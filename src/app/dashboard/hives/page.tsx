@@ -53,38 +53,105 @@ export default function HivesPage() {
   })
 
   useEffect(() => {
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) {
+        console.error('Auth error:', error)
+      }
+      console.log('Current session:', session ? 'Authenticated' : 'Not authenticated')
+    }
+
+    checkAuth()
     fetchHives()
     fetchApiaries()
     fetchQueens()
   }, [])
 
   const fetchHives = async () => {
-    const { data } = await supabase
+    // Try without joins first to see if we can get basic hive data
+    const { data, error } = await supabase
       .from('hives')
-      .select('*, apiaries(name), queens(queen_number)')
+      .select('*')
       .order('hive_number')
-    
-    if (data) setHives(data as Hive[])
+
+    console.log('Fetch hives response:', { data, error })
+
+    if (error) {
+      console.error('Error fetching hives:', error)
+      alert(`Error loading hives: ${error.message}`)
+    } else {
+      console.log('Hives data received:', data)
+      console.log('Number of hives:', data?.length || 0)
+
+      // If we have hives, try to enrich them with apiary and queen data
+      if (data && data.length > 0) {
+        const enrichedHives = await Promise.all(
+          data.map(async (hive) => {
+            let apiaryName = null
+            let queenNumber = null
+
+            // Fetch apiary if exists
+            if (hive.apiary_id) {
+              const { data: apiaryData } = await supabase
+                .from('apiaries')
+                .select('name')
+                .eq('id', hive.apiary_id)
+                .single()
+              apiaryName = apiaryData?.name
+            }
+
+            // Fetch queen if exists
+            if (hive.queen_id) {
+              const { data: queenData } = await supabase
+                .from('queens')
+                .select('queen_number')
+                .eq('id', hive.queen_id)
+                .single()
+              queenNumber = queenData?.queen_number
+            }
+
+            return {
+              ...hive,
+              apiaries: apiaryName ? { name: apiaryName } : undefined,
+              queens: queenNumber ? { queen_number: queenNumber } : undefined,
+            }
+          })
+        )
+        console.log('Enriched hives:', enrichedHives)
+        setHives(enrichedHives as Hive[])
+      } else {
+        setHives([])
+      }
+    }
     setLoading(false)
   }
 
   const fetchApiaries = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('apiaries')
       .select('id, name')
       .order('name')
-    
-    if (data) setApiaries(data as Apiary[])
+
+    if (error) {
+      console.error('Error fetching apiaries:', error)
+    } else if (data) {
+      setApiaries(data as Apiary[])
+    }
   }
 
   const fetchQueens = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('queens')
       .select('id, queen_number')
       .eq('status', 'active')
       .order('queen_number')
-    
-    if (data) setQueens(data as Queen[])
+
+    if (error) {
+      console.error('Error fetching queens:', error)
+    } else if (data) {
+      setQueens(data as Queen[])
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
