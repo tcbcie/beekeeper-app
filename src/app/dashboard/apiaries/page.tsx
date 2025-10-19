@@ -8,6 +8,7 @@ interface Apiary {
   id: string
   name: string
   location: string | null
+  city: string | null
   notes: string | null
   created_at?: string
 }
@@ -15,6 +16,7 @@ interface Apiary {
 interface FormData {
   name: string
   location: string
+  city: string
   notes: string
 }
 
@@ -26,6 +28,7 @@ export default function ApiariesPage() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     location: '',
+    city: '',
     notes: '',
   })
 
@@ -75,6 +78,7 @@ export default function ApiariesPage() {
     setFormData({
       name: apiary.name,
       location: apiary.location || '',
+      city: apiary.city || '',
       notes: apiary.notes || '',
     })
     setShowForm(true)
@@ -97,6 +101,7 @@ export default function ApiariesPage() {
     setFormData({
       name: '',
       location: '',
+      city: '',
       notes: '',
     })
   }
@@ -134,15 +139,28 @@ export default function ApiariesPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                placeholder="e.g., 123 Main St, GPS coordinates"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Eircode</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  placeholder="e.g., D02 XY45"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <input
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  placeholder="e.g., Dublin, Cork"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
             </div>
 
             <div>
@@ -175,7 +193,10 @@ export default function ApiariesPage() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{apiary.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{apiary.location || 'No location specified'}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {apiary.city && apiary.location ? `${apiary.city} - ${apiary.location}` :
+                     apiary.city || apiary.location || 'No location specified'}
+                  </p>
                 </div>
               </div>
 

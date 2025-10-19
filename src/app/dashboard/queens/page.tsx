@@ -10,7 +10,9 @@ interface Queen {
   birth_date: string
   marking_color: string
   source: string
-  genetics: string
+  subspecies: string
+  lineage: string
+  queen_clipped: boolean
   status: string
   performance_notes: string
   created_at?: string
@@ -21,9 +23,69 @@ interface FormData {
   birth_date: string
   marking_color: string
   source: string
-  genetics: string
+  subspecies: string
+  lineage: string
+  queen_clipped: boolean
   status: string
   performance_notes: string
+}
+
+// Calculate queen marking color based on birth year
+// International color coding: White=1,6 | Yellow=2,7 | Red=3,8 | Green=4,9 | Blue=5,0
+const getQueenColorFromYear = (birthDate: string): string => {
+  if (!birthDate) return ''
+  const year = new Date(birthDate).getFullYear()
+  const lastDigit = year % 10
+
+  switch (lastDigit) {
+    case 1:
+    case 6:
+      return 'White'
+    case 2:
+    case 7:
+      return 'Yellow'
+    case 3:
+    case 8:
+      return 'Red'
+    case 4:
+    case 9:
+      return 'Green'
+    case 5:
+    case 0:
+      return 'Blue'
+    default:
+      return ''
+  }
+}
+
+// Calculate queen age from birth date
+const calculateQueenAge = (birthDate: string): string => {
+  if (!birthDate) return 'N/A'
+
+  const birth = new Date(birthDate)
+  const today = new Date()
+  const ageInDays = Math.floor((today.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (ageInDays < 0) return 'Future date'
+  if (ageInDays === 0) return 'Today'
+  if (ageInDays === 1) return '1 day'
+  if (ageInDays < 7) return `${ageInDays} days`
+  if (ageInDays < 30) {
+    const weeks = Math.floor(ageInDays / 7)
+    return `${weeks} week${weeks > 1 ? 's' : ''}`
+  }
+  if (ageInDays < 365) {
+    const months = Math.floor(ageInDays / 30)
+    return `${months} month${months > 1 ? 's' : ''}`
+  }
+
+  const years = Math.floor(ageInDays / 365)
+  const remainingMonths = Math.floor((ageInDays % 365) / 30)
+
+  if (remainingMonths === 0) {
+    return `${years} year${years > 1 ? 's' : ''}`
+  }
+  return `${years}y ${remainingMonths}m`
 }
 
 export default function QueensPage() {
@@ -32,19 +94,33 @@ export default function QueensPage() {
   const [editingQueen, setEditingQueen] = useState<Queen | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
   const [formData, setFormData] = useState<FormData>({
     queen_number: '',
     birth_date: '',
     marking_color: '',
     source: 'bred',
-    genetics: '',
+    subspecies: '',
+    lineage: '',
+    queen_clipped: false,
     status: 'active',
     performance_notes: '',
   })
 
   useEffect(() => {
     fetchQueens()
+    fetchSubspeciesOptions()
   }, [])
+
+  // Auto-calculate color when birth date changes
+  useEffect(() => {
+    if (formData.birth_date) {
+      const calculatedColor = getQueenColorFromYear(formData.birth_date)
+      if (calculatedColor && calculatedColor !== formData.marking_color) {
+        setFormData(prev => ({ ...prev, marking_color: calculatedColor }))
+      }
+    }
+  }, [formData.birth_date])
 
   const fetchQueens = async () => {
     const { data, error } = await supabase
@@ -56,6 +132,29 @@ export default function QueensPage() {
       setQueens(data as Queen[])
     }
     setLoading(false)
+  }
+
+  const fetchSubspeciesOptions = async () => {
+    const { data, error } = await supabase
+      .from('dropdown_categories')
+      .select(`
+        id,
+        dropdown_values (
+          value,
+          is_active,
+          display_order
+        )
+      `)
+      .eq('category_key', 'bee_subspecies')
+      .single()
+
+    if (!error && data && data.dropdown_values) {
+      const activeValues = data.dropdown_values
+        .filter((v: any) => v.is_active)
+        .sort((a: any, b: any) => a.display_order - b.display_order)
+        .map((v: any) => v.value)
+      setSubspeciesOptions(activeValues)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,7 +189,9 @@ export default function QueensPage() {
       birth_date: queen.birth_date,
       marking_color: queen.marking_color,
       source: queen.source,
-      genetics: queen.genetics,
+      subspecies: queen.subspecies,
+      lineage: queen.lineage,
+      queen_clipped: queen.queen_clipped || false,
       status: queen.status,
       performance_notes: queen.performance_notes,
     })
@@ -112,7 +213,9 @@ export default function QueensPage() {
       birth_date: '',
       marking_color: '',
       source: 'bred',
-      genetics: '',
+      subspecies: '',
+      lineage: '',
+      queen_clipped: false,
       status: 'active',
       performance_notes: '',
     })
@@ -120,12 +223,13 @@ export default function QueensPage() {
 
   const exportCSV = () => {
     const csv = [
-      ['Queen Number', 'Birth Date', 'Color', 'Genetics', 'Status'],
+      ['Queen Number', 'Birth Date', 'Color', 'Subspecies', 'Lineage', 'Status'],
       ...filteredQueens.map((q) => [
         q.queen_number,
         q.birth_date,
         q.marking_color,
-        q.genetics,
+        q.subspecies,
+        q.lineage,
         q.status,
       ]),
     ]
@@ -143,7 +247,7 @@ export default function QueensPage() {
   const filteredQueens = queens.filter(
     (q) =>
       q.queen_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (q.genetics && q.genetics.toLowerCase().includes(searchTerm.toLowerCase()))
+      (q.subspecies && q.subspecies.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   const colorOptions = ['White', 'Yellow', 'Red', 'Green', 'Blue', 'None']
@@ -203,6 +307,11 @@ export default function QueensPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Marking Color
+                {formData.birth_date && (
+                  <span className="ml-2 text-xs text-blue-600 font-normal">
+                    (Auto-set based on birth year)
+                  </span>
+                )}
               </label>
               <select
                 value={formData.marking_color}
@@ -216,6 +325,9 @@ export default function QueensPage() {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                International standard: White (1,6) | Yellow (2,7) | Red (3,8) | Green (4,9) | Blue (5,0)
+              </p>
             </div>
 
             <div>
@@ -232,12 +344,28 @@ export default function QueensPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Genetics</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subspecies</label>
+              <select
+                value={formData.subspecies}
+                onChange={(e) => setFormData({ ...formData, subspecies: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="">Select subspecies</option>
+                {subspeciesOptions.map((subspecies) => (
+                  <option key={subspecies} value={subspecies}>
+                    {subspecies}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lineage</label>
               <input
                 type="text"
-                value={formData.genetics}
-                onChange={(e) => setFormData({ ...formData, genetics: e.target.value })}
-                placeholder="e.g., Buckfast, Italian"
+                value={formData.lineage}
+                onChange={(e) => setFormData({ ...formData, lineage: e.target.value })}
+                placeholder="e.g., Queen's mother/breeder line"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               />
             </div>
@@ -253,6 +381,19 @@ export default function QueensPage() {
                 <option value="retired">Retired</option>
                 <option value="dead">Dead</option>
               </select>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="queen_clipped"
+                checked={formData.queen_clipped}
+                onChange={(e) => setFormData({ ...formData, queen_clipped: e.target.checked })}
+                className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+              />
+              <label htmlFor="queen_clipped" className="ml-2 text-sm font-medium text-gray-700">
+                Queen Clipped
+              </label>
             </div>
 
             <div className="md:col-span-2">
@@ -297,7 +438,7 @@ export default function QueensPage() {
             />
             <input
               type="text"
-              placeholder="Search by queen number or genetics..."
+              placeholder="Search by queen number or subspecies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg"
@@ -316,10 +457,19 @@ export default function QueensPage() {
                   Birth Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Age
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Color
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Genetics
+                  Subspecies
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Lineage
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Clipped
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Status
@@ -337,6 +487,9 @@ export default function QueensPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     {queen.birth_date || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-600 font-medium">
+                    {calculateQueenAge(queen.birth_date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -356,7 +509,19 @@ export default function QueensPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {queen.genetics || 'N/A'}
+                    {queen.subspecies || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                    {queen.lineage || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    {queen.queen_clipped ? (
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">No</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

@@ -19,6 +19,10 @@ interface Hive {
   hive_number: string
   apiary_id: string | null
   queen_id: string | null
+  queen_marked: boolean
+  queen_marking_color: string | null
+  queen_mated: boolean
+  queen_clipped: boolean
   status: string
   notes: string | null
   apiaries?: {
@@ -33,6 +37,10 @@ interface FormData {
   hive_number: string
   apiary_id: string
   queen_id: string
+  queen_marked: boolean
+  queen_marking_color: string
+  queen_mated: boolean
+  queen_clipped: boolean
   status: string
   notes: string
 }
@@ -48,6 +56,10 @@ export default function HivesPage() {
     hive_number: '',
     apiary_id: '',
     queen_id: '',
+    queen_marked: false,
+    queen_marking_color: '',
+    queen_mated: false,
+    queen_clipped: false,
     status: 'active',
     notes: '',
   })
@@ -194,6 +206,10 @@ export default function HivesPage() {
       hive_number: hive.hive_number,
       apiary_id: hive.apiary_id || '',
       queen_id: hive.queen_id || '',
+      queen_marked: hive.queen_marked || false,
+      queen_marking_color: hive.queen_marking_color || '',
+      queen_mated: hive.queen_mated || false,
+      queen_clipped: hive.queen_clipped || false,
       status: hive.status,
       notes: hive.notes || '',
     })
@@ -218,6 +234,10 @@ export default function HivesPage() {
       hive_number: '',
       apiary_id: '',
       queen_id: '',
+      queen_marked: false,
+      queen_marking_color: '',
+      queen_mated: false,
+      queen_clipped: false,
       status: 'active',
       notes: '',
     })
@@ -277,7 +297,7 @@ export default function HivesPage() {
                 onChange={(e) => setFormData({...formData, queen_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
-                <option value="">No queen / Queenless</option>
+                <option value="">Record manual</option>
                 {queens.map((q) => (
                   <option key={q.id} value={q.id}>{q.queen_number}</option>
                 ))}
@@ -296,6 +316,75 @@ export default function HivesPage() {
                 <option value="retired">Retired</option>
               </select>
             </div>
+
+            {/* Show queen checkboxes only when no queen is assigned */}
+            {!formData.queen_id && (
+              <>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Queen Status (if no specific queen assigned)</label>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, queen_marked: !formData.queen_marked})}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                        formData.queen_marked
+                          ? 'bg-amber-600 text-white shadow-md hover:bg-amber-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <span className="text-lg">{formData.queen_marked ? '✓' : '○'}</span>
+                      Queen Marked
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, queen_mated: !formData.queen_mated})}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                        formData.queen_mated
+                          ? 'bg-green-600 text-white shadow-md hover:bg-green-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <span className="text-lg">{formData.queen_mated ? '♥' : '○'}</span>
+                      Queen Mated
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, queen_clipped: !formData.queen_clipped})}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                        formData.queen_clipped
+                          ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <span className="text-lg">{formData.queen_clipped ? '✂' : '○'}</span>
+                      Queen Clipped
+                    </button>
+                  </div>
+                </div>
+
+                {/* Show marking color dropdown when Queen Marked is checked */}
+                {formData.queen_marked && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Queen Marking Color</label>
+                    <select
+                      value={formData.queen_marking_color}
+                      onChange={(e) => setFormData({...formData, queen_marking_color: e.target.value})}
+                      className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="">Select color</option>
+                      <option value="White">White</option>
+                      <option value="Yellow">Yellow</option>
+                      <option value="Red">Red</option>
+                      <option value="Green">Green</option>
+                      <option value="Blue">Blue</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      International standard: White (1,6) | Yellow (2,7) | Red (3,8) | Green (4,9) | Blue (5,0)
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>

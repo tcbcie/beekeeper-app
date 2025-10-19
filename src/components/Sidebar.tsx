@@ -1,7 +1,7 @@
 'use client'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings } from 'lucide-react'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -13,6 +13,7 @@ export default function Sidebar() {
     { href: '/dashboard/hives', label: 'Hives', icon: Archive },
     { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
     { href: '/dashboard/inspections', label: 'Inspections', icon: ClipboardList },
+    { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ]
 
   return (

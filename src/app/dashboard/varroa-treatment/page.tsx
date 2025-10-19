@@ -10,6 +10,13 @@ interface Hive {
   hive_number: string
 }
 
+interface DropdownValue {
+  id: string
+  value: string
+  display_order: number
+  is_active: boolean
+}
+
 interface VarroaTreatment {
   id: string
   hive_id: string
@@ -40,6 +47,7 @@ export default function VarroaTreatmentPage() {
   const router = useRouter()
   const [treatments, setTreatments] = useState<VarroaTreatment[]>([])
   const [hives, setHives] = useState<Hive[]>([])
+  const [productNames, setProductNames] = useState<DropdownValue[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingTreatment, setEditingTreatment] = useState<VarroaTreatment | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,6 +65,7 @@ export default function VarroaTreatmentPage() {
   useEffect(() => {
     fetchTreatments()
     fetchHives()
+    fetchProductNames()
   }, [])
 
   const fetchTreatments = async () => {
@@ -77,6 +86,25 @@ export default function VarroaTreatmentPage() {
       .order('hive_number')
 
     if (data) setHives(data as Hive[])
+  }
+
+  const fetchProductNames = async () => {
+    const { data: category } = await supabase
+      .from('dropdown_categories')
+      .select('id')
+      .eq('category_key', 'varroa_treatment_product')
+      .single()
+
+    if (category) {
+      const { data } = await supabase
+        .from('dropdown_values')
+        .select('id, value, display_order, is_active')
+        .eq('category_id', category.id)
+        .eq('is_active', true)
+        .order('display_order')
+
+      if (data) setProductNames(data as DropdownValue[])
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -254,13 +282,18 @@ export default function VarroaTreatmentPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-              <input
-                type="text"
+              <select
                 value={formData.product_name}
                 onChange={(e) => setFormData({...formData, product_name: e.target.value})}
-                placeholder="e.g., Api-Bioxal"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
+              >
+                <option value="">Select product</option>
+                {productNames.map((product) => (
+                  <option key={product.id} value={product.value}>
+                    {product.value}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
