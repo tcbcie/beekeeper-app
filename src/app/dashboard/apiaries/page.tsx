@@ -9,6 +9,7 @@ interface Apiary {
   name: string
   location: string | null
   city: string | null
+  eircode: string | null
   notes: string | null
   created_at?: string
 }
@@ -17,6 +18,7 @@ interface FormData {
   name: string
   location: string
   city: string
+  eircode: string
   notes: string
 }
 
@@ -29,6 +31,7 @@ export default function ApiariesPage() {
     name: '',
     location: '',
     city: '',
+    eircode: '',
     notes: '',
   })
 
@@ -79,6 +82,7 @@ export default function ApiariesPage() {
       name: apiary.name,
       location: apiary.location || '',
       city: apiary.city || '',
+      eircode: apiary.eircode || '',
       notes: apiary.notes || '',
     })
     setShowForm(true)
@@ -102,6 +106,7 @@ export default function ApiariesPage() {
       name: '',
       location: '',
       city: '',
+      eircode: '',
       notes: '',
     })
   }
@@ -141,12 +146,12 @@ export default function ApiariesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Eircode</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  placeholder="e.g., D02 XY45"
+                  placeholder="e.g., North Field, Back Garden"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
@@ -161,6 +166,19 @@ export default function ApiariesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Eircode *</label>
+              <input
+                type="text"
+                value={formData.eircode}
+                onChange={(e) => setFormData({...formData, eircode: e.target.value})}
+                placeholder="e.g., D02 XY45"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Required for automatic weather data on inspections</p>
             </div>
 
             <div>
@@ -197,6 +215,11 @@ export default function ApiariesPage() {
                     {apiary.city && apiary.location ? `${apiary.city} - ${apiary.location}` :
                      apiary.city || apiary.location || 'No location specified'}
                   </p>
+                  {apiary.eircode && (
+                    <p className="text-sm text-indigo-600 font-medium mt-1">
+                      Eircode: {apiary.eircode}
+                    </p>
+                  )}
                 </div>
               </div>
 

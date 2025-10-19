@@ -20,6 +20,7 @@ interface Inspection {
   id: string
   hive_id: string
   inspection_date: string
+  inspection_time: string | null
   queen_seen: boolean
   eggs_present: boolean
   brood_frames: number | null
@@ -45,6 +46,7 @@ interface Inspection {
 interface FormData {
   hive_id: string
   inspection_date: string
+  inspection_time: string
   queen_seen: boolean
   eggs_present: boolean
   brood_frames: number | null
@@ -83,6 +85,7 @@ export default function InspectionsPage() {
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
+    inspection_time: new Date().toTimeString().slice(0, 5),
     queen_seen: false,
     eggs_present: false,
     brood_frames: null,
@@ -413,6 +416,7 @@ export default function InspectionsPage() {
       const submitData = {
         hive_id: formData.hive_id,
         inspection_date: formData.inspection_date,
+        inspection_time: formData.inspection_time,
         queen_seen: formData.queen_seen,
         eggs_present: formData.eggs_present,
         brood_frames: formData.brood_frames,
@@ -478,6 +482,7 @@ export default function InspectionsPage() {
     setFormData({
       hive_id: inspection.hive_id,
       inspection_date: inspection.inspection_date,
+      inspection_time: inspection.inspection_time || '',
       queen_seen: inspection.queen_seen || false,
       eggs_present: inspection.eggs_present || false,
       brood_frames: inspection.brood_frames ?? null,
@@ -524,6 +529,7 @@ export default function InspectionsPage() {
     setFormData({
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
+      inspection_time: new Date().toTimeString().slice(0, 5),
       queen_seen: false,
       eggs_present: false,
       brood_frames: null,
@@ -798,15 +804,28 @@ export default function InspectionsPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-              <input
-                type="date"
-                value={formData.inspection_date}
-                onChange={(e) => setFormData({...formData, inspection_date: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                <input
+                  type="date"
+                  value={formData.inspection_date}
+                  onChange={(e) => setFormData({...formData, inspection_date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                <input
+                  type="time"
+                  value={formData.inspection_time}
+                  onChange={(e) => setFormData({...formData, inspection_time: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
             </div>
 
             <div className="flex items-center">
@@ -1179,7 +1198,10 @@ export default function InspectionsPage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
-                <p className="text-sm text-gray-500">{inspection.inspection_date}</p>
+                <p className="text-sm text-gray-500">
+                  {inspection.inspection_date}
+                  {inspection.inspection_time && ` at ${inspection.inspection_time}`}
+                </p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => handleEdit(inspection)} className="text-blue-600 hover:text-blue-900">
@@ -1227,7 +1249,16 @@ export default function InspectionsPage() {
               </div>
             </div>
 
-            {(inspection.weather_temp !== null || inspection.weather_condition) && (
+            {(() => {
+              console.log('Inspection weather check:', inspection.id, {
+                temp: inspection.weather_temp,
+                condition: inspection.weather_condition,
+                humidity: inspection.weather_humidity,
+                wind: inspection.weather_wind_speed,
+                shouldShow: inspection.weather_temp !== null || inspection.weather_condition
+              })
+              return (inspection.weather_temp !== null || inspection.weather_condition)
+            })() && (
               <div className="mb-4 p-3 bg-sky-50 rounded border-2 border-sky-200">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🌤️</span>
