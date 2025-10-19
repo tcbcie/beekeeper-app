@@ -54,6 +54,7 @@ export default function HivesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingHive, setEditingHive] = useState<Hive | null>(null)
   const [loading, setLoading] = useState(true)
+  const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_number: '',
     apiary_id: '',
@@ -247,19 +248,39 @@ export default function HivesPage() {
     })
   }
 
+  // Filter hives based on selected apiary
+  const filteredHives = hives.filter(hive => {
+    if (filterApiaryId && hive.apiary_id !== filterApiaryId) {
+      return false
+    }
+    return true
+  })
+
   if (loading) return <LoadingSpinner text="Loading hives..." />
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Hives 🐝</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium flex items-center gap-2"
-        >
-          {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? 'Cancel' : 'Add Hive'}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <select
+            value={filterApiaryId}
+            onChange={(e) => setFilterApiaryId(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
+          >
+            <option value="">All Apiaries</option>
+            {apiaries.map((apiary) => (
+              <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium flex items-center gap-2"
+          >
+            {showForm ? <X size={16} /> : <Plus size={16} />}
+            {showForm ? 'Cancel' : 'Add Hive'}
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -414,7 +435,7 @@ export default function HivesPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {hives.map((hive) => (
+        {filteredHives.map((hive) => (
           <div key={hive.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-start mb-3">
               <h3 className="text-xl font-bold text-gray-900">{hive.hive_number}</h3>
@@ -471,9 +492,11 @@ export default function HivesPage() {
         ))}
       </div>
 
-      {hives.length === 0 && (
+      {filteredHives.length === 0 && (
         <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
-          No hives found. Add your first hive!
+          {filterApiaryId
+            ? 'No hives found for this apiary. Select "All Apiaries" or add a new hive.'
+            : 'No hives found. Add your first hive!'}
         </div>
       )}
     </div>
