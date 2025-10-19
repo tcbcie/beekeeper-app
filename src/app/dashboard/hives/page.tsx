@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface Apiary {
@@ -29,6 +30,7 @@ interface Hive {
     name: string
   }
   queens?: {
+    id: string
     queen_number: string
   }
 }
@@ -117,16 +119,18 @@ export default function HivesPage() {
             if (hive.queen_id) {
               const { data: queenData } = await supabase
                 .from('queens')
-                .select('queen_number')
+                .select('id, queen_number')
                 .eq('id', hive.queen_id)
                 .single()
-              queenNumber = queenData?.queen_number
+              if (queenData) {
+                queenNumber = queenData.queen_number
+              }
             }
 
             return {
               ...hive,
               apiaries: apiaryName ? { name: apiaryName } : undefined,
-              queens: queenNumber ? { queen_number: queenNumber } : undefined,
+              queens: hive.queen_id && queenNumber ? { id: hive.queen_id, queen_number: queenNumber } : undefined,
             }
           })
         )
@@ -430,7 +434,17 @@ export default function HivesPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">👑</span>
-                <span>{hive.queens?.queen_number || 'No queen'}</span>
+                {hive.queens?.id ? (
+                  <Link
+                    href={`/dashboard/queens?id=${hive.queens.id}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
+                  >
+                    {hive.queens.queen_number}
+                    <ExternalLink size={12} />
+                  </Link>
+                ) : (
+                  <span>No queen</span>
+                )}
               </div>
               {hive.notes && (
                 <div className="mt-3 p-2 bg-gray-50 rounded text-gray-700 text-xs">

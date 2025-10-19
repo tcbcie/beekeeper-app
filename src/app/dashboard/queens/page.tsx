@@ -1,7 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Search, Plus, Edit2, Trash2, X, Download } from 'lucide-react'
+import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface Queen {
@@ -16,6 +18,13 @@ interface Queen {
   status: string
   performance_notes: string
   created_at?: string
+  hives?: {
+    id: string
+    hive_number: string
+    apiaries?: {
+      name: string
+    }
+  }
 }
 
 interface FormData {
@@ -89,6 +98,10 @@ const calculateQueenAge = (birthDate: string): string => {
 }
 
 export default function QueensPage() {
+  const searchParams = useSearchParams()
+  const highlightedQueenId = searchParams.get('id')
+  const queenRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+
   const [queens, setQueens] = useState<Queen[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingQueen, setEditingQueen] = useState<Queen | null>(null)
@@ -112,6 +125,18 @@ export default function QueensPage() {
     fetchSubspeciesOptions()
   }, [])
 
+  // Scroll to highlighted queen when data loads
+  useEffect(() => {
+    if (highlightedQueenId && queens.length > 0) {
+      const queenElement = queenRefs.current[highlightedQueenId]
+      if (queenElement) {
+        setTimeout(() => {
+          queenElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 100)
+      }
+    }
+  }, [highlightedQueenId, queens])
+
   // Auto-calculate color when birth date changes
   useEffect(() => {
     if (formData.birth_date) {
@@ -123,14 +148,49 @@ export default function QueensPage() {
   }, [formData.birth_date])
 
   const fetchQueens = async () => {
-    const { data, error } = await supabase
+    // First get all queens
+    const { data: queensData, error: queensError } = await supabase
       .from('queens')
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (!error && data) {
-      setQueens(data as Queen[])
+    if (queensError) {
+      console.error('Error fetching queens:', queensError)
+      setLoading(false)
+      return
     }
+
+    // Then enrich with hive and apiary data
+    if (queensData && queensData.length > 0) {
+      const enrichedQueens = await Promise.all(
+        queensData.map(async (queen) => {
+          if (!queen.id) return queen
+
+          // Find hive that has this queen
+          const { data: hiveData } = await supabase
+            .from('hives')
+            .select(`
+              id,
+              hive_number,
+              apiaries (
+                name
+              )
+            `)
+            .eq('queen_id', queen.id)
+            .eq('status', 'active')
+            .single()
+
+          return {
+            ...queen,
+            hives: hiveData || undefined
+          }
+        })
+      )
+      setQueens(enrichedQueens as Queen[])
+    } else {
+      setQueens([])
+    }
+
     setLoading(false)
   }
 
@@ -223,12 +283,13 @@ export default function QueensPage() {
 
   const exportCSV = () => {
     const csv = [
-      ['Queen Number', 'Birth Date', 'Color', 'Subspecies', 'Lineage', 'Status'],
+      ['Queen Number', 'Age', 'Color', 'Hive', 'Apiary', 'Lineage', 'Status'],
       ...filteredQueens.map((q) => [
         q.queen_number,
-        q.birth_date,
+        calculateQueenAge(q.birth_date),
         q.marking_color,
-        q.subspecies,
+        q.hives?.hive_number || 'N/A',
+        q.hives?.apiaries?.name || 'N/A',
         q.lineage,
         q.status,
       ]),
@@ -454,22 +515,19 @@ export default function QueensPage() {
                   Queen Number
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Birth Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Age
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Color
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Subspecies
+                  Hive
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Apiary
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Lineage
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Clipped
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Status
@@ -481,12 +539,19 @@ export default function QueensPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredQueens.map((queen) => (
-                <tr key={queen.id} className="hover:bg-gray-50">
+                <tr
+                  key={queen.id}
+                  ref={(el) => {
+                    queenRefs.current[queen.id] = el
+                  }}
+                  className={`transition-all duration-500 ${
+                    highlightedQueenId === queen.id
+                      ? 'bg-blue-100 hover:bg-blue-150 border-l-4 border-blue-600'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
                   <td className="px-6 py-4 whitespace-nowrap font-medium">
                     {queen.queen_number}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {queen.birth_date || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-600 font-medium">
                     {calculateQueenAge(queen.birth_date)}
@@ -509,19 +574,23 @@ export default function QueensPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {queen.subspecies || 'N/A'}
+                    {queen.hives?.id ? (
+                      <Link
+                        href={`/dashboard/hives`}
+                        className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
+                      >
+                        {queen.hives.hive_number}
+                        <ExternalLink size={12} />
+                      </Link>
+                    ) : (
+                      'N/A'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                    {queen.hives?.apiaries?.name || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     {queen.lineage || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {queen.queen_clipped ? (
-                      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                        Yes
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">No</span>
-                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit2, Trash2, ChevronDown, HelpCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronDown, HelpCircle, Camera, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -29,8 +29,16 @@ interface Inspection {
   honey_stores: string
   disease_issues: string
   notes: string
+  image_url: string | null
+  weather_temp: number | null
+  weather_condition: string | null
+  weather_humidity: number | null
+  weather_wind_speed: number | null
   hives?: {
     hive_number: string
+    apiaries?: {
+      eircode: string | null
+    }
   }
 }
 
@@ -50,6 +58,7 @@ interface FormData {
   varroa: boolean
   chalkbrood: boolean
   virus: boolean
+  image_url: string | null
 }
 
 export default function InspectionsPage() {
@@ -67,6 +76,10 @@ export default function InspectionsPage() {
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [lastInspection, setLastInspection] = useState<Inspection | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [fetchingWeather, setFetchingWeather] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -83,6 +96,7 @@ export default function InspectionsPage() {
     varroa: false,
     chalkbrood: false,
     virus: false,
+    image_url: null,
   })
 
   useEffect(() => {
@@ -104,11 +118,23 @@ export default function InspectionsPage() {
   }, [showDropdown])
 
   const fetchInspections = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('inspections')
-      .select('*, hives(hive_number)')
+      .select('*, hives(hive_number, apiaries(eircode))')
       .order('inspection_date', { ascending: false })
-    
+
+    console.log('Fetched inspections:', data)
+    console.log('Fetch error:', error)
+
+    if (data && data.length > 0) {
+      console.log('First inspection weather data:', {
+        temp: data[0].weather_temp,
+        condition: data[0].weather_condition,
+        humidity: data[0].weather_humidity,
+        wind: data[0].weather_wind_speed
+      })
+    }
+
     if (data) setInspections(data as Inspection[])
     setLoading(false)
   }
@@ -152,6 +178,158 @@ export default function InspectionsPage() {
     }
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setFormData({ ...formData, image_url: null })
+  }
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
+      const filePath = `inspections/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('inspection-images')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('inspection-images')
+        .getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Failed to upload image')
+      return null
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const fetchWeatherData = async (eircode: string) => {
+    try {
+      // Remove spaces and encode the Eircode for the URL
+      const cleanedEircode = eircode.trim().replace(/\s+/g, '').toUpperCase()
+      console.log('Original Eircode:', eircode, 'Cleaned:', cleanedEircode)
+
+      // Nominatim requires a User-Agent header
+      const headers = {
+        'User-Agent': 'BeekeeperApp/1.0'
+      }
+
+      // First, try searching with just the Eircode and Ireland
+      console.log('Trying to geocode:', cleanedEircode)
+      const geocodeResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode)},Ireland&format=json&limit=1`,
+        { headers }
+      )
+      const geocodeData = await geocodeResponse.json()
+      console.log('Geocode response:', geocodeData)
+
+      if (!geocodeData || geocodeData.length === 0) {
+        console.log('Could not find coordinates for Eircode:', eircode)
+
+        // Try with different format - just search term
+        console.log('Trying alternative geocoding...')
+        const altResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode + ' Ireland')}&format=json&limit=1`,
+          { headers }
+        )
+        const altData = await altResponse.json()
+        console.log('Alternative geocode response:', altData)
+
+        if (!altData || altData.length === 0) {
+          console.log('Alternative geocoding also failed. Using default Dublin coordinates.')
+          // Fallback to Dublin city center coordinates if Eircode lookup fails
+          return await getWeatherFromCoordinates('53.3498', '-6.2603')
+        }
+
+        const { lat, lon } = altData[0]
+        return await getWeatherFromCoordinates(lat, lon)
+      }
+
+      const { lat, lon } = geocodeData[0]
+      return await getWeatherFromCoordinates(lat, lon)
+    } catch (error) {
+      console.error('Error fetching weather data:', error)
+      // Fallback to Dublin coordinates on error
+      console.log('Using fallback Dublin coordinates due to error')
+      return await getWeatherFromCoordinates('53.3498', '-6.2603')
+    }
+  }
+
+  const getWeatherFromCoordinates = async (lat: string, lon: string) => {
+    try {
+      console.log('Fetching weather for coordinates:', lat, lon)
+
+      // Get current weather from Open-Meteo API (free, no API key required)
+      const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe/Dublin`
+      )
+      const weatherData = await weatherResponse.json()
+      console.log('Weather API response:', weatherData)
+
+      if (!weatherData.current) {
+        console.log('No current weather data in response')
+        return null
+      }
+
+      // Map weather codes to conditions
+      const weatherCodeMap: { [key: number]: string } = {
+        0: 'Clear',
+        1: 'Mainly Clear',
+        2: 'Partly Cloudy',
+        3: 'Overcast',
+        45: 'Fog',
+        48: 'Depositing Rime Fog',
+        51: 'Light Drizzle',
+        53: 'Moderate Drizzle',
+        55: 'Dense Drizzle',
+        61: 'Slight Rain',
+        63: 'Moderate Rain',
+        65: 'Heavy Rain',
+        71: 'Slight Snow',
+        73: 'Moderate Snow',
+        75: 'Heavy Snow',
+        80: 'Slight Rain Showers',
+        81: 'Moderate Rain Showers',
+        82: 'Violent Rain Showers',
+        95: 'Thunderstorm',
+        96: 'Thunderstorm with Hail',
+      }
+
+      const result = {
+        temp: Math.round(weatherData.current.temperature_2m),
+        condition: weatherCodeMap[weatherData.current.weather_code] || 'Unknown',
+        humidity: weatherData.current.relative_humidity_2m,
+        wind_speed: Math.round(weatherData.current.wind_speed_10m),
+      }
+
+      console.log('Processed weather data:', result)
+      return result
+    } catch (error) {
+      console.error('Error fetching weather from coordinates:', error)
+      return null
+    }
+  }
+
   const handleHiveChange = async (hiveId: string) => {
     await fetchLastInspection(hiveId)
 
@@ -181,6 +359,7 @@ export default function InspectionsPage() {
       varroa: false,
       chalkbrood: false,
       virus: false,
+      image_url: null,
     })
   }
 
@@ -188,6 +367,42 @@ export default function InspectionsPage() {
     e.preventDefault()
 
     try {
+      // Upload image if one was selected
+      let imageUrl = formData.image_url
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile)
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl
+        }
+      }
+
+      // Fetch weather data based on hive's apiary Eircode
+      setFetchingWeather(true)
+      let weatherData = null
+      const selectedHive = hives.find(h => h.id === formData.hive_id)
+      console.log('Selected hive:', selectedHive)
+
+      if (selectedHive?.apiary_id) {
+        const { data: apiaryData, error: apiaryError } = await supabase
+          .from('apiaries')
+          .select('eircode')
+          .eq('id', selectedHive.apiary_id)
+          .single()
+
+        console.log('Apiary data:', apiaryData, 'Error:', apiaryError)
+
+        if (apiaryData?.eircode) {
+          console.log('Fetching weather for Eircode:', apiaryData.eircode)
+          weatherData = await fetchWeatherData(apiaryData.eircode)
+          console.log('Weather data received:', weatherData)
+        } else {
+          console.log('No Eircode found for this apiary. Please add an Eircode to the apiary.')
+        }
+      } else {
+        console.log('No apiary assigned to this hive')
+      }
+      setFetchingWeather(false)
+
       // Build disease_issues string from checkboxes
       const diseases = []
       if (formData.varroa) diseases.push('Varroa')
@@ -207,21 +422,38 @@ export default function InspectionsPage() {
         honey_stores: formData.honey_stores,
         disease_issues: disease_issues,
         notes: formData.notes,
+        image_url: imageUrl,
+        weather_temp: weatherData?.temp || null,
+        weather_condition: weatherData?.condition || null,
+        weather_humidity: weatherData?.humidity || null,
+        weather_wind_speed: weatherData?.wind_speed || null,
       }
 
+      console.log('Submitting inspection data:', submitData)
+
       if (editingInspection) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('inspections')
           .update(submitData)
           .eq('id', editingInspection.id)
+          .select()
 
-        if (error) throw error
+        console.log('Update result:', { data, error })
+        if (error) {
+          console.error('Database update error:', error)
+          throw error
+        }
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('inspections')
           .insert([submitData])
+          .select()
 
-        if (error) throw error
+        console.log('Insert result:', { data, error })
+        if (error) {
+          console.error('Database insert error:', error)
+          throw error
+        }
       }
 
       fetchInspections()
@@ -259,7 +491,17 @@ export default function InspectionsPage() {
       varroa: varroa,
       chalkbrood: chalkbrood,
       virus: virus,
+      image_url: inspection.image_url || null,
     })
+
+    // Set image preview if there's an existing image
+    if (inspection.image_url) {
+      setImagePreview(inspection.image_url)
+    } else {
+      setImagePreview(null)
+    }
+    setImageFile(null)
+
     setShowForm(true)
   }
 
@@ -277,6 +519,8 @@ export default function InspectionsPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingInspection(null)
+    setImageFile(null)
+    setImagePreview(null)
     setFormData({
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
@@ -293,6 +537,7 @@ export default function InspectionsPage() {
       varroa: false,
       chalkbrood: false,
       virus: false,
+      image_url: null,
     })
   }
 
@@ -874,9 +1119,51 @@ export default function InspectionsPage() {
               />
             </div>
 
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Inspection Photo</label>
+              <div className="space-y-3">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Inspection preview"
+                      className="w-full max-h-64 object-cover rounded-lg border-2 border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-lg transition-all"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Camera size={32} className="text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-500">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-400">PNG, JPG, WEBP up to 10MB</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
             <div className="md:col-span-2 flex gap-3">
-              <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                {editingInspection ? 'Update' : 'Save'} Inspection
+              <button
+                type="submit"
+                disabled={uploadingImage || fetchingWeather}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+              >
+                {uploadingImage ? 'Uploading Image...' : fetchingWeather ? 'Fetching Weather...' : editingInspection ? 'Update' : 'Save'} Inspection
               </button>
               <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
                 Cancel
@@ -940,10 +1227,51 @@ export default function InspectionsPage() {
               </div>
             </div>
 
+            {(inspection.weather_temp !== null || inspection.weather_condition) && (
+              <div className="mb-4 p-3 bg-sky-50 rounded border-2 border-sky-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🌤️</span>
+                  <span className="text-sm font-medium text-sky-700">Weather Conditions</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm ml-7">
+                  {inspection.weather_temp !== null && (
+                    <div>
+                      <span className="font-medium text-gray-700">Temperature:</span> {inspection.weather_temp}°C
+                    </div>
+                  )}
+                  {inspection.weather_condition && (
+                    <div>
+                      <span className="font-medium text-gray-700">Condition:</span> {inspection.weather_condition}
+                    </div>
+                  )}
+                  {inspection.weather_humidity !== null && (
+                    <div>
+                      <span className="font-medium text-gray-700">Humidity:</span> {inspection.weather_humidity}%
+                    </div>
+                  )}
+                  {inspection.weather_wind_speed !== null && (
+                    <div>
+                      <span className="font-medium text-gray-700">Wind:</span> {inspection.weather_wind_speed} km/h
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {inspection.disease_issues && (
               <div className="mb-4 p-3 bg-red-50 rounded">
                 <span className="text-sm font-medium text-red-700">Disease: </span>
                 <span className="text-sm text-red-600">{inspection.disease_issues}</span>
+              </div>
+            )}
+
+            {inspection.image_url && (
+              <div className="mb-4">
+                <img
+                  src={inspection.image_url}
+                  alt="Inspection photo"
+                  className="w-full max-h-96 object-cover rounded-lg border-2 border-gray-300"
+                />
               </div>
             )}
 

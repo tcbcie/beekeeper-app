@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface DropdownCategory {
@@ -32,6 +32,8 @@ export default function SettingsPage() {
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [exporting, setExporting] = useState(false)
+  const [showExportSection, setShowExportSection] = useState(false)
 
   const [categoryFormData, setCategoryFormData] = useState({
     category_name: '',
@@ -202,6 +204,72 @@ export default function SettingsPage() {
     })
   }
 
+  const exportDatabase = async () => {
+    setExporting(true)
+    try {
+      // Define all tables to export
+      const tables = ['apiaries', 'hives', 'queens', 'inspections', 'varroa_checks', 'varroa_treatments', 'dropdown_categories', 'dropdown_values']
+
+      let sqlContent = `-- Tribes Beekeeping App Database Export\n`
+      sqlContent += `-- Generated on: ${new Date().toISOString()}\n\n`
+      sqlContent += `-- NOTE: This is a data-only export. Run this against an existing database schema.\n\n`
+
+      // Fetch and export data from each table
+      for (const table of tables) {
+        const { data, error } = await supabase
+          .from(table)
+          .select('*')
+
+        if (error) {
+          console.error(`Error fetching ${table}:`, error)
+          continue
+        }
+
+        if (data && data.length > 0) {
+          sqlContent += `\n-- Table: ${table}\n`
+          sqlContent += `-- Records: ${data.length}\n\n`
+
+          // Get column names from first record
+          const columns = Object.keys(data[0])
+
+          for (const row of data) {
+            const values = columns.map(col => {
+              const value = row[col]
+              if (value === null) return 'NULL'
+              if (typeof value === 'boolean') return value ? 'true' : 'false'
+              if (typeof value === 'number') return value.toString()
+              if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`
+              if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'`
+              return `'${value}'`
+            }).join(', ')
+
+            sqlContent += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values});\n`
+          }
+
+          sqlContent += '\n'
+        }
+      }
+
+      // Create and download file
+      const blob = new Blob([sqlContent], { type: 'text/sql' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `beekeeper-database-${new Date().toISOString().split('T')[0]}.sql`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      alert('Database exported successfully!')
+    } catch (error) {
+      console.error('Error exporting database:', error)
+      alert('Failed to export database. Check console for details.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => {
       const newSet = new Set(prev)
@@ -219,7 +287,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Settings ⚙️</h1>
         <button
           onClick={() => setShowCategoryForm(!showCategoryForm)}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
@@ -457,6 +525,62 @@ export default function SettingsPage() {
         {categories.length === 0 && (
           <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
             No dropdown categories configured yet. Click "Add Category" to get started.
+          </div>
+        )}
+      </div>
+
+      {/* Database Export Section - Collapsible */}
+      <div className="bg-white rounded-lg shadow">
+        <div
+          className="p-6 cursor-pointer"
+          onClick={() => setShowExportSection(!showExportSection)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {showExportSection ? (
+                <ChevronDown size={20} className="text-gray-500" />
+              ) : (
+                <ChevronRight size={20} className="text-gray-500" />
+              )}
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Database size={24} className="text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Database Export</h2>
+                <p className="text-sm text-gray-500">Export your data as SQL backup</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showExportSection && (
+          <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+            <p className="text-sm text-gray-600 mb-4">
+              Export your entire beekeeping database as an SQL file. This creates a complete backup
+              of all your apiaries, hives, queens, inspections, and treatments.
+            </p>
+            <ul className="text-sm text-gray-600 space-y-1 mb-4">
+              <li>• Includes all tables and data</li>
+              <li>• SQL format compatible with PostgreSQL</li>
+              <li>• Use for backup or migration purposes</li>
+            </ul>
+            <button
+              onClick={exportDatabase}
+              disabled={exporting}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+            >
+              {exporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download size={16} />
+                  Export Database
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>
