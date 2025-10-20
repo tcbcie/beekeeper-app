@@ -15,6 +15,16 @@ interface Queen {
   queen_number: string
 }
 
+interface HiveConfiguration {
+  brood_boxes: number
+  honey_supers: number
+  queen_excluder: boolean
+  feeder: boolean
+  feeder_type: string
+  entrance_reducer: boolean
+  varroa_mesh_floor: string
+}
+
 interface Hive {
   id: string
   hive_number: string
@@ -29,6 +39,7 @@ interface Hive {
   colony_established_date: string | null
   queen_installed_date: string | null
   hive_type: string | null
+  configuration: HiveConfiguration | null
   apiaries?: {
     name: string
   }
@@ -43,6 +54,8 @@ interface Hive {
     population: number | null
     inspection_count: number
   }
+  queen_last_seen?: string | null
+  eggs_last_present?: string | null
 }
 
 interface FormData {
@@ -58,6 +71,7 @@ interface FormData {
   colony_established_date: string
   queen_installed_date: string
   hive_type: string
+  configuration: HiveConfiguration
 }
 
 export default function HivesPage() {
@@ -84,6 +98,15 @@ export default function HivesPage() {
     colony_established_date: '',
     queen_installed_date: '',
     hive_type: '',
+    configuration: {
+      brood_boxes: 1,
+      honey_supers: 0,
+      queen_excluder: false,
+      feeder: false,
+      feeder_type: '',
+      entrance_reducer: false,
+      varroa_mesh_floor: 'closed',
+    },
   })
 
   useEffect(() => {
@@ -134,6 +157,29 @@ export default function HivesPage() {
     }
 
     return startDate
+  }
+
+  const getLastQueenAndEggsInfo = async (hiveId: string) => {
+    const { data: inspections } = await supabase
+      .from('inspections')
+      .select('inspection_date, queen_seen, eggs_present')
+      .eq('hive_id', hiveId)
+      .order('inspection_date', { ascending: false })
+
+    if (!inspections || inspections.length === 0) {
+      return { queen_last_seen: null, eggs_last_present: null }
+    }
+
+    // Find most recent inspection where queen was seen
+    const queenInspection = inspections.find(i => i.queen_seen === true)
+
+    // Find most recent inspection where eggs were present
+    const eggsInspection = inspections.find(i => i.eggs_present === true)
+
+    return {
+      queen_last_seen: queenInspection?.inspection_date || null,
+      eggs_last_present: eggsInspection?.inspection_date || null,
+    }
   }
 
   const calculateInspectionAverages = async (hiveId: string) => {
@@ -262,11 +308,16 @@ export default function HivesPage() {
             // Fetch inspection averages
             const averages = await calculateInspectionAverages(hive.id)
 
+            // Fetch last queen seen and eggs present info
+            const queenEggsInfo = await getLastQueenAndEggsInfo(hive.id)
+
             return {
               ...hive,
               apiaries: apiaryName ? { name: apiaryName } : undefined,
               queens: hive.queen_id && queenNumber ? { id: hive.queen_id, queen_number: queenNumber } : undefined,
               averages: averages,
+              queen_last_seen: queenEggsInfo.queen_last_seen,
+              eggs_last_present: queenEggsInfo.eggs_last_present,
             }
           })
         )
@@ -355,6 +406,15 @@ export default function HivesPage() {
       colony_established_date: hive.colony_established_date || '',
       queen_installed_date: hive.queen_installed_date || '',
       hive_type: hive.hive_type || '',
+      configuration: hive.configuration || {
+        brood_boxes: 1,
+        honey_supers: 0,
+        queen_excluder: false,
+        feeder: false,
+        feeder_type: '',
+        entrance_reducer: false,
+        varroa_mesh_floor: 'closed',
+      },
     })
     setShowForm(true)
   }
@@ -386,6 +446,15 @@ export default function HivesPage() {
       colony_established_date: '',
       queen_installed_date: '',
       hive_type: '',
+      configuration: {
+        brood_boxes: 1,
+        honey_supers: 0,
+        queen_excluder: false,
+        feeder: false,
+        feeder_type: '',
+        entrance_reducer: false,
+        varroa_mesh_floor: 'closed',
+      },
     })
   }
 
@@ -676,6 +745,110 @@ export default function HivesPage() {
               </>
             )}
 
+            {/* Hive Configuration Section */}
+            <div className="md:col-span-2 p-4 bg-amber-50 rounded-lg border-2 border-amber-200">
+              <h4 className="text-md font-semibold text-amber-900 mb-4">Hive Configuration</h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Brood Boxes: {formData.configuration.brood_boxes}
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setFormData({...formData, configuration: {...formData.configuration, brood_boxes: num}})}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                          formData.configuration.brood_boxes === num
+                            ? 'bg-amber-600 text-white shadow-md'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Honey Supers: {formData.configuration.honey_supers}
+                  </label>
+                  <div className="flex gap-2">
+                    {[0, 1, 2, 3, 4].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setFormData({...formData, configuration: {...formData.configuration, honey_supers: num}})}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                          formData.configuration.honey_supers === num
+                            ? 'bg-amber-600 text-white shadow-md'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Varroa Mesh Floor</label>
+                  <select
+                    value={formData.configuration.varroa_mesh_floor}
+                    onChange={(e) => setFormData({...formData, configuration: {...formData.configuration, varroa_mesh_floor: e.target.value}})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="closed">Closed</option>
+                    <option value="open">Open</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Feeder Type</label>
+                  <select
+                    value={formData.configuration.feeder_type}
+                    onChange={(e) => setFormData({...formData, configuration: {...formData.configuration, feeder_type: e.target.value, feeder: e.target.value !== ''}})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="">None</option>
+                    <option value="top">Top Feeder</option>
+                    <option value="frame">Frame Feeder</option>
+                    <option value="entrance">Entrance Feeder</option>
+                    <option value="boardman">Boardman Feeder</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, configuration: {...formData.configuration, queen_excluder: !formData.configuration.queen_excluder}})}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                      formData.configuration.queen_excluder
+                        ? 'bg-amber-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {formData.configuration.queen_excluder ? '✓' : '○'} Queen Excluder
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, configuration: {...formData.configuration, entrance_reducer: !formData.configuration.entrance_reducer}})}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                      formData.configuration.entrance_reducer
+                        ? 'bg-amber-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {formData.configuration.entrance_reducer ? '✓' : '○'} Entrance Reducer
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea
@@ -757,12 +930,75 @@ export default function HivesPage() {
                   <span className="text-xs">Queen since: {new Date(hive.queen_installed_date).toLocaleDateString()}</span>
                 </div>
               )}
+              {hive.queen_last_seen && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">👑👁️</span>
+                  <span className="text-xs text-green-700 font-medium">Last seen: {new Date(hive.queen_last_seen).toLocaleDateString()}</span>
+                </div>
+              )}
+              {hive.eggs_last_present && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">🥚</span>
+                  <span className="text-xs text-blue-700 font-medium">Eggs: {new Date(hive.eggs_last_present).toLocaleDateString()}</span>
+                </div>
+              )}
               {hive.notes && (
                 <div className="mt-3 p-2 bg-gray-50 rounded text-gray-700 text-xs">
                   {hive.notes}
                 </div>
               )}
             </div>
+
+            {hive.configuration && (
+              <div className="mb-4 p-3 bg-amber-50 rounded border border-amber-200">
+                <div className="text-xs font-semibold text-amber-900 mb-3">Hive Setup</div>
+
+                {/* Visual Hive Stack */}
+                <div className="flex flex-col items-center gap-1 mb-3">
+                  {/* Honey Supers (top to bottom) */}
+                  {Array.from({ length: hive.configuration.honey_supers }).map((_, i) => (
+                    <div key={`super-${i}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-center text-xs font-semibold">
+                      🍯 Super {i + 1}
+                    </div>
+                  ))}
+
+                  {/* Queen Excluder - always directly above brood boxes if present */}
+                  {hive.configuration.queen_excluder && (
+                    <div className="w-full h-3 bg-gray-400 border-2 border-gray-600 rounded flex items-center justify-center text-xs font-bold">
+                      ═══
+                    </div>
+                  )}
+
+                  {/* Brood Boxes (top to bottom) */}
+                  {Array.from({ length: hive.configuration.brood_boxes }).map((_, i) => (
+                    <div key={`brood-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold">
+                      🐝 Brood {i + 1}
+                    </div>
+                  ))}
+
+                  {/* Varroa Mesh Floor - always at the very bottom */}
+                  <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-gray-200' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
+                    {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
+                  </div>
+                </div>
+
+                {/* Configuration Details */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {hive.configuration.feeder_type && (
+                    <div className="flex items-center gap-1">
+                      <span>🍯</span>
+                      <span className="capitalize">{hive.configuration.feeder_type} feeder</span>
+                    </div>
+                  )}
+                  {hive.configuration.entrance_reducer && (
+                    <div className="flex items-center gap-1">
+                      <span>🚪</span>
+                      <span>Entrance reducer</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {hive.averages && (
               <div className="mb-4 p-3 bg-indigo-50 rounded border border-indigo-200">
