@@ -651,6 +651,7 @@ export default function HivesPage() {
               >
                 <option value="">Select type</option>
                 <option value="Production">Production</option>
+                <option value="Bee production">Bee production</option>
                 <option value="Split">Split</option>
                 <option value="Swarm">Swarm</option>
               </select>

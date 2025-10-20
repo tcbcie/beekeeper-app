@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(find src/app/dashboard -name \"*.tsx\" -exec wc -l {} +)"
     ],
     "deny": [],
     "ask": []
