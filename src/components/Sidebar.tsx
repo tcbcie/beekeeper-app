@@ -17,7 +17,7 @@ export default function Sidebar() {
   ]
 
   return (
-    <aside className="w-64 bg-white rounded-lg shadow p-4 h-fit">
+    <aside className="hidden md:block w-64 bg-white rounded-lg shadow p-4 h-fit">
       <nav className="space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href

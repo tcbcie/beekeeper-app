@@ -261,12 +261,12 @@ export default function HivesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Hives 🐝</h1>
+        <h1 className="text-responsive-3xl font-bold text-gray-900">Hives 🐝</h1>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <select
             value={filterApiaryId}
             onChange={(e) => setFilterApiaryId(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
+            className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
           >
             <option value="">All Apiaries</option>
             {apiaries.map((apiary) => (
@@ -275,9 +275,9 @@ export default function HivesPage() {
           </select>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium flex items-center gap-2"
+            className="px-4 py-3 sm:py-2 min-h-[48px] bg-amber-600 text-white rounded-lg hover:bg-amber-700 active:bg-amber-800 font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto"
           >
-            {showForm ? <X size={16} /> : <Plus size={16} />}
+            {showForm ? <X size={18} /> : <Plus size={18} />}
             {showForm ? 'Cancel' : 'Add Hive'}
           </button>
         </div>
@@ -347,14 +347,14 @@ export default function HivesPage() {
               <>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-3">Queen Status (if no specific queen assigned)</label>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, queen_marked: !formData.queen_marked})}
-                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                      className={`px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.queen_marked
-                          ? 'bg-amber-600 text-white shadow-md hover:bg-amber-700'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-amber-600 text-white shadow-md hover:bg-amber-700 active:bg-amber-800'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                       }`}
                     >
                       <span className="text-lg">{formData.queen_marked ? '✓' : '○'}</span>
@@ -363,10 +363,10 @@ export default function HivesPage() {
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, queen_mated: !formData.queen_mated})}
-                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                      className={`px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.queen_mated
-                          ? 'bg-green-600 text-white shadow-md hover:bg-green-700'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-green-600 text-white shadow-md hover:bg-green-700 active:bg-green-800'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                       }`}
                     >
                       <span className="text-lg">{formData.queen_mated ? '♥' : '○'}</span>
@@ -375,10 +375,10 @@ export default function HivesPage() {
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, queen_clipped: !formData.queen_clipped})}
-                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                      className={`px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.queen_clipped
-                          ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 active:bg-blue-800'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                       }`}
                     >
                       <span className="text-lg">{formData.queen_clipped ? '✂' : '○'}</span>
@@ -422,11 +422,18 @@ export default function HivesPage() {
               />
             </div>
 
-            <div className="md:col-span-2 flex gap-3">
-              <button type="submit" className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+            <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
+              <button
+                type="submit"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-amber-600 text-white rounded-lg hover:bg-amber-700 active:bg-amber-800 touch-manipulation font-medium"
+              >
                 {editingHive ? 'Update' : 'Add'} Hive
               </button>
-              <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
                 Cancel
               </button>
             </div>

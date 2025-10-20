@@ -137,11 +137,17 @@ export default function VarroaTreatmentPage() {
     } catch (error) {
       if (error instanceof Error) {
         // Log detailed error for debugging
+        interface PostgrestError {
+          message: string
+          hint?: string
+          details?: string
+          code?: string
+        }
         const errorDetails = {
           message: error.message,
-          hint: (error as any).hint,
-          details: (error as any).details,
-          code: (error as any).code
+          hint: (error as PostgrestError).hint,
+          details: (error as PostgrestError).details,
+          code: (error as PostgrestError).code
         }
         console.log('Error saving varroa treatment:', errorDetails)
 

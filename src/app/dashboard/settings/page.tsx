@@ -68,11 +68,11 @@ export default function SettingsPage() {
 
     if (!error && data) {
       // Sort values within each category by display_order
-      const categoriesWithSortedValues = data.map((cat: any) => ({
+      const categoriesWithSortedValues = (data as CategoryWithValues[]).map((cat) => ({
         ...cat,
         dropdown_values: (cat.dropdown_values || []).sort((a: DropdownValue, b: DropdownValue) => a.display_order - b.display_order)
       }))
-      setCategories(categoriesWithSortedValues as CategoryWithValues[])
+      setCategories(categoriesWithSortedValues)
     }
     setLoading(false)
   }
@@ -524,7 +524,7 @@ export default function SettingsPage() {
 
         {categories.length === 0 && (
           <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
-            No dropdown categories configured yet. Click "Add Category" to get started.
+            No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
           </div>
         )}
       </div>

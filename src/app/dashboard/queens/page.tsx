@@ -145,7 +145,7 @@ export default function QueensPage() {
         setFormData(prev => ({ ...prev, marking_color: calculatedColor }))
       }
     }
-  }, [formData.birth_date])
+  }, [formData.birth_date, formData.marking_color])
 
   const fetchQueens = async () => {
     // First get all queens
@@ -209,10 +209,15 @@ export default function QueensPage() {
       .single()
 
     if (!error && data && data.dropdown_values) {
-      const activeValues = data.dropdown_values
-        .filter((v: any) => v.is_active)
-        .sort((a: any, b: any) => a.display_order - b.display_order)
-        .map((v: any) => v.value)
+      interface DropdownValue {
+        is_active: boolean
+        display_order: number
+        value: string
+      }
+      const activeValues = (data.dropdown_values as DropdownValue[])
+        .filter((v) => v.is_active)
+        .sort((a, b) => a.display_order - b.display_order)
+        .map((v) => v.value)
       setSubspeciesOptions(activeValues)
     }
   }

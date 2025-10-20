@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Edit2, Trash2, ChevronDown, HelpCircle, Camera, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface Hive {
@@ -77,7 +78,8 @@ export default function InspectionsPage() {
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [showDropdown, setShowDropdown] = useState(false)
-  const [lastInspection, setLastInspection] = useState<Inspection | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_lastInspection, setLastInspection] = useState<Inspection | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -619,7 +621,7 @@ export default function InspectionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Inspections 📋</h1>
+        <h1 className="text-responsive-3xl font-bold text-gray-900">Inspections 📋</h1>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <select
             value={filterApiaryId}
@@ -649,11 +651,11 @@ export default function InspectionsPage() {
           <div className="relative dropdown-container">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2 justify-center"
+              className="px-4 py-2 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 font-medium flex items-center gap-2 justify-center touch-manipulation w-full sm:w-auto"
             >
-              <Plus size={16} />
+              <Plus size={18} />
               New Record
-              <ChevronDown size={16} />
+              <ChevronDown size={18} />
             </button>
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
@@ -701,50 +703,50 @@ export default function InspectionsPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setTimePeriod('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === 'all'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
                 All Time
               </button>
               <button
                 onClick={() => setTimePeriod('3months')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '3months'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
                 Last 3 Months
               </button>
               <button
                 onClick={() => setTimePeriod('6months')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '6months'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
                 Last 6 Months
               </button>
               <button
                 onClick={() => setTimePeriod('1year')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '1year'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
                 Last Year
               </button>
               <button
                 onClick={() => setTimePeriod('custom')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === 'custom'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                 }`}
               >
                 Custom Range
@@ -828,40 +830,40 @@ export default function InspectionsPage() {
               </div>
             </div>
 
-            <div className="flex items-center">
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer touch-manipulation hover:bg-gray-100 active:bg-gray-200">
               <input
                 type="checkbox"
                 checked={formData.queen_seen}
                 onChange={(e) => setFormData({...formData, queen_seen: e.target.checked})}
-                className="mr-2 h-4 w-4"
+                className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
               />
-              <label className="text-sm font-medium text-gray-700">Queen Seen</label>
-            </div>
+              <span className="text-sm font-medium text-gray-700">Queen Seen</span>
+            </label>
 
-            <div className="flex items-center">
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer touch-manipulation hover:bg-gray-100 active:bg-gray-200">
               <input
                 type="checkbox"
                 checked={formData.eggs_present}
                 onChange={(e) => setFormData({...formData, eggs_present: e.target.checked})}
-                className="mr-2 h-4 w-4"
+                className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
               />
-              <label className="text-sm font-medium text-gray-700">Eggs Present</label>
-            </div>
+              <span className="text-sm font-medium text-gray-700">Eggs Present</span>
+            </label>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Frames with Brood {formData.brood_frames !== null ? `(${formData.brood_frames})` : ''}
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                   <button
                     key={num}
                     type="button"
                     onClick={() => setFormData({...formData, brood_frames: num})}
-                    className={`w-12 h-12 rounded-lg font-semibold transition-all ${
+                    className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                       formData.brood_frames === num
-                        ? 'bg-indigo-600 text-white shadow-lg scale-110'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                     }`}
                   >
                     {num}
@@ -870,10 +872,10 @@ export default function InspectionsPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, brood_frames: null})}
-                  className={`px-4 h-12 rounded-lg font-medium transition-all ${
+                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                     formData.brood_frames === null
-                      ? 'bg-gray-400 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-gray-400 text-white shadow-lg ring-2 ring-gray-300'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Clear
@@ -903,16 +905,16 @@ export default function InspectionsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                 {[1, 2, 3, 4, 5].map((rating) => (
                   <button
                     key={rating}
                     type="button"
                     onClick={() => setFormData({...formData, brood_pattern_rating: rating})}
-                    className={`flex-1 h-12 rounded-lg font-semibold transition-all ${
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                       formData.brood_pattern_rating === rating
-                        ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                     }`}
                   >
                     {rating}
@@ -921,10 +923,10 @@ export default function InspectionsPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, brood_pattern_rating: 0})}
-                  className={`flex-1 h-12 rounded-lg font-medium text-sm transition-all ${
+                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                     formData.brood_pattern_rating === 0
-                      ? 'bg-gray-500 text-white shadow-lg scale-105'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Not Recorded
@@ -954,16 +956,16 @@ export default function InspectionsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                 {[1, 2, 3, 4, 5].map((rating) => (
                   <button
                     key={rating}
                     type="button"
                     onClick={() => setFormData({...formData, temperament_rating: rating})}
-                    className={`flex-1 h-12 rounded-lg font-semibold transition-all ${
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                       formData.temperament_rating === rating
-                        ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                     }`}
                   >
                     {rating}
@@ -972,10 +974,10 @@ export default function InspectionsPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, temperament_rating: 0})}
-                  className={`flex-1 h-12 rounded-lg font-medium text-sm transition-all ${
+                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                     formData.temperament_rating === 0
-                      ? 'bg-gray-500 text-white shadow-lg scale-105'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Not Recorded
@@ -1005,16 +1007,16 @@ export default function InspectionsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                 {[1, 2, 3, 4, 5].map((rating) => (
                   <button
                     key={rating}
                     type="button"
                     onClick={() => setFormData({...formData, population_strength: rating})}
-                    className={`flex-1 h-12 rounded-lg font-semibold transition-all ${
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                       formData.population_strength === rating
-                        ? 'bg-indigo-600 text-white shadow-lg scale-105'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                     }`}
                   >
                     {rating}
@@ -1023,10 +1025,10 @@ export default function InspectionsPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, population_strength: 0})}
-                  className={`flex-1 h-12 rounded-lg font-medium text-sm transition-all ${
+                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                     formData.population_strength === 0
-                      ? 'bg-gray-500 text-white shadow-lg scale-105'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Not Recorded
@@ -1063,10 +1065,10 @@ export default function InspectionsPage() {
                     virus: newValue ? formData.virus : false,
                   })
                 }}
-                className={`w-full h-14 rounded-lg font-semibold text-base transition-all flex items-center justify-center gap-2 ${
+                className={`w-full min-h-[56px] rounded-lg font-semibold text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                   formData.disease_present
-                    ? 'bg-red-600 text-white shadow-lg hover:bg-red-700'
-                    : 'bg-green-100 text-green-800 hover:bg-green-200 border-2 border-green-300'
+                    ? 'bg-red-600 text-white shadow-lg hover:bg-red-700 active:bg-red-800'
+                    : 'bg-green-100 text-green-800 hover:bg-green-200 active:bg-green-300 border-2 border-green-300'
                 }`}
               >
                 {formData.disease_present ? (
@@ -1085,14 +1087,14 @@ export default function InspectionsPage() {
               {formData.disease_present && (
                 <div className="mt-4 p-4 bg-red-50 rounded-lg border-2 border-red-200">
                   <div className="text-sm font-medium text-red-900 mb-3">Select Disease Type(s):</div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3">
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, varroa: !formData.varroa})}
-                      className={`h-12 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                      className={`min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.varroa
-                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50'
+                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600 active:bg-red-700'
+                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50 active:bg-red-100'
                       }`}
                     >
                       {formData.varroa && <span className="text-lg">✓</span>}
@@ -1101,10 +1103,10 @@ export default function InspectionsPage() {
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, chalkbrood: !formData.chalkbrood})}
-                      className={`h-12 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                      className={`min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.chalkbrood
-                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50'
+                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600 active:bg-red-700'
+                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50 active:bg-red-100'
                       }`}
                     >
                       {formData.chalkbrood && <span className="text-lg">✓</span>}
@@ -1113,10 +1115,10 @@ export default function InspectionsPage() {
                     <button
                       type="button"
                       onClick={() => setFormData({...formData, virus: !formData.virus})}
-                      className={`h-12 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                      className={`min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.virus
-                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50'
+                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600 active:bg-red-700'
+                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50 active:bg-red-100'
                       }`}
                     >
                       {formData.virus && <span className="text-lg">✓</span>}
@@ -1142,16 +1144,18 @@ export default function InspectionsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Inspection Photo</label>
               <div className="space-y-3">
                 {imagePreview ? (
-                  <div className="relative">
-                    <img
+                  <div className="relative w-full h-64">
+                    <Image
                       src={imagePreview}
                       alt="Inspection preview"
-                      className="w-full max-h-64 object-cover rounded-lg border-2 border-gray-300"
+                      fill
+                      className="object-cover rounded-lg border-2 border-gray-300"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                     <button
                       type="button"
                       onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-lg transition-all"
+                      className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
                     >
                       <X size={20} />
                     </button>
@@ -1176,15 +1180,19 @@ export default function InspectionsPage() {
               </div>
             </div>
 
-            <div className="md:col-span-2 flex gap-3">
+            <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
                 disabled={uploadingImage || fetchingWeather}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
               >
                 {uploadingImage ? 'Uploading Image...' : fetchingWeather ? 'Fetching Weather...' : editingInspection ? 'Update' : 'Save'} Inspection
               </button>
-              <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
                 Cancel
               </button>
             </div>
@@ -1204,16 +1212,24 @@ export default function InspectionsPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => handleEdit(inspection)} className="text-blue-600 hover:text-blue-900">
-                  <Edit2 size={16} />
+                <button
+                  onClick={() => handleEdit(inspection)}
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation"
+                  aria-label="Edit inspection"
+                >
+                  <Edit2 size={20} />
                 </button>
-                <button onClick={() => handleDelete(inspection.id)} className="text-red-600 hover:text-red-900">
-                  <Trash2 size={16} />
+                <button
+                  onClick={() => handleDelete(inspection.id)}
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation"
+                  aria-label="Delete inspection"
+                >
+                  <Trash2 size={20} />
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-4">
               <div className="text-center p-3 bg-gray-50 rounded">
                 <div className="text-xs text-gray-500 mb-1">Queen Seen</div>
                 <div className="text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
@@ -1297,11 +1313,13 @@ export default function InspectionsPage() {
             )}
 
             {inspection.image_url && (
-              <div className="mb-4">
-                <img
+              <div className="relative w-full h-96 mb-4">
+                <Image
                   src={inspection.image_url}
                   alt="Inspection photo"
-                  className="w-full max-h-96 object-cover rounded-lg border-2 border-gray-300"
+                  fill
+                  className="object-cover rounded-lg border-2 border-gray-300"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
             )}
