@@ -62,10 +62,17 @@ export default function VarroaCheckPage() {
   useEffect(() => {
     // Auto-calculate infestation rate if both counts are provided
     if (formData.mites_count !== null && formData.sample_size !== null && formData.sample_size > 0) {
-      const rate = (formData.mites_count / formData.sample_size) * 100
+      let rate: number
+      if (formData.method === 'Floor Board Screening') {
+        // For Floor Board Screening: Daily mite drop = mites_count / number_of_days
+        rate = formData.mites_count / formData.sample_size
+      } else {
+        // For other methods: percentage calculation
+        rate = (formData.mites_count / formData.sample_size) * 100
+      }
       setFormData(prev => ({...prev, infestation_rate: parseFloat(rate.toFixed(2))}))
     }
-  }, [formData.mites_count, formData.sample_size])
+  }, [formData.mites_count, formData.sample_size, formData.method])
 
   const fetchChecks = async () => {
     const { data } = await supabase
@@ -265,6 +272,7 @@ export default function VarroaCheckPage() {
                 <option value="Alcohol Wash">Alcohol Wash</option>
                 <option value="Sugar Shake">Sugar Shake</option>
                 <option value="Sticky Board">Sticky Board (24h count)</option>
+                <option value="Floor Board Screening">Floor Board Screening</option>
                 <option value="Drone Brood Inspection">Drone Brood Inspection</option>
                 <option value="Visual Count">Visual Count</option>
                 <option value="Other">Other</option>
@@ -284,19 +292,23 @@ export default function VarroaCheckPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sample Size</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {formData.method === 'Floor Board Screening' ? 'Number of Days' : 'Sample Size'}
+              </label>
               <input
                 type="number"
                 value={formData.sample_size || ''}
                 onChange={(e) => setFormData({...formData, sample_size: e.target.value ? parseInt(e.target.value) : null})}
-                placeholder="e.g., 300 bees or 24 hours"
+                placeholder={formData.method === 'Floor Board Screening' ? 'e.g., 3 days' : 'e.g., 300 bees or 24 hours'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 min="1"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Infestation Rate (%)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {formData.method === 'Floor Board Screening' ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -307,7 +319,9 @@ export default function VarroaCheckPage() {
                 min="0"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Auto-calculated from mites count and sample size
+                {formData.method === 'Floor Board Screening'
+                  ? 'Auto-calculated: mites count ÷ number of days'
+                  : 'Auto-calculated from mites count and sample size'}
               </p>
             </div>
 
@@ -377,15 +391,19 @@ export default function VarroaCheckPage() {
                 )}
                 {check.sample_size !== null && (
                   <div>
-                    <span className="font-medium text-gray-700">Sample Size: </span>
+                    <span className="font-medium text-gray-700">
+                      {check.method === 'Floor Board Screening' ? 'Number of Days: ' : 'Sample Size: '}
+                    </span>
                     <span>{check.sample_size}</span>
                   </div>
                 )}
                 {check.infestation_rate !== null && (
                   <div>
-                    <span className="font-medium text-gray-700">Infestation Rate: </span>
+                    <span className="font-medium text-gray-700">
+                      {check.method === 'Floor Board Screening' ? 'Daily Mite Drop: ' : 'Infestation Rate: '}
+                    </span>
                     <span className={`font-bold ${infestationLevel.color}`}>
-                      {check.infestation_rate}%
+                      {check.infestation_rate}{check.method === 'Floor Board Screening' ? '' : '%'}
                     </span>
                   </div>
                 )}

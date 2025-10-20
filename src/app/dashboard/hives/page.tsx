@@ -26,12 +26,22 @@ interface Hive {
   queen_clipped: boolean
   status: string
   notes: string | null
+  colony_established_date: string | null
+  queen_installed_date: string | null
+  hive_type: string | null
   apiaries?: {
     name: string
   }
   queens?: {
     id: string
     queen_number: string
+  }
+  averages?: {
+    brood_frames: number | null
+    brood_pattern: number | null
+    temperament: number | null
+    population: number | null
+    inspection_count: number
   }
 }
 
@@ -45,6 +55,9 @@ interface FormData {
   queen_clipped: boolean
   status: string
   notes: string
+  colony_established_date: string
+  queen_installed_date: string
+  hive_type: string
 }
 
 export default function HivesPage() {
@@ -55,6 +68,9 @@ export default function HivesPage() {
   const [editingHive, setEditingHive] = useState<Hive | null>(null)
   const [loading, setLoading] = useState(true)
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
+  const [timePeriod, setTimePeriod] = useState<string>('all')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
+  const [customEndDate, setCustomEndDate] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_number: '',
     apiary_id: '',
@@ -65,6 +81,9 @@ export default function HivesPage() {
     queen_clipped: false,
     status: 'active',
     notes: '',
+    colony_established_date: '',
+    queen_installed_date: '',
+    hive_type: '',
   })
 
   useEffect(() => {
@@ -82,6 +101,118 @@ export default function HivesPage() {
     fetchApiaries()
     fetchQueens()
   }, [])
+
+  // Refetch hives when time period changes
+  useEffect(() => {
+    if (!loading) {
+      fetchHives()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timePeriod, customStartDate, customEndDate])
+
+  // Calculate date range based on time period
+  const getDateRange = () => {
+    const today = new Date()
+    let startDate: Date | null = null
+
+    switch (timePeriod) {
+      case '3months':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
+        break
+      case '6months':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())
+        break
+      case '1year':
+        startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
+        break
+      case 'custom':
+        if (customStartDate) startDate = new Date(customStartDate)
+        break
+      case 'all':
+      default:
+        return null
+    }
+
+    return startDate
+  }
+
+  const calculateInspectionAverages = async (hiveId: string) => {
+    const { data: inspections } = await supabase
+      .from('inspections')
+      .select('inspection_date, brood_frames, brood_pattern_rating, temperament_rating, population_strength')
+      .eq('hive_id', hiveId)
+      .order('inspection_date', { ascending: false })
+
+    if (!inspections || inspections.length === 0) {
+      return null
+    }
+
+    // Filter by date range
+    let filteredInspections = inspections
+    const startDate = getDateRange()
+
+    if (startDate) {
+      filteredInspections = inspections.filter(inspection => {
+        const inspectionDate = new Date(inspection.inspection_date)
+
+        // For custom range, check both start and end dates
+        if (timePeriod === 'custom') {
+          if (customStartDate && inspectionDate < new Date(customStartDate)) {
+            return false
+          }
+          if (customEndDate && inspectionDate > new Date(customEndDate)) {
+            return false
+          }
+          return true
+        } else {
+          // For preset ranges, just check start date
+          return inspectionDate >= startDate
+        }
+      })
+    }
+
+    if (filteredInspections.length === 0) {
+      return null
+    }
+
+    // Filter out null/0 values and calculate averages
+    const broodFrames = filteredInspections
+      .filter(i => i.brood_frames !== null && i.brood_frames > 0)
+      .map(i => i.brood_frames)
+
+    const broodPatterns = filteredInspections
+      .filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0)
+      .map(i => i.brood_pattern_rating)
+
+    const temperaments = filteredInspections
+      .filter(i => i.temperament_rating !== null && i.temperament_rating > 0)
+      .map(i => i.temperament_rating)
+
+    const populations = filteredInspections
+      .filter(i => i.population_strength !== null && i.population_strength > 0)
+      .map(i => i.population_strength)
+
+    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+
+    // Count unique inspections that have at least one recorded metric
+    const inspectionsWithData = new Set<string>()
+    filteredInspections.forEach(inspection => {
+      if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
+          (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
+          (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
+          (inspection.population_strength !== null && inspection.population_strength > 0)) {
+        inspectionsWithData.add(inspection.inspection_date)
+      }
+    })
+
+    return {
+      brood_frames: avg(broodFrames),
+      brood_pattern: avg(broodPatterns),
+      temperament: avg(temperaments),
+      population: avg(populations),
+      inspection_count: inspectionsWithData.size,
+    }
+  }
 
   const fetchHives = async () => {
     // Try without joins first to see if we can get basic hive data
@@ -128,10 +259,14 @@ export default function HivesPage() {
               }
             }
 
+            // Fetch inspection averages
+            const averages = await calculateInspectionAverages(hive.id)
+
             return {
               ...hive,
               apiaries: apiaryName ? { name: apiaryName } : undefined,
               queens: hive.queen_id && queenNumber ? { id: hive.queen_id, queen_number: queenNumber } : undefined,
+              averages: averages,
             }
           })
         )
@@ -217,6 +352,9 @@ export default function HivesPage() {
       queen_clipped: hive.queen_clipped || false,
       status: hive.status,
       notes: hive.notes || '',
+      colony_established_date: hive.colony_established_date || '',
+      queen_installed_date: hive.queen_installed_date || '',
+      hive_type: hive.hive_type || '',
     })
     setShowForm(true)
   }
@@ -245,6 +383,9 @@ export default function HivesPage() {
       queen_clipped: false,
       status: 'active',
       notes: '',
+      colony_established_date: '',
+      queen_installed_date: '',
+      hive_type: '',
     })
   }
 
@@ -280,6 +421,96 @@ export default function HivesPage() {
             {showForm ? <X size={18} /> : <Plus size={18} />}
             {showForm ? 'Cancel' : 'Add Hive'}
           </button>
+        </div>
+      </div>
+
+      {/* Time Period Filter */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Inspection Average Period:</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setTimePeriod('all')}
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  timePeriod === 'all'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                }`}
+              >
+                All Time
+              </button>
+              <button
+                onClick={() => setTimePeriod('3months')}
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  timePeriod === '3months'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                }`}
+              >
+                Last 3 Months
+              </button>
+              <button
+                onClick={() => setTimePeriod('6months')}
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  timePeriod === '6months'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                }`}
+              >
+                Last 6 Months
+              </button>
+              <button
+                onClick={() => setTimePeriod('1year')}
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  timePeriod === '1year'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                }`}
+              >
+                Last Year
+              </button>
+              <button
+                onClick={() => setTimePeriod('custom')}
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  timePeriod === 'custom'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                }`}
+              >
+                Custom Range
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Date Range Inputs */}
+          {timePeriod === 'custom' && (
+            <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-40">
+              <label className="text-sm font-medium text-gray-700">From:</label>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+              />
+              <label className="text-sm font-medium text-gray-700">To:</label>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+              />
+              <button
+                onClick={() => {
+                  setCustomStartDate('')
+                  setCustomEndDate('')
+                }}
+                className="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Clear Dates
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -340,6 +571,40 @@ export default function HivesPage() {
                 <option value="queenless">Queenless</option>
                 <option value="retired">Retired</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select
+                value={formData.hive_type}
+                onChange={(e) => setFormData({...formData, hive_type: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="">Select type</option>
+                <option value="Production">Production</option>
+                <option value="Split">Split</option>
+                <option value="Swarm">Swarm</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Colony Established Date</label>
+              <input
+                type="date"
+                value={formData.colony_established_date}
+                onChange={(e) => setFormData({...formData, colony_established_date: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Queen Installed Date</label>
+              <input
+                type="date"
+                value={formData.queen_installed_date}
+                onChange={(e) => setFormData({...formData, queen_installed_date: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
             </div>
 
             {/* Show queen checkboxes only when no queen is assigned */}
@@ -454,7 +719,7 @@ export default function HivesPage() {
                 {hive.status}
               </span>
             </div>
-            
+
             <div className="space-y-2 text-sm mb-4">
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">📍</span>
@@ -474,12 +739,67 @@ export default function HivesPage() {
                   <span>No queen</span>
                 )}
               </div>
+              {hive.hive_type && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">🏷️</span>
+                  <span className="font-medium text-amber-700">{hive.hive_type}</span>
+                </div>
+              )}
+              {hive.colony_established_date && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">📅</span>
+                  <span className="text-xs">Colony est: {new Date(hive.colony_established_date).toLocaleDateString()}</span>
+                </div>
+              )}
+              {hive.queen_installed_date && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">👑📅</span>
+                  <span className="text-xs">Queen since: {new Date(hive.queen_installed_date).toLocaleDateString()}</span>
+                </div>
+              )}
               {hive.notes && (
                 <div className="mt-3 p-2 bg-gray-50 rounded text-gray-700 text-xs">
                   {hive.notes}
                 </div>
               )}
             </div>
+
+            {hive.averages && (
+              <div className="mb-4 p-3 bg-indigo-50 rounded border border-indigo-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-semibold text-indigo-900">Inspection Averages</span>
+                  <span className="text-xs text-indigo-600 font-medium">
+                    {hive.averages.inspection_count} inspection{hive.averages.inspection_count !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  {hive.averages.brood_frames !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Frames with Brood:</span>
+                      <span className="font-semibold text-indigo-700">{hive.averages.brood_frames.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {hive.averages.brood_pattern !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Brood Pattern:</span>
+                      <span className="font-semibold text-indigo-700">{'⭐'.repeat(Math.round(hive.averages.brood_pattern))}</span>
+                    </div>
+                  )}
+                  {hive.averages.temperament !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Temperament:</span>
+                      <span className="font-semibold text-indigo-700">{'⭐'.repeat(Math.round(hive.averages.temperament))}</span>
+                    </div>
+                  )}
+                  {hive.averages.population !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Population:</span>
+                      <span className="font-semibold text-indigo-700">{'⭐'.repeat(Math.round(hive.averages.population))}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               <button
