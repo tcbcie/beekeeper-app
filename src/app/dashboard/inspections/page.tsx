@@ -84,6 +84,7 @@ export default function InspectionsPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
+  const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -474,6 +475,14 @@ export default function InspectionsPage() {
   const handleEdit = (inspection: Inspection) => {
     setEditingInspection(inspection)
 
+    // Find the hive's apiary to pre-populate the apiary selector
+    const selectedHive = hives.find(h => h.id === inspection.hive_id)
+    if (selectedHive?.apiary_id) {
+      setFormApiaryId(selectedHive.apiary_id)
+    } else {
+      setFormApiaryId('')
+    }
+
     // Parse disease_issues back into checkboxes
     const diseaseIssues = inspection.disease_issues || ''
     const varroa = diseaseIssues.includes('Varroa')
@@ -526,6 +535,7 @@ export default function InspectionsPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingInspection(null)
+    setFormApiaryId('')
     setImageFile(null)
     setImagePreview(null)
     setFormData({
@@ -684,10 +694,30 @@ export default function InspectionsPage() {
                     router.push('/dashboard/varroa-check')
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 rounded-b-lg transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
                   Varroa Check
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/dashboard/feeding')
+                    setShowDropdown(false)
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                >
+                  <Plus size={16} />
+                  Feeding
+                </button>
+                <button
+                  onClick={() => {
+                    router.push('/dashboard/harvest')
+                    setShowDropdown(false)
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 rounded-b-lg transition-colors"
+                >
+                  <Plus size={16} />
+                  Harvest
                 </button>
               </div>
             )}
@@ -792,17 +822,36 @@ export default function InspectionsPage() {
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <select
+                value={formApiaryId}
+                onChange={(e) => {
+                  setFormApiaryId(e.target.value)
+                  setFormData({...formData, hive_id: ''}) // Reset hive selection when apiary changes
+                }}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md"
+              >
+                <option value="">All Apiaries</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
               <select
                 value={formData.hive_id}
                 onChange={(e) => handleHiveChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md"
                 required
               >
                 <option value="">Select hive</option>
-                {hives.map((h) => (
-                  <option key={h.id} value={h.id}>{h.hive_number}</option>
-                ))}
+                {hives
+                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>{h.hive_number}</option>
+                  ))}
               </select>
             </div>
 
