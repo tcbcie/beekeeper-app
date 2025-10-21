@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useRouter } from 'next/navigation'
 
 interface DropdownCategory {
   id: string
@@ -26,6 +28,8 @@ interface CategoryWithValues extends DropdownCategory {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const [userId, setUserId] = useState<string | null>(null)
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [showCategoryForm, setShowCategoryForm] = useState(false)
@@ -47,7 +51,16 @@ export default function SettingsPage() {
   })
 
   useEffect(() => {
-    fetchCategories()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchCategories()
+    }
+    initUser()
   }, [])
 
   const fetchCategories = async () => {

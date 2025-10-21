@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Plus, X, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface Apiary {
@@ -81,6 +83,8 @@ export default function HivesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingHive, setEditingHive] = useState<Hive | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const router = useRouter()
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [timePeriod, setTimePeriod] = useState<string>('all')
   const [customStartDate, setCustomStartDate] = useState<string>('')
@@ -110,19 +114,18 @@ export default function HivesPage() {
   })
 
   useEffect(() => {
-    // Check authentication status
-    const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Auth error:', error)
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
       }
-      console.log('Current session:', session ? 'Authenticated' : 'Not authenticated')
+      setUserId(id)
+      fetchHives(id)
+      fetchApiaries(id)
+      fetchQueens(id)
     }
-
-    checkAuth()
-    fetchHives()
-    fetchApiaries()
-    fetchQueens()
+    initUser()
   }, [])
 
   // Refetch hives when time period changes
@@ -159,11 +162,12 @@ export default function HivesPage() {
     return startDate
   }
 
-  const getLastQueenAndEggsInfo = async (hiveId: string) => {
+  const getLastQueenAndEggsInfo = async (hiveId: string, userIdParam: string) => {
     const { data: inspections } = await supabase
       .from('inspections')
       .select('inspection_date, queen_seen, eggs_present')
       .eq('hive_id', hiveId)
+      .eq('user_id', userIdParam)
       .order('inspection_date', { ascending: false })
 
     if (!inspections || inspections.length === 0) {
@@ -182,11 +186,12 @@ export default function HivesPage() {
     }
   }
 
-  const calculateInspectionAverages = async (hiveId: string) => {
+  const calculateInspectionAverages = async (hiveId: string, userIdParam: string) => {
     const { data: inspections } = await supabase
       .from('inspections')
       .select('inspection_date, brood_frames, brood_pattern_rating, temperament_rating, population_strength')
       .eq('hive_id', hiveId)
+      .eq('user_id', userIdParam)
       .order('inspection_date', { ascending: false })
 
     if (!inspections || inspections.length === 0) {
@@ -260,11 +265,15 @@ export default function HivesPage() {
     }
   }
 
-  const fetchHives = async () => {
+  const fetchHives = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     // Try without joins first to see if we can get basic hive data
     const { data, error } = await supabase
       .from('hives')
       .select('*')
+      .eq('user_id', currentUserId)
       .order('hive_number')
 
     console.log('Fetch hives response:', { data, error })
@@ -289,6 +298,7 @@ export default function HivesPage() {
                 .from('apiaries')
                 .select('name')
                 .eq('id', hive.apiary_id)
+                .eq('user_id', currentUserId)
                 .single()
               apiaryName = apiaryData?.name
             }
@@ -299,6 +309,7 @@ export default function HivesPage() {
                 .from('queens')
                 .select('id, queen_number')
                 .eq('id', hive.queen_id)
+                .eq('user_id', currentUserId)
                 .single()
               if (queenData) {
                 queenNumber = queenData.queen_number
@@ -306,10 +317,10 @@ export default function HivesPage() {
             }
 
             // Fetch inspection averages
-            const averages = await calculateInspectionAverages(hive.id)
+            const averages = await calculateInspectionAverages(hive.id, currentUserId)
 
             // Fetch last queen seen and eggs present info
-            const queenEggsInfo = await getLastQueenAndEggsInfo(hive.id)
+            const queenEggsInfo = await getLastQueenAndEggsInfo(hive.id, currentUserId)
 
             return {
               ...hive,
@@ -330,10 +341,14 @@ export default function HivesPage() {
     setLoading(false)
   }
 
-  const fetchApiaries = async () => {
+  const fetchApiaries = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data, error } = await supabase
       .from('apiaries')
       .select('id, name')
+      .eq('user_id', currentUserId)
       .order('name')
 
     if (error) {
@@ -343,11 +358,15 @@ export default function HivesPage() {
     }
   }
 
-  const fetchQueens = async () => {
+  const fetchQueens = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data, error } = await supabase
       .from('queens')
       .select('id, queen_number')
       .eq('status', 'active')
+      .eq('user_id', currentUserId)
       .order('queen_number')
 
     if (error) {
@@ -359,6 +378,7 @@ export default function HivesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!userId) return
 
     try {
       const dataToSubmit = {
@@ -372,12 +392,13 @@ export default function HivesPage() {
           .from('hives')
           .update(dataToSubmit)
           .eq('id', editingHive.id)
+          .eq('user_id', userId)
 
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('hives')
-          .insert([dataToSubmit])
+          .insert([{ ...dataToSubmit, user_id: userId }])
 
         if (error) throw error
       }
@@ -420,11 +441,13 @@ export default function HivesPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!userId) return
     if (confirm('Are you sure you want to delete this hive?')) {
       const { error } = await supabase
         .from('hives')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (!error) fetchHives()
     }
