@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -99,6 +100,7 @@ const calculateQueenAge = (birthDate: string): string => {
 
 export default function QueensPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const highlightedQueenId = searchParams.get('id')
   const queenRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
@@ -107,6 +109,7 @@ export default function QueensPage() {
   const [editingQueen, setEditingQueen] = useState<Queen | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
   const [formData, setFormData] = useState<FormData>({
     queen_number: '',
@@ -121,8 +124,17 @@ export default function QueensPage() {
   })
 
   useEffect(() => {
-    fetchQueens()
-    fetchSubspeciesOptions()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchQueens(id)
+      fetchSubspeciesOptions()
+    }
+    initUser()
   }, [])
 
   // Scroll to highlighted queen when data loads
@@ -147,11 +159,15 @@ export default function QueensPage() {
     }
   }, [formData.birth_date, formData.marking_color])
 
-  const fetchQueens = async () => {
+  const fetchQueens = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     // First get all queens
     const { data: queensData, error: queensError } = await supabase
       .from('queens')
       .select('*')
+      .eq('user_id', currentUserId)
       .order('created_at', { ascending: false })
 
     if (queensError) {
@@ -177,6 +193,7 @@ export default function QueensPage() {
               )
             `)
             .eq('queen_id', queen.id)
+            .eq('user_id', currentUserId)
             .eq('status', 'active')
             .single()
 
@@ -224,6 +241,7 @@ export default function QueensPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!userId) return
 
     try {
       if (editingQueen) {
@@ -231,10 +249,11 @@ export default function QueensPage() {
           .from('queens')
           .update(formData)
           .eq('id', editingQueen.id)
+          .eq('user_id', userId)
 
         if (error) throw error
       } else {
-        const { error } = await supabase.from('queens').insert([formData])
+        const { error } = await supabase.from('queens').insert([{ ...formData, user_id: userId }])
         if (error) throw error
       }
 
@@ -264,8 +283,9 @@ export default function QueensPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!userId) return
     if (confirm('Are you sure you want to delete this queen?')) {
-      const { error } = await supabase.from('queens').delete().eq('id', id)
+      const { error } = await supabase.from('queens').delete().eq('id', id).eq('user_id', userId)
       if (!error) fetchQueens()
     }
   }

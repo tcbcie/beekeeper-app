@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface Queen {
@@ -34,11 +36,13 @@ interface FormData {
 }
 
 export default function BatchesPage() {
+  const router = useRouter()
   const [batches, setBatches] = useState<Batch[]>([])
   const [queens, setQueens] = useState<Queen[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     batch_name: '',
     mother_queen_id: '',
@@ -50,32 +54,50 @@ export default function BatchesPage() {
   })
 
   useEffect(() => {
-    fetchBatches()
-    fetchQueens()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchBatches(id)
+      fetchQueens(id)
+    }
+    initUser()
   }, [])
 
-  const fetchBatches = async () => {
+  const fetchBatches = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('rearing_batches')
       .select('*, queens(queen_number)')
+      .eq('user_id', currentUserId)
       .order('graft_date', { ascending: false })
-    
+
     if (data) setBatches(data)
     setLoading(false)
   }
 
-  const fetchQueens = async () => {
+  const fetchQueens = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('queens')
       .select('id, queen_number')
       .eq('status', 'active')
+      .eq('user_id', currentUserId)
       .order('queen_number')
-    
+
     if (data) setQueens(data)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!userId) return
 
     try {
       const dataToSubmit = {
@@ -93,12 +115,13 @@ export default function BatchesPage() {
           .from('rearing_batches')
           .update(dataToSubmit)
           .eq('id', editingBatch.id)
+          .eq('user_id', userId)
 
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('rearing_batches')
-          .insert([dataToSubmit])
+          .insert([{ ...dataToSubmit, user_id: userId }])
 
         if (error) throw error
       }
@@ -126,11 +149,13 @@ export default function BatchesPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!userId) return
     if (confirm('Are you sure you want to delete this batch?')) {
       const { error } = await supabase
         .from('rearing_batches')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (!error) fetchBatches()
     }

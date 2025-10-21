@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -23,20 +25,34 @@ export default function DashboardPage() {
   })
   const [recentActivity, setRecentActivity] = useState<Inspection[]>([])
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
-    fetchDashboardData()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchDashboardData(id)
+    }
+    initUser()
   }, [])
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     try {
       // Fetch all stats in parallel
       const [queensRes, activeQueensRes, hivesRes, batchesRes, inspectionsRes] = await Promise.all([
-        supabase.from('queens').select('id', { count: 'exact', head: true }),
-        supabase.from('queens').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('hives').select('id', { count: 'exact', head: true }),
-        supabase.from('rearing_batches').select('id', { count: 'exact', head: true }).in('status', ['grafted', 'emerged']),
-        supabase.from('inspections').select('id', { count: 'exact', head: true }).gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+        supabase.from('queens').select('id', { count: 'exact', head: true }).eq('user_id', currentUserId),
+        supabase.from('queens').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('user_id', currentUserId),
+        supabase.from('hives').select('id', { count: 'exact', head: true }).eq('user_id', currentUserId),
+        supabase.from('rearing_batches').select('id', { count: 'exact', head: true }).in('status', ['grafted', 'emerged']).eq('user_id', currentUserId),
+        supabase.from('inspections').select('id', { count: 'exact', head: true }).gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]).eq('user_id', currentUserId),
       ])
 
       setStats({
@@ -51,6 +67,7 @@ export default function DashboardPage() {
       const { data: inspections } = await supabase
         .from('inspections')
         .select('*, hives(hive_number)')
+        .eq('user_id', currentUserId)
         .order('inspection_date', { ascending: false })
         .limit(5)
 

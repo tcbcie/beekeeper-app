@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -43,6 +44,7 @@ export default function VarroaCheckPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingCheck, setEditingCheck] = useState<VarroaCheck | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     check_date: new Date().toISOString().split('T')[0],
@@ -55,8 +57,17 @@ export default function VarroaCheckPage() {
   })
 
   useEffect(() => {
-    fetchChecks()
-    fetchHives()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchChecks(id)
+      fetchHives(id)
+    }
+    initUser()
   }, [])
 
   useEffect(() => {
@@ -74,21 +85,29 @@ export default function VarroaCheckPage() {
     }
   }, [formData.mites_count, formData.sample_size, formData.method])
 
-  const fetchChecks = async () => {
+  const fetchChecks = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('varroa_checks')
       .select('*, hives(hive_number)')
+      .eq('user_id', currentUserId)
       .order('check_date', { ascending: false })
 
     if (data) setChecks(data as VarroaCheck[])
     setLoading(false)
   }
 
-  const fetchHives = async () => {
+  const fetchHives = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('hives')
       .select('id, hive_number')
       .eq('status', 'active')
+      .eq('user_id', currentUserId)
       .order('hive_number')
 
     if (data) setHives(data as Hive[])
@@ -96,6 +115,7 @@ export default function VarroaCheckPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!userId) return
 
     console.log('Submitting varroa check with data:', formData)
 
@@ -105,6 +125,7 @@ export default function VarroaCheckPage() {
           .from('varroa_checks')
           .update(formData)
           .eq('id', editingCheck.id)
+          .eq('user_id', userId)
           .select()
 
         console.log('Update response:', { data, error })
@@ -112,7 +133,7 @@ export default function VarroaCheckPage() {
       } else {
         const { data, error } = await supabase
           .from('varroa_checks')
-          .insert([formData])
+          .insert([{ ...formData, user_id: userId }])
           .select()
 
         console.log('Insert response:', { data, error })
@@ -172,11 +193,13 @@ export default function VarroaCheckPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!userId) return
     if (confirm('Are you sure you want to delete this varroa check?')) {
       const { error } = await supabase
         .from('varroa_checks')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (!error) fetchChecks()
     }

@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useRouter } from 'next/navigation'
 
 interface Apiary {
   id: string
@@ -27,6 +29,8 @@ export default function ApiariesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingApiary, setEditingApiary] = useState<Apiary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const router = useRouter()
   const [formData, setFormData] = useState<FormData>({
     name: '',
     location: '',
@@ -36,21 +40,35 @@ export default function ApiariesPage() {
   })
 
   useEffect(() => {
-    fetchApiaries()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchApiaries(id)
+    }
+    initUser()
   }, [])
 
-  const fetchApiaries = async () => {
+  const fetchApiaries = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('apiaries')
       .select('*')
+      .eq('user_id', currentUserId)
       .order('name')
-    
+
     if (data) setApiaries(data)
     setLoading(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!userId) return
 
     try {
       if (editingApiary) {
@@ -58,12 +76,13 @@ export default function ApiariesPage() {
           .from('apiaries')
           .update(formData)
           .eq('id', editingApiary.id)
+          .eq('user_id', userId)
 
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('apiaries')
-          .insert([formData])
+          .insert([{ ...formData, user_id: userId }])
 
         if (error) throw error
       }
@@ -89,11 +108,13 @@ export default function ApiariesPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!userId) return
     if (confirm('Delete this apiary? Associated hives will lose their location.')) {
       const { error } = await supabase
         .from('apiaries')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (!error) fetchApiaries()
     }

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -48,6 +49,7 @@ export default function HarvestPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingHarvest, setEditingHarvest] = useState<Harvest | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
@@ -60,34 +62,55 @@ export default function HarvestPage() {
   })
 
   useEffect(() => {
-    fetchHarvests()
-    fetchHives()
-    fetchApiaries()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchHarvests(id)
+      fetchHives(id)
+      fetchApiaries(id)
+    }
+    initUser()
   }, [])
 
-  const fetchHarvests = async () => {
+  const fetchHarvests = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('harvests')
       .select('*, hives(hive_number)')
+      .eq('user_id', currentUserId)
       .order('harvest_date', { ascending: false })
 
     if (data) setHarvests(data as Harvest[])
     setLoading(false)
   }
 
-  const fetchHives = async () => {
+  const fetchHives = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('hives')
       .select('id, hive_number, apiary_id')
+      .eq('user_id', currentUserId)
       .order('hive_number')
 
     if (data) setHives(data as Hive[])
   }
 
-  const fetchApiaries = async () => {
+  const fetchApiaries = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('apiaries')
       .select('id, name')
+      .eq('user_id', currentUserId)
       .order('name')
 
     if (data) setApiaries(data as Apiary[])
@@ -95,6 +118,7 @@ export default function HarvestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!userId) return
 
     const submitData = {
       hive_id: formData.hive_id,
@@ -111,6 +135,7 @@ export default function HarvestPage() {
         .from('harvests')
         .update(submitData)
         .eq('id', editingHarvest.id)
+        .eq('user_id', userId)
 
       if (error) {
         alert(`Error updating harvest: ${error.message}`)
@@ -119,7 +144,7 @@ export default function HarvestPage() {
     } else {
       const { error } = await supabase
         .from('harvests')
-        .insert([submitData])
+        .insert([{ ...submitData, user_id: userId }])
 
       if (error) {
         alert(`Error adding harvest: ${error.message}`)
@@ -156,11 +181,13 @@ export default function HarvestPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!userId) return
     if (confirm('Are you sure you want to delete this harvest record?')) {
       const { error } = await supabase
         .from('harvests')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (!error) fetchHarvests()
     }

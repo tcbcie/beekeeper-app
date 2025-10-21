@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ChevronDown, HelpCircle, Camera, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -72,6 +73,7 @@ export default function InspectionsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingInspection, setEditingInspection] = useState<Inspection | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   const [filterHiveId, setFilterHiveId] = useState<string>('')
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [timePeriod, setTimePeriod] = useState<string>('all')
@@ -106,9 +108,18 @@ export default function InspectionsPage() {
   })
 
   useEffect(() => {
-    fetchInspections()
-    fetchHives()
-    fetchApiaries()
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchInspections(id)
+      fetchHives(id)
+      fetchApiaries(id)
+    }
+    initUser()
   }, [])
 
   useEffect(() => {
@@ -123,10 +134,14 @@ export default function InspectionsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showDropdown])
 
-  const fetchInspections = async () => {
+  const fetchInspections = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data, error } = await supabase
       .from('inspections')
       .select('*, hives(hive_number, apiaries(eircode))')
+      .eq('user_id', currentUserId)
       .order('inspection_date', { ascending: false })
 
     console.log('Fetched inspections:', data)
@@ -145,9 +160,13 @@ export default function InspectionsPage() {
     setLoading(false)
   }
 
-  const fetchHives = async () => {
+  const fetchHives = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('hives')
+      .eq('user_id', currentUserId)
       .select('id, hive_number, apiary_id')
       .eq('status', 'active')
       .order('hive_number')
@@ -155,17 +174,21 @@ export default function InspectionsPage() {
     if (data) setHives(data as Hive[])
   }
 
-  const fetchApiaries = async () => {
+  const fetchApiaries = async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
     const { data } = await supabase
       .from('apiaries')
       .select('id, name')
+      .eq('user_id', currentUserId)
       .order('name')
 
     if (data) setApiaries(data as Apiary[])
   }
 
   const fetchLastInspection = async (hiveId: string) => {
-    if (!hiveId) {
+    if (!hiveId || !userId) {
       setLastInspection(null)
       return
     }
@@ -174,6 +197,7 @@ export default function InspectionsPage() {
       .from('inspections')
       .select('*')
       .eq('hive_id', hiveId)
+      .eq('user_id', userId)
       .order('inspection_date', { ascending: false })
       .limit(1)
 
@@ -345,11 +369,14 @@ export default function InspectionsPage() {
       return
     }
 
+    if (!userId) return
+
     // Fetch last inspection for this hive
     const { data } = await supabase
       .from('inspections')
       .select('*')
       .eq('hive_id', hiveId)
+      .eq('user_id', userId)
       .order('inspection_date', { ascending: false })
       .limit(1)
 
@@ -438,11 +465,14 @@ export default function InspectionsPage() {
 
       console.log('Submitting inspection data:', submitData)
 
+      if (!userId) return
+
       if (editingInspection) {
         const { data, error } = await supabase
           .from('inspections')
           .update(submitData)
           .eq('id', editingInspection.id)
+          .eq('user_id', userId)
           .select()
 
         console.log('Update result:', { data, error })
@@ -453,7 +483,7 @@ export default function InspectionsPage() {
       } else {
         const { data, error } = await supabase
           .from('inspections')
-          .insert([submitData])
+          .insert([{ ...submitData, user_id: userId }])
           .select()
 
         console.log('Insert result:', { data, error })
@@ -522,11 +552,13 @@ export default function InspectionsPage() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!userId) return
     if (confirm('Are you sure you want to delete this inspection?')) {
       const { error } = await supabase
         .from('inspections')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (!error) fetchInspections()
     }
