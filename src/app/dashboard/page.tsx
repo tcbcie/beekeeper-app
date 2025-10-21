@@ -1,10 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId } from '@/lib/auth'
+import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { Shield } from 'lucide-react'
 
 interface Inspection {
   id: string
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [recentActivity, setRecentActivity] = useState<Inspection[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<UserRole>('User')
   const router = useRouter()
 
   useEffect(() => {
@@ -36,6 +38,11 @@ export default function DashboardPage() {
         return
       }
       setUserId(id)
+
+      // Fetch user role
+      const role = await getUserRole()
+      setUserRole(role)
+
       fetchDashboardData(id)
     }
     initUser()
@@ -92,7 +99,15 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+          {userRole === 'Admin' && (
+            <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
+              <Shield size={14} />
+              Admin
+            </span>
+          )}
+        </div>
         <button
           onClick={fetchDashboardData}
           className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
