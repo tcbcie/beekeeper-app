@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database } from 'lucide-react'
+import { getCurrentUserId, isAdmin } from '@/lib/auth'
+import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database, Shield } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -30,8 +30,10 @@ interface CategoryWithValues extends DropdownCategory {
 export default function SettingsPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
+  const [isAdminUser, setIsAdminUser] = useState(false)
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
@@ -58,6 +60,17 @@ export default function SettingsPage() {
         return
       }
       setUserId(id)
+
+      // Check if user has admin access
+      const adminAccess = await isAdmin()
+      setIsAdminUser(adminAccess)
+
+      if (!adminAccess) {
+        setAccessDenied(true)
+        setLoading(false)
+        return
+      }
+
       fetchCategories()
     }
     initUser()
@@ -297,10 +310,39 @@ export default function SettingsPage() {
 
   if (loading) return <LoadingSpinner text="Loading settings..." />
 
+  // Access denied screen for non-admin users
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <Shield size={64} className="text-red-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-6">
+            You need administrator privileges to access the Settings page.
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Settings ⚙️</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900">Settings ⚙️</h1>
+          <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
+            <Shield size={14} />
+            Admin Only
+          </span>
+        </div>
         <button
           onClick={() => setShowCategoryForm(!showCategoryForm)}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
