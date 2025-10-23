@@ -7,10 +7,22 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
+interface HiveConfiguration {
+  brood_boxes?: number
+  honey_supers?: number
+  queen_excluder?: boolean
+  feeder?: boolean
+  feeder_type?: string
+  entrance_reducer?: boolean
+  varroa_mesh_floor?: string
+  right_sized_broodbox?: boolean
+}
+
 interface Hive {
   id: string
   hive_number: string
   apiary_id: string | null
+  configuration: HiveConfiguration | null
 }
 
 interface Apiary {
@@ -26,6 +38,7 @@ interface Inspection {
   queen_seen: boolean
   eggs_present: boolean
   brood_frames: number | null
+  right_sized_frames: number | null
   brood_pattern_rating: number
   temperament_rating: number
   population_strength: number
@@ -52,6 +65,7 @@ interface FormData {
   queen_seen: boolean
   eggs_present: boolean
   brood_frames: number | null
+  right_sized_frames: number | null
   brood_pattern_rating: number
   temperament_rating: number
   population_strength: number
@@ -94,6 +108,7 @@ export default function InspectionsPage() {
     queen_seen: false,
     eggs_present: false,
     brood_frames: null,
+    right_sized_frames: null,
     brood_pattern_rating: 3,
     temperament_rating: 3,
     population_strength: 3,
@@ -164,14 +179,19 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('hives')
+      .select('*')
       .eq('user_id', currentUserId)
-      .select('id, hive_number, apiary_id')
       .eq('status', 'active')
       .order('hive_number')
 
-    if (data) setHives(data as Hive[])
+    if (error) {
+      console.error('Error fetching hives for inspections:', error)
+    }
+    if (data) {
+      setHives(data as Hive[])
+    }
   }
 
   const fetchApiaries = async (userIdParam?: string) => {
@@ -450,6 +470,7 @@ export default function InspectionsPage() {
         queen_seen: formData.queen_seen,
         eggs_present: formData.eggs_present,
         brood_frames: formData.brood_frames,
+        right_sized_frames: formData.right_sized_frames,
         brood_pattern_rating: formData.brood_pattern_rating,
         temperament_rating: formData.temperament_rating,
         population_strength: formData.population_strength,
@@ -527,6 +548,7 @@ export default function InspectionsPage() {
       queen_seen: inspection.queen_seen || false,
       eggs_present: inspection.eggs_present || false,
       brood_frames: inspection.brood_frames ?? null,
+      right_sized_frames: inspection.right_sized_frames ?? null,
       brood_pattern_rating: inspection.brood_pattern_rating ?? 3,
       temperament_rating: inspection.temperament_rating ?? 3,
       population_strength: inspection.population_strength ?? 3,
@@ -577,6 +599,7 @@ export default function InspectionsPage() {
       queen_seen: false,
       eggs_present: false,
       brood_frames: null,
+      right_sized_frames: null,
       brood_pattern_rating: 3,
       temperament_rating: 3,
       population_strength: 3,
@@ -849,10 +872,29 @@ export default function InspectionsPage() {
 
       {showForm && (
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">
-            {editingInspection ? 'Edit Inspection' : 'Record New Inspection'}
-          </h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h3 className="text-xl font-semibold">
+              {editingInspection ? 'Edit Inspection' : 'Record New Inspection'}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                type="submit"
+                form="inspection-form"
+                disabled={uploadingImage || fetchingWeather}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
+              >
+                {uploadingImage ? 'Uploading Image...' : fetchingWeather ? 'Fetching Weather...' : editingInspection ? 'Update' : 'Save'} Inspection
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
               <select
@@ -963,6 +1005,41 @@ export default function InspectionsPage() {
                 </button>
               </div>
             </div>
+
+            {hives.find(h => h.id === formData.hive_id)?.configuration?.right_sized_broodbox && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Right-Sized to How Many Frames {formData.right_sized_frames !== null ? `(${formData.right_sized_frames})` : ''}
+                </label>
+                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setFormData({...formData, right_sized_frames: num})}
+                      className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                        formData.right_sized_frames === num
+                          ? 'bg-amber-600 text-white shadow-lg ring-2 ring-amber-300'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, right_sized_frames: null})}
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
+                      formData.right_sized_frames === null
+                        ? 'bg-gray-400 text-white shadow-lg ring-2 ring-gray-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    }`}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-2">
@@ -1325,6 +1402,14 @@ export default function InspectionsPage() {
                   {inspection.brood_frames ?? '-'}
                 </div>
               </div>
+              {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
+                <div className="text-center p-3 bg-amber-50 rounded">
+                  <div className="text-xs text-gray-500 mb-1">Right-Sized Frames</div>
+                  <div className="text-2xl font-bold text-amber-600">
+                    {inspection.right_sized_frames ?? '-'}
+                  </div>
+                </div>
+              )}
               <div className="text-center p-3 bg-gray-50 rounded">
                 <div className="text-xs text-gray-500 mb-1">Brood Pattern</div>
                 <div className="text-sm">{renderStars(inspection.brood_pattern_rating)}</div>

@@ -25,6 +25,7 @@ interface HiveConfiguration {
   feeder_type: string
   entrance_reducer: boolean
   varroa_mesh_floor: string
+  right_sized_broodbox: boolean
 }
 
 interface Hive {
@@ -51,6 +52,7 @@ interface Hive {
   }
   averages?: {
     brood_frames: number | null
+    right_sized_frames: number | null
     brood_pattern: number | null
     temperament: number | null
     population: number | null
@@ -110,6 +112,7 @@ export default function HivesPage() {
       feeder_type: '',
       entrance_reducer: false,
       varroa_mesh_floor: 'closed',
+      right_sized_broodbox: false,
     },
   })
 
@@ -189,7 +192,7 @@ export default function HivesPage() {
   const calculateInspectionAverages = async (hiveId: string, userIdParam: string) => {
     const { data: inspections } = await supabase
       .from('inspections')
-      .select('inspection_date, brood_frames, brood_pattern_rating, temperament_rating, population_strength')
+      .select('inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength')
       .eq('hive_id', hiveId)
       .eq('user_id', userIdParam)
       .order('inspection_date', { ascending: false })
@@ -231,6 +234,10 @@ export default function HivesPage() {
       .filter(i => i.brood_frames !== null && i.brood_frames > 0)
       .map(i => i.brood_frames)
 
+    const rightSizedFrames = filteredInspections
+      .filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0)
+      .map(i => i.right_sized_frames)
+
     const broodPatterns = filteredInspections
       .filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0)
       .map(i => i.brood_pattern_rating)
@@ -249,6 +256,7 @@ export default function HivesPage() {
     const inspectionsWithData = new Set<string>()
     filteredInspections.forEach(inspection => {
       if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
+          (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
           (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
           (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
           (inspection.population_strength !== null && inspection.population_strength > 0)) {
@@ -258,6 +266,7 @@ export default function HivesPage() {
 
     return {
       brood_frames: avg(broodFrames),
+      right_sized_frames: avg(rightSizedFrames),
       brood_pattern: avg(broodPatterns),
       temperament: avg(temperaments),
       population: avg(populations),
@@ -435,6 +444,7 @@ export default function HivesPage() {
         feeder_type: '',
         entrance_reducer: false,
         varroa_mesh_floor: 'closed',
+        right_sized_broodbox: false,
       },
     })
     setShowForm(true)
@@ -477,6 +487,7 @@ export default function HivesPage() {
         feeder_type: '',
         entrance_reducer: false,
         varroa_mesh_floor: 'closed',
+        right_sized_broodbox: false,
       },
     })
   }
@@ -869,6 +880,18 @@ export default function HivesPage() {
                   >
                     {formData.configuration.entrance_reducer ? '✓' : '○'} Entrance Reducer
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, configuration: {...formData.configuration, right_sized_broodbox: !formData.configuration.right_sized_broodbox}})}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                      formData.configuration.right_sized_broodbox
+                        ? 'bg-amber-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {formData.configuration.right_sized_broodbox ? '✓' : '○'} Right-Sized Broodbox
+                  </button>
                 </div>
               </div>
             </div>
@@ -1037,6 +1060,12 @@ export default function HivesPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Frames with Brood:</span>
                       <span className="font-semibold text-indigo-700">{hive.averages.brood_frames.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {hive.configuration?.right_sized_broodbox && hive.averages.right_sized_frames !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Right-Sized Frames:</span>
+                      <span className="font-semibold text-amber-700">{hive.averages.right_sized_frames.toFixed(1)}</span>
                     </div>
                   )}
                   {hive.averages.brood_pattern !== null && (
