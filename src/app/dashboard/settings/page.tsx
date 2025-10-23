@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database, Shield } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database, Shield, Users, Search } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -27,6 +27,14 @@ interface CategoryWithValues extends DropdownCategory {
   dropdown_values: DropdownValue[]
 }
 
+interface UserProfile {
+  id: string
+  role: 'User' | 'Admin'
+  created_at: string
+  updated_at: string
+  email?: string
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
@@ -40,6 +48,12 @@ export default function SettingsPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [exporting, setExporting] = useState(false)
   const [showExportSection, setShowExportSection] = useState(false)
+
+  // User Management state
+  const [showUserManagement, setShowUserManagement] = useState(false)
+  const [users, setUsers] = useState<UserProfile[]>([])
+  const [userSearch, setUserSearch] = useState('')
+  const [loadingUsers, setLoadingUsers] = useState(false)
 
   const [categoryFormData, setCategoryFormData] = useState({
     category_name: '',
@@ -229,6 +243,61 @@ export default function SettingsPage() {
       display_order: 0,
     })
   }
+
+  // User Management Functions
+  const fetchUsers = async () => {
+    setLoadingUsers(true)
+    try {
+      // Call the function that joins user_profiles with auth.users to get emails
+      // Uses RPC (Remote Procedure Call) to execute the database function
+      const { data, error } = await supabase
+        .rpc('get_users_with_email')
+
+      if (error) throw error
+
+      if (data) {
+        setUsers(data as UserProfile[])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      alert('Failed to fetch users. Make sure you have admin permissions.')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const handleRoleChange = async (targetUserId: string, newRole: 'User' | 'Admin') => {
+    if (targetUserId === userId) {
+      alert('You cannot change your own role.')
+      return
+    }
+
+    if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ role: newRole, updated_at: new Date().toISOString() })
+        .eq('id', targetUserId)
+
+      if (error) throw error
+
+      alert(`User role updated to ${newRole} successfully!`)
+      fetchUsers() // Refresh the list
+    } catch (error) {
+      console.error('Error updating user role:', error)
+      alert('Failed to update user role.')
+    }
+  }
+
+  // Fetch users when user management section is opened
+  useEffect(() => {
+    if (showUserManagement && users.length === 0) {
+      fetchUsers()
+    }
+  }, [showUserManagement])
 
   const exportDatabase = async () => {
     setExporting(true)
@@ -580,6 +649,165 @@ export default function SettingsPage() {
         {categories.length === 0 && (
           <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
             No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
+          </div>
+        )}
+      </div>
+
+      {/* User Management Section - Collapsible */}
+      <div className="bg-white rounded-lg shadow">
+        <div
+          className="p-6 cursor-pointer hover:bg-gray-50"
+          onClick={() => setShowUserManagement(!showUserManagement)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {showUserManagement ? (
+                <ChevronDown size={20} className="text-gray-500" />
+              ) : (
+                <ChevronRight size={20} className="text-gray-500" />
+              )}
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Users size={24} className="text-purple-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900">User Management</h2>
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full flex items-center gap-1">
+                    <Shield size={12} />
+                    Admin Only
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">Manage user accounts and roles</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showUserManagement && (
+          <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+            <p className="text-sm text-gray-600 mb-4">
+              View and manage all user accounts. Change user roles between User and Admin.
+            </p>
+
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search users by email or ID..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Refresh Button */}
+            <div className="mb-4">
+              <button
+                onClick={fetchUsers}
+                disabled={loadingUsers}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+              >
+                {loadingUsers ? 'Loading...' : 'Refresh Users'}
+              </button>
+            </div>
+
+            {/* Users Table */}
+            {loadingUsers ? (
+              <div className="text-center py-8">
+                <LoadingSpinner text="Loading users..." />
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No users found. Click "Refresh Users" to load.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        User ID
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Joined
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {users
+                      .filter(user =>
+                        !userSearch ||
+                        user.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        user.id.toLowerCase().includes(userSearch.toLowerCase())
+                      )
+                      .map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 text-sm text-gray-900">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{user.email || 'No email'}</span>
+                              {user.id === userId && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-sans">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-xs text-gray-500 font-mono max-w-xs truncate" title={user.id}>
+                            {user.id.substring(0, 8)}...
+                          </td>
+                          <td className="px-4 py-4 text-sm">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              user.role === 'Admin'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {user.role === 'Admin' && <Shield size={12} className="inline mr-1" />}
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-500">
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-4 text-sm">
+                            {user.id === userId ? (
+                              <span className="text-gray-400 text-xs italic">Cannot modify own role</span>
+                            ) : (
+                              <select
+                                value={user.role}
+                                onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Admin')}
+                                className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              >
+                                <option value="User">User</option>
+                                <option value="Admin">Admin</option>
+                              </select>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="mt-4 text-sm text-gray-500">
+              <p className="mb-2"><strong>Role Descriptions:</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>User:</strong> Standard access to their own beekeeping data</li>
+                <li><strong>Admin:</strong> Full access including user management and settings</li>
+              </ul>
+            </div>
           </div>
         )}
       </div>
