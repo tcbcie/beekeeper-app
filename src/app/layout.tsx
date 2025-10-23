@@ -24,12 +24,12 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "Tribes Beekeeping App",
+  title: "Hive Craic",
   description: "Comprehensive beekeeping management system for tracking hives, inspections, queens, and apiary health",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Beekeeper",
+    title: "Hive Craic",
   },
 };
 

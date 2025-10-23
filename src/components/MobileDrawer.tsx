@@ -30,7 +30,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const baseNavItems = [
     { href: '/dashboard', label: 'Overview', icon: Home },
     { href: '/dashboard/queens', label: 'Queens', icon: Crown },
-    { href: '/dashboard/batches', label: 'Rearing Batches', icon: Egg },
+    { href: '/dashboard/batches', label: 'QueenCraft', icon: Egg },
     { href: '/dashboard/hives', label: 'Hives', icon: Archive },
     { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
     { href: '/dashboard/inspections', label: 'Inspections', icon: ClipboardList },

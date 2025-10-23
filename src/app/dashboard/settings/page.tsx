@@ -305,7 +305,7 @@ export default function SettingsPage() {
       // Define all tables to export
       const tables = ['apiaries', 'hives', 'queens', 'inspections', 'varroa_checks', 'varroa_treatments', 'dropdown_categories', 'dropdown_values']
 
-      let sqlContent = `-- Tribes Beekeeping App Database Export\n`
+      let sqlContent = `-- Hive Craic Database Export\n`
       sqlContent += `-- Generated on: ${new Date().toISOString()}\n\n`
       sqlContent += `-- NOTE: This is a data-only export. Run this against an existing database schema.\n\n`
 
