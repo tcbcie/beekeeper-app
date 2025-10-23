@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 
 export default function Sidebar() {
@@ -24,6 +24,8 @@ export default function Sidebar() {
     { href: '/dashboard/hives', label: 'Hives', icon: Archive },
     { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
     { href: '/dashboard/inspections', label: 'Inspections', icon: ClipboardList },
+    { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
+    { href: '/dashboard/profile', label: 'Profile', icon: User },
   ]
 
   const adminNavItems = [
