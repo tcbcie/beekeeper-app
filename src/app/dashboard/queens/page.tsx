@@ -18,6 +18,7 @@ interface Queen {
   queen_clipped: boolean
   status: string
   performance_notes: string
+  mated_at_eircode: string
   created_at?: string
   hives?: {
     id: string
@@ -38,6 +39,7 @@ interface FormData {
   queen_clipped: boolean
   status: string
   performance_notes: string
+  mated_at_eircode: string
 }
 
 // Calculate queen marking color based on birth year
@@ -121,6 +123,7 @@ export default function QueensPage() {
     queen_clipped: false,
     status: 'active',
     performance_notes: '',
+    mated_at_eircode: '',
   })
 
   useEffect(() => {
@@ -278,6 +281,7 @@ export default function QueensPage() {
       queen_clipped: queen.queen_clipped || false,
       status: queen.status,
       performance_notes: queen.performance_notes,
+      mated_at_eircode: queen.mated_at_eircode || '',
     })
     setShowForm(true)
   }
@@ -303,6 +307,7 @@ export default function QueensPage() {
       queen_clipped: false,
       status: 'active',
       performance_notes: '',
+      mated_at_eircode: '',
     })
   }
 
@@ -457,6 +462,23 @@ export default function QueensPage() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mated at (Eircode)
+              </label>
+              <input
+                type="text"
+                value={formData.mated_at_eircode}
+                onChange={(e) => setFormData({ ...formData, mated_at_eircode: e.target.value.toUpperCase() })}
+                placeholder="e.g., H91 E6K2"
+                maxLength={8}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md uppercase"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Irish postcode where the queen was mated
+              </p>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
                 value={formData.status}
@@ -537,6 +559,9 @@ export default function QueensPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Queen Number
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -555,10 +580,10 @@ export default function QueensPage() {
                   Lineage
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
+                  Mated at
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
+                  Status
                 </th>
               </tr>
             </thead>
@@ -575,6 +600,20 @@ export default function QueensPage() {
                       : 'hover:bg-gray-50'
                   }`}
                 >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm flex gap-2">
+                    <button
+                      onClick={() => handleEdit(queen)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(queen.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap font-medium">
                     {queen.queen_number}
                   </td>
@@ -617,6 +656,9 @@ export default function QueensPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     {queen.lineage || 'N/A'}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                    {queen.mated_at_eircode || 'N/A'}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
@@ -627,20 +669,6 @@ export default function QueensPage() {
                     >
                       {queen.status}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm flex gap-2">
-                    <button
-                      onClick={() => handleEdit(queen)}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(queen.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 size={16} />
-                    </button>
                   </td>
                 </tr>
               ))}

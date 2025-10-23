@@ -619,10 +619,28 @@ export default function HivesPage() {
 
       {showForm && (
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">
-            {editingHive ? 'Edit Hive' : 'Add New Hive'}
-          </h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h3 className="text-xl font-semibold">
+              {editingHive ? 'Edit Hive' : 'Add New Hive'}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                type="submit"
+                form="hive-form"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-amber-600 text-white rounded-lg hover:bg-amber-700 active:bg-amber-800 touch-manipulation font-medium"
+              >
+                {editingHive ? 'Update' : 'Add'} Hive
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <form id="hive-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hive Number *</label>
               <input

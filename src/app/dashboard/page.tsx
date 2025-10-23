@@ -24,6 +24,12 @@ export default function DashboardPage() {
     activeBatches: 0,
     recentInspections: 0,
   })
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    onlineUsers: 0,
+    totalHives: 0,
+    totalApiaries: 0,
+  })
   const [recentActivity, setRecentActivity] = useState<Inspection[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
@@ -79,6 +85,45 @@ export default function DashboardPage() {
         .limit(5)
 
       setRecentActivity((inspections as Inspection[]) || [])
+
+      // Fetch user statistics (admin only)
+      const role = await getUserRole()
+      if (role === 'Admin') {
+        // Get total users from user_profiles
+        const { count: totalUsers } = await supabase
+          .from('user_profiles')
+          .select('id', { count: 'exact', head: true })
+
+        // Get total hives across all users
+        const { count: totalHives } = await supabase
+          .from('hives')
+          .select('id', { count: 'exact', head: true })
+
+        // Get total apiaries across all users
+        const { count: totalApiaries } = await supabase
+          .from('apiaries')
+          .select('id', { count: 'exact', head: true })
+
+        // Consider users "online" if they've been active in the last 15 minutes
+        // We'll check for recent activity in inspections, or any table with updated_at
+        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+
+        // Get distinct user IDs who have activity in the last 15 minutes
+        const { data: recentActivityUsers } = await supabase
+          .from('inspections')
+          .select('user_id')
+          .gte('created_at', fifteenMinutesAgo)
+
+        // Count unique users
+        const uniqueUserIds = new Set(recentActivityUsers?.map(r => r.user_id) || [])
+
+        setUserStats({
+          totalUsers: totalUsers || 0,
+          onlineUsers: uniqueUserIds.size,
+          totalHives: totalHives || 0,
+          totalApiaries: totalApiaries || 0,
+        })
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -92,20 +137,38 @@ export default function DashboardPage() {
     { label: 'Total Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700' },
     { label: 'Active Queens', value: stats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700' },
     { label: 'Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700' },
-    { label: 'Active Batches', value: stats.activeBatches, icon: '🥚', color: 'bg-blue-50 text-blue-700' },
+    { label: 'Active QueenCraft', value: stats.activeBatches, icon: '🥚', color: 'bg-blue-50 text-blue-700' },
     { label: 'Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700' },
   ]
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-          {userRole === 'Admin' && (
-            <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
-              <Shield size={14} />
-              Admin
-            </span>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+            {userRole === 'Admin' && (
+              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
+                <Shield size={14} />
+                Admin
+              </span>
+            )}
+          </div>
+          {userRole === 'Admin' && userStats.totalUsers > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <strong className="text-green-700">{userStats.onlineUsers}</strong> of <strong>{userStats.totalUsers}</strong> users online
+              </span>
+              <span className="hidden sm:inline text-gray-400">•</span>
+              <span className="inline-flex items-center gap-1">
+                🐝 <strong className="text-amber-700">{userStats.totalHives}</strong> hives managed
+              </span>
+              <span className="hidden sm:inline text-gray-400">•</span>
+              <span className="inline-flex items-center gap-1">
+                📍 <strong className="text-blue-700">{userStats.totalApiaries}</strong> apiaries
+              </span>
+            </div>
           )}
         </div>
         <button
@@ -145,7 +208,7 @@ export default function DashboardPage() {
             className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
           >
             <div className="text-3xl mb-2">➕🥚</div>
-            <div className="font-medium">New Batch</div>
+            <div className="font-medium">New QueenCraft</div>
           </a>
           <a
             href="/dashboard/inspections"

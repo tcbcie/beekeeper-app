@@ -87,7 +87,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-yellow-100 p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-amber-600 mb-2">🐝 Beekeeper</h1>
+          <h1 className="text-3xl font-bold text-amber-600 mb-2">🐝 Hive Craic</h1>
           <h2 className="text-xl font-semibold text-gray-700">Set New Password</h2>
           <p className="text-gray-600 mt-2">
             Enter your new password below.

@@ -281,7 +281,7 @@ export default function InspectionsPage() {
 
       // Nominatim requires a User-Agent header
       const headers = {
-        'User-Agent': 'BeekeeperApp/1.0'
+        'User-Agent': 'HiveCraic/1.0'
       }
 
       // First, try searching with just the Eircode and Ireland
