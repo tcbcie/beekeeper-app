@@ -197,7 +197,28 @@ SELECT get_user_role('08e38bd9-30b0-4183-92c2-fc3b7600a46a');
 
 ## Managing User Roles
 
-### Promote User to Admin
+### Using the Admin UI (Recommended)
+
+Admin users can manage user roles directly from the Settings page:
+
+1. **Navigate to Settings** (Admin only)
+2. **Expand "User Management" section**
+3. **Click "Refresh Users"** to load all users
+4. **Search for users** by User ID if needed
+5. **Change role** using the dropdown in the Actions column
+6. **Confirm the change** when prompted
+
+Features:
+- View all user accounts with their User ID, role, and join date
+- Search/filter users by ID
+- Change user roles with dropdown (User/Admin)
+- Cannot modify your own role (safety feature)
+- Visual indicators for current user and admin roles
+- Real-time updates after role changes
+
+### Using SQL (Alternative Method)
+
+#### Promote User to Admin
 
 ```sql
 UPDATE user_profiles
@@ -205,7 +226,7 @@ SET role = 'Admin', updated_at = NOW()
 WHERE id = 'user-uuid-here';
 ```
 
-### Demote Admin to User
+#### Demote Admin to User
 
 ```sql
 UPDATE user_profiles
@@ -249,11 +270,21 @@ Execute [sql/add_roles_system.sql](sql/add_roles_system.sql) in your Supabase SQ
 ```bash
 # The migration will:
 # 1. Create user_profiles table
-# 2. Set up RLS policies
+# 2. Set up RLS policies (including admin access to all profiles)
 # 3. Create trigger for automatic profile creation
 # 4. Create profiles for existing users (default: 'User')
 # 5. Assign Admin role to user 08e38bd9-30b0-4183-92c2-fc3b7600a46a
 # 6. Create helper functions (is_admin, get_user_role)
+```
+
+**If you've already run the migration before this update:**
+
+Run [sql/fix_user_profiles_rls_for_admins.sql](sql/fix_user_profiles_rls_for_admins.sql) to add the admin policies:
+
+```sql
+-- This adds two policies:
+-- 1. "Admins can view all profiles" - Allows admins to see all users
+-- 2. "Admins can update any profile" - Allows admins to change user roles
 ```
 
 ### 2. Verify the Migration
@@ -340,6 +371,65 @@ CREATE TABLE role_audit_log (
 
 ## Troubleshooting
 
+### User Management Shows Only Current User OR Settings Menu Disappeared
+
+**Problem:** The User Management section only displays the logged-in admin, not all users. Or the Settings menu disappeared after running the fix.
+
+**Cause:** RLS policy circular dependency. When checking if a user is an admin, the policy queries `user_profiles`, which is itself protected by RLS that checks if the user is admin - creating an infinite loop.
+
+**Solution:** Run the updated [sql/fix_user_profiles_rls_for_admins.sql](sql/fix_user_profiles_rls_for_admins.sql):
+
+```sql
+-- Creates a helper function with SECURITY DEFINER to bypass RLS
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS BOOLEAN AS $$
+DECLARE
+  user_role VARCHAR(50);
+BEGIN
+  SELECT role INTO user_role
+  FROM public.user_profiles
+  WHERE id = auth.uid()
+  LIMIT 1;
+
+  RETURN COALESCE(user_role = 'Admin', FALSE);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Add admin policies using the helper function
+CREATE POLICY "Admins can view all profiles"
+  ON user_profiles FOR SELECT TO authenticated
+  USING (public.is_current_user_admin());
+
+CREATE POLICY "Admins can update any profile"
+  ON user_profiles FOR UPDATE TO authenticated
+  USING (public.is_current_user_admin())
+  WITH CHECK (public.is_current_user_admin());
+```
+
+**The fix script automatically:**
+1. Drops any existing conflicting policies
+2. Creates the helper function with SECURITY DEFINER
+3. Creates new policies using the helper function
+4. Avoids circular dependency by bypassing RLS in the helper function
+
+**Verify:**
+```sql
+-- Check helper function exists
+SELECT proname FROM pg_proc WHERE proname = 'is_current_user_admin';
+-- Should return: is_current_user_admin
+
+-- Check RLS policies exist
+SELECT policyname FROM pg_policies WHERE tablename = 'user_profiles';
+-- Should show: "Admins can view all profiles" and "Admins can update any profile"
+
+-- Test as admin - should return all users
+SELECT id, role FROM user_profiles;
+
+-- Test the helper function
+SELECT public.is_current_user_admin();
+-- Should return: true (if you're an admin)
+```
+
 ### User Profile Not Created
 ```sql
 -- Manually create profile for a user
@@ -361,6 +451,105 @@ WHERE id = 'user-uuid-here';
 SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
 ```
 
+### Check RLS Policies
+```sql
+-- View all policies on user_profiles table
+SELECT schemaname, tablename, policyname, permissive, roles, cmd
+FROM pg_policies
+WHERE tablename = 'user_profiles';
+```
+
+## User Management Interface
+
+The Settings page includes a comprehensive User Management section for admins:
+
+### Features
+
+**User List Table:**
+- Displays all user accounts with Email, User ID, role, and join date
+- Email shown prominently in first column
+- User ID truncated for readability (full ID in tooltip)
+- Current user highlighted with "You" badge
+- Admin roles shown with purple badge and shield icon
+
+**Search & Filter:**
+- Real-time search by Email or User ID
+- Instantly filter the user list as you type
+- Searches across both email and ID fields
+
+**Role Management:**
+- Dropdown to change user roles (User/Admin)
+- Cannot modify your own role (safety measure)
+- Confirmation dialog before role changes
+- Success/error alerts after operations
+
+**Visual Design:**
+- Collapsible section with purple theme
+- "Admin Only" badge on section header
+- Hover effects on rows for better UX
+- Loading spinner during data fetch
+- Refresh button to reload user list
+
+### Access Control
+
+The User Management section is:
+- Only visible to Admin users
+- Protected at the Settings page level (non-admins can't access)
+- Uses RLS policies to ensure data security
+- Validates admin status before allowing role changes
+
+### Technical Implementation
+
+**Database View for Email Display:**
+
+The system uses a database view to join `user_profiles` with `auth.users` to display emails:
+
+```sql
+CREATE VIEW public.user_profiles_with_email AS
+SELECT
+  up.id,
+  up.role,
+  up.created_at,
+  up.updated_at,
+  au.email
+FROM public.user_profiles up
+LEFT JOIN auth.users au ON up.id = au.id;
+```
+
+**Benefits:**
+- No need for service role key in client
+- RLS policies automatically apply (admins see all, users see only their own)
+- Email data always in sync with auth.users
+- Simple to query from the application
+
+**Application Code:**
+
+Located in [src/app/dashboard/settings/page.tsx](src/app/dashboard/settings/page.tsx):
+
+```typescript
+// Fetch users from view that includes emails
+const fetchUsers = async () => {
+  const { data, error } = await supabase
+    .from('user_profiles_with_email')  // View that joins with auth.users
+    .select('*')
+    .order('created_at', { ascending: false })
+  // ...
+}
+
+// Handle role changes
+const handleRoleChange = async (targetUserId: string, newRole: 'User' | 'Admin') => {
+  if (targetUserId === userId) {
+    alert('You cannot change your own role.')
+    return
+  }
+  // Update role in database
+  await supabase
+    .from('user_profiles')
+    .update({ role: newRole, updated_at: new Date().toISOString() })
+    .eq('id', targetUserId)
+}
+```
+
 ## Summary
 
 The role-based access control system provides:
@@ -368,9 +557,10 @@ The role-based access control system provides:
 - ✅ Automatic profile creation for new users
 - ✅ Database-level security with RLS
 - ✅ Admin-only access to Settings page
+- ✅ User Management UI in Settings page
 - ✅ Visual role indicators in UI
 - ✅ Comprehensive auth utility functions
-- ✅ Easy role management via SQL
+- ✅ Easy role management via UI or SQL
 - ✅ Future-proof architecture for additional roles
 
 For questions or issues, refer to [src/lib/auth.ts](src/lib/auth.ts) for implementation details.

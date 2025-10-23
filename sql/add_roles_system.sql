@@ -18,6 +18,22 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
 -- Step 3: Enable RLS on user_profiles table
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
+-- Step 3.5: Create helper function to check admin status WITHOUT RLS recursion
+-- Uses SECURITY DEFINER to bypass RLS when checking role
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS BOOLEAN AS $$
+DECLARE
+  user_role VARCHAR(50);
+BEGIN
+  SELECT role INTO user_role
+  FROM public.user_profiles
+  WHERE id = auth.uid()
+  LIMIT 1;
+
+  RETURN COALESCE(user_role = 'Admin', FALSE);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Step 4: Create RLS policies for user_profiles
 -- Users can read their own profile
 CREATE POLICY "Users can view own profile"
@@ -26,6 +42,13 @@ CREATE POLICY "Users can view own profile"
   TO authenticated
   USING (auth.uid() = id);
 
+-- Admins can view all profiles (uses helper function to avoid RLS recursion)
+CREATE POLICY "Admins can view all profiles"
+  ON user_profiles
+  FOR SELECT
+  TO authenticated
+  USING (public.is_current_user_admin());
+
 -- Users can insert their own profile (for new user registration)
 CREATE POLICY "Users can create own profile"
   ON user_profiles
@@ -33,13 +56,21 @@ CREATE POLICY "Users can create own profile"
   TO authenticated
   WITH CHECK (auth.uid() = id);
 
--- Users can update their own profile (but role changes should be restricted in application logic)
+-- Users can update their own profile
 CREATE POLICY "Users can update own profile"
   ON user_profiles
   FOR UPDATE
   TO authenticated
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
+
+-- Admins can update any user profile (uses helper function to avoid RLS recursion)
+CREATE POLICY "Admins can update any profile"
+  ON user_profiles
+  FOR UPDATE
+  TO authenticated
+  USING (public.is_current_user_admin())
+  WITH CHECK (public.is_current_user_admin());
 
 -- Step 5: Create function to automatically create user profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -91,6 +122,47 @@ BEGIN
   WHERE id = user_id;
 
   RETURN COALESCE(user_role, 'User');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Step 11: Create function to fetch user profiles with emails
+-- This function joins user_profiles with auth.users to show emails in the User Management UI
+-- Uses SECURITY DEFINER to bypass RLS and access auth.users
+CREATE OR REPLACE FUNCTION public.get_users_with_email()
+RETURNS TABLE (
+  id UUID,
+  role VARCHAR(50),
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  email TEXT
+) AS $$
+BEGIN
+  -- Check if current user is admin
+  IF NOT public.is_current_user_admin() THEN
+    -- Non-admins can only see their own profile
+    RETURN QUERY
+    SELECT
+      up.id,
+      up.role,
+      up.created_at,
+      up.updated_at,
+      au.email::TEXT
+    FROM public.user_profiles up
+    LEFT JOIN auth.users au ON up.id = au.id
+    WHERE up.id = auth.uid();
+  ELSE
+    -- Admins can see all profiles
+    RETURN QUERY
+    SELECT
+      up.id,
+      up.role,
+      up.created_at,
+      up.updated_at,
+      au.email::TEXT
+    FROM public.user_profiles up
+    LEFT JOIN auth.users au ON up.id = au.id
+    ORDER BY up.created_at DESC;
+  END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
