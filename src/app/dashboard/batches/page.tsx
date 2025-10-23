@@ -43,6 +43,7 @@ export default function BatchesPage() {
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'planning' | 'selection'>('planning')
   const [formData, setFormData] = useState<FormData>({
     batch_name: '',
     mother_queen_id: '',
@@ -181,20 +182,53 @@ export default function BatchesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">QueenCraft 🥚</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
-        >
-          {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? 'Cancel' : 'New QueenCraft'}
-        </button>
+        {activeTab === 'planning' && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
+          >
+            {showForm ? <X size={16} /> : <Plus size={16} />}
+            {showForm ? 'Cancel' : 'New QueenCraft'}
+          </button>
+        )}
       </div>
 
-      {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">
-            {editingBatch ? 'Edit QueenCraft' : 'Create New QueenCraft'}
-          </h3>
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setActiveTab('planning')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'planning'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Planning
+            </button>
+            <button
+              onClick={() => setActiveTab('selection')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'selection'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Selection
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Planning Tab Content */}
+      {activeTab === 'planning' && (
+        <>
+          {showForm && (
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h3 className="text-xl font-semibold mb-4">
+                {editingBatch ? 'Edit QueenCraft' : 'Create New QueenCraft'}
+              </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Batch Name *</label>
@@ -288,10 +322,10 @@ export default function BatchesPage() {
               </button>
             </div>
           </form>
-        </div>
-      )}
+            </div>
+          )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -335,7 +369,19 @@ export default function BatchesPage() {
         {batches.length === 0 && (
           <div className="text-center py-8 text-gray-500">No QueenCraft found. Create your first QueenCraft!</div>
         )}
-      </div>
+          </div>
+        </>
+      )}
+
+      {/* Selection Tab Content */}
+      {activeTab === 'selection' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-2">Selection tools coming soon</p>
+            <p className="text-gray-400 text-sm">Track and select the best performing queens from your batches</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
