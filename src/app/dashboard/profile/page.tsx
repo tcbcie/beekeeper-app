@@ -36,7 +36,7 @@ export default function ProfilePage() {
       setLoading(false)
     }
     initUser()
-  }, [])
+  }, [router])
 
   if (loading) {
     return (

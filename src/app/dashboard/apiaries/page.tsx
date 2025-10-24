@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X } from 'lucide-react'
@@ -39,20 +39,7 @@ export default function ApiariesPage() {
     notes: '',
   })
 
-  useEffect(() => {
-    const initUser = async () => {
-      const id = await getCurrentUserId()
-      if (!id) {
-        router.push('/login')
-        return
-      }
-      setUserId(id)
-      fetchApiaries(id)
-    }
-    initUser()
-  }, [])
-
-  const fetchApiaries = async (userIdParam?: string) => {
+  const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
@@ -64,7 +51,20 @@ export default function ApiariesPage() {
 
     if (data) setApiaries(data)
     setLoading(false)
-  }
+  }, [userId])
+
+  useEffect(() => {
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchApiaries(id)
+    }
+    initUser()
+  }, [router, fetchApiaries])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

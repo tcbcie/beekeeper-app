@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function ForgotPassword() {
@@ -10,7 +9,6 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const router = useRouter()
 
   const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,8 +25,8 @@ export default function ForgotPassword() {
 
       setMessage('Password reset instructions have been sent to your email.')
       setEmail('')
-    } catch (error: any) {
-      setError(error.message || 'An error occurred. Please try again.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -41,7 +39,7 @@ export default function ForgotPassword() {
           <h1 className="text-3xl font-bold text-amber-600 mb-2">🐝 Hive Craic</h1>
           <h2 className="text-xl font-semibold text-gray-700">Reset Password</h2>
           <p className="text-gray-600 mt-2">
-            Enter your email address and we'll send you instructions to reset your password.
+            Enter your email address and we&apos;ll send you instructions to reset your password.
           </p>
         </div>
 

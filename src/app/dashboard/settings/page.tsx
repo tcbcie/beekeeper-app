@@ -38,7 +38,6 @@ interface UserProfile {
 export default function SettingsPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
-  const [isAdminUser, setIsAdminUser] = useState(false)
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
@@ -54,6 +53,13 @@ export default function SettingsPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [userSearch, setUserSearch] = useState('')
   const [loadingUsers, setLoadingUsers] = useState(false)
+
+  // Support Tickets state
+  const [showTicketManagement, setShowTicketManagement] = useState(false)
+  const [tickets, setTickets] = useState<any[]>([])
+  const [loadingTickets, setLoadingTickets] = useState(false)
+  const [editingTicket, setEditingTicket] = useState<any | null>(null)
+  const [ticketFilter, setTicketFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved' | 'closed'>('open')
 
   const [categoryFormData, setCategoryFormData] = useState({
     category_name: '',
@@ -77,7 +83,6 @@ export default function SettingsPage() {
 
       // Check if user has admin access
       const adminAccess = await isAdmin()
-      setIsAdminUser(adminAccess)
 
       if (!adminAccess) {
         setAccessDenied(true)
@@ -88,7 +93,7 @@ export default function SettingsPage() {
       fetchCategories()
     }
     initUser()
-  }, [])
+  }, [router])
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -297,7 +302,141 @@ export default function SettingsPage() {
     if (showUserManagement && users.length === 0) {
       fetchUsers()
     }
-  }, [showUserManagement])
+  }, [showUserManagement, users.length])
+
+  // Fetch tickets when ticket management section is opened
+  useEffect(() => {
+    if (showTicketManagement) {
+      fetchTickets()
+    }
+  }, [showTicketManagement, ticketFilter])
+
+  const fetchTickets = async () => {
+    setLoadingTickets(true)
+    try {
+      // First, try to fetch tickets without joins to check if table exists
+      let query = supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (ticketFilter !== 'all') {
+        query = query.eq('status', ticketFilter)
+      }
+
+      const { data: ticketsData, error: ticketsError } = await query
+
+      if (ticketsError) {
+        // Check if it's a table not found error
+        if (ticketsError.message?.includes('relation "support_tickets" does not exist') ||
+            ticketsError.code === '42P01') {
+          console.error('Support tickets table does not exist. Please run the migration.')
+          alert('Support tickets table not found. Please run the SQL migration: sql/create_support_tickets.sql')
+          setTickets([])
+          return
+        }
+        console.error('Error details:', ticketsError)
+        throw ticketsError
+      }
+
+      // If we have tickets, enrich them with user email data
+      if (ticketsData && ticketsData.length > 0) {
+        const enrichedTickets = await Promise.all(
+          ticketsData.map(async (ticket) => {
+            // Fetch user email
+            const { data: userProfile } = await supabase
+              .from('user_profiles')
+              .select('email')
+              .eq('id', ticket.user_id)
+              .single()
+
+            // Fetch resolver email if exists
+            let resolverProfile = null
+            if (ticket.resolved_by) {
+              const { data } = await supabase
+                .from('user_profiles')
+                .select('email')
+                .eq('id', ticket.resolved_by)
+                .single()
+              resolverProfile = data
+            }
+
+            return {
+              ...ticket,
+              user_profiles: userProfile,
+              resolver: resolverProfile,
+            }
+          })
+        )
+        setTickets(enrichedTickets)
+      } else {
+        setTickets([])
+      }
+    } catch (error) {
+      console.error('Error fetching tickets:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Full error details:', error)
+      alert(`Failed to fetch tickets: ${errorMessage}\n\nCheck browser console for details.`)
+      setTickets([])
+    } finally {
+      setLoadingTickets(false)
+    }
+  }
+
+  const handleTicketUpdate = async (ticketId: string, updates: any) => {
+    try {
+      const updateData: any = { ...updates }
+
+      // Set resolved_by and resolved_at if status is being set to resolved or closed
+      if (updates.status === 'resolved' || updates.status === 'closed') {
+        updateData.resolved_by = userId
+        updateData.resolved_at = new Date().toISOString()
+      }
+
+      console.log('Updating ticket with data:', updateData)
+
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .update(updateData)
+        .eq('id', ticketId)
+        .select()
+
+      if (error) {
+        console.error('Update error:', error)
+        throw error
+      }
+
+      console.log('Update successful:', data)
+      alert('Ticket updated successfully!')
+      fetchTickets()
+      setEditingTicket(null)
+    } catch (error) {
+      console.error('Error updating ticket:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to update ticket: ${errorMessage}\n\nCheck browser console for details.`)
+    }
+  }
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .delete()
+        .eq('id', ticketId)
+
+      if (error) throw error
+
+      alert('Ticket deleted successfully!')
+      fetchTickets()
+    } catch (error) {
+      console.error('Error deleting ticket:', error)
+      alert('Failed to delete ticket.')
+    }
+  }
 
   const exportDatabase = async () => {
     setExporting(true)
@@ -419,6 +558,260 @@ export default function SettingsPage() {
           {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
           {showCategoryForm ? 'Cancel' : 'Add Category'}
         </button>
+      </div>
+
+      {/* Support Ticket Management Section - Collapsible */}
+      <div className="bg-white rounded-lg shadow">
+        <div
+          className="p-6 cursor-pointer"
+          onClick={() => setShowTicketManagement(!showTicketManagement)}
+        >
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-between">
+            Support Ticket Management
+            <span className="text-xl">{showTicketManagement ? '−' : '+'}</span>
+          </h2>
+          <p className="text-gray-600 mt-2">Manage and respond to user support tickets</p>
+        </div>
+
+        {showTicketManagement && (
+          <div className="px-6 pb-6 space-y-4">
+            {/* Filter Buttons */}
+            <div className="flex flex-wrap gap-2">
+              {['all', 'open', 'in_progress', 'resolved', 'closed'].map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setTicketFilter(filter as any)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    ticketFilter === filter
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {filter.replace('_', ' ').toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {/* Tickets List */}
+            {loadingTickets ? (
+              <div className="text-center py-8">
+                <LoadingSpinner text="Loading tickets..." />
+              </div>
+            ) : tickets.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No tickets found for this filter.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {tickets.map((ticket: any) => (
+                  <div key={ticket.id} className="border rounded-lg p-4 bg-gray-50">
+                    {editingTicket?.id === ticket.id ? (
+                      /* Edit Form */
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Status
+                            </label>
+                            <select
+                              value={editingTicket.status}
+                              onChange={(e) =>
+                                setEditingTicket({ ...editingTicket, status: e.target.value })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                              <option value="open">Open</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="resolved">Resolved</option>
+                              <option value="closed">Closed</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Priority
+                            </label>
+                            <select
+                              value={editingTicket.priority}
+                              onChange={(e) =>
+                                setEditingTicket({ ...editingTicket, priority: e.target.value })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                              <option value="low">Low</option>
+                              <option value="normal">Normal</option>
+                              <option value="high">High</option>
+                              <option value="urgent">Urgent</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Admin Notes (visible to user)
+                          </label>
+                          <textarea
+                            value={editingTicket.admin_notes || ''}
+                            onChange={(e) =>
+                              setEditingTicket({ ...editingTicket, admin_notes: e.target.value })
+                            }
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="Response to the user..."
+                          />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              handleTicketUpdate(ticket.id, {
+                                status: editingTicket.status,
+                                priority: editingTicket.priority,
+                                admin_notes: editingTicket.admin_notes,
+                              })
+                            }
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            Save Changes
+                          </button>
+                          <button
+                            onClick={() => setEditingTicket(null)}
+                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Display Mode */
+                      <div>
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {ticket.subject}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              From: {ticket.user_profiles?.email || 'Unknown'} |{' '}
+                              {new Date(ticket.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setEditingTicket(ticket)}
+                              className="text-blue-600 hover:text-blue-900 text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTicket(ticket.id)}
+                              className="text-red-600 hover:text-red-900 text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              ticket.status === 'open'
+                                ? 'bg-blue-100 text-blue-800'
+                                : ticket.status === 'in_progress'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : ticket.status === 'resolved'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {ticket.status.replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              ticket.priority === 'urgent'
+                                ? 'bg-red-100 text-red-600'
+                                : ticket.priority === 'high'
+                                ? 'bg-orange-100 text-orange-600'
+                                : ticket.priority === 'normal'
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {ticket.priority.toUpperCase()}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              ticket.ticket_type === 'problem'
+                                ? 'bg-red-100 text-red-600'
+                                : 'bg-blue-100 text-blue-600'
+                            }`}
+                          >
+                            {ticket.ticket_type.toUpperCase()}
+                          </span>
+                        </div>
+
+                        <p className="text-gray-700 mb-3 whitespace-pre-wrap">
+                          {ticket.description}
+                        </p>
+
+                        {ticket.admin_notes && (
+                          <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-2">
+                            <p className="text-sm font-semibold text-blue-900 mb-1">
+                              Your Response:
+                            </p>
+                            <p className="text-sm text-blue-800 whitespace-pre-wrap">
+                              {ticket.admin_notes}
+                            </p>
+                          </div>
+                        )}
+
+                        {ticket.resolved_by && (
+                          <p className="text-xs text-gray-500">
+                            Resolved by: {ticket.resolver?.email || 'Unknown'} on{' '}
+                            {new Date(ticket.resolved_at).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Statistics */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
+              <h4 className="font-semibold text-gray-900 mb-2">Ticket Statistics</h4>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Total:</span>
+                  <span className="ml-2 font-bold">{tickets.length}</span>
+                </div>
+                <div>
+                  <span className="text-blue-600">Open:</span>
+                  <span className="ml-2 font-bold">
+                    {tickets.filter((t: any) => t.status === 'open').length}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-yellow-600">In Progress:</span>
+                  <span className="ml-2 font-bold">
+                    {tickets.filter((t: any) => t.status === 'in_progress').length}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-green-600">Resolved:</span>
+                  <span className="ml-2 font-bold">
+                    {tickets.filter((t: any) => t.status === 'resolved').length}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Closed:</span>
+                  <span className="ml-2 font-bold">
+                    {tickets.filter((t: any) => t.status === 'closed').length}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {showCategoryForm && (
@@ -721,7 +1114,7 @@ export default function SettingsPage() {
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No users found. Click "Refresh Users" to load.
+                No users found. Click &quot;Refresh Users&quot; to load.
               </div>
             ) : (
               <div className="overflow-x-auto">
