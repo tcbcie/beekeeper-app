@@ -194,6 +194,19 @@ export default function DashboardPage() {
               <span className="inline-flex items-center gap-1">
                 📍 <strong className="text-blue-700">{userStats.totalApiaries}</strong> apiaries
               </span>
+              {ticketStats.totalTickets > 0 && (
+                <>
+                  <span className="hidden sm:inline text-gray-400">•</span>
+                  <span className="inline-flex items-center gap-1">
+                    🎫 <strong className={ticketStats.openTickets > 0 ? "text-red-700" : "text-blue-700"}>{ticketStats.openTickets}</strong> open tickets
+                    {ticketStats.inProgressTickets > 0 && (
+                      <span className="text-gray-600">
+                        (<strong className="text-yellow-700">{ticketStats.inProgressTickets}</strong> in progress)
+                      </span>
+                    )}
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -204,45 +217,6 @@ export default function DashboardPage() {
           Refresh
         </button>
       </div>
-
-      {/* Support Tickets Widget - Admin Only */}
-      {userRole === 'Admin' && ticketStats.totalTickets > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Support Tickets</h2>
-            <a
-              href="/dashboard/settings"
-              className="text-sm text-blue-600 hover:text-blue-900 font-medium"
-            >
-              Manage →
-            </a>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
-              <div className="text-sm font-medium text-blue-900 mb-1">Open</div>
-              <div className="text-2xl font-bold text-blue-700">{ticketStats.openTickets}</div>
-              <div className="text-xs text-blue-600 mt-1">Need attention</div>
-            </div>
-            <div className="bg-yellow-50 rounded-lg p-4 border-l-4 border-yellow-500">
-              <div className="text-sm font-medium text-yellow-900 mb-1">In Progress</div>
-              <div className="text-2xl font-bold text-yellow-700">{ticketStats.inProgressTickets}</div>
-              <div className="text-xs text-yellow-600 mt-1">Being worked on</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-gray-500">
-              <div className="text-sm font-medium text-gray-900 mb-1">Total</div>
-              <div className="text-2xl font-bold text-gray-700">{ticketStats.totalTickets}</div>
-              <div className="text-xs text-gray-600 mt-1">All time</div>
-            </div>
-          </div>
-          {ticketStats.openTickets > 0 && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-800">
-                <strong>⚠️ Action Required:</strong> You have {ticketStats.openTickets} open ticket{ticketStats.openTickets !== 1 ? 's' : ''} waiting for review.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

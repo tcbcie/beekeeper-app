@@ -113,11 +113,12 @@ export default function QueensPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
+  const [sourceOptions, setSourceOptions] = useState<string[]>([])
   const [formData, setFormData] = useState<FormData>({
     queen_number: '',
     birth_date: '',
     marking_color: '',
-    source: 'bred',
+    source: '',
     subspecies: '',
     lineage: '',
     queen_clipped: false,
@@ -206,6 +207,34 @@ export default function QueensPage() {
     }
   }, [])
 
+  const fetchSourceOptions = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('dropdown_categories')
+      .select(`
+        id,
+        dropdown_values (
+          value,
+          is_active,
+          display_order
+        )
+      `)
+      .eq('category_key', 'queen_source')
+      .single()
+
+    if (!error && data && data.dropdown_values) {
+      interface DropdownValue {
+        is_active: boolean
+        display_order: number
+        value: string
+      }
+      const activeValues = (data.dropdown_values as DropdownValue[])
+        .filter((v) => v.is_active)
+        .sort((a, b) => a.display_order - b.display_order)
+        .map((v) => v.value)
+      setSourceOptions(activeValues)
+    }
+  }, [])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -216,9 +245,10 @@ export default function QueensPage() {
       setUserId(id)
       fetchQueens(id)
       fetchSubspeciesOptions()
+      fetchSourceOptions()
     }
     initUser()
-  }, [router, fetchQueens, fetchSubspeciesOptions])
+  }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions])
 
   // Scroll to highlighted queen when data loads
   useEffect(() => {
@@ -301,7 +331,7 @@ export default function QueensPage() {
       queen_number: '',
       birth_date: '',
       marking_color: '',
-      source: 'bred',
+      source: '',
       subspecies: '',
       lineage: '',
       queen_clipped: false,
@@ -313,14 +343,13 @@ export default function QueensPage() {
 
   const exportCSV = () => {
     const csv = [
-      ['Queen Number', 'Age', 'Color', 'Hive', 'Apiary', 'Lineage', 'Status'],
+      ['Queen Number', 'Age', 'Color', 'Hive', 'Apiary', 'Status'],
       ...filteredQueens.map((q) => [
         q.queen_number,
         calculateQueenAge(q.birth_date),
         q.marking_color,
         q.hives?.hive_number || 'N/A',
         q.hives?.apiaries?.name || 'N/A',
-        q.lineage,
         q.status,
       ]),
     ]
@@ -374,14 +403,13 @@ export default function QueensPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Queen Number *
+                Queen Number
               </label>
               <input
                 type="text"
                 value={formData.queen_number}
                 onChange={(e) => setFormData({ ...formData, queen_number: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
               />
             </div>
 
@@ -428,9 +456,12 @@ export default function QueensPage() {
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
-                <option value="bred">Bred</option>
-                <option value="purchased">Purchased</option>
-                <option value="swarm">Swarm</option>
+                <option value="">Select source</option>
+                {sourceOptions.map((source) => (
+                  <option key={source} value={source}>
+                    {source}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -577,12 +608,6 @@ export default function QueensPage() {
                   Apiary
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Lineage
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Mated at
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Status
                 </th>
               </tr>
@@ -652,12 +677,6 @@ export default function QueensPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                     {queen.hives?.apiaries?.name || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {queen.lineage || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {queen.mated_at_eircode || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
