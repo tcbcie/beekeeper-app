@@ -151,7 +151,7 @@ export default function BatchesPage() {
 
   const handleDelete = async (id: string) => {
     if (!userId) return
-    if (confirm('Are you sure you want to delete this QueenCraft?')) {
+    if (confirm('Are you sure you want to delete this batch?')) {
       const { error } = await supabase
         .from('rearing_batches')
         .delete()
@@ -176,19 +176,19 @@ export default function BatchesPage() {
     })
   }
 
-  if (loading) return <LoadingSpinner text="Loading QueenCraft..." />
+  if (loading) return <LoadingSpinner text="Loading Queen Rearing..." />
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">QueenCraft 🥚</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Queen Rearing 🥚</h1>
         {activeTab === 'planning' && (
           <button
             onClick={() => setShowForm(!showForm)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
           >
             {showForm ? <X size={16} /> : <Plus size={16} />}
-            {showForm ? 'Cancel' : 'New QueenCraft'}
+            {showForm ? 'Cancel' : 'New Batch'}
           </button>
         )}
       </div>
@@ -227,7 +227,7 @@ export default function BatchesPage() {
           {showForm && (
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-xl font-semibold mb-4">
-                {editingBatch ? 'Edit QueenCraft' : 'Create New QueenCraft'}
+                {editingBatch ? 'Edit Batch' : 'Create New Batch'}
               </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

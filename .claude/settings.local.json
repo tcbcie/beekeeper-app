@@ -3,7 +3,8 @@
     "allow": [
       "Bash(find src/app/dashboard -name \"*.tsx\" -exec wc -l {} +)",
       "Bash(npm run lint:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx supabase:*)"
     ],
     "deny": [],
     "ask": []

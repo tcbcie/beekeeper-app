@@ -20,12 +20,11 @@ export default function Sidebar() {
   const baseNavItems = [
     { href: '/dashboard', label: 'Overview', icon: Home },
     { href: '/dashboard/queens', label: 'Queens', icon: Crown },
-    { href: '/dashboard/batches', label: 'QueenCraft', icon: Egg },
+    { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/hives', label: 'Hives', icon: Archive },
     { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
     { href: '/dashboard/inspections', label: 'Inspections', icon: ClipboardList },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
-    { href: '/dashboard/support', label: 'Support', icon: MessageCircle },
     { href: '/dashboard/profile', label: 'Profile', icon: User },
     { href: '/dashboard/about', label: 'About', icon: Info },
   ]
