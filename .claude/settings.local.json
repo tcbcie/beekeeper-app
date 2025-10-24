@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find src/app/dashboard -name \"*.tsx\" -exec wc -l {} +)"
+      "Bash(find src/app/dashboard -name \"*.tsx\" -exec wc -l {} +)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
@@ -58,6 +58,46 @@ export default function FeedingPage() {
     notes: '',
   })
 
+  const fetchFeedings = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('feedings')
+      .select('*, hives(hive_number)')
+      .eq('user_id', currentUserId)
+      .order('feed_date', { ascending: false })
+
+    if (data) setFeedings(data as Feeding[])
+    setLoading(false)
+  }, [userId])
+
+  const fetchHives = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('hives')
+      .select('id, hive_number, apiary_id')
+      .eq('user_id', currentUserId)
+      .order('hive_number')
+
+    if (data) setHives(data as Hive[])
+  }, [userId])
+
+  const fetchApiaries = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('apiaries')
+      .select('id, name')
+      .eq('user_id', currentUserId)
+      .order('name')
+
+    if (data) setApiaries(data as Apiary[])
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -71,47 +111,7 @@ export default function FeedingPage() {
       fetchApiaries(id)
     }
     initUser()
-  }, [])
-
-  const fetchFeedings = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('feedings')
-      .select('*, hives(hive_number)')
-      .eq('user_id', currentUserId)
-      .order('feed_date', { ascending: false })
-
-    if (data) setFeedings(data as Feeding[])
-    setLoading(false)
-  }
-
-  const fetchHives = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('hives')
-      .select('id, hive_number, apiary_id')
-      .eq('user_id', currentUserId)
-      .order('hive_number')
-
-    if (data) setHives(data as Hive[])
-  }
-
-  const fetchApiaries = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('apiaries')
-      .select('id, name')
-      .eq('user_id', currentUserId)
-      .order('name')
-
-    if (data) setApiaries(data as Apiary[])
-  }
+  }, [router, fetchFeedings, fetchHives, fetchApiaries])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

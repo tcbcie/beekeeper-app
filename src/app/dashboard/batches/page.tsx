@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X } from 'lucide-react'
@@ -54,6 +54,34 @@ export default function BatchesPage() {
     notes: '',
   })
 
+  const fetchBatches = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('rearing_batches')
+      .select('*, queens(queen_number)')
+      .eq('user_id', currentUserId)
+      .order('graft_date', { ascending: false })
+
+    if (data) setBatches(data)
+    setLoading(false)
+  }, [userId])
+
+  const fetchQueens = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('queens')
+      .select('id, queen_number')
+      .eq('status', 'active')
+      .eq('user_id', currentUserId)
+      .order('queen_number')
+
+    if (data) setQueens(data)
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -66,35 +94,7 @@ export default function BatchesPage() {
       fetchQueens(id)
     }
     initUser()
-  }, [])
-
-  const fetchBatches = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('rearing_batches')
-      .select('*, queens(queen_number)')
-      .eq('user_id', currentUserId)
-      .order('graft_date', { ascending: false })
-
-    if (data) setBatches(data)
-    setLoading(false)
-  }
-
-  const fetchQueens = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('queens')
-      .select('id, queen_number')
-      .eq('status', 'active')
-      .eq('user_id', currentUserId)
-      .order('queen_number')
-
-    if (data) setQueens(data)
-  }
+  }, [router, fetchBatches, fetchQueens])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -18,7 +18,7 @@ export default function ToolsPage() {
       setUserId(id)
     }
     initUser()
-  }, [])
+  }, [router])
 
   if (!userId) {
     return (
@@ -97,7 +97,7 @@ export default function ToolsPage() {
           More Tools Coming Soon
         </h3>
         <p className="text-blue-700">
-          We're actively developing new tools to help you manage your beekeeping operations more efficiently.
+          We&apos;re actively developing new tools to help you manage your beekeeping operations more efficiently.
           Check back soon for updates!
         </p>
       </div>

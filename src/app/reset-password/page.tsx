@@ -64,8 +64,8 @@ export default function ResetPassword() {
         await supabase.auth.signOut()
         router.push('/login')
       }, 2000)
-    } catch (error: any) {
-      setError(error.message || 'An error occurred. Please try again.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

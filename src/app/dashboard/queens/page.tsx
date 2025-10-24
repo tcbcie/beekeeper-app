@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -126,43 +126,7 @@ export default function QueensPage() {
     mated_at_eircode: '',
   })
 
-  useEffect(() => {
-    const initUser = async () => {
-      const id = await getCurrentUserId()
-      if (!id) {
-        router.push('/login')
-        return
-      }
-      setUserId(id)
-      fetchQueens(id)
-      fetchSubspeciesOptions()
-    }
-    initUser()
-  }, [])
-
-  // Scroll to highlighted queen when data loads
-  useEffect(() => {
-    if (highlightedQueenId && queens.length > 0) {
-      const queenElement = queenRefs.current[highlightedQueenId]
-      if (queenElement) {
-        setTimeout(() => {
-          queenElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }, 100)
-      }
-    }
-  }, [highlightedQueenId, queens])
-
-  // Auto-calculate color when birth date changes
-  useEffect(() => {
-    if (formData.birth_date) {
-      const calculatedColor = getQueenColorFromYear(formData.birth_date)
-      if (calculatedColor && calculatedColor !== formData.marking_color) {
-        setFormData(prev => ({ ...prev, marking_color: calculatedColor }))
-      }
-    }
-  }, [formData.birth_date, formData.marking_color])
-
-  const fetchQueens = async (userIdParam?: string) => {
+  const fetchQueens = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
@@ -212,9 +176,9 @@ export default function QueensPage() {
     }
 
     setLoading(false)
-  }
+  }, [userId])
 
-  const fetchSubspeciesOptions = async () => {
+  const fetchSubspeciesOptions = useCallback(async () => {
     const { data, error } = await supabase
       .from('dropdown_categories')
       .select(`
@@ -240,7 +204,43 @@ export default function QueensPage() {
         .map((v) => v.value)
       setSubspeciesOptions(activeValues)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchQueens(id)
+      fetchSubspeciesOptions()
+    }
+    initUser()
+  }, [router, fetchQueens, fetchSubspeciesOptions])
+
+  // Scroll to highlighted queen when data loads
+  useEffect(() => {
+    if (highlightedQueenId && queens.length > 0) {
+      const queenElement = queenRefs.current[highlightedQueenId]
+      if (queenElement) {
+        setTimeout(() => {
+          queenElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 100)
+      }
+    }
+  }, [highlightedQueenId, queens])
+
+  // Auto-calculate color when birth date changes
+  useEffect(() => {
+    if (formData.birth_date) {
+      const calculatedColor = getQueenColorFromYear(formData.birth_date)
+      if (calculatedColor && calculatedColor !== formData.marking_color) {
+        setFormData(prev => ({ ...prev, marking_color: calculatedColor }))
+      }
+    }
+  }, [formData.birth_date, formData.marking_color])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
