@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, MessageCircle } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 
 export default function Sidebar() {

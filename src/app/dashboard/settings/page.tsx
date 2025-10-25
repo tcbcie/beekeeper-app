@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database, Shield, Users, Search } from 'lucide-react'
@@ -35,6 +35,35 @@ interface UserProfile {
   email?: string
 }
 
+interface SupportTicket {
+  id: string
+  user_id: string
+  ticket_type: 'problem' | 'suggestion'
+  subject: string
+  description: string
+  status: 'open' | 'in_progress' | 'resolved' | 'closed'
+  priority: 'low' | 'normal' | 'high' | 'urgent'
+  admin_notes: string | null
+  resolved_by?: string | null
+  resolved_at?: string | null
+  created_at: string
+  updated_at: string
+  user_profiles?: {
+    email: string
+  } | null
+  resolver?: {
+    email: string
+  } | null
+}
+
+interface TicketUpdate {
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed'
+  priority?: 'low' | 'normal' | 'high' | 'urgent'
+  admin_notes?: string
+  resolved_by?: string
+  resolved_at?: string
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
@@ -56,9 +85,9 @@ export default function SettingsPage() {
 
   // Support Tickets state
   const [showTicketManagement, setShowTicketManagement] = useState(false)
-  const [tickets, setTickets] = useState<any[]>([])
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [loadingTickets, setLoadingTickets] = useState(false)
-  const [editingTicket, setEditingTicket] = useState<any | null>(null)
+  const [editingTicket, setEditingTicket] = useState<SupportTicket | null>(null)
   const [ticketFilter, setTicketFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved' | 'closed'>('open')
 
   const [categoryFormData, setCategoryFormData] = useState({
@@ -304,14 +333,7 @@ export default function SettingsPage() {
     }
   }, [showUserManagement, users.length])
 
-  // Fetch tickets when ticket management section is opened
-  useEffect(() => {
-    if (showTicketManagement) {
-      fetchTickets()
-    }
-  }, [showTicketManagement, ticketFilter])
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     setLoadingTickets(true)
     try {
       // First, try to fetch tickets without joins to check if table exists
@@ -381,15 +403,22 @@ export default function SettingsPage() {
     } finally {
       setLoadingTickets(false)
     }
-  }
+  }, [ticketFilter])
 
-  const handleTicketUpdate = async (ticketId: string, updates: any) => {
+  // Fetch tickets when ticket management section is opened
+  useEffect(() => {
+    if (showTicketManagement) {
+      fetchTickets()
+    }
+  }, [showTicketManagement, fetchTickets])
+
+  const handleTicketUpdate = async (ticketId: string, updates: TicketUpdate) => {
     try {
-      const updateData: any = { ...updates }
+      const updateData: TicketUpdate & { resolved_by?: string; resolved_at?: string } = { ...updates }
 
       // Set resolved_by and resolved_at if status is being set to resolved or closed
       if (updates.status === 'resolved' || updates.status === 'closed') {
-        updateData.resolved_by = userId
+        updateData.resolved_by = userId || undefined
         updateData.resolved_at = new Date().toISOString()
       }
 
@@ -577,10 +606,10 @@ export default function SettingsPage() {
           <div className="px-6 pb-6 space-y-4">
             {/* Filter Buttons */}
             <div className="flex flex-wrap gap-2">
-              {['all', 'open', 'in_progress', 'resolved', 'closed'].map((filter) => (
+              {(['all', 'open', 'in_progress', 'resolved', 'closed'] as const).map((filter) => (
                 <button
                   key={filter}
-                  onClick={() => setTicketFilter(filter as any)}
+                  onClick={() => setTicketFilter(filter)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     ticketFilter === filter
                       ? 'bg-blue-600 text-white'
@@ -603,7 +632,7 @@ export default function SettingsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {tickets.map((ticket: any) => (
+                {tickets.map((ticket) => (
                   <div key={ticket.id} className="border rounded-lg p-4 bg-gray-50">
                     {editingTicket?.id === ticket.id ? (
                       /* Edit Form */
@@ -787,25 +816,25 @@ export default function SettingsPage() {
                 <div>
                   <span className="text-blue-600">Open:</span>
                   <span className="ml-2 font-bold">
-                    {tickets.filter((t: any) => t.status === 'open').length}
+                    {tickets.filter((t) => t.status === 'open').length}
                   </span>
                 </div>
                 <div>
                   <span className="text-yellow-600">In Progress:</span>
                   <span className="ml-2 font-bold">
-                    {tickets.filter((t: any) => t.status === 'in_progress').length}
+                    {tickets.filter((t) => t.status === 'in_progress').length}
                   </span>
                 </div>
                 <div>
                   <span className="text-green-600">Resolved:</span>
                   <span className="ml-2 font-bold">
-                    {tickets.filter((t: any) => t.status === 'resolved').length}
+                    {tickets.filter((t) => t.status === 'resolved').length}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Closed:</span>
                   <span className="ml-2 font-bold">
-                    {tickets.filter((t: any) => t.status === 'closed').length}
+                    {tickets.filter((t) => t.status === 'closed').length}
                   </span>
                 </div>
               </div>

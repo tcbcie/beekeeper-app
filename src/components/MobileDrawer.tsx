@@ -1,7 +1,7 @@
 'use client'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info, MessageCircle } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
@@ -64,6 +64,34 @@ export default function VarroaTreatmentPage() {
     notes: '',
   })
 
+  const fetchTreatments = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('varroa_treatments')
+      .select('*, hives(hive_number)')
+      .eq('user_id', currentUserId)
+      .order('treatment_date', { ascending: false })
+
+    if (data) setTreatments(data as VarroaTreatment[])
+    setLoading(false)
+  }, [userId])
+
+  const fetchHives = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('hives')
+      .select('id, hive_number')
+      .eq('status', 'active')
+      .eq('user_id', currentUserId)
+      .order('hive_number')
+
+    if (data) setHives(data as Hive[])
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -77,35 +105,7 @@ export default function VarroaTreatmentPage() {
       fetchProductNames()
     }
     initUser()
-  }, [])
-
-  const fetchTreatments = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('varroa_treatments')
-      .select('*, hives(hive_number)')
-      .eq('user_id', currentUserId)
-      .order('treatment_date', { ascending: false })
-
-    if (data) setTreatments(data as VarroaTreatment[])
-    setLoading(false)
-  }
-
-  const fetchHives = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('hives')
-      .select('id, hive_number')
-      .eq('status', 'active')
-      .eq('user_id', currentUserId)
-      .order('hive_number')
-
-    if (data) setHives(data as Hive[])
-  }
+  }, [router, fetchTreatments, fetchHives])
 
   const fetchProductNames = async () => {
     const { data: category } = await supabase

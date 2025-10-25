@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
@@ -56,6 +56,34 @@ export default function VarroaCheckPage() {
     notes: '',
   })
 
+  const fetchChecks = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('varroa_checks')
+      .select('*, hives(hive_number)')
+      .eq('user_id', currentUserId)
+      .order('check_date', { ascending: false })
+
+    if (data) setChecks(data as VarroaCheck[])
+    setLoading(false)
+  }, [userId])
+
+  const fetchHives = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('hives')
+      .select('id, hive_number')
+      .eq('status', 'active')
+      .eq('user_id', currentUserId)
+      .order('hive_number')
+
+    if (data) setHives(data as Hive[])
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -68,7 +96,7 @@ export default function VarroaCheckPage() {
       fetchHives(id)
     }
     initUser()
-  }, [])
+  }, [router, fetchChecks, fetchHives])
 
   useEffect(() => {
     // Auto-calculate infestation rate if both counts are provided
@@ -84,34 +112,6 @@ export default function VarroaCheckPage() {
       setFormData(prev => ({...prev, infestation_rate: parseFloat(rate.toFixed(2))}))
     }
   }, [formData.mites_count, formData.sample_size, formData.method])
-
-  const fetchChecks = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('varroa_checks')
-      .select('*, hives(hive_number)')
-      .eq('user_id', currentUserId)
-      .order('check_date', { ascending: false })
-
-    if (data) setChecks(data as VarroaCheck[])
-    setLoading(false)
-  }
-
-  const fetchHives = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data } = await supabase
-      .from('hives')
-      .select('id, hive_number')
-      .eq('status', 'active')
-      .eq('user_id', currentUserId)
-      .order('hive_number')
-
-    if (data) setHives(data as Hive[])
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

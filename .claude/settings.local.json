@@ -4,7 +4,11 @@
       "Bash(find src/app/dashboard -name \"*.tsx\" -exec wc -l {} +)",
       "Bash(npm run lint:*)",
       "Bash(npm run build:*)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(git log:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
