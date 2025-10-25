@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ChevronDown, HelpCircle, Camera, X } from 'lucide-react'
@@ -122,34 +122,7 @@ export default function InspectionsPage() {
     image_url: null,
   })
 
-  useEffect(() => {
-    const initUser = async () => {
-      const id = await getCurrentUserId()
-      if (!id) {
-        router.push('/login')
-        return
-      }
-      setUserId(id)
-      fetchInspections(id)
-      fetchHives(id)
-      fetchApiaries(id)
-    }
-    initUser()
-  }, [])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (showDropdown && !target.closest('.dropdown-container')) {
-        setShowDropdown(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showDropdown])
-
-  const fetchInspections = async (userIdParam?: string) => {
+  const fetchInspections = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
@@ -173,9 +146,9 @@ export default function InspectionsPage() {
 
     if (data) setInspections(data as Inspection[])
     setLoading(false)
-  }
+  }, [userId])
 
-  const fetchHives = async (userIdParam?: string) => {
+  const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
@@ -192,9 +165,9 @@ export default function InspectionsPage() {
     if (data) {
       setHives(data as Hive[])
     }
-  }
+  }, [userId])
 
-  const fetchApiaries = async (userIdParam?: string) => {
+  const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
@@ -205,7 +178,34 @@ export default function InspectionsPage() {
       .order('name')
 
     if (data) setApiaries(data as Apiary[])
-  }
+  }, [userId])
+
+  useEffect(() => {
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
+      }
+      setUserId(id)
+      fetchInspections(id)
+      fetchHives(id)
+      fetchApiaries(id)
+    }
+    initUser()
+  }, [router, fetchInspections, fetchHives, fetchApiaries])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (showDropdown && !target.closest('.dropdown-container')) {
+        setShowDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showDropdown])
 
   const fetchLastInspection = async (hiveId: string) => {
     if (!hiveId || !userId) {

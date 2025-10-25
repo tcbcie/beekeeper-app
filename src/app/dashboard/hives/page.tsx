@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, X, ExternalLink } from 'lucide-react'
@@ -116,6 +116,117 @@ export default function HivesPage() {
     },
   })
 
+  const fetchHives = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    // Try without joins first to see if we can get basic hive data
+    const { data, error } = await supabase
+      .from('hives')
+      .select('*')
+      .eq('user_id', currentUserId)
+      .order('hive_number')
+
+    console.log('Fetch hives response:', { data, error })
+
+    if (error) {
+      console.error('Error fetching hives:', error)
+      alert(`Error loading hives: ${error.message}`)
+    } else {
+      console.log('Hives data received:', data)
+      console.log('Number of hives:', data?.length || 0)
+
+      // If we have hives, try to enrich them with apiary and queen data
+      if (data && data.length > 0) {
+        const enrichedHives = await Promise.all(
+          data.map(async (hive) => {
+            let apiaryName = null
+            let queenNumber = null
+
+            // Fetch apiary if exists
+            if (hive.apiary_id) {
+              const { data: apiaryData } = await supabase
+                .from('apiaries')
+                .select('name')
+                .eq('id', hive.apiary_id)
+                .eq('user_id', currentUserId)
+                .single()
+              apiaryName = apiaryData?.name
+            }
+
+            // Fetch queen if exists
+            if (hive.queen_id) {
+              const { data: queenData } = await supabase
+                .from('queens')
+                .select('id, queen_number')
+                .eq('id', hive.queen_id)
+                .eq('user_id', currentUserId)
+                .single()
+              if (queenData) {
+                queenNumber = queenData.queen_number
+              }
+            }
+
+            // Fetch inspection averages
+            const averages = await calculateInspectionAverages(hive.id, currentUserId)
+
+            // Fetch last queen seen and eggs present info
+            const queenEggsInfo = await getLastQueenAndEggsInfo(hive.id, currentUserId)
+
+            return {
+              ...hive,
+              apiaries: apiaryName ? { name: apiaryName } : undefined,
+              queens: hive.queen_id && queenNumber ? { id: hive.queen_id, queen_number: queenNumber } : undefined,
+              averages: averages,
+              queen_last_seen: queenEggsInfo.queen_last_seen,
+              eggs_last_present: queenEggsInfo.eggs_last_present,
+            }
+          })
+        )
+        console.log('Enriched hives:', enrichedHives)
+        setHives(enrichedHives as Hive[])
+      } else {
+        setHives([])
+      }
+    }
+    setLoading(false)
+  }, [userId, calculateInspectionAverages, getLastQueenAndEggsInfo])
+
+  const fetchApiaries = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data, error } = await supabase
+      .from('apiaries')
+      .select('id, name')
+      .eq('user_id', currentUserId)
+      .order('name')
+
+    if (error) {
+      console.error('Error fetching apiaries:', error)
+    } else if (data) {
+      setApiaries(data as Apiary[])
+    }
+  }, [userId])
+
+  const fetchQueens = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data, error } = await supabase
+      .from('queens')
+      .select('id, queen_number')
+      .eq('status', 'active')
+      .eq('user_id', currentUserId)
+      .order('queen_number')
+
+    if (error) {
+      console.error('Error fetching queens:', error)
+    } else if (data) {
+      setQueens(data as Queen[])
+    }
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -129,7 +240,7 @@ export default function HivesPage() {
       fetchQueens(id)
     }
     initUser()
-  }, [])
+  }, [router, fetchHives, fetchApiaries, fetchQueens])
 
   // Refetch hives when time period changes
   useEffect(() => {
@@ -271,117 +382,6 @@ export default function HivesPage() {
       temperament: avg(temperaments),
       population: avg(populations),
       inspection_count: inspectionsWithData.size,
-    }
-  }
-
-  const fetchHives = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Try without joins first to see if we can get basic hive data
-    const { data, error } = await supabase
-      .from('hives')
-      .select('*')
-      .eq('user_id', currentUserId)
-      .order('hive_number')
-
-    console.log('Fetch hives response:', { data, error })
-
-    if (error) {
-      console.error('Error fetching hives:', error)
-      alert(`Error loading hives: ${error.message}`)
-    } else {
-      console.log('Hives data received:', data)
-      console.log('Number of hives:', data?.length || 0)
-
-      // If we have hives, try to enrich them with apiary and queen data
-      if (data && data.length > 0) {
-        const enrichedHives = await Promise.all(
-          data.map(async (hive) => {
-            let apiaryName = null
-            let queenNumber = null
-
-            // Fetch apiary if exists
-            if (hive.apiary_id) {
-              const { data: apiaryData } = await supabase
-                .from('apiaries')
-                .select('name')
-                .eq('id', hive.apiary_id)
-                .eq('user_id', currentUserId)
-                .single()
-              apiaryName = apiaryData?.name
-            }
-
-            // Fetch queen if exists
-            if (hive.queen_id) {
-              const { data: queenData } = await supabase
-                .from('queens')
-                .select('id, queen_number')
-                .eq('id', hive.queen_id)
-                .eq('user_id', currentUserId)
-                .single()
-              if (queenData) {
-                queenNumber = queenData.queen_number
-              }
-            }
-
-            // Fetch inspection averages
-            const averages = await calculateInspectionAverages(hive.id, currentUserId)
-
-            // Fetch last queen seen and eggs present info
-            const queenEggsInfo = await getLastQueenAndEggsInfo(hive.id, currentUserId)
-
-            return {
-              ...hive,
-              apiaries: apiaryName ? { name: apiaryName } : undefined,
-              queens: hive.queen_id && queenNumber ? { id: hive.queen_id, queen_number: queenNumber } : undefined,
-              averages: averages,
-              queen_last_seen: queenEggsInfo.queen_last_seen,
-              eggs_last_present: queenEggsInfo.eggs_last_present,
-            }
-          })
-        )
-        console.log('Enriched hives:', enrichedHives)
-        setHives(enrichedHives as Hive[])
-      } else {
-        setHives([])
-      }
-    }
-    setLoading(false)
-  }
-
-  const fetchApiaries = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data, error } = await supabase
-      .from('apiaries')
-      .select('id, name')
-      .eq('user_id', currentUserId)
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching apiaries:', error)
-    } else if (data) {
-      setApiaries(data as Apiary[])
-    }
-  }
-
-  const fetchQueens = async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    const { data, error } = await supabase
-      .from('queens')
-      .select('id, queen_number')
-      .eq('status', 'active')
-      .eq('user_id', currentUserId)
-      .order('queen_number')
-
-    if (error) {
-      console.error('Error fetching queens:', error)
-    } else if (data) {
-      setQueens(data as Queen[])
     }
   }
 
