@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database, Shield, Users, Search } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database, Shield, Users, Search, User } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -33,6 +33,9 @@ interface UserProfile {
   created_at: string
   updated_at: string
   email?: string
+  first_name?: string
+  last_name?: string
+  mobile_number?: string
 }
 
 interface SupportTicket {
@@ -76,6 +79,8 @@ export default function SettingsPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [exporting, setExporting] = useState(false)
   const [showExportSection, setShowExportSection] = useState(false)
+  const [showMyDataExport, setShowMyDataExport] = useState(false)
+  const [exportingMyData, setExportingMyData] = useState(false)
 
   // User Management state
   const [showUserManagement, setShowUserManagement] = useState(false)
@@ -89,6 +94,17 @@ export default function SettingsPage() {
   const [loadingTickets, setLoadingTickets] = useState(false)
   const [editingTicket, setEditingTicket] = useState<SupportTicket | null>(null)
   const [ticketFilter, setTicketFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved' | 'closed'>('open')
+
+  // User Profile state
+  const [showUserProfile, setShowUserProfile] = useState(false)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [profileFormData, setProfileFormData] = useState({
+    first_name: '',
+    last_name: '',
+    mobile_number: '',
+  })
+  const [savingProfile, setSavingProfile] = useState(false)
 
   const [categoryFormData, setCategoryFormData] = useState({
     category_name: '',
@@ -333,6 +349,79 @@ export default function SettingsPage() {
     }
   }, [showUserManagement, users.length])
 
+  // User Profile functions
+  const fetchUserProfile = useCallback(async () => {
+    if (!userId) return
+
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (error) throw error
+
+      if (data) {
+        setUserProfile(data as UserProfile)
+        setProfileFormData({
+          first_name: data.first_name || '',
+          last_name: data.last_name || '',
+          mobile_number: data.mobile_number || '',
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+    }
+  }, [userId])
+
+  const updateUserProfile = async () => {
+    if (!userId) return
+
+    setSavingProfile(true)
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          first_name: profileFormData.first_name || null,
+          last_name: profileFormData.last_name || null,
+          mobile_number: profileFormData.mobile_number || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+
+      if (error) throw error
+
+      alert('Profile updated successfully!')
+      setEditingProfile(false)
+      fetchUserProfile() // Refresh profile data
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      alert('Failed to update profile. Please try again.')
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleCancelProfileEdit = () => {
+    setEditingProfile(false)
+    // Reset form data to current profile values
+    if (userProfile) {
+      setProfileFormData({
+        first_name: userProfile.first_name || '',
+        last_name: userProfile.last_name || '',
+        mobile_number: userProfile.mobile_number || '',
+      })
+    }
+  }
+
+  // Fetch user profile when profile section is opened
+  useEffect(() => {
+    if (showUserProfile && !userProfile && userId) {
+      fetchUserProfile()
+    }
+  }, [showUserProfile, userProfile, userId, fetchUserProfile])
+
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true)
     try {
@@ -499,6 +588,126 @@ export default function SettingsPage() {
     }
   }
 
+  const exportMyDataAsJSON = async () => {
+    if (!userId) return
+
+    setExportingMyData(true)
+    try {
+      // Fetch all user data
+      const [
+        { data: apiaries },
+        { data: hives },
+        { data: queens },
+        { data: inspections },
+        { data: varroaChecks },
+        { data: varroaTreatments },
+      ] = await Promise.all([
+        supabase.from('apiaries').select('*').eq('user_id', userId),
+        supabase.from('hives').select('*').eq('user_id', userId),
+        supabase.from('queens').select('*').eq('user_id', userId),
+        supabase.from('inspections').select('*').eq('user_id', userId),
+        supabase.from('varroa_checks').select('*').eq('user_id', userId),
+        supabase.from('varroa_treatments').select('*').eq('user_id', userId),
+      ])
+
+      const exportData = {
+        export_info: {
+          exported_at: new Date().toISOString(),
+          user_id: userId,
+          format: 'JSON',
+        },
+        apiaries: apiaries || [],
+        hives: hives || [],
+        queens: queens || [],
+        inspections: inspections || [],
+        varroa_checks: varroaChecks || [],
+        varroa_treatments: varroaTreatments || [],
+      }
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `my-beekeeping-data-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      alert('Your data has been exported successfully!')
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      alert('Failed to export data. Check console for details.')
+    } finally {
+      setExportingMyData(false)
+    }
+  }
+
+  const exportMyDataAsCSV = async () => {
+    if (!userId) return
+
+    setExportingMyData(true)
+    try {
+      // Fetch all user data
+      const [
+        { data: apiaries },
+        { data: hives },
+        { data: queens },
+        { data: inspections },
+        { data: varroaChecks },
+        { data: varroaTreatments },
+      ] = await Promise.all([
+        supabase.from('apiaries').select('*').eq('user_id', userId),
+        supabase.from('hives').select('*').eq('user_id', userId),
+        supabase.from('queens').select('*').eq('user_id', userId),
+        supabase.from('inspections').select('*').eq('user_id', userId),
+        supabase.from('varroa_checks').select('*').eq('user_id', userId),
+        supabase.from('varroa_treatments').select('*').eq('user_id', userId),
+      ])
+
+      const convertToCSV = (data: Record<string, unknown>[], tableName: string) => {
+        if (!data || data.length === 0) return `${tableName}\nNo data\n\n`
+
+        const headers = Object.keys(data[0])
+        const rows = data.map(row =>
+          headers.map(header => {
+            const value = row[header]
+            if (value === null || value === undefined) return ''
+            if (typeof value === 'string' && value.includes(',')) return `"${value}"`
+            return value
+          }).join(',')
+        )
+
+        return `${tableName}\n${headers.join(',')}\n${rows.join('\n')}\n\n`
+      }
+
+      let csvContent = `Beekeeping Data Export\nExported on: ${new Date().toISOString()}\n\n`
+      csvContent += convertToCSV(apiaries || [], 'Apiaries')
+      csvContent += convertToCSV(hives || [], 'Hives')
+      csvContent += convertToCSV(queens || [], 'Queens')
+      csvContent += convertToCSV(inspections || [], 'Inspections')
+      csvContent += convertToCSV(varroaChecks || [], 'Varroa Checks')
+      csvContent += convertToCSV(varroaTreatments || [], 'Varroa Treatments')
+
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `my-beekeeping-data-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      alert('Your data has been exported successfully!')
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      alert('Failed to export data. Check console for details.')
+    } finally {
+      setExportingMyData(false)
+    }
+  }
+
   const exportDatabase = async () => {
     setExporting(true)
     try {
@@ -619,6 +828,158 @@ export default function SettingsPage() {
           {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
           {showCategoryForm ? 'Cancel' : 'Add Category'}
         </button>
+      </div>
+
+      {/* User Profile Section - Collapsible */}
+      <div className="bg-white rounded-lg shadow">
+        <div
+          className="p-6 cursor-pointer hover:bg-gray-50"
+          onClick={() => setShowUserProfile(!showUserProfile)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {showUserProfile ? (
+                <ChevronDown size={20} className="text-gray-500" />
+              ) : (
+                <ChevronRight size={20} className="text-gray-500" />
+              )}
+              <div className="p-3 bg-indigo-100 rounded-lg">
+                <User size={24} className="text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">My Profile</h2>
+                <p className="text-sm text-gray-500">Manage your personal information</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showUserProfile && (
+          <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+            {editingProfile ? (
+              /* Edit Mode */
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Update your personal information. All fields are optional.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileFormData.first_name}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, first_name: e.target.value })
+                      }
+                      placeholder="Enter your first name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileFormData.last_name}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, last_name: e.target.value })
+                      }
+                      placeholder="Enter your last name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Mobile Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={profileFormData.mobile_number}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, mobile_number: e.target.value })
+                      }
+                      placeholder="Enter your mobile number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={updateUserProfile}
+                    disabled={savingProfile}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+                  >
+                    {savingProfile ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCancelProfileEdit}
+                    disabled={savingProfile}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium disabled:opacity-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Display Mode */
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  View and edit your personal information.
+                </p>
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">First Name</p>
+                      <p className="text-gray-900 mt-1">
+                        {userProfile?.first_name || <span className="text-gray-400 italic">Not set</span>}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Last Name</p>
+                      <p className="text-gray-900 mt-1">
+                        {userProfile?.last_name || <span className="text-gray-400 italic">Not set</span>}
+                      </p>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <p className="text-sm font-medium text-gray-500">Mobile Number</p>
+                      <p className="text-gray-900 mt-1">
+                        {userProfile?.mobile_number || <span className="text-gray-400 italic">Not set</span>}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setEditingProfile(true)}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2 transition-all"
+                >
+                  <Edit2 size={16} />
+                  Edit Profile
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Support Ticket Management Section - Collapsible */}
@@ -1127,6 +1488,81 @@ export default function SettingsPage() {
         {categories.length === 0 && (
           <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
             No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
+          </div>
+        )}
+      </div>
+
+      {/* My Data Export Section - Collapsible */}
+      <div className="bg-white rounded-lg shadow">
+        <div
+          className="p-6 cursor-pointer hover:bg-gray-50"
+          onClick={() => setShowMyDataExport(!showMyDataExport)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {showMyDataExport ? (
+                <ChevronDown size={20} className="text-gray-500" />
+              ) : (
+                <ChevronRight size={20} className="text-gray-500" />
+              )}
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Download size={24} className="text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">My Data Export</h2>
+                <p className="text-sm text-gray-500">Download your personal beekeeping data</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showMyDataExport && (
+          <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+            <p className="text-sm text-gray-600 mb-4">
+              Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
+            </p>
+            <ul className="text-sm text-gray-600 space-y-1 mb-4">
+              <li>• Includes all your personal beekeeping records</li>
+              <li>• Choose between JSON or CSV format</li>
+              <li>• Use for backup, analysis, or migration purposes</li>
+              <li>• Only includes data you own and have created</li>
+            </ul>
+            <div className="flex gap-3">
+              <button
+                onClick={exportMyDataAsJSON}
+                disabled={exportingMyData}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+              >
+                {exportingMyData ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} />
+                    Export as JSON
+                  </>
+                )}
+              </button>
+              <button
+                onClick={exportMyDataAsCSV}
+                disabled={exportingMyData}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+              >
+                {exportingMyData ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} />
+                    Export as CSV
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
       </div>
