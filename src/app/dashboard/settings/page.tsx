@@ -645,7 +645,7 @@ export default function SettingsPage() {
                             <select
                               value={editingTicket.status}
                               onChange={(e) =>
-                                setEditingTicket({ ...editingTicket, status: e.target.value })
+                                setEditingTicket({ ...editingTicket, status: e.target.value as 'open' | 'in_progress' | 'resolved' | 'closed' })
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             >
@@ -662,7 +662,7 @@ export default function SettingsPage() {
                             <select
                               value={editingTicket.priority}
                               onChange={(e) =>
-                                setEditingTicket({ ...editingTicket, priority: e.target.value })
+                                setEditingTicket({ ...editingTicket, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent' })
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             >
@@ -695,7 +695,7 @@ export default function SettingsPage() {
                               handleTicketUpdate(ticket.id, {
                                 status: editingTicket.status,
                                 priority: editingTicket.priority,
-                                admin_notes: editingTicket.admin_notes,
+                                admin_notes: editingTicket.admin_notes || undefined,
                               })
                             }
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -792,7 +792,7 @@ export default function SettingsPage() {
                           </div>
                         )}
 
-                        {ticket.resolved_by && (
+                        {ticket.resolved_by && ticket.resolved_at && (
                           <p className="text-xs text-gray-500">
                             Resolved by: {ticket.resolver?.email || 'Unknown'} on{' '}
                             {new Date(ticket.resolved_at).toLocaleString()}

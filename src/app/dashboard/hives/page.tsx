@@ -116,6 +116,141 @@ export default function HivesPage() {
     },
   })
 
+  // Calculate date range based on time period
+  const getDateRange = useCallback(() => {
+    const today = new Date()
+    let startDate: Date | null = null
+
+    switch (timePeriod) {
+      case '3months':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
+        break
+      case '6months':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())
+        break
+      case '1year':
+        startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
+        break
+      case 'custom':
+        if (customStartDate) startDate = new Date(customStartDate)
+        break
+      case 'all':
+      default:
+        return null
+    }
+
+    return startDate
+  }, [timePeriod, customStartDate])
+
+  const getLastQueenAndEggsInfo = useCallback(async (hiveId: string, userIdParam: string) => {
+    const { data: inspections } = await supabase
+      .from('inspections')
+      .select('inspection_date, queen_seen, eggs_present')
+      .eq('hive_id', hiveId)
+      .eq('user_id', userIdParam)
+      .order('inspection_date', { ascending: false })
+
+    if (!inspections || inspections.length === 0) {
+      return { queen_last_seen: null, eggs_last_present: null }
+    }
+
+    // Find most recent inspection where queen was seen
+    const queenInspection = inspections.find(i => i.queen_seen === true)
+
+    // Find most recent inspection where eggs were present
+    const eggsInspection = inspections.find(i => i.eggs_present === true)
+
+    return {
+      queen_last_seen: queenInspection?.inspection_date || null,
+      eggs_last_present: eggsInspection?.inspection_date || null,
+    }
+  }, [])
+
+  const calculateInspectionAverages = useCallback(async (hiveId: string, userIdParam: string) => {
+    const { data: inspections } = await supabase
+      .from('inspections')
+      .select('inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength')
+      .eq('hive_id', hiveId)
+      .eq('user_id', userIdParam)
+      .order('inspection_date', { ascending: false })
+
+    if (!inspections || inspections.length === 0) {
+      return null
+    }
+
+    // Filter by date range
+    let filteredInspections = inspections
+    const startDate = getDateRange()
+
+    if (startDate) {
+      filteredInspections = inspections.filter(inspection => {
+        const inspectionDate = new Date(inspection.inspection_date)
+
+        // For custom range, check both start and end dates
+        if (timePeriod === 'custom') {
+          if (customStartDate && inspectionDate < new Date(customStartDate)) {
+            return false
+          }
+          if (customEndDate && inspectionDate > new Date(customEndDate)) {
+            return false
+          }
+          return true
+        } else {
+          // For preset ranges, just check start date
+          return inspectionDate >= startDate
+        }
+      })
+    }
+
+    if (filteredInspections.length === 0) {
+      return null
+    }
+
+    // Filter out null/0 values and calculate averages
+    const broodFrames = filteredInspections
+      .filter(i => i.brood_frames !== null && i.brood_frames > 0)
+      .map(i => i.brood_frames)
+
+    const rightSizedFrames = filteredInspections
+      .filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0)
+      .map(i => i.right_sized_frames)
+
+    const broodPatterns = filteredInspections
+      .filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0)
+      .map(i => i.brood_pattern_rating)
+
+    const temperaments = filteredInspections
+      .filter(i => i.temperament_rating !== null && i.temperament_rating > 0)
+      .map(i => i.temperament_rating)
+
+    const populations = filteredInspections
+      .filter(i => i.population_strength !== null && i.population_strength > 0)
+      .map(i => i.population_strength)
+
+    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+
+    // Count unique inspections that have at least one recorded metric
+    const inspectionsWithData = new Set<string>()
+    filteredInspections.forEach(inspection => {
+      if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
+          (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
+          (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
+          (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
+          (inspection.population_strength !== null && inspection.population_strength > 0)) {
+        inspectionsWithData.add(inspection.inspection_date)
+      }
+    })
+
+    return {
+      brood_frames: avg(broodFrames),
+      right_sized_frames: avg(rightSizedFrames),
+      brood_pattern: avg(broodPatterns),
+      temperament: avg(temperaments),
+      population: avg(populations),
+      inspection_count: inspectionsWithData.size,
+    }
+  }, [timePeriod, customStartDate, customEndDate, getDateRange])
+
   const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
@@ -249,141 +384,6 @@ export default function HivesPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timePeriod, customStartDate, customEndDate])
-
-  // Calculate date range based on time period
-  const getDateRange = () => {
-    const today = new Date()
-    let startDate: Date | null = null
-
-    switch (timePeriod) {
-      case '3months':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
-        break
-      case '6months':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())
-        break
-      case '1year':
-        startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
-        break
-      case 'custom':
-        if (customStartDate) startDate = new Date(customStartDate)
-        break
-      case 'all':
-      default:
-        return null
-    }
-
-    return startDate
-  }
-
-  const getLastQueenAndEggsInfo = async (hiveId: string, userIdParam: string) => {
-    const { data: inspections } = await supabase
-      .from('inspections')
-      .select('inspection_date, queen_seen, eggs_present')
-      .eq('hive_id', hiveId)
-      .eq('user_id', userIdParam)
-      .order('inspection_date', { ascending: false })
-
-    if (!inspections || inspections.length === 0) {
-      return { queen_last_seen: null, eggs_last_present: null }
-    }
-
-    // Find most recent inspection where queen was seen
-    const queenInspection = inspections.find(i => i.queen_seen === true)
-
-    // Find most recent inspection where eggs were present
-    const eggsInspection = inspections.find(i => i.eggs_present === true)
-
-    return {
-      queen_last_seen: queenInspection?.inspection_date || null,
-      eggs_last_present: eggsInspection?.inspection_date || null,
-    }
-  }
-
-  const calculateInspectionAverages = async (hiveId: string, userIdParam: string) => {
-    const { data: inspections } = await supabase
-      .from('inspections')
-      .select('inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength')
-      .eq('hive_id', hiveId)
-      .eq('user_id', userIdParam)
-      .order('inspection_date', { ascending: false })
-
-    if (!inspections || inspections.length === 0) {
-      return null
-    }
-
-    // Filter by date range
-    let filteredInspections = inspections
-    const startDate = getDateRange()
-
-    if (startDate) {
-      filteredInspections = inspections.filter(inspection => {
-        const inspectionDate = new Date(inspection.inspection_date)
-
-        // For custom range, check both start and end dates
-        if (timePeriod === 'custom') {
-          if (customStartDate && inspectionDate < new Date(customStartDate)) {
-            return false
-          }
-          if (customEndDate && inspectionDate > new Date(customEndDate)) {
-            return false
-          }
-          return true
-        } else {
-          // For preset ranges, just check start date
-          return inspectionDate >= startDate
-        }
-      })
-    }
-
-    if (filteredInspections.length === 0) {
-      return null
-    }
-
-    // Filter out null/0 values and calculate averages
-    const broodFrames = filteredInspections
-      .filter(i => i.brood_frames !== null && i.brood_frames > 0)
-      .map(i => i.brood_frames)
-
-    const rightSizedFrames = filteredInspections
-      .filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0)
-      .map(i => i.right_sized_frames)
-
-    const broodPatterns = filteredInspections
-      .filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0)
-      .map(i => i.brood_pattern_rating)
-
-    const temperaments = filteredInspections
-      .filter(i => i.temperament_rating !== null && i.temperament_rating > 0)
-      .map(i => i.temperament_rating)
-
-    const populations = filteredInspections
-      .filter(i => i.population_strength !== null && i.population_strength > 0)
-      .map(i => i.population_strength)
-
-    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
-
-    // Count unique inspections that have at least one recorded metric
-    const inspectionsWithData = new Set<string>()
-    filteredInspections.forEach(inspection => {
-      if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
-          (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
-          (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
-          (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
-          (inspection.population_strength !== null && inspection.population_strength > 0)) {
-        inspectionsWithData.add(inspection.inspection_date)
-      }
-    })
-
-    return {
-      brood_frames: avg(broodFrames),
-      right_sized_frames: avg(rightSizedFrames),
-      brood_pattern: avg(broodPatterns),
-      temperament: avg(temperaments),
-      population: avg(populations),
-      inspection_count: inspectionsWithData.size,
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
