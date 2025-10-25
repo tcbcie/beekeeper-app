@@ -336,7 +336,7 @@ export default function SettingsPage() {
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true)
     try {
-      // First, try to fetch tickets without joins to check if table exists
+      // Fetch tickets without joins first
       let query = supabase
         .from('support_tickets')
         .select('*')
@@ -361,35 +361,67 @@ export default function SettingsPage() {
         throw ticketsError
       }
 
-      // If we have tickets, enrich them with user email data
+      // Enrich tickets with user emails
       if (ticketsData && ticketsData.length > 0) {
         const enrichedTickets = await Promise.all(
           ticketsData.map(async (ticket) => {
-            // Fetch user email
+            // Try to get user email - first from user_profiles, then from RPC call to get auth user
+            let userEmail = null
+
+            // Try user_profiles first
             const { data: userProfile } = await supabase
               .from('user_profiles')
               .select('email')
-              .eq('id', ticket.user_id)
-              .single()
+              .eq('user_id', ticket.user_id)
+              .maybeSingle()
+
+            if (userProfile?.email) {
+              userEmail = userProfile.email
+            } else {
+              // Fallback: try to get email using RPC function or from profiles table
+              const { data: authUser } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', ticket.user_id)
+                .maybeSingle()
+
+              if (authUser?.email) {
+                userEmail = authUser.email
+              }
+            }
 
             // Fetch resolver email if exists
-            let resolverProfile = null
+            let resolverEmail = null
             if (ticket.resolved_by) {
-              const { data } = await supabase
+              const { data: resolver } = await supabase
                 .from('user_profiles')
                 .select('email')
-                .eq('id', ticket.resolved_by)
-                .single()
-              resolverProfile = data
+                .eq('user_id', ticket.resolved_by)
+                .maybeSingle()
+
+              if (resolver?.email) {
+                resolverEmail = resolver.email
+              } else {
+                const { data: authResolver } = await supabase
+                  .from('profiles')
+                  .select('email')
+                  .eq('id', ticket.resolved_by)
+                  .maybeSingle()
+
+                if (authResolver?.email) {
+                  resolverEmail = authResolver.email
+                }
+              }
             }
 
             return {
               ...ticket,
-              user_profiles: userProfile,
-              resolver: resolverProfile,
+              user_profiles: userEmail ? { email: userEmail } : null,
+              resolver: resolverEmail ? { email: resolverEmail } : null,
             }
           })
         )
+        console.log('Fetched tickets with user data:', enrichedTickets)
         setTickets(enrichedTickets)
       } else {
         setTickets([])
@@ -637,6 +669,27 @@ export default function SettingsPage() {
                     {editingTicket?.id === ticket.id ? (
                       /* Edit Form */
                       <div className="space-y-3">
+                        {/* Ticket Header - Read Only */}
+                        <div className="bg-gray-100 p-4 rounded-lg">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {ticket.subject}
+                          </h3>
+                          <p className="text-sm text-gray-500 mb-2">
+                            From: {ticket.user_profiles?.email || 'Unknown'} |{' '}
+                            {new Date(ticket.created_at).toLocaleString()}
+                          </p>
+                          <div className="flex gap-2 mb-3">
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-600">
+                              {ticket.ticket_type.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 whitespace-pre-wrap">
+                            {ticket.description}
+                          </p>
+                        </div>
+
+                        {/* Edit Fields */}
+                        <h4 className="font-semibold text-gray-900 mt-2">Update Ticket</h4>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -725,14 +778,17 @@ export default function SettingsPage() {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => setEditingTicket(ticket)}
-                              className="text-blue-600 hover:text-blue-900 text-sm"
+                              onClick={() => {
+                                console.log('Editing ticket:', ticket)
+                                setEditingTicket(ticket)
+                              }}
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handleDeleteTicket(ticket.id)}
-                              className="text-red-600 hover:text-red-900 text-sm"
+                              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium"
                             >
                               Delete
                             </button>
@@ -795,7 +851,7 @@ export default function SettingsPage() {
                         {ticket.resolved_by && ticket.resolved_at && (
                           <p className="text-xs text-gray-500">
                             Resolved by: {ticket.resolver?.email || 'Unknown'} on{' '}
-                            {new Date(ticket.resolved_at).toLocaleString()}
+                            {new Date(ticket.resolved_at!).toLocaleString()}
                           </p>
                         )}
                       </div>
