@@ -249,7 +249,7 @@ export default function HivesPage() {
       population: avg(populations),
       inspection_count: inspectionsWithData.size,
     }
-  }, [timePeriod, customStartDate, customEndDate, getDateRange])
+  }, [getDateRange, timePeriod, customStartDate, customEndDate])
 
   const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
