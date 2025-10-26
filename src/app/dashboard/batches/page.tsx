@@ -5,6 +5,7 @@ import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Minus, MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
 
 interface Queen {
   id: string
@@ -208,6 +209,34 @@ export default function BatchesPage() {
     }
     initUser()
   }, [router, fetchBatches, fetchQueens, fetchApiaries, fetchHives])
+
+  // Initialize browser notifications
+  useEffect(() => {
+    const setupNotifications = async () => {
+      const isGranted = await initializeNotifications()
+      if (isGranted) {
+        console.log('Browser notifications initialized successfully')
+      }
+    }
+    setupNotifications()
+  }, [])
+
+  // Schedule notifications for batches with browser notifications enabled
+  useEffect(() => {
+    if (batches.length === 0) return
+
+    batches.forEach(batch => {
+      if (batch.enable_browser_notifications) {
+        scheduleBatchNotifications({
+          batchName: batch.batch_name,
+          acceptanceCheckDate: batch.acceptance_check_date,
+          firstCageDate: batch.first_option_to_cage_date,
+          secondCageDate: batch.second_option_to_cage_date,
+          hatchDate: batch.emergence_date,
+        })
+      }
+    })
+  }, [batches])
 
   // Filter hives based on selected apiary
   useEffect(() => {
