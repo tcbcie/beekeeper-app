@@ -432,17 +432,53 @@ export default function BatchesPage() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Graft Date *
-              </label>
-              <input
-                type="date"
-                value={formData.graft_date}
-                onChange={(e) => setFormData({...formData, graft_date: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              />
+            {/* Timeline Dates - Grouped */}
+            <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Timeline</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Graft Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.graft_date}
+                    onChange={(e) => setFormData({...formData, graft_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Acceptance Check</label>
+                  <input
+                    type="date"
+                    value={formData.acceptance_check_date}
+                    onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Graft + 1 day</p>
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    Expected Day to Hatch
+                    <div className="group relative">
+                      <MessageCircle size={14} className="text-gray-400 cursor-help" />
+                      <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                        Assuming the larvae are approximately four days after the egg was laid, they should all be of the same age and ideally no more than 12 hours old at the time of grafting.
+                      </div>
+                    </div>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.emergence_date}
+                    onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Graft + 12 days</p>
+                </div>
+              </div>
             </div>
 
             {/* Starter Colony Selection - Grouped */}
@@ -629,36 +665,6 @@ export default function BatchesPage() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Acceptance Check Date</label>
-              <input
-                type="date"
-                value={formData.acceptance_check_date}
-                onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <p className="text-xs text-gray-500 mt-1">Auto-set to graft date + 1 day</p>
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                Expected Day to Hatch
-                <div className="group relative">
-                  <MessageCircle size={14} className="text-gray-400 cursor-help" />
-                  <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
-                    Assuming the larvae are approximately four days after the egg was laid, they should all be of the same age and ideally no more than 12 hours old at the time of grafting.
-                  </div>
-                </div>
-              </label>
-              <input
-                type="date"
-                value={formData.emergence_date}
-                onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <p className="text-xs text-gray-500 mt-1">Auto-set to graft date + 12 days</p>
             </div>
 
             <div className="md:col-span-2">
