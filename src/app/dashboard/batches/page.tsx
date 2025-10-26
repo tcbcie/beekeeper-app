@@ -328,9 +328,9 @@ export default function BatchesPage() {
               />
             </div>
 
-            {/* Queen Rearing Progression - Grouped Vertically */}
+            {/* Batch Quantities - Grouped Vertically */}
             <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Queen Rearing Progression</h4>
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Batch Quantities</h4>
               <div className="space-y-3">
                 {/* Number of Grafts */}
                 <div>
