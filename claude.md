@@ -20,11 +20,16 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - `sql/` - Database migrations and SQL scripts
 
 ### Key Pages
+- `/dashboard` - Overview dashboard with statistics
 - `/dashboard/hives` - Manage apiaries and hives
 - `/dashboard/inspections` - Record and view hive inspections
-- `/dashboard/settings` - User settings, categories, support tickets
+- `/dashboard/queens` - Manage queen bee records
+- `/dashboard/batches` - Queen rearing planning and selection
+- `/dashboard/profile` - User profile management and data export
+- `/dashboard/settings` - Admin-only settings (user management, categories, tickets)
 - `/dashboard/varroa-check` - Track varroa mite infestations
 - `/dashboard/varroa-treatment` - Log varroa treatment applications
+- `/dashboard/about` - App information and support
 
 ## Features
 
@@ -35,12 +40,28 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Date range filtering (3 months, 6 months, 1 year, custom)
 - Right-sized broodbox tracking
 
+### Queen Management
+- Track individual queen records
+- Record queen marking, clipping, mating information
+- Track lineage and breeding history
+- Performance notes and subspecies tracking
+
+### Queen Rearing
+- **Planning Tab**: Create and manage queen rearing batches
+  - Track graft date and breeder queen (optional)
+  - Number of grafts tracking
+  - Acceptance check date (auto-calculated as graft date + 1 day)
+  - Expected emergence date tracking
+  - Batch status management (grafted, emerged, mated, completed)
+- **Selection Tab**: (Coming soon) Track and select best performing queens
+
 ### Inspections
 - Detailed hive inspection records
 - Track queen presence, eggs, diseases
 - Weather information (temperature, conditions, humidity, wind speed)
 - Weather condition indicators
 - Frame-level observations
+- Right-sized frame tracking
 
 ### Varroa Management
 - **Varroa Checks**: Track mite counts and infestation rates
@@ -48,6 +69,15 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Auto-calculation of infestation rates
 - **Varroa Treatment**: Log treatment applications
 - Track treatment products, dates, and effectiveness
+
+### User Profile & Data Management
+- **Personal Information**: Edit first name, last name, mobile number
+- **Account Information**: View email, user ID, role, account creation date
+- **Data Export**:
+  - Export all personal beekeeping data in JSON or CSV format
+  - Includes apiaries, hives, queens, inspections, varroa checks/treatments
+  - Date-stamped export files
+- **Additional Settings**: Placeholders for password change, notifications, privacy
 
 ### Support Ticket System
 - Users can submit support tickets (problems/suggestions)
@@ -57,10 +87,11 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Admin notes visible to users
 - Ticket statistics and analytics
 
-### User Management
-- Role-based access (User, Admin)
-- User profile management with email support
-- Settings and preferences
+### Admin Features
+- **User Management**: View and manage all user accounts, assign roles
+- **Dropdown Management**: Configure custom dropdowns for categories and values
+- **Support Ticket Management**: Full ticket administration
+- **Database Export**: Full SQL database backup export
 
 ## Important Implementation Notes
 
@@ -73,6 +104,7 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Strict type checking enabled
 - Proper interfaces for all data structures:
   - `Hive`, `Apiary`, `Queen`, `Inspection`
+  - `Batch` (Queen Rearing), `FormData`
   - `VarroaCheck`, `VarroaTreatment`
   - `SupportTicket`, `TicketUpdate`
   - `UserProfile`, `DropdownCategory`, `DropdownValue`
@@ -121,22 +153,46 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Validate TypeScript types match database schema
 - Use React DevTools for state/props debugging
 
-## Recent Changes (Latest Session)
+## Recent Changes
 
-### React Hooks Fixes
-- Fixed useCallback dependencies throughout dashboard pages
-- Reordered function definitions to prevent initialization errors
-- Proper dependency arrays in all useEffect hooks
+### October 26, 2025 - Queen Rearing Enhancements
+- **Field Renaming**:
+  - "Mother Queen" → "Breeder Queen" (now explicitly optional)
+  - "Cell Count" → "Number of Grafts"
+- **New Acceptance Check Feature**:
+  - Added `acceptance_check_date` field to rearing_batches table
+  - Auto-calculates to Graft Date + 1 day with manual override capability
+  - Displays in batch list table
+  - Database migration: `sql/add_acceptance_check_to_rearing_batches.sql`
+- **Implementation Details**:
+  - useEffect with infinite loop prevention for auto-calculation
+  - Only auto-calculates when creating new batches (not editing)
+  - Updated TypeScript interfaces and form handling
 
-### Support Ticket System Improvements
-- Fixed ticket editing UI - now shows full ticket details in edit mode
-- Fixed user email display with fallback to profiles table
-- Enhanced Edit/Delete buttons with better visibility
-- TypeScript type safety improvements
-- Improved error handling in ticket fetching
+### October 25, 2025 - Profile & Data Export
+- **Moved Profile Features**:
+  - Relocated user profile editing from Settings to dedicated Profile page
+  - Moved personal data export from Settings to Profile page
+- **Profile Management**:
+  - Added editable fields: first name, last name, mobile number
+  - Database migration: `sql/add_profile_fields.sql`
+- **Data Export**:
+  - Export all user data in JSON or CSV format
+  - Includes: apiaries, hives, queens, inspections, varroa checks/treatments
+- **Settings Page Cleanup**:
+  - Now exclusively for admin features
+  - Removed 440+ lines of user-facing code
 
-### Cross-Origin Configuration
-- Added allowedDevOrigins for local network development
+### October 25, 2025 - React Hooks & Support Tickets
+- **React Hooks Fixes**:
+  - Fixed useCallback dependencies throughout dashboard pages
+  - Reordered function definitions to prevent initialization errors
+  - Proper dependency arrays in all useEffect hooks
+- **Support Ticket System**:
+  - Fixed ticket editing UI with full ticket details display
+  - Fixed user email display with fallback to profiles table
+  - Enhanced Edit/Delete buttons with better visibility
+  - TypeScript type safety improvements
 
 ## Notes for Future Development
 
@@ -168,7 +224,26 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Test RLS policies in production environment
 - Monitor Supabase quota usage
 
+## Database Migrations
+
+### Pending Migrations
+Run these in Supabase SQL Editor if not already applied:
+
+1. **Profile Fields** (`sql/add_profile_fields.sql`):
+```sql
+ALTER TABLE user_profiles
+ADD COLUMN IF NOT EXISTS first_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS last_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(50);
+```
+
+2. **Queen Rearing Acceptance Check** (`sql/add_acceptance_check_to_rearing_batches.sql`):
+```sql
+ALTER TABLE public.rearing_batches
+ADD COLUMN IF NOT EXISTS acceptance_check_date DATE;
+```
+
 ---
 
-**Last Updated**: October 25, 2025
-**Version**: Post-ticket-management-fixes
+**Last Updated**: October 26, 2025
+**Version**: Queen-Rearing-Enhancements
