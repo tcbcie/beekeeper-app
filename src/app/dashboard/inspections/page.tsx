@@ -900,133 +900,109 @@ export default function InspectionsPage() {
               </button>
             </div>
           </div>
-          <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
-              <select
-                value={formApiaryId}
-                onChange={(e) => {
-                  setFormApiaryId(e.target.value)
-                  setFormData({...formData, hive_id: ''}) // Reset hive selection when apiary changes
-                }}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md"
-              >
-                <option value="">All Apiaries</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
-              <select
-                value={formData.hive_id}
-                onChange={(e) => handleHiveChange(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md"
-                required
-              >
-                <option value="">Select hive</option>
-                {hives
-                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
-                  .map((h) => (
-                    <option key={h.id} value={h.id}>{h.hive_number}</option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                <input
-                  type="date"
-                  value={formData.inspection_date}
-                  onChange={(e) => setFormData({...formData, inspection_date: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
-                <input
-                  type="time"
-                  value={formData.inspection_time}
-                  onChange={(e) => setFormData({...formData, inspection_time: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                />
-              </div>
-            </div>
-
-            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer touch-manipulation hover:bg-gray-100 active:bg-gray-200">
-              <input
-                type="checkbox"
-                checked={formData.queen_seen}
-                onChange={(e) => setFormData({...formData, queen_seen: e.target.checked})}
-                className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
-              />
-              <span className="text-sm font-medium text-gray-700">Queen Seen</span>
-            </label>
-
-            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer touch-manipulation hover:bg-gray-100 active:bg-gray-200">
-              <input
-                type="checkbox"
-                checked={formData.eggs_present}
-                onChange={(e) => setFormData({...formData, eggs_present: e.target.checked})}
-                className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
-              />
-              <span className="text-sm font-medium text-gray-700">Eggs Present</span>
-            </label>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Frames with Brood {formData.brood_frames !== null ? `(${formData.brood_frames})` : ''}
-              </label>
-              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => setFormData({...formData, brood_frames: num})}
-                    className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                      formData.brood_frames === num
-                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                    }`}
+          <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Inspection Details Section - Grouped */}
+            <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-4">Inspection Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+                  <select
+                    value={formApiaryId}
+                    onChange={(e) => {
+                      setFormApiaryId(e.target.value)
+                      setFormData({...formData, hive_id: ''}) // Reset hive selection when apiary changes
+                    }}
+                    className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
                   >
-                    {num}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, brood_frames: null})}
-                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
-                    formData.brood_frames === null
-                      ? 'bg-gray-400 text-white shadow-lg ring-2 ring-gray-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                  }`}
-                >
-                  Clear
-                </button>
+                    <option value="">All Apiaries</option>
+                    {apiaries.map((apiary) => (
+                      <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+                  <select
+                    value={formData.hive_id}
+                    onChange={(e) => handleHiveChange(e.target.value)}
+                    className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                    required
+                  >
+                    <option value="">Select hive</option>
+                    {hives
+                      .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
+                      .map((h) => (
+                        <option key={h.id} value={h.id}>{h.hive_number}</option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <input
+                    type="date"
+                    value={formData.inspection_date}
+                    onChange={(e) => setFormData({...formData, inspection_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                  <input
+                    type="time"
+                    value={formData.inspection_time}
+                    onChange={(e) => setFormData({...formData, inspection_time: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    required
+                  />
+                </div>
               </div>
             </div>
 
-            {hives.find(h => h.id === formData.hive_id)?.configuration?.right_sized_broodbox && (
-              <div className="md:col-span-2">
+            {/* Queen & Brood Section - Grouped */}
+            <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-4">Queen & Brood</h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
+                  <input
+                    type="checkbox"
+                    checked={formData.queen_seen}
+                    onChange={(e) => setFormData({...formData, queen_seen: e.target.checked})}
+                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Queen Seen</span>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
+                  <input
+                    type="checkbox"
+                    checked={formData.eggs_present}
+                    onChange={(e) => setFormData({...formData, eggs_present: e.target.checked})}
+                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Eggs Present</span>
+                </label>
+              </div>
+
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Right-Sized to How Many Frames {formData.right_sized_frames !== null ? `(${formData.right_sized_frames})` : ''}
+                  Frames with Brood {formData.brood_frames !== null ? `(${formData.brood_frames})` : ''}
                 </label>
                 <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                     <button
                       key={num}
                       type="button"
-                      onClick={() => setFormData({...formData, right_sized_frames: num})}
+                      onClick={() => setFormData({...formData, brood_frames: num})}
                       className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                        formData.right_sized_frames === num
-                          ? 'bg-amber-600 text-white shadow-lg ring-2 ring-amber-300'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                        formData.brood_frames === num
+                          ? 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-300'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                       }`}
                     >
                       {num}
@@ -1034,18 +1010,53 @@ export default function InspectionsPage() {
                   ))}
                   <button
                     type="button"
-                    onClick={() => setFormData({...formData, right_sized_frames: null})}
+                    onClick={() => setFormData({...formData, brood_frames: null})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
-                      formData.right_sized_frames === null
-                        ? 'bg-gray-400 text-white shadow-lg ring-2 ring-gray-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      formData.brood_frames === null
+                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                     }`}
                   >
                     Clear
                   </button>
                 </div>
               </div>
-            )}
+
+              {hives.find(h => h.id === formData.hive_id)?.configuration?.right_sized_broodbox && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Right-Sized to How Many Frames {formData.right_sized_frames !== null ? `(${formData.right_sized_frames})` : ''}
+                  </label>
+                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setFormData({...formData, right_sized_frames: num})}
+                        className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                          formData.right_sized_frames === num
+                            ? 'bg-amber-600 text-white shadow-lg ring-2 ring-amber-300'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, right_sized_frames: null})}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
+                        formData.right_sized_frames === null
+                          ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                      }`}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Behaviour Section - Grouped */}
             <div className="md:col-span-2 bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
@@ -1490,29 +1501,33 @@ export default function InspectionsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-4">
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-xs text-gray-500 mb-1">Queen Seen</div>
-                <div className="text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-xs text-gray-500 mb-1">Eggs</div>
-                <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
-              </div>
-              <div className="text-center p-3 bg-indigo-50 rounded">
-                <div className="text-xs text-gray-500 mb-1">Brood Frames</div>
-                <div className="text-2xl font-bold text-indigo-600">
-                  {inspection.brood_frames ?? '-'}
+            {/* Queen & Brood Section - Grouped Display */}
+            <div className="mb-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Queen & Brood</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Queen Seen</div>
+                  <div className="text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
                 </div>
-              </div>
-              {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
-                <div className="text-center p-3 bg-amber-50 rounded">
-                  <div className="text-xs text-gray-500 mb-1">Right-Sized Frames</div>
-                  <div className="text-2xl font-bold text-amber-600">
-                    {inspection.right_sized_frames ?? '-'}
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Eggs</div>
+                  <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Brood Frames</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {inspection.brood_frames ?? '-'}
                   </div>
                 </div>
-              )}
+                {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
+                  <div className="text-center p-3 bg-white rounded shadow-sm">
+                    <div className="text-xs text-gray-500 mb-1">Right-Sized Frames</div>
+                    <div className="text-2xl font-bold text-amber-600">
+                      {inspection.right_sized_frames ?? '-'}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Behaviour Section - Grouped Display */}
