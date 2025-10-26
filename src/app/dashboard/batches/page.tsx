@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -17,6 +17,9 @@ interface Batch {
   mother_queen_id: string | null
   graft_date: string
   cell_count: number | null
+  grafts_accepted: number | null
+  queens_hatched: number | null
+  queens_mated: number | null
   acceptance_check_date: string | null
   emergence_date: string | null
   status: string
@@ -31,6 +34,9 @@ interface FormData {
   mother_queen_id: string
   graft_date: string
   cell_count: string
+  grafts_accepted: string
+  queens_hatched: string
+  queens_mated: string
   acceptance_check_date: string
   emergence_date: string
   status: string
@@ -51,6 +57,9 @@ export default function BatchesPage() {
     mother_queen_id: '',
     graft_date: new Date().toISOString().split('T')[0],
     cell_count: '',
+    grafts_accepted: '',
+    queens_hatched: '',
+    queens_mated: '',
     acceptance_check_date: '',
     emergence_date: '',
     status: 'grafted',
@@ -128,6 +137,9 @@ export default function BatchesPage() {
         mother_queen_id: formData.mother_queen_id || null,
         graft_date: formData.graft_date,
         cell_count: formData.cell_count ? parseInt(formData.cell_count) : null,
+        grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted) : null,
+        queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched) : null,
+        queens_mated: formData.queens_mated ? parseInt(formData.queens_mated) : null,
         acceptance_check_date: formData.acceptance_check_date || null,
         emergence_date: formData.emergence_date || null,
         status: formData.status,
@@ -165,6 +177,9 @@ export default function BatchesPage() {
       mother_queen_id: batch.mother_queen_id || '',
       graft_date: batch.graft_date,
       cell_count: batch.cell_count?.toString() || '',
+      grafts_accepted: batch.grafts_accepted?.toString() || '',
+      queens_hatched: batch.queens_hatched?.toString() || '',
+      queens_mated: batch.queens_mated?.toString() || '',
       acceptance_check_date: batch.acceptance_check_date || '',
       emergence_date: batch.emergence_date || '',
       status: batch.status,
@@ -194,6 +209,9 @@ export default function BatchesPage() {
       mother_queen_id: '',
       graft_date: new Date().toISOString().split('T')[0],
       cell_count: '',
+      grafts_accepted: '',
+      queens_hatched: '',
+      queens_mated: '',
       acceptance_check_date: '',
       emergence_date: '',
       status: 'grafted',
@@ -282,7 +300,15 @@ export default function BatchesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Graft Date *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                Graft Date *
+                <div className="group relative">
+                  <Info size={14} className="text-gray-400 cursor-help" />
+                  <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                    Assuming larvae is 4 days old, ideally not older than 12 hours.
+                  </div>
+                </div>
+              </label>
               <input
                 type="date"
                 value={formData.graft_date}
@@ -301,6 +327,42 @@ export default function BatchesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 min="0"
                 placeholder="Total cells grafted"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Grafts Accepted</label>
+              <input
+                type="number"
+                value={formData.grafts_accepted}
+                onChange={(e) => setFormData({...formData, grafts_accepted: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                min="0"
+                placeholder="Cells accepted by larvae"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Queens Hatched</label>
+              <input
+                type="number"
+                value={formData.queens_hatched}
+                onChange={(e) => setFormData({...formData, queens_hatched: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                min="0"
+                placeholder="Number emerged from cells"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Queens Mated</label>
+              <input
+                type="number"
+                value={formData.queens_mated}
+                onChange={(e) => setFormData({...formData, queens_mated: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                min="0"
+                placeholder="Successfully mated queens"
               />
             </div>
 
@@ -352,7 +414,7 @@ export default function BatchesPage() {
 
             <div className="md:col-span-2 flex gap-3">
               <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                {editingBatch ? 'Update' : 'Create'} QueenCraft
+                {editingBatch ? 'Update' : 'Create'} Batch
               </button>
               <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
                 Cancel
@@ -370,6 +432,9 @@ export default function BatchesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Breeder Queen</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Graft Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grafts</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Accepted</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hatched</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mated</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acceptance Check</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -381,8 +446,11 @@ export default function BatchesPage() {
                 <td className="px-6 py-4 whitespace-nowrap font-medium">{batch.batch_name}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.graft_date}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.acceptance_check_date || 'N/A'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.acceptance_check_date || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     batch.status === 'grafted' ? 'bg-blue-100 text-blue-800' :
@@ -406,7 +474,7 @@ export default function BatchesPage() {
           </tbody>
         </table>
         {batches.length === 0 && (
-          <div className="text-center py-8 text-gray-500">No QueenCraft found. Create your first QueenCraft!</div>
+          <div className="text-center py-8 text-gray-500">No rearing batch found. Create your first!</div>
         )}
           </div>
         </>
