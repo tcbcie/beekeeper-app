@@ -5,6 +5,7 @@ import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import UpcomingEvents from '@/components/UpcomingEvents'
 import { Shield } from 'lucide-react'
 
 interface Inspection {
@@ -258,6 +259,9 @@ export default function DashboardPage() {
           </a>
         </div>
       </div>
+
+      {/* Upcoming Events - Queen Rearing Calendar */}
+      {userId && <UpcomingEvents userId={userId} />}
 
       {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow p-6">
