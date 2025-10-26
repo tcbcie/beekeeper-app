@@ -9,12 +9,13 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 interface Queen {
   id: string
   queen_number: string
-  hives?: {
+  hives?: Array<{
+    queen_id: string
     hive_number: string
-    apiaries?: {
+    apiaries: {
       name: string
-    }
-  }[]
+    } | null
+  }>
 }
 
 interface Batch {
@@ -87,21 +88,36 @@ export default function BatchesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    // First, get all queens
+    const { data: queensData, error: queensError } = await supabase
       .from('queens')
-      .select(`
-        id,
-        queen_number,
-        hives!hives_queen_id_fkey(
-          hive_number,
-          apiaries(name)
-        )
-      `)
+      .select('id, queen_number')
       .eq('status', 'active')
       .eq('user_id', currentUserId)
       .order('queen_number')
 
-    if (data) setQueens(data)
+    if (queensError) {
+      console.error('Error fetching queens:', queensError)
+      return
+    }
+
+    if (!queensData) return
+
+    // Then, get hives with apiaries for these queens
+    const queenIds = queensData.map(q => q.id)
+    const { data: hivesData } = await supabase
+      .from('hives')
+      .select('queen_id, hive_number, apiaries(name)')
+      .in('queen_id', queenIds)
+      .eq('user_id', currentUserId)
+
+    // Merge the data
+    const queensWithHives = queensData.map(queen => ({
+      ...queen,
+      hives: hivesData?.filter(h => h.queen_id === queen.id) || []
+    }))
+
+    setQueens(queensWithHives)
   }, [userId])
 
   useEffect(() => {
