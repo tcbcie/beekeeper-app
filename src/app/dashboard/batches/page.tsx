@@ -48,6 +48,16 @@ interface FormData {
   notes: string
 }
 
+// Format date to Irish format (DD/MM/YYYY)
+const formatDateIrish = (dateString: string | null): string => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  const day = date.getDate().toString().padStart(2, '0')
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
 export default function BatchesPage() {
   const router = useRouter()
   const [batches, setBatches] = useState<Batch[]>([])
@@ -584,12 +594,12 @@ export default function BatchesPage() {
               <tr key={batch.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap font-medium">{batch.batch_name}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.graft_date}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.acceptance_check_date || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.acceptance_check_date)}</td>
                 <td className="px-6 py-4 whitespace-nowrap flex gap-2">
                   <button onClick={() => handleEdit(batch)} className="text-blue-600 hover:text-blue-900">
                     <Edit2 size={16} />
