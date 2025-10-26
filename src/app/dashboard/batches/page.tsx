@@ -18,10 +18,22 @@ interface Queen {
   }>
 }
 
+interface Apiary {
+  id: string
+  name: string
+}
+
+interface Hive {
+  id: string
+  hive_number: string
+  apiary_id: string
+}
+
 interface Batch {
   id: string
   batch_name: string
   mother_queen_id: string | null
+  starter_colony_hive_id: string | null
   graft_date: string
   cell_count: number | null
   grafts_accepted: number | null
@@ -33,11 +45,19 @@ interface Batch {
   queens?: {
     queen_number: string
   } | null
+  hives?: {
+    hive_number: string
+    apiaries?: {
+      name: string
+    }
+  } | null
 }
 
 interface FormData {
   batch_name: string
   mother_queen_id: string
+  starter_apiary_id: string
+  starter_colony_hive_id: string
   graft_date: string
   cell_count: string
   grafts_accepted: string
@@ -62,6 +82,9 @@ export default function BatchesPage() {
   const router = useRouter()
   const [batches, setBatches] = useState<Batch[]>([])
   const [queens, setQueens] = useState<Queen[]>([])
+  const [apiaries, setApiaries] = useState<Apiary[]>([])
+  const [hives, setHives] = useState<Hive[]>([])
+  const [filteredHives, setFilteredHives] = useState<Hive[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
   const [loading, setLoading] = useState(true)
@@ -70,6 +93,8 @@ export default function BatchesPage() {
   const [formData, setFormData] = useState<FormData>({
     batch_name: '',
     mother_queen_id: '',
+    starter_apiary_id: '',
+    starter_colony_hive_id: '',
     graft_date: new Date().toISOString().split('T')[0],
     cell_count: '',
     grafts_accepted: '',
@@ -86,12 +111,38 @@ export default function BatchesPage() {
 
     const { data } = await supabase
       .from('rearing_batches')
-      .select('*, queens(queen_number)')
+      .select('*, queens(queen_number), hives(hive_number, apiaries(name))')
       .eq('user_id', currentUserId)
       .order('graft_date', { ascending: false })
 
     if (data) setBatches(data)
     setLoading(false)
+  }, [userId])
+
+  const fetchApiaries = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('apiaries')
+      .select('id, name')
+      .eq('user_id', currentUserId)
+      .order('name')
+
+    if (data) setApiaries(data)
+  }, [userId])
+
+  const fetchHives = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('hives')
+      .select('id, hive_number, apiary_id')
+      .eq('user_id', currentUserId)
+      .order('hive_number')
+
+    if (data) setHives(data)
   }, [userId])
 
   const fetchQueens = useCallback(async (userIdParam?: string) => {
@@ -140,9 +191,21 @@ export default function BatchesPage() {
       setUserId(id)
       fetchBatches(id)
       fetchQueens(id)
+      fetchApiaries(id)
+      fetchHives(id)
     }
     initUser()
-  }, [router, fetchBatches, fetchQueens])
+  }, [router, fetchBatches, fetchQueens, fetchApiaries, fetchHives])
+
+  // Filter hives based on selected apiary
+  useEffect(() => {
+    if (formData.starter_apiary_id) {
+      const filtered = hives.filter(h => h.apiary_id === formData.starter_apiary_id)
+      setFilteredHives(filtered)
+    } else {
+      setFilteredHives([])
+    }
+  }, [formData.starter_apiary_id, hives])
 
   // Auto-calculate acceptance check date (graft_date + 1 day)
   useEffect(() => {
@@ -190,6 +253,7 @@ export default function BatchesPage() {
       const dataToSubmit = {
         batch_name: formData.batch_name,
         mother_queen_id: formData.mother_queen_id || null,
+        starter_colony_hive_id: formData.starter_colony_hive_id || null,
         graft_date: formData.graft_date,
         cell_count: formData.cell_count ? parseInt(formData.cell_count) : null,
         grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted) : null,
@@ -226,9 +290,13 @@ export default function BatchesPage() {
 
   const handleEdit = (batch: Batch) => {
     setEditingBatch(batch)
+    // Find the apiary_id from the hive if it exists
+    const hive = hives.find(h => h.id === batch.starter_colony_hive_id)
     setFormData({
       batch_name: batch.batch_name,
       mother_queen_id: batch.mother_queen_id || '',
+      starter_apiary_id: hive?.apiary_id || '',
+      starter_colony_hive_id: batch.starter_colony_hive_id || '',
       graft_date: batch.graft_date,
       cell_count: batch.cell_count?.toString() || '',
       grafts_accepted: batch.grafts_accepted?.toString() || '',
@@ -260,6 +328,8 @@ export default function BatchesPage() {
     setFormData({
       batch_name: '',
       mother_queen_id: '',
+      starter_apiary_id: '',
+      starter_colony_hive_id: '',
       graft_date: new Date().toISOString().split('T')[0],
       cell_count: '',
       grafts_accepted: '',
@@ -373,6 +443,37 @@ export default function BatchesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Starter Colony Apiary</label>
+              <select
+                value={formData.starter_apiary_id}
+                onChange={(e) => {
+                  setFormData({...formData, starter_apiary_id: e.target.value, starter_colony_hive_id: ''})
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="">Select apiary (optional)</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Starter Colony Hive</label>
+              <select
+                value={formData.starter_colony_hive_id}
+                onChange={(e) => setFormData({...formData, starter_colony_hive_id: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                disabled={!formData.starter_apiary_id}
+              >
+                <option value="">Select hive (optional)</option>
+                {filteredHives.map((hive) => (
+                  <option key={hive.id} value={hive.id}>{hive.hive_number}</option>
+                ))}
+              </select>
             </div>
 
             {/* Batch Quantities - Grouped Vertically */}
