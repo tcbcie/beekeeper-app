@@ -186,9 +186,13 @@ export default function BatchesPage() {
       .eq('user_id', currentUserId)
 
     // Merge the data
-    const queensWithHives = queensData.map(queen => ({
+    const queensWithHives: Queen[] = queensData.map(queen => ({
       ...queen,
-      hives: hivesData?.filter(h => h.queen_id === queen.id) || []
+      hives: hivesData?.filter(h => h.queen_id === queen.id).map(h => ({
+        queen_id: h.queen_id,
+        hive_number: h.hive_number,
+        apiaries: Array.isArray(h.apiaries) ? h.apiaries[0] || null : h.apiaries
+      })) || []
     }))
 
     setQueens(queensWithHives)

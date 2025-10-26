@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Calendar, Bell } from 'lucide-react'
 import Link from 'next/link'
@@ -16,11 +16,7 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
   const [events, setEvents] = useState<UpcomingEvent[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchUpcomingEvents()
-  }, [userId])
-
-  const fetchUpcomingEvents = async () => {
+  const fetchUpcomingEvents = useCallback(async () => {
     if (!userId) return
 
     const { data: batches } = await supabase
@@ -112,7 +108,11 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
 
     setEvents(upcomingEvents)
     setLoading(false)
-  }
+  }, [userId])
+
+  useEffect(() => {
+    fetchUpcomingEvents()
+  }, [fetchUpcomingEvents])
 
   const getEventLabel = (type: string) => {
     switch (type) {
