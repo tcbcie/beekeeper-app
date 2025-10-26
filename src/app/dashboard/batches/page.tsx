@@ -9,6 +9,12 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 interface Queen {
   id: string
   queen_number: string
+  hives?: {
+    hive_number: string
+    apiaries?: {
+      name: string
+    }
+  }[]
 }
 
 interface Batch {
@@ -83,7 +89,14 @@ export default function BatchesPage() {
 
     const { data } = await supabase
       .from('queens')
-      .select('id, queen_number')
+      .select(`
+        id,
+        queen_number,
+        hives!hives_queen_id_fkey(
+          hive_number,
+          apiaries(name)
+        )
+      `)
       .eq('status', 'active')
       .eq('user_id', currentUserId)
       .order('queen_number')
@@ -309,9 +322,17 @@ export default function BatchesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="">Select breeder queen (optional)</option>
-                {queens.map((q: Queen) => (
-                  <option key={q.id} value={q.id}>{q.queen_number}</option>
-                ))}
+                {queens.map((q: Queen) => {
+                  const hive = q.hives && q.hives.length > 0 ? q.hives[0] : null
+                  const apiary = hive?.apiaries?.name || ''
+                  const hiveNumber = hive?.hive_number || ''
+                  const location = apiary && hiveNumber ? ` (${apiary} - ${hiveNumber})` : ''
+                  return (
+                    <option key={q.id} value={q.id}>
+                      {q.queen_number}{location}
+                    </option>
+                  )
+                })}
               </select>
             </div>
 
