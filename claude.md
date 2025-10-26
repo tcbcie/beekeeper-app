@@ -49,10 +49,17 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 ### Queen Rearing
 - **Planning Tab**: Create and manage queen rearing batches
   - Track graft date and breeder queen (optional)
-  - Number of grafts tracking
-  - Acceptance check date (auto-calculated as graft date + 1 day)
-  - Expected emergence date tracking
-  - Batch status management (grafted, emerged, mated, completed)
+  - **Timeline Section** (purple box): All dates in chronological order
+    - Graft Date (Day 0) - required
+    - Acceptance Check (Day 1) - auto-calculated
+    - 1st Option to Cage (Day 5) - auto-calculated
+    - 2nd Option to Cage (Day 10) - auto-calculated
+    - Expected Day to Hatch (Day 12) - auto-calculated
+  - **Starter Colony Section** (green box): Select apiary and hive for starter colony
+  - **Batch Quantities Section** (blue box): Track progression with +/- buttons
+    - Number of Grafts → Grafts Accepted → Queens Hatched → Queens Mated
+  - Breeder queen dropdown shows: "Queen# (Apiary - Hive#)"
+  - Dates displayed in Irish format (DD/MM/YYYY) in table
 - **Selection Tab**: (Coming soon) Track and select best performing queens
 
 ### Inspections
@@ -155,19 +162,64 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 
 ## Recent Changes
 
-### October 26, 2025 - Queen Rearing Enhancements
-- **Field Renaming**:
-  - "Mother Queen" → "Breeder Queen" (now explicitly optional)
-  - "Cell Count" → "Number of Grafts"
-- **New Acceptance Check Feature**:
-  - Added `acceptance_check_date` field to rearing_batches table
-  - Auto-calculates to Graft Date + 1 day with manual override capability
-  - Displays in batch list table
-  - Database migration: `sql/add_acceptance_check_to_rearing_batches.sql`
-- **Implementation Details**:
-  - useEffect with infinite loop prevention for auto-calculation
-  - Only auto-calculates when creating new batches (not editing)
-  - Updated TypeScript interfaces and form handling
+### October 26, 2025 - Queen Rearing Complete Overhaul
+- **Timeline Section** (Purple Box):
+  - Added 5 date fields in chronological order displayed side-by-side
+  - Graft Date (Day 0) - required field
+  - Acceptance Check (Day 1) - auto-calculated from graft date
+  - 1st Option to Cage (Day 5) - NEW auto-calculated field
+  - 2nd Option to Cage (Day 10) - NEW auto-calculated field
+  - Expected Day to Hatch (Day 12) - auto-calculated, renamed from "Emergence Date"
+  - All auto-calculations use useEffect with infinite loop prevention
+  - Helper text shows calculation formula (e.g., "Graft + 5 days")
+  - Database migrations: `add_acceptance_check_to_rearing_batches.sql`, `add_cage_dates_to_rearing_batches.sql`
+
+- **Starter Colony Section** (Green Box):
+  - Cascading dropdowns for selecting apiary then hive
+  - Apiary dropdown populated from user's apiaries
+  - Hive dropdown filtered by selected apiary (disabled until apiary selected)
+  - Helper text: "Select an apiary first" when hive disabled
+  - Stores `starter_colony_hive_id` in database
+  - Database migration: `add_starter_colony_to_rearing_batches.sql`
+
+- **Batch Quantities Section** (Blue Box):
+  - Renamed from "Queen Rearing Progression"
+  - Four fields with plus/minus buttons for easy incrementing
+  - Number of Grafts → Grafts Accepted → Queens Hatched → Queens Mated
+  - Vertical layout with spacing for better visual hierarchy
+  - Removed Status field completely from form and table
+  - Database migration: `add_queen_rearing_progression_fields.sql`
+
+- **Field Improvements**:
+  - Renamed: "Mother Queen" → "Breeder Queen" (optional)
+  - Renamed: "Cell Count" → "Number of Grafts"
+  - Renamed: "Expected Emergence Date" → "Expected Day to Hatch"
+  - Removed: Status dropdown completely
+
+- **Breeder Queen Dropdown Enhancement**:
+  - Now shows context: "Queen# (Apiary - Hive#)"
+  - Example: "Q2024-001 (North Field - H-12)"
+  - Two-query approach: fetch queens, then join with hives/apiaries
+  - Handles queens not in hives gracefully
+
+- **Date Formatting**:
+  - Added Irish format (DD/MM/YYYY) for Graft Date and Acceptance Check in table
+  - Created `formatDateIrish()` helper function
+  - Handles null dates with '-' placeholder
+
+- **Form Organization**:
+  - Added tagline: "3-5-8 - The Queen is made!"
+  - Color-coded sections: Timeline (purple), Starter Colony (green), Batch Quantities (blue)
+  - Responsive grid layouts that stack on mobile
+  - Improved visual hierarchy with grouped sections
+
+- **Technical Implementation**:
+  - Updated TypeScript interfaces: Batch, FormData, Queen, Apiary, Hive
+  - Added useEffect hooks for auto-calculating all 4 dates
+  - Updated handleSubmit, handleEdit, resetForm with all new fields
+  - Added fetchApiaries and fetchHives functions with useCallback
+  - Implemented hive filtering based on selected apiary
+  - Proper dependency arrays throughout to prevent re-renders
 
 ### October 25, 2025 - Profile & Data Export
 - **Moved Profile Features**:
@@ -237,13 +289,34 @@ ADD COLUMN IF NOT EXISTS last_name VARCHAR(255),
 ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(50);
 ```
 
-2. **Queen Rearing Acceptance Check** (`sql/add_acceptance_check_to_rearing_batches.sql`):
+2. **Queen Rearing - Acceptance Check** (`sql/add_acceptance_check_to_rearing_batches.sql`):
 ```sql
 ALTER TABLE public.rearing_batches
 ADD COLUMN IF NOT EXISTS acceptance_check_date DATE;
 ```
 
+3. **Queen Rearing - Progression Fields** (`sql/add_queen_rearing_progression_fields.sql`):
+```sql
+ALTER TABLE public.rearing_batches
+ADD COLUMN IF NOT EXISTS grafts_accepted INTEGER,
+ADD COLUMN IF NOT EXISTS queens_hatched INTEGER,
+ADD COLUMN IF NOT EXISTS queens_mated INTEGER;
+```
+
+4. **Queen Rearing - Starter Colony** (`sql/add_starter_colony_to_rearing_batches.sql`):
+```sql
+ALTER TABLE public.rearing_batches
+ADD COLUMN IF NOT EXISTS starter_colony_hive_id UUID REFERENCES public.hives(id) ON DELETE SET NULL;
+```
+
+5. **Queen Rearing - Cage Dates** (`sql/add_cage_dates_to_rearing_batches.sql`):
+```sql
+ALTER TABLE public.rearing_batches
+ADD COLUMN IF NOT EXISTS first_option_to_cage_date DATE,
+ADD COLUMN IF NOT EXISTS second_option_to_cage_date DATE;
+```
+
 ---
 
 **Last Updated**: October 26, 2025
-**Version**: Queen-Rearing-Enhancements
+**Version**: Queen-Rearing-Complete-Overhaul
