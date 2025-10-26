@@ -445,35 +445,44 @@ export default function BatchesPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Starter Colony Apiary</label>
-              <select
-                value={formData.starter_apiary_id}
-                onChange={(e) => {
-                  setFormData({...formData, starter_apiary_id: e.target.value, starter_colony_hive_id: ''})
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Select apiary (optional)</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
-                ))}
-              </select>
-            </div>
+            {/* Starter Colony Selection - Grouped */}
+            <div className="md:col-span-2 bg-green-50 p-4 rounded-lg border border-green-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Starter Colony</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+                  <select
+                    value={formData.starter_apiary_id}
+                    onChange={(e) => {
+                      setFormData({...formData, starter_apiary_id: e.target.value, starter_colony_hive_id: ''})
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="">Select apiary (optional)</option>
+                    {apiaries.map((apiary) => (
+                      <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Starter Colony Hive</label>
-              <select
-                value={formData.starter_colony_hive_id}
-                onChange={(e) => setFormData({...formData, starter_colony_hive_id: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                disabled={!formData.starter_apiary_id}
-              >
-                <option value="">Select hive (optional)</option>
-                {filteredHives.map((hive) => (
-                  <option key={hive.id} value={hive.id}>{hive.hive_number}</option>
-                ))}
-              </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hive</label>
+                  <select
+                    value={formData.starter_colony_hive_id}
+                    onChange={(e) => setFormData({...formData, starter_colony_hive_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!formData.starter_apiary_id}
+                  >
+                    <option value="">Select hive (optional)</option>
+                    {filteredHives.map((hive) => (
+                      <option key={hive.id} value={hive.id}>{hive.hive_number}</option>
+                    ))}
+                  </select>
+                  {!formData.starter_apiary_id && (
+                    <p className="text-xs text-gray-500 mt-1">Select an apiary first</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Batch Quantities - Grouped Vertically */}
