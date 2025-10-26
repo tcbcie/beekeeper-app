@@ -42,6 +42,8 @@ interface Inspection {
   brood_pattern_rating: number
   temperament_rating: number
   population_strength: number
+  swarming_tendency: number
+  calmness: number
   disease_issues: string
   notes: string
   image_url: string | null
@@ -68,6 +70,8 @@ interface FormData {
   brood_pattern_rating: number
   temperament_rating: number
   population_strength: number
+  swarming_tendency: number
+  calmness: number
   disease_issues: string
   notes: string
   disease_present: boolean
@@ -110,6 +114,8 @@ export default function InspectionsPage() {
     brood_pattern_rating: 3,
     temperament_rating: 3,
     population_strength: 3,
+    swarming_tendency: 3,
+    calmness: 3,
     disease_issues: '',
     notes: '',
     disease_present: false,
@@ -471,6 +477,8 @@ export default function InspectionsPage() {
         brood_pattern_rating: formData.brood_pattern_rating,
         temperament_rating: formData.temperament_rating,
         population_strength: formData.population_strength,
+        swarming_tendency: formData.swarming_tendency,
+        calmness: formData.calmness,
         disease_issues: disease_issues,
         notes: formData.notes,
         image_url: imageUrl,
@@ -548,6 +556,8 @@ export default function InspectionsPage() {
       brood_pattern_rating: inspection.brood_pattern_rating ?? 3,
       temperament_rating: inspection.temperament_rating ?? 3,
       population_strength: inspection.population_strength ?? 3,
+      swarming_tendency: inspection.swarming_tendency ?? 3,
+      calmness: inspection.calmness ?? 3,
       disease_issues: inspection.disease_issues || '',
       notes: inspection.notes || '',
       disease_present: disease_present,
@@ -598,6 +608,8 @@ export default function InspectionsPage() {
       brood_pattern_rating: 3,
       temperament_rating: 3,
       population_strength: 3,
+      swarming_tendency: 3,
+      calmness: 3,
       disease_issues: '',
       notes: '',
       disease_present: false,
@@ -1035,156 +1047,268 @@ export default function InspectionsPage() {
               </div>
             )}
 
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Brood Pattern: {formData.brood_pattern_rating === 0 ? 'Not Recorded' : renderStars(formData.brood_pattern_rating)}
-                </label>
-                <div className="relative group">
-                  <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
-                    <div className="font-semibold mb-2">Brood Pattern Rating Guide:</div>
-                    <div className="space-y-1">
-                      <div><strong>⭐ (1):</strong> Poor - Many empty cells, spotty pattern</div>
-                      <div><strong>⭐⭐ (2):</strong> Fair - Some gaps, irregular pattern</div>
-                      <div><strong>⭐⭐⭐ (3):</strong> Good - Mostly solid with few gaps</div>
-                      <div><strong>⭐⭐⭐⭐ (4):</strong> Very Good - Solid pattern, minimal gaps</div>
-                      <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Solid, compact brood pattern</div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
-                      A good brood pattern indicates a healthy, productive queen laying eggs consistently.
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => setFormData({...formData, brood_pattern_rating: rating})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                      formData.brood_pattern_rating === rating
-                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                    }`}
-                  >
-                    {rating}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, brood_pattern_rating: 0})}
-                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                    formData.brood_pattern_rating === 0
-                      ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                  }`}
-                >
-                  Not Recorded
-                </button>
-              </div>
-            </div>
+            {/* Behaviour Section - Grouped */}
+            <div className="md:col-span-2 bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-4">Behaviour</h4>
 
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Temperament: {formData.temperament_rating === 0 ? 'Not Recorded' : renderStars(formData.temperament_rating)}
-                </label>
-                <div className="relative group">
-                  <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
-                    <div className="font-semibold mb-2">Temperament Rating Guide:</div>
-                    <div className="space-y-1">
-                      <div><strong>⭐ (1):</strong> Aggressive - Very defensive, difficult to work with</div>
-                      <div><strong>⭐⭐ (2):</strong> Defensive - Quite agitated, requires care</div>
-                      <div><strong>⭐⭐⭐ (3):</strong> Average - Some defensiveness, manageable</div>
-                      <div><strong>⭐⭐⭐⭐ (4):</strong> Calm - Easy to work with, minimal smoke needed</div>
-                      <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Gentle - Very calm, pleasant to inspect</div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
-                      Temperament affects how easy the colony is to manage and inspect safely.
+              {/* Population */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Population: {formData.population_strength === 0 ? 'Not Recorded' : renderStars(formData.population_strength)}
+                  </label>
+                  <div className="relative group">
+                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                      <div className="font-semibold mb-2">Population Rating Guide:</div>
+                      <div className="space-y-1">
+                        <div><strong>⭐ (1):</strong> Very Weak - Few bees, struggling colony</div>
+                        <div><strong>⭐⭐ (2):</strong> Weak - Low population, needs attention</div>
+                        <div><strong>⭐⭐⭐ (3):</strong> Moderate - Average strength, room to grow</div>
+                        <div><strong>⭐⭐⭐⭐ (4):</strong> Strong - Good population, healthy colony</div>
+                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very Strong - Bursting with bees, may need space</div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                        Population strength indicates colony health and productivity potential.
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                {[1, 2, 3, 4, 5].map((rating) => (
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setFormData({...formData, population_strength: rating})}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                        formData.population_strength === rating
+                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                      }`}
+                    >
+                      {rating}
+                    </button>
+                  ))}
                   <button
-                    key={rating}
                     type="button"
-                    onClick={() => setFormData({...formData, temperament_rating: rating})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                      formData.temperament_rating === rating
-                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    onClick={() => setFormData({...formData, population_strength: 0})}
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                      formData.population_strength === 0
+                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                     }`}
                   >
-                    {rating}
+                    Not Recorded
                   </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, temperament_rating: 0})}
-                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                    formData.temperament_rating === 0
-                      ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                  }`}
-                >
-                  Not Recorded
-                </button>
+                </div>
               </div>
-            </div>
 
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Population: {formData.population_strength === 0 ? 'Not Recorded' : renderStars(formData.population_strength)}
-                </label>
-                <div className="relative group">
-                  <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
-                    <div className="font-semibold mb-2">Population Rating Guide:</div>
-                    <div className="space-y-1">
-                      <div><strong>⭐ (1):</strong> Very Weak - Few bees, struggling colony</div>
-                      <div><strong>⭐⭐ (2):</strong> Weak - Low population, needs attention</div>
-                      <div><strong>⭐⭐⭐ (3):</strong> Moderate - Average strength, room to grow</div>
-                      <div><strong>⭐⭐⭐⭐ (4):</strong> Strong - Good population, healthy colony</div>
-                      <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very Strong - Bursting with bees, may need space</div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
-                      Population strength indicates colony health and productivity potential.
+              {/* Temperament */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Temperament: {formData.temperament_rating === 0 ? 'Not Recorded' : renderStars(formData.temperament_rating)}
+                  </label>
+                  <div className="relative group">
+                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                      <div className="font-semibold mb-2">Temperament Rating Guide:</div>
+                      <div className="space-y-1">
+                        <div><strong>⭐ (1):</strong> Aggressive - Very defensive, difficult to work with</div>
+                        <div><strong>⭐⭐ (2):</strong> Defensive - Quite agitated, requires care</div>
+                        <div><strong>⭐⭐⭐ (3):</strong> Average - Some defensiveness, manageable</div>
+                        <div><strong>⭐⭐⭐⭐ (4):</strong> Calm - Easy to work with, minimal smoke needed</div>
+                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Gentle - Very calm, pleasant to inspect</div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                        Temperament affects how easy the colony is to manage and inspect safely.
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                {[1, 2, 3, 4, 5].map((rating) => (
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setFormData({...formData, temperament_rating: rating})}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                        formData.temperament_rating === rating
+                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                      }`}
+                    >
+                      {rating}
+                    </button>
+                  ))}
                   <button
-                    key={rating}
                     type="button"
-                    onClick={() => setFormData({...formData, population_strength: rating})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                      formData.population_strength === rating
-                        ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    onClick={() => setFormData({...formData, temperament_rating: 0})}
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                      formData.temperament_rating === 0
+                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                     }`}
                   >
-                    {rating}
+                    Not Recorded
                   </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, population_strength: 0})}
-                  className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                    formData.population_strength === 0
-                      ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                  }`}
-                >
-                  Not Recorded
-                </button>
+                </div>
+              </div>
+
+              {/* Brood Pattern */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Brood Pattern: {formData.brood_pattern_rating === 0 ? 'Not Recorded' : renderStars(formData.brood_pattern_rating)}
+                  </label>
+                  <div className="relative group">
+                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                      <div className="font-semibold mb-2">Brood Pattern Rating Guide:</div>
+                      <div className="space-y-1">
+                        <div><strong>⭐ (1):</strong> Poor - Many empty cells, spotty pattern</div>
+                        <div><strong>⭐⭐ (2):</strong> Fair - Some gaps, irregular pattern</div>
+                        <div><strong>⭐⭐⭐ (3):</strong> Good - Mostly solid with few gaps</div>
+                        <div><strong>⭐⭐⭐⭐ (4):</strong> Very Good - Solid pattern, minimal gaps</div>
+                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Solid, compact brood pattern</div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                        A good brood pattern indicates a healthy, productive queen laying eggs consistently.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setFormData({...formData, brood_pattern_rating: rating})}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                        formData.brood_pattern_rating === rating
+                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                      }`}
+                    >
+                      {rating}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, brood_pattern_rating: 0})}
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                      formData.brood_pattern_rating === 0
+                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    Not Recorded
+                  </button>
+                </div>
+              </div>
+
+              {/* Swarming Tendency */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Swarming Tendency: {formData.swarming_tendency === 0 ? 'Not Recorded' : renderStars(formData.swarming_tendency)}
+                  </label>
+                  <div className="relative group">
+                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                      <div className="font-semibold mb-2">Swarming Tendency Rating Guide:</div>
+                      <div className="space-y-1">
+                        <div><strong>⭐ (1):</strong> Very Low - Rarely swarms, stable colony</div>
+                        <div><strong>⭐⭐ (2):</strong> Low - Occasional signs, manageable</div>
+                        <div><strong>⭐⭐⭐ (3):</strong> Moderate - Average swarming behavior</div>
+                        <div><strong>⭐⭐⭐⭐ (4):</strong> High - Frequent queen cells, needs attention</div>
+                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very High - Strong swarm preparations evident</div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                        Monitor swarming tendency to prevent losing half your colony.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setFormData({...formData, swarming_tendency: rating})}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                        formData.swarming_tendency === rating
+                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                      }`}
+                    >
+                      {rating}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, swarming_tendency: 0})}
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                      formData.swarming_tendency === 0
+                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    Not Recorded
+                  </button>
+                </div>
+              </div>
+
+              {/* Calmness */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Calmness: {formData.calmness === 0 ? 'Not Recorded' : renderStars(formData.calmness)}
+                  </label>
+                  <div className="relative group">
+                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                      <div className="font-semibold mb-2">Calmness Rating Guide:</div>
+                      <div className="space-y-1">
+                        <div><strong>⭐ (1):</strong> Very Nervous - Runs on comb, easily agitated</div>
+                        <div><strong>⭐⭐ (2):</strong> Nervous - Some running, fairly reactive</div>
+                        <div><strong>⭐⭐⭐ (3):</strong> Average - Normal bee behavior</div>
+                        <div><strong>⭐⭐⭐⭐ (4):</strong> Calm - Stay on comb, minimal disturbance</div>
+                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very Calm - Hardly notice inspection, very gentle</div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                        Calm bees make inspections easier and safer for both bees and beekeeper.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setFormData({...formData, calmness: rating})}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                        formData.calmness === rating
+                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                      }`}
+                    >
+                      {rating}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, calmness: 0})}
+                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                      formData.calmness === 0
+                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    Not Recorded
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1389,20 +1513,32 @@ export default function InspectionsPage() {
                   </div>
                 </div>
               )}
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-xs text-gray-500 mb-1">Brood Pattern</div>
-                <div className="text-sm">{renderStars(inspection.brood_pattern_rating)}</div>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-xs text-gray-500 mb-1">Temperament</div>
-                <div className="text-sm">{renderStars(inspection.temperament_rating)}</div>
-              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">Population: </span>
-                <span>{renderStars(inspection.population_strength)}</span>
+            {/* Behaviour Section - Grouped Display */}
+            <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Behaviour</h4>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Population</div>
+                  <div className="text-sm">{renderStars(inspection.population_strength)}</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Temperament</div>
+                  <div className="text-sm">{renderStars(inspection.temperament_rating)}</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Brood Pattern</div>
+                  <div className="text-sm">{renderStars(inspection.brood_pattern_rating)}</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Swarming Tendency</div>
+                  <div className="text-sm">{renderStars(inspection.swarming_tendency)}</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Calmness</div>
+                  <div className="text-sm">{renderStars(inspection.calmness)}</div>
+                </div>
               </div>
             </div>
 
