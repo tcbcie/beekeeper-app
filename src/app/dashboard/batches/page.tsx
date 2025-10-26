@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Info } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Info, Minus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -22,7 +22,6 @@ interface Batch {
   queens_mated: number | null
   acceptance_check_date: string | null
   emergence_date: string | null
-  status: string
   notes: string | null
   queens?: {
     queen_number: string
@@ -39,7 +38,6 @@ interface FormData {
   queens_mated: string
   acceptance_check_date: string
   emergence_date: string
-  status: string
   notes: string
 }
 
@@ -62,7 +60,6 @@ export default function BatchesPage() {
     queens_mated: '',
     acceptance_check_date: '',
     emergence_date: '',
-    status: 'grafted',
     notes: '',
   })
 
@@ -142,7 +139,6 @@ export default function BatchesPage() {
         queens_mated: formData.queens_mated ? parseInt(formData.queens_mated) : null,
         acceptance_check_date: formData.acceptance_check_date || null,
         emergence_date: formData.emergence_date || null,
-        status: formData.status,
         notes: formData.notes || null,
       }
 
@@ -182,7 +178,6 @@ export default function BatchesPage() {
       queens_mated: batch.queens_mated?.toString() || '',
       acceptance_check_date: batch.acceptance_check_date || '',
       emergence_date: batch.emergence_date || '',
-      status: batch.status,
       notes: batch.notes || '',
     })
     setShowForm(true)
@@ -214,7 +209,6 @@ export default function BatchesPage() {
       queens_mated: '',
       acceptance_check_date: '',
       emergence_date: '',
-      status: 'grafted',
       notes: '',
     })
   }
@@ -318,52 +312,150 @@ export default function BatchesPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Number of Grafts</label>
-              <input
-                type="number"
-                value={formData.cell_count}
-                onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                min="0"
-                placeholder="Total cells grafted"
-              />
-            </div>
+            {/* Queen Rearing Progression - Grouped Vertically */}
+            <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Queen Rearing Progression</h4>
+              <div className="space-y-3">
+                {/* Number of Grafts */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Number of Grafts</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.cell_count || '0')
+                        if (val > 0) setFormData({...formData, cell_count: (val - 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      value={formData.cell_count}
+                      onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      min="0"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.cell_count || '0')
+                        setFormData({...formData, cell_count: (val + 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Grafts Accepted</label>
-              <input
-                type="number"
-                value={formData.grafts_accepted}
-                onChange={(e) => setFormData({...formData, grafts_accepted: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                min="0"
-                placeholder="Cells accepted by larvae"
-              />
-            </div>
+                {/* Grafts Accepted */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Grafts Accepted</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.grafts_accepted || '0')
+                        if (val > 0) setFormData({...formData, grafts_accepted: (val - 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      value={formData.grafts_accepted}
+                      onChange={(e) => setFormData({...formData, grafts_accepted: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      min="0"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.grafts_accepted || '0')
+                        setFormData({...formData, grafts_accepted: (val + 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Queens Hatched</label>
-              <input
-                type="number"
-                value={formData.queens_hatched}
-                onChange={(e) => setFormData({...formData, queens_hatched: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                min="0"
-                placeholder="Number emerged from cells"
-              />
-            </div>
+                {/* Queens Hatched */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Queens Hatched</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.queens_hatched || '0')
+                        if (val > 0) setFormData({...formData, queens_hatched: (val - 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      value={formData.queens_hatched}
+                      onChange={(e) => setFormData({...formData, queens_hatched: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      min="0"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.queens_hatched || '0')
+                        setFormData({...formData, queens_hatched: (val + 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Queens Mated</label>
-              <input
-                type="number"
-                value={formData.queens_mated}
-                onChange={(e) => setFormData({...formData, queens_mated: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                min="0"
-                placeholder="Successfully mated queens"
-              />
+                {/* Queens Mated */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Queens Mated</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.queens_mated || '0')
+                        if (val > 0) setFormData({...formData, queens_mated: (val - 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      value={formData.queens_mated}
+                      onChange={(e) => setFormData({...formData, queens_mated: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      min="0"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.queens_mated || '0')
+                        setFormData({...formData, queens_mated: (val + 1).toString()})
+                      }}
+                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -385,20 +477,6 @@ export default function BatchesPage() {
                 onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="grafted">Grafted</option>
-                <option value="emerged">Emerged</option>
-                <option value="mated">Mated</option>
-                <option value="completed">Completed</option>
-              </select>
             </div>
 
             <div className="md:col-span-2">
@@ -436,7 +514,6 @@ export default function BatchesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hatched</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mated</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acceptance Check</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -451,16 +528,6 @@ export default function BatchesPage() {
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.acceptance_check_date || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    batch.status === 'grafted' ? 'bg-blue-100 text-blue-800' :
-                    batch.status === 'emerged' ? 'bg-purple-100 text-purple-800' :
-                    batch.status === 'mated' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {batch.status}
-                  </span>
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap flex gap-2">
                   <button onClick={() => handleEdit(batch)} className="text-blue-600 hover:text-blue-900">
                     <Edit2 size={16} />
