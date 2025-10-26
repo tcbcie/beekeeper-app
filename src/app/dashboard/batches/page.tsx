@@ -17,6 +17,7 @@ interface Batch {
   mother_queen_id: string | null
   graft_date: string
   cell_count: number | null
+  acceptance_check_date: string | null
   emergence_date: string | null
   status: string
   notes: string | null
@@ -30,6 +31,7 @@ interface FormData {
   mother_queen_id: string
   graft_date: string
   cell_count: string
+  acceptance_check_date: string
   emergence_date: string
   status: string
   notes: string
@@ -49,6 +51,7 @@ export default function BatchesPage() {
     mother_queen_id: '',
     graft_date: new Date().toISOString().split('T')[0],
     cell_count: '',
+    acceptance_check_date: '',
     emergence_date: '',
     status: 'grafted',
     notes: '',
@@ -96,6 +99,25 @@ export default function BatchesPage() {
     initUser()
   }, [router, fetchBatches, fetchQueens])
 
+  // Auto-calculate acceptance check date (graft_date + 1 day)
+  useEffect(() => {
+    if (formData.graft_date) {
+      const graftDate = new Date(formData.graft_date)
+      const acceptanceDate = new Date(graftDate)
+      acceptanceDate.setDate(acceptanceDate.getDate() + 1)
+      const calculatedDate = acceptanceDate.toISOString().split('T')[0]
+
+      // Only update if the calculated date is different from current acceptance_check_date
+      // This prevents infinite loops
+      if (formData.acceptance_check_date !== calculatedDate && !editingBatch) {
+        setFormData(prev => ({
+          ...prev,
+          acceptance_check_date: calculatedDate
+        }))
+      }
+    }
+  }, [formData.graft_date, formData.acceptance_check_date, editingBatch])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
@@ -106,6 +128,7 @@ export default function BatchesPage() {
         mother_queen_id: formData.mother_queen_id || null,
         graft_date: formData.graft_date,
         cell_count: formData.cell_count ? parseInt(formData.cell_count) : null,
+        acceptance_check_date: formData.acceptance_check_date || null,
         emergence_date: formData.emergence_date || null,
         status: formData.status,
         notes: formData.notes || null,
@@ -142,6 +165,7 @@ export default function BatchesPage() {
       mother_queen_id: batch.mother_queen_id || '',
       graft_date: batch.graft_date,
       cell_count: batch.cell_count?.toString() || '',
+      acceptance_check_date: batch.acceptance_check_date || '',
       emergence_date: batch.emergence_date || '',
       status: batch.status,
       notes: batch.notes || '',
@@ -170,6 +194,7 @@ export default function BatchesPage() {
       mother_queen_id: '',
       graft_date: new Date().toISOString().split('T')[0],
       cell_count: '',
+      acceptance_check_date: '',
       emergence_date: '',
       status: 'grafted',
       notes: '',
@@ -243,13 +268,13 @@ export default function BatchesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mother Queen</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Breeder Queen</label>
               <select
                 value={formData.mother_queen_id}
                 onChange={(e) => setFormData({...formData, mother_queen_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
-                <option value="">Select mother queen</option>
+                <option value="">Select breeder queen (optional)</option>
                 {queens.map((q: Queen) => (
                   <option key={q.id} value={q.id}>{q.queen_number}</option>
                 ))}
@@ -268,14 +293,26 @@ export default function BatchesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cell Count</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Number of Grafts</label>
               <input
                 type="number"
                 value={formData.cell_count}
                 onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 min="0"
+                placeholder="Total cells grafted"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Acceptance Check Date</label>
+              <input
+                type="date"
+                value={formData.acceptance_check_date}
+                onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <p className="text-xs text-gray-500 mt-1">Auto-set to graft date + 1 day</p>
             </div>
 
             <div>
@@ -330,9 +367,10 @@ export default function BatchesPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mother Queen</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Breeder Queen</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Graft Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cells</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grafts</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acceptance Check</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
@@ -344,6 +382,7 @@ export default function BatchesPage() {
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.graft_date}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || 'N/A'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.acceptance_check_date || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     batch.status === 'grafted' ? 'bg-blue-100 text-blue-800' :
