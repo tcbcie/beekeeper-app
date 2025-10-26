@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Minus } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Minus, MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -464,7 +464,15 @@ export default function BatchesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expected Emergence Date</label>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                Expected Emergence Date
+                <div className="group relative">
+                  <MessageCircle size={14} className="text-gray-400 cursor-help" />
+                  <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                    Assuming the larvae are approximately four days after the egg was laid, they should all be of the same age and ideally no more than 12 hours old at the time of grafting.
+                  </div>
+                </div>
+              </label>
               <input
                 type="date"
                 value={formData.emergence_date}
