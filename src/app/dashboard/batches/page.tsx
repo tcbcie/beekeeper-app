@@ -44,6 +44,8 @@ interface Batch {
   second_option_to_cage_date: string | null
   emergence_date: string | null
   notes: string | null
+  enable_browser_notifications: boolean
+  enable_email_digest: boolean
   queens?: {
     queen_number: string
   } | null
@@ -70,6 +72,8 @@ interface FormData {
   second_option_to_cage_date: string
   emergence_date: string
   notes: string
+  enable_browser_notifications: boolean
+  enable_email_digest: boolean
 }
 
 // Format date to Irish format (DD/MM/YYYY)
@@ -109,6 +113,8 @@ export default function BatchesPage() {
     second_option_to_cage_date: '',
     emergence_date: '',
     notes: '',
+    enable_browser_notifications: false,
+    enable_email_digest: false,
   })
 
   const fetchBatches = useCallback(async (userIdParam?: string) => {
@@ -304,6 +310,8 @@ export default function BatchesPage() {
         second_option_to_cage_date: formData.second_option_to_cage_date || null,
         emergence_date: formData.emergence_date || null,
         notes: formData.notes || null,
+        enable_browser_notifications: formData.enable_browser_notifications,
+        enable_email_digest: formData.enable_email_digest,
       }
 
       if (editingBatch) {
@@ -349,6 +357,8 @@ export default function BatchesPage() {
       second_option_to_cage_date: batch.second_option_to_cage_date || '',
       emergence_date: batch.emergence_date || '',
       notes: batch.notes || '',
+      enable_browser_notifications: batch.enable_browser_notifications || false,
+      enable_email_digest: batch.enable_email_digest || false,
     })
     setShowForm(true)
   }
@@ -384,6 +394,8 @@ export default function BatchesPage() {
       second_option_to_cage_date: '',
       emergence_date: '',
       notes: '',
+      enable_browser_notifications: false,
+      enable_email_digest: false,
     })
   }
 
@@ -744,6 +756,44 @@ export default function BatchesPage() {
                 placeholder="Weather conditions, acceptance rate, observations..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               />
+            </div>
+
+            {/* Notification Preferences - Grouped */}
+            <div className="md:col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Notification Preferences</h4>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="browser-notifications"
+                    checked={formData.enable_browser_notifications}
+                    onChange={(e) => setFormData({...formData, enable_browser_notifications: e.target.checked})}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="browser-notifications" className="ml-2 text-sm text-gray-700">
+                    Enable Browser Notifications
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      Get notified on the day of important dates (acceptance check, cage dates, hatch date)
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="email-digest"
+                    checked={formData.enable_email_digest}
+                    onChange={(e) => setFormData({...formData, enable_email_digest: e.target.checked})}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="email-digest" className="ml-2 text-sm text-gray-700">
+                    Include in Weekly Email Digest
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      Receive a weekly summary of upcoming dates for this batch
+                    </span>
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="md:col-span-2 flex gap-3">
