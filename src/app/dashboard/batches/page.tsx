@@ -218,7 +218,10 @@ export default function BatchesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Queen Rearing 🥚</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Queen Rearing 🥚</h1>
+          <p className="text-sm text-gray-600 mt-1">3-5-8 - The Queen is made!</p>
+        </div>
         {activeTab === 'planning' && (
           <button
             onClick={() => setShowForm(!showForm)}
