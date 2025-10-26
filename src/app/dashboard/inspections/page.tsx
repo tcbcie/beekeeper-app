@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, ChevronDown, HelpCircle, Camera, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -44,6 +44,12 @@ interface Inspection {
   population_strength: number
   swarming_tendency: number
   calmness: number
+  frames_foundation: number
+  frames_brood: number
+  frames_drawn: number
+  honey_supers: number
+  drone_frames: number
+  store_frames: number
   disease_issues: string
   notes: string
   image_url: string | null
@@ -72,6 +78,12 @@ interface FormData {
   population_strength: number
   swarming_tendency: number
   calmness: number
+  frames_foundation: number
+  frames_brood: number
+  frames_drawn: number
+  honey_supers: number
+  drone_frames: number
+  store_frames: number
   disease_issues: string
   notes: string
   disease_present: boolean
@@ -103,6 +115,7 @@ export default function InspectionsPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [formApiaryId, setFormApiaryId] = useState<string>('')
+  const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -116,6 +129,12 @@ export default function InspectionsPage() {
     population_strength: 3,
     swarming_tendency: 3,
     calmness: 3,
+    frames_foundation: 0,
+    frames_brood: 0,
+    frames_drawn: 0,
+    honey_supers: 0,
+    drone_frames: 0,
+    store_frames: 0,
     disease_issues: '',
     notes: '',
     disease_present: false,
@@ -479,6 +498,12 @@ export default function InspectionsPage() {
         population_strength: formData.population_strength,
         swarming_tendency: formData.swarming_tendency,
         calmness: formData.calmness,
+        frames_foundation: formData.frames_foundation,
+        frames_brood: formData.frames_brood,
+        frames_drawn: formData.frames_drawn,
+        honey_supers: formData.honey_supers,
+        drone_frames: formData.drone_frames,
+        store_frames: formData.store_frames,
         disease_issues: disease_issues,
         notes: formData.notes,
         image_url: imageUrl,
@@ -558,6 +583,12 @@ export default function InspectionsPage() {
       population_strength: inspection.population_strength ?? 3,
       swarming_tendency: inspection.swarming_tendency ?? 3,
       calmness: inspection.calmness ?? 3,
+      frames_foundation: inspection.frames_foundation ?? 0,
+      frames_brood: inspection.frames_brood ?? 0,
+      frames_drawn: inspection.frames_drawn ?? 0,
+      honey_supers: inspection.honey_supers ?? 0,
+      drone_frames: inspection.drone_frames ?? 0,
+      store_frames: inspection.store_frames ?? 0,
       disease_issues: inspection.disease_issues || '',
       notes: inspection.notes || '',
       disease_present: disease_present,
@@ -597,6 +628,7 @@ export default function InspectionsPage() {
     setFormApiaryId('')
     setImageFile(null)
     setImagePreview(null)
+    setGivenTakenExpanded(false)
     setFormData({
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
@@ -610,6 +642,12 @@ export default function InspectionsPage() {
       population_strength: 3,
       swarming_tendency: 3,
       calmness: 3,
+      frames_foundation: 0,
+      frames_brood: 0,
+      frames_drawn: 0,
+      honey_supers: 0,
+      drone_frames: 0,
+      store_frames: 0,
       disease_issues: '',
       notes: '',
       disease_present: false,
@@ -1323,6 +1361,190 @@ export default function InspectionsPage() {
               </div>
             </div>
 
+            {/* Given/Taken Section - Collapsible */}
+            <div className="md:col-span-2 bg-orange-50 rounded-lg border-2 border-orange-200">
+              <button
+                type="button"
+                onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
+                className="w-full p-4 flex items-center justify-between hover:bg-orange-100 transition-colors rounded-t-lg"
+              >
+                <h4 className="text-sm font-semibold text-gray-900">Given/Taken</h4>
+                {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+
+              {givenTakenExpanded && (
+                <div className="p-4 pt-0 space-y-4">
+                  {/* Frames-Foundation */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Frames-Foundation</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, frames_foundation: Math.max(0, formData.frames_foundation - 1)})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Minus size={20} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.frames_foundation}
+                        onChange={(e) => setFormData({...formData, frames_foundation: Math.max(0, parseInt(e.target.value) || 0)})}
+                        className="flex-1 text-center px-3 py-2 min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-lg"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, frames_foundation: formData.frames_foundation + 1})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Brood-Frames */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Brood-Frames</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, frames_brood: Math.max(0, formData.frames_brood - 1)})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Minus size={20} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.frames_brood}
+                        onChange={(e) => setFormData({...formData, frames_brood: Math.max(0, parseInt(e.target.value) || 0)})}
+                        className="flex-1 text-center px-3 py-2 min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-lg"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, frames_brood: formData.frames_brood + 1})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Drawn-Frames */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Drawn-Frames</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, frames_drawn: Math.max(0, formData.frames_drawn - 1)})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Minus size={20} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.frames_drawn}
+                        onChange={(e) => setFormData({...formData, frames_drawn: Math.max(0, parseInt(e.target.value) || 0)})}
+                        className="flex-1 text-center px-3 py-2 min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-lg"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, frames_drawn: formData.frames_drawn + 1})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Honey Supers */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Honey Supers</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, honey_supers: Math.max(0, formData.honey_supers - 1)})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Minus size={20} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.honey_supers}
+                        onChange={(e) => setFormData({...formData, honey_supers: Math.max(0, parseInt(e.target.value) || 0)})}
+                        className="flex-1 text-center px-3 py-2 min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-lg"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, honey_supers: formData.honey_supers + 1})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Drone-Frames */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Drone-Frames</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, drone_frames: Math.max(0, formData.drone_frames - 1)})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Minus size={20} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.drone_frames}
+                        onChange={(e) => setFormData({...formData, drone_frames: Math.max(0, parseInt(e.target.value) || 0)})}
+                        className="flex-1 text-center px-3 py-2 min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-lg"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, drone_frames: formData.drone_frames + 1})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Store-Frames */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Store-Frames</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, store_frames: Math.max(0, formData.store_frames - 1)})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Minus size={20} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.store_frames}
+                        onChange={(e) => setFormData({...formData, store_frames: Math.max(0, parseInt(e.target.value) || 0)})}
+                        className="flex-1 text-center px-3 py-2 min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-lg"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, store_frames: formData.store_frames + 1})}
+                        className="min-h-[48px] min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Disease Status</label>
               <button
@@ -1556,6 +1778,52 @@ export default function InspectionsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Given/Taken Section - Display (only show if any values are non-zero) */}
+            {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
+              inspection.honey_supers > 0 || inspection.drone_frames > 0 || inspection.store_frames > 0) && (
+              <div className="mb-4 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Given/Taken</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {inspection.frames_foundation > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Frames-Foundation</div>
+                      <div className="text-2xl font-bold text-orange-600">{inspection.frames_foundation}</div>
+                    </div>
+                  )}
+                  {inspection.frames_brood > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Brood-Frames</div>
+                      <div className="text-2xl font-bold text-orange-600">{inspection.frames_brood}</div>
+                    </div>
+                  )}
+                  {inspection.frames_drawn > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Drawn-Frames</div>
+                      <div className="text-2xl font-bold text-orange-600">{inspection.frames_drawn}</div>
+                    </div>
+                  )}
+                  {inspection.honey_supers > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Honey Supers</div>
+                      <div className="text-2xl font-bold text-orange-600">{inspection.honey_supers}</div>
+                    </div>
+                  )}
+                  {inspection.drone_frames > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Drone-Frames</div>
+                      <div className="text-2xl font-bold text-orange-600">{inspection.drone_frames}</div>
+                    </div>
+                  )}
+                  {inspection.store_frames > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Store-Frames</div>
+                      <div className="text-2xl font-bold text-orange-600">{inspection.store_frames}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {(() => {
               console.log('Inspection weather check:', inspection.id, {
