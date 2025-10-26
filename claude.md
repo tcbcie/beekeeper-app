@@ -58,9 +58,32 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
   - **Starter Colony Section** (green box): Select apiary and hive for starter colony
   - **Batch Quantities Section** (blue box): Track progression with +/- buttons
     - Number of Grafts → Grafts Accepted → Queens Hatched → Queens Mated
+  - **Notification Preferences Section** (amber box): Per-batch notification settings
+    - Enable Browser Notifications - day-of alerts for important dates
+    - Include in Weekly Email Digest - weekly summary of upcoming dates
   - Breeder queen dropdown shows: "Queen# (Apiary - Hive#)"
   - Dates displayed in Irish format (DD/MM/YYYY) in table
 - **Selection Tab**: (Coming soon) Track and select best performing queens
+
+### Notification System
+- **Browser Push Notifications**: Day-of reminders for queen rearing events
+  - Requests permission on first visit to batches page
+  - Service worker handles notification display
+  - Triggers at 8 AM on event dates (acceptance check, cage dates, hatch date)
+  - Only works while browser tab is open (browser limitation)
+  - Click notification to navigate to batches page
+- **In-App Calendar Widget**: Shows upcoming events in next 7 days
+  - Displayed on main dashboard below Quick Actions
+  - Color-coded urgency badges (red/orange/yellow/blue)
+  - Lists all 4 event types for all batches
+  - Each event links to batches page
+- **Weekly Email Digest**: Optional weekly summary via email
+  - Supabase Edge Function runs on cron schedule
+  - Sends HTML email with upcoming events (next 7 days)
+  - Irish date format (DD/MM/YYYY)
+  - Color-coded urgency indicators
+  - Only sends to users with batches that have email digest enabled
+  - Uses Resend API (free tier: 100 emails/day)
 
 ### Inspections
 - Detailed hive inspection records
@@ -162,6 +185,55 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 
 ## Recent Changes
 
+### October 26, 2025 - Notification System Implementation
+- **Three-Part Notification System**:
+  1. **Browser Push Notifications** - Day-of alerts at 8 AM for important dates
+  2. **In-App Calendar Widget** - Dashboard widget showing upcoming events (next 7 days)
+  3. **Weekly Email Digest** - Optional weekly summary sent via email
+
+- **Notification Preferences** (Amber Box):
+  - Added two checkboxes to batch form for granular control
+  - "Enable Browser Notifications" - get browser alerts on event days
+  - "Include in Weekly Email Digest" - receive weekly email summaries
+  - Per-batch configuration (users choose which batches to get notifications for)
+  - Database migration: `add_notification_preferences_to_rearing_batches.sql`
+
+- **Browser Push Notifications**:
+  - Service worker (`public/service-worker.js`) handles notification display
+  - Notification utility (`src/lib/notifications.ts`) manages permissions and scheduling
+  - Auto-requests permission on first visit to batches page
+  - Schedules 8 AM notifications for today's events (4 types: acceptance, 1st cage, 2nd cage, hatch)
+  - Click notification to navigate to /dashboard/batches
+  - Limitation: Only works while browser tab is open
+
+- **In-App Calendar Widget** (`src/components/UpcomingEvents.tsx`):
+  - Displays on main dashboard between Quick Actions and Recent Activity
+  - Shows events within next 7 days across all batches
+  - Color-coded urgency badges:
+    - Red: Today
+    - Orange: Tomorrow
+    - Yellow: 2-3 days away
+    - Blue: 4-7 days away
+  - Each event is clickable and links to batches page
+  - Irish date format (DD/MM/YYYY)
+
+- **Weekly Email Digest** (Supabase Edge Function):
+  - Edge Function: `supabase/functions/weekly-email-digest/index.ts`
+  - Runs on weekly cron schedule (configurable, default Monday 8 AM)
+  - Sends HTML email with responsive design
+  - Only sends to users with batches that have `enable_email_digest = true`
+  - Groups all upcoming events by user
+  - Uses Resend API for email delivery (free tier: 100 emails/day)
+  - Includes unsubscribe/manage preferences link
+  - See `supabase/functions/weekly-email-digest/README.md` for setup instructions
+
+- **Technical Implementation**:
+  - Updated Batch and FormData interfaces with notification boolean fields
+  - Added useEffect hooks for notification initialization and scheduling
+  - Service worker registration and permission handling
+  - Supabase Edge Function with email templating
+  - Comprehensive README for Edge Function deployment
+
 ### October 26, 2025 - Queen Rearing Complete Overhaul
 - **Timeline Section** (Purple Box):
   - Added 5 date fields in chronological order displayed side-by-side
@@ -256,8 +328,9 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 ### Feature Enhancements
 - Export functionality for inspections and treatments
 - Advanced filtering and search across all sections
-- Notification system for important updates
 - Data visualization (charts/graphs) for trends
+- Enhanced notification preferences (global settings, custom notification times)
+- Email open tracking and click-through analytics for digest emails
 
 ### Code Quality
 - Maintain strict TypeScript types
@@ -316,7 +389,20 @@ ADD COLUMN IF NOT EXISTS first_option_to_cage_date DATE,
 ADD COLUMN IF NOT EXISTS second_option_to_cage_date DATE;
 ```
 
+6. **Queen Rearing - Notification Preferences** (`sql/add_notification_preferences_to_rearing_batches.sql`):
+```sql
+ALTER TABLE public.rearing_batches
+ADD COLUMN IF NOT EXISTS enable_browser_notifications BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS enable_email_digest BOOLEAN DEFAULT FALSE;
+
+COMMENT ON COLUMN public.rearing_batches.enable_browser_notifications
+IS 'Enable browser push notifications for important dates (acceptance check, cage dates, hatch date)';
+
+COMMENT ON COLUMN public.rearing_batches.enable_email_digest
+IS 'Include this batch in weekly email digest with upcoming dates';
+```
+
 ---
 
 **Last Updated**: October 26, 2025
-**Version**: Queen-Rearing-Complete-Overhaul
+**Version**: Notification-System-Complete
