@@ -40,6 +40,8 @@ interface Batch {
   queens_hatched: number | null
   queens_mated: number | null
   acceptance_check_date: string | null
+  first_option_to_cage_date: string | null
+  second_option_to_cage_date: string | null
   emergence_date: string | null
   notes: string | null
   queens?: {
@@ -64,6 +66,8 @@ interface FormData {
   queens_hatched: string
   queens_mated: string
   acceptance_check_date: string
+  first_option_to_cage_date: string
+  second_option_to_cage_date: string
   emergence_date: string
   notes: string
 }
@@ -101,6 +105,8 @@ export default function BatchesPage() {
     queens_hatched: '',
     queens_mated: '',
     acceptance_check_date: '',
+    first_option_to_cage_date: '',
+    second_option_to_cage_date: '',
     emergence_date: '',
     notes: '',
   })
@@ -226,6 +232,40 @@ export default function BatchesPage() {
     }
   }, [formData.graft_date, formData.acceptance_check_date, editingBatch])
 
+  // Auto-calculate first option to cage date (graft_date + 5 days)
+  useEffect(() => {
+    if (formData.graft_date) {
+      const graftDate = new Date(formData.graft_date)
+      const cageDate = new Date(graftDate)
+      cageDate.setDate(cageDate.getDate() + 5)
+      const calculatedDate = cageDate.toISOString().split('T')[0]
+
+      if (formData.first_option_to_cage_date !== calculatedDate && !editingBatch) {
+        setFormData(prev => ({
+          ...prev,
+          first_option_to_cage_date: calculatedDate
+        }))
+      }
+    }
+  }, [formData.graft_date, formData.first_option_to_cage_date, editingBatch])
+
+  // Auto-calculate second option to cage date (graft_date + 10 days)
+  useEffect(() => {
+    if (formData.graft_date) {
+      const graftDate = new Date(formData.graft_date)
+      const cageDate = new Date(graftDate)
+      cageDate.setDate(cageDate.getDate() + 10)
+      const calculatedDate = cageDate.toISOString().split('T')[0]
+
+      if (formData.second_option_to_cage_date !== calculatedDate && !editingBatch) {
+        setFormData(prev => ({
+          ...prev,
+          second_option_to_cage_date: calculatedDate
+        }))
+      }
+    }
+  }, [formData.graft_date, formData.second_option_to_cage_date, editingBatch])
+
   // Auto-calculate emergence date (graft_date + 12 days)
   useEffect(() => {
     if (formData.graft_date) {
@@ -260,6 +300,8 @@ export default function BatchesPage() {
         queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched) : null,
         queens_mated: formData.queens_mated ? parseInt(formData.queens_mated) : null,
         acceptance_check_date: formData.acceptance_check_date || null,
+        first_option_to_cage_date: formData.first_option_to_cage_date || null,
+        second_option_to_cage_date: formData.second_option_to_cage_date || null,
         emergence_date: formData.emergence_date || null,
         notes: formData.notes || null,
       }
@@ -303,6 +345,8 @@ export default function BatchesPage() {
       queens_hatched: batch.queens_hatched?.toString() || '',
       queens_mated: batch.queens_mated?.toString() || '',
       acceptance_check_date: batch.acceptance_check_date || '',
+      first_option_to_cage_date: batch.first_option_to_cage_date || '',
+      second_option_to_cage_date: batch.second_option_to_cage_date || '',
       emergence_date: batch.emergence_date || '',
       notes: batch.notes || '',
     })
@@ -336,6 +380,8 @@ export default function BatchesPage() {
       queens_hatched: '',
       queens_mated: '',
       acceptance_check_date: '',
+      first_option_to_cage_date: '',
+      second_option_to_cage_date: '',
       emergence_date: '',
       notes: '',
     })
@@ -435,7 +481,7 @@ export default function BatchesPage() {
             {/* Timeline Dates - Grouped */}
             <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border border-purple-200">
               <h4 className="text-sm font-semibold text-gray-900 mb-3">Timeline</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Graft Date *
@@ -458,6 +504,28 @@ export default function BatchesPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
                   <p className="text-xs text-gray-500 mt-1">Graft + 1 day</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">1st Option to Cage</label>
+                  <input
+                    type="date"
+                    value={formData.first_option_to_cage_date}
+                    onChange={(e) => setFormData({...formData, first_option_to_cage_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Graft + 5 days</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">2nd Option to Cage</label>
+                  <input
+                    type="date"
+                    value={formData.second_option_to_cage_date}
+                    onChange={(e) => setFormData({...formData, second_option_to_cage_date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Graft + 10 days</p>
                 </div>
 
                 <div>
