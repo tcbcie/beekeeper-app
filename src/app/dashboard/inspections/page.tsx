@@ -42,7 +42,6 @@ interface Inspection {
   brood_pattern_rating: number
   temperament_rating: number
   population_strength: number
-  honey_stores: string
   disease_issues: string
   notes: string
   image_url: string | null
@@ -69,7 +68,6 @@ interface FormData {
   brood_pattern_rating: number
   temperament_rating: number
   population_strength: number
-  honey_stores: string
   disease_issues: string
   notes: string
   disease_present: boolean
@@ -112,7 +110,6 @@ export default function InspectionsPage() {
     brood_pattern_rating: 3,
     temperament_rating: 3,
     population_strength: 3,
-    honey_stores: '',
     disease_issues: '',
     notes: '',
     disease_present: false,
@@ -474,7 +471,6 @@ export default function InspectionsPage() {
         brood_pattern_rating: formData.brood_pattern_rating,
         temperament_rating: formData.temperament_rating,
         population_strength: formData.population_strength,
-        honey_stores: formData.honey_stores,
         disease_issues: disease_issues,
         notes: formData.notes,
         image_url: imageUrl,
@@ -552,7 +548,6 @@ export default function InspectionsPage() {
       brood_pattern_rating: inspection.brood_pattern_rating ?? 3,
       temperament_rating: inspection.temperament_rating ?? 3,
       population_strength: inspection.population_strength ?? 3,
-      honey_stores: inspection.honey_stores || '',
       disease_issues: inspection.disease_issues || '',
       notes: inspection.notes || '',
       disease_present: disease_present,
@@ -603,7 +598,6 @@ export default function InspectionsPage() {
       brood_pattern_rating: 3,
       temperament_rating: 3,
       population_strength: 3,
-      honey_stores: '',
       disease_issues: '',
       notes: '',
       disease_present: false,
@@ -1194,21 +1188,6 @@ export default function InspectionsPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Honey Stores</label>
-              <select
-                value={formData.honey_stores}
-                onChange={(e) => setFormData({...formData, honey_stores: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Select level</option>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="Good">Good</option>
-                <option value="Excellent">Excellent</option>
-              </select>
-            </div>
-
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Disease Status</label>
               <button
@@ -1424,10 +1403,6 @@ export default function InspectionsPage() {
               <div>
                 <span className="font-medium text-gray-700">Population: </span>
                 <span>{renderStars(inspection.population_strength)}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Honey: </span>
-                <span>{inspection.honey_stores || 'N/A'}</span>
               </div>
             </div>
 
