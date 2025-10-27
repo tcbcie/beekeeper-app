@@ -130,6 +130,8 @@ export default function InspectionsPage() {
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
   const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
   const [diseaseExpanded, setDiseaseExpanded] = useState(false)
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -2381,14 +2383,23 @@ export default function InspectionsPage() {
             )}
 
             {inspection.image_url && (
-              <div className="relative w-full h-96 mb-4">
-                <Image
-                  src={inspection.image_url}
-                  alt="Inspection photo"
-                  fill
-                  className="object-cover rounded-lg border-2 border-gray-300"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
+              <div className="mb-4">
+                <div className="text-xs text-gray-500 mb-2">📷 Inspection Photo (double-click to enlarge)</div>
+                <div
+                  className="relative w-48 h-48 cursor-pointer hover:opacity-90 transition-opacity"
+                  onDoubleClick={() => {
+                    setModalImageUrl(inspection.image_url)
+                    setImageModalOpen(true)
+                  }}
+                >
+                  <Image
+                    src={inspection.image_url}
+                    alt="Inspection photo thumbnail"
+                    fill
+                    className="object-cover rounded-lg border-2 border-gray-300 shadow-md"
+                    sizes="192px"
+                  />
+                </div>
               </div>
             )}
 
@@ -2407,6 +2418,40 @@ export default function InspectionsPage() {
           {filterHiveId
             ? `No inspections found for this hive. Select "All Hives" or record a new inspection.`
             : 'No inspections recorded yet. Start tracking your hive inspections!'}
+        </div>
+      )}
+
+      {/* Image Modal */}
+      {imageModalOpen && modalImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => {
+            setImageModalOpen(false)
+            setModalImageUrl(null)
+          }}
+        >
+          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            <button
+              onClick={() => {
+                setImageModalOpen(false)
+                setModalImageUrl(null)
+              }}
+              className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
+              aria-label="Close modal"
+            >
+              <X size={24} className="text-gray-700" />
+            </button>
+            <div className="relative w-full h-full">
+              <Image
+                src={modalImageUrl}
+                alt="Inspection photo full size"
+                fill
+                className="object-contain"
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                priority
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
