@@ -434,11 +434,12 @@ export default function BatchesPage() {
   // Calculate date range based on time period
   const getDateRange = useCallback(() => {
     const today = new Date()
+    const currentYear = today.getFullYear()
     let startDate: Date | null = null
 
     switch (timePeriod) {
-      case '3months':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
+      case 'currentyear':
+        startDate = new Date(currentYear, 0, 1) // January 1st of current year
         break
       case '6months':
         startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())
@@ -1082,24 +1083,14 @@ export default function BatchesPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setTimePeriod('all')}
+                  onClick={() => setTimePeriod('currentyear')}
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                    timePeriod === 'all'
+                    timePeriod === 'currentyear'
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
-                  All Time
-                </button>
-                <button
-                  onClick={() => setTimePeriod('3months')}
-                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                    timePeriod === '3months'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                  }`}
-                >
-                  Last 3 Months
+                  Current Year ({new Date().getFullYear()})
                 </button>
                 <button
                   onClick={() => setTimePeriod('6months')}
@@ -1120,6 +1111,16 @@ export default function BatchesPage() {
                   }`}
                 >
                   Last Year
+                </button>
+                <button
+                  onClick={() => setTimePeriod('all')}
+                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                    timePeriod === 'all'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
+                >
+                  All Time
                 </button>
                 <button
                   onClick={() => setTimePeriod('custom')}
