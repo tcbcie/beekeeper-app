@@ -40,6 +40,7 @@ CREATE POLICY "hives_select_team_shared"
 SELECT 'Added: Team members can view hives in shared apiaries' as step;
 
 -- Step 5: Add policy for team members to view queens in shared hives
+-- Note: queens are linked via hives.queen_id, not queens.hive_id
 SELECT 'Current queens policies:' as step;
 SELECT policyname, cmd FROM pg_policies
 WHERE tablename = 'queens'
@@ -48,14 +49,15 @@ ORDER BY policyname;
 CREATE POLICY "queens_select_team_shared"
   ON public.queens FOR SELECT
   USING (
-    hive_id IN (
-      SELECT id
+    id IN (
+      SELECT queen_id
       FROM public.hives
-      WHERE apiary_id IN (
-        SELECT apiary_id
-        FROM public.team_apiaries
-        WHERE team_id IN (SELECT team_id FROM public.user_team_ids())
-      )
+      WHERE queen_id IS NOT NULL
+        AND apiary_id IN (
+          SELECT apiary_id
+          FROM public.team_apiaries
+          WHERE team_id IN (SELECT team_id FROM public.user_team_ids())
+        )
     )
   );
 
