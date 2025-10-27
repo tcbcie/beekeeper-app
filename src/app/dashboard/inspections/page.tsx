@@ -2081,13 +2081,25 @@ export default function InspectionsPage() {
               <div className="flex items-start gap-3">
                 {imagePreview ? (
                   <div className="relative w-20 h-20 flex-shrink-0 group">
-                    <Image
-                      src={imagePreview}
-                      alt="Preview"
-                      fill
-                      className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
-                      sizes="80px"
-                    />
+                    <div
+                      className="relative w-full h-full cursor-pointer"
+                      onDoubleClick={() => {
+                        setModalImageUrl(imagePreview)
+                        setImageModalOpen(true)
+                      }}
+                      title="Double-click to enlarge"
+                    >
+                      <Image
+                        src={imagePreview}
+                        alt="Preview"
+                        fill
+                        className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                        sizes="80px"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
+                        <Camera size={16} className="text-white" />
+                      </div>
+                    </div>
                     <button
                       type="button"
                       onClick={handleRemoveImage}
