@@ -338,6 +338,43 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">v1.0.5</span>
+                October 27, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Team Collaboration:</strong> Create teams to collaborate with other beekeepers on managing apiaries and hives</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Team Management in Profile: Create teams, invite members via email, manage roles (owner/admin/member)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Dashboard Teams section: View owned teams and teams you&apos;re a member of with member counts</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Invitation system with 7-day expiration, duplicate checking, and pending invitation tracking</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Member management: Add/remove members, view team member list, leave teams</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Full database schema with RLS policies for secure team-based data access</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">⚡</span>
+                  <span><em>Coming soon:</em> Email notifications for invitations and shared apiary management</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">v1.0.4</span>
                 October 27, 2025
               </h3>
