@@ -531,12 +531,13 @@ export default function SettingsPage() {
         `
       })
 
+      let tables: string[]
       if (tablesError) {
         console.error('Cannot fetch schema via RPC, using direct query method')
         // Fallback: get tables from known list
-        var tables = ['apiaries', 'hives', 'queens', 'inspections', 'varroa_checks', 'varroa_treatments', 'dropdown_categories', 'dropdown_values', 'feedings', 'harvests', 'rearing_batches', 'support_tickets', 'user_profiles']
+        tables = ['apiaries', 'hives', 'queens', 'inspections', 'varroa_checks', 'varroa_treatments', 'dropdown_categories', 'dropdown_values', 'feedings', 'harvests', 'rearing_batches', 'support_tickets', 'user_profiles']
       } else {
-        var tables = tablesData.map((t: { table_name: string }) => t.table_name)
+        tables = tablesData.map((t: { table_name: string }) => t.table_name)
       }
 
       // Get schema information for each table
