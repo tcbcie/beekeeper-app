@@ -102,9 +102,9 @@ export default function BatchesPage() {
 
   // Selection tab states
   const [selectedApiary, setSelectedApiary] = useState<string>('all')
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
-  const [dateFrom, setDateFrom] = useState<string>('')
-  const [dateTo, setDateTo] = useState<string>('')
+  const [timePeriod, setTimePeriod] = useState<string>('all')
+  const [customStartDate, setCustomStartDate] = useState<string>('')
+  const [customEndDate, setCustomEndDate] = useState<string>('')
   const [weights, setWeights] = useState({
     brood_pattern: 3,
     population: 3,
@@ -431,19 +431,38 @@ export default function BatchesPage() {
     }
   }
 
+  // Calculate date range based on time period
+  const getDateRange = useCallback(() => {
+    const today = new Date()
+    let startDate: Date | null = null
+
+    switch (timePeriod) {
+      case '3months':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
+        break
+      case '6months':
+        startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())
+        break
+      case '1year':
+        startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
+        break
+      case 'custom':
+        return customStartDate ? new Date(customStartDate) : null
+      case 'all':
+      default:
+        return null
+    }
+
+    return startDate
+  }, [timePeriod, customStartDate])
+
   // Calculate hive scores based on inspection data
   const calculateHiveScores = useCallback(async () => {
     if (!userId) return
     setLoadingScores(true)
 
     try {
-      // Build date filter
-      let dateFilter = ''
-      if (dateFrom && dateTo) {
-        dateFilter = `inspection_date.gte.${dateFrom},inspection_date.lte.${dateTo}`
-      } else if (selectedYear !== 'all') {
-        dateFilter = `inspection_date.gte.${selectedYear}-01-01,inspection_date.lte.${selectedYear}-12-31`
-      }
+      const startDate = getDateRange()
 
       // Fetch all hives with their inspections
       let query = supabase
@@ -479,10 +498,24 @@ export default function BatchesPage() {
 
       // Calculate averages and scores for each hive
       const scored = hivesData?.map((hive: any) => {
-        const inspections = hive.inspections || []
+        let inspections = hive.inspections || []
+
+        // Filter inspections by date range
+        if (startDate) {
+          inspections = inspections.filter((i: any) => {
+            const inspectionDate = new Date(i.inspection_date)
+            // For custom range, check both start and end dates
+            if (timePeriod === 'custom' && customEndDate) {
+              const endDate = new Date(customEndDate)
+              return inspectionDate >= startDate && inspectionDate <= endDate
+            }
+            // For predefined periods, just check if after start date
+            return inspectionDate >= startDate
+          })
+        }
 
         if (inspections.length === 0) {
-          return null // Skip hives with no inspections
+          return null // Skip hives with no inspections in the date range
         }
 
         // Calculate averages
@@ -534,14 +567,14 @@ export default function BatchesPage() {
     } finally {
       setLoadingScores(false)
     }
-  }, [userId, selectedApiary, selectedYear, dateFrom, dateTo, weights])
+  }, [userId, selectedApiary, timePeriod, customStartDate, customEndDate, weights, getDateRange])
 
   // Recalculate when filters or weights change
   useEffect(() => {
     if (activeTab === 'selection') {
       calculateHiveScores()
     }
-  }, [activeTab, selectedApiary, selectedYear, dateFrom, dateTo, weights, calculateHiveScores])
+  }, [activeTab, selectedApiary, timePeriod, customStartDate, customEndDate, weights, calculateHiveScores])
 
   const resetForm = () => {
     setShowForm(false)
@@ -1026,63 +1059,109 @@ export default function BatchesPage() {
           {/* Filters Row */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Breeder Queen Selection Filters</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Apiary Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
-                <select
-                  value={selectedApiary}
-                  onChange={(e) => setSelectedApiary(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+
+            {/* Apiary Filter */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Apiary</label>
+              <select
+                value={selectedApiary}
+                onChange={(e) => setSelectedApiary(e.target.value)}
+                className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="all">All Apiaries</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>
+                    {apiary.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Time Period Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setTimePeriod('all')}
+                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                    timePeriod === 'all'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
                 >
-                  <option value="all">All Apiaries</option>
-                  {apiaries.map((apiary) => (
-                    <option key={apiary.id} value={apiary.id}>
-                      {apiary.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Year Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  All Time
+                </button>
+                <button
+                  onClick={() => setTimePeriod('3months')}
+                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                    timePeriod === '3months'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
                 >
-                  <option value="all">All Years</option>
-                  {[2025, 2024, 2023, 2022, 2021].map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Date From */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-
-              {/* Date To */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date To</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
+                  Last 3 Months
+                </button>
+                <button
+                  onClick={() => setTimePeriod('6months')}
+                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                    timePeriod === '6months'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
+                >
+                  Last 6 Months
+                </button>
+                <button
+                  onClick={() => setTimePeriod('1year')}
+                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                    timePeriod === '1year'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
+                >
+                  Last Year
+                </button>
+                <button
+                  onClick={() => setTimePeriod('custom')}
+                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                    timePeriod === 'custom'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                  }`}
+                >
+                  Custom Range
+                </button>
               </div>
             </div>
+
+            {/* Custom Date Range Inputs */}
+            {timePeriod === 'custom' && (
+              <div className="flex flex-wrap items-center gap-3 mt-4 pl-0 md:pl-0">
+                <label className="text-sm font-medium text-gray-700">From:</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                <label className="text-sm font-medium text-gray-700">To:</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+                <button
+                  onClick={() => {
+                    setCustomStartDate('')
+                    setCustomEndDate('')
+                  }}
+                  className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 underline"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Weights Row */}
