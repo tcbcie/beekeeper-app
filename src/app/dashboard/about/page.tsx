@@ -30,6 +30,15 @@ export default function AboutPage() {
   const [activeSection, setActiveSection] = useState<'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support'>('about')
   const router = useRouter()
 
+  // Check URL for section parameter on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const section = urlParams.get('section')
+    if (section && ['about', 'news', 'changes', 'disclaimer', 'privacy', 'support'].includes(section)) {
+      setActiveSection(section as 'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support')
+    }
+  }, [])
+
   // Support ticket states
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [showForm, setShowForm] = useState(false)

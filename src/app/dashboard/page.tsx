@@ -312,7 +312,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <a
-            href="/dashboard/about"
+            href="/dashboard/about?section=changes"
             className="px-4 py-2 text-sm bg-white text-blue-600 rounded-lg hover:bg-blue-50 border border-blue-200 font-medium transition-colors"
           >
             View Changes
