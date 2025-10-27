@@ -63,37 +63,45 @@ After running this migration, check that these tables exist in Supabase:
   - Run `reset_all_team_policies.sql` to fix this issue
   - See the "Fixing Infinite Recursion Error" section below for detailed steps
 
-### `reset_all_team_policies.sql` - Fix Infinite Recursion Error
+### `fix_teams_rls_final.sql` - DEFINITIVE Fix for Infinite Recursion Error ⭐
 
 **Required when**: You see "infinite recursion detected in policy for relation 'teams'" error
 
-This script completely resets ALL RLS policies on all 4 team-related tables to fix circular dependency issues.
+**USE THIS SCRIPT** - This is the most recent and correct version that eliminates ALL circular references.
 
 **What it does:**
 1. Shows all current policies (for debugging)
-2. Drops ALL existing policies on teams, team_members, team_apiaries, team_invitations
-3. Recreates all policies with non-recursive structure
-4. Uses `EXISTS` instead of `IN` subqueries to prevent recursion
-5. Splits the teams SELECT policy into two separate policies
-6. Includes step-by-step progress messages
-7. Verifies all policies were created successfully
+2. **Uses PL/pgSQL to dynamically drop ALL policies** (guarantees clean slate)
+3. Recreates policies with **ZERO circular references**:
+   - Teams table: Only checks `owner_id = auth.uid()` (no cross-table queries)
+   - Other tables: Only query UP to teams table (never back down)
+4. **Simplified permissions** (for now):
+   - Only team OWNERS can create/manage teams
+   - Team members can view but not manage (admin roles disabled temporarily)
+5. Includes step-by-step progress messages
+6. Verifies all policies were created successfully
+
+**Why this version is different:**
+- Previous scripts still had `team_members` querying `team_members` (causing recursion)
+- This version ensures policies only flow ONE direction: members → teams (never back)
+- Simplified to owner-only permissions until basic functionality is proven to work
 
 **How to run:**
 1. Go to Supabase Dashboard → **SQL Editor**
 2. Click **New Query**
-3. Copy the ENTIRE contents of `sql/reset_all_team_policies.sql`
+3. Copy the ENTIRE contents of `sql/fix_teams_rls_final.sql` ⭐
 4. Paste into the query editor
 5. Click **Run** (or press Ctrl+Enter)
 6. You should see multiple result sets with step messages:
-   - "Current policies before drop:" (shows existing policies)
-   - "All policies dropped successfully"
-   - "Teams policies created"
+   - "Current policies:" (shows what's currently there)
+   - "All policies dropped"
+   - "Teams policies created (owner only)"
    - "Team members policies created"
    - "Team apiaries policies created"
    - "Team invitations policies created"
-   - "Final verification - all policies:" (shows all new policies)
-   - "Policy reset complete!"
-7. Refresh your browser and try creating a team again
+   - "Final policy list:" (shows all new simplified policies)
+   - "COMPLETE!" message
+7. **Refresh your browser** and try creating a team again
 
 **If it still doesn't work:**
 - Check the "Final verification" output to ensure all policies are listed
