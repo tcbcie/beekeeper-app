@@ -274,6 +274,13 @@ export default function ProfilePage() {
     setLoadingTeams(true)
 
     try {
+      // Debug: Log the user ID being used
+      console.log('Fetching teams for user ID:', userId)
+
+      // Verify auth.uid() matches
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Current auth user:', user?.id)
+
       // Fetch owned teams
       const { data: owned, error: ownedError } = await supabase
         .from('teams')
@@ -281,6 +288,7 @@ export default function ProfilePage() {
         .eq('owner_id', userId)
         .order('created_at', { ascending: false })
 
+      console.log('Owned teams query result:', { owned, error: ownedError })
       if (ownedError) throw ownedError
 
       // Get member count for each owned team
