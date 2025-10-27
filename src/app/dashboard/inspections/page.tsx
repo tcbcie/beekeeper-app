@@ -50,6 +50,9 @@ interface Inspection {
   honey_supers: number
   drone_frames: number
   store_frames: number
+  recapping: number
+  vsh: number
+  smr: number
   disease_issues: string
   notes: string
   image_url: string | null
@@ -84,6 +87,9 @@ interface FormData {
   honey_supers: number
   drone_frames: number
   store_frames: number
+  recapping: number
+  vsh: number
+  smr: number
   disease_issues: string
   notes: string
   disease_present: boolean
@@ -116,6 +122,7 @@ export default function InspectionsPage() {
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
+  const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -135,6 +142,9 @@ export default function InspectionsPage() {
     honey_supers: 0,
     drone_frames: 0,
     store_frames: 0,
+    recapping: 3,
+    vsh: 3,
+    smr: 3,
     disease_issues: '',
     notes: '',
     disease_present: false,
@@ -504,6 +514,9 @@ export default function InspectionsPage() {
         honey_supers: formData.honey_supers,
         drone_frames: formData.drone_frames,
         store_frames: formData.store_frames,
+        recapping: formData.recapping,
+        vsh: formData.vsh,
+        smr: formData.smr,
         disease_issues: disease_issues,
         notes: formData.notes,
         image_url: imageUrl,
@@ -589,6 +602,9 @@ export default function InspectionsPage() {
       honey_supers: inspection.honey_supers ?? 0,
       drone_frames: inspection.drone_frames ?? 0,
       store_frames: inspection.store_frames ?? 0,
+      recapping: inspection.recapping ?? 3,
+      vsh: inspection.vsh ?? 3,
+      smr: inspection.smr ?? 3,
       disease_issues: inspection.disease_issues || '',
       notes: inspection.notes || '',
       disease_present: disease_present,
@@ -629,6 +645,7 @@ export default function InspectionsPage() {
     setImageFile(null)
     setImagePreview(null)
     setGivenTakenExpanded(false)
+    setHygienicBehaviourExpanded(false)
     setFormData({
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
@@ -648,6 +665,9 @@ export default function InspectionsPage() {
       honey_supers: 0,
       drone_frames: 0,
       store_frames: 0,
+      recapping: 3,
+      vsh: 3,
+      smr: 3,
       disease_issues: '',
       notes: '',
       disease_present: false,
@@ -1545,6 +1565,178 @@ export default function InspectionsPage() {
               )}
             </div>
 
+            {/* Hygienic Behaviour Section - Collapsible */}
+            <div className="md:col-span-2 bg-teal-50 rounded-lg border-2 border-teal-200">
+              <button
+                type="button"
+                onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
+                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
+              >
+                <h4 className="text-sm font-semibold text-gray-900">Hygienic Behaviour</h4>
+                {hygienicBehaviourExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+
+              {hygienicBehaviourExpanded && (
+                <div className="p-4 pt-0 space-y-6">
+                  {/* Recapping */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Recapping: {formData.recapping === 0 ? 'Not Recorded' : renderStars(formData.recapping)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">Recapping Rating Guide:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Very Low - Rarely uncap and remove diseased brood</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Occasionally remove diseased brood</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Average hygienic behavior</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good at detecting and removing diseased brood</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Rapidly detect and remove diseased brood</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            Bees that recap cells may be identifying and removing diseased or parasitized brood.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, recapping: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.recapping === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, recapping: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.recapping === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* VSH (Varroa Sensitive Hygiene) */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        VSH (Varroa Sensitive Hygiene): {formData.vsh === 0 ? 'Not Recorded' : renderStars(formData.vsh)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">VSH Rating Guide:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Very Low - No VSH behavior observed</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Minimal detection of varroa-infested brood</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Some ability to detect infested brood</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good at identifying and removing infested brood</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Highly sensitive to varroa presence in brood</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            VSH bees can detect and remove brood infested with reproducing varroa mites.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, vsh: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.vsh === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, vsh: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.vsh === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SMR (Suppressed Mite Reproduction) */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        SMR (Suppressed Mite Reproduction): {formData.smr === 0 ? 'Not Recorded' : renderStars(formData.smr)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">SMR Rating Guide:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Very Low - Varroa reproduce freely</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Little suppression of mite reproduction</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Some suppression observed</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good suppression of mite reproduction</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Strong suppression, fewer viable offspring</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            SMR trait limits varroa mite reproduction in capped brood cells.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, smr: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.smr === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, smr: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.smr === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Disease Status</label>
               <button
@@ -1819,6 +2011,35 @@ export default function InspectionsPage() {
                     <div className="text-center p-3 bg-white rounded shadow-sm">
                       <div className="text-xs text-gray-500 mb-1">Store-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.store_frames}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Hygienic Behaviour Section - Display (only show if any values are non-zero and not default 3) */}
+            {((inspection.recapping !== 3 && inspection.recapping !== 0) ||
+              (inspection.vsh !== 3 && inspection.vsh !== 0) ||
+              (inspection.smr !== 3 && inspection.smr !== 0)) && (
+              <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Hygienic Behaviour</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {inspection.recapping !== 3 && inspection.recapping !== 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Recapping</div>
+                      <div className="text-sm">{renderStars(inspection.recapping)}</div>
+                    </div>
+                  )}
+                  {inspection.vsh !== 3 && inspection.vsh !== 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">VSH</div>
+                      <div className="text-sm">{renderStars(inspection.vsh)}</div>
+                    </div>
+                  )}
+                  {inspection.smr !== 3 && inspection.smr !== 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">SMR</div>
+                      <div className="text-sm">{renderStars(inspection.smr)}</div>
                     </div>
                   )}
                 </div>
