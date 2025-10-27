@@ -77,6 +77,50 @@ interface FormData {
   enable_email_digest: boolean
 }
 
+interface Inspection {
+  inspection_date: string
+  brood_pattern_rating: number | null
+  population_strength: number | null
+  temperament_rating: number | null
+  swarming_signs: boolean | null
+  honey_stores: string | null
+  calmness_rating: number | null
+  recapping_speed: number | null
+  vsh_score: number | null
+  smr_percentage: number | null
+  chalkbrood_severity: number | null
+}
+
+interface HiveWithInspections {
+  id: string
+  hive_number: string
+  apiary_id: string
+  apiaries: {
+    name: string
+  } | null
+  inspections: Inspection[]
+}
+
+interface HiveScore {
+  hive_id: string
+  hive_number: string
+  apiary_name: string
+  inspection_count: number
+  averages: {
+    brood_pattern: number
+    population: number
+    temperament: number
+    swarming: number
+    honey_yield: number
+    calmness: number
+    recapping: number
+    vsh: number
+    smr: number
+    chalkbrood: number
+  }
+  score: number
+}
+
 // Format date to Irish format (DD/MM/YYYY)
 const formatDateIrish = (dateString: string | null): string => {
   if (!dateString) return '-'
@@ -124,7 +168,7 @@ export default function BatchesPage() {
     smr: false,
     chalkbrood: false,
   })
-  const [hiveScores, setHiveScores] = useState<any[]>([])
+  const [hiveScores, setHiveScores] = useState<HiveScore[]>([])
   const [loadingScores, setLoadingScores] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     batch_name: '',
@@ -503,12 +547,12 @@ export default function BatchesPage() {
       if (error) throw error
 
       // Calculate averages and scores for each hive
-      const scored = hivesData?.map((hive: any) => {
+      const scored = (hivesData as unknown as HiveWithInspections[])?.map((hive) => {
         let inspections = hive.inspections || []
 
         // Filter inspections by date range
         if (startDate) {
-          inspections = inspections.filter((i: any) => {
+          inspections = inspections.filter((i) => {
             const inspectionDate = new Date(i.inspection_date)
             // For custom range, check both start and end dates
             if (timePeriod === 'custom' && customEndDate) {
@@ -527,11 +571,11 @@ export default function BatchesPage() {
 
         // Calculate averages
         const avg = {
-          brood_pattern: inspections.reduce((sum: number, i: any) => sum + (i.brood_pattern_rating || 0), 0) / inspections.length,
-          population: inspections.reduce((sum: number, i: any) => sum + (i.population_strength || 0), 0) / inspections.length,
-          temperament: inspections.reduce((sum: number, i: any) => sum + (i.temperament_rating || 0), 0) / inspections.length,
-          swarming: inspections.filter((i: any) => i.swarming_signs).length / inspections.length, // Percentage
-          honey_yield: inspections.reduce((sum: number, i: any) => {
+          brood_pattern: inspections.reduce((sum: number, i) => sum + (i.brood_pattern_rating || 0), 0) / inspections.length,
+          population: inspections.reduce((sum: number, i) => sum + (i.population_strength || 0), 0) / inspections.length,
+          temperament: inspections.reduce((sum: number, i) => sum + (i.temperament_rating || 0), 0) / inspections.length,
+          swarming: inspections.filter((i) => i.swarming_signs).length / inspections.length, // Percentage
+          honey_yield: inspections.reduce((sum: number, i) => {
             const stores = i.honey_stores?.toLowerCase() || ''
             if (stores.includes('full')) return sum + 5
             if (stores.includes('good')) return sum + 4
@@ -539,11 +583,11 @@ export default function BatchesPage() {
             if (stores.includes('low')) return sum + 2
             return sum + 1
           }, 0) / inspections.length,
-          calmness: inspections.reduce((sum: number, i: any) => sum + (i.calmness_rating || 0), 0) / inspections.length,
-          recapping: inspections.reduce((sum: number, i: any) => sum + (i.recapping_speed || 0), 0) / inspections.length,
-          vsh: inspections.reduce((sum: number, i: any) => sum + (i.vsh_score || 0), 0) / inspections.length,
-          smr: inspections.reduce((sum: number, i: any) => sum + (i.smr_percentage || 0), 0) / inspections.length,
-          chalkbrood: inspections.reduce((sum: number, i: any) => sum + (i.chalkbrood_severity || 0), 0) / inspections.length,
+          calmness: inspections.reduce((sum: number, i) => sum + (i.calmness_rating || 0), 0) / inspections.length,
+          recapping: inspections.reduce((sum: number, i) => sum + (i.recapping_speed || 0), 0) / inspections.length,
+          vsh: inspections.reduce((sum: number, i) => sum + (i.vsh_score || 0), 0) / inspections.length,
+          smr: inspections.reduce((sum: number, i) => sum + (i.smr_percentage || 0), 0) / inspections.length,
+          chalkbrood: inspections.reduce((sum: number, i) => sum + (i.chalkbrood_severity || 0), 0) / inspections.length,
         }
 
         // Calculate weighted score (lower swarming and chalkbrood are better, so invert them)
@@ -580,10 +624,10 @@ export default function BatchesPage() {
           averages: avg,
           score: score,
         }
-      }).filter(Boolean) as any[] // Remove null entries
+      }).filter((item): item is HiveScore => item !== null) // Remove null entries
 
       // Sort by score descending
-      scored?.sort((a: any, b: any) => b.score - a.score)
+      scored?.sort((a, b) => b.score - a.score)
 
       setHiveScores(scored || [])
     } catch (error) {
@@ -593,7 +637,7 @@ export default function BatchesPage() {
     } finally {
       setLoadingScores(false)
     }
-  }, [userId, selectedApiary, timePeriod, customStartDate, customEndDate, weights, optionalColumns, getDateRange])
+  }, [userId, selectedApiary, timePeriod, customEndDate, weights, optionalColumns, getDateRange])
 
   // Recalculate when filters or weights change
   useEffect(() => {
