@@ -358,7 +358,7 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <UserCheck size={18} className="text-green-600" />
-                  <h3 className="font-semibold text-gray-900">Teams I'm In</h3>
+                  <h3 className="font-semibold text-gray-900">Teams I&apos;m In</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {memberTeams.map((team) => (
@@ -386,7 +386,7 @@ export default function DashboardPage() {
             {ownedTeams.length === 0 && memberTeams.length === 0 && (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <Users size={48} className="mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-600 mb-2">You haven't created or joined any teams yet.</p>
+                <p className="text-gray-600 mb-2">You haven&apos;t created or joined any teams yet.</p>
                 <p className="text-sm text-gray-500 mb-4">Create a team to collaborate with other beekeepers!</p>
                 <a
                   href="/dashboard/profile#teams"
