@@ -51,11 +51,23 @@ SELECT COUNT(*) as invitation_count FROM team_invitations;
 -- 6. Check current user's auth.uid()
 SELECT auth.uid() as current_user_id;
 
--- 7. Check if current user has a profile
+-- 7. Check user_profiles table structure
 SELECT
-  id,
-  email,
-  role,
-  created_at
+  column_name,
+  data_type,
+  is_nullable
+FROM information_schema.columns
+WHERE table_name = 'user_profiles'
+ORDER BY ordinal_position;
+
+-- 8. Check if current user has a profile
+SELECT *
 FROM user_profiles
 WHERE user_id = auth.uid();
+
+-- 9. Alternative: Check profiles table (Supabase default)
+SELECT
+  id,
+  email
+FROM auth.users
+WHERE id = auth.uid();
