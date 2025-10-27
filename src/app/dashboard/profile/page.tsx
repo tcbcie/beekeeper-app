@@ -370,24 +370,37 @@ export default function ProfilePage() {
   // Fetch team members and invitations
   const fetchTeamDetails = useCallback(async (teamId: string) => {
     try {
-      // Fetch team members
+      // Fetch team members (without user_profiles join since no FK exists)
       const { data: members, error: membersError } = await supabase
         .from('team_members')
-        .select('*, user_profiles!inner(email, first_name, last_name)')
+        .select('*')
         .eq('team_id', teamId)
         .order('joined_at', { ascending: false })
 
       if (membersError) throw membersError
 
-      const membersWithDetails = (members || []).map((member) => {
-        const profile = (member as { user_profiles: UserProfile }).user_profiles
-        return {
-          ...member,
-          user_email: profile?.email || 'Unknown',
-          first_name: profile?.first_name,
-          last_name: profile?.last_name,
-        }
-      })
+      // Manually fetch user details for each member
+      const membersWithDetails = await Promise.all(
+        (members || []).map(async (member) => {
+          // Get user profile by user_id
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('first_name, last_name')
+            .eq('user_id', member.user_id)
+            .maybeSingle()
+
+          // Get email from auth.users via RPC function
+          const { data: userEmail } = await supabase
+            .rpc('get_user_email', { search_user_id: member.user_id })
+
+          return {
+            ...member,
+            user_email: userEmail || 'Unknown',
+            first_name: profile?.first_name,
+            last_name: profile?.last_name,
+          }
+        })
+      )
 
       setTeamMembers(membersWithDetails as TeamMember[])
 
