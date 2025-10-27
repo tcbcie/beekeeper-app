@@ -459,21 +459,48 @@ export default function ProfilePage() {
         return
       }
 
-      // Create invitation
-      const { error: inviteError } = await supabase
-        .from('team_invitations')
-        .insert({
-          team_id: selectedTeam.id,
-          email: inviteEmail.toLowerCase(),
-          invited_by: userId,
-          status: 'pending',
-        })
+      // If user exists, auto-accept and add to team_members
+      if (existingUser) {
+        // Add user to team_members directly
+        const { error: memberError } = await supabase
+          .from('team_members')
+          .insert({
+            team_id: selectedTeam.id,
+            user_id: existingUser.user_id,
+            role: 'member',
+          })
 
-      if (inviteError) throw inviteError
+        if (memberError) throw memberError
 
-      // Call Edge Function to send email (to be implemented)
-      // For now, we'll just show success message
-      alert(`Invitation sent to ${inviteEmail}!`)
+        // Create invitation record as 'accepted' for audit trail
+        await supabase
+          .from('team_invitations')
+          .insert({
+            team_id: selectedTeam.id,
+            email: inviteEmail.toLowerCase(),
+            invited_by: userId,
+            status: 'accepted',
+            accepted_at: new Date().toISOString(),
+          })
+
+        alert(`${inviteEmail} has been added to the team!`)
+      } else {
+        // User doesn't exist yet - create pending invitation
+        const { error: inviteError } = await supabase
+          .from('team_invitations')
+          .insert({
+            team_id: selectedTeam.id,
+            email: inviteEmail.toLowerCase(),
+            invited_by: userId,
+            status: 'pending',
+          })
+
+        if (inviteError) throw inviteError
+
+        // Call Edge Function to send email (to be implemented)
+        alert(`Invitation sent to ${inviteEmail}! They will be added when they create an account.`)
+      }
+
       setInviteEmail('')
       setShowInviteMemberModal(false)
       fetchTeamDetails(selectedTeam.id) // Refresh team details
