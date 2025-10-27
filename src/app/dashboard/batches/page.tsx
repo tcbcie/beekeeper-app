@@ -111,6 +111,11 @@ export default function BatchesPage() {
     temperament: 3,
     swarming: 3,
     honey_yield: 3,
+    calmness: 3,
+    recapping: 3,
+    vsh: 3,
+    smr: 3,
+    chalkbrood: 3,
   })
   const [optionalColumns, setOptionalColumns] = useState({
     calmness: false,
@@ -541,13 +546,31 @@ export default function BatchesPage() {
           chalkbrood: inspections.reduce((sum: number, i: any) => sum + (i.chalkbrood_severity || 0), 0) / inspections.length,
         }
 
-        // Calculate weighted score (lower swarming is better, so invert it)
-        const score =
+        // Calculate weighted score (lower swarming and chalkbrood are better, so invert them)
+        let score =
           (avg.brood_pattern * weights.brood_pattern) +
           (avg.population * weights.population) +
           (avg.temperament * weights.temperament) +
           ((1 - avg.swarming) * 5 * weights.swarming) + // Invert swarming tendency
           (avg.honey_yield * weights.honey_yield)
+
+        // Add optional criteria to score if selected
+        if (optionalColumns.calmness) {
+          score += avg.calmness * weights.calmness
+        }
+        if (optionalColumns.recapping) {
+          score += avg.recapping * weights.recapping
+        }
+        if (optionalColumns.vsh) {
+          score += avg.vsh * weights.vsh
+        }
+        if (optionalColumns.smr) {
+          score += avg.smr * weights.smr
+        }
+        if (optionalColumns.chalkbrood) {
+          // Lower chalkbrood is better, so invert it (assuming 1-5 scale)
+          score += (6 - avg.chalkbrood) * weights.chalkbrood
+        }
 
         return {
           hive_id: hive.id,
@@ -570,14 +593,14 @@ export default function BatchesPage() {
     } finally {
       setLoadingScores(false)
     }
-  }, [userId, selectedApiary, timePeriod, customStartDate, customEndDate, weights, getDateRange])
+  }, [userId, selectedApiary, timePeriod, customStartDate, customEndDate, weights, optionalColumns, getDateRange])
 
   // Recalculate when filters or weights change
   useEffect(() => {
     if (activeTab === 'selection') {
       calculateHiveScores()
     }
-  }, [activeTab, selectedApiary, timePeriod, customStartDate, customEndDate, weights, calculateHiveScores])
+  }, [activeTab, selectedApiary, timePeriod, customStartDate, customEndDate, weights, optionalColumns, calculateHiveScores])
 
   const resetForm = () => {
     setShowForm(false)
@@ -1271,6 +1294,112 @@ export default function BatchesPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Optional Criteria Weights - Only show if selected */}
+              {optionalColumns.calmness && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Calmness</label>
+                  <div className="flex gap-1 justify-center">
+                    {[1, 2, 3, 4, 5].map((weight) => (
+                      <button
+                        key={weight}
+                        onClick={() => setWeights({ ...weights, calmness: weight })}
+                        className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                          weights.calmness === weight
+                            ? 'bg-blue-600 text-white shadow-md scale-110'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        {weight}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {optionalColumns.recapping && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Recapping</label>
+                  <div className="flex gap-1 justify-center">
+                    {[1, 2, 3, 4, 5].map((weight) => (
+                      <button
+                        key={weight}
+                        onClick={() => setWeights({ ...weights, recapping: weight })}
+                        className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                          weights.recapping === weight
+                            ? 'bg-blue-600 text-white shadow-md scale-110'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        {weight}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {optionalColumns.vsh && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">VSH</label>
+                  <div className="flex gap-1 justify-center">
+                    {[1, 2, 3, 4, 5].map((weight) => (
+                      <button
+                        key={weight}
+                        onClick={() => setWeights({ ...weights, vsh: weight })}
+                        className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                          weights.vsh === weight
+                            ? 'bg-blue-600 text-white shadow-md scale-110'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        {weight}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {optionalColumns.smr && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">SMR</label>
+                  <div className="flex gap-1 justify-center">
+                    {[1, 2, 3, 4, 5].map((weight) => (
+                      <button
+                        key={weight}
+                        onClick={() => setWeights({ ...weights, smr: weight })}
+                        className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                          weights.smr === weight
+                            ? 'bg-blue-600 text-white shadow-md scale-110'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        {weight}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {optionalColumns.chalkbrood && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Chalkbrood (Low=Good)</label>
+                  <div className="flex gap-1 justify-center">
+                    {[1, 2, 3, 4, 5].map((weight) => (
+                      <button
+                        key={weight}
+                        onClick={() => setWeights({ ...weights, chalkbrood: weight })}
+                        className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                          weights.chalkbrood === weight
+                            ? 'bg-blue-600 text-white shadow-md scale-110'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                      >
+                        {weight}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
