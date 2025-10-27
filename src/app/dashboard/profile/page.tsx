@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Mail, Shield, Calendar, Edit2, Save, Download } from 'lucide-react'
+import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -15,6 +15,37 @@ interface UserProfile {
   last_name?: string
   mobile_number?: string
   user_id?: string
+}
+
+interface Team {
+  id: string
+  name: string
+  owner_id: string
+  created_at: string
+  updated_at: string
+  member_count?: number
+  user_role?: string
+}
+
+interface TeamMember {
+  id: string
+  team_id: string
+  user_id: string
+  role: 'owner' | 'admin' | 'member'
+  joined_at: string
+  user_email?: string
+  first_name?: string
+  last_name?: string
+}
+
+interface TeamInvitation {
+  id: string
+  team_id: string
+  email: string
+  invited_by: string
+  status: 'pending' | 'accepted' | 'declined' | 'expired'
+  invited_at: string
+  expires_at: string
 }
 
 export default function ProfilePage() {
@@ -37,6 +68,20 @@ export default function ProfilePage() {
 
   // Data export state
   const [exportingMyData, setExportingMyData] = useState(false)
+
+  // Teams state
+  const [ownedTeams, setOwnedTeams] = useState<Team[]>([])
+  const [memberTeams, setMemberTeams] = useState<Team[]>([])
+  const [loadingTeams, setLoadingTeams] = useState(false)
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false)
+  const [showInviteMemberModal, setShowInviteMemberModal] = useState(false)
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [newTeamName, setNewTeamName] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [creatingTeam, setCreatingTeam] = useState(false)
+  const [sendingInvite, setSendingInvite] = useState(false)
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([])
 
   const fetchUserProfile = useCallback(async () => {
     if (!userId) return
@@ -223,6 +268,306 @@ export default function ProfilePage() {
     }
   }
 
+  // Fetch user's teams (owned and member)
+  const fetchTeams = useCallback(async () => {
+    if (!userId) return
+    setLoadingTeams(true)
+
+    try {
+      // Fetch owned teams
+      const { data: owned, error: ownedError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('owner_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (ownedError) throw ownedError
+
+      // Get member count for each owned team
+      const ownedWithCounts = await Promise.all((owned || []).map(async (team) => {
+        const { count } = await supabase
+          .from('team_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', team.id)
+        return { ...team, member_count: count || 0, user_role: 'owner' }
+      }))
+
+      setOwnedTeams(ownedWithCounts)
+
+      // Fetch teams where user is a member (not owner)
+      const { data: memberData, error: memberError } = await supabase
+        .from('team_members')
+        .select('team_id, role, teams(*)')
+        .eq('user_id', userId)
+        .neq('role', 'owner')
+
+      if (memberError) throw memberError
+
+      // Get member count for each team
+      const memberWithCounts = await Promise.all((memberData || []).map(async (membership) => {
+        const team = (membership as unknown as { teams: Team }).teams
+        const { count } = await supabase
+          .from('team_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', team.id)
+        return { ...team, member_count: count || 0, user_role: membership.role }
+      }))
+
+      setMemberTeams(memberWithCounts)
+    } catch (error) {
+      console.error('Error fetching teams:', error)
+      alert('Failed to load teams.')
+    } finally {
+      setLoadingTeams(false)
+    }
+  }, [userId])
+
+  // Create a new team
+  const handleCreateTeam = async () => {
+    if (!userId || !newTeamName.trim()) {
+      alert('Please enter a team name.')
+      return
+    }
+
+    setCreatingTeam(true)
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .insert({
+          name: newTeamName.trim(),
+          owner_id: userId,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      alert(`Team "${newTeamName}" created successfully!`)
+      setNewTeamName('')
+      setShowCreateTeamModal(false)
+      fetchTeams() // Refresh teams list
+    } catch (error) {
+      console.error('Error creating team:', error)
+      alert('Failed to create team. Please try again.')
+    } finally {
+      setCreatingTeam(false)
+    }
+  }
+
+  // Fetch team members and invitations
+  const fetchTeamDetails = useCallback(async (teamId: string) => {
+    try {
+      // Fetch team members
+      const { data: members, error: membersError } = await supabase
+        .from('team_members')
+        .select('*, user_profiles!inner(email, first_name, last_name)')
+        .eq('team_id', teamId)
+        .order('joined_at', { ascending: false })
+
+      if (membersError) throw membersError
+
+      const membersWithDetails = (members || []).map((member) => {
+        const profile = (member as { user_profiles: UserProfile }).user_profiles
+        return {
+          ...member,
+          user_email: profile?.email || 'Unknown',
+          first_name: profile?.first_name,
+          last_name: profile?.last_name,
+        }
+      })
+
+      setTeamMembers(membersWithDetails as TeamMember[])
+
+      // Fetch pending invitations
+      const { data: invitations, error: invitationsError } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('team_id', teamId)
+        .eq('status', 'pending')
+        .order('invited_at', { ascending: false })
+
+      if (invitationsError) throw invitationsError
+
+      setTeamInvitations(invitations || [])
+    } catch (error) {
+      console.error('Error fetching team details:', error)
+    }
+  }, [])
+
+  // Send invitation to join team
+  const handleSendInvite = async () => {
+    if (!selectedTeam || !inviteEmail.trim()) {
+      alert('Please enter an email address.')
+      return
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(inviteEmail)) {
+      alert('Please enter a valid email address.')
+      return
+    }
+
+    setSendingInvite(true)
+    try {
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('user_profiles')
+        .select('user_id, email')
+        .eq('email', inviteEmail.toLowerCase())
+        .maybeSingle()
+
+      // Check if already a member
+      if (existingUser) {
+        const { data: existingMember } = await supabase
+          .from('team_members')
+          .select('id')
+          .eq('team_id', selectedTeam.id)
+          .eq('user_id', existingUser.user_id)
+          .maybeSingle()
+
+        if (existingMember) {
+          alert('This user is already a member of the team.')
+          setSendingInvite(false)
+          return
+        }
+      }
+
+      // Check if invitation already exists
+      const { data: existingInvite } = await supabase
+        .from('team_invitations')
+        .select('id')
+        .eq('team_id', selectedTeam.id)
+        .eq('email', inviteEmail.toLowerCase())
+        .eq('status', 'pending')
+        .maybeSingle()
+
+      if (existingInvite) {
+        alert('An invitation has already been sent to this email.')
+        setSendingInvite(false)
+        return
+      }
+
+      // Create invitation
+      const { error: inviteError } = await supabase
+        .from('team_invitations')
+        .insert({
+          team_id: selectedTeam.id,
+          email: inviteEmail.toLowerCase(),
+          invited_by: userId,
+          status: 'pending',
+        })
+
+      if (inviteError) throw inviteError
+
+      // Call Edge Function to send email (to be implemented)
+      // For now, we'll just show success message
+      alert(`Invitation sent to ${inviteEmail}!`)
+      setInviteEmail('')
+      setShowInviteMemberModal(false)
+      fetchTeamDetails(selectedTeam.id) // Refresh team details
+    } catch (error) {
+      console.error('Error sending invitation:', error)
+      alert('Failed to send invitation. Please try again.')
+    } finally {
+      setSendingInvite(false)
+    }
+  }
+
+  // Delete team
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`Are you sure you want to delete the team "${teamName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', teamId)
+
+      if (error) throw error
+
+      alert(`Team "${teamName}" deleted successfully.`)
+      fetchTeams() // Refresh teams list
+    } catch (error) {
+      console.error('Error deleting team:', error)
+      alert('Failed to delete team. Please try again.')
+    }
+  }
+
+  // Remove team member
+  const handleRemoveMember = async (memberId: string, memberEmail: string) => {
+    if (!confirm(`Are you sure you want to remove ${memberEmail} from the team?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', memberId)
+
+      if (error) throw error
+
+      alert(`${memberEmail} removed from team.`)
+      if (selectedTeam) {
+        fetchTeamDetails(selectedTeam.id) // Refresh team details
+      }
+      fetchTeams() // Refresh teams list
+    } catch (error) {
+      console.error('Error removing member:', error)
+      alert('Failed to remove member. Please try again.')
+    }
+  }
+
+  // Leave team (for members)
+  const handleLeaveTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`Are you sure you want to leave the team "${teamName}"?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('team_id', teamId)
+        .eq('user_id', userId)
+
+      if (error) throw error
+
+      alert(`You have left the team "${teamName}".`)
+      fetchTeams() // Refresh teams list
+    } catch (error) {
+      console.error('Error leaving team:', error)
+      alert('Failed to leave team. Please try again.')
+    }
+  }
+
+  // Cancel invitation
+  const handleCancelInvitation = async (invitationId: string, email: string) => {
+    if (!confirm(`Are you sure you want to cancel the invitation to ${email}?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('team_invitations')
+        .delete()
+        .eq('id', invitationId)
+
+      if (error) throw error
+
+      alert(`Invitation to ${email} cancelled.`)
+      if (selectedTeam) {
+        fetchTeamDetails(selectedTeam.id) // Refresh team details
+      }
+    } catch (error) {
+      console.error('Error cancelling invitation:', error)
+      alert('Failed to cancel invitation. Please try again.')
+    }
+  }
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -252,8 +597,9 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userId) {
       fetchUserProfile()
+      fetchTeams()
     }
-  }, [userId, fetchUserProfile])
+  }, [userId, fetchUserProfile, fetchTeams])
 
   if (loading) {
     return (
@@ -511,6 +857,333 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Team Management */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Users size={24} className="text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Team Management</h2>
+          </div>
+          <button
+            onClick={() => setShowCreateTeamModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
+          >
+            <Plus size={16} />
+            Create Team
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-600 mb-6">
+          Create teams to collaborate with other beekeepers. Share apiaries and manage hives together.
+        </p>
+
+        {loadingTeams ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Owned Teams */}
+            {ownedTeams.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">My Teams</h3>
+                <div className="space-y-3">
+                  {ownedTeams.map((team) => (
+                    <div key={team.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-semibold text-gray-900">{team.name}</h4>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-medium">
+                            Owner
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTeam(team)
+                              setShowInviteMemberModal(true)
+                              fetchTeamDetails(team.id)
+                            }}
+                            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                          >
+                            <UserPlus size={14} />
+                            Invite
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTeam(team.id, team.name)}
+                            className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">{team.member_count || 0}</span> member{(team.member_count || 0) !== 1 ? 's' : ''}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Created {new Date(team.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Member Teams */}
+            {memberTeams.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Teams I'm In</h3>
+                <div className="space-y-3">
+                  {memberTeams.map((team) => (
+                    <div key={team.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-semibold text-gray-900">{team.name}</h4>
+                          <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded font-medium capitalize">
+                            {team.user_role}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleLeaveTeam(team.id, team.name)}
+                          className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                        >
+                          Leave Team
+                        </button>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">{team.member_count || 0}</span> member{(team.member_count || 0) !== 1 ? 's' : ''}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Joined {new Date(team.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {ownedTeams.length === 0 && memberTeams.length === 0 && (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Users size={48} className="mx-auto text-gray-400 mb-3" />
+                <p className="text-gray-600 mb-4">You haven't created or joined any teams yet.</p>
+                <button
+                  onClick={() => setShowCreateTeamModal(true)}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Create Your First Team
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Create Team Modal */}
+      {showCreateTeamModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Create New Team</h3>
+              <button
+                onClick={() => {
+                  setShowCreateTeamModal(false)
+                  setNewTeamName('')
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Give your team a name. You'll be able to invite members after creating the team.
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Team Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                placeholder="e.g., West County Beekeepers"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                maxLength={100}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowCreateTeamModal(false)
+                  setNewTeamName('')
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                disabled={creatingTeam}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateTeam}
+                disabled={creatingTeam || !newTeamName.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {creatingTeam ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Creating...
+                  </>
+                ) : (
+                  'Create Team'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Member Modal */}
+      {showInviteMemberModal && selectedTeam && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Manage Team: {selectedTeam.name}</h3>
+              <button
+                onClick={() => {
+                  setShowInviteMemberModal(false)
+                  setSelectedTeam(null)
+                  setInviteEmail('')
+                  setTeamMembers([])
+                  setTeamInvitations([])
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Invite New Member Section */}
+            <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <UserPlus size={18} className="text-green-600" />
+                Invite New Member
+              </h4>
+              <p className="text-sm text-gray-600 mb-3">
+                Enter the email address of the person you'd like to invite. They'll receive an email with instructions.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                <button
+                  onClick={handleSendInvite}
+                  disabled={sendingInvite || !inviteEmail.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {sendingInvite ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={16} />
+                      Invite
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Current Members */}
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-900 mb-3">Current Members ({teamMembers.length})</h4>
+              {teamMembers.length > 0 ? (
+                <div className="space-y-2">
+                  {teamMembers.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+                          {member.first_name ? member.first_name[0].toUpperCase() : (member.user_email || 'U')[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {member.first_name && member.last_name
+                              ? `${member.first_name} ${member.last_name}`
+                              : member.user_email}
+                          </div>
+                          <div className="text-sm text-gray-600">{member.user_email}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-gray-200 text-gray-800 text-xs rounded font-medium capitalize">
+                          {member.role}
+                        </span>
+                        {member.role !== 'owner' && (
+                          <button
+                            onClick={() => handleRemoveMember(member.id, member.user_email || 'Unknown')}
+                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic">No members yet.</p>
+              )}
+            </div>
+
+            {/* Pending Invitations */}
+            {teamInvitations.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Pending Invitations ({teamInvitations.length})</h4>
+                <div className="space-y-2">
+                  {teamInvitations.map((invitation) => (
+                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <div>
+                        <div className="font-medium text-gray-900">{invitation.email}</div>
+                        <div className="text-xs text-gray-600">
+                          Invited {new Date(invitation.invited_at).toLocaleDateString()}
+                          {' • Expires '}{new Date(invitation.expires_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
+                        className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowInviteMemberModal(false)
+                  setSelectedTeam(null)
+                  setInviteEmail('')
+                  setTeamMembers([])
+                  setTeamInvitations([])
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Additional Settings */}
       <div className="bg-white rounded-lg shadow p-6">
