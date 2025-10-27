@@ -1089,70 +1089,105 @@ export default function BatchesPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Column Weights (1-5)</h3>
             <p className="text-sm text-gray-600 mb-4">Assign importance to each trait. Higher weights = more influence on ranking.</p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               {/* Brood Pattern Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Brood Pattern</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={weights.brood_pattern}
-                  onChange={(e) => setWeights({ ...weights, brood_pattern: parseInt(e.target.value) || 1 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Brood Pattern</label>
+                <div className="flex gap-1 justify-center">
+                  {[1, 2, 3, 4, 5].map((weight) => (
+                    <button
+                      key={weight}
+                      onClick={() => setWeights({ ...weights, brood_pattern: weight })}
+                      className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                        weights.brood_pattern === weight
+                          ? 'bg-blue-600 text-white shadow-md scale-110'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      }`}
+                    >
+                      {weight}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Population Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Population</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={weights.population}
-                  onChange={(e) => setWeights({ ...weights, population: parseInt(e.target.value) || 1 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Population</label>
+                <div className="flex gap-1 justify-center">
+                  {[1, 2, 3, 4, 5].map((weight) => (
+                    <button
+                      key={weight}
+                      onClick={() => setWeights({ ...weights, population: weight })}
+                      className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                        weights.population === weight
+                          ? 'bg-blue-600 text-white shadow-md scale-110'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      }`}
+                    >
+                      {weight}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Temperament Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Temperament</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={weights.temperament}
-                  onChange={(e) => setWeights({ ...weights, temperament: parseInt(e.target.value) || 1 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Temperament</label>
+                <div className="flex gap-1 justify-center">
+                  {[1, 2, 3, 4, 5].map((weight) => (
+                    <button
+                      key={weight}
+                      onClick={() => setWeights({ ...weights, temperament: weight })}
+                      className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                        weights.temperament === weight
+                          ? 'bg-blue-600 text-white shadow-md scale-110'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      }`}
+                    >
+                      {weight}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Swarming Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Swarming (Low=Good)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={weights.swarming}
-                  onChange={(e) => setWeights({ ...weights, swarming: parseInt(e.target.value) || 1 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Swarming (Low=Good)</label>
+                <div className="flex gap-1 justify-center">
+                  {[1, 2, 3, 4, 5].map((weight) => (
+                    <button
+                      key={weight}
+                      onClick={() => setWeights({ ...weights, swarming: weight })}
+                      className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                        weights.swarming === weight
+                          ? 'bg-blue-600 text-white shadow-md scale-110'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      }`}
+                    >
+                      {weight}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Honey Yield Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Honey Yield</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={weights.honey_yield}
-                  onChange={(e) => setWeights({ ...weights, honey_yield: parseInt(e.target.value) || 1 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Honey Yield</label>
+                <div className="flex gap-1 justify-center">
+                  {[1, 2, 3, 4, 5].map((weight) => (
+                    <button
+                      key={weight}
+                      onClick={() => setWeights({ ...weights, honey_yield: weight })}
+                      className={`w-10 h-10 rounded-md font-semibold transition-all ${
+                        weights.honey_yield === weight
+                          ? 'bg-blue-600 text-white shadow-md scale-110'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      }`}
+                    >
+                      {weight}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
