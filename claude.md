@@ -93,6 +93,36 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Frame-level observations
 - Right-sized frame tracking
 
+### Team Collaboration
+- **Team Management**: Create and manage teams for collaborative beekeeping
+  - Create teams with custom names
+  - Invite members via email (with 7-day expiring invitations)
+  - Role-based permissions: owner, admin, member
+  - View owned teams vs teams you're a member of
+- **Member Management**:
+  - Add/remove team members
+  - View member list with roles and avatars
+  - Leave teams (for non-owners)
+  - Delete teams (owners only)
+- **Invitation System**:
+  - Email validation and duplicate checking
+  - Track pending invitations
+  - Cancel invitations before acceptance
+  - Automatic checking for existing users
+- **Dashboard Overview**:
+  - Display top 3 owned teams
+  - Display top 3 member teams
+  - Member counts and join dates
+  - Quick links to Profile for full management
+- **Database Structure**:
+  - 4 tables: teams, team_members, team_apiaries, team_invitations
+  - Full RLS policies for secure access
+  - Automatic triggers for owner membership
+- **Coming Soon**:
+  - Email notifications for invitations
+  - Shared apiary management for team members
+  - Team-based apiary linking UI
+
 ### Varroa Management
 - **Varroa Checks**: Track mite counts and infestation rates
 - Supports multiple check methods (floor board screening, alcohol wash, etc.)
@@ -184,6 +214,44 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 - Use React DevTools for state/props debugging
 
 ## Recent Changes
+
+### October 27, 2025 - Team Collaboration Feature
+- **Complete Team Management System**:
+  - Database schema with 4 tables: `teams`, `team_members`, `team_apiaries`, `team_invitations`
+  - Full RLS policies for secure team-based data access
+  - Automatic triggers for owner membership and timestamp updates
+
+- **Profile Page - Team Management Section**:
+  - Create teams with custom names (validates uniqueness per owner)
+  - Invite members via email with validation
+  - Checks for existing users before invitation
+  - Duplicate invitation/membership prevention
+  - View owned teams (with Owner badge) vs member teams (with role badge)
+  - Member management modal with avatar display
+  - Remove members (except owner), leave teams, delete teams
+  - Track pending invitations with 7-day expiration
+  - Cancel pending invitations
+
+- **Dashboard - Teams Overview**:
+  - Display top 3 owned teams with crown icon
+  - Display top 3 member teams with check icon
+  - Member counts and creation/join dates
+  - Responsive grid layout
+  - Empty state with call-to-action
+  - Link to Profile page for full management
+
+- **Technical Implementation**:
+  - TypeScript interfaces: `Team`, `TeamMember`, `TeamInvitation`
+  - useCallback hooks with proper dependencies
+  - Email validation regex
+  - Type-safe Supabase queries with proper casting
+  - Modal components for create team and invite members
+  - Database migration: `sql/create_teams_tables.sql`
+
+- **Coming Soon**:
+  - Supabase Edge Function for invitation emails
+  - Team-based RLS updates for apiaries/hives
+  - Apiary linking UI for teams
 
 ### October 26, 2025 - Notification System Implementation
 - **Three-Part Notification System**:
@@ -404,5 +472,5 @@ IS 'Include this batch in weekly email digest with upcoming dates';
 
 ---
 
-**Last Updated**: October 26, 2025
-**Version**: Notification-System-Complete
+**Last Updated**: October 27, 2025
+**Version**: Team-Collaboration-Complete
