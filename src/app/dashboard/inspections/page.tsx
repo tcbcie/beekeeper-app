@@ -2077,42 +2077,42 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Inspection Photo</label>
-              <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Inspection Photo (optional)</label>
+              <div className="flex items-start gap-3">
                 {imagePreview ? (
-                  <div className="relative w-full h-64">
+                  <div className="relative w-20 h-20 flex-shrink-0 group">
                     <Image
                       src={imagePreview}
-                      alt="Inspection preview"
+                      alt="Preview"
                       fill
-                      className="object-cover rounded-lg border-2 border-gray-300"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                      sizes="80px"
                     />
                     <button
                       type="button"
                       onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                      title="Remove image"
                     >
-                      <X size={20} />
+                      <X size={16} />
                     </button>
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Camera size={32} className="text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-400">PNG, JPG, WEBP up to 10MB</p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-                )}
+                ) : null}
+                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all p-4">
+                  <div className="flex flex-col items-center justify-center">
+                    <Camera size={24} className="text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-500 text-center">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-400">PNG, JPG, WEBP up to 10MB</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                </label>
               </div>
             </div>
 
