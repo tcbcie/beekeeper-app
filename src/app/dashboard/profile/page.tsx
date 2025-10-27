@@ -423,12 +423,18 @@ export default function ProfilePage() {
 
     setSendingInvite(true)
     try {
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('user_profiles')
-        .select('user_id, email')
-        .eq('email', inviteEmail.toLowerCase())
-        .maybeSingle()
+      // Check if user already exists using RPC function
+      // This function queries auth.users which is not directly accessible from client
+      const { data: lookupResult, error: lookupError } = await supabase
+        .rpc('lookup_user_by_email', { search_email: inviteEmail.toLowerCase() })
+
+      if (lookupError) {
+        console.error('Error looking up user:', lookupError)
+      }
+
+      const existingUser = lookupResult && lookupResult.length > 0 ? lookupResult[0] : null
+
+      console.log('Looking up user:', inviteEmail, 'Found:', existingUser)
 
       // Check if already a member
       if (existingUser) {
