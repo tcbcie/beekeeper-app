@@ -1,0 +1,83 @@
+# Database Migrations
+
+This directory contains SQL migration files for the Beekeeper App database schema.
+
+## How to Run Migrations
+
+### Using Supabase Dashboard (Recommended)
+
+1. Go to your Supabase project dashboard at https://supabase.com/dashboard
+2. Navigate to **SQL Editor** in the left sidebar
+3. Click **New Query**
+4. Copy the contents of the migration file you want to run
+5. Paste into the query editor
+6. Click **Run** or press `Ctrl+Enter` / `Cmd+Enter`
+7. Verify the tables were created in the **Table Editor**
+
+### Using Supabase CLI
+
+If you have the Supabase CLI installed:
+
+```bash
+# From the project root
+supabase db reset  # WARNING: This resets the entire database
+
+# Or apply a specific migration
+supabase db execute < sql/create_teams_tables.sql
+```
+
+## Migration Files
+
+### `create_teams_tables.sql` - Team Collaboration Feature ✨ NEW
+
+**Required for**: Team management features in Profile and Dashboard
+
+This migration creates the complete team collaboration system:
+
+**Tables Created:**
+- `teams` - Team information with owner
+- `team_members` - Junction table for team membership (roles: owner, admin, member)
+- `team_apiaries` - Links apiaries to teams for shared management
+- `team_invitations` - Tracks pending invitations (7-day expiration)
+
+**Features Included:**
+- Row-Level Security (RLS) policies for all tables
+- Indexes for optimized query performance
+- Automatic triggers for:
+  - Adding team owner as member when team is created
+  - Updating `updated_at` timestamp on team changes
+- Foreign key constraints with proper cascading deletes
+
+**How to Verify:**
+After running this migration, check that these tables exist in Supabase:
+1. Go to **Table Editor**
+2. Look for: `teams`, `team_members`, `team_apiaries`, `team_invitations`
+3. Each table should have RLS enabled (green shield icon)
+
+**Troubleshooting:**
+- If you get "relation already exists" errors, the tables are already created
+- If you get "permission denied" errors, ensure RLS policies are enabled
+- If team features still don't work after migration, check browser console for specific errors
+
+### Other Migration Files
+
+Add documentation for other migration files as they are created.
+
+## Migration Best Practices
+
+1. **Always backup your database before running migrations** (especially in production)
+2. Test migrations in a development environment first
+3. Migrations should be idempotent (safe to run multiple times) - note the `IF NOT EXISTS` clauses
+4. Never modify existing migration files - create new ones for changes
+5. Document any manual steps required after running migrations
+
+## Getting Help
+
+If you encounter issues:
+1. Check the browser console for specific error messages
+2. Verify tables exist in Supabase Table Editor
+3. Check RLS policies are enabled on all team-related tables
+4. Review the error message for specific table names or permission issues
+
+For more information on Supabase migrations, see:
+https://supabase.com/docs/guides/database/overview
