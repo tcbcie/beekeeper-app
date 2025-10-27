@@ -104,9 +104,44 @@ After running this migration, check that these tables exist in Supabase:
 7. **Refresh your browser** and try creating a team again
 
 **If it still doesn't work:**
-- Check the "Final verification" output to ensure all policies are listed
+- Check the "Final policy list" output to ensure all policies are listed
 - Each table should have multiple policies (SELECT, INSERT, UPDATE, DELETE)
 - If any policies are missing, there may be a syntax error in the script
+
+### `add_admin_member_permissions.sql` - Add Admin/Member Permissions
+
+**Required after**: Successfully running `fix_teams_rls_final.sql` and confirming basic team functionality works
+
+**What it does:**
+Extends the basic owner-only policies with full admin and member support:
+- **Owners**: Full control (already working from previous script)
+- **Admins**: Can manage members, apiaries, and invitations
+- **Members**: Can view teams, members, and apiaries (read-only)
+
+**Safe Design:**
+- Uses the same one-directional pattern (no circular references)
+- All policies query UP to parent tables only (team_members → teams)
+- Never creates circular lookups
+
+**How to run:**
+1. **First verify** basic team creation works (owners can create teams)
+2. Go to Supabase Dashboard → **SQL Editor**
+3. Click **New Query**
+4. Copy the ENTIRE contents of `sql/add_admin_member_permissions.sql`
+5. Paste and run
+6. Look for success messages:
+   - "Added: Members can view their teams"
+   - "Added: Members can view other members in their teams"
+   - "Added: Admins can manage team members"
+   - "Added: Members can view team apiaries"
+   - "Added: Admins can manage team apiaries"
+   - "Added: Admins can manage team invitations"
+   - "COMPLETE!"
+
+**Permissions summary:**
+- **Owners**: Create/update/delete teams, full member management, full apiary/invitation control
+- **Admins**: Manage members (add/update/remove), manage apiaries, manage invitations
+- **Members**: View teams they belong to, view other members, view team apiaries (read-only)
 
 ### Other Migration Files
 
