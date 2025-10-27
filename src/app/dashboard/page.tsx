@@ -164,7 +164,7 @@ export default function DashboardPage() {
     { label: 'Total Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700' },
     { label: 'Active Queens', value: stats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700' },
     { label: 'Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700' },
-    { label: 'Active QueenCraft', value: stats.activeBatches, icon: '🥚', color: 'bg-blue-50 text-blue-700' },
+    { label: 'Active Queen Rearing Batches', value: stats.activeBatches, icon: '🥚', color: 'bg-blue-50 text-blue-700' },
     { label: 'Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700' },
   ]
 
@@ -232,34 +232,6 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a
-            href="/dashboard/queens"
-            className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-amber-500 hover:bg-amber-50 transition-colors text-center"
-          >
-            <div className="text-3xl mb-2">➕👑</div>
-            <div className="font-medium">Add Queen</div>
-          </a>
-          <a
-            href="/dashboard/batches"
-            className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
-          >
-            <div className="text-3xl mb-2">➕🥚</div>
-            <div className="font-medium">New QueenCraft</div>
-          </a>
-          <a
-            href="/dashboard/inspections"
-            className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors text-center"
-          >
-            <div className="text-3xl mb-2">➕📋</div>
-            <div className="font-medium">Record Inspection</div>
-          </a>
-        </div>
-      </div>
-
       {/* Upcoming Events - Queen Rearing Calendar */}
       {userId && <UpcomingEvents userId={userId} />}
 
@@ -320,6 +292,31 @@ export default function DashboardPage() {
               <span className="text-sm text-gray-600">All Systems Operational</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Application Version */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow p-6 border border-blue-100">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hive Craic</h3>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
+                <span className="font-medium text-gray-600">Version:</span>
+                <span className="font-bold text-purple-700">v1.0.4</span>
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
+                <span className="font-medium text-gray-600">Last Updated:</span>
+                <span className="font-semibold text-blue-700">October 27, 2025</span>
+              </span>
+            </div>
+          </div>
+          <a
+            href="/dashboard/about"
+            className="px-4 py-2 text-sm bg-white text-blue-600 rounded-lg hover:bg-blue-50 border border-blue-200 font-medium transition-colors"
+          >
+            View Changes
+          </a>
         </div>
       </div>
     </div>
