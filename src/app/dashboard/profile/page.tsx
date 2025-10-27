@@ -331,7 +331,7 @@ export default function ProfilePage() {
 
     setCreatingTeam(true)
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('teams')
         .insert({
           name: newTeamName.trim(),
@@ -934,7 +934,7 @@ export default function ProfilePage() {
             {/* Member Teams */}
             {memberTeams.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Teams I'm In</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Teams I&apos;m In</h3>
                 <div className="space-y-3">
                   {memberTeams.map((team) => (
                     <div key={team.id} className="border border-gray-200 rounded-lg p-4">
@@ -968,7 +968,7 @@ export default function ProfilePage() {
             {ownedTeams.length === 0 && memberTeams.length === 0 && (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <Users size={48} className="mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-600 mb-4">You haven't created or joined any teams yet.</p>
+                <p className="text-gray-600 mb-4">You haven&apos;t created or joined any teams yet.</p>
                 <button
                   onClick={() => setShowCreateTeamModal(true)}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -998,7 +998,7 @@ export default function ProfilePage() {
               </button>
             </div>
             <p className="text-sm text-gray-600 mb-4">
-              Give your team a name. You'll be able to invite members after creating the team.
+              Give your team a name. You&apos;ll be able to invite members after creating the team.
             </p>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1070,7 +1070,7 @@ export default function ProfilePage() {
                 Invite New Member
               </h4>
               <p className="text-sm text-gray-600 mb-3">
-                Enter the email address of the person you'd like to invite. They'll receive an email with instructions.
+                Enter the email address of the person you&apos;d like to invite. They&apos;ll receive an email with instructions.
               </p>
               <div className="flex gap-2">
                 <input
