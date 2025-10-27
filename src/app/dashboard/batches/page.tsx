@@ -1169,7 +1169,7 @@ export default function BatchesPage() {
 
           {/* Weights Row */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Column Weights (1-5)</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Weight Criterias (1-5)</h3>
             <p className="text-sm text-gray-600 mb-4">Assign importance to each trait. Higher weights = more influence on ranking.</p>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               {/* Brood Pattern Weight */}
