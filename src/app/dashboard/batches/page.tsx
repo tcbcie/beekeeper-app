@@ -99,6 +99,28 @@ export default function BatchesPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'planning' | 'selection'>('planning')
+
+  // Selection tab states
+  const [selectedApiary, setSelectedApiary] = useState<string>('all')
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
+  const [dateFrom, setDateFrom] = useState<string>('')
+  const [dateTo, setDateTo] = useState<string>('')
+  const [weights, setWeights] = useState({
+    brood_pattern: 3,
+    population: 3,
+    temperament: 3,
+    swarming: 3,
+    honey_yield: 3,
+  })
+  const [optionalColumns, setOptionalColumns] = useState({
+    calmness: false,
+    recapping: false,
+    vsh: false,
+    smr: false,
+    chalkbrood: false,
+  })
+  const [hiveScores, setHiveScores] = useState<any[]>([])
+  const [loadingScores, setLoadingScores] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     batch_name: '',
     mother_queen_id: '',
@@ -408,6 +430,118 @@ export default function BatchesPage() {
       if (!error) fetchBatches()
     }
   }
+
+  // Calculate hive scores based on inspection data
+  const calculateHiveScores = useCallback(async () => {
+    if (!userId) return
+    setLoadingScores(true)
+
+    try {
+      // Build date filter
+      let dateFilter = ''
+      if (dateFrom && dateTo) {
+        dateFilter = `inspection_date.gte.${dateFrom},inspection_date.lte.${dateTo}`
+      } else if (selectedYear !== 'all') {
+        dateFilter = `inspection_date.gte.${selectedYear}-01-01,inspection_date.lte.${selectedYear}-12-31`
+      }
+
+      // Fetch all hives with their inspections
+      let query = supabase
+        .from('hives')
+        .select(`
+          id,
+          hive_number,
+          apiary_id,
+          apiaries (name),
+          inspections (
+            brood_pattern_rating,
+            population_strength,
+            temperament_rating,
+            swarming_signs,
+            honey_stores,
+            calmness_rating,
+            recapping_speed,
+            vsh_score,
+            smr_percentage,
+            chalkbrood_severity
+          )
+        `)
+        .eq('user_id', userId)
+
+      // Apply apiary filter
+      if (selectedApiary !== 'all') {
+        query = query.eq('apiary_id', selectedApiary)
+      }
+
+      const { data: hivesData, error } = await query
+
+      if (error) throw error
+
+      // Calculate averages and scores for each hive
+      const scored = hivesData?.map((hive: any) => {
+        const inspections = hive.inspections || []
+
+        if (inspections.length === 0) {
+          return null // Skip hives with no inspections
+        }
+
+        // Calculate averages
+        const avg = {
+          brood_pattern: inspections.reduce((sum: number, i: any) => sum + (i.brood_pattern_rating || 0), 0) / inspections.length,
+          population: inspections.reduce((sum: number, i: any) => sum + (i.population_strength || 0), 0) / inspections.length,
+          temperament: inspections.reduce((sum: number, i: any) => sum + (i.temperament_rating || 0), 0) / inspections.length,
+          swarming: inspections.filter((i: any) => i.swarming_signs).length / inspections.length, // Percentage
+          honey_yield: inspections.reduce((sum: number, i: any) => {
+            const stores = i.honey_stores?.toLowerCase() || ''
+            if (stores.includes('full')) return sum + 5
+            if (stores.includes('good')) return sum + 4
+            if (stores.includes('moderate')) return sum + 3
+            if (stores.includes('low')) return sum + 2
+            return sum + 1
+          }, 0) / inspections.length,
+          calmness: inspections.reduce((sum: number, i: any) => sum + (i.calmness_rating || 0), 0) / inspections.length,
+          recapping: inspections.reduce((sum: number, i: any) => sum + (i.recapping_speed || 0), 0) / inspections.length,
+          vsh: inspections.reduce((sum: number, i: any) => sum + (i.vsh_score || 0), 0) / inspections.length,
+          smr: inspections.reduce((sum: number, i: any) => sum + (i.smr_percentage || 0), 0) / inspections.length,
+          chalkbrood: inspections.reduce((sum: number, i: any) => sum + (i.chalkbrood_severity || 0), 0) / inspections.length,
+        }
+
+        // Calculate weighted score (lower swarming is better, so invert it)
+        const score =
+          (avg.brood_pattern * weights.brood_pattern) +
+          (avg.population * weights.population) +
+          (avg.temperament * weights.temperament) +
+          ((1 - avg.swarming) * 5 * weights.swarming) + // Invert swarming tendency
+          (avg.honey_yield * weights.honey_yield)
+
+        return {
+          hive_id: hive.id,
+          hive_number: hive.hive_number,
+          apiary_name: hive.apiaries?.name || 'Unknown',
+          inspection_count: inspections.length,
+          averages: avg,
+          score: score,
+        }
+      }).filter(Boolean) as any[] // Remove null entries
+
+      // Sort by score descending
+      scored?.sort((a: any, b: any) => b.score - a.score)
+
+      setHiveScores(scored || [])
+    } catch (error) {
+      console.error('Error calculating hive scores:', error)
+      alert('Failed to calculate hive scores')
+    } finally {
+      setLoadingScores(false)
+    }
+  }, [userId, selectedApiary, selectedYear, dateFrom, dateTo, weights])
+
+  // Recalculate when filters or weights change
+  useEffect(() => {
+    if (activeTab === 'selection') {
+      calculateHiveScores()
+    }
+  }, [activeTab, selectedApiary, selectedYear, dateFrom, dateTo, weights, calculateHiveScores])
 
   const resetForm = () => {
     setShowForm(false)
@@ -888,10 +1022,308 @@ export default function BatchesPage() {
 
       {/* Selection Tab Content */}
       {activeTab === 'selection' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-2">Selection tools coming soon</p>
-            <p className="text-gray-400 text-sm">Track and select the best performing queens from your batches</p>
+        <div className="space-y-6">
+          {/* Filters Row */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Breeder Queen Selection Filters</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Apiary Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+                <select
+                  value={selectedApiary}
+                  onChange={(e) => setSelectedApiary(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="all">All Apiaries</option>
+                  {apiaries.map((apiary) => (
+                    <option key={apiary.id} value={apiary.id}>
+                      {apiary.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Year Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="all">All Years</option>
+                  {[2025, 2024, 2023, 2022, 2021].map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date From */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              {/* Date To */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Weights Row */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Column Weights (1-5)</h3>
+            <p className="text-sm text-gray-600 mb-4">Assign importance to each trait. Higher weights = more influence on ranking.</p>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {/* Brood Pattern Weight */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Brood Pattern</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={weights.brood_pattern}
+                  onChange={(e) => setWeights({ ...weights, brood_pattern: parseInt(e.target.value) || 1 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              {/* Population Weight */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Population</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={weights.population}
+                  onChange={(e) => setWeights({ ...weights, population: parseInt(e.target.value) || 1 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              {/* Temperament Weight */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Temperament</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={weights.temperament}
+                  onChange={(e) => setWeights({ ...weights, temperament: parseInt(e.target.value) || 1 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              {/* Swarming Weight */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Swarming (Low=Good)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={weights.swarming}
+                  onChange={(e) => setWeights({ ...weights, swarming: parseInt(e.target.value) || 1 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              {/* Honey Yield Weight */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Honey Yield</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={weights.honey_yield}
+                  onChange={(e) => setWeights({ ...weights, honey_yield: parseInt(e.target.value) || 1 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Optional Columns */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Optional Columns</h3>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={optionalColumns.calmness}
+                  onChange={(e) => setOptionalColumns({ ...optionalColumns, calmness: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">Calmness</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={optionalColumns.recapping}
+                  onChange={(e) => setOptionalColumns({ ...optionalColumns, recapping: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">Recapping</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={optionalColumns.vsh}
+                  onChange={(e) => setOptionalColumns({ ...optionalColumns, vsh: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">VSH</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={optionalColumns.smr}
+                  onChange={(e) => setOptionalColumns({ ...optionalColumns, smr: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">SMR</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={optionalColumns.chalkbrood}
+                  onChange={(e) => setOptionalColumns({ ...optionalColumns, chalkbrood: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">Chalkbrood</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Results Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Ranked Hives</h3>
+              <p className="text-sm text-gray-600 mt-1">Based on inspection averages and weighted scores</p>
+            </div>
+
+            {loadingScores ? (
+              <div className="p-12">
+                <LoadingSpinner text="Calculating scores..." />
+              </div>
+            ) : hiveScores.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg mb-2">No hives found matching the selected filters</p>
+                <p className="text-sm">Try adjusting your filters or add more inspection data</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hive</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Apiary</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inspections</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brood Pattern</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Population</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Temperament</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Swarming %</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Honey Yield</th>
+                      {optionalColumns.calmness && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Calmness</th>
+                      )}
+                      {optionalColumns.recapping && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recapping</th>
+                      )}
+                      {optionalColumns.vsh && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">VSH</th>
+                      )}
+                      {optionalColumns.smr && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SMR</th>
+                      )}
+                      {optionalColumns.chalkbrood && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chalkbrood</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {hiveScores.map((hive, index) => (
+                      <tr key={hive.hive_id} className={index < 3 ? 'bg-green-50' : ''}>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {index === 0 && <span className="text-yellow-500">🥇</span>}
+                          {index === 1 && <span className="text-gray-400">🥈</span>}
+                          {index === 2 && <span className="text-orange-400">🥉</span>}
+                          {index > 2 && <span className="text-gray-500">{index + 1}</span>}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {hive.hive_number}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {hive.apiary_name}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {hive.inspection_count}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
+                          {hive.score.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {hive.averages.brood_pattern.toFixed(1)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {hive.averages.population.toFixed(1)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {hive.averages.temperament.toFixed(1)}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {(hive.averages.swarming * 100).toFixed(0)}%
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {hive.averages.honey_yield.toFixed(1)}
+                        </td>
+                        {optionalColumns.calmness && (
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {hive.averages.calmness.toFixed(1)}
+                          </td>
+                        )}
+                        {optionalColumns.recapping && (
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {hive.averages.recapping.toFixed(1)}
+                          </td>
+                        )}
+                        {optionalColumns.vsh && (
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {hive.averages.vsh.toFixed(1)}
+                          </td>
+                        )}
+                        {optionalColumns.smr && (
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {hive.averages.smr.toFixed(1)}
+                          </td>
+                        )}
+                        {optionalColumns.chalkbrood && (
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {hive.averages.chalkbrood.toFixed(1)}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
