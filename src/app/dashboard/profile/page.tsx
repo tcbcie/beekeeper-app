@@ -350,7 +350,8 @@ export default function ProfilePage() {
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error creating team:', error)
-      alert('Failed to create team. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to create team: ${errorMessage}\n\nThe teams tables may not exist in your Supabase database yet.\n\nPlease run the migration:\n1. Go to Supabase Dashboard > SQL Editor\n2. Open and run: sql/create_teams_tables.sql`)
     } finally {
       setCreatingTeam(false)
     }
