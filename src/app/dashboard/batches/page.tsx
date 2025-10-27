@@ -515,8 +515,9 @@ export default function BatchesPage() {
           })
         }
 
-        if (inspections.length === 0) {
-          return null // Skip hives with no inspections in the date range
+        // Require minimum of 3 inspections for reliable averages
+        if (inspections.length < 3) {
+          return null // Skip hives with insufficient inspection data
         }
 
         // Calculate averages
@@ -564,7 +565,8 @@ export default function BatchesPage() {
       setHiveScores(scored || [])
     } catch (error) {
       console.error('Error calculating hive scores:', error)
-      alert('Failed to calculate hive scores')
+      // Silently fail - user will see empty state message instead of alert
+      setHiveScores([])
     } finally {
       setLoadingScores(false)
     }
@@ -1337,8 +1339,8 @@ export default function BatchesPage() {
               </div>
             ) : hiveScores.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                <p className="text-lg mb-2">No hives found matching the selected filters</p>
-                <p className="text-sm">Try adjusting your filters or add more inspection data</p>
+                <p className="text-lg mb-2">Not enough data to calculate scores</p>
+                <p className="text-sm">Each hive requires at least 3 inspection records in the selected period</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
