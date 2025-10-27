@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import UpcomingEvents from '@/components/UpcomingEvents'
-import { Shield } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck } from 'lucide-react'
 
 interface Inspection {
   id: string
@@ -15,6 +15,15 @@ interface Inspection {
   hives?: {
     hive_number: string
   }
+}
+
+interface Team {
+  id: string
+  name: string
+  owner_id: string
+  created_at: string
+  member_count?: number
+  user_role?: string
 }
 
 export default function DashboardPage() {
@@ -40,6 +49,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<UserRole>('User')
+  const [ownedTeams, setOwnedTeams] = useState<Team[]>([])
+  const [memberTeams, setMemberTeams] = useState<Team[]>([])
+  const [loadingTeams, setLoadingTeams] = useState(false)
   const router = useRouter()
 
   const fetchDashboardData = useCallback(async (userIdParam?: string) => {
@@ -140,6 +152,61 @@ export default function DashboardPage() {
     }
   }, [userId])
 
+  // Fetch teams (owned and member)
+  const fetchTeams = useCallback(async () => {
+    if (!userId) return
+    setLoadingTeams(true)
+
+    try {
+      // Fetch owned teams
+      const { data: owned, error: ownedError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('owner_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(3) // Show top 3 owned teams
+
+      if (ownedError) throw ownedError
+
+      // Get member count for each owned team
+      const ownedWithCounts = await Promise.all((owned || []).map(async (team) => {
+        const { count } = await supabase
+          .from('team_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', team.id)
+        return { ...team, member_count: count || 0, user_role: 'owner' }
+      }))
+
+      setOwnedTeams(ownedWithCounts)
+
+      // Fetch teams where user is a member (not owner)
+      const { data: memberData, error: memberError } = await supabase
+        .from('team_members')
+        .select('team_id, role, teams(*)')
+        .eq('user_id', userId)
+        .neq('role', 'owner')
+        .limit(3) // Show top 3 member teams
+
+      if (memberError) throw memberError
+
+      // Get member count for each team
+      const memberWithCounts = await Promise.all((memberData || []).map(async (membership) => {
+        const team = (membership as unknown as { teams: Team }).teams
+        const { count } = await supabase
+          .from('team_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', team.id)
+        return { ...team, member_count: count || 0, user_role: membership.role }
+      }))
+
+      setMemberTeams(memberWithCounts)
+    } catch (error) {
+      console.error('Error fetching teams:', error)
+    } finally {
+      setLoadingTeams(false)
+    }
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -154,9 +221,10 @@ export default function DashboardPage() {
       setUserRole(role)
 
       fetchDashboardData(id)
+      fetchTeams()
     }
     initUser()
-  }, [router, fetchDashboardData])
+  }, [router, fetchDashboardData, fetchTeams])
 
   if (loading) return <LoadingSpinner text="Loading dashboard..." />
 
@@ -234,6 +302,103 @@ export default function DashboardPage() {
 
       {/* Upcoming Events - Queen Rearing Calendar */}
       {userId && <UpcomingEvents userId={userId} />}
+
+      {/* Teams Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Users size={24} className="text-blue-600" />
+            <h2 className="text-xl font-semibold">My Teams</h2>
+          </div>
+          <a
+            href="/dashboard/profile#teams"
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            Manage Teams
+          </a>
+        </div>
+
+        {loadingTeams ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Owned Teams */}
+            {ownedTeams.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Crown size={18} className="text-amber-600" />
+                  <h3 className="font-semibold text-gray-900">Teams I Own</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {ownedTeams.map((team) => (
+                    <div key={team.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-gray-900">{team.name}</h4>
+                        <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-medium">
+                          Owner
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <Users size={14} className="inline mr-1" />
+                        {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Created {new Date(team.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Member Teams */}
+            {memberTeams.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <UserCheck size={18} className="text-green-600" />
+                  <h3 className="font-semibold text-gray-900">Teams I'm In</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {memberTeams.map((team) => (
+                    <div key={team.id} className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-gray-900">{team.name}</h4>
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium capitalize">
+                          {team.user_role}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <Users size={14} className="inline mr-1" />
+                        {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Joined {new Date(team.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {ownedTeams.length === 0 && memberTeams.length === 0 && (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Users size={48} className="mx-auto text-gray-400 mb-3" />
+                <p className="text-gray-600 mb-2">You haven't created or joined any teams yet.</p>
+                <p className="text-sm text-gray-500 mb-4">Create a team to collaborate with other beekeepers!</p>
+                <a
+                  href="/dashboard/profile#teams"
+                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Get Started
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow p-6">
