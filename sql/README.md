@@ -58,6 +58,47 @@ After running this migration, check that these tables exist in Supabase:
 - If you get "relation already exists" errors, the tables are already created
 - If you get "permission denied" errors, ensure RLS policies are enabled
 - If team features still don't work after migration, check browser console for specific errors
+- **If you get "infinite recursion detected in policy for relation 'teams'" error**:
+  - This means the RLS policies have circular dependencies
+  - Run `reset_all_team_policies.sql` to fix this issue
+  - See the "Fixing Infinite Recursion Error" section below for detailed steps
+
+### `reset_all_team_policies.sql` - Fix Infinite Recursion Error
+
+**Required when**: You see "infinite recursion detected in policy for relation 'teams'" error
+
+This script completely resets ALL RLS policies on all 4 team-related tables to fix circular dependency issues.
+
+**What it does:**
+1. Shows all current policies (for debugging)
+2. Drops ALL existing policies on teams, team_members, team_apiaries, team_invitations
+3. Recreates all policies with non-recursive structure
+4. Uses `EXISTS` instead of `IN` subqueries to prevent recursion
+5. Splits the teams SELECT policy into two separate policies
+6. Includes step-by-step progress messages
+7. Verifies all policies were created successfully
+
+**How to run:**
+1. Go to Supabase Dashboard → **SQL Editor**
+2. Click **New Query**
+3. Copy the ENTIRE contents of `sql/reset_all_team_policies.sql`
+4. Paste into the query editor
+5. Click **Run** (or press Ctrl+Enter)
+6. You should see multiple result sets with step messages:
+   - "Current policies before drop:" (shows existing policies)
+   - "All policies dropped successfully"
+   - "Teams policies created"
+   - "Team members policies created"
+   - "Team apiaries policies created"
+   - "Team invitations policies created"
+   - "Final verification - all policies:" (shows all new policies)
+   - "Policy reset complete!"
+7. Refresh your browser and try creating a team again
+
+**If it still doesn't work:**
+- Check the "Final verification" output to ensure all policies are listed
+- Each table should have multiple policies (SELECT, INSERT, UPDATE, DELETE)
+- If any policies are missing, there may be a syntax error in the script
 
 ### Other Migration Files
 
