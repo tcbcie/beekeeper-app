@@ -53,7 +53,12 @@ interface Inspection {
   recapping: number
   vsh: number
   smr: number
-  disease_issues: string
+  afb_disease: number
+  efb_disease: number
+  chalkbrood_disease: number
+  nosemosis_disease: number
+  dwv_disease: number
+  iapv_cbpv_disease: number
   notes: string
   image_url: string | null
   weather_temp: number | null
@@ -90,12 +95,13 @@ interface FormData {
   recapping: number
   vsh: number
   smr: number
-  disease_issues: string
+  afb_disease: number
+  efb_disease: number
+  chalkbrood_disease: number
+  nosemosis_disease: number
+  dwv_disease: number
+  iapv_cbpv_disease: number
   notes: string
-  disease_present: boolean
-  varroa: boolean
-  chalkbrood: boolean
-  virus: boolean
   image_url: string | null
 }
 
@@ -123,6 +129,7 @@ export default function InspectionsPage() {
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
   const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
+  const [diseaseExpanded, setDiseaseExpanded] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -145,12 +152,13 @@ export default function InspectionsPage() {
     recapping: 3,
     vsh: 3,
     smr: 3,
-    disease_issues: '',
+    afb_disease: 0,
+    efb_disease: 0,
+    chalkbrood_disease: 0,
+    nosemosis_disease: 0,
+    dwv_disease: 0,
+    iapv_cbpv_disease: 0,
     notes: '',
-    disease_present: false,
-    varroa: false,
-    chalkbrood: false,
-    virus: false,
     image_url: null,
   })
 
@@ -440,10 +448,6 @@ export default function InspectionsPage() {
       brood_pattern_rating: lastInsp?.brood_pattern_rating || 3,
       temperament_rating: lastInsp?.temperament_rating || 3,
       population_strength: lastInsp?.population_strength || 3,
-      disease_present: false,
-      varroa: false,
-      chalkbrood: false,
-      virus: false,
       image_url: null,
     })
   }
@@ -488,13 +492,6 @@ export default function InspectionsPage() {
       }
       setFetchingWeather(false)
 
-      // Build disease_issues string from checkboxes
-      const diseases = []
-      if (formData.varroa) diseases.push('Varroa')
-      if (formData.chalkbrood) diseases.push('Chalkbrood')
-      if (formData.virus) diseases.push('Virus present')
-      const disease_issues = diseases.join(', ')
-
       const submitData = {
         hive_id: formData.hive_id,
         inspection_date: formData.inspection_date,
@@ -517,7 +514,12 @@ export default function InspectionsPage() {
         recapping: formData.recapping,
         vsh: formData.vsh,
         smr: formData.smr,
-        disease_issues: disease_issues,
+        afb_disease: formData.afb_disease,
+        efb_disease: formData.efb_disease,
+        chalkbrood_disease: formData.chalkbrood_disease,
+        nosemosis_disease: formData.nosemosis_disease,
+        dwv_disease: formData.dwv_disease,
+        iapv_cbpv_disease: formData.iapv_cbpv_disease,
         notes: formData.notes,
         image_url: imageUrl,
         weather_temp: weatherData?.temp || null,
@@ -576,13 +578,6 @@ export default function InspectionsPage() {
       setFormApiaryId('')
     }
 
-    // Parse disease_issues back into checkboxes
-    const diseaseIssues = inspection.disease_issues || ''
-    const varroa = diseaseIssues.includes('Varroa')
-    const chalkbrood = diseaseIssues.includes('Chalkbrood')
-    const virus = diseaseIssues.includes('Virus')
-    const disease_present = diseaseIssues.length > 0
-
     setFormData({
       hive_id: inspection.hive_id,
       inspection_date: inspection.inspection_date,
@@ -605,12 +600,13 @@ export default function InspectionsPage() {
       recapping: inspection.recapping ?? 3,
       vsh: inspection.vsh ?? 3,
       smr: inspection.smr ?? 3,
-      disease_issues: inspection.disease_issues || '',
+      afb_disease: inspection.afb_disease ?? 0,
+      efb_disease: inspection.efb_disease ?? 0,
+      chalkbrood_disease: inspection.chalkbrood_disease ?? 0,
+      nosemosis_disease: inspection.nosemosis_disease ?? 0,
+      dwv_disease: inspection.dwv_disease ?? 0,
+      iapv_cbpv_disease: inspection.iapv_cbpv_disease ?? 0,
       notes: inspection.notes || '',
-      disease_present: disease_present,
-      varroa: varroa,
-      chalkbrood: chalkbrood,
-      virus: virus,
       image_url: inspection.image_url || null,
     })
 
@@ -646,6 +642,7 @@ export default function InspectionsPage() {
     setImagePreview(null)
     setGivenTakenExpanded(false)
     setHygienicBehaviourExpanded(false)
+    setDiseaseExpanded(false)
     setFormData({
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
@@ -668,12 +665,13 @@ export default function InspectionsPage() {
       recapping: 3,
       vsh: 3,
       smr: 3,
-      disease_issues: '',
+      afb_disease: 0,
+      efb_disease: 0,
+      chalkbrood_disease: 0,
+      nosemosis_disease: 0,
+      dwv_disease: 0,
+      iapv_cbpv_disease: 0,
       notes: '',
-      disease_present: false,
-      varroa: false,
-      chalkbrood: false,
-      virus: false,
       image_url: null,
     })
   }
@@ -1737,79 +1735,329 @@ export default function InspectionsPage() {
               )}
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Disease Status</label>
+            {/* Disease Section - Collapsible */}
+            <div className="md:col-span-2 bg-teal-50 rounded-lg border-2 border-teal-200">
               <button
                 type="button"
-                onClick={() => {
-                  const newValue = !formData.disease_present
-                  setFormData({
-                    ...formData,
-                    disease_present: newValue,
-                    varroa: newValue ? formData.varroa : false,
-                    chalkbrood: newValue ? formData.chalkbrood : false,
-                    virus: newValue ? formData.virus : false,
-                  })
-                }}
-                className={`w-full min-h-[56px] rounded-lg font-semibold text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
-                  formData.disease_present
-                    ? 'bg-red-600 text-white shadow-lg hover:bg-red-700 active:bg-red-800'
-                    : 'bg-green-100 text-green-800 hover:bg-green-200 active:bg-green-300 border-2 border-green-300'
-                }`}
+                onClick={() => setDiseaseExpanded(!diseaseExpanded)}
+                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
               >
-                {formData.disease_present ? (
-                  <>
-                    <span className="text-xl">⚠️</span>
-                    Disease Present
-                  </>
-                ) : (
-                  <>
-                    <span className="text-xl">✓</span>
-                    No Disease Detected
-                  </>
-                )}
+                <h4 className="text-sm font-semibold text-gray-900">Disease</h4>
+                {diseaseExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
-              {formData.disease_present && (
-                <div className="mt-4 p-4 bg-red-50 rounded-lg border-2 border-red-200">
-                  <div className="text-sm font-medium text-red-900 mb-3">Select Disease Type(s):</div>
-                  <div className="flex flex-col gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({...formData, varroa: !formData.varroa})}
-                      className={`min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
-                        formData.varroa
-                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600 active:bg-red-700'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50 active:bg-red-100'
-                      }`}
-                    >
-                      {formData.varroa && <span className="text-lg">✓</span>}
-                      Varroa Mite
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({...formData, chalkbrood: !formData.chalkbrood})}
-                      className={`min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
-                        formData.chalkbrood
-                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600 active:bg-red-700'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50 active:bg-red-100'
-                      }`}
-                    >
-                      {formData.chalkbrood && <span className="text-lg">✓</span>}
-                      Chalkbrood
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({...formData, virus: !formData.virus})}
-                      className={`min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
-                        formData.virus
-                          ? 'bg-red-500 text-white shadow-md hover:bg-red-600 active:bg-red-700'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-300 hover:bg-red-50 active:bg-red-100'
-                      }`}
-                    >
-                      {formData.virus && <span className="text-lg">✓</span>}
-                      Virus Present
-                    </button>
+              {diseaseExpanded && (
+                <div className="p-4 pt-0 space-y-6">
+                  {/* American Foulbrood (AFB) */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        American Foulbrood (AFB): {formData.afb_disease === 0 ? 'Not Recorded' : renderStars(formData.afb_disease)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">AFB Severity Rating:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Minimal - Very few signs, easily treated</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Some affected cells, manageable</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable infection, requires intervention</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Significant infection, urgent action needed</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive infection, colony at risk</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            AFB is a highly contagious bacterial disease that requires immediate reporting and treatment.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, afb_disease: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.afb_disease === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, afb_disease: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.afb_disease === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* European Foulbrood (EFB) */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        European Foulbrood (EFB): {formData.efb_disease === 0 ? 'Not Recorded' : renderStars(formData.efb_disease)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">EFB Severity Rating:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Minimal - Few affected larvae, colony strong</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Some dead larvae, manageable</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable infection, intervention needed</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many dead larvae, serious concern</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive infection, colony struggling</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            EFB affects young larvae and can weaken the colony significantly.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, efb_disease: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.efb_disease === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, efb_disease: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.efb_disease === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Chalkbrood */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Chalkbrood: {formData.chalkbrood_disease === 0 ? 'Not Recorded' : renderStars(formData.chalkbrood_disease)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">Chalkbrood Severity Rating:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Minimal - Occasional mummified larvae</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Few mummies, not spreading</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Regular mummies, some impact</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many mummies, colony weakened</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive mummies, serious concern</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            Chalkbrood is a fungal disease that creates hard, chalk-like mummies.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, chalkbrood_disease: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.chalkbrood_disease === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, chalkbrood_disease: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.chalkbrood_disease === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Nosemosis */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Nosemosis: {formData.nosemosis_disease === 0 ? 'Not Recorded' : renderStars(formData.nosemosis_disease)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">Nosemosis Severity Rating:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Minimal - Light spotting, minor dysentery</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Some spotting visible, manageable</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable spotting, intervention needed</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Heavy spotting, colony weakened</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive spotting, serious health issue</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            Nosemosis is caused by microsporidian parasites affecting bee digestion.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, nosemosis_disease: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.nosemosis_disease === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, nosemosis_disease: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.nosemosis_disease === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Deformed Wing Virus (DWV) */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Deformed Wing Virus (DWV): {formData.dwv_disease === 0 ? 'Not Recorded' : renderStars(formData.dwv_disease)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">DWV Severity Rating:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Minimal - Rare deformed bees observed</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Few deformed bees, limited spread</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Regular deformed bees, concern</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many deformed bees, varroa issues</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive deformities, urgent intervention</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            DWV often indicates varroa mite issues. Bees have shrunken, deformed wings.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, dwv_disease: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.dwv_disease === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, dwv_disease: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.dwv_disease === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* IAPV & CBPV */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        IAPV & CBPV: {formData.iapv_cbpv_disease === 0 ? 'Not Recorded' : renderStars(formData.iapv_cbpv_disease)}
+                      </label>
+                      <div className="relative group">
+                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                          <div className="font-semibold mb-2">IAPV & CBPV Severity Rating:</div>
+                          <div className="space-y-1">
+                            <div><strong>⭐ (1):</strong> Minimal - Few trembling/hairless bees</div>
+                            <div><strong>⭐⭐ (2):</strong> Low - Some affected bees, limited spread</div>
+                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable symptoms, monitoring needed</div>
+                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many affected bees, colony weakened</div>
+                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive symptoms, serious concern</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                            IAPV causes paralysis; CBPV causes trembling and hairless appearance.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => setFormData({...formData, iapv_cbpv_disease: rating})}
+                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
+                            formData.iapv_cbpv_disease === rating
+                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          }`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, iapv_cbpv_disease: 0})}
+                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+                          formData.iapv_cbpv_disease === 0
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2086,10 +2334,49 @@ export default function InspectionsPage() {
               </div>
             )}
 
-            {inspection.disease_issues && (
-              <div className="mb-4 p-3 bg-red-50 rounded">
-                <span className="text-sm font-medium text-red-700">Disease: </span>
-                <span className="text-sm text-red-600">{inspection.disease_issues}</span>
+            {/* Disease Section - Display (only show if any values are recorded) */}
+            {(inspection.afb_disease > 0 || inspection.efb_disease > 0 || inspection.chalkbrood_disease > 0 ||
+              inspection.nosemosis_disease > 0 || inspection.dwv_disease > 0 || inspection.iapv_cbpv_disease > 0) && (
+              <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Disease</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {inspection.afb_disease > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">AFB</div>
+                      <div className="text-sm">{renderStars(inspection.afb_disease)}</div>
+                    </div>
+                  )}
+                  {inspection.efb_disease > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">EFB</div>
+                      <div className="text-sm">{renderStars(inspection.efb_disease)}</div>
+                    </div>
+                  )}
+                  {inspection.chalkbrood_disease > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Chalkbrood</div>
+                      <div className="text-sm">{renderStars(inspection.chalkbrood_disease)}</div>
+                    </div>
+                  )}
+                  {inspection.nosemosis_disease > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">Nosemosis</div>
+                      <div className="text-sm">{renderStars(inspection.nosemosis_disease)}</div>
+                    </div>
+                  )}
+                  {inspection.dwv_disease > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">DWV</div>
+                      <div className="text-sm">{renderStars(inspection.dwv_disease)}</div>
+                    </div>
+                  )}
+                  {inspection.iapv_cbpv_disease > 0 && (
+                    <div className="text-center p-3 bg-white rounded shadow-sm">
+                      <div className="text-xs text-gray-500 mb-1">IAPV & CBPV</div>
+                      <div className="text-sm">{renderStars(inspection.iapv_cbpv_disease)}</div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
