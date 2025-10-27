@@ -1274,9 +1274,9 @@ export default function BatchesPage() {
             </div>
           </div>
 
-          {/* Optional Columns */}
+          {/* Optional Criteria */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Optional Columns</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Optional Criteria</h3>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
