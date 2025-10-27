@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus } from 'lucide-react'
+import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -1036,6 +1036,57 @@ export default function ProfilePage() {
                             </div>
                           ) : (
                             <p className="text-sm text-gray-500 text-center py-4">No members yet. Invite someone to get started!</p>
+                          )}
+
+                          {/* Pending Invitations */}
+                          {teamInvitations.length > 0 && (
+                            <div className="mt-6 pt-4 border-t border-gray-200">
+                              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <Send size={14} className="text-orange-600" />
+                                Pending Invitations
+                              </h5>
+                              <div className="space-y-2">
+                                {teamInvitations.map((invitation) => {
+                                  const expiresAt = new Date(invitation.expires_at)
+                                  const now = new Date()
+                                  const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                                  const isExpiringSoon = daysLeft <= 2
+                                  const isExpired = daysLeft < 0
+
+                                  return (
+                                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                      <div className="flex items-center gap-3 flex-1">
+                                        <Mail size={16} className="text-orange-400" />
+                                        <div className="flex-1">
+                                          <div className="text-sm font-medium text-gray-900">{invitation.email}</div>
+                                          <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                            <Clock size={12} />
+                                            {isExpired ? (
+                                              <span className="text-red-600 font-medium">Expired</span>
+                                            ) : isExpiringSoon ? (
+                                              <span className="text-orange-600 font-medium">Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</span>
+                                            ) : (
+                                              <span>Expires in {daysLeft} days</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <span className="px-2 py-1 text-xs rounded font-medium bg-orange-100 text-orange-800">
+                                          Pending
+                                        </span>
+                                      </div>
+                                      <button
+                                        onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
+                                        className="ml-3 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center gap-1"
+                                        title="Cancel invitation"
+                                      >
+                                        <X size={12} />
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
