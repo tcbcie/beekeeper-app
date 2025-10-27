@@ -389,7 +389,7 @@ export default function AboutPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span>Star rating system (1-5) with "Not Recorded" default option</span>
+                  <span>Star rating system (1-5) with &quot;Not Recorded&quot; default option</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
