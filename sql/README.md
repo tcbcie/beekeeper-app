@@ -169,6 +169,60 @@ team_members table
 
 **Use instead**: `fix_recursion_alternative.sql` which adds the same permissions safely using a SECURITY DEFINER function
 
+### `add_team_hive_visibility.sql` - Allow Team Members to See Shared Data ⭐
+
+**IMPORTANT**: Run this AFTER `fix_recursion_alternative.sql` to complete team collaboration setup
+
+**What it does:**
+Adds RLS policies so team members can VIEW data in shared apiaries:
+- Apiaries (shared apiaries)
+- Hives (in shared apiaries)
+- Queens (in shared hives)
+- Inspections (in shared hives)
+- Varroa Checks (in shared hives)
+- Varroa Treatments (in shared hives)
+
+**How to run:**
+1. Go to Supabase Dashboard → **SQL Editor**
+2. Click **New Query**
+3. Copy the ENTIRE contents of `sql/add_team_hive_visibility.sql`
+4. Paste and run
+5. Look for success messages for each table:
+   - "Added: Team members can view shared apiaries"
+   - "Added: Team members can view hives in shared apiaries"
+   - "Added: Team members can view queens in shared hives"
+   - "Added: Team members can view inspections in shared hives"
+   - "Added: Team members can view varroa checks in shared hives"
+   - "Added: Team members can view varroa treatments in shared hives"
+   - "COMPLETE!"
+
+**Permissions:**
+- **READ-ONLY**: Team members can VIEW all data in shared apiaries
+- **NO WRITE**: Only team owners and admins can modify shared data (to be added later)
+
+**Safety:**
+- Uses the safe `user_team_ids()` function (no recursion risk)
+- Consistent with other team policies
+
+### `debug_team_membership.sql` - Diagnostic Tool
+
+**Purpose**: Debug tool to check team membership, invitations, and permissions
+
+**When to use**: When troubleshooting team visibility issues
+
+**What it shows:**
+- All teams in the database
+- All team members and their roles
+- All invitations (pending/accepted/declined)
+- Team apiaries (shared apiaries)
+- Current user's expected team visibility
+- Raw data for debugging RLS issues
+
+**How to run:**
+1. Go to Supabase Dashboard → **SQL Editor**
+2. Copy and run `sql/debug_team_membership.sql`
+3. Review the output to diagnose issues
+
 ### Other Migration Files
 
 Add documentation for other migration files as they are created.
