@@ -316,7 +316,9 @@ export default function ProfilePage() {
       setMemberTeams(memberWithCounts)
     } catch (error) {
       console.error('Error fetching teams:', error)
-      alert('Failed to load teams.')
+      // More detailed error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to load teams: ${errorMessage}\n\nPlease ensure the teams tables have been created in Supabase by running the migration in sql/create_teams_tables.sql`)
     } finally {
       setLoadingTeams(false)
     }
