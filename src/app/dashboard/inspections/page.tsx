@@ -2139,15 +2139,38 @@ export default function InspectionsPage() {
       <div className="space-y-4">
         {filteredInspections.map((inspection) => (
           <div key={inspection.id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
-                <p className="text-sm text-gray-500">
-                  {inspection.inspection_date}
-                  {inspection.inspection_time && ` at ${inspection.inspection_time}`}
-                </p>
+            <div className="flex justify-between items-start mb-4 gap-4">
+              <div className="flex items-start gap-3 flex-1">
+                {inspection.image_url && (
+                  <div
+                    className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
+                    onDoubleClick={() => {
+                      setModalImageUrl(inspection.image_url)
+                      setImageModalOpen(true)
+                    }}
+                    title="Double-click to enlarge"
+                  >
+                    <Image
+                      src={inspection.image_url}
+                      alt="Inspection"
+                      fill
+                      className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                      sizes="64px"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
+                      <Camera size={20} className="text-white" />
+                    </div>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
+                  <p className="text-sm text-gray-500">
+                    {inspection.inspection_date}
+                    {inspection.inspection_time && ` at ${inspection.inspection_time}`}
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => handleEdit(inspection)}
                   className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation"
@@ -2378,27 +2401,6 @@ export default function InspectionsPage() {
                       <div className="text-sm">{renderStars(inspection.iapv_cbpv_disease)}</div>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {inspection.image_url && (
-              <div className="mb-4">
-                <div className="text-xs text-gray-500 mb-2">📷 Inspection Photo (double-click to enlarge)</div>
-                <div
-                  className="relative w-48 h-48 cursor-pointer hover:opacity-90 transition-opacity"
-                  onDoubleClick={() => {
-                    setModalImageUrl(inspection.image_url)
-                    setImageModalOpen(true)
-                  }}
-                >
-                  <Image
-                    src={inspection.image_url}
-                    alt="Inspection photo thumbnail"
-                    fill
-                    className="object-cover rounded-lg border-2 border-gray-300 shadow-md"
-                    sizes="192px"
-                  />
                 </div>
               </div>
             )}
