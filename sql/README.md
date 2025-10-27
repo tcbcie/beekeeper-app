@@ -108,40 +108,66 @@ After running this migration, check that these tables exist in Supabase:
 - Each table should have multiple policies (SELECT, INSERT, UPDATE, DELETE)
 - If any policies are missing, there may be a syntax error in the script
 
-### `add_admin_member_permissions.sql` - Add Admin/Member Permissions
+### `fix_recursion_alternative.sql` - Fix Recursion with Security Definer Function ⭐⭐
 
-**Required after**: Successfully running `fix_teams_rls_final.sql` and confirming basic team functionality works
+**IMPORTANT**: Run this AFTER `fix_teams_rls_final.sql` to add admin/member support
+
+**Why needed**: Direct policies between `teams` and `team_members` create recursion. This script uses a PostgreSQL **SECURITY DEFINER function** to break the circular dependency.
+
+**The Problem:**
+```
+teams policy: "if you're in team_members, you can see team"
+  ↓ queries team_members
+team_members policy: "if you own the team, you can see members"
+  ↓ queries teams
+= INFINITE RECURSION! ❌
+```
+
+**The Solution:**
+```
+teams policy: "if id IN user_team_ids(), you can see team"
+  ↓ calls function
+user_team_ids() function: SECURITY DEFINER (bypasses RLS)
+  ↓ direct query (no policies)
+team_members table
+= NO RECURSION! ✅
+```
 
 **What it does:**
-Extends the basic owner-only policies with full admin and member support:
-- **Owners**: Full control (already working from previous script)
-- **Admins**: Can manage members, apiaries, and invitations
-- **Members**: Can view teams, members, and apiaries (read-only)
-
-**Safe Design:**
-- Uses the same one-directional pattern (no circular references)
-- All policies query UP to parent tables only (team_members → teams)
-- Never creates circular lookups
+1. Drops problematic recursive policies
+2. Creates `user_team_ids()` function that bypasses RLS (runs with elevated privileges)
+3. Creates safe policies using the function
+4. Adds full admin/member permissions for apiaries and invitations
 
 **How to run:**
-1. **First verify** basic team creation works (owners can create teams)
-2. Go to Supabase Dashboard → **SQL Editor**
-3. Click **New Query**
-4. Copy the ENTIRE contents of `sql/add_admin_member_permissions.sql`
-5. Paste and run
-6. Look for success messages:
-   - "Added: Members can view their teams"
-   - "Added: Members can view other members in their teams"
-   - "Added: Admins can manage team members"
-   - "Added: Members can view team apiaries"
-   - "Added: Admins can manage team apiaries"
-   - "Added: Admins can manage team invitations"
+1. Go to Supabase Dashboard → **SQL Editor**
+2. Click **New Query**
+3. Copy the ENTIRE contents of `sql/fix_recursion_alternative.sql`
+4. Paste and run
+5. Look for success messages:
+   - "Dropped potentially recursive policies"
+   - "Created helper function: user_team_ids()"
+   - "Created safe policy for members to view teams"
+   - "Created safe policy for members to view each other"
    - "COMPLETE!"
 
-**Permissions summary:**
-- **Owners**: Create/update/delete teams, full member management, full apiary/invitation control
+**Permissions after this:**
+- **Owners**: Full control (create/update/delete teams, manage everything)
 - **Admins**: Manage members (add/update/remove), manage apiaries, manage invitations
 - **Members**: View teams they belong to, view other members, view team apiaries (read-only)
+
+**Technical Details:**
+- `SECURITY DEFINER` = function runs as its creator (with elevated privileges)
+- This breaks the circular dependency: policies → function (bypasses RLS) → direct table access
+- Function is marked `STABLE` for query optimization
+
+### `add_admin_member_permissions.sql` - ⚠️ DO NOT USE (Causes Recursion)
+
+**Status**: DEPRECATED - This script causes infinite recursion
+
+**Why it fails**: Creates policies where `teams` queries `team_members` and `team_members` queries `teams` (circular dependency)
+
+**Use instead**: `fix_recursion_alternative.sql` which adds the same permissions safely using a SECURITY DEFINER function
 
 ### Other Migration Files
 
