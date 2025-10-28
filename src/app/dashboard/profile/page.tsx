@@ -50,6 +50,7 @@ interface TeamInvitation {
 
 interface Apiary {
   id: string
+  name?: string
   eircode: string
   user_id: string
   created_at: string
@@ -1201,7 +1202,9 @@ export default function ProfilePage() {
                                       <MapPin size={16} className="text-purple-600" />
                                       <div className="flex-1">
                                         <div className="text-sm font-medium text-gray-900">
-                                          {ta.apiary?.eircode || 'Unknown Location'}
+                                          {ta.apiary?.name
+                                            ? `${ta.apiary.name} - ${ta.apiary.eircode}`
+                                            : (ta.apiary?.eircode || 'Unknown Location')}
                                         </div>
                                         <div className="text-xs text-gray-500 mt-1">
                                           Shared {new Date(ta.added_at).toLocaleDateString()}
@@ -1209,7 +1212,12 @@ export default function ProfilePage() {
                                       </div>
                                     </div>
                                     <button
-                                      onClick={() => handleUnshareApiary(ta.id, ta.apiary?.eircode || 'this apiary')}
+                                      onClick={() => handleUnshareApiary(
+                                        ta.id,
+                                        ta.apiary?.name
+                                          ? `${ta.apiary.name} - ${ta.apiary.eircode}`
+                                          : (ta.apiary?.eircode || 'this apiary')
+                                      )}
                                       className="ml-3 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center gap-1"
                                       title="Remove apiary from team"
                                     >
@@ -1571,7 +1579,7 @@ export default function ProfilePage() {
                 <option value="">-- Select an apiary --</option>
                 {userApiaries.map((apiary) => (
                   <option key={apiary.id} value={apiary.id}>
-                    {apiary.eircode}
+                    {apiary.name ? `${apiary.name} - ${apiary.eircode}` : apiary.eircode}
                   </option>
                 ))}
               </select>
