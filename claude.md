@@ -215,6 +215,43 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 
 ## Recent Changes
 
+### October 28, 2025 - Apiary Sharing & Team Data Visibility
+- **Apiary Sharing UI** (Profile Page - Team Management):
+  - "Share Apiary" button for team owners (purple-themed)
+  - Share Apiary modal with dropdown showing "Apiary Name - Eircode"
+  - Shared Apiaries section displays all apiaries shared with each team
+  - Remove button to unshare apiaries from teams
+  - Team members automatically gain read-only access to ALL hives, queens, and inspections in shared apiaries
+
+- **Team Data Visibility**:
+  - Dashboard "Team Beekeeping" section now displays actual team statistics
+  - Shows team queens, active queens, hives, and 7-day inspections
+  - Only appears for users who are team members with shared apiaries
+  - Helpful empty state message when no apiaries are shared yet
+  - Debug logging with emojis for troubleshooting team stats
+
+- **Ownership Filters**:
+  - Added ownership filter dropdown to Hives page: "My Hives", "Team Hives", "All Hives"
+  - Added ownership filter dropdown to Inspections page: "My Inspections", "Team Inspections", "All Inspections"
+  - Filters allow users to focus on their own data vs collaborative team data
+
+- **Profile Page Improvements**:
+  - Profile Information section layout optimized for better space usage
+  - Combined Email, User ID, Role, and Account Created into single compact box
+  - Reduced vertical space by ~75% while maintaining readability
+  - Fixed profile update to use upsert (handles new user profiles correctly)
+  - Fixed user_profiles column references ('id' instead of 'user_id')
+
+- **Team Collaboration Architecture Verified**:
+  - Confirmed system uses apiary-level sharing (not individual hives)
+  - Created TEAM_SHARING_ANALYSIS.md documenting the architecture
+  - RLS policies grant access to apiaries and ALL their related data
+  - Database schema: `team_apiaries` table links apiaries to teams
+
+- **Database Migrations**:
+  - `sql/add_profile_fields.sql` - Adds first_name, last_name, mobile_number columns
+  - All team RLS policies working correctly with user_team_ids() function
+
 ### October 27, 2025 - Team Collaboration Feature
 - **Complete Team Management System**:
   - Database schema with 4 tables: `teams`, `team_members`, `team_apiaries`, `team_invitations`
@@ -472,5 +509,5 @@ IS 'Include this batch in weekly email digest with upcoming dates';
 
 ---
 
-**Last Updated**: October 27, 2025
-**Version**: Team-Collaboration-Complete
+**Last Updated**: October 28, 2025
+**Version**: 1.0.6 - Apiary-Sharing-Complete

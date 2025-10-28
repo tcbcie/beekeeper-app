@@ -338,6 +338,51 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded font-semibold">v1.0.6</span>
+                October 28, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Apiary Sharing UI:</strong> Team owners can now share entire apiaries with teams (all hives included)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Share Apiary button in Team Management with dropdown showing &quot;Name - Eircode&quot;</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Shared Apiaries section displays all apiaries shared with each team</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Team members automatically gain read-only access to ALL hives, queens, and inspections in shared apiaries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Dashboard Team Beekeeping section now shows actual team data (queens, hives, inspections)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Ownership filters on Hives and Inspections pages: My/Team/All views</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Profile section layout optimized for better space usage (compact account info display)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Fixed profile update using upsert to handle new user profiles correctly</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Team collaboration system confirmed using apiary-level sharing (not individual hives)</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">v1.0.5</span>
                 October 27, 2025
               </h3>
