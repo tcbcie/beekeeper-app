@@ -935,50 +935,54 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Account Information - Read-only fields */}
-              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <Mail size={20} className="text-blue-600 mt-1" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-blue-900 mb-1">Email Address</div>
-                  <div className="text-gray-900 font-medium">{userEmail}</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <User size={20} className="text-blue-600 mt-1" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-blue-900 mb-1">User ID</div>
-                  <div className="text-gray-900 font-mono text-xs break-all">{userId}</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <Shield size={20} className="text-blue-600 mt-1" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-blue-900 mb-1">Role</div>
-                  <div>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      userRole === 'Admin'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {userRole === 'Admin' && <Shield size={14} className="mr-1" />}
-                      {userRole}
-                    </span>
+              {/* Account Information - Read-only fields in compact layout */}
+              <div className="md:col-span-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Mail size={16} className="text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-blue-900">Email</div>
+                      <div className="text-sm text-gray-900 truncate">{userEmail}</div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <Calendar size={20} className="text-blue-600 mt-1" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-blue-900 mb-1">Account Created</div>
-                  <div className="text-gray-900">
-                    {createdAt ? new Date(createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }) : 'Unknown'}
+                  <div className="flex items-center gap-2">
+                    <Shield size={16} className="text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-blue-900">Role</div>
+                      <div className="text-sm">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          userRole === 'Admin'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {userRole === 'Admin' && <Shield size={12} className="mr-1" />}
+                          {userRole}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <User size={16} className="text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-blue-900">User ID</div>
+                      <div className="text-xs text-gray-900 font-mono truncate">{userId}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-blue-900">Created</div>
+                      <div className="text-sm text-gray-900">
+                        {createdAt ? new Date(createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        }) : 'Unknown'}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
