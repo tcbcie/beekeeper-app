@@ -867,56 +867,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Data Export */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">My Data Export</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
-        </p>
-        <ul className="text-sm text-gray-600 space-y-1 mb-4">
-          <li>• Includes all your personal beekeeping records</li>
-          <li>• Choose between JSON or CSV format</li>
-          <li>• Use for backup, analysis, or migration purposes</li>
-          <li>• Only includes data you own and have created</li>
-        </ul>
-        <div className="flex gap-3">
-          <button
-            onClick={exportMyDataAsJSON}
-            disabled={exportingMyData}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
-          >
-            {exportingMyData ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download size={16} />
-                Export as JSON
-              </>
-            )}
-          </button>
-          <button
-            onClick={exportMyDataAsCSV}
-            disabled={exportingMyData}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
-          >
-            {exportingMyData ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download size={16} />
-                Export as CSV
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
       {/* Team Management */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
@@ -1157,6 +1107,56 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Data Export */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">My Data Export</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
+        </p>
+        <ul className="text-sm text-gray-600 space-y-1 mb-4">
+          <li>• Includes all your personal beekeeping records</li>
+          <li>• Choose between JSON or CSV format</li>
+          <li>• Use for backup, analysis, or migration purposes</li>
+          <li>• Only includes data you own and have created</li>
+        </ul>
+        <div className="flex gap-3">
+          <button
+            onClick={exportMyDataAsJSON}
+            disabled={exportingMyData}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+          >
+            {exportingMyData ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                Export as JSON
+              </>
+            )}
+          </button>
+          <button
+            onClick={exportMyDataAsCSV}
+            disabled={exportingMyData}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+          >
+            {exportingMyData ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                Export as CSV
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Create Team Modal */}
