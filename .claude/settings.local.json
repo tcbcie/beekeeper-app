@@ -12,7 +12,9 @@
       "Bash(git push:*)",
       "Bash(npm run dev)",
       "Bash(git restore:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(timeout 30 npx tsc:*)",
+      "Bash(timeout 45 npx tsc:*)"
     ],
     "deny": [],
     "ask": []

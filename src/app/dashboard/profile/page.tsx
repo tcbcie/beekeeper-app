@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone } from 'lucide-react'
+import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2 } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -48,6 +48,22 @@ interface TeamInvitation {
   expires_at: string
 }
 
+interface Apiary {
+  id: string
+  eircode: string
+  user_id: string
+  created_at: string
+}
+
+interface TeamApiary {
+  id: string
+  team_id: string
+  apiary_id: string
+  added_at: string
+  added_by: string
+  apiary?: Apiary
+}
+
 export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string>('')
@@ -84,6 +100,13 @@ export default function ProfilePage() {
   const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([])
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
   const [loadingMembers, setLoadingMembers] = useState(false)
+
+  // Apiary sharing state
+  const [userApiaries, setUserApiaries] = useState<Apiary[]>([])
+  const [teamApiaries, setTeamApiaries] = useState<TeamApiary[]>([])
+  const [showShareApiaryModal, setShowShareApiaryModal] = useState(false)
+  const [selectedApiaryId, setSelectedApiaryId] = useState<string>('')
+  const [sharingApiary, setSharingApiary] = useState(false)
 
   const fetchUserProfile = useCallback(async () => {
     if (!userId) return
@@ -334,6 +357,101 @@ export default function ProfilePage() {
     }
   }, [userId])
 
+  // Fetch user's apiaries
+  const fetchUserApiaries = useCallback(async () => {
+    if (!userId) return
+
+    try {
+      const { data, error } = await supabase
+        .from('apiaries')
+        .select('*')
+        .eq('user_id', userId)
+        .order('eircode')
+
+      if (error) throw error
+      setUserApiaries(data || [])
+    } catch (error) {
+      console.error('Error fetching apiaries:', error)
+    }
+  }, [userId])
+
+  // Fetch shared apiaries for a team
+  const fetchTeamApiaries = useCallback(async (teamId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('team_apiaries')
+        .select('*, apiaries(*)')
+        .eq('team_id', teamId)
+        .order('added_at', { ascending: false })
+
+      if (error) throw error
+
+      // Transform the data to match our interface
+      const transformed = (data || []).map(ta => ({
+        ...ta,
+        apiary: (ta as { apiaries: Apiary }).apiaries
+      }))
+
+      setTeamApiaries(transformed)
+    } catch (error) {
+      console.error('Error fetching team apiaries:', error)
+    }
+  }, [])
+
+  // Share an apiary with a team
+  const handleShareApiary = async () => {
+    if (!userId || !selectedTeam || !selectedApiaryId) {
+      alert('Please select an apiary to share.')
+      return
+    }
+
+    setSharingApiary(true)
+    try {
+      const { error } = await supabase
+        .from('team_apiaries')
+        .insert({
+          team_id: selectedTeam.id,
+          apiary_id: selectedApiaryId,
+          added_by: userId,
+        })
+
+      if (error) throw error
+
+      alert('Apiary shared with team successfully!')
+      setSelectedApiaryId('')
+      setShowShareApiaryModal(false)
+      fetchTeamApiaries(selectedTeam.id)
+    } catch (error) {
+      console.error('Error sharing apiary:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to share apiary: ${errorMessage}`)
+    } finally {
+      setSharingApiary(false)
+    }
+  }
+
+  // Unshare an apiary from a team
+  const handleUnshareApiary = async (teamApiaryId: string, apiaryEircode: string) => {
+    if (!confirm(`Remove apiary ${apiaryEircode} from this team?`)) return
+
+    try {
+      const { error } = await supabase
+        .from('team_apiaries')
+        .delete()
+        .eq('id', teamApiaryId)
+
+      if (error) throw error
+
+      alert('Apiary removed from team successfully!')
+      if (selectedTeam) {
+        fetchTeamApiaries(selectedTeam.id)
+      }
+    } catch (error) {
+      console.error('Error unsharing apiary:', error)
+      alert('Failed to remove apiary from team.')
+    }
+  }
+
   // Create a new team
   const handleCreateTeam = async () => {
     if (!userId || !newTeamName.trim()) {
@@ -415,10 +533,13 @@ export default function ProfilePage() {
       if (invitationsError) throw invitationsError
 
       setTeamInvitations(invitations || [])
+
+      // Fetch shared apiaries for this team
+      await fetchTeamApiaries(teamId)
     } catch (error) {
       console.error('Error fetching team details:', error)
     }
-  }, [])
+  }, [fetchTeamApiaries])
 
   // Send invitation to join team
   const handleSendInvite = async () => {
@@ -657,8 +778,9 @@ export default function ProfilePage() {
     if (userId) {
       fetchUserProfile()
       fetchTeams()
+      fetchUserApiaries()
     }
-  }, [userId, fetchUserProfile, fetchTeams])
+  }, [userId, fetchUserProfile, fetchTeams, fetchUserApiaries])
 
   if (loading) {
     return (
@@ -925,6 +1047,17 @@ export default function ProfilePage() {
                             Invite
                           </button>
                           <button
+                            onClick={() => {
+                              setSelectedTeam(team)
+                              setShowShareApiaryModal(true)
+                              setSelectedApiaryId('')
+                            }}
+                            className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
+                          >
+                            <Share2 size={14} />
+                            Share Apiary
+                          </button>
+                          <button
                             onClick={() => handleDeleteTeam(team.id, team.name)}
                             className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
                           >
@@ -1041,6 +1174,45 @@ export default function ProfilePage() {
                               </div>
                             </div>
                           )}
+
+                          {/* Shared Apiaries */}
+                          <div className="mt-6 pt-4 border-t border-gray-200">
+                            <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                              <MapPin size={14} className="text-purple-600" />
+                              Shared Apiaries
+                            </h5>
+                            {teamApiaries.length > 0 ? (
+                              <div className="space-y-2">
+                                {teamApiaries.map((ta) => (
+                                  <div key={ta.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                    <div className="flex items-center gap-3 flex-1">
+                                      <MapPin size={16} className="text-purple-600" />
+                                      <div className="flex-1">
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {ta.apiary?.eircode || 'Unknown Location'}
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                          Shared {new Date(ta.added_at).toLocaleDateString()}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => handleUnshareApiary(ta.id, ta.apiary?.eircode || 'this apiary')}
+                                      className="ml-3 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center gap-1"
+                                      title="Remove apiary from team"
+                                    >
+                                      <X size={12} />
+                                      Remove
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg">
+                                No apiaries shared yet. Click &quot;Share Apiary&quot; to share an apiary with this team.
+                              </p>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1347,6 +1519,84 @@ export default function ProfilePage() {
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Apiary Modal */}
+      {showShareApiaryModal && selectedTeam && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Share Apiary with {selectedTeam.name}</h3>
+              <button
+                onClick={() => {
+                  setShowShareApiaryModal(false)
+                  setSelectedTeam(null)
+                  setSelectedApiaryId('')
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Select an apiary to share with this team. All hives in the apiary will be visible to team members (read-only access).
+            </p>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Apiary <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedApiaryId}
+                onChange={(e) => setSelectedApiaryId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="">-- Select an apiary --</option>
+                {userApiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>
+                    {apiary.eircode}
+                  </option>
+                ))}
+              </select>
+              {userApiaries.length === 0 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  You don&apos;t have any apiaries yet. Create an apiary first to share it with teams.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowShareApiaryModal(false)
+                  setSelectedTeam(null)
+                  setSelectedApiaryId('')
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShareApiary}
+                disabled={sharingApiary || !selectedApiaryId}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {sharingApiary ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Sharing...
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={16} />
+                    Share Apiary
+                  </>
+                )}
               </button>
             </div>
           </div>
