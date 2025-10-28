@@ -138,24 +138,31 @@ export default function ProfilePage() {
 
     setSavingProfile(true)
     try {
+      // Use upsert to create profile if it doesn't exist
       const { error } = await supabase
         .from('user_profiles')
-        .update({
+        .upsert({
+          user_id: userId,
           first_name: profileFormData.first_name || null,
           last_name: profileFormData.last_name || null,
           mobile_number: profileFormData.mobile_number || null,
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
         })
-        .eq('user_id', userId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error updating profile:', error)
+        throw error
+      }
 
       alert('Profile updated successfully!')
       setEditingProfile(false)
       fetchUserProfile() // Refresh profile data
     } catch (error) {
       console.error('Error updating profile:', error)
-      alert('Failed to update profile. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to update profile: ${errorMessage}`)
     } finally {
       setSavingProfile(false)
     }
