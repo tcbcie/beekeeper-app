@@ -115,7 +115,7 @@ export default function ProfilePage() {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('id', userId)  // Changed from 'user_id' to 'id'
         .maybeSingle()
 
       if (error) throw error
@@ -139,16 +139,17 @@ export default function ProfilePage() {
     setSavingProfile(true)
     try {
       // Use upsert to create profile if it doesn't exist
+      // Note: user_profiles table uses 'id' as primary key (not 'user_id')
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
-          user_id: userId,
+          id: userId,  // Changed from 'user_id' to 'id'
           first_name: profileFormData.first_name || null,
           last_name: profileFormData.last_name || null,
           mobile_number: profileFormData.mobile_number || null,
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'user_id'
+          onConflict: 'id'  // Changed from 'user_id' to 'id'
         })
 
       if (error) {
@@ -507,11 +508,11 @@ export default function ProfilePage() {
       // Manually fetch user details for each member
       const membersWithDetails = await Promise.all(
         (members || []).map(async (member) => {
-          // Get user profile by user_id
+          // Get user profile by id
           const { data: profile } = await supabase
             .from('user_profiles')
             .select('first_name, last_name')
-            .eq('user_id', member.user_id)
+            .eq('id', member.user_id)  // Changed from 'user_id' to 'id'
             .maybeSingle()
 
           // Get email from auth.users via RPC function
