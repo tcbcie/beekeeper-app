@@ -227,8 +227,10 @@ export default function DashboardPage() {
       if (membershipError) throw membershipError
 
       const teamIds = (teamMemberships || []).map(m => m.team_id)
+      console.log('🔍 Team IDs for user:', teamIds)
 
       if (teamIds.length === 0) {
+        console.log('❌ User is not a member of any teams')
         setTeamStats({
           teamQueens: 0,
           teamActiveQueens: 0,
@@ -247,8 +249,10 @@ export default function DashboardPage() {
       if (apiaryError) throw apiaryError
 
       const apiaryIds = (teamApiaries || []).map(ta => ta.apiary_id)
+      console.log('🏠 Shared apiary IDs:', apiaryIds)
 
       if (apiaryIds.length === 0) {
+        console.log('⚠️ No shared apiaries found for teams. Teams need to share apiaries first!')
         setTeamStats({
           teamQueens: 0,
           teamActiveQueens: 0,
@@ -258,17 +262,17 @@ export default function DashboardPage() {
         return
       }
 
-      // Fetch team hives from shared apiaries (exclude user's own hives)
+      // Fetch ALL hives from shared apiaries (including user's own hives in shared apiaries)
       const { data: teamHives, error: hivesError } = await supabase
         .from('hives')
-        .select('id, queen_id')
+        .select('id, queen_id, user_id')
         .in('apiary_id', apiaryIds)
-        .neq('user_id', userId)
 
       if (hivesError) throw hivesError
 
       const teamHiveIds = (teamHives || []).map(h => h.id)
       const teamQueenIds = (teamHives || []).map(h => h.queen_id).filter(q => q !== null)
+      console.log('🐝 Team hive IDs:', teamHiveIds.length, 'Team queen IDs:', teamQueenIds.length)
 
       // Count team queens
       let teamQueensCount = 0
@@ -302,14 +306,16 @@ export default function DashboardPage() {
         teamInspectionsCount = inspectionsCount || 0
       }
 
-      setTeamStats({
+      const finalStats = {
         teamQueens: teamQueensCount,
         teamActiveQueens: teamActiveQueensCount,
         teamHives: teamHiveIds.length,
         teamInspections: teamInspectionsCount,
-      })
+      }
+      console.log('✅ Final team stats:', finalStats)
+      setTeamStats(finalStats)
     } catch (error) {
-      console.error('Error fetching team stats:', error)
+      console.error('❌ Error fetching team stats:', error)
     }
   }, [userId])
 
@@ -335,8 +341,9 @@ export default function DashboardPage() {
 
   if (loading) return <LoadingSpinner text="Loading dashboard..." />
 
-  // Check if user has any team data
+  // Check if user has any team data or is a team member
   const hasTeamData = teamStats.teamHives > 0 || teamStats.teamQueens > 0 || teamStats.teamInspections > 0
+  const isTeamMember = (ownedTeams.length > 0 || memberTeams.length > 0)
 
   const statCards = [
     { label: 'My Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700' },
@@ -424,23 +431,36 @@ export default function DashboardPage() {
       </div>
 
       {/* Team Statistics Cards */}
-      {hasTeamData && (
+      {isTeamMember && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Users size={20} className="text-blue-600" />
             Team Beekeeping
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {teamStatCards.map((card) => (
-              <StatCard
-                key={card.label}
-                label={card.label}
-                value={card.value}
-                icon={card.icon}
-                color={card.color}
-              />
-            ))}
-          </div>
+          {hasTeamData ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {teamStatCards.map((card) => (
+                <StatCard
+                  key={card.label}
+                  label={card.label}
+                  value={card.value}
+                  icon={card.icon}
+                  color={card.color}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center">
+              <Users size={48} className="mx-auto text-blue-400 mb-3" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shared Apiaries Yet</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                You&apos;re part of a team, but no apiaries have been shared yet. Team owners need to share apiaries for team data to appear here.
+              </p>
+              <p className="text-xs text-gray-500">
+                Check the browser console for debugging info (F12)
+              </p>
+            </div>
+          )}
         </div>
       )}
 
