@@ -34,6 +34,12 @@ export default function DashboardPage() {
     activeBatches: 0,
     recentInspections: 0,
   })
+  const [teamStats, setTeamStats] = useState({
+    teamQueens: 0,
+    teamActiveQueens: 0,
+    teamHives: 0,
+    teamInspections: 0,
+  })
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
     onlineUsers: 0,
@@ -207,6 +213,106 @@ export default function DashboardPage() {
     }
   }, [userId])
 
+  // Fetch team statistics
+  const fetchTeamStats = useCallback(async () => {
+    if (!userId) return
+
+    try {
+      // Get all team IDs where user is a member (including owned teams)
+      const { data: teamMemberships, error: membershipError } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', userId)
+
+      if (membershipError) throw membershipError
+
+      const teamIds = (teamMemberships || []).map(m => m.team_id)
+
+      if (teamIds.length === 0) {
+        setTeamStats({
+          teamQueens: 0,
+          teamActiveQueens: 0,
+          teamHives: 0,
+          teamInspections: 0,
+        })
+        return
+      }
+
+      // Get shared apiaries for these teams
+      const { data: teamApiaries, error: apiaryError } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      if (apiaryError) throw apiaryError
+
+      const apiaryIds = (teamApiaries || []).map(ta => ta.apiary_id)
+
+      if (apiaryIds.length === 0) {
+        setTeamStats({
+          teamQueens: 0,
+          teamActiveQueens: 0,
+          teamHives: 0,
+          teamInspections: 0,
+        })
+        return
+      }
+
+      // Fetch team hives from shared apiaries (exclude user's own hives)
+      const { data: teamHives, error: hivesError } = await supabase
+        .from('hives')
+        .select('id, queen_id')
+        .in('apiary_id', apiaryIds)
+        .neq('user_id', userId)
+
+      if (hivesError) throw hivesError
+
+      const teamHiveIds = (teamHives || []).map(h => h.id)
+      const teamQueenIds = (teamHives || []).map(h => h.queen_id).filter(q => q !== null)
+
+      // Count team queens
+      let teamQueensCount = 0
+      let teamActiveQueensCount = 0
+
+      if (teamQueenIds.length > 0) {
+        const { count: queensCount } = await supabase
+          .from('queens')
+          .select('id', { count: 'exact', head: true })
+          .in('id', teamQueenIds)
+
+        const { count: activeQueensCount } = await supabase
+          .from('queens')
+          .select('id', { count: 'exact', head: true })
+          .in('id', teamQueenIds)
+          .eq('status', 'active')
+
+        teamQueensCount = queensCount || 0
+        teamActiveQueensCount = activeQueensCount || 0
+      }
+
+      // Count team inspections (last 7 days)
+      let teamInspectionsCount = 0
+      if (teamHiveIds.length > 0) {
+        const { count: inspectionsCount } = await supabase
+          .from('inspections')
+          .select('id', { count: 'exact', head: true })
+          .in('hive_id', teamHiveIds)
+          .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+
+        teamInspectionsCount = inspectionsCount || 0
+      }
+
+      setTeamStats({
+        teamQueens: teamQueensCount,
+        teamActiveQueens: teamActiveQueensCount,
+        teamHives: teamHiveIds.length,
+        teamInspections: teamInspectionsCount,
+      })
+    } catch (error) {
+      console.error('Error fetching team stats:', error)
+    }
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -222,19 +328,30 @@ export default function DashboardPage() {
 
       fetchDashboardData(id)
       fetchTeams()
+      fetchTeamStats()
     }
     initUser()
-  }, [router, fetchDashboardData, fetchTeams])
+  }, [router, fetchDashboardData, fetchTeams, fetchTeamStats])
 
   if (loading) return <LoadingSpinner text="Loading dashboard..." />
 
+  // Check if user has any team data
+  const hasTeamData = teamStats.teamHives > 0 || teamStats.teamQueens > 0 || teamStats.teamInspections > 0
+
   const statCards = [
-    { label: 'Total Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700' },
-    { label: 'Active Queens', value: stats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700' },
-    { label: 'Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700' },
+    { label: 'My Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700' },
+    { label: 'My Active Queens', value: stats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700' },
+    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700' },
     { label: 'Active Queen Rearing Batches', value: stats.activeBatches, icon: '🥚', color: 'bg-blue-50 text-blue-700' },
-    { label: 'Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700' },
+    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700' },
   ]
+
+  const teamStatCards = hasTeamData ? [
+    { label: 'Team Queens', value: teamStats.teamQueens, icon: '👑', color: 'bg-purple-100 text-purple-800 border-2 border-purple-300' },
+    { label: 'Team Active Queens', value: teamStats.teamActiveQueens, icon: '✨', color: 'bg-green-100 text-green-800 border-2 border-green-300' },
+    { label: 'Team Hives', value: teamStats.teamHives, icon: '🐝', color: 'bg-amber-100 text-amber-800 border-2 border-amber-300' },
+    { label: 'Team Inspections (7d)', value: teamStats.teamInspections, icon: '📋', color: 'bg-indigo-100 text-indigo-800 border-2 border-indigo-300' },
+  ] : []
 
   return (
     <div className="space-y-6">
@@ -280,25 +397,52 @@ export default function DashboardPage() {
           )}
         </div>
         <button
-          onClick={() => fetchDashboardData()}
+          onClick={() => {
+            fetchDashboardData()
+            fetchTeamStats()
+          }}
           className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
         >
           Refresh
         </button>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {statCards.map((card) => (
-          <StatCard
-            key={card.label}
-            label={card.label}
-            value={card.value}
-            icon={card.icon}
-            color={card.color}
-          />
-        ))}
+      {/* My Statistics Cards */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">My Beekeeping</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {statCards.map((card) => (
+            <StatCard
+              key={card.label}
+              label={card.label}
+              value={card.value}
+              icon={card.icon}
+              color={card.color}
+            />
+          ))}
+        </div>
       </div>
+
+      {/* Team Statistics Cards */}
+      {hasTeamData && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Users size={20} className="text-blue-600" />
+            Team Beekeeping
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {teamStatCards.map((card) => (
+              <StatCard
+                key={card.label}
+                label={card.label}
+                value={card.value}
+                icon={card.icon}
+                color={card.color}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Upcoming Events - Queen Rearing Calendar */}
       {userId && <UpcomingEvents userId={userId} />}
