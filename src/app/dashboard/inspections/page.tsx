@@ -119,6 +119,7 @@ export default function InspectionsPage() {
   const [timePeriod, setTimePeriod] = useState<string>('all')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
+  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [showDropdown, setShowDropdown] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_lastInspection, setLastInspection] = useState<Inspection | null>(null)
@@ -168,11 +169,20 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data, error } = await supabase
+    // Build query based on ownership filter
+    let query = supabase
       .from('inspections')
       .select('*, hives(hive_number, apiaries(eircode))')
-      .eq('user_id', currentUserId)
-      .order('inspection_date', { ascending: false })
+
+    // Apply ownership filter
+    if (ownershipFilter === 'my') {
+      query = query.eq('user_id', currentUserId)
+    } else if (ownershipFilter === 'team') {
+      query = query.neq('user_id', currentUserId)
+    }
+    // 'all' = no filter, RLS will show both
+
+    const { data, error} = await query.order('inspection_date', { ascending: false })
 
     console.log('Fetched inspections:', data)
     console.log('Fetch error:', error)
@@ -188,7 +198,7 @@ export default function InspectionsPage() {
 
     if (data) setInspections(data as Inspection[])
     setLoading(false)
-  }, [userId])
+  }, [userId, ownershipFilter])
 
   const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
@@ -752,6 +762,18 @@ export default function InspectionsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-responsive-3xl font-bold text-gray-900">Inspections 📋</h1>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <select
+            value={ownershipFilter}
+            onChange={(e) => {
+              setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
+              fetchInspections()
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+          >
+            <option value="my">My Inspections</option>
+            <option value="team">Team Inspections</option>
+            <option value="all">All Inspections</option>
+          </select>
           <select
             value={filterApiaryId}
             onChange={(e) => {
