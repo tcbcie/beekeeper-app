@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send } from 'lucide-react'
+import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -675,10 +675,10 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
       </div>
 
-      {/* Personal Information */}
+      {/* Profile Information */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
           {!editingProfile && (
             <button
               onClick={() => setEditingProfile(true)}
@@ -796,7 +796,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="md:col-span-2 flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                <Mail size={20} className="text-gray-600 mt-1" />
+                <Phone size={20} className="text-gray-600 mt-1" />
                 <div className="flex-1">
                   <div className="text-sm font-medium text-gray-500 mb-1">Mobile Number</div>
                   <div className="text-gray-900">
@@ -804,67 +804,57 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Account Information - Read-only fields */}
+              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Mail size={20} className="text-blue-600 mt-1" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-blue-900 mb-1">Email Address</div>
+                  <div className="text-gray-900 font-medium">{userEmail}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <User size={20} className="text-blue-600 mt-1" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-blue-900 mb-1">User ID</div>
+                  <div className="text-gray-900 font-mono text-xs break-all">{userId}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Shield size={20} className="text-blue-600 mt-1" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-blue-900 mb-1">Role</div>
+                  <div>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      userRole === 'Admin'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {userRole === 'Admin' && <Shield size={14} className="mr-1" />}
+                      {userRole}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Calendar size={20} className="text-blue-600 mt-1" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-blue-900 mb-1">Account Created</div>
+                  <div className="text-gray-900">
+                    {createdAt ? new Date(createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    }) : 'Unknown'}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Account Information */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Account Information</h2>
-
-        <div className="space-y-4">
-          {/* Email */}
-          <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-            <Mail size={20} className="text-gray-600 mt-1" />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-500 mb-1">Email Address</div>
-              <div className="text-gray-900 font-medium">{userEmail}</div>
-            </div>
-          </div>
-
-          {/* User ID */}
-          <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-            <User size={20} className="text-gray-600 mt-1" />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-500 mb-1">User ID</div>
-              <div className="text-gray-900 font-mono text-sm break-all">{userId}</div>
-            </div>
-          </div>
-
-          {/* Role */}
-          <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-            <Shield size={20} className="text-gray-600 mt-1" />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-500 mb-1">Role</div>
-              <div>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  userRole === 'Admin'
-                    ? 'bg-purple-100 text-purple-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {userRole === 'Admin' && <Shield size={14} className="mr-1" />}
-                  {userRole}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Account Created */}
-          <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-            <Calendar size={20} className="text-gray-600 mt-1" />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-500 mb-1">Account Created</div>
-              <div className="text-gray-900">
-                {createdAt ? new Date(createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) : 'Unknown'}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Team Management */}
