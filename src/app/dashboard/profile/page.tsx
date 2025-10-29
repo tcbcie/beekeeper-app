@@ -1025,14 +1025,14 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   {ownedTeams.map((team) => (
                     <div key={team.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-gray-900">{team.name}</h4>
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-medium">
                             Owner
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => {
                               if (expandedTeamId === team.id) {
@@ -1046,7 +1046,8 @@ export default function ProfilePage() {
                             className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center gap-1"
                           >
                             <Users size={14} />
-                            {expandedTeamId === team.id ? 'Hide' : 'View'} Members
+                            <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
+                            <span className="sm:hidden">Members</span>
                           </button>
                           <button
                             onClick={() => {
@@ -1068,7 +1069,8 @@ export default function ProfilePage() {
                             className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
                           >
                             <Share2 size={14} />
-                            Share Apiary
+                            <span className="hidden sm:inline">Share Apiary</span>
+                            <span className="sm:hidden">Share</span>
                           </button>
                           <button
                             onClick={() => handleDeleteTeam(team.id, team.name)}
@@ -1248,7 +1250,7 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   {memberTeams.map((team) => (
                     <div key={team.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-gray-900">{team.name}</h4>
                           <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded font-medium capitalize">
@@ -1257,7 +1259,7 @@ export default function ProfilePage() {
                         </div>
                         <button
                           onClick={() => handleLeaveTeam(team.id, team.name)}
-                          className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                          className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 w-full sm:w-auto"
                         >
                           Leave Team
                         </button>
