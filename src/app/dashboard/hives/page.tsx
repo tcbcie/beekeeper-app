@@ -43,6 +43,7 @@ interface Hive {
   queen_installed_date: string | null
   hive_type: string | null
   configuration: HiveConfiguration | null
+  user_id?: string
   apiaries?: {
     name: string
   }
@@ -60,6 +61,8 @@ interface Hive {
   }
   queen_last_seen?: string | null
   eggs_last_present?: string | null
+  team_name?: string | null
+  is_shared?: boolean
 }
 
 interface FormData {
@@ -289,27 +292,42 @@ export default function HivesPage() {
             let apiaryName = null
             let queenNumber = null
 
-            // Fetch apiary if exists
+            // Fetch apiary if exists (remove user_id filter to show shared apiaries)
             if (hive.apiary_id) {
               const { data: apiaryData } = await supabase
                 .from('apiaries')
                 .select('name')
                 .eq('id', hive.apiary_id)
-                .eq('user_id', currentUserId)
-                .single()
+                .maybeSingle()
               apiaryName = apiaryData?.name
             }
 
-            // Fetch queen if exists
+            // Fetch queen if exists (remove user_id filter to show shared queens)
             if (hive.queen_id) {
               const { data: queenData } = await supabase
                 .from('queens')
                 .select('id, queen_number')
                 .eq('id', hive.queen_id)
-                .eq('user_id', currentUserId)
-                .single()
+                .maybeSingle()
               if (queenData) {
                 queenNumber = queenData.queen_number
+              }
+            }
+
+            // Check if hive is shared and get team name
+            let teamName = null
+            let isShared = false
+            if (hive.user_id !== currentUserId && hive.apiary_id) {
+              // This is a team hive, find which team it's shared through
+              const { data: teamApiaryData } = await supabase
+                .from('team_apiaries')
+                .select('team_id, teams(name)')
+                .eq('apiary_id', hive.apiary_id)
+                .maybeSingle()
+
+              if (teamApiaryData) {
+                isShared = true
+                teamName = (teamApiaryData as any).teams?.name || null
               }
             }
 
@@ -326,6 +344,8 @@ export default function HivesPage() {
               averages: averages,
               queen_last_seen: queenEggsInfo.queen_last_seen,
               eggs_last_present: queenEggsInfo.eggs_last_present,
+              team_name: teamName,
+              is_shared: isShared,
             }
           })
         )
@@ -971,7 +991,15 @@ export default function HivesPage() {
         {filteredHives.map((hive) => (
           <div key={hive.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-start mb-3">
-              <h3 className="text-xl font-bold text-gray-900">{hive.hive_number}</h3>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-xl font-bold text-gray-900">{hive.hive_number}</h3>
+                {hive.is_shared && hive.team_name && (
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded flex items-center gap-1 w-fit">
+                    <span>👥</span>
+                    <span>Shared via {hive.team_name}</span>
+                  </span>
+                )}
+              </div>
               <span className={`px-2 py-1 rounded text-xs font-medium ${
                 hive.status === 'active' ? 'bg-green-100 text-green-800' :
                 hive.status === 'queenless' ? 'bg-red-100 text-red-800' :
@@ -984,7 +1012,7 @@ export default function HivesPage() {
             <div className="space-y-2 text-sm mb-4">
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">📍</span>
-                <span>{hive.apiaries?.name || 'No apiary'}</span>
+                <span className="font-medium">{hive.apiaries?.name || 'No apiary'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">👑</span>
