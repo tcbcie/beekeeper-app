@@ -642,7 +642,7 @@ export default function ProfilePage() {
         alert(`${inviteEmail} has been added to the team!`)
       } else {
         // User doesn't exist yet - create pending invitation
-        const { error: inviteError } = await supabase
+        const { data: newInvite, error: inviteError } = await supabase
           .from('team_invitations')
           .insert({
             team_id: selectedTeam.id,
@@ -650,11 +650,34 @@ export default function ProfilePage() {
             invited_by: userId,
             status: 'pending',
           })
+          .select()
+          .single()
 
         if (inviteError) throw inviteError
 
-        // Call Edge Function to send email (to be implemented)
-        alert(`Invitation sent to ${inviteEmail}! They will be added when they create an account.`)
+        // Send invitation email via Edge Function
+        console.log('📧 Sending invitation email to:', inviteEmail)
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-team-invitation', {
+          body: {
+            invitationId: newInvite.id,
+            inviteeEmail: inviteEmail.toLowerCase(),
+            teamName: selectedTeam.name,
+            inviterName: userProfile?.first_name && userProfile?.last_name
+              ? `${userProfile.first_name} ${userProfile.last_name}`
+              : undefined,
+            inviterEmail: userEmail,
+            expiresAt: newInvite.expires_at,
+          },
+        })
+
+        if (emailError) {
+          console.error('❌ Failed to send invitation email:', emailError)
+          // Don't fail the whole operation if email fails
+          alert(`Invitation created but email failed to send.\n\nPlease contact ${inviteEmail} directly to let them know.\n\nThey can accept the invitation after signing up with this email address.`)
+        } else {
+          console.log('✅ Invitation email sent successfully:', emailData)
+          alert(`Invitation email sent to ${inviteEmail}!\n\nThey will be automatically added to the team when they sign up with this email address.`)
+        }
       }
 
       setInviteEmail('')

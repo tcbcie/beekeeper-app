@@ -215,6 +215,29 @@ A comprehensive beekeeping management system built with Next.js, React, TypeScri
 
 ## Recent Changes
 
+### October 30, 2025 - Mobile Responsiveness Improvements
+- **Team Management Mobile Layout**:
+  - Fixed button overflow on mobile screens in Profile/Team Management section
+  - Team management buttons (Invite, Share Apiary) now wrap with flex-wrap
+  - Shortened button text on mobile: "View/Hide Members" → "Members", "Share Apiary" → "Share"
+  - Full-width Leave Team button on mobile
+  - Changed header layout to flex-col on mobile
+
+- **Inspections Given/Taken Mobile Layout**:
+  - Fixed all 6 frame fields (Foundation, Brood, Drawn, Supers, Drone, Store) for mobile screens
+  - Shortened labels on mobile: "Frames-Foundation" → "Foundation", etc.
+  - Reduced button sizes: 48px → 44px on mobile (maintained touch-friendly targets)
+  - Reduced icon sizes: 20px → 18px on mobile
+  - Reduced gaps: gap-3 → gap-2 on mobile
+  - Reduced input padding: px-3 → px-2 on mobile
+  - Reduced font sizes: text-lg → text-base on mobile
+  - Used Tailwind responsive breakpoints (sm:) throughout
+
+- **TypeScript Improvements**:
+  - Fixed @typescript-eslint/no-explicit-any error in hives page
+  - Created TeamApiaryResponse interface for proper type safety
+  - Handles both object and array return types from Supabase joins
+
 ### October 28, 2025 - Apiary Sharing & Team Data Visibility
 - **Apiary Sharing UI** (Profile Page - Team Management):
   - "Share Apiary" button for team owners (purple-themed)
@@ -509,5 +532,5 @@ IS 'Include this batch in weekly email digest with upcoming dates';
 
 ---
 
-**Last Updated**: October 28, 2025
-**Version**: 1.0.6 - Apiary-Sharing-Complete
+**Last Updated**: October 30, 2025
+**Version**: 1.0.7 - Mobile-Responsive-Complete
