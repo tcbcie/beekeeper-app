@@ -1415,35 +1415,35 @@ export default function InspectionsPage() {
               </button>
 
               {givenTakenExpanded && (
-                <div className="p-4 pt-0 space-y-4">
+                <div className="p-2 sm:p-4 pt-0 space-y-3 sm:space-y-4">
                   {/* Frames-Foundation */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Frames-Foundation</span>
                       <span className="sm:hidden">Foundation</span>
                     </label>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, frames_foundation: Math.max(0, formData.frames_foundation - 1)})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Minus size={18} className="sm:hidden" />
+                        <Minus size={16} className="sm:hidden" />
                         <Minus size={20} className="hidden sm:block" />
                       </button>
                       <input
                         type="number"
                         value={formData.frames_foundation}
                         onChange={(e) => setFormData({...formData, frames_foundation: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-2 sm:px-3 py-2 min-h-[44px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-base sm:text-lg"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, frames_foundation: formData.frames_foundation + 1})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Plus size={18} className="sm:hidden" />
+                        <Plus size={16} className="sm:hidden" />
                         <Plus size={20} className="hidden sm:block" />
                       </button>
                     </div>
@@ -1451,32 +1451,32 @@ export default function InspectionsPage() {
 
                   {/* Brood-Frames */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Brood-Frames</span>
                       <span className="sm:hidden">Brood</span>
                     </label>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, frames_brood: Math.max(0, formData.frames_brood - 1)})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Minus size={18} className="sm:hidden" />
+                        <Minus size={16} className="sm:hidden" />
                         <Minus size={20} className="hidden sm:block" />
                       </button>
                       <input
                         type="number"
                         value={formData.frames_brood}
                         onChange={(e) => setFormData({...formData, frames_brood: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-2 sm:px-3 py-2 min-h-[44px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-base sm:text-lg"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, frames_brood: formData.frames_brood + 1})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Plus size={18} className="sm:hidden" />
+                        <Plus size={16} className="sm:hidden" />
                         <Plus size={20} className="hidden sm:block" />
                       </button>
                     </div>
@@ -1484,32 +1484,32 @@ export default function InspectionsPage() {
 
                   {/* Drawn-Frames */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Drawn-Frames</span>
                       <span className="sm:hidden">Drawn</span>
                     </label>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, frames_drawn: Math.max(0, formData.frames_drawn - 1)})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Minus size={18} className="sm:hidden" />
+                        <Minus size={16} className="sm:hidden" />
                         <Minus size={20} className="hidden sm:block" />
                       </button>
                       <input
                         type="number"
                         value={formData.frames_drawn}
                         onChange={(e) => setFormData({...formData, frames_drawn: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-2 sm:px-3 py-2 min-h-[44px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-base sm:text-lg"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, frames_drawn: formData.frames_drawn + 1})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Plus size={18} className="sm:hidden" />
+                        <Plus size={16} className="sm:hidden" />
                         <Plus size={20} className="hidden sm:block" />
                       </button>
                     </div>
@@ -1517,32 +1517,32 @@ export default function InspectionsPage() {
 
                   {/* Honey Supers */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Honey Supers</span>
                       <span className="sm:hidden">Supers</span>
                     </label>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, honey_supers: Math.max(0, formData.honey_supers - 1)})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Minus size={18} className="sm:hidden" />
+                        <Minus size={16} className="sm:hidden" />
                         <Minus size={20} className="hidden sm:block" />
                       </button>
                       <input
                         type="number"
                         value={formData.honey_supers}
                         onChange={(e) => setFormData({...formData, honey_supers: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-2 sm:px-3 py-2 min-h-[44px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-base sm:text-lg"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, honey_supers: formData.honey_supers + 1})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Plus size={18} className="sm:hidden" />
+                        <Plus size={16} className="sm:hidden" />
                         <Plus size={20} className="hidden sm:block" />
                       </button>
                     </div>
@@ -1550,32 +1550,32 @@ export default function InspectionsPage() {
 
                   {/* Drone-Frames */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Drone-Frames</span>
                       <span className="sm:hidden">Drone</span>
                     </label>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, drone_frames: Math.max(0, formData.drone_frames - 1)})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Minus size={18} className="sm:hidden" />
+                        <Minus size={16} className="sm:hidden" />
                         <Minus size={20} className="hidden sm:block" />
                       </button>
                       <input
                         type="number"
                         value={formData.drone_frames}
                         onChange={(e) => setFormData({...formData, drone_frames: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-2 sm:px-3 py-2 min-h-[44px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-base sm:text-lg"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, drone_frames: formData.drone_frames + 1})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Plus size={18} className="sm:hidden" />
+                        <Plus size={16} className="sm:hidden" />
                         <Plus size={20} className="hidden sm:block" />
                       </button>
                     </div>
@@ -1583,32 +1583,32 @@ export default function InspectionsPage() {
 
                   {/* Store-Frames */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Store-Frames</span>
                       <span className="sm:hidden">Store</span>
                     </label>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, store_frames: Math.max(0, formData.store_frames - 1)})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Minus size={18} className="sm:hidden" />
+                        <Minus size={16} className="sm:hidden" />
                         <Minus size={20} className="hidden sm:block" />
                       </button>
                       <input
                         type="number"
                         value={formData.store_frames}
                         onChange={(e) => setFormData({...formData, store_frames: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-2 sm:px-3 py-2 min-h-[44px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-base sm:text-lg"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, store_frames: formData.store_frames + 1})}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center"
+                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
-                        <Plus size={18} className="sm:hidden" />
+                        <Plus size={16} className="sm:hidden" />
                         <Plus size={20} className="hidden sm:block" />
                       </button>
                     </div>
