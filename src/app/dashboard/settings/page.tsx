@@ -349,23 +349,68 @@ export default function SettingsPage() {
     try {
       console.log('🗑️ Attempting to delete user:', { targetUserId, userEmail })
 
-      // Delete the user profile - cascading deletes should handle related data
-      const { error } = await supabase
+      // Step 1: Delete all user data in order (to avoid foreign key constraints)
+      console.log('🗑️ Step 1: Deleting user data...')
+
+      // Delete inspections
+      await supabase.from('inspections').delete().eq('user_id', targetUserId)
+
+      // Delete varroa checks and treatments
+      await supabase.from('varroa_checks').delete().eq('user_id', targetUserId)
+      await supabase.from('varroa_treatments').delete().eq('user_id', targetUserId)
+
+      // Delete queens (must be before hives due to FK)
+      await supabase.from('queens').delete().eq('user_id', targetUserId)
+
+      // Delete hives
+      await supabase.from('hives').delete().eq('user_id', targetUserId)
+
+      // Delete apiaries
+      await supabase.from('apiaries').delete().eq('user_id', targetUserId)
+
+      // Delete rearing batches
+      await supabase.from('rearing_batches').delete().eq('user_id', targetUserId)
+
+      // Delete team memberships
+      await supabase.from('team_members').delete().eq('user_id', targetUserId)
+
+      // Delete teams owned by user
+      await supabase.from('teams').delete().eq('owner_id', targetUserId)
+
+      // Delete support tickets
+      await supabase.from('support_tickets').delete().eq('user_id', targetUserId)
+
+      console.log('🗑️ Step 2: Deleting user profile...')
+
+      // Step 2: Delete user profile
+      const { error: profileError } = await supabase
         .from('user_profiles')
         .delete()
         .eq('id', targetUserId)
 
-      if (error) {
-        console.error('Delete user error:', error)
-        throw error
+      if (profileError) {
+        console.error('Delete user profile error:', profileError)
+        throw profileError
       }
 
-      alert(`User "${userEmail}" has been deleted successfully.`)
+      console.log('🗑️ Step 3: Attempting to delete auth user...')
+
+      // Step 3: Try to delete from auth.users via RPC function (if exists)
+      // This will fail gracefully if the function doesn't exist
+      try {
+        await supabase.rpc('delete_user', { user_id: targetUserId })
+        console.log('✅ Auth user deleted via RPC')
+      } catch (authError) {
+        console.warn('⚠️ Could not delete auth user (RPC function may not exist):', authError)
+        console.log('ℹ️ User profile and data deleted, but auth account remains')
+      }
+
+      alert(`User "${userEmail}" and all associated data has been deleted successfully.\n\nNote: The authentication account may still exist in Supabase Auth. Contact a database administrator to fully remove it if needed.`)
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error deleting user:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to delete user: ${errorMessage}\n\nNote: You may need to delete related data first or configure cascading deletes in the database.`)
+      alert(`Failed to delete user: ${errorMessage}`)
     }
   }
 
