@@ -131,11 +131,51 @@ export default function QueensPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // First get all queens
-    const { data: queensData, error: queensError } = await supabase
+    // Get shared apiary IDs
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaryIds: string[] = []
+    if (teamIds.length > 0) {
+      const { data: sharedApiaries } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
+    }
+
+    // Get hives from shared apiaries to find their queens
+    let sharedQueenIds: string[] = []
+    if (sharedApiaryIds.length > 0) {
+      const { data: sharedHives } = await supabase
+        .from('hives')
+        .select('queen_id')
+        .in('apiary_id', sharedApiaryIds)
+        .not('queen_id', 'is', null)
+        .neq('user_id', currentUserId)
+
+      sharedQueenIds = sharedHives?.map(h => h.queen_id).filter(Boolean) as string[] || []
+    }
+
+    console.log('🔍 Shared queen IDs:', sharedQueenIds)
+
+    // Fetch my queens + queens from shared apiaries
+    let queensQuery = supabase
       .from('queens')
       .select('*')
-      .eq('user_id', currentUserId)
+
+    if (sharedQueenIds.length > 0) {
+      queensQuery = queensQuery.or(`user_id.eq.${currentUserId},id.in.(${sharedQueenIds.join(',')})`)
+    } else {
+      queensQuery = queensQuery.eq('user_id', currentUserId)
+    }
+
+    const { data: queensData, error: queensError } = await queensQuery
       .order('created_at', { ascending: false })
 
     if (queensError) {
@@ -150,7 +190,7 @@ export default function QueensPage() {
         queensData.map(async (queen) => {
           if (!queen.id) return queen
 
-          // Find hive that has this queen
+          // Find hive that has this queen (either my hive or shared hive)
           const { data: hiveData } = await supabase
             .from('hives')
             .select(`
@@ -161,7 +201,6 @@ export default function QueensPage() {
               )
             `)
             .eq('queen_id', queen.id)
-            .eq('user_id', currentUserId)
             .eq('status', 'active')
             .single()
 

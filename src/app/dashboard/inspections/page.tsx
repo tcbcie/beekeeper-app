@@ -169,6 +169,38 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    // First, get list of shared apiary IDs for this user
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaryIds: string[] = []
+    if (teamIds.length > 0) {
+      const { data: sharedApiaries } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
+    }
+
+    // Get hives from shared apiaries to filter inspections
+    let sharedHiveIds: string[] = []
+    if (sharedApiaryIds.length > 0) {
+      const { data: sharedHives } = await supabase
+        .from('hives')
+        .select('id')
+        .in('apiary_id', sharedApiaryIds)
+        .neq('user_id', currentUserId)
+
+      sharedHiveIds = sharedHives?.map(h => h.id) || []
+    }
+
+    console.log('🔍 Shared hive IDs for inspections:', sharedHiveIds)
+
     // Build query based on ownership filter
     let query = supabase
       .from('inspections')
@@ -178,9 +210,24 @@ export default function InspectionsPage() {
     if (ownershipFilter === 'my') {
       query = query.eq('user_id', currentUserId)
     } else if (ownershipFilter === 'team') {
-      query = query.neq('user_id', currentUserId)
+      // Only inspections for hives from shared apiaries
+      if (sharedHiveIds.length > 0) {
+        query = query.in('hive_id', sharedHiveIds)
+      } else {
+        // No shared hives, return empty result
+        setInspections([])
+        setLoading(false)
+        return
+      }
+    } else {
+      // 'all' = my inspections + inspections for hives from shared apiaries
+      if (sharedHiveIds.length > 0) {
+        query = query.or(`user_id.eq.${currentUserId},hive_id.in.(${sharedHiveIds.join(',')})`)
+      } else {
+        // No shared hives, only show my inspections
+        query = query.eq('user_id', currentUserId)
+      }
     }
-    // 'all' = no filter, RLS will show both
 
     const { data, error} = await query.order('inspection_date', { ascending: false })
 
