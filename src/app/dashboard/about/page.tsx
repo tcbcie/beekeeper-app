@@ -338,6 +338,39 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded font-semibold">v1.0.7</span>
+                October 30, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Mobile Responsiveness:</strong> Fixed Team Management section for mobile screens</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Team management buttons (Invite, Share Apiary) now wrap and use shortened text on mobile</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Fixed Inspections Given/Taken section to fit mobile screens without overflow</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>All 6 frame fields (Foundation, Brood, Drawn, Supers, Drone, Store) now have compact mobile layout</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Reduced button sizes, gaps, and font sizes on mobile while maintaining touch-friendly 44px targets</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Fixed TypeScript error: Replaced 'any' type with proper TeamApiaryResponse interface</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded font-semibold">v1.0.6</span>
                 October 28, 2025
               </h3>
