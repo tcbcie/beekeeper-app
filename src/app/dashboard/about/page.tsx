@@ -364,7 +364,7 @@ export default function AboutPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span>Fixed TypeScript error: Replaced 'any' type with proper TeamApiaryResponse interface</span>
+                  <span>Fixed TypeScript error: Replaced &apos;any&apos; type with proper TeamApiaryResponse interface</span>
                 </li>
               </ul>
             </div>
