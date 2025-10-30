@@ -109,6 +109,11 @@ export default function ProfilePage() {
   const [selectedApiaryId, setSelectedApiaryId] = useState<string>('')
   const [sharingApiary, setSharingApiary] = useState(false)
 
+  // Rename team state
+  const [showRenameTeamModal, setShowRenameTeamModal] = useState(false)
+  const [renameTeamName, setRenameTeamName] = useState('')
+  const [renamingTeam, setRenamingTeam] = useState(false)
+
   const fetchUserProfile = useCallback(async () => {
     if (!userId) return
 
@@ -685,6 +690,41 @@ export default function ProfilePage() {
     }
   }
 
+  // Rename team
+  const handleRenameTeam = async () => {
+    if (!selectedTeam || !renameTeamName.trim()) {
+      alert('Please enter a new team name.')
+      return
+    }
+
+    if (renameTeamName.trim() === selectedTeam.name) {
+      alert('New name is the same as current name.')
+      return
+    }
+
+    setRenamingTeam(true)
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ name: renameTeamName.trim() })
+        .eq('id', selectedTeam.id)
+        .eq('owner_id', userId) // Ensure only owner can rename
+
+      if (error) throw error
+
+      alert(`Team renamed to "${renameTeamName.trim()}" successfully!`)
+      setShowRenameTeamModal(false)
+      setRenameTeamName('')
+      setSelectedTeam(null)
+      fetchTeams() // Refresh teams list
+    } catch (error) {
+      console.error('Error renaming team:', error)
+      alert('Failed to rename team. Please try again.')
+    } finally {
+      setRenamingTeam(false)
+    }
+  }
+
   // Remove team member
   const handleRemoveMember = async (memberId: string, memberEmail: string) => {
     if (!confirm(`Are you sure you want to remove ${memberEmail} from the team?`)) {
@@ -1071,6 +1111,17 @@ export default function ProfilePage() {
                             <Share2 size={14} />
                             <span className="hidden sm:inline">Share Apiary</span>
                             <span className="sm:hidden">Share</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedTeam(team)
+                              setRenameTeamName(team.name)
+                              setShowRenameTeamModal(true)
+                            }}
+                            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                          >
+                            <Edit2 size={14} />
+                            Rename
                           </button>
                           <button
                             onClick={() => handleDeleteTeam(team.id, team.name)}
@@ -1617,6 +1668,74 @@ export default function ProfilePage() {
                   <>
                     <Share2 size={16} />
                     Share Apiary
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Team Modal */}
+      {showRenameTeamModal && selectedTeam && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Rename Team</h3>
+              <button
+                onClick={() => {
+                  setShowRenameTeamModal(false)
+                  setSelectedTeam(null)
+                  setRenameTeamName('')
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Current Name: <span className="font-semibold text-gray-900">{selectedTeam.name}</span>
+              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Team Name
+              </label>
+              <input
+                type="text"
+                value={renameTeamName}
+                onChange={(e) => setRenameTeamName(e.target.value)}
+                placeholder="Enter new team name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                maxLength={100}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRenameTeamModal(false)
+                  setSelectedTeam(null)
+                  setRenameTeamName('')
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenameTeam}
+                disabled={renamingTeam || !renameTeamName.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {renamingTeam ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Renaming...
+                  </>
+                ) : (
+                  <>
+                    <Edit2 size={16} />
+                    Rename Team
                   </>
                 )}
               </button>
