@@ -752,24 +752,44 @@ export default function ProfilePage() {
 
   // Leave team (for members)
   const handleLeaveTeam = async (teamId: string, teamName: string) => {
+    if (!userId) {
+      alert('User not authenticated.')
+      return
+    }
+
     if (!confirm(`Are you sure you want to leave the team "${teamName}"?`)) {
       return
     }
 
     try {
-      const { error } = await supabase
+      console.log('🚪 Attempting to leave team:', { teamId, userId })
+
+      const { data, error } = await supabase
         .from('team_members')
         .delete()
         .eq('team_id', teamId)
         .eq('user_id', userId)
+        .select()
 
-      if (error) throw error
+      console.log('🚪 Leave team response:', { data, error })
+
+      if (error) {
+        console.error('Leave team error details:', error)
+        throw error
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('No team_member record was deleted')
+        alert('You are not a member of this team or membership not found.')
+        return
+      }
 
       alert(`You have left the team "${teamName}".`)
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error leaving team:', error)
-      alert('Failed to leave team. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to leave team: ${errorMessage}`)
     }
   }
 
