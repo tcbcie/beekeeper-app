@@ -268,6 +268,26 @@ export default function HivesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    // First, get list of shared apiary IDs for this user (apiaries shared WITH teams they're in)
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaryIds: string[] = []
+    if (teamIds.length > 0) {
+      const { data: sharedApiaries } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
+    }
+
+    console.log('🔍 Shared apiary IDs for user:', sharedApiaryIds)
+
     // Build query based on ownership filter
     let query = supabase
       .from('hives')
@@ -278,10 +298,26 @@ export default function HivesPage() {
       // Only my hives
       query = query.eq('user_id', currentUserId)
     } else if (ownershipFilter === 'team') {
-      // Only team hives (hives in team_apiaries that I'm not the owner of)
-      query = query.neq('user_id', currentUserId)
+      // Only team hives (hives from shared apiaries that I'm not the owner of)
+      if (sharedApiaryIds.length > 0) {
+        query = query
+          .in('apiary_id', sharedApiaryIds)
+          .neq('user_id', currentUserId)
+      } else {
+        // No shared apiaries, return empty result
+        setHives([])
+        setLoading(false)
+        return
+      }
+    } else {
+      // 'all' = my hives + hives from shared apiaries only
+      if (sharedApiaryIds.length > 0) {
+        query = query.or(`user_id.eq.${currentUserId},and(apiary_id.in.(${sharedApiaryIds.join(',')}),user_id.neq.${currentUserId})`)
+      } else {
+        // No shared apiaries, only show my hives
+        query = query.eq('user_id', currentUserId)
+      }
     }
-    // 'all' = no filter, RLS will show both my hives and team hives
 
     const { data, error } = await query.order('hive_number')
 
