@@ -329,6 +329,46 @@ export default function SettingsPage() {
     }
   }
 
+  const handleDeleteUser = async (targetUserId: string, userEmail: string) => {
+    if (targetUserId === userId) {
+      alert('You cannot delete your own account.')
+      return
+    }
+
+    if (!confirm(`⚠️ WARNING: Are you sure you want to delete the user "${userEmail}"?\n\nThis will permanently delete:\n- User account\n- All apiaries, hives, and queens\n- All inspections and treatments\n- All team memberships\n- All data associated with this user\n\nThis action CANNOT be undone!`)) {
+      return
+    }
+
+    // Double confirmation for safety
+    const confirmText = prompt('Type "DELETE" (in capital letters) to confirm deletion:')
+    if (confirmText !== 'DELETE') {
+      alert('Deletion cancelled. Confirmation text did not match.')
+      return
+    }
+
+    try {
+      console.log('🗑️ Attempting to delete user:', { targetUserId, userEmail })
+
+      // Delete the user profile - cascading deletes should handle related data
+      const { error } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', targetUserId)
+
+      if (error) {
+        console.error('Delete user error:', error)
+        throw error
+      }
+
+      alert(`User "${userEmail}" has been deleted successfully.`)
+      fetchUsers() // Refresh the list
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to delete user: ${errorMessage}\n\nNote: You may need to delete related data first or configure cascading deletes in the database.`)
+    }
+  }
+
   // Fetch users when user management section is opened
   useEffect(() => {
     if (showUserManagement && users.length === 0) {
@@ -1352,16 +1392,25 @@ export default function SettingsPage() {
                           </td>
                           <td className="px-4 py-4 text-sm">
                             {user.id === userId ? (
-                              <span className="text-gray-400 text-xs italic">Cannot modify own role</span>
+                              <span className="text-gray-400 text-xs italic">Cannot modify own account</span>
                             ) : (
-                              <select
-                                value={user.role}
-                                onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Admin')}
-                                className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              >
-                                <option value="User">User</option>
-                                <option value="Admin">Admin</option>
-                              </select>
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Admin')}
+                                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                                  <option value="User">User</option>
+                                  <option value="Admin">Admin</option>
+                                </select>
+                                <button
+                                  onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
+                                  className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                                  title="Delete user"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
