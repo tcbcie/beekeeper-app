@@ -656,27 +656,39 @@ export default function ProfilePage() {
         if (inviteError) throw inviteError
 
         // Send invitation email via Edge Function
-        console.log('📧 Sending invitation email to:', inviteEmail)
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-team-invitation', {
-          body: {
-            invitationId: newInvite.id,
-            inviteeEmail: inviteEmail.toLowerCase(),
-            teamName: selectedTeam.name,
-            inviterName: userProfile?.first_name && userProfile?.last_name
-              ? `${userProfile.first_name} ${userProfile.last_name}`
-              : undefined,
-            inviterEmail: userEmail,
-            expiresAt: newInvite.expires_at,
-          },
-        })
+        console.log('📧 Attempting to send invitation email to:', inviteEmail)
 
-        if (emailError) {
-          console.error('❌ Failed to send invitation email:', emailError)
-          // Don't fail the whole operation if email fails
-          alert(`Invitation created but email failed to send.\n\nPlease contact ${inviteEmail} directly to let them know.\n\nThey can accept the invitation after signing up with this email address.`)
-        } else {
-          console.log('✅ Invitation email sent successfully:', emailData)
-          alert(`Invitation email sent to ${inviteEmail}!\n\nThey will be automatically added to the team when they sign up with this email address.`)
+        try {
+          const { data: emailData, error: emailError } = await supabase.functions.invoke('send-team-invitation', {
+            body: {
+              invitationId: newInvite.id,
+              inviteeEmail: inviteEmail.toLowerCase(),
+              teamName: selectedTeam.name,
+              inviterName: userProfile?.first_name && userProfile?.last_name
+                ? `${userProfile.first_name} ${userProfile.last_name}`
+                : undefined,
+              inviterEmail: userEmail,
+              expiresAt: newInvite.expires_at,
+            },
+          })
+
+          if (emailError) {
+            console.error('❌ Failed to send invitation email:', emailError)
+            console.error('Error details:', emailError)
+
+            // Check if it's a "function not found" error
+            if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
+              alert(`✅ Invitation created successfully!\n\n⚠️ Email system not yet configured.\n\nThe invitation is saved and ${inviteEmail} will be automatically added to the team when they sign up.\n\nTo enable email notifications:\n1. Deploy: supabase functions deploy send-team-invitation\n2. Set API key: See TEAM_INVITATION_SETUP.md\n\nFor now, please contact ${inviteEmail} directly to let them know.`)
+            } else {
+              alert(`✅ Invitation created successfully!\n\n⚠️ Email failed to send (check console for details).\n\nThe invitation is saved and ${inviteEmail} will be automatically added to the team when they sign up.\n\nPlease contact ${inviteEmail} directly to let them know.`)
+            }
+          } else {
+            console.log('✅ Invitation email sent successfully:', emailData)
+            alert(`📧 Invitation email sent to ${inviteEmail}!\n\nThey will be automatically added to the team when they sign up with this email address.`)
+          }
+        } catch (emailException) {
+          console.error('❌ Exception sending invitation email:', emailException)
+          alert(`✅ Invitation created successfully!\n\n⚠️ Email system not configured yet.\n\nThe invitation is saved and ${inviteEmail} will be automatically added to the team when they sign up.\n\nTo enable email notifications, see: TEAM_INVITATION_SETUP.md\n\nFor now, please contact ${inviteEmail} directly to let them know.`)
         }
       }
 
