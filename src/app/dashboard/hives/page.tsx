@@ -65,6 +65,15 @@ interface Hive {
   is_shared?: boolean
 }
 
+interface TeamApiaryResponse {
+  team_id: string
+  teams: {
+    name: string
+  } | {
+    name: string
+  }[] | null
+}
+
 interface FormData {
   hive_number: string
   apiary_id: string
@@ -327,7 +336,12 @@ export default function HivesPage() {
 
               if (teamApiaryData) {
                 isShared = true
-                teamName = (teamApiaryData as any).teams?.name || null
+                const typedData = teamApiaryData as TeamApiaryResponse
+                if (typedData.teams) {
+                  teamName = Array.isArray(typedData.teams)
+                    ? typedData.teams[0]?.name || null
+                    : typedData.teams.name
+                }
               }
             }
 
