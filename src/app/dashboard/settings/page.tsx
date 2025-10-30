@@ -353,44 +353,137 @@ export default function SettingsPage() {
       console.log('🗑️ Step 1: Deleting user data...')
 
       // Delete inspections
-      await supabase.from('inspections').delete().eq('user_id', targetUserId)
+      console.log('🗑️ Deleting inspections...')
+      const { error: inspError } = await supabase.from('inspections').delete().eq('user_id', targetUserId)
+      if (inspError) {
+        console.error('❌ Failed to delete inspections:', inspError)
+        throw new Error(`Failed to delete inspections: ${inspError.message}`)
+      }
+      console.log('✅ Inspections deleted')
 
-      // Delete varroa checks and treatments
-      await supabase.from('varroa_checks').delete().eq('user_id', targetUserId)
-      await supabase.from('varroa_treatments').delete().eq('user_id', targetUserId)
+      // Delete varroa checks
+      console.log('🗑️ Deleting varroa checks...')
+      const { error: varroaCheckError } = await supabase.from('varroa_checks').delete().eq('user_id', targetUserId)
+      if (varroaCheckError) {
+        console.error('❌ Failed to delete varroa checks:', varroaCheckError)
+        throw new Error(`Failed to delete varroa checks: ${varroaCheckError.message}`)
+      }
+      console.log('✅ Varroa checks deleted')
+
+      // Delete varroa treatments
+      console.log('🗑️ Deleting varroa treatments...')
+      const { error: varroaTreatError } = await supabase.from('varroa_treatments').delete().eq('user_id', targetUserId)
+      if (varroaTreatError) {
+        console.error('❌ Failed to delete varroa treatments:', varroaTreatError)
+        throw new Error(`Failed to delete varroa treatments: ${varroaTreatError.message}`)
+      }
+      console.log('✅ Varroa treatments deleted')
 
       // Delete queens (must be before hives due to FK)
-      await supabase.from('queens').delete().eq('user_id', targetUserId)
+      console.log('🗑️ Deleting queens...')
+      const { error: queensError } = await supabase.from('queens').delete().eq('user_id', targetUserId)
+      if (queensError) {
+        console.error('❌ Failed to delete queens:', queensError)
+        throw new Error(`Failed to delete queens: ${queensError.message}`)
+      }
+      console.log('✅ Queens deleted')
 
       // Delete hives
-      await supabase.from('hives').delete().eq('user_id', targetUserId)
+      console.log('🗑️ Deleting hives...')
+      const { error: hivesError } = await supabase.from('hives').delete().eq('user_id', targetUserId)
+      if (hivesError) {
+        console.error('❌ Failed to delete hives:', hivesError)
+        throw new Error(`Failed to delete hives: ${hivesError.message}`)
+      }
+      console.log('✅ Hives deleted')
 
       // Delete apiaries
-      await supabase.from('apiaries').delete().eq('user_id', targetUserId)
+      console.log('🗑️ Deleting apiaries...')
+      const { error: apiariesError } = await supabase.from('apiaries').delete().eq('user_id', targetUserId)
+      if (apiariesError) {
+        console.error('❌ Failed to delete apiaries:', apiariesError)
+        throw new Error(`Failed to delete apiaries: ${apiariesError.message}`)
+      }
+      console.log('✅ Apiaries deleted')
 
       // Delete rearing batches
-      await supabase.from('rearing_batches').delete().eq('user_id', targetUserId)
+      console.log('🗑️ Deleting rearing batches...')
+      const { error: batchesError } = await supabase.from('rearing_batches').delete().eq('user_id', targetUserId)
+      if (batchesError) {
+        console.error('❌ Failed to delete rearing batches:', batchesError)
+        throw new Error(`Failed to delete rearing batches: ${batchesError.message}`)
+      }
+      console.log('✅ Rearing batches deleted')
 
       // Delete team memberships
-      await supabase.from('team_members').delete().eq('user_id', targetUserId)
+      console.log('🗑️ Deleting team memberships...')
+      const { error: memberError } = await supabase.from('team_members').delete().eq('user_id', targetUserId)
+      if (memberError) {
+        console.error('❌ Failed to delete team memberships:', memberError)
+        throw new Error(`Failed to delete team memberships: ${memberError.message}`)
+      }
+      console.log('✅ Team memberships deleted')
 
       // Delete teams owned by user
-      await supabase.from('teams').delete().eq('owner_id', targetUserId)
+      console.log('🗑️ Deleting owned teams...')
+      const { error: teamsError } = await supabase.from('teams').delete().eq('owner_id', targetUserId)
+      if (teamsError) {
+        console.error('❌ Failed to delete teams:', teamsError)
+        throw new Error(`Failed to delete teams: ${teamsError.message}`)
+      }
+      console.log('✅ Teams deleted')
 
       // Delete support tickets
-      await supabase.from('support_tickets').delete().eq('user_id', targetUserId)
+      console.log('🗑️ Deleting support tickets...')
+      const { error: ticketsError } = await supabase.from('support_tickets').delete().eq('user_id', targetUserId)
+      if (ticketsError) {
+        console.error('❌ Failed to delete support tickets:', ticketsError)
+        throw new Error(`Failed to delete support tickets: ${ticketsError.message}`)
+      }
+      console.log('✅ Support tickets deleted')
 
-      console.log('🗑️ Step 2: Deleting user profile...')
+      console.log('🗑️ Step 2: Deleting user profiles...')
 
-      // Step 2: Delete user profile
-      const { error: profileError } = await supabase
+      // Step 2a: Delete from user_profiles table
+      console.log('🗑️ Deleting from user_profiles...')
+      const { data: userProfileData, error: userProfileError } = await supabase
         .from('user_profiles')
         .delete()
         .eq('id', targetUserId)
+        .select()
+
+      console.log('🗑️ user_profiles deletion response:', { data: userProfileData, error: userProfileError })
+
+      if (userProfileError) {
+        console.error('❌ Delete user_profiles error:', userProfileError)
+        throw new Error(`Failed to delete from user_profiles: ${userProfileError.message}`)
+      }
+
+      if (!userProfileData || userProfileData.length === 0) {
+        console.warn('⚠️ No user_profiles record was deleted (may not exist)')
+      } else {
+        console.log('✅ user_profiles deleted:', userProfileData)
+      }
+
+      // Step 2b: Delete from profiles table (this is the one blocking auth deletion)
+      console.log('🗑️ Deleting from profiles...')
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', targetUserId)
+        .select()
+
+      console.log('🗑️ profiles deletion response:', { data: profileData, error: profileError })
 
       if (profileError) {
-        console.error('Delete user profile error:', profileError)
-        throw profileError
+        console.error('❌ Delete profiles error:', profileError)
+        throw new Error(`Failed to delete from profiles: ${profileError.message}`)
+      }
+
+      if (!profileData || profileData.length === 0) {
+        console.warn('⚠️ No profiles record was deleted (may not exist)')
+      } else {
+        console.log('✅ profiles deleted:', profileData)
       }
 
       console.log('🗑️ Step 3: Attempting to delete auth user...')
@@ -398,8 +491,13 @@ export default function SettingsPage() {
       // Step 3: Try to delete from auth.users via RPC function (if exists)
       // This will fail gracefully if the function doesn't exist
       try {
-        await supabase.rpc('delete_user', { user_id: targetUserId })
-        console.log('✅ Auth user deleted via RPC')
+        const { data: rpcData, error: rpcError } = await supabase.rpc('delete_user', { user_id: targetUserId })
+        console.log('🗑️ RPC delete_user response:', { data: rpcData, error: rpcError })
+        if (rpcError) {
+          console.warn('⚠️ RPC error:', rpcError)
+        } else {
+          console.log('✅ Auth user deleted via RPC')
+        }
       } catch (authError) {
         console.warn('⚠️ Could not delete auth user (RPC function may not exist):', authError)
         console.log('ℹ️ User profile and data deleted, but auth account remains')
@@ -408,7 +506,7 @@ export default function SettingsPage() {
       alert(`User "${userEmail}" and all associated data has been deleted successfully.\n\nNote: The authentication account may still exist in Supabase Auth. Contact a database administrator to fully remove it if needed.`)
       fetchUsers() // Refresh the list
     } catch (error) {
-      console.error('Error deleting user:', error)
+      console.error('❌ Error deleting user:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       alert(`Failed to delete user: ${errorMessage}`)
     }
