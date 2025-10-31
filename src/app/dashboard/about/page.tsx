@@ -352,11 +352,11 @@ export default function AboutPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Team Beekeeping Sections:</strong> Split team data into "Shared by Me" and "Shared with Me" for clarity</span>
+                  <span><strong>Team Beekeeping Sections:</strong> Split team data into &quot;Shared by Me&quot; and &quot;Shared with Me&quot; for clarity</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Team Members Detail View:</strong> Added "Show Details" button to see all members with access to shared apiaries</span>
+                  <span><strong>Team Members Detail View:</strong> Added &quot;Show Details&quot; button to see all members with access to shared apiaries</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
