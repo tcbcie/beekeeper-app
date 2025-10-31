@@ -70,6 +70,9 @@ export default function DashboardPage() {
   const [ownedTeams, setOwnedTeams] = useState<Team[]>([])
   const [memberTeams, setMemberTeams] = useState<Team[]>([])
   const [loadingTeams, setLoadingTeams] = useState(false)
+  const [showMySharedDetails, setShowMySharedDetails] = useState(false)
+  const [mySharedTeamMembers, setMySharedTeamMembers] = useState<any[]>([])
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
   const router = useRouter()
 
   const fetchDashboardData = useCallback(async (userIdParam?: string) => {
@@ -410,6 +413,61 @@ export default function DashboardPage() {
     }
   }, [userId])
 
+  // Fetch team members who have access to my shared apiaries
+  const fetchMySharedTeamMembers = useCallback(async () => {
+    if (!userId) return
+    setLoadingTeamMembers(true)
+
+    try {
+      // Get apiaries owned by the current user
+      const { data: myApiaries, error: apiariesError } = await supabase
+        .from('apiaries')
+        .select('id, name')
+        .eq('user_id', userId)
+
+      if (apiariesError) throw apiariesError
+
+      const myApiaryIds = (myApiaries || []).map(a => a.id)
+
+      if (myApiaryIds.length === 0) {
+        setMySharedTeamMembers([])
+        setLoadingTeamMembers(false)
+        return
+      }
+
+      // Get teams that these apiaries are shared with
+      const { data: teamApiaries, error: teamApiariesError } = await supabase
+        .from('team_apiaries')
+        .select('team_id, teams(name)')
+        .in('apiary_id', myApiaryIds)
+
+      if (teamApiariesError) throw teamApiariesError
+
+      const teamIds = [...new Set((teamApiaries || []).map(ta => ta.team_id))]
+
+      if (teamIds.length === 0) {
+        setMySharedTeamMembers([])
+        setLoadingTeamMembers(false)
+        return
+      }
+
+      // Get team members for these teams
+      const { data: teamMembers, error: membersError } = await supabase
+        .from('team_members')
+        .select('user_id, team_id, role, teams(name), user_profiles(full_name, email)')
+        .in('team_id', teamIds)
+        .neq('user_id', userId) // Exclude current user
+
+      if (membersError) throw membersError
+
+      setMySharedTeamMembers(teamMembers || [])
+    } catch (error) {
+      console.error('❌ Error fetching team members:', error)
+    } finally {
+      setLoadingTeamMembers(false)
+    }
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -534,10 +592,23 @@ export default function DashboardPage() {
       {/* Team Statistics Cards - Shared by Me */}
       {isTeamMember && hasMySharedData && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Users size={20} className="text-blue-600" />
-            Shared by Me
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Users size={20} className="text-blue-600" />
+              Shared by Me
+            </h2>
+            <button
+              onClick={() => {
+                if (!showMySharedDetails) {
+                  fetchMySharedTeamMembers()
+                }
+                setShowMySharedDetails(!showMySharedDetails)
+              }}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              {showMySharedDetails ? 'Hide Details' : 'Show Details'}
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {mySharedCards.map((card) => (
               <StatCard
@@ -549,6 +620,45 @@ export default function DashboardPage() {
               />
             ))}
           </div>
+
+          {/* Team Members Detail View */}
+          {showMySharedDetails && (
+            <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+              <h3 className="text-md font-semibold text-gray-900 mb-4">Team Members with Access</h3>
+              {loadingTeamMembers ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+                </div>
+              ) : mySharedTeamMembers.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {mySharedTeamMembers.map((member) => (
+                    <div key={`${member.team_id}-${member.user_id}`} className="bg-white border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">
+                            {member.user_profiles?.full_name || 'Unknown User'}
+                          </h4>
+                          <p className="text-sm text-gray-600">{member.user_profiles?.email}</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                              {member.teams?.name || 'Unknown Team'}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded font-medium ${
+                              member.role === 'owner' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {member.role}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-center py-4">No team members found</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
