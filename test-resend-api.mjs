@@ -1,29 +1,41 @@
-// test-resend-api.js (Node 18+; ESM)
+// Quick test to verify Resend API key works
 // Run: node test-resend-api.mjs
-import { Resend } from 'resend';
 
-//const resend = new Resend(process.env.re_WqrriZhm_MgU3G8tumSNoXPPuUquhaDjS);
-const resend = new Resend('re_hEsrPdKC_HcAgbqoxNiCG5YecofYAacBJ');
+const RESEND_API_KEY = 'YOUR_API_KEY_HERE'; // Replace with your actual key
 
-(async () => {
-  const { data, error } = await resend.emails.send({
-    from: 'HiveCraic <noreply@hivecraic.com>',   // keep their test sender for smoke tests
-    to: 'rico@zmarzly.me',
-    subject: 'Hello World',
-    html: '<strong>it works!</strong>',
-  });
+async function testResend() {
+  console.log('🧪 Testing Resend API...\n');
 
-  if (error) {
-    // log as much as possible while redacting secrets in CI logs
-    console.error('Resend SDK error:', {
-      name: error.name,
-      message: error.message,
-      statusCode: error.statusCode,
-      cause: error.cause,
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: 'HiveCraic <info@hivecraic.com>',
+        to: ['YOUR_EMAIL@example.com'], // Replace with your email
+        subject: 'Test from Resend API',
+        html: '<p><strong>Success!</strong> Resend API is working.</p>',
+      }),
     });
-    return;
+
+    const data = await response.json();
+
+    console.log('Status:', response.status);
+    console.log('Response:', JSON.stringify(data, null, 2));
+
+    if (response.ok) {
+      console.log('\n✅ SUCCESS! Check your email inbox (or spam folder)');
+      console.log('Email ID:', data.id);
+    } else {
+      console.log('\n❌ FAILED!');
+      console.log('Error:', data.message || data.error);
+    }
+  } catch (error) {
+    console.error('❌ Error:', error.message);
   }
+}
 
-  console.log('Sent:', data); // contains an id you can search in the dashboard
-})();
-
+testResend();
