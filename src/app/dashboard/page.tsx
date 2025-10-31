@@ -40,6 +40,18 @@ export default function DashboardPage() {
     teamHives: 0,
     teamInspections: 0,
   })
+  const [mySharedStats, setMySharedStats] = useState({
+    queens: 0,
+    activeQueens: 0,
+    hives: 0,
+    inspections: 0,
+  })
+  const [sharedWithMeStats, setSharedWithMeStats] = useState({
+    queens: 0,
+    activeQueens: 0,
+    hives: 0,
+    inspections: 0,
+  })
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
     onlineUsers: 0,
@@ -270,28 +282,90 @@ export default function DashboardPage() {
 
       if (hivesError) throw hivesError
 
-      const teamHiveIds = (teamHives || []).map(h => h.id)
-      const teamQueenIds = (teamHives || []).map(h => h.queen_id).filter(q => q !== null)
-      console.log('🐝 Team hive IDs:', teamHiveIds.length, 'Team queen IDs:', teamQueenIds.length)
+      // Separate hives by ownership
+      const myHives = (teamHives || []).filter(h => h.user_id === userId)
+      const othersHives = (teamHives || []).filter(h => h.user_id !== userId)
 
-      // Count team queens
+      const teamHiveIds = (teamHives || []).map(h => h.id)
+      const myHiveIds = myHives.map(h => h.id)
+      const othersHiveIds = othersHives.map(h => h.id)
+      const myQueenIds = myHives.map(h => h.queen_id).filter(q => q !== null)
+      const othersQueenIds = othersHives.map(h => h.queen_id).filter(q => q !== null)
+      const teamQueenIds = (teamHives || []).map(h => h.queen_id).filter(q => q !== null)
+
+      console.log('🐝 My shared hives:', myHiveIds.length, 'Others hives:', othersHiveIds.length)
+
+      // Count MY shared queens
+      let myQueensCount = 0
+      let myActiveQueensCount = 0
+      if (myQueenIds.length > 0) {
+        const { count: queensCount } = await supabase
+          .from('queens')
+          .select('id', { count: 'exact', head: true })
+          .in('id', myQueenIds)
+        const { count: activeQueensCount } = await supabase
+          .from('queens')
+          .select('id', { count: 'exact', head: true })
+          .in('id', myQueenIds)
+          .eq('status', 'active')
+        myQueensCount = queensCount || 0
+        myActiveQueensCount = activeQueensCount || 0
+      }
+
+      // Count OTHERS' shared queens
+      let othersQueensCount = 0
+      let othersActiveQueensCount = 0
+      if (othersQueenIds.length > 0) {
+        const { count: queensCount } = await supabase
+          .from('queens')
+          .select('id', { count: 'exact', head: true })
+          .in('id', othersQueenIds)
+        const { count: activeQueensCount } = await supabase
+          .from('queens')
+          .select('id', { count: 'exact', head: true })
+          .in('id', othersQueenIds)
+          .eq('status', 'active')
+        othersQueensCount = queensCount || 0
+        othersActiveQueensCount = activeQueensCount || 0
+      }
+
+      // Count total team queens
       let teamQueensCount = 0
       let teamActiveQueensCount = 0
-
       if (teamQueenIds.length > 0) {
         const { count: queensCount } = await supabase
           .from('queens')
           .select('id', { count: 'exact', head: true })
           .in('id', teamQueenIds)
-
         const { count: activeQueensCount } = await supabase
           .from('queens')
           .select('id', { count: 'exact', head: true })
           .in('id', teamQueenIds)
           .eq('status', 'active')
-
         teamQueensCount = queensCount || 0
         teamActiveQueensCount = activeQueensCount || 0
+      }
+
+      // Count MY inspections (last 7 days)
+      let myInspectionsCount = 0
+      if (myHiveIds.length > 0) {
+        const { count: inspectionsCount } = await supabase
+          .from('inspections')
+          .select('id', { count: 'exact', head: true })
+          .in('hive_id', myHiveIds)
+          .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+        myInspectionsCount = inspectionsCount || 0
+      }
+
+      // Count OTHERS' inspections (last 7 days)
+      let othersInspectionsCount = 0
+      if (othersHiveIds.length > 0) {
+        const { count: inspectionsCount } = await supabase
+          .from('inspections')
+          .select('id', { count: 'exact', head: true })
+          .in('hive_id', othersHiveIds)
+          .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+        othersInspectionsCount = inspectionsCount || 0
       }
 
       // Count team inspections (last 7 days)
@@ -302,7 +376,6 @@ export default function DashboardPage() {
           .select('id', { count: 'exact', head: true })
           .in('hive_id', teamHiveIds)
           .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-
         teamInspectionsCount = inspectionsCount || 0
       }
 
@@ -314,6 +387,24 @@ export default function DashboardPage() {
       }
       console.log('✅ Final team stats:', finalStats)
       setTeamStats(finalStats)
+
+      const myShared = {
+        queens: myQueensCount,
+        activeQueens: myActiveQueensCount,
+        hives: myHiveIds.length,
+        inspections: myInspectionsCount,
+      }
+      console.log('👤 My shared stats:', myShared)
+      setMySharedStats(myShared)
+
+      const sharedWithMe = {
+        queens: othersQueensCount,
+        activeQueens: othersActiveQueensCount,
+        hives: othersHiveIds.length,
+        inspections: othersInspectionsCount,
+      }
+      console.log('👥 Shared with me stats:', sharedWithMe)
+      setSharedWithMeStats(sharedWithMe)
     } catch (error) {
       console.error('❌ Error fetching team stats:', error)
     }
@@ -353,11 +444,21 @@ export default function DashboardPage() {
     { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700' },
   ]
 
-  const teamStatCards = hasTeamData ? [
-    { label: 'Team Queens', value: teamStats.teamQueens, icon: '👑', color: 'bg-purple-100 text-purple-800 border-2 border-purple-300' },
-    { label: 'Team Active Queens', value: teamStats.teamActiveQueens, icon: '✨', color: 'bg-green-100 text-green-800 border-2 border-green-300' },
-    { label: 'Team Hives', value: teamStats.teamHives, icon: '🐝', color: 'bg-amber-100 text-amber-800 border-2 border-amber-300' },
-    { label: 'Team Inspections (7d)', value: teamStats.teamInspections, icon: '📋', color: 'bg-indigo-100 text-indigo-800 border-2 border-indigo-300' },
+  const hasMySharedData = mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0
+  const hasSharedWithMeData = sharedWithMeStats.hives > 0 || sharedWithMeStats.queens > 0 || sharedWithMeStats.inspections > 0
+
+  const mySharedCards = hasMySharedData ? [
+    { label: 'Queens I Shared', value: mySharedStats.queens, icon: '👑', color: 'bg-purple-100 text-purple-800 border-2 border-purple-300' },
+    { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: '✨', color: 'bg-green-100 text-green-800 border-2 border-green-300' },
+    { label: 'Hives I Shared', value: mySharedStats.hives, icon: '🐝', color: 'bg-amber-100 text-amber-800 border-2 border-amber-300' },
+    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 text-indigo-800 border-2 border-indigo-300' },
+  ] : []
+
+  const sharedWithMeCards = hasSharedWithMeData ? [
+    { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700 border-2 border-purple-200' },
+    { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700 border-2 border-green-200' },
+    { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700 border-2 border-amber-200' },
+    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700 border-2 border-indigo-200' },
   ] : []
 
   return (
@@ -430,37 +531,59 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Team Statistics Cards */}
-      {isTeamMember && (
+      {/* Team Statistics Cards - Shared by Me */}
+      {isTeamMember && hasMySharedData && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Users size={20} className="text-blue-600" />
-            Team Beekeeping
+            Shared by Me
           </h2>
-          {hasTeamData ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {teamStatCards.map((card) => (
-                <StatCard
-                  key={card.label}
-                  label={card.label}
-                  value={card.value}
-                  icon={card.icon}
-                  color={card.color}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center">
-              <Users size={48} className="mx-auto text-blue-400 mb-3" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shared Apiaries Yet</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                You&apos;re part of a team, but no apiaries have been shared yet. Team owners need to share apiaries for team data to appear here.
-              </p>
-              <p className="text-xs text-gray-500">
-                Check the browser console for debugging info (F12)
-              </p>
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {mySharedCards.map((card) => (
+              <StatCard
+                key={card.label}
+                label={card.label}
+                value={card.value}
+                icon={card.icon}
+                color={card.color}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Team Statistics Cards - Shared with Me */}
+      {isTeamMember && hasSharedWithMeData && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Users size={20} className="text-green-600" />
+            Shared with Me
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {sharedWithMeCards.map((card) => (
+              <StatCard
+                key={card.label}
+                label={card.label}
+                value={card.value}
+                icon={card.icon}
+                color={card.color}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No Shared Data Message */}
+      {isTeamMember && !hasMySharedData && !hasSharedWithMeData && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center">
+          <Users size={48} className="mx-auto text-blue-400 mb-3" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shared Apiaries Yet</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            You&apos;re part of a team, but no apiaries have been shared yet. Team owners need to share apiaries for team data to appear here.
+          </p>
+          <p className="text-xs text-gray-500">
+            Check the browser console for debugging info (F12)
+          </p>
         </div>
       )}
 
