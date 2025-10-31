@@ -26,6 +26,19 @@ interface Team {
   user_role?: string
 }
 
+interface TeamMember {
+  user_id: string
+  team_id: string
+  role: string
+  teams?: {
+    name: string
+  }
+  user_profiles?: {
+    full_name: string
+    email: string
+  }
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState({
     queens: 0,
@@ -71,7 +84,7 @@ export default function DashboardPage() {
   const [memberTeams, setMemberTeams] = useState<Team[]>([])
   const [loadingTeams, setLoadingTeams] = useState(false)
   const [showMySharedDetails, setShowMySharedDetails] = useState(false)
-  const [mySharedTeamMembers, setMySharedTeamMembers] = useState<any[]>([])
+  const [mySharedTeamMembers, setMySharedTeamMembers] = useState<TeamMember[]>([])
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
   const router = useRouter()
 
@@ -490,8 +503,7 @@ export default function DashboardPage() {
 
   if (loading) return <LoadingSpinner text="Loading dashboard..." />
 
-  // Check if user has any team data or is a team member
-  const hasTeamData = teamStats.teamHives > 0 || teamStats.teamQueens > 0 || teamStats.teamInspections > 0
+  // Check if user is a team member
   const isTeamMember = (ownedTeams.length > 0 || memberTeams.length > 0)
 
   const statCards = [
