@@ -420,7 +420,16 @@ export default function DashboardPage() {
 
       if (membersError) throw membersError
 
-      setMySharedTeamMembers(teamMembers || [])
+      // Transform the data to match our interface (Supabase returns arrays for relations)
+      const transformedMembers: TeamMember[] = (teamMembers || []).map((member: any) => ({
+        user_id: member.user_id,
+        team_id: member.team_id,
+        role: member.role,
+        teams: Array.isArray(member.teams) ? member.teams[0] : member.teams,
+        user_profiles: Array.isArray(member.user_profiles) ? member.user_profiles[0] : member.user_profiles,
+      }))
+
+      setMySharedTeamMembers(transformedMembers)
     } catch (error) {
       console.error('❌ Error fetching team members:', error)
     } finally {
