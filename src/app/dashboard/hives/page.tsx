@@ -32,6 +32,7 @@ interface Hive {
   id: string
   hive_number: string
   apiary_id: string | null
+  hive_order: number | null
   queen_id: string | null
   queen_marked: boolean
   queen_marking_color: string | null
@@ -77,6 +78,7 @@ interface TeamApiaryResponse {
 interface FormData {
   hive_number: string
   apiary_id: string
+  hive_order: number | null
   queen_id: string
   queen_marked: boolean
   queen_marking_color: string
@@ -107,6 +109,7 @@ export default function HivesPage() {
   const [formData, setFormData] = useState<FormData>({
     hive_number: '',
     apiary_id: '',
+    hive_order: null,
     queen_id: '',
     queen_marked: false,
     queen_marking_color: '',
@@ -507,6 +510,7 @@ export default function HivesPage() {
     setFormData({
       hive_number: hive.hive_number,
       apiary_id: hive.apiary_id || '',
+      hive_order: hive.hive_order ?? null,
       queen_id: hive.queen_id || '',
       queen_marked: hive.queen_marked || false,
       queen_marking_color: hive.queen_marking_color || '',
@@ -758,6 +762,34 @@ export default function HivesPage() {
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hive Order at Apiary</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, hive_order: Math.max(1, (formData.hive_order ?? 1) - 1)})}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-md border border-gray-300 font-bold text-lg"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  value={formData.hive_order ?? ''}
+                  onChange={(e) => setFormData({...formData, hive_order: e.target.value ? parseInt(e.target.value) : null})}
+                  placeholder="Optional"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                  min="1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, hive_order: (formData.hive_order ?? 0) + 1})}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-md border border-gray-300 font-bold text-lg"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             <div>
@@ -1063,6 +1095,9 @@ export default function HivesPage() {
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">📍</span>
                 <span className="font-medium">{hive.apiaries?.name || 'No apiary'}</span>
+                {hive.hive_order && (
+                  <span className="text-xs text-gray-600 ml-1">(Order: {hive.hive_order})</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">👑</span>

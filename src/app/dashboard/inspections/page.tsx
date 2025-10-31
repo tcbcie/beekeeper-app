@@ -35,6 +35,7 @@ interface Inspection {
   hive_id: string
   inspection_date: string
   inspection_time: string | null
+  weight: number | null
   queen_seen: boolean
   eggs_present: boolean
   brood_frames: number | null
@@ -77,6 +78,7 @@ interface FormData {
   hive_id: string
   inspection_date: string
   inspection_time: string
+  weight: number | null
   queen_seen: boolean
   eggs_present: boolean
   brood_frames: number | null
@@ -137,6 +139,7 @@ export default function InspectionsPage() {
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
     inspection_time: new Date().toTimeString().slice(0, 5),
+    weight: null,
     queen_seen: false,
     eggs_present: false,
     brood_frames: null,
@@ -555,6 +558,7 @@ export default function InspectionsPage() {
         hive_id: formData.hive_id,
         inspection_date: formData.inspection_date,
         inspection_time: formData.inspection_time,
+        weight: formData.weight,
         queen_seen: formData.queen_seen,
         eggs_present: formData.eggs_present,
         brood_frames: formData.brood_frames,
@@ -641,6 +645,7 @@ export default function InspectionsPage() {
       hive_id: inspection.hive_id,
       inspection_date: inspection.inspection_date,
       inspection_time: inspection.inspection_time || '',
+      weight: inspection.weight ?? null,
       queen_seen: inspection.queen_seen || false,
       eggs_present: inspection.eggs_present || false,
       brood_frames: inspection.brood_frames ?? null,
@@ -706,6 +711,7 @@ export default function InspectionsPage() {
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
       inspection_time: new Date().toTimeString().slice(0, 5),
+      weight: null,
       queen_seen: false,
       eggs_present: false,
       brood_frames: null,
@@ -1085,6 +1091,18 @@ export default function InspectionsPage() {
                     onChange={(e) => setFormData({...formData, inspection_time: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.weight ?? ''}
+                    onChange={(e) => setFormData({...formData, weight: e.target.value ? parseFloat(e.target.value) : null})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    placeholder="Optional"
                   />
                 </div>
               </div>
@@ -2279,6 +2297,11 @@ export default function InspectionsPage() {
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
+                  {inspection.weight && (
+                    <p className="text-sm text-gray-600 font-medium mt-1">
+                      Weight: {inspection.weight} kg
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
