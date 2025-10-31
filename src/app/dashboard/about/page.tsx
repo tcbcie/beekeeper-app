@@ -338,7 +338,44 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.9</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.10</span>
+                October 31, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Varroa Treatment Products:</strong> Created reference table for approved varroa treatment products in Ireland with detailed information</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Treatment Type Dropdown:</strong> Enhanced with organized sections (Thymol, Formic Acid, Oxalic Acid) showing product name and active ingredients</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Auto Weather Data:</strong> Varroa treatment records now auto-populate temperature and weather conditions based on hive Eircode</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>IPM Tips Popup:</strong> Added integrated pest management tips popup on varroa treatment page for best practices</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Settings Reorganization:</strong> Settings page now uses tabs (Profile, Users, Tickets, Treatments, Dropdowns) for better organization</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Editable Treatment Table:</strong> Varroa treatment products can be managed via inline-editable table in Settings</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Removed Product Name column from Settings table, now shown in Treatment Type dropdown instead</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded font-semibold">v1.0.9</span>
                 October 31, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">

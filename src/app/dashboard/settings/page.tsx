@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Database, Shield, Users, Search } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Shield, Users, Search, User, MessageCircle, Bug, List } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -59,6 +59,20 @@ interface SupportTicket {
   } | null
 }
 
+interface VarroaTreatment {
+  id: string
+  product_name: string
+  active_ingredients: string
+  notes: string | null
+  application_method: string
+  treatment_duration: string
+  temperature_range: string
+  honey_flow_restrictions: string
+  withdrawal_period_days: number
+  created_at?: string
+  updated_at?: string
+}
+
 interface TicketUpdate {
   status?: 'open' | 'in_progress' | 'resolved' | 'closed'
   priority?: 'low' | 'normal' | 'high' | 'urgent'
@@ -70,15 +84,16 @@ interface TicketUpdate {
 export default function SettingsPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
+  const [userIsAdmin, setUserIsAdmin] = useState(false)
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
+  const [activeSection, setActiveSection] = useState<'profile' | 'users' | 'tickets' | 'treatments' | 'dropdowns'>('profile')
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [exporting, setExporting] = useState(false)
-  const [showExportSection, setShowExportSection] = useState(false)
 
   // User Management state
   const [showUserManagement, setShowUserManagement] = useState(false)
@@ -93,6 +108,13 @@ export default function SettingsPage() {
   const [editingTicket, setEditingTicket] = useState<SupportTicket | null>(null)
   const [ticketFilter, setTicketFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved' | 'closed'>('open')
 
+  // Varroa Treatments state
+  const [showVarroaTreatments, setShowVarroaTreatments] = useState(false)
+  const [varroaTreatments, setVarroaTreatments] = useState<VarroaTreatment[]>([])
+  const [loadingVarroaTreatments, setLoadingVarroaTreatments] = useState(false)
+  const [editingVarroaTreatment, setEditingVarroaTreatment] = useState<VarroaTreatment | null>(null)
+  const [showAddVarroaTreatment, setShowAddVarroaTreatment] = useState(false)
+
   const [categoryFormData, setCategoryFormData] = useState({
     category_name: '',
     category_key: '',
@@ -102,6 +124,17 @@ export default function SettingsPage() {
   const [valueFormData, setValueFormData] = useState({
     value: '',
     display_order: 0,
+  })
+
+  const [varroaTreatmentFormData, setVarroaTreatmentFormData] = useState({
+    product_name: '',
+    active_ingredients: '',
+    notes: '',
+    application_method: '',
+    treatment_duration: '',
+    temperature_range: '',
+    honey_flow_restrictions: '',
+    withdrawal_period_days: 0,
   })
 
   useEffect(() => {
@@ -115,6 +148,7 @@ export default function SettingsPage() {
 
       // Check if user has admin access
       const adminAccess = await isAdmin()
+      setUserIsAdmin(adminAccess)
 
       if (!adminAccess) {
         setAccessDenied(true)
@@ -254,11 +288,11 @@ export default function SettingsPage() {
     }
   }
 
-  const handleToggleValueActive = async (value: DropdownValue) => {
+  const handleToggleValueStatus = async (valueId: string, currentStatus: boolean) => {
     const { error } = await supabase
       .from('dropdown_values')
-      .update({ is_active: !value.is_active })
-      .eq('id', value.id)
+      .update({ is_active: !currentStatus })
+      .eq('id', valueId)
 
     if (!error) fetchCategories()
   }
@@ -630,6 +664,37 @@ export default function SettingsPage() {
     }
   }, [showTicketManagement, fetchTickets])
 
+  // Fetch Varroa Treatment Products
+  const fetchVarroaTreatments = useCallback(async () => {
+    setLoadingVarroaTreatments(true)
+    try {
+      const { data, error } = await supabase
+        .from('varroa_treatment_products')
+        .select('*')
+        .order('product_name')
+
+      if (error) {
+        console.error('Error fetching varroa treatment products:', error)
+        alert('Failed to fetch varroa treatment products.')
+        return
+      }
+
+      setVarroaTreatments(data || [])
+    } catch (error) {
+      console.error('Error fetching varroa treatment products:', error)
+      alert('Failed to fetch varroa treatment products.')
+    } finally {
+      setLoadingVarroaTreatments(false)
+    }
+  }, [])
+
+  // Fetch varroa treatments when section is opened
+  useEffect(() => {
+    if (showVarroaTreatments) {
+      fetchVarroaTreatments()
+    }
+  }, [showVarroaTreatments, fetchVarroaTreatments])
+
   const handleTicketUpdate = async (ticketId: string, updates: TicketUpdate) => {
     try {
       const updateData: TicketUpdate & { resolved_by?: string; resolved_at?: string } = { ...updates }
@@ -683,6 +748,93 @@ export default function SettingsPage() {
       console.error('Error deleting ticket:', error)
       alert('Failed to delete ticket.')
     }
+  }
+
+  // Varroa Treatment Product CRUD functions
+  const handleVarroaTreatmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      if (editingVarroaTreatment) {
+        // Update existing treatment product
+        const { error } = await supabase
+          .from('varroa_treatment_products')
+          .update({
+            ...varroaTreatmentFormData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingVarroaTreatment.id)
+
+        if (error) throw error
+        alert('Varroa treatment product updated successfully!')
+      } else {
+        // Create new treatment product
+        const { error } = await supabase
+          .from('varroa_treatment_products')
+          .insert([varroaTreatmentFormData])
+
+        if (error) throw error
+        alert('Varroa treatment product added successfully!')
+      }
+
+      fetchVarroaTreatments()
+      resetVarroaTreatmentForm()
+    } catch (error) {
+      console.error('Error saving varroa treatment product:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to save varroa treatment product: ${errorMessage}`)
+    }
+  }
+
+  const handleEditVarroaTreatment = (treatment: VarroaTreatment) => {
+    setEditingVarroaTreatment(treatment)
+    setVarroaTreatmentFormData({
+      product_name: treatment.product_name,
+      active_ingredients: treatment.active_ingredients,
+      notes: treatment.notes || '',
+      application_method: treatment.application_method,
+      treatment_duration: treatment.treatment_duration,
+      temperature_range: treatment.temperature_range,
+      honey_flow_restrictions: treatment.honey_flow_restrictions,
+      withdrawal_period_days: treatment.withdrawal_period_days,
+    })
+    // Don't show the add form - we're doing inline editing in the table
+  }
+
+  const handleDeleteVarroaTreatment = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this varroa treatment product? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('varroa_treatment_products')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      alert('Varroa treatment product deleted successfully!')
+      fetchVarroaTreatments()
+    } catch (error) {
+      console.error('Error deleting varroa treatment product:', error)
+      alert('Failed to delete varroa treatment product.')
+    }
+  }
+
+  const resetVarroaTreatmentForm = () => {
+    setShowAddVarroaTreatment(false)
+    setEditingVarroaTreatment(null)
+    setVarroaTreatmentFormData({
+      product_name: '',
+      active_ingredients: '',
+      notes: '',
+      application_method: '',
+      treatment_duration: '',
+      temperature_range: '',
+      honey_flow_restrictions: '',
+      withdrawal_period_days: 0,
+    })
   }
 
   const exportDatabase = async () => {
@@ -877,26 +1029,422 @@ export default function SettingsPage() {
     )
   }
 
+  const sections = [
+    { id: 'profile' as const, label: 'Profile & Export', icon: User, adminOnly: false },
+    { id: 'users' as const, label: 'User Management', icon: Users, adminOnly: true },
+    { id: 'tickets' as const, label: 'Support Tickets', icon: MessageCircle, adminOnly: true },
+    { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true },
+    { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true },
+  ].filter(section => !section.adminOnly || userIsAdmin)
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-gray-900">Settings ⚙️</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        {userIsAdmin && (
           <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
             <Shield size={14} />
-            Admin Only
+            Admin
           </span>
-        </div>
-        <button
-          onClick={() => setShowCategoryForm(!showCategoryForm)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
-        >
-          {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
-          {showCategoryForm ? 'Cancel' : 'Add Category'}
-        </button>
+        )}
       </div>
 
-      {/* Support Ticket Management Section - Collapsible */}
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="border-b border-gray-200">
+          <nav className="flex flex-wrap -mb-px">
+            {sections.map((section) => {
+              const Icon = section.icon
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                    activeSection === section.id
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon size={16} />
+                  {section.label}
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Profile & Export Section */}
+      {activeSection === 'profile' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile & Data Export</h2>
+
+          {/* Export Database Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">Export Your Data</h3>
+            <p className="text-sm text-gray-600">Download all your beekeeping data in JSON format.</p>
+            <button
+              onClick={exportDatabase}
+              disabled={exporting}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium flex items-center gap-2"
+            >
+              <Download size={16} />
+              {exporting ? 'Exporting...' : 'Export Database'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Varroa Treatments Section */}
+      {activeSection === 'treatments' && (
+      <div className="bg-white rounded-lg shadow">
+        <div
+          className="p-6 cursor-pointer hover:bg-gray-50"
+          onClick={() => setShowVarroaTreatments(!showVarroaTreatments)}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Varroa Treatments
+                <span className="ml-2 text-xl">{showVarroaTreatments ? '−' : '+'}</span>
+              </h2>
+              <p className="text-gray-600 mt-2">Manage approved varroa treatment products for Ireland</p>
+            </div>
+          </div>
+        </div>
+
+        {showVarroaTreatments && (
+          <div className="px-6 pb-6 border-t border-gray-200 pt-6 space-y-4">
+            {/* Add Treatment Button */}
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-600">
+                Reference data for approved varroa mite treatment products in Ireland.
+              </p>
+              <button
+                onClick={() => setShowAddVarroaTreatment(!showAddVarroaTreatment)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+              >
+                {showAddVarroaTreatment ? <X size={16} /> : <Plus size={16} />}
+                {showAddVarroaTreatment ? 'Cancel' : 'Add Treatment'}
+              </button>
+            </div>
+
+            {/* Add/Edit Form */}
+            {showAddVarroaTreatment && (
+              <form onSubmit={handleVarroaTreatmentSubmit} className="bg-gray-50 p-6 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editingVarroaTreatment ? 'Edit Treatment' : 'Add New Treatment'}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Product Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={varroaTreatmentFormData.product_name}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, product_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Active Ingredients *
+                    </label>
+                    <input
+                      type="text"
+                      value={varroaTreatmentFormData.active_ingredients}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, active_ingredients: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Application Method *
+                    </label>
+                    <input
+                      type="text"
+                      value={varroaTreatmentFormData.application_method}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, application_method: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Treatment Duration *
+                    </label>
+                    <input
+                      type="text"
+                      value={varroaTreatmentFormData.treatment_duration}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, treatment_duration: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Temperature Range *
+                    </label>
+                    <input
+                      type="text"
+                      value={varroaTreatmentFormData.temperature_range}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, temperature_range: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Honey Flow Restrictions *
+                    </label>
+                    <input
+                      type="text"
+                      value={varroaTreatmentFormData.honey_flow_restrictions}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, honey_flow_restrictions: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Withdrawal Period (days) *
+                    </label>
+                    <input
+                      type="number"
+                      value={varroaTreatmentFormData.withdrawal_period_days}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, withdrawal_period_days: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      min="0"
+                      required
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      value={varroaTreatmentFormData.notes}
+                      onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, notes: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <Save size={16} />
+                    {editingVarroaTreatment ? 'Update' : 'Add'} Treatment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetVarroaTreatmentForm}
+                    className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Treatments Table */}
+            {loadingVarroaTreatments ? (
+              <div className="text-center py-8">
+                <LoadingSpinner text="Loading varroa treatments..." />
+              </div>
+            ) : varroaTreatments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No varroa treatments found. Add your first treatment above.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 border-b-2 border-gray-300">
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Actions
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Active Ingredients
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Application Method
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Duration
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Temperature
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Honey Flow
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Withdrawal (days)
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Notes
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {varroaTreatments.map((treatment) => (
+                      <tr key={treatment.id} className="hover:bg-gray-50">
+                        {editingVarroaTreatment?.id === treatment.id ? (
+                          /* Inline Edit Mode */
+                          <>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleVarroaTreatmentSubmit(e)
+                                  }}
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Save"
+                                >
+                                  <Save size={18} />
+                                </button>
+                                <button
+                                  onClick={() => resetVarroaTreatmentForm()}
+                                  className="text-gray-600 hover:text-gray-900"
+                                  title="Cancel"
+                                >
+                                  <X size={18} />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={varroaTreatmentFormData.active_ingredients}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, active_ingredients: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={varroaTreatmentFormData.application_method}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, application_method: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={varroaTreatmentFormData.treatment_duration}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, treatment_duration: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={varroaTreatmentFormData.temperature_range}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, temperature_range: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={varroaTreatmentFormData.honey_flow_restrictions}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, honey_flow_restrictions: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                value={varroaTreatmentFormData.withdrawal_period_days}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, withdrawal_period_days: parseInt(e.target.value) })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                min="0"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <textarea
+                                value={varroaTreatmentFormData.notes}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, notes: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                rows={2}
+                              />
+                            </td>
+                          </>
+                        ) : (
+                          /* Display Mode */
+                          <>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => handleEditVarroaTreatment(treatment)}
+                                  className="text-blue-600 hover:text-blue-900"
+                                  title="Edit"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteVarroaTreatment(treatment.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {treatment.active_ingredients}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {treatment.application_method}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {treatment.treatment_duration}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {treatment.temperature_range}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {treatment.honey_flow_restrictions}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600 text-center">
+                              {treatment.withdrawal_period_days === 0 ? 'None' : treatment.withdrawal_period_days}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              <div className="max-w-xs truncate" title={treatment.notes || ''}>
+                                {treatment.notes || '-'}
+                              </div>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Support Ticket Management Section */}
+      {activeSection === 'tickets' && (
       <div className="bg-white rounded-lg shadow">
         <div
           className="p-6 cursor-pointer"
@@ -1173,240 +1721,9 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
-
-      {showCategoryForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">
-            {editingCategory ? 'Edit Category' : 'Add New Category'}
-          </h3>
-          <form onSubmit={handleCategorySubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category Name *
-              </label>
-              <input
-                type="text"
-                value={categoryFormData.category_name}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, category_name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="e.g., Queen Marking Colors"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category Key * (used in code)
-              </label>
-              <input
-                type="text"
-                value={categoryFormData.category_key}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, category_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
-                placeholder="e.g., queen_marking_colors"
-                required
-                disabled={!!editingCategory}
-              />
-              <p className="text-xs text-gray-500 mt-1">Lowercase with underscores, cannot be changed after creation</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                value={categoryFormData.description}
-                onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="Brief description of this dropdown category"
-                rows={2}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-              >
-                {editingCategory ? 'Update' : 'Add'} Category
-              </button>
-              <button
-                type="button"
-                onClick={resetCategoryForm}
-                className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
       )}
-
-      <div className="space-y-6">
-        {categories.map((category) => {
-          const isExpanded = expandedCategories.has(category.id)
-
-          return (
-            <div key={category.id} className="bg-white rounded-lg shadow">
-              <div className="p-6">
-                <div className="flex justify-between items-start">
-                  <div
-                    className="flex-1 cursor-pointer"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      {isExpanded ? (
-                        <ChevronDown size={20} className="text-gray-500" />
-                      ) : (
-                        <ChevronRight size={20} className="text-gray-500" />
-                      )}
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900">{category.category_name}</h2>
-                        <p className="text-sm text-gray-500 font-mono">{category.category_key}</p>
-                        {category.description && (
-                          <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditCategory(category)}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCategory(category.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {isExpanded && (
-                <div className="px-6 pb-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-semibold text-gray-700 uppercase">Values</h3>
-                <button
-                  onClick={() => {
-                    setEditingValue({ categoryId: category.id, value: null })
-                    const maxOrder = category.dropdown_values.reduce((max, v) => Math.max(max, v.display_order), 0)
-                    setValueFormData({ value: '', display_order: maxOrder + 1 })
-                  }}
-                  className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
-                >
-                  <Plus size={14} /> Add Value
-                </button>
-              </div>
-
-              {editingValue.categoryId === category.id && (
-                <form onSubmit={handleValueSubmit} className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Value *</label>
-                      <input
-                        type="text"
-                        value={valueFormData.value}
-                        onChange={(e) => setValueFormData({ ...valueFormData, value: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                        placeholder="Enter value"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Display Order</label>
-                      <input
-                        type="number"
-                        value={valueFormData.display_order}
-                        onChange={(e) => setValueFormData({ ...valueFormData, display_order: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center gap-1"
-                    >
-                      <Save size={14} /> {editingValue.value ? 'Update' : 'Add'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetValueForm}
-                      className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              <div className="space-y-2">
-                {category.dropdown_values.length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">No values yet. Add your first value above.</p>
-                ) : (
-                  category.dropdown_values.map((value) => (
-                    <div
-                      key={value.id}
-                      className={`flex justify-between items-center p-3 rounded-lg border ${
-                        value.is_active ? 'bg-white border-gray-200' : 'bg-gray-100 border-gray-300 opacity-60'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500 font-mono w-8">#{value.display_order}</span>
-                        <span className={`font-medium ${!value.is_active ? 'line-through text-gray-500' : ''}`}>
-                          {value.value}
-                        </span>
-                        {!value.is_active && (
-                          <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Inactive</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleToggleValueActive(value)}
-                          className={`text-xs px-3 py-1 rounded ${
-                            value.is_active
-                              ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
-                          }`}
-                        >
-                          {value.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => handleEditValue(category.id, value)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteValue(value.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-
-        {categories.length === 0 && (
-          <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
-            No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
-          </div>
-        )}
-      </div>
-
-      {/* User Management Section - Collapsible */}
+      {/* User Management Section */}
+      {activeSection === 'users' && (
       <div className="bg-white rounded-lg shadow">
         <div
           className="p-6 cursor-pointer hover:bg-gray-50"
@@ -1573,63 +1890,264 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
 
-      {/* Database Export Section - Collapsible */}
-      <div className="bg-white rounded-lg shadow">
-        <div
-          className="p-6 cursor-pointer"
-          onClick={() => setShowExportSection(!showExportSection)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {showExportSection ? (
-                <ChevronDown size={20} className="text-gray-500" />
-              ) : (
-                <ChevronRight size={20} className="text-gray-500" />
-              )}
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Database size={24} className="text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Database Export</h2>
-                <p className="text-sm text-gray-500">Export your data as SQL backup</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {showExportSection && (
-          <div className="px-6 pb-6 border-t border-gray-200 pt-6">
-            <p className="text-sm text-gray-600 mb-4">
-              Export your entire beekeeping database as an SQL file. This creates a complete backup
-              including the current database schema and all data.
-            </p>
-            <ul className="text-sm text-gray-600 space-y-1 mb-4">
-              <li>• Includes live database schema (tables, columns, constraints)</li>
-              <li>• Exports all data from all tables</li>
-              <li>• SQL format compatible with PostgreSQL</li>
-              <li>• Use for backup, migration, or disaster recovery</li>
-            </ul>
+      {/* Dropdown Values Section */}
+      {activeSection === 'dropdowns' && (
+        <>
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">Dropdown Values Management</h2>
             <button
-              onClick={exportDatabase}
-              disabled={exporting}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+              onClick={() => setShowCategoryForm(!showCategoryForm)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
             >
-              {exporting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download size={16} />
-                  Export Database
-                </>
-              )}
+              {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
+              {showCategoryForm ? 'Cancel' : 'Add Category'}
             </button>
           </div>
-        )}
-      </div>
+
+          {showCategoryForm && (
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h3 className="text-xl font-semibold mb-4">
+                {editingCategory ? 'Edit Category' : 'Add New Category'}
+              </h3>
+              <form onSubmit={handleCategorySubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={categoryFormData.category_name}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, category_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="e.g., Queen Marking Colors"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category Key * (used in code)
+                  </label>
+                  <input
+                    type="text"
+                    value={categoryFormData.category_key}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, category_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+                    placeholder="e.g., queen_marking_colors"
+                    required
+                    disabled={!!editingCategory}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Lowercase with underscores, cannot be changed after creation</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={categoryFormData.description}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="Brief description of this dropdown category"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  >
+                    {editingCategory ? 'Update' : 'Add'} Category
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetCategoryForm}
+                    className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div className="space-y-6">
+            {categories.map((category) => {
+              const isExpanded = expandedCategories.has(category.id)
+
+              return (
+                <div key={category.id} className="bg-white rounded-lg shadow">
+                  <div className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => toggleCategory(category.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronDown size={20} className="text-gray-500" />
+                          ) : (
+                            <ChevronRight size={20} className="text-gray-500" />
+                          )}
+                          <div>
+                            <h2 className="text-xl font-bold text-gray-900">{category.category_name}</h2>
+                            <p className="text-sm text-gray-500 font-mono">{category.category_key}</p>
+                            {category.description && (
+                              <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditCategory(category)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(category.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mt-6 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-semibold text-gray-700">Values</h3>
+                          <button
+                            onClick={() => {
+                              setEditingValue({ categoryId: category.id, value: null })
+                              setValueFormData({ value: '', display_order: 0 })
+                            }}
+                            className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm flex items-center gap-1"
+                          >
+                            <Plus size={14} />
+                            Add Value
+                          </button>
+                        </div>
+
+                        {editingValue.categoryId === category.id && (
+                          <form
+                            onSubmit={handleValueSubmit}
+                            className="bg-gray-50 p-4 rounded space-y-3"
+                          >
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Value *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={valueFormData.value}
+                                  onChange={(e) => setValueFormData({ ...valueFormData, value: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Display Order
+                                </label>
+                                <input
+                                  type="number"
+                                  value={valueFormData.display_order}
+                                  onChange={(e) => setValueFormData({ ...valueFormData, display_order: parseInt(e.target.value) })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="submit"
+                                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
+                              >
+                                {editingValue.value ? 'Update' : 'Add'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingValue({ categoryId: '', value: null })
+                                  setValueFormData({ value: '', display_order: 0 })
+                                }}
+                                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        )}
+
+                        <div className="space-y-2">
+                          {category.dropdown_values && category.dropdown_values.length > 0 ? (
+                            category.dropdown_values
+                              .sort((a, b) => a.display_order - b.display_order)
+                              .map((value) => (
+                                <div
+                                  key={value.id}
+                                  className="flex justify-between items-center p-3 bg-gray-50 rounded border border-gray-200"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm text-gray-500 font-mono">
+                                      #{value.display_order}
+                                    </span>
+                                    <span className="font-medium">{value.value}</span>
+                                    {!value.is_active && (
+                                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
+                                        Inactive
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleEditValue(category.id, value)}
+                                      className="text-blue-600 hover:text-blue-900"
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleToggleValueStatus(value.id, value.is_active)}
+                                      className="text-gray-600 hover:text-gray-900"
+                                      title={value.is_active ? 'Deactivate' : 'Activate'}
+                                    >
+                                      {value.is_active ? <X size={14} /> : <Plus size={14} />}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteValue(value.id)}
+                                      className="text-red-600 hover:text-red-900"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))
+                          ) : (
+                            <p className="text-sm text-gray-500 text-center py-4">
+                              No values yet. Click &ldquo;Add Value&rdquo; to get started.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+
+            {categories.length === 0 && (
+              <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+                No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

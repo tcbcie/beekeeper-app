@@ -2,20 +2,38 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react'
+import { Plus, Edit2, Trash2, ArrowLeft, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface Hive {
   id: string
   hive_number: string
+  apiaries?: {
+    eircode: string | null
+  }
 }
 
-interface DropdownValue {
+interface HiveQueryResult {
   id: string
-  value: string
-  display_order: number
-  is_active: boolean
+  hive_number: string
+  apiaries: {
+    eircode: string | null
+  } | {
+    eircode: string | null
+  }[] | null
+}
+
+interface VarroaTreatmentProduct {
+  id: string
+  product_name: string
+  active_ingredients: string
+  application_method: string
+  treatment_duration: string
+  temperature_range: string
+  honey_flow_restrictions: string
+  withdrawal_period_days: number
+  notes: string | null
 }
 
 interface VarroaTreatment {
@@ -48,11 +66,12 @@ export default function VarroaTreatmentPage() {
   const router = useRouter()
   const [treatments, setTreatments] = useState<VarroaTreatment[]>([])
   const [hives, setHives] = useState<Hive[]>([])
-  const [productNames, setProductNames] = useState<DropdownValue[]>([])
+  const [treatmentProducts, setTreatmentProducts] = useState<VarroaTreatmentProduct[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingTreatment, setEditingTreatment] = useState<VarroaTreatment | null>(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [showIPMTips, setShowIPMTips] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     treatment_date: new Date().toISOString().split('T')[0],
@@ -84,12 +103,24 @@ export default function VarroaTreatmentPage() {
 
     const { data } = await supabase
       .from('hives')
-      .select('id, hive_number')
+      .select('id, hive_number, apiaries(eircode)')
       .eq('status', 'active')
       .eq('user_id', currentUserId)
       .order('hive_number')
 
-    if (data) setHives(data as Hive[])
+    if (data) {
+      // Transform the data to match Hive interface
+      const hivesData = (data as HiveQueryResult[]).map((hive) => ({
+        id: hive.id,
+        hive_number: hive.hive_number,
+        apiaries: hive.apiaries && !Array.isArray(hive.apiaries)
+          ? hive.apiaries
+          : (Array.isArray(hive.apiaries) && hive.apiaries[0])
+            ? hive.apiaries[0]
+            : undefined
+      }))
+      setHives(hivesData)
+    }
   }, [userId])
 
   useEffect(() => {
@@ -102,27 +133,148 @@ export default function VarroaTreatmentPage() {
       setUserId(id)
       fetchTreatments(id)
       fetchHives(id)
-      fetchProductNames()
+      fetchTreatmentProducts()
     }
     initUser()
   }, [router, fetchTreatments, fetchHives])
 
-  const fetchProductNames = async () => {
-    const { data: category } = await supabase
-      .from('dropdown_categories')
-      .select('id')
-      .eq('category_key', 'varroa_treatment_product')
-      .single()
+  // Close IPM tips popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (showIPMTips && !target.closest('.ipm-tips-container')) {
+        setShowIPMTips(false)
+      }
+    }
 
-    if (category) {
-      const { data } = await supabase
-        .from('dropdown_values')
-        .select('id, value, display_order, is_active')
-        .eq('category_id', category.id)
-        .eq('is_active', true)
-        .order('display_order')
+    if (showIPMTips) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
 
-      if (data) setProductNames(data as DropdownValue[])
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showIPMTips])
+
+  const fetchTreatmentProducts = async () => {
+    const { data } = await supabase
+      .from('varroa_treatment_products')
+      .select('*')
+      .order('product_name')
+
+    if (data) setTreatmentProducts(data as VarroaTreatmentProduct[])
+  }
+
+  const fetchWeatherData = async (eircode: string) => {
+    try {
+      // Remove spaces and encode the Eircode for the URL
+      const cleanedEircode = eircode.trim().replace(/\s+/g, '').toUpperCase()
+      console.log('Original Eircode:', eircode, 'Cleaned:', cleanedEircode)
+
+      // Set User-Agent header for Nominatim (OpenStreetMap geocoding)
+      const headers = {
+        'User-Agent': 'HiveCraic-Beekeeping-App/1.0'
+      }
+
+      // First, try searching with just the Eircode and Ireland
+      console.log('Trying to geocode:', cleanedEircode)
+      const geocodeResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode)},Ireland&format=json&limit=1`,
+        { headers }
+      )
+      let geoData = await geocodeResponse.json()
+
+      if (!geoData || geoData.length === 0) {
+        console.log('Could not find coordinates for Eircode:', eircode)
+
+        // Try alternative search
+        const altGeoResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode + ' Ireland')}&format=json&limit=1`,
+          { headers }
+        )
+        geoData = await altGeoResponse.json()
+
+        if (!geoData || geoData.length === 0) {
+          console.log('Geocoding failed completely for:', eircode)
+          // Fallback to Dublin city center coordinates if Eircode lookup fails
+          geoData = [{ lat: '53.3498', lon: '-6.2603' }]
+          console.log('Using Dublin fallback coordinates')
+        }
+      }
+
+      const { lat, lon } = geoData[0]
+      console.log('Coordinates found:', { lat, lon })
+
+      // Fetch weather data from Open-Meteo API
+      const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+      )
+      const weatherData = await weatherResponse.json()
+      console.log('Weather data received:', weatherData)
+
+      if (weatherData.current_weather) {
+        const temp = Math.round(weatherData.current_weather.temperature)
+        const windSpeed = Math.round(weatherData.current_weather.windspeed)
+        const weatherCode = weatherData.current_weather.weathercode
+
+        // Map weather codes to descriptions
+        const weatherDescriptions: { [key: number]: string } = {
+          0: 'Clear sky',
+          1: 'Mainly clear',
+          2: 'Partly cloudy',
+          3: 'Overcast',
+          45: 'Foggy',
+          48: 'Depositing rime fog',
+          51: 'Light drizzle',
+          53: 'Moderate drizzle',
+          55: 'Dense drizzle',
+          61: 'Slight rain',
+          63: 'Moderate rain',
+          65: 'Heavy rain',
+          71: 'Slight snow',
+          73: 'Moderate snow',
+          75: 'Heavy snow',
+          80: 'Slight rain showers',
+          81: 'Moderate rain showers',
+          82: 'Violent rain showers',
+          95: 'Thunderstorm',
+        }
+
+        const weatherDescription = weatherDescriptions[weatherCode] || 'Unknown'
+        const weatherConditions = `${weatherDescription}, Wind: ${windSpeed} km/h`
+
+        return {
+          temperature: temp,
+          weather_conditions: weatherConditions
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error('Error fetching weather:', error)
+      return null
+    }
+  }
+
+  const handleHiveChange = async (hiveId: string) => {
+    setFormData({ ...formData, hive_id: hiveId })
+
+    // Find the selected hive and fetch weather data
+    const selectedHive = hives.find(h => h.id === hiveId)
+    if (selectedHive?.apiaries?.eircode) {
+      console.log('Fetching weather for Eircode:', selectedHive.apiaries.eircode)
+      const weatherData = await fetchWeatherData(selectedHive.apiaries.eircode)
+
+      if (weatherData) {
+        setFormData(prev => ({
+          ...prev,
+          hive_id: hiveId,
+          temperature: weatherData.temperature,
+          weather_conditions: weatherData.weather_conditions
+        }))
+      }
+    } else {
+      console.log('No Eircode found for this hive\'s apiary')
     }
   }
 
@@ -247,13 +399,68 @@ export default function VarroaTreatmentPage() {
           </button>
           <h1 className="text-3xl font-bold text-gray-900">Varroa Treatments</h1>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2 justify-center"
-        >
-          <Plus size={16} />
-          {showForm ? 'Cancel' : 'Record Treatment'}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="relative ipm-tips-container">
+            <button
+              onClick={() => setShowIPMTips(!showIPMTips)}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="IPM Tips"
+            >
+              <Info size={20} />
+            </button>
+
+            {showIPMTips && (
+              <div className="absolute right-0 top-12 w-96 bg-white border-2 border-blue-200 rounded-lg shadow-xl z-50 p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-bold text-blue-900">Integrated Pest Management (IPM) Tips</h3>
+                  <button
+                    onClick={() => setShowIPMTips(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                </div>
+                <ul className="space-y-3 text-sm text-gray-700">
+                  <li className="flex gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>Rotate treatments annually to prevent resistance development.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>Monitor mite levels regularly using sugar shake or alcohol wash.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>Apply treatments according to label instructions and seasonal timing.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>Ensure adequate colony ventilation during treatment.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>Avoid treating during honey flow unless product is approved for use.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>Combine chemical treatments with biotechnical methods (e.g., drone brood removal).</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>Maintain strong, healthy colonies through good nutrition and disease management.</span>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2 justify-center"
+          >
+            <Plus size={16} />
+            {showForm ? 'Cancel' : 'Record Treatment'}
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -266,7 +473,7 @@ export default function VarroaTreatmentPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
               <select
                 value={formData.hive_id}
-                onChange={(e) => setFormData({...formData, hive_id: e.target.value})}
+                onChange={(e) => handleHiveChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 required
               >
@@ -288,7 +495,7 @@ export default function VarroaTreatmentPage() {
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Type *</label>
               <select
                 value={formData.treatment_type}
@@ -296,32 +503,80 @@ export default function VarroaTreatmentPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 required
               >
-                <option value="">Select type</option>
-                <option value="Oxalic Acid">Oxalic Acid</option>
-                <option value="Formic Acid">Formic Acid</option>
-                <option value="Apiguard">Apiguard (Thymol)</option>
-                <option value="Apivar">Apivar (Amitraz)</option>
-                <option value="Apistan">Apistan (Fluvalinate)</option>
-                <option value="Checkmite+">Checkmite+ (Coumaphos)</option>
-                <option value="Mite Away Quick Strips">Mite Away Quick Strips</option>
-                <option value="Hopguard">Hopguard</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+                <option value="">── Select Treatment ──</option>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-              <select
-                value={formData.product_name}
-                onChange={(e) => setFormData({...formData, product_name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">Select product</option>
-                {productNames.map((product) => (
-                  <option key={product.id} value={product.value}>
-                    {product.value}
-                  </option>
-                ))}
+                {/* Group by active ingredient type */}
+                {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('thymol')).length > 0 && (
+                  <>
+                    <option disabled>─── Thymol Based ───</option>
+                    {treatmentProducts
+                      .filter(p => p.active_ingredients.toLowerCase().includes('thymol'))
+                      .map((product) => (
+                        <option
+                          key={product.id}
+                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                        >
+                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                        </option>
+                      ))}
+                  </>
+                )}
+
+                {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('formic acid')).length > 0 && (
+                  <>
+                    <option disabled>─── Formic Acid ───</option>
+                    {treatmentProducts
+                      .filter(p => p.active_ingredients.toLowerCase().includes('formic acid') && !p.active_ingredients.toLowerCase().includes('oxalic'))
+                      .map((product) => (
+                        <option
+                          key={product.id}
+                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                        >
+                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                        </option>
+                      ))}
+                  </>
+                )}
+
+                {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('oxalic acid')).length > 0 && (
+                  <>
+                    <option disabled>─── Oxalic Acid ───</option>
+                    {treatmentProducts
+                      .filter(p => p.active_ingredients.toLowerCase().includes('oxalic acid'))
+                      .map((product) => (
+                        <option
+                          key={product.id}
+                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                        >
+                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                        </option>
+                      ))}
+                  </>
+                )}
+
+                {treatmentProducts.filter(p =>
+                  !p.active_ingredients.toLowerCase().includes('thymol') &&
+                  !p.active_ingredients.toLowerCase().includes('formic acid') &&
+                  !p.active_ingredients.toLowerCase().includes('oxalic acid')
+                ).length > 0 && (
+                  <>
+                    <option disabled>─── Other Treatments ───</option>
+                    {treatmentProducts
+                      .filter(p =>
+                        !p.active_ingredients.toLowerCase().includes('thymol') &&
+                        !p.active_ingredients.toLowerCase().includes('formic acid') &&
+                        !p.active_ingredients.toLowerCase().includes('oxalic acid')
+                      )
+                      .map((product) => (
+                        <option
+                          key={product.id}
+                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                        >
+                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                        </option>
+                      ))}
+                  </>
+                )}
               </select>
             </div>
 
