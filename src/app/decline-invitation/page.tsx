@@ -1,12 +1,12 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 
-export default function DeclineInvitationPage() {
+function DeclineInvitationContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -166,5 +166,13 @@ export default function DeclineInvitationPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DeclineInvitationPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner text="Loading..." />}>
+      <DeclineInvitationContent />
+    </Suspense>
   )
 }
