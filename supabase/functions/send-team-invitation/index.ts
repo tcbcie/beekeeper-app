@@ -147,9 +147,6 @@ serve(async (req) => {
       <a href="${appUrl}" style="color: #9333ea; text-decoration: none;">HiveCraic</a> -
       Manage your hives, track inspections, and collaborate with your team.
     </p>
-    <p style="margin: 15px 0 5px 0; font-size: 11px;">
-      🤖 Generated with <a href="https://claude.com/claude-code" style="color: #9333ea; text-decoration: none;">Claude Code</a>
-    </p>
   </div>
 
 </body>
