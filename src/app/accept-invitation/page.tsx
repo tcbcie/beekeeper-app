@@ -12,7 +12,6 @@ export default function AcceptInvitationPage() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<'success' | 'error' | 'expired' | 'already-accepted'>('success')
   const [message, setMessage] = useState('')
-  const [teamName, setTeamName] = useState('')
 
   useEffect(() => {
     const acceptInvitation = async () => {
@@ -47,8 +46,6 @@ export default function AcceptInvitationPage() {
           setLoading(false)
           return
         }
-
-        setTeamName(invitation.teams?.name || 'Unknown Team')
 
         // Check if invitation is already accepted
         if (invitation.status === 'accepted') {

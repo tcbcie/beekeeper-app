@@ -12,7 +12,6 @@ export default function DeclineInvitationPage() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<'success' | 'error' | 'expired' | 'already-declined'>('success')
   const [message, setMessage] = useState('')
-  const [teamName, setTeamName] = useState('')
 
   useEffect(() => {
     const declineInvitation = async () => {
@@ -42,8 +41,6 @@ export default function DeclineInvitationPage() {
           setLoading(false)
           return
         }
-
-        setTeamName(invitation.teams?.name || 'Unknown Team')
 
         // Check if invitation is already declined
         if (invitation.status === 'declined') {

@@ -47,12 +47,6 @@ export default function DashboardPage() {
     activeBatches: 0,
     recentInspections: 0,
   })
-  const [teamStats, setTeamStats] = useState({
-    teamQueens: 0,
-    teamActiveQueens: 0,
-    teamHives: 0,
-    teamInspections: 0,
-  })
   const [mySharedStats, setMySharedStats] = useState({
     queens: 0,
     activeQueens: 0,
@@ -259,12 +253,8 @@ export default function DashboardPage() {
 
       if (teamIds.length === 0) {
         console.log('❌ User is not a member of any teams')
-        setTeamStats({
-          teamQueens: 0,
-          teamActiveQueens: 0,
-          teamHives: 0,
-          teamInspections: 0,
-        })
+        setMySharedStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
+        setSharedWithMeStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
         return
       }
 
@@ -281,12 +271,8 @@ export default function DashboardPage() {
 
       if (apiaryIds.length === 0) {
         console.log('⚠️ No shared apiaries found for teams. Teams need to share apiaries first!')
-        setTeamStats({
-          teamQueens: 0,
-          teamActiveQueens: 0,
-          teamHives: 0,
-          teamInspections: 0,
-        })
+        setMySharedStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
+        setSharedWithMeStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
         return
       }
 
@@ -394,15 +380,6 @@ export default function DashboardPage() {
           .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
         teamInspectionsCount = inspectionsCount || 0
       }
-
-      const finalStats = {
-        teamQueens: teamQueensCount,
-        teamActiveQueens: teamActiveQueensCount,
-        teamHives: teamHiveIds.length,
-        teamInspections: teamInspectionsCount,
-      }
-      console.log('✅ Final team stats:', finalStats)
-      setTeamStats(finalStats)
 
       const myShared = {
         queens: myQueensCount,
@@ -877,11 +854,11 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Version:</span>
-                <span className="font-bold text-indigo-700">v1.0.7</span>
+                <span className="font-bold text-indigo-700">v1.0.9</span>
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Last Updated:</span>
-                <span className="font-semibold text-blue-700">October 30, 2025</span>
+                <span className="font-semibold text-blue-700">October 31, 2025</span>
               </span>
             </div>
           </div>

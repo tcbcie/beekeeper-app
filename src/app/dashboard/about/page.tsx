@@ -338,7 +338,44 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.8</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.9</span>
+                October 31, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Inspection Weight Field:</strong> Added optional weight field (kg) to record hive weight during inspections</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Hive Order Field:</strong> Added optional hive order field with +/- buttons to track physical position at apiary</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Team Beekeeping Sections:</strong> Split team data into "Shared by Me" and "Shared with Me" for clarity</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Team Members Detail View:</strong> Added "Show Details" button to see all members with access to shared apiaries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Fixed Invitation Links:</strong> Corrected email invitation accept/decline URLs to use proper domain</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Invitation Pages:</strong> Created accept-invitation and decline-invitation pages with full validation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Fixed TypeScript errors and improved type safety across dashboard and invitation pages</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded font-semibold">v1.0.8</span>
                 October 30, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">

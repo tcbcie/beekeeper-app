@@ -554,6 +554,7 @@ export default function HivesPage() {
     setFormData({
       hive_number: '',
       apiary_id: '',
+      hive_order: null,
       queen_id: '',
       queen_marked: false,
       queen_marking_color: '',
