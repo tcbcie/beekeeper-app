@@ -421,7 +421,7 @@ export default function DashboardPage() {
       if (membersError) throw membersError
 
       // Transform the data to match our interface (Supabase returns arrays for relations)
-      const transformedMembers: TeamMember[] = (teamMembers || []).map((member: any) => ({
+      const transformedMembers: TeamMember[] = (teamMembers || []).map((member) => ({
         user_id: member.user_id,
         team_id: member.team_id,
         role: member.role,
