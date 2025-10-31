@@ -49,8 +49,8 @@ This sends beautiful invitation emails. Users still need to sign up and accept m
 
 **Step 2: Update Email Address**
 1. Open `supabase/functions/send-team-invitation/index.ts`
-2. Find line ~130: `from: 'Beekeeper App <noreply@yourdomain.com>'`
-3. For testing, change to: `from: 'Beekeeper App <your@email.com>'`
+2. Find line ~130: `from: 'HiveCraic <noreply@yourdomain.com>'`
+3. For testing, change to: `from: 'HiveCraic <your@email.com>'`
    (Use the email you verified in Resend)
 
 **Step 3: Deploy Edge Function**

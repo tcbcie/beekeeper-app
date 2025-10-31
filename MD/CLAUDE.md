@@ -1,4 +1,4 @@
-# Beekeeper App - Claude Project Documentation
+# HiveCraic - Claude Project Documentation
 
 ## Project Overview
 A comprehensive beekeeping management system built with Next.js, React, TypeScript, and Supabase. The application helps beekeepers track hives, inspections, queens, varroa treatments, and manage support tickets.

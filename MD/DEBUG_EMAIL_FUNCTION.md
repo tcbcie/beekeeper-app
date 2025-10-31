@@ -71,7 +71,7 @@ curl -i --location --request POST \
 2. For testing: Use your own verified email
 3. Update Edge Function:
    ```typescript
-   from: 'Beekeeper App <your-verified@email.com>'
+   from: 'HiveCraic <your-verified@email.com>'
    ```
 4. Redeploy:
    ```bash
@@ -127,7 +127,7 @@ grep -n "from:" supabase/functions/send-team-invitation/index.ts
 
 **Should show** something like:
 ```
-line 130: from: 'Beekeeper App <your@email.com>',
+line 130: from: 'HiveCraic <your@email.com>',
 ```
 
 **Must be**:
@@ -170,7 +170,7 @@ curl -X POST 'https://api.resend.com/emails' \
   -H 'Authorization: Bearer re_your_api_key_here' \
   -H 'Content-Type: application/json' \
   -d '{
-    "from": "Beekeeper App <your@email.com>",
+    "from": "HiveCraic <your@email.com>",
     "to": ["your@email.com"],
     "subject": "Test Email",
     "html": "<p>Test from Resend API</p>"
@@ -188,7 +188,7 @@ If this fails, the problem is with Resend setup (API key or email verification).
 Open `supabase/functions/send-team-invitation/index.ts` and verify:
 
 1. **Line ~5**: `const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')`
-2. **Line ~130**: `from: 'Beekeeper App <your-verified@email.com>'`
+2. **Line ~130**: `from: 'HiveCraic <your-verified@email.com>'`
 3. **Line ~131**: `to: [inviteeEmail]` (should be array)
 
 After any changes:

@@ -82,12 +82,12 @@ serve(async (req) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Team Invitation - Beekeeper App</title>
+  <title>Team Invitation - HiveCraic</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 
   <div style="background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">🐝 Beekeeper App</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">🐝 HiveCraic</h1>
   </div>
 
   <div style="background: white; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
@@ -96,7 +96,7 @@ serve(async (req) => {
 
     <p style="font-size: 16px; margin-bottom: 20px;">
       Hello! <strong>${inviterName || inviterEmail}</strong> has invited you to join the team
-      <strong style="color: #9333ea;">${teamName}</strong> on Beekeeper App.
+      <strong style="color: #9333ea;">${teamName}</strong> on HiveCraic.
     </p>
 
     <div style="background: #f9fafb; border-left: 4px solid #9333ea; padding: 15px; margin: 25px 0;">
@@ -125,7 +125,7 @@ serve(async (req) => {
 
     <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 6px; margin: 25px 0;">
       <p style="margin: 0; font-size: 14px; color: #92400e;">
-        <strong>⚠️ Note:</strong> If you don't have a Beekeeper App account yet, you'll need to
+        <strong>⚠️ Note:</strong> If you don't have a HiveCraic account yet, you'll need to
         <a href="${appUrl}/signup" style="color: #9333ea; text-decoration: none; font-weight: 600;">create one</a>
         first. Use this email address (${inviteeEmail}) when signing up, and your invitation will be
         automatically accepted.
@@ -141,10 +141,10 @@ serve(async (req) => {
 
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
     <p style="margin: 5px 0;">
-      You received this email because ${inviterName || inviterEmail} invited you to join their team on Beekeeper App.
+      You received this email because ${inviterName || inviterEmail} invited you to join their team on HiveCraic.
     </p>
     <p style="margin: 5px 0;">
-      <a href="${appUrl}" style="color: #9333ea; text-decoration: none;">Beekeeper App</a> -
+      <a href="${appUrl}" style="color: #9333ea; text-decoration: none;">HiveCraic</a> -
       Manage your hives, track inspections, and collaborate with your team.
     </p>
     <p style="margin: 15px 0 5px 0; font-size: 11px;">
@@ -158,11 +158,11 @@ serve(async (req) => {
 
     // Plain text version for email clients that don't support HTML
     const textContent = `
-Beekeeper App - Team Invitation
+HiveCraic - Team Invitation
 
 You've Been Invited to Join a Team!
 
-${inviterName || inviterEmail} has invited you to join the team "${teamName}" on Beekeeper App.
+${inviterName || inviterEmail} has invited you to join the team "${teamName}" on HiveCraic.
 
 Team: ${teamName}
 Invited by: ${inviterName || inviterEmail}
@@ -173,13 +173,13 @@ By joining this team, you'll be able to collaborate on beekeeping activities, sh
 To accept this invitation, visit: ${acceptUrl}
 To decline this invitation, visit: ${declineUrl}
 
-Note: If you don't have a Beekeeper App account yet, you'll need to create one first at ${appUrl}/signup.
+Note: If you don't have a HiveCraic account yet, you'll need to create one first at ${appUrl}/signup.
 Use this email address (${inviteeEmail}) when signing up, and your invitation will be automatically accepted.
 
 This invitation will expire on ${formattedExpiry}.
 
 ---
-You received this email because ${inviterName || inviterEmail} invited you to join their team on Beekeeper App.
+You received this email because ${inviterName || inviterEmail} invited you to join their team on HiveCraic.
 If you have any questions, please contact ${inviterEmail}.
     `
 
@@ -193,7 +193,7 @@ If you have any questions, please contact ${inviterEmail}.
       body: JSON.stringify({
         from: 'HiveCraic <info@hivecraic.com>', // Verified Resend email
         to: [inviteeEmail],
-        subject: `You've been invited to join ${teamName} on Beekeeper App`,
+        subject: `You've been invited to join ${teamName} on HiveCraic`,
         html: htmlContent,
         text: textContent,
       }),

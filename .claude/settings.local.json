@@ -19,7 +19,8 @@
       "Bash(supabase functions list:*)",
       "Bash(supabase secrets:*)",
       "Bash(supabase functions logs:*)",
-      "Bash(supabase functions --help:*)"
+      "Bash(supabase functions --help:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

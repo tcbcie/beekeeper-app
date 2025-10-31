@@ -106,7 +106,7 @@ curl -X POST 'https://api.resend.com/emails' \
 
 The invitation email might be triggering spam filters. Check:
 
-1. Subject line: "You've been invited to join [Team] on Beekeeper App"
+1. Subject line: "You've been invited to join [Team] on HiveCraic"
 2. Has HTML content with links
 3. First email from this domain
 

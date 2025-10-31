@@ -68,7 +68,7 @@ supabase functions deploy send-team-invitation
 
 3. **Update Email "From" Address**:
    - Open `supabase/functions/send-team-invitation/index.ts`
-   - Line ~130: Update `from: 'Beekeeper App <noreply@yourdomain.com>'`
+   - Line ~130: Update `from: 'HiveCraic <noreply@yourdomain.com>'`
    - Replace `yourdomain.com` with your verified domain
 
 4. **Verify Domain in Resend** (Optional but recommended):

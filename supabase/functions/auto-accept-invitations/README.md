@@ -342,7 +342,7 @@ Each user signup = 1 invocation. Very unlikely to hit limits.
 
 ## License
 
-Part of Beekeeper App - see main project LICENSE
+Part of HiveCraic - see main project LICENSE
 
 ---
 

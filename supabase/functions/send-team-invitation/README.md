@@ -1,13 +1,13 @@
 # Team Invitation Email Edge Function
 
-Sends email invitations to users invited to join a team on Beekeeper App.
+Sends email invitations to users invited to join a team on HiveCraic.
 
 ## Features
 
 - 📧 Beautiful HTML email with team details
 - ✅ Accept/Decline buttons (links to app)
 - ⏰ Expiration date display
-- 🎨 Branded with Beekeeper App purple theme
+- 🎨 Branded with HiveCraic purple theme
 - 📱 Responsive design for mobile email clients
 - 📝 Plain text fallback for email clients without HTML support
 
@@ -37,7 +37,7 @@ In your Supabase Dashboard → Project Settings → Edge Functions:
 In `index.ts`, update this line with your verified domain:
 
 ```typescript
-from: 'Beekeeper App <noreply@yourdomain.com>', // Update with your domain
+from: 'HiveCraic <noreply@yourdomain.com>', // Update with your domain
 ```
 
 **Note**: You need to verify your domain in Resend before you can send from it.
@@ -112,7 +112,7 @@ Error (400/500):
 The email includes:
 
 ### Header
-- Purple gradient banner with Beekeeper App branding
+- Purple gradient banner with HiveCraic branding
 
 ### Body
 - Personalized greeting with inviter's name
@@ -124,7 +124,7 @@ The email includes:
 
 ### Footer
 - Explanation of why they received the email
-- Link to Beekeeper App
+- Link to HiveCraic
 - Branding/attribution
 
 ## Testing
@@ -237,7 +237,7 @@ if (!existingUser) {
 
 ## License
 
-Part of Beekeeper App - see main project LICENSE
+Part of HiveCraic - see main project LICENSE
 
 ---
 
