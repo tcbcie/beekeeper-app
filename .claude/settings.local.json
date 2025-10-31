@@ -15,7 +15,11 @@
       "Bash(npx tsc:*)",
       "Bash(timeout 30 npx tsc:*)",
       "Bash(timeout 45 npx tsc:*)",
-      "Bash(npx next lint:*)"
+      "Bash(npx next lint:*)",
+      "Bash(supabase functions list:*)",
+      "Bash(supabase secrets:*)",
+      "Bash(supabase functions logs:*)",
+      "Bash(supabase functions --help:*)"
     ],
     "deny": [],
     "ask": []

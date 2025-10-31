@@ -191,7 +191,7 @@ If you have any questions, please contact ${inviterEmail}.
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Beekeeper App <noreply@yourdomain.com>', // TODO: Update with your domain
+        from: 'HiveCraic <info@hivecraic.com>', // Verified Resend email
         to: [inviteeEmail],
         subject: `You've been invited to join ${teamName} on Beekeeper App`,
         html: htmlContent,
