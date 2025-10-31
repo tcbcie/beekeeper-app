@@ -331,23 +331,6 @@ export default function DashboardPage() {
         othersActiveQueensCount = activeQueensCount || 0
       }
 
-      // Count total team queens
-      let teamQueensCount = 0
-      let teamActiveQueensCount = 0
-      if (teamQueenIds.length > 0) {
-        const { count: queensCount } = await supabase
-          .from('queens')
-          .select('id', { count: 'exact', head: true })
-          .in('id', teamQueenIds)
-        const { count: activeQueensCount } = await supabase
-          .from('queens')
-          .select('id', { count: 'exact', head: true })
-          .in('id', teamQueenIds)
-          .eq('status', 'active')
-        teamQueensCount = queensCount || 0
-        teamActiveQueensCount = activeQueensCount || 0
-      }
-
       // Count MY inspections (last 7 days)
       let myInspectionsCount = 0
       if (myHiveIds.length > 0) {
@@ -368,17 +351,6 @@ export default function DashboardPage() {
           .in('hive_id', othersHiveIds)
           .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
         othersInspectionsCount = inspectionsCount || 0
-      }
-
-      // Count team inspections (last 7 days)
-      let teamInspectionsCount = 0
-      if (teamHiveIds.length > 0) {
-        const { count: inspectionsCount } = await supabase
-          .from('inspections')
-          .select('id', { count: 'exact', head: true })
-          .in('hive_id', teamHiveIds)
-          .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        teamInspectionsCount = inspectionsCount || 0
       }
 
       const myShared = {
