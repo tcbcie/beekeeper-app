@@ -71,7 +71,7 @@ serve(async (req) => {
     )
 
     // Generate accept/decline URLs (these will be handled in the app)
-    const appUrl = SUPABASE_URL!.replace('.supabase.co', '')
+    const appUrl = 'https://www.hivecraic.com'
     const acceptUrl = `${appUrl}/accept-invitation?id=${invitationId}`
     const declineUrl = `${appUrl}/decline-invitation?id=${invitationId}`
 
