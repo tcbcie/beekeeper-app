@@ -288,12 +288,10 @@ export default function DashboardPage() {
       const myHives = (teamHives || []).filter(h => h.user_id === userId)
       const othersHives = (teamHives || []).filter(h => h.user_id !== userId)
 
-      const teamHiveIds = (teamHives || []).map(h => h.id)
       const myHiveIds = myHives.map(h => h.id)
       const othersHiveIds = othersHives.map(h => h.id)
       const myQueenIds = myHives.map(h => h.queen_id).filter(q => q !== null)
       const othersQueenIds = othersHives.map(h => h.queen_id).filter(q => q !== null)
-      const teamQueenIds = (teamHives || []).map(h => h.queen_id).filter(q => q !== null)
 
       console.log('🐝 My shared hives:', myHiveIds.length, 'Others hives:', othersHiveIds.length)
 
