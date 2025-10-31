@@ -1,6 +1,6 @@
 -- =====================================================
 -- Hive Craic Database Export
--- Generated on: 2025-10-28T22:00:27.086Z
+-- Generated on: 2025-10-30T18:52:39.621Z
 -- =====================================================
 
 -- This export includes:
@@ -262,8 +262,8 @@ INSERT INTO hives (id, apiary_id, hive_number, queen_id, status, notes, created_
 INSERT INTO hives (id, apiary_id, hive_number, queen_id, status, notes, created_at, user_id, queen_marked, queen_marking_color, queen_mated, queen_clipped, colony_established_date, queen_installed_date, hive_type, configuration) VALUES ('9cf84ad7-5030-4e4b-b7dc-6a15315d1f7c', '5233097b-500c-44cd-8da8-5f6b1fc7c03d', '64-DA (R1)', '728b4ed3-3c7e-4db3-8e26-b0faa8fa0450', 'active', '', '2025-10-19T14:55:17.31296+00:00', '08e38bd9-30b0-4183-92c2-fc3b7600a46a', false, '', false, false, '2025-07-13', '2025-06-30', 'Production', '{"feeder":false,"brood_boxes":1,"feeder_type":"","honey_supers":0,"queen_excluder":false,"entrance_reducer":false,"varroa_mesh_floor":"closed","right_sized_broodbox":true}');
 INSERT INTO hives (id, apiary_id, hive_number, queen_id, status, notes, created_at, user_id, queen_marked, queen_marking_color, queen_mated, queen_clipped, colony_established_date, queen_installed_date, hive_type, configuration) VALUES ('83fd855e-18f8-4e64-ba12-3df41493fe1c', '5233097b-500c-44cd-8da8-5f6b1fc7c03d', '76-DA (R2)', '2a97687a-90f3-495d-9bd5-de519f275fab', 'active', '', '2025-10-19T18:57:35.281915+00:00', '08e38bd9-30b0-4183-92c2-fc3b7600a46a', false, '', false, false, '2024-09-18', '2025-06-01', 'Production', '{"feeder":false,"brood_boxes":1,"feeder_type":"","honey_supers":0,"queen_excluder":false,"entrance_reducer":false,"varroa_mesh_floor":"closed","right_sized_broodbox":true}');
 INSERT INTO hives (id, apiary_id, hive_number, queen_id, status, notes, created_at, user_id, queen_marked, queen_marking_color, queen_mated, queen_clipped, colony_established_date, queen_installed_date, hive_type, configuration) VALUES ('24e85d09-86d7-4c7f-991b-f229d351c98f', '7e73bb19-6bbc-49a3-b160-66e41ac99c1b', '60-MN+', '2c3ed5f1-64a1-4455-8bc2-bbf992287a7f', 'active', '', '2025-10-25T17:42:06.486449+00:00', '08e38bd9-30b0-4183-92c2-fc3b7600a46a', true, 'Blue', false, false, '2025-10-25', '2025-10-25', 'Split', '{"feeder":false,"brood_boxes":3,"feeder_type":"","honey_supers":0,"queen_excluder":false,"entrance_reducer":true,"varroa_mesh_floor":"closed","right_sized_broodbox":false}');
+INSERT INTO hives (id, apiary_id, hive_number, queen_id, status, notes, created_at, user_id, queen_marked, queen_marking_color, queen_mated, queen_clipped, colony_established_date, queen_installed_date, hive_type, configuration) VALUES ('3b8820f5-65ea-4e6f-bd8b-057860d8ba52', '53e4f795-25ee-4ae9-a881-fb783406ad00', '29-DA (R1R2)', NULL, 'active', '', '2025-10-19T21:30:18.960898+00:00', '08e38bd9-30b0-4183-92c2-fc3b7600a46a', true, 'Blue', false, false, '2024-05-01', '2024-06-09', 'Production', '{"feeder":false,"brood_boxes":1,"feeder_type":"","honey_supers":0,"queen_excluder":false,"entrance_reducer":false,"varroa_mesh_floor":"closed","right_sized_broodbox":true}');
 INSERT INTO hives (id, apiary_id, hive_number, queen_id, status, notes, created_at, user_id, queen_marked, queen_marking_color, queen_mated, queen_clipped, colony_established_date, queen_installed_date, hive_type, configuration) VALUES ('ef58668a-93a0-4c3d-aafe-e114de245152', '5233097b-500c-44cd-8da8-5f6b1fc7c03d', '26-DA (R4)', 'ae42216a-2e8f-497f-a6de-fa096f0a6846', 'active', '', '2025-10-19T19:22:24.027626+00:00', '08e38bd9-30b0-4183-92c2-fc3b7600a46a', false, '', false, false, '2024-06-02', '2025-07-05', 'Production', '{"feeder":false,"brood_boxes":1,"feeder_type":"","honey_supers":0,"queen_excluder":false,"entrance_reducer":false,"bottom_board_type":"screened","varroa_mesh_floor":"closed","right_sized_broodbox":true}');
-INSERT INTO hives (id, apiary_id, hive_number, queen_id, status, notes, created_at, user_id, queen_marked, queen_marking_color, queen_mated, queen_clipped, colony_established_date, queen_installed_date, hive_type, configuration) VALUES ('3b8820f5-65ea-4e6f-bd8b-057860d8ba52', '53e4f795-25ee-4ae9-a881-fb783406ad00', '29-DA (R1R2)', 'b27cff7f-562b-4fcc-a8af-24968fe507a4', 'active', '', '2025-10-19T21:30:18.960898+00:00', '08e38bd9-30b0-4183-92c2-fc3b7600a46a', false, '', false, false, '2024-05-01', '2024-06-09', 'Production', '{"feeder":false,"brood_boxes":1,"feeder_type":"","honey_supers":0,"queen_excluder":false,"entrance_reducer":false,"varroa_mesh_floor":"closed","right_sized_broodbox":true}');
 
 
 -- Table: queens
@@ -323,7 +323,6 @@ INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, c
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('cdcb4f79-1f9e-4d71-80e4-5692fef45687', 'dd2abaa9-5131-48c8-aafb-7b62bc9b32c7', 'Medium', 2, true, '2025-10-19T11:40:50.463315+00:00', '2025-10-19T11:40:50.463315+00:00');
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('550306de-6175-490b-a869-02dee8755348', 'dd2abaa9-5131-48c8-aafb-7b62bc9b32c7', 'Good', 3, true, '2025-10-19T11:40:50.463315+00:00', '2025-10-19T11:40:50.463315+00:00');
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('e0f7de83-a278-4bd9-907d-616e70a5dc3c', 'dd2abaa9-5131-48c8-aafb-7b62bc9b32c7', 'Excellent', 4, true, '2025-10-19T11:40:50.463315+00:00', '2025-10-19T11:40:50.463315+00:00');
-INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('baf651ae-41cc-48c7-903b-5428e8167de6', '2f08ae0c-3e0f-4714-9f30-5d3ef80b7297', 'BienenWohl', 8, true, '2025-10-19T11:51:06.254327+00:00', '2025-10-19T11:51:06.254327+00:00');
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('de52c3f3-c760-4c44-8381-d6118eb7d7ed', '2f08ae0c-3e0f-4714-9f30-5d3ef80b7297', 'Oxalic Acid', 7, false, '2025-10-19T11:49:57.616523+00:00', '2025-10-19T11:51:57.025293+00:00');
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('d5e54f14-53e2-464b-ac88-df70fe88cfde', 'aee31758-a524-403d-9d64-6b1789e94cd2', 'Italian (Apis mellifera ligustica)', 1, true, '2025-10-19T15:07:47.592146+00:00', '2025-10-19T15:07:47.592146+00:00');
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('8bc5f86c-c1fc-4324-a289-7e387b69b1a7', 'aee31758-a524-403d-9d64-6b1789e94cd2', 'Carniolan (Apis mellifera carnica)', 2, true, '2025-10-19T15:07:47.592146+00:00', '2025-10-19T15:07:47.592146+00:00');
@@ -338,6 +337,7 @@ INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, c
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('3e4d0877-8e03-4004-8586-61996d3a008b', '66b34a67-7555-4efa-b841-386d08b38d53', 'Swarm Cell', 4, true, '2025-10-24T11:40:30.497021+00:00', '2025-10-24T11:40:30.497021+00:00');
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('05b7ec5a-d03d-4c94-a963-a08fbaf2ade4', '66b34a67-7555-4efa-b841-386d08b38d53', 'Supersedure', 5, true, '2025-10-24T11:40:51.352846+00:00', '2025-10-24T11:40:51.352846+00:00');
 INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('a3c2930c-5f42-4162-a9cd-0876a715c541', '66b34a67-7555-4efa-b841-386d08b38d53', 'Emergency Cell', 6, true, '2025-10-24T11:41:14.29696+00:00', '2025-10-24T11:41:14.29696+00:00');
+INSERT INTO dropdown_values (id, category_id, value, display_order, is_active, created_at, updated_at) VALUES ('baf651ae-41cc-48c7-903b-5428e8167de6', '2f08ae0c-3e0f-4714-9f30-5d3ef80b7297', 'BienenWohl', 8, true, '2025-10-19T11:51:06.254327+00:00', '2025-10-28T22:15:04.58324+00:00');
 
 
 -- Table: rearing_batches
@@ -356,15 +356,14 @@ Add team feature
 Move Support from main menu into a tab/section in "About"
 Update Varroa treatments
 Hive number in the apiary
-Filter for teams (Hives) ', 'open', 'normal', NULL, NULL, NULL, '2025-10-25T16:20:20.094844+00:00', '2025-10-28T08:53:45.404169+00:00');
+For sharing hive with users not registered. Email edge function in conjunciton with token, but should be part of any user registration.', 'open', 'normal', NULL, NULL, NULL, '2025-10-25T16:20:20.094844+00:00', '2025-10-28T22:12:49.901956+00:00');
 
 
 -- Table: user_profiles
--- Records: 3
+-- Records: 2
 
-INSERT INTO user_profiles (id, role, created_at, updated_at, first_name, last_name, mobile_number) VALUES ('195075a4-a403-425d-8146-419cd04625c5', 'User', '2025-10-21T20:53:19.349879+00:00', '2025-10-21T20:53:19.349879+00:00', NULL, NULL, NULL);
-INSERT INTO user_profiles (id, role, created_at, updated_at, first_name, last_name, mobile_number) VALUES ('85cd0893-a4e7-402e-9822-e630d7b91649', 'User', '2025-10-21T20:53:19.349879+00:00', '2025-10-21T20:53:19.349879+00:00', NULL, NULL, NULL);
-INSERT INTO user_profiles (id, role, created_at, updated_at, first_name, last_name, mobile_number) VALUES ('08e38bd9-30b0-4183-92c2-fc3b7600a46a', 'Admin', '2025-10-21T20:53:19.349879+00:00', '2025-10-28T21:44:33.393+00:00', 'Rico', 'Zmarzly', '0872486880');
+INSERT INTO user_profiles (id, role, created_at, updated_at, first_name, last_name, mobile_number) VALUES ('195075a4-a403-425d-8146-419cd04625c5', 'User', '2025-10-21T20:53:19.349879+00:00', '2025-10-28T22:09:03.747+00:00', 'Info', 'TCBC', ' 089 9885522');
+INSERT INTO user_profiles (id, role, created_at, updated_at, first_name, last_name, mobile_number) VALUES ('08e38bd9-30b0-4183-92c2-fc3b7600a46a', 'Admin', '2025-10-21T20:53:19.349879+00:00', '2025-10-29T08:59:42.436+00:00', 'Rico', 'Zmarzly', '0872486880');
 
 
 -- =====================================================
