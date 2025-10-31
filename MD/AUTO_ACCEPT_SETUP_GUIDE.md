@@ -320,7 +320,7 @@ beekeeper-app/
 2. Review the specific README for your chosen option
 3. Check Supabase docs: https://supabase.com/docs
 4. Check logs for error messages
-5. Ask in Beekeeper App issues/discussions
+5. Ask in HiveCraic issues/discussions
 
 ---
 

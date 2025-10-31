@@ -54,7 +54,7 @@ If using Resend for emails:
 3. Get your API key from the dashboard
 4. Update the `from` address in the Edge Function code (line 170):
    ```typescript
-   from: 'Beekeeper App <noreply@yourdomain.com>', // Replace with your verified domain
+   from: 'HiveCraic <noreply@yourdomain.com>', // Replace with your verified domain
    ```
 
 ### 5. Set Up Weekly Cron Job

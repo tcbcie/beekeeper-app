@@ -226,7 +226,7 @@ serve(async (req) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              from: 'Beekeeper App <noreply@yourdomain.com>', // Replace with your domain
+              from: 'HiveCraic <info@hivecraic.com>', // Verified Resend email
               to: [profile.email],
               subject: `🐝 Weekly Queen Rearing Digest - ${allEvents.length} Upcoming Event${allEvents.length > 1 ? 's' : ''}`,
               html: emailHTML,
