@@ -298,10 +298,13 @@ export default function InspectionsPage() {
       if (teamApiaryData) {
         sharedApiaries = teamApiaryData
           .filter(ta => ta.apiaries)
-          .map(ta => ({
-            id: ta.apiaries!.id,
-            name: ta.apiaries!.name
-          }))
+          .map(ta => {
+            const apiary = Array.isArray(ta.apiaries) ? ta.apiaries[0] : ta.apiaries
+            return {
+              id: apiary!.id,
+              name: apiary!.name
+            }
+          })
       }
     }
 
