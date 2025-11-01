@@ -73,7 +73,7 @@ interface Inspection {
       eircode: string | null
     }
   }
-  user_profiles?: {
+  profiles?: {
     full_name: string
     email: string
   }
@@ -212,7 +212,7 @@ export default function InspectionsPage() {
     // Build query based on ownership filter
     let query = supabase
       .from('inspections')
-      .select('*, hives(hive_number, apiaries(eircode)), user_profiles(full_name, email)')
+      .select('*, hives(hive_number, apiaries(eircode)), profiles(full_name, email)')
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
@@ -2372,9 +2372,9 @@ export default function InspectionsPage() {
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
-                  {inspection.user_profiles && (
+                  {inspection.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Recorded by: <span className="font-medium text-gray-700">{inspection.user_profiles.full_name}</span>
+                      Recorded by: <span className="font-medium text-gray-700">{inspection.profiles.full_name}</span>
                     </p>
                   )}
                   {inspection.weight && (
