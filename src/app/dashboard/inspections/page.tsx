@@ -273,13 +273,45 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    // Fetch user's own apiaries
+    const { data: ownApiaries } = await supabase
       .from('apiaries')
       .select('id, name')
       .eq('user_id', currentUserId)
       .order('name')
 
-    if (data) setApiaries(data as Apiary[])
+    // Fetch team memberships to get shared apiaries
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaries: Apiary[] = []
+    if (teamIds.length > 0) {
+      const { data: teamApiaryData } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id, apiaries(id, name)')
+        .in('team_id', teamIds)
+
+      if (teamApiaryData) {
+        sharedApiaries = teamApiaryData
+          .filter(ta => ta.apiaries)
+          .map(ta => ({
+            id: ta.apiaries!.id,
+            name: ta.apiaries!.name
+          }))
+      }
+    }
+
+    // Combine own and shared apiaries, removing duplicates
+    const allApiaries = [...(ownApiaries || []), ...sharedApiaries]
+    const uniqueApiaries = Array.from(
+      new Map(allApiaries.map(a => [a.id, a])).values()
+    ).sort((a, b) => a.name.localeCompare(b.name))
+
+    setApiaries(uniqueApiaries)
   }, [userId])
 
   useEffect(() => {
