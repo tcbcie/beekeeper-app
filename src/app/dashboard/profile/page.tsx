@@ -886,10 +886,13 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      alert(`Invitation to ${email} cancelled.`)
+      // Refresh team details FIRST to update the UI
       if (selectedTeam) {
-        fetchTeamDetails(selectedTeam.id) // Refresh team details
+        await fetchTeamDetails(selectedTeam.id)
       }
+
+      // Show success message AFTER refresh completes
+      alert(`Invitation to ${email} cancelled.`)
     } catch (error) {
       console.error('Error cancelling invitation:', error)
       alert('Failed to cancel invitation. Please try again.')
