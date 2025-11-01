@@ -25,8 +25,16 @@ BEGIN
       -- It's the product catalog, rename it
       ALTER TABLE varroa_treatments RENAME TO varroa_treatment_products;
 
+      -- Rename the primary key constraint (if it exists)
+      BEGIN
+        ALTER TABLE varroa_treatment_products RENAME CONSTRAINT varroa_treatments_pkey TO varroa_treatment_products_pkey;
+      EXCEPTION
+        WHEN undefined_object THEN
+          -- Constraint doesn't exist or already renamed, ignore
+          NULL;
+      END;
+
       -- Rename indexes
-      ALTER INDEX IF EXISTS varroa_treatments_pkey RENAME TO varroa_treatment_products_pkey;
       ALTER INDEX IF EXISTS idx_varroa_treatments_product_name RENAME TO idx_varroa_treatment_products_product_name;
       ALTER INDEX IF EXISTS idx_varroa_treatments_active_ingredients RENAME TO idx_varroa_treatment_products_active_ingredients;
     END IF;
