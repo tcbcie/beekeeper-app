@@ -535,22 +535,32 @@ export default function SettingsPage() {
 
       console.log('🗑️ Step 3: Attempting to delete auth user...')
 
-      // Step 3: Try to delete from auth.users via RPC function (if exists)
-      // This will fail gracefully if the function doesn't exist
+      // Step 3: Try to delete from auth.users via RPC function
+      let authDeleted = false
+      let authDeleteError = null
+
       try {
         const { data: rpcData, error: rpcError } = await supabase.rpc('delete_user', { user_id: targetUserId })
         console.log('🗑️ RPC delete_user response:', { data: rpcData, error: rpcError })
+
         if (rpcError) {
           console.warn('⚠️ RPC error:', rpcError)
+          authDeleteError = rpcError.message
         } else {
           console.log('✅ Auth user deleted via RPC')
+          authDeleted = true
         }
       } catch (authError) {
-        console.warn('⚠️ Could not delete auth user (RPC function may not exist):', authError)
-        console.log('ℹ️ User profile and data deleted, but auth account remains')
+        console.warn('⚠️ Could not delete auth user:', authError)
+        authDeleteError = authError instanceof Error ? authError.message : 'Unknown error'
       }
 
-      alert(`User "${userEmail}" and all associated data has been deleted successfully.\n\nNote: The authentication account may still exist in Supabase Auth. Contact a database administrator to fully remove it if needed.`)
+      // Show appropriate success message based on whether auth was deleted
+      if (authDeleted) {
+        alert(`✅ User "${userEmail}" has been completely deleted!\n\n• All user data removed\n• All associated records deleted\n• Authentication account deleted\n\nThe user has been completely removed from the system.`)
+      } else {
+        alert(`⚠️ User "${userEmail}" has been partially deleted.\n\n✅ Deleted:\n• All user data and records\n• User profile\n\n❌ Not Deleted:\n• Authentication account (still exists in Supabase Auth)\n\nReason: ${authDeleteError || 'RPC function may not exist or lack permissions'}\n\nTo complete deletion:\n1. Run SQL: sql/create_delete_auth_user_function.sql\n2. Or manually delete from Supabase Dashboard → Authentication → Users`)
+      }
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('❌ Error deleting user:', error)
