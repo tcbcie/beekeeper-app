@@ -541,7 +541,7 @@ export default function VarroaTreatmentPage() {
                     setUseManualTreatmentEntry(!useManualTreatmentEntry)
                     setFormData({...formData, treatment_type: ''})
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-md hover:bg-blue-100 hover:border-blue-400 active:bg-blue-200 transition-colors"
                 >
                   {useManualTreatmentEntry ? 'Select from list' : 'Enter manually'}
                 </button>
