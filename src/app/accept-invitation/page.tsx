@@ -52,15 +52,24 @@ function AcceptInvitationContent() {
           .from('team_invitations')
           .select('*, teams(name)')
           .eq('id', invitationId)
-          .single()
+          .maybeSingle()
 
-        if (invitationError || !invitation) {
+        if (invitationError) {
           console.error('Error fetching invitation:', invitationError)
           console.error('Invitation ID:', invitationId)
           console.error('Error code:', invitationError?.code)
           console.error('Error message:', invitationError?.message)
           setStatus('error')
-          setMessage(`Invitation not found: ${invitationError?.message || 'Unknown error'}`)
+          setMessage(`Error loading invitation: ${invitationError?.message || 'Unknown error'}`)
+          setLoading(false)
+          return
+        }
+
+        if (!invitation) {
+          console.error('Invitation not found in database')
+          console.error('Invitation ID:', invitationId)
+          setStatus('error')
+          setMessage('This invitation does not exist or has been removed. Please contact the person who sent you the invitation.')
           setLoading(false)
           return
         }
