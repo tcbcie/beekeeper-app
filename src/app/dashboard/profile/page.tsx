@@ -886,7 +886,10 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      // Refresh team details FIRST to update the UI
+      // Immediately update local state to remove the invitation (optimistic update)
+      setTeamInvitations(prev => prev.filter(inv => inv.id !== invitationId))
+
+      // Also refresh team details to ensure consistency
       if (selectedTeam) {
         await fetchTeamDetails(selectedTeam.id)
       }
@@ -896,6 +899,10 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error cancelling invitation:', error)
       alert('Failed to cancel invitation. Please try again.')
+      // Refresh to restore correct state if delete failed
+      if (selectedTeam) {
+        fetchTeamDetails(selectedTeam.id)
+      }
     }
   }
 
