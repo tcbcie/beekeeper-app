@@ -1,5 +1,5 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
@@ -14,6 +14,23 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect') || '/dashboard'
 
+  // Check for pending redirect after email confirmation
+  useEffect(() => {
+    const checkPendingRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        const pendingRedirect = localStorage.getItem('pendingRedirect')
+        if (pendingRedirect) {
+          localStorage.removeItem('pendingRedirect')
+          router.push(pendingRedirect)
+        } else if (!searchParams.get('redirect')) {
+          router.push('/dashboard')
+        }
+      }
+    }
+    checkPendingRedirect()
+  }, [router, searchParams])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -25,7 +42,8 @@ function LoginForm() {
           email,
           password,
           options: {
-            data: { full_name: email.split('@')[0] }
+            data: { full_name: email.split('@')[0] },
+            emailRedirectTo: `${window.location.origin}${redirectUrl}`
           }
         })
         if (error) throw error
@@ -36,7 +54,11 @@ function LoginForm() {
         if (session) {
           router.push(redirectUrl)
         } else {
-          setMessage('Account created! Please check your email to confirm, then return to the invitation link.')
+          // Store redirect URL in localStorage so we can use it after email confirmation
+          if (redirectUrl !== '/dashboard') {
+            localStorage.setItem('pendingRedirect', redirectUrl)
+          }
+          setMessage('Account created! Please check your email to confirm your account. After confirming, you will be automatically redirected to complete your team invitation.')
           setIsSignUp(false)
         }
       } else {
