@@ -24,7 +24,9 @@ CREATE POLICY "Users can view invitations sent to them"
   ON team_invitations
   FOR SELECT
   USING (
-    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    email = (SELECT email FROM user_profiles WHERE id = auth.uid())
+    OR
+    email = auth.email()
   );
 
 -- Policy 3: Admins can view all invitations
@@ -65,7 +67,9 @@ CREATE POLICY "Users can update invitations sent to them"
   ON team_invitations
   FOR UPDATE
   USING (
-    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    email = (SELECT email FROM user_profiles WHERE id = auth.uid())
+    OR
+    email = auth.email()
   );
 
 -- Policy 7: Users can delete invitations they sent
