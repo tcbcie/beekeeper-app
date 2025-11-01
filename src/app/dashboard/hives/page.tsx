@@ -489,18 +489,23 @@ export default function HivesPage() {
 
         if (error) throw error
       } else {
+        // Insert without user_id - database trigger will set it automatically
         const { error } = await supabase
           .from('hives')
-          .insert([{ ...dataToSubmit, user_id: userId }])
+          .insert([dataToSubmit])
 
-        if (error) throw error
+        if (error) {
+          console.error('Insert error:', error)
+          throw error
+        }
       }
 
       fetchHives()
       resetForm()
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message)
+        console.error('Submit error:', error)
+        alert(`Failed to save hive: ${error.message}`)
       }
     }
   }
