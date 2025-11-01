@@ -597,6 +597,24 @@ export default function ProfilePage() {
       return
     }
 
+    // Check if at least one apiary is explicitly shared with this specific team
+    // This ensures the team has apiaries in scope before inviting members
+    const { data: sharedApiaries, error: sharedError } = await supabase
+      .from('team_apiaries')
+      .select('id, apiary_id, apiaries(eircode)')
+      .eq('team_id', selectedTeam.id)
+
+    if (sharedError) {
+      console.error('Error checking shared apiaries:', sharedError)
+      alert('Failed to verify team apiaries. Please try again.')
+      return
+    }
+
+    if (!sharedApiaries || sharedApiaries.length === 0) {
+      alert('Before inviting team members, you must share at least one apiary with this team.\n\nTeam members can only access apiaries that are explicitly shared with the team.\n\nGo to the Apiaries page and use the "Share with Team" option to share an apiary first.')
+      return
+    }
+
     setSendingInvite(true)
     try {
       // Check if user already exists using RPC function
