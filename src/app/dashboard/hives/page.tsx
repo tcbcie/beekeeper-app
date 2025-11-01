@@ -415,6 +415,36 @@ export default function HivesPage() {
         queen_id: formData.queen_id || null,
       }
 
+      // Validate queen assignment: check if queen is already assigned to another active hive
+      if (dataToSubmit.queen_id) {
+        const { data: existingHives, error: checkError } = await supabase
+          .from('hives')
+          .select('id, hive_number, apiaries(name)')
+          .eq('queen_id', dataToSubmit.queen_id)
+          .eq('status', 'active')
+          .eq('user_id', userId)
+
+        if (checkError) {
+          console.error('Error checking queen assignment:', checkError)
+          throw new Error('Failed to validate queen assignment')
+        }
+
+        // Filter out the current hive being edited (if editing)
+        const otherHives = existingHives?.filter(h => h.id !== editingHive?.id) || []
+
+        if (otherHives.length > 0) {
+          const hive = otherHives[0]
+          const apiaryData = hive.apiaries as { name: string } | { name: string }[] | null
+          const apiaryName = Array.isArray(apiaryData) ? apiaryData[0]?.name : apiaryData?.name
+          const apiaryText = apiaryName || 'Unknown apiary'
+          const selectedQueen = queens.find(q => q.id === dataToSubmit.queen_id)
+          const queenName = selectedQueen?.queen_number || 'this queen'
+
+          alert(`Cannot assign queen: ${queenName} is already assigned to active hive "${hive.hive_number}" at ${apiaryText}.\n\nA queen can only be in one active hive at a time.`)
+          return
+        }
+      }
+
       if (editingHive) {
         const { error } = await supabase
           .from('hives')
