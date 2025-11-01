@@ -72,15 +72,7 @@ function AcceptInvitationContent() {
           return
         }
 
-        // Accept the invitation
-        const { error: updateError } = await supabase
-          .from('team_invitations')
-          .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-          .eq('id', invitationId)
-
-        if (updateError) throw updateError
-
-        // Add user to team
+        // Add user to team FIRST (before updating invitation status)
         const { error: memberError } = await supabase
           .from('team_members')
           .insert({
@@ -98,6 +90,17 @@ function AcceptInvitationContent() {
             throw memberError
           }
         } else {
+          // Only update invitation status AFTER successfully adding to team
+          const { error: updateError } = await supabase
+            .from('team_invitations')
+            .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+            .eq('id', invitationId)
+
+          if (updateError) {
+            console.error('Warning: Failed to update invitation status:', updateError)
+            // Don't throw - user is already added to team, this is just audit trail
+          }
+
           setStatus('success')
           setMessage(`Successfully joined ${invitation.teams?.name}!`)
         }
