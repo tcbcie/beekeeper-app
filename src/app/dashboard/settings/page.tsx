@@ -404,12 +404,25 @@ export default function SettingsPage() {
       }
       console.log('✅ Varroa checks deleted')
 
-      // Delete varroa treatments
+      // Delete varroa treatments (through hives relationship)
       console.log('🗑️ Deleting varroa treatments...')
-      const { error: varroaTreatError } = await supabase.from('varroa_treatments').delete().eq('user_id', targetUserId)
-      if (varroaTreatError) {
-        console.error('❌ Failed to delete varroa treatments:', varroaTreatError)
-        throw new Error(`Failed to delete varroa treatments: ${varroaTreatError.message}`)
+      // First get all user's hive IDs
+      const { data: userHives } = await supabase
+        .from('hives')
+        .select('id')
+        .eq('user_id', targetUserId)
+
+      if (userHives && userHives.length > 0) {
+        const hiveIds = userHives.map(h => h.id)
+        const { error: varroaTreatError } = await supabase
+          .from('varroa_treatments')
+          .delete()
+          .in('hive_id', hiveIds)
+
+        if (varroaTreatError) {
+          console.error('❌ Failed to delete varroa treatments:', varroaTreatError)
+          throw new Error(`Failed to delete varroa treatments: ${varroaTreatError.message}`)
+        }
       }
       console.log('✅ Varroa treatments deleted')
 
