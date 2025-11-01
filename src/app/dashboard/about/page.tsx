@@ -338,7 +338,44 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.10</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.11</span>
+                November 1, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Team Invitation History:</strong> Team owners can now view complete invitation history including accepted and declined invitations with timestamps</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Declined Invitation Tracking:</strong> Added declined_at column to team_invitations table to properly track when invitations are declined</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Reinvite Declined Users:</strong> Fixed issue where reinviting users who previously declined would show incorrect error message</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Invitation Display:</strong> Color-coded invitation cards (Green for accepted, Red for declined, Orange for pending) with formatted timestamps</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Auto-cleanup Old Invitations:</strong> Declined invitations are automatically removed when sending new invitations to the same email</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Fixed 406 Not Acceptable error when declining team invitations with schema cache reload</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Improved invitation validation and error messages for better user experience</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded font-semibold">v1.0.10</span>
                 October 31, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
