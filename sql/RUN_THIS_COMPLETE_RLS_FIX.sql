@@ -127,6 +127,20 @@ CREATE POLICY "Admins can view all team members"
 -- PART 3: FIX TEAMS RLS POLICIES
 -- =============================================================================
 
+-- First, create a security definer function to check team membership
+-- This bypasses RLS to prevent infinite recursion
+CREATE OR REPLACE FUNCTION is_team_member(team_uuid uuid, user_uuid uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM team_members
+    WHERE team_id = team_uuid AND user_id = user_uuid
+  );
+$$;
+
 -- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their own teams" ON teams;
 DROP POLICY IF EXISTS "Users can view teams they are members of" ON teams;
@@ -139,14 +153,12 @@ DROP POLICY IF EXISTS "Admins can view all teams" ON teams;
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 
 -- Create new policies
-CREATE POLICY "Users can view their own teams"
-  ON teams FOR SELECT
-  USING (owner_id = auth.uid());
-
-CREATE POLICY "Users can view teams they are members of"
+-- Use security definer function to avoid recursion with team_members table
+CREATE POLICY "Users can view their teams"
   ON teams FOR SELECT
   USING (
-    EXISTS (SELECT 1 FROM team_members WHERE team_id = teams.id AND user_id = auth.uid())
+    owner_id = auth.uid()
+    OR is_team_member(id, auth.uid())
   );
 
 CREATE POLICY "Users can create teams"
