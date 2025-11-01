@@ -213,7 +213,7 @@ export default function AboutPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Info size={32} className="text-gray-700" />
-        <h1 className="text-3xl font-bold text-gray-900">About Hive Craic</h1>
+        <h1 className="text-3xl font-bold text-gray-900">About HiveCraic</h1>
       </div>
 
       {/* Tab Navigation */}
@@ -244,21 +244,22 @@ export default function AboutPage() {
       {/* About Section */}
       {activeSection === 'about' && (
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">About Hive Craic</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">About HiveCraic</h2>
 
           <div className="prose max-w-none">
             <p className="text-gray-700 leading-relaxed">
-              Hive Craic is a comprehensive beekeeping management application designed to help beekeepers
+              HiveCraic is a comprehensive beekeeping management application designed to help beekeepers
               of all experience levels track and manage their apiaries, hives, queens, and beekeeping activities.
             </p>
 
             <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-3">Features</h3>
             <ul className="list-disc list-inside text-gray-700 space-y-2">
               <li>Complete apiary and hive management</li>
+              <li>Apiaries Team Management</li>
               <li>Queen tracking with age calculation and lineage records</li>
               <li>Detailed inspection logging with weather data</li>
               <li>Varroa mite monitoring and treatment tracking</li>
-              <li>QueenCraft (Queen rearing batch management)</li>
+              <li>Queen rearing batch management</li>
               <li>Harvest and feeding records</li>
               <li>Multi-user support with role-based access control</li>
               <li>Data export capabilities</li>
