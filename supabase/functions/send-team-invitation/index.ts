@@ -124,11 +124,17 @@ serve(async (req) => {
     </div>
 
     <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 6px; margin: 25px 0;">
-      <p style="margin: 0; font-size: 14px; color: #92400e;">
-        <strong>⚠️ Note:</strong> If you don't have a HiveCraic account yet, you'll need to
-        <a href="${appUrl}/signup" style="color: #9333ea; text-decoration: none; font-weight: 600;">create one</a>
-        first. Use this email address (${inviteeEmail}) when signing up, and your invitation will be
-        automatically accepted.
+      <p style="margin: 0 0 10px 0; font-size: 14px; color: #92400e;">
+        <strong>⚠️ New to HiveCraic?</strong>
+      </p>
+      <p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.6;">
+        If you don't have a HiveCraic account yet, clicking "Accept Invitation" will take you to the login page
+        where you can <strong>sign up for a new account</strong>. After creating your account, you'll be automatically
+        redirected back to accept the team invitation.
+      </p>
+      <p style="margin: 10px 0 0 0; font-size: 14px; color: #92400e;">
+        <strong>Important:</strong> Please use this email address (<strong>${inviteeEmail}</strong>) when signing up
+        to ensure your invitation is processed correctly.
       </p>
     </div>
 
@@ -170,8 +176,10 @@ By joining this team, you'll be able to collaborate on beekeeping activities, sh
 To accept this invitation, visit: ${acceptUrl}
 To decline this invitation, visit: ${declineUrl}
 
-Note: If you don't have a HiveCraic account yet, you'll need to create one first at ${appUrl}/signup.
-Use this email address (${inviteeEmail}) when signing up, and your invitation will be automatically accepted.
+⚠️ NEW TO HIVECRAIC?
+If you don't have a HiveCraic account yet, clicking "Accept Invitation" will take you to the login page where you can sign up for a new account. After creating your account, you'll be automatically redirected back to accept the team invitation.
+
+IMPORTANT: Please use this email address (${inviteeEmail}) when signing up to ensure your invitation is processed correctly.
 
 This invitation will expire on ${formattedExpiry}.
 
