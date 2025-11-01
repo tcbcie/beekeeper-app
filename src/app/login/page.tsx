@@ -113,9 +113,9 @@ export default function LoginPage() {
           </div>
         </form>
         <div className="flex items-center justify-center gap-3 text-xs text-gray-500">
-          <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">v1.0.10</span>
+          <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">v1.0.11</span>
           <span>•</span>
-          <span>Oct 31, 2025</span>
+          <span>Nov 1, 2025</span>
         </div>
       </div>
     </div>
