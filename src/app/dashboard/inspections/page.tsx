@@ -259,19 +259,54 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data, error } = await supabase
+    // Fetch user's own hives
+    const { data: ownHives, error: ownError } = await supabase
       .from('hives')
       .select('*')
       .eq('user_id', currentUserId)
       .eq('status', 'active')
       .order('hive_number')
 
-    if (error) {
-      console.error('Error fetching hives for inspections:', error)
+    if (ownError) {
+      console.error('Error fetching own hives:', ownError)
     }
-    if (data) {
-      setHives(data as Hive[])
+
+    // Fetch team memberships to get shared hives
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedHives: Hive[] = []
+    if (teamIds.length > 0) {
+      const { data: teamApiaryData } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      const sharedApiaryIds = teamApiaryData?.map(ta => ta.apiary_id) || []
+
+      if (sharedApiaryIds.length > 0) {
+        const { data: sharedHivesData } = await supabase
+          .from('hives')
+          .select('*')
+          .in('apiary_id', sharedApiaryIds)
+          .eq('status', 'active')
+          .order('hive_number')
+
+        sharedHives = sharedHivesData || []
+      }
     }
+
+    // Combine own and shared hives, removing duplicates
+    const allHives = [...(ownHives || []), ...sharedHives]
+    const uniqueHives = Array.from(
+      new Map(allHives.map(h => [h.id, h])).values()
+    ).sort((a, b) => a.hive_number.localeCompare(b.hive_number))
+
+    setHives(uniqueHives as Hive[])
   }, [userId])
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {

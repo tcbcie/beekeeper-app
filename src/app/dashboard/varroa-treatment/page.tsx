@@ -102,26 +102,61 @@ export default function VarroaTreatmentPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    // Fetch user's own hives
+    const { data: ownHives } = await supabase
       .from('hives')
       .select('id, hive_number, apiaries(eircode)')
       .eq('status', 'active')
       .eq('user_id', currentUserId)
       .order('hive_number')
 
-    if (data) {
-      // Transform the data to match Hive interface
-      const hivesData = (data as HiveQueryResult[]).map((hive) => ({
-        id: hive.id,
-        hive_number: hive.hive_number,
-        apiaries: hive.apiaries && !Array.isArray(hive.apiaries)
-          ? hive.apiaries
-          : (Array.isArray(hive.apiaries) && hive.apiaries[0])
-            ? hive.apiaries[0]
-            : undefined
-      }))
-      setHives(hivesData)
+    // Fetch team memberships to get shared hives
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedHives: HiveQueryResult[] = []
+    if (teamIds.length > 0) {
+      const { data: teamApiaryData } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      const sharedApiaryIds = teamApiaryData?.map(ta => ta.apiary_id) || []
+
+      if (sharedApiaryIds.length > 0) {
+        const { data: sharedHivesData } = await supabase
+          .from('hives')
+          .select('id, hive_number, apiaries(eircode)')
+          .in('apiary_id', sharedApiaryIds)
+          .eq('status', 'active')
+          .order('hive_number')
+
+        sharedHives = sharedHivesData as HiveQueryResult[] || []
+      }
     }
+
+    // Combine own and shared hives
+    const allHives = [...(ownHives as HiveQueryResult[] || []), ...sharedHives]
+    const uniqueHives = Array.from(
+      new Map(allHives.map(h => [h.id, h])).values()
+    )
+
+    // Transform the data to match Hive interface
+    const hivesData = uniqueHives.map((hive) => ({
+      id: hive.id,
+      hive_number: hive.hive_number,
+      apiaries: hive.apiaries && !Array.isArray(hive.apiaries)
+        ? hive.apiaries
+        : (Array.isArray(hive.apiaries) && hive.apiaries[0])
+          ? hive.apiaries[0]
+          : undefined
+    }))
+
+    setHives(hivesData)
   }, [userId])
 
   useEffect(() => {
