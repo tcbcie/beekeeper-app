@@ -55,8 +55,12 @@ function AcceptInvitationContent() {
           .single()
 
         if (invitationError || !invitation) {
+          console.error('Error fetching invitation:', invitationError)
+          console.error('Invitation ID:', invitationId)
+          console.error('Error code:', invitationError?.code)
+          console.error('Error message:', invitationError?.message)
           setStatus('error')
-          setMessage('Invitation not found')
+          setMessage(`Invitation not found: ${invitationError?.message || 'Unknown error'}`)
           setLoading(false)
           return
         }
