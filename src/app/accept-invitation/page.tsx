@@ -53,31 +53,42 @@ function AcceptInvitationContent() {
         }
 
         // Fetch invitation details
+        console.log('🔍 Fetching invitation with ID:', invitationId)
+        console.log('👤 Current user ID:', userId)
+
         const { data: invitation, error: invitationError } = await supabase
           .from('team_invitations')
           .select('*, teams(name)')
           .eq('id', invitationId)
           .maybeSingle()
 
+        console.log('📦 Invitation data:', invitation)
+        console.log('❌ Invitation error:', invitationError)
+
         if (invitationError) {
           console.error('Error fetching invitation:', invitationError)
           console.error('Invitation ID:', invitationId)
           console.error('Error code:', invitationError?.code)
           console.error('Error message:', invitationError?.message)
+          console.error('Error details:', invitationError?.details)
+          console.error('Error hint:', invitationError?.hint)
           setStatus('error')
-          setMessage(`Error loading invitation: ${invitationError?.message || 'Unknown error'}`)
+          setMessage(`Error loading invitation: ${invitationError?.message || 'Unknown error'}. Please check the console for details.`)
           setLoading(false)
           return
         }
 
         if (!invitation) {
-          console.error('Invitation not found in database')
+          console.error('❌ Invitation not found in database')
           console.error('Invitation ID:', invitationId)
+          console.error('This could be due to RLS policies or the invitation was deleted')
           setStatus('error')
           setMessage('This invitation does not exist or has been removed. Please contact the person who sent you the invitation.')
           setLoading(false)
           return
         }
+
+        console.log('✅ Invitation found:', invitation.id, 'Status:', invitation.status)
 
         // Check if invitation is already accepted
         if (invitation.status === 'accepted') {
