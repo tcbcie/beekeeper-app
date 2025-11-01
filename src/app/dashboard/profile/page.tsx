@@ -628,19 +628,35 @@ export default function ProfilePage() {
         }
       }
 
-      // Check if invitation already exists
+      // Check if invitation already exists (pending or declined)
       const { data: existingInvite } = await supabase
         .from('team_invitations')
-        .select('id')
+        .select('id, status')
         .eq('team_id', selectedTeam.id)
         .eq('email', inviteEmail.toLowerCase())
-        .eq('status', 'pending')
+        .in('status', ['pending', 'declined'])
         .maybeSingle()
 
       if (existingInvite) {
-        alert('An invitation has already been sent to this email.')
-        setSendingInvite(false)
-        return
+        if (existingInvite.status === 'pending') {
+          alert('An invitation has already been sent to this email.')
+          setSendingInvite(false)
+          return
+        } else if (existingInvite.status === 'declined') {
+          // Delete the old declined invitation so we can send a new one
+          const { error: deleteError } = await supabase
+            .from('team_invitations')
+            .delete()
+            .eq('id', existingInvite.id)
+
+          if (deleteError) {
+            console.error('Error deleting declined invitation:', deleteError)
+            alert('Failed to resend invitation. Please try again.')
+            setSendingInvite(false)
+            return
+          }
+          // Continue to send new invitation below
+        }
       }
 
       // If user exists, auto-accept and add to team_members
