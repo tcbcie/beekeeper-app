@@ -169,6 +169,7 @@ $$;
 -- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their own teams" ON teams;
 DROP POLICY IF EXISTS "Users can view teams they are members of" ON teams;
+DROP POLICY IF EXISTS "Users can view their teams" ON teams;
 DROP POLICY IF EXISTS "Users can create teams" ON teams;
 DROP POLICY IF EXISTS "Team owners can update their teams" ON teams;
 DROP POLICY IF EXISTS "Team owners can delete their teams" ON teams;
