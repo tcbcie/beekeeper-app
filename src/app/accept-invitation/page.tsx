@@ -12,8 +12,23 @@ function AcceptInvitationContent() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<'success' | 'error' | 'expired' | 'already-accepted'>('success')
   const [message, setMessage] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [checkedAuth, setCheckedAuth] = useState(false)
 
+  // First useEffect: Check authentication status
   useEffect(() => {
+    const checkAuth = async () => {
+      const id = await getCurrentUserId()
+      setUserId(id)
+      setCheckedAuth(true)
+    }
+    checkAuth()
+  }, [])
+
+  // Second useEffect: Handle invitation acceptance once we know auth status
+  useEffect(() => {
+    if (!checkedAuth) return // Wait until we've checked authentication
+
     const acceptInvitation = async () => {
       const invitationId = searchParams.get('id')
 
@@ -25,10 +40,9 @@ function AcceptInvitationContent() {
       }
 
       try {
-        // Get current user
-        const userId = await getCurrentUserId()
+        // If no user, redirect to login
         if (!userId) {
-          // Redirect to login with return URL
+          setLoading(false)
           router.push(`/login?redirect=/accept-invitation?id=${invitationId}`)
           return
         }
@@ -121,7 +135,7 @@ function AcceptInvitationContent() {
     }
 
     acceptInvitation()
-  }, [searchParams, router])
+  }, [checkedAuth, userId, searchParams, router])
 
   if (loading) {
     return <LoadingSpinner text="Processing invitation..." />
