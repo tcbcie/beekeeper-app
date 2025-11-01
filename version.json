@@ -1,0 +1,39 @@
+{
+  "version": "1.0.11",
+  "date": "November 1, 2025",
+  "changelog": {
+    "1.0.11": {
+      "date": "November 1, 2025",
+      "features": [
+        {
+          "title": "Team Invitation History",
+          "description": "Team owners can now view complete invitation history including accepted and declined invitations with timestamps"
+        },
+        {
+          "title": "Declined Invitation Tracking",
+          "description": "Added declined_at column to team_invitations table to properly track when invitations are declined"
+        },
+        {
+          "title": "Reinvite Declined Users",
+          "description": "Fixed issue where reinviting users who previously declined would show incorrect error message"
+        },
+        {
+          "title": "Invitation Display",
+          "description": "Color-coded invitation cards (Green for accepted, Red for declined, Orange for pending) with formatted timestamps"
+        },
+        {
+          "title": "Auto-cleanup Old Invitations",
+          "description": "Declined invitations are automatically removed when sending new invitations to the same email"
+        },
+        {
+          "title": "",
+          "description": "Fixed 406 Not Acceptable error when declining team invitations with schema cache reload"
+        },
+        {
+          "title": "",
+          "description": "Improved invitation validation and error messages for better user experience"
+        }
+      ]
+    }
+  }
+}
