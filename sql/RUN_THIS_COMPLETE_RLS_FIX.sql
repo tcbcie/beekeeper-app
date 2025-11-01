@@ -82,35 +82,60 @@ DROP POLICY IF EXISTS "Admins can view all team members" ON team_members;
 -- Enable RLS
 ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
 
+-- Create a security definer function to check team ownership
+-- This bypasses RLS to prevent recursion issues
+CREATE OR REPLACE FUNCTION is_team_owner(team_uuid uuid, user_uuid uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM teams
+    WHERE id = team_uuid AND owner_id = user_uuid
+  );
+$$;
+
 -- Create new policies
--- Simplified to avoid infinite recursion with teams table policies
+-- Use security definer functions to avoid infinite recursion with teams table
 CREATE POLICY "Users can view team members of their teams"
   ON team_members FOR SELECT
   USING (
     user_id = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM teams
-      WHERE id = team_members.team_id AND owner_id = auth.uid()
-    )
+    OR is_team_owner(team_id, auth.uid())
   );
 
 CREATE POLICY "Team owners can manage members"
   ON team_members FOR ALL
   USING (
-    EXISTS (SELECT 1 FROM teams WHERE id = team_id AND owner_id = auth.uid())
+    is_team_owner(team_id, auth.uid())
   );
+
+-- Create a security definer function to check valid invitation
+-- This bypasses RLS and simplifies the policy
+CREATE OR REPLACE FUNCTION has_valid_invitation(team_uuid uuid, user_uuid uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM team_invitations
+    WHERE team_id = team_uuid
+    AND (
+      email = (SELECT email FROM user_profiles WHERE id = user_uuid)
+      OR email = (SELECT email FROM auth.users WHERE id = user_uuid)
+    )
+    AND status = 'pending'
+    AND expires_at > NOW()
+  );
+$$;
 
 CREATE POLICY "Users can add themselves via invitation"
   ON team_members FOR INSERT
   WITH CHECK (
     user_id = auth.uid()
-    AND EXISTS (
-      SELECT 1 FROM team_invitations
-      WHERE team_id = team_members.team_id
-      AND (email = (SELECT email FROM user_profiles WHERE id = auth.uid()) OR email = auth.email())
-      AND status = 'pending'
-      AND expires_at > NOW()
-    )
+    AND has_valid_invitation(team_id, auth.uid())
   );
 
 CREATE POLICY "Users can remove themselves from teams"
