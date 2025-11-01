@@ -1,16 +1,18 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get('redirect') || '/dashboard'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,15 +29,23 @@ export default function LoginPage() {
           }
         })
         if (error) throw error
-        setMessage('Account created! Please check your email to confirm.')
-        setIsSignUp(false)
+
+        // If email confirmation is disabled, redirect immediately
+        // Otherwise show message to check email
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          router.push(redirectUrl)
+        } else {
+          setMessage('Account created! Please check your email to confirm, then return to the invitation link.')
+          setIsSignUp(false)
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         if (error) throw error
-        router.push('/dashboard')
+        router.push(redirectUrl)
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -119,5 +129,20 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-amber-100">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-gray-900">🐝 Hive Craic</div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
