@@ -454,14 +454,16 @@ export default function DashboardPage() {
         return
       }
 
-      // Get team members for these teams
+      // Get team members for these teams (including current user as owner)
       const { data: teamMembers, error: membersError } = await supabase
         .from('team_members')
         .select('user_id, team_id, role, teams(name), user_profiles(full_name, email)')
         .in('team_id', teamIds)
-        .neq('user_id', userId) // Exclude current user
 
       if (membersError) throw membersError
+
+      console.log('🔍 Debug - Team IDs:', teamIds)
+      console.log('🔍 Debug - Raw team members data:', teamMembers)
 
       // Transform the data to match our interface (Supabase returns arrays for relations)
       const transformedMembers: TeamMember[] = (teamMembers || []).map((member) => ({
@@ -471,6 +473,8 @@ export default function DashboardPage() {
         teams: Array.isArray(member.teams) ? member.teams[0] : member.teams,
         user_profiles: Array.isArray(member.user_profiles) ? member.user_profiles[0] : member.user_profiles,
       }))
+
+      console.log('🔍 Debug - Transformed members:', transformedMembers)
 
       setMySharedTeamMembers(transformedMembers)
     } catch (error) {
