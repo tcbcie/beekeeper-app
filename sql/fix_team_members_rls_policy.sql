@@ -12,6 +12,7 @@ DROP POLICY IF EXISTS "Admins can view all team members" ON team_members;
 ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
 
 -- Policy 1: Users can view team members of teams they belong to
+-- Simplified to avoid infinite recursion with teams table policies
 CREATE POLICY "Users can view team members of their teams"
   ON team_members
   FOR SELECT
@@ -19,14 +20,8 @@ CREATE POLICY "Users can view team members of their teams"
     user_id = auth.uid()
     OR
     EXISTS (
-      SELECT 1 FROM team_members tm
-      WHERE tm.team_id = team_members.team_id
-      AND tm.user_id = auth.uid()
-    )
-    OR
-    EXISTS (
       SELECT 1 FROM teams
-      WHERE id = team_id AND owner_id = auth.uid()
+      WHERE id = team_members.team_id AND owner_id = auth.uid()
     )
   );
 
