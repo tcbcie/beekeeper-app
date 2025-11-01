@@ -72,6 +72,7 @@ export default function VarroaTreatmentPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [showIPMTips, setShowIPMTips] = useState(false)
+  const [useManualTreatmentEntry, setUseManualTreatmentEntry] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     treatment_date: new Date().toISOString().split('T')[0],
@@ -373,6 +374,7 @@ export default function VarroaTreatmentPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingTreatment(null)
+    setUseManualTreatmentEntry(false)
     setFormData({
       hive_id: '',
       treatment_date: new Date().toISOString().split('T')[0],
@@ -496,88 +498,112 @@ export default function VarroaTreatmentPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Type *</label>
-              <select
-                value={formData.treatment_type}
-                onChange={(e) => setFormData({...formData, treatment_type: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-              >
-                <option value="">── Select Treatment ──</option>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">Treatment Type *</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseManualTreatmentEntry(!useManualTreatmentEntry)
+                    setFormData({...formData, treatment_type: ''})
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  {useManualTreatmentEntry ? 'Select from list' : 'Enter manually'}
+                </button>
+              </div>
 
-                {/* Group by active ingredient type */}
-                {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('thymol')).length > 0 && (
-                  <>
-                    <option disabled>─── Thymol Based ───</option>
-                    {treatmentProducts
-                      .filter(p => p.active_ingredients.toLowerCase().includes('thymol'))
-                      .map((product) => (
-                        <option
-                          key={product.id}
-                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
-                        >
-                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
-                        </option>
-                      ))}
-                  </>
-                )}
+              {useManualTreatmentEntry ? (
+                <input
+                  type="text"
+                  value={formData.treatment_type}
+                  onChange={(e) => setFormData({...formData, treatment_type: e.target.value})}
+                  placeholder="e.g., Custom Treatment Name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+              ) : (
+                <select
+                  value={formData.treatment_type}
+                  onChange={(e) => setFormData({...formData, treatment_type: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                >
+                  <option value="">── Select Treatment ──</option>
 
-                {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('formic acid')).length > 0 && (
-                  <>
-                    <option disabled>─── Formic Acid ───</option>
-                    {treatmentProducts
-                      .filter(p => p.active_ingredients.toLowerCase().includes('formic acid') && !p.active_ingredients.toLowerCase().includes('oxalic'))
-                      .map((product) => (
-                        <option
-                          key={product.id}
-                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
-                        >
-                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
-                        </option>
-                      ))}
-                  </>
-                )}
+                  {/* Group by active ingredient type */}
+                  {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('thymol')).length > 0 && (
+                    <>
+                      <option disabled>─── Thymol Based ───</option>
+                      {treatmentProducts
+                        .filter(p => p.active_ingredients.toLowerCase().includes('thymol'))
+                        .map((product) => (
+                          <option
+                            key={product.id}
+                            value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                          >
+                            &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                          </option>
+                        ))}
+                    </>
+                  )}
 
-                {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('oxalic acid')).length > 0 && (
-                  <>
-                    <option disabled>─── Oxalic Acid ───</option>
-                    {treatmentProducts
-                      .filter(p => p.active_ingredients.toLowerCase().includes('oxalic acid'))
-                      .map((product) => (
-                        <option
-                          key={product.id}
-                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
-                        >
-                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
-                        </option>
-                      ))}
-                  </>
-                )}
+                  {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('formic acid')).length > 0 && (
+                    <>
+                      <option disabled>─── Formic Acid ───</option>
+                      {treatmentProducts
+                        .filter(p => p.active_ingredients.toLowerCase().includes('formic acid') && !p.active_ingredients.toLowerCase().includes('oxalic'))
+                        .map((product) => (
+                          <option
+                            key={product.id}
+                            value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                          >
+                            &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                          </option>
+                        ))}
+                    </>
+                  )}
 
-                {treatmentProducts.filter(p =>
-                  !p.active_ingredients.toLowerCase().includes('thymol') &&
-                  !p.active_ingredients.toLowerCase().includes('formic acid') &&
-                  !p.active_ingredients.toLowerCase().includes('oxalic acid')
-                ).length > 0 && (
-                  <>
-                    <option disabled>─── Other Treatments ───</option>
-                    {treatmentProducts
-                      .filter(p =>
-                        !p.active_ingredients.toLowerCase().includes('thymol') &&
-                        !p.active_ingredients.toLowerCase().includes('formic acid') &&
-                        !p.active_ingredients.toLowerCase().includes('oxalic acid')
-                      )
-                      .map((product) => (
-                        <option
-                          key={product.id}
-                          value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
-                        >
-                          &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
-                        </option>
-                      ))}
-                  </>
-                )}
-              </select>
+                  {treatmentProducts.filter(p => p.active_ingredients.toLowerCase().includes('oxalic acid')).length > 0 && (
+                    <>
+                      <option disabled>─── Oxalic Acid ───</option>
+                      {treatmentProducts
+                        .filter(p => p.active_ingredients.toLowerCase().includes('oxalic acid'))
+                        .map((product) => (
+                          <option
+                            key={product.id}
+                            value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                          >
+                            &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                          </option>
+                        ))}
+                    </>
+                  )}
+
+                  {treatmentProducts.filter(p =>
+                    !p.active_ingredients.toLowerCase().includes('thymol') &&
+                    !p.active_ingredients.toLowerCase().includes('formic acid') &&
+                    !p.active_ingredients.toLowerCase().includes('oxalic acid')
+                  ).length > 0 && (
+                    <>
+                      <option disabled>─── Other Treatments ───</option>
+                      {treatmentProducts
+                        .filter(p =>
+                          !p.active_ingredients.toLowerCase().includes('thymol') &&
+                          !p.active_ingredients.toLowerCase().includes('formic acid') &&
+                          !p.active_ingredients.toLowerCase().includes('oxalic acid')
+                        )
+                        .map((product) => (
+                          <option
+                            key={product.id}
+                            value={`${product.product_name} - ${product.active_ingredients} - ${product.application_method}`}
+                          >
+                            &nbsp;&nbsp;{product.product_name} ({product.active_ingredients})
+                          </option>
+                        ))}
+                    </>
+                  )}
+                </select>
+              )}
             </div>
 
             <div>
