@@ -338,25 +338,37 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.12</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.13</span>
                 November 1, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Dashboard Shared Items Fix:</strong> Corrected &quot;Shared by Me&quot; vs &quot;Shared with Me&quot; logic to properly display based on apiary ownership</span>
+                  <span><strong>Queen Assignment Validation:</strong> Prevents queens from being assigned to multiple active hives - ensures data integrity</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Automated Version Management:</strong> Added scripts to automatically update version numbers across all pages (login, dashboard, changelog)</span>
+                  <span><strong>Manual Queen Display:</strong> Hive cards now show &quot;Queen recorded&quot; with color-coded marking badges instead of misleading &quot;No queen&quot; message</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span>Dashboard now correctly separates shared items by apiary ownership instead of hive ownership</span>
+                  <span><strong>Team Invitation Validation:</strong> Requires at least one apiary to be shared before inviting team members - prevents empty team experience</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span>Added npm scripts for version bumping (patch, minor, major) following semantic versioning</span>
+                  <span><strong>Email Spam Prevention:</strong> Rewrote reset password, reauthentication, and change email templates to avoid phishing-like phrases</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Dashboard UI Cleanup:</strong> Removed developer debugging messages from user-facing &quot;No Shared Apiaries&quot; section</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Queen marking colors now display with color-coded badges (White, Yellow, Red, Green, Blue) on hive cards</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span>Team invitations now validate that apiaries are explicitly in scope for the specific team</span>
                 </li>
               </ul>
             </div>
