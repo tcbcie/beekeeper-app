@@ -39,6 +39,15 @@ interface TeamMember {
   }
 }
 
+interface TeamApiaryWithOwner {
+  apiary_id: string
+  apiaries: {
+    user_id: string
+  } | {
+    user_id: string
+  }[] | null
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState({
     queens: 0,
@@ -258,10 +267,10 @@ export default function DashboardPage() {
         return
       }
 
-      // Get shared apiaries for these teams
+      // Get shared apiaries for these teams with ownership info
       const { data: teamApiaries, error: apiaryError } = await supabase
         .from('team_apiaries')
-        .select('apiary_id')
+        .select('apiary_id, apiaries(user_id)')
         .in('team_id', teamIds)
 
       if (apiaryError) throw apiaryError
@@ -276,17 +285,51 @@ export default function DashboardPage() {
         return
       }
 
-      // Fetch ALL hives from shared apiaries (including user's own hives in shared apiaries)
-      const { data: teamHives, error: hivesError } = await supabase
+      // Separate apiaries by ownership
+      // Note: Supabase may return apiaries as object or array depending on relationship
+      const typedTeamApiaries = teamApiaries as TeamApiaryWithOwner[]
+      const myApiaryIds = (typedTeamApiaries || [])
+        .filter(ta => {
+          if (!ta.apiaries) return false
+          // Handle both single object and array responses
+          const apiaryUserId = Array.isArray(ta.apiaries)
+            ? ta.apiaries[0]?.user_id
+            : ta.apiaries.user_id
+          return apiaryUserId === userId
+        })
+        .map(ta => ta.apiary_id)
+      const othersApiaryIds = (typedTeamApiaries || [])
+        .filter(ta => {
+          if (!ta.apiaries) return false
+          // Handle both single object and array responses
+          const apiaryUserId = Array.isArray(ta.apiaries)
+            ? ta.apiaries[0]?.user_id
+            : ta.apiaries.user_id
+          return apiaryUserId !== userId
+        })
+        .map(ta => ta.apiary_id)
+
+      console.log('👤 My shared apiaries:', myApiaryIds.length, '👥 Others shared with me:', othersApiaryIds.length)
+
+      // Fetch hives from MY shared apiaries
+      const { data: mySharedHives, error: myHivesError } = await supabase
         .from('hives')
-        .select('id, queen_id, user_id')
-        .in('apiary_id', apiaryIds)
+        .select('id, queen_id, user_id, apiary_id')
+        .in('apiary_id', myApiaryIds)
 
-      if (hivesError) throw hivesError
+      if (myHivesError) throw myHivesError
 
-      // Separate hives by ownership
-      const myHives = (teamHives || []).filter(h => h.user_id === userId)
-      const othersHives = (teamHives || []).filter(h => h.user_id !== userId)
+      // Fetch hives from apiaries shared WITH ME
+      const { data: sharedWithMeHives, error: othersHivesError } = await supabase
+        .from('hives')
+        .select('id, queen_id, user_id, apiary_id')
+        .in('apiary_id', othersApiaryIds)
+
+      if (othersHivesError) throw othersHivesError
+
+      // Process MY shared hives (all hives in apiaries I own and shared)
+      const myHives = mySharedHives || []
+      const othersHives = sharedWithMeHives || []
 
       const myHiveIds = myHives.map(h => h.id)
       const othersHiveIds = othersHives.map(h => h.id)
