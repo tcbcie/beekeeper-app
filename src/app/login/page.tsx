@@ -62,7 +62,7 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-amber-100">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">🐝 Hive Craic</h2>
+          <h2 className="text-3xl font-bold text-gray-900">🐝 HiveCraic</h2>
           <p className="mt-2 text-sm text-gray-600">Crafted with honeyed hearts by tcbc.ie,</p>
           <p className="text-sm text-gray-600">alongside the buzzing minds of</p>
           <p className="text-sm text-gray-600">Tribes Beekeepers Association and Tribes QRBG!</p>
@@ -137,7 +137,7 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-amber-100">
         <div className="text-center">
-          <div className="text-3xl font-bold text-gray-900">🐝 Hive Craic</div>
+          <div className="text-3xl font-bold text-gray-900">🐝 HiveCraic</div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
