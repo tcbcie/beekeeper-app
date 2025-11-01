@@ -102,9 +102,6 @@ export default function HivesPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
-  const [timePeriod, setTimePeriod] = useState<string>('all')
-  const [customStartDate, setCustomStartDate] = useState<string>('')
-  const [customEndDate, setCustomEndDate] = useState<string>('')
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [formData, setFormData] = useState<FormData>({
     hive_number: '',
@@ -131,32 +128,6 @@ export default function HivesPage() {
       right_sized_broodbox: false,
     },
   })
-
-  // Calculate date range based on time period
-  const getDateRange = useCallback(() => {
-    const today = new Date()
-    let startDate: Date | null = null
-
-    switch (timePeriod) {
-      case '3months':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
-        break
-      case '6months':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())
-        break
-      case '1year':
-        startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
-        break
-      case 'custom':
-        if (customStartDate) startDate = new Date(customStartDate)
-        break
-      case 'all':
-      default:
-        return null
-    }
-
-    return startDate
-  }, [timePeriod, customStartDate])
 
   const getLastQueenAndEggsInfo = useCallback(async (hiveId: string, userIdParam: string) => {
     const { data: inspections } = await supabase
@@ -194,52 +165,24 @@ export default function HivesPage() {
       return null
     }
 
-    // Filter by date range
-    let filteredInspections = inspections
-    const startDate = getDateRange()
-
-    if (startDate) {
-      filteredInspections = inspections.filter(inspection => {
-        const inspectionDate = new Date(inspection.inspection_date)
-
-        // For custom range, check both start and end dates
-        if (timePeriod === 'custom') {
-          if (customStartDate && inspectionDate < new Date(customStartDate)) {
-            return false
-          }
-          if (customEndDate && inspectionDate > new Date(customEndDate)) {
-            return false
-          }
-          return true
-        } else {
-          // For preset ranges, just check start date
-          return inspectionDate >= startDate
-        }
-      })
-    }
-
-    if (filteredInspections.length === 0) {
-      return null
-    }
-
     // Filter out null/0 values and calculate averages
-    const broodFrames = filteredInspections
+    const broodFrames = inspections
       .filter(i => i.brood_frames !== null && i.brood_frames > 0)
       .map(i => i.brood_frames)
 
-    const rightSizedFrames = filteredInspections
+    const rightSizedFrames = inspections
       .filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0)
       .map(i => i.right_sized_frames)
 
-    const broodPatterns = filteredInspections
+    const broodPatterns = inspections
       .filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0)
       .map(i => i.brood_pattern_rating)
 
-    const temperaments = filteredInspections
+    const temperaments = inspections
       .filter(i => i.temperament_rating !== null && i.temperament_rating > 0)
       .map(i => i.temperament_rating)
 
-    const populations = filteredInspections
+    const populations = inspections
       .filter(i => i.population_strength !== null && i.population_strength > 0)
       .map(i => i.population_strength)
 
@@ -247,7 +190,7 @@ export default function HivesPage() {
 
     // Count unique inspections that have at least one recorded metric
     const inspectionsWithData = new Set<string>()
-    filteredInspections.forEach(inspection => {
+    inspections.forEach(inspection => {
       if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
           (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
           (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
@@ -265,7 +208,7 @@ export default function HivesPage() {
       population: avg(populations),
       inspection_count: inspectionsWithData.size,
     }
-  }, [getDateRange, timePeriod, customStartDate, customEndDate])
+  }, [])
 
   const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
@@ -461,14 +404,6 @@ export default function HivesPage() {
     initUser()
   }, [router, fetchHives, fetchApiaries, fetchQueens])
 
-  // Refetch hives when time period changes
-  useEffect(() => {
-    if (!loading) {
-      fetchHives()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timePeriod, customStartDate, customEndDate])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
@@ -627,96 +562,6 @@ export default function HivesPage() {
             {showForm ? <X size={18} /> : <Plus size={18} />}
             {showForm ? 'Cancel' : 'Add Hive'}
           </button>
-        </div>
-      </div>
-
-      {/* Time Period Filter */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm font-medium text-gray-700">Inspection Average Period:</label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setTimePeriod('all')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                  timePeriod === 'all'
-                    ? 'bg-amber-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                }`}
-              >
-                All Time
-              </button>
-              <button
-                onClick={() => setTimePeriod('3months')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                  timePeriod === '3months'
-                    ? 'bg-amber-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                }`}
-              >
-                Last 3 Months
-              </button>
-              <button
-                onClick={() => setTimePeriod('6months')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                  timePeriod === '6months'
-                    ? 'bg-amber-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                }`}
-              >
-                Last 6 Months
-              </button>
-              <button
-                onClick={() => setTimePeriod('1year')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                  timePeriod === '1year'
-                    ? 'bg-amber-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                }`}
-              >
-                Last Year
-              </button>
-              <button
-                onClick={() => setTimePeriod('custom')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                  timePeriod === 'custom'
-                    ? 'bg-amber-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                }`}
-              >
-                Custom Range
-              </button>
-            </div>
-          </div>
-
-          {/* Custom Date Range Inputs */}
-          {timePeriod === 'custom' && (
-            <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-40">
-              <label className="text-sm font-medium text-gray-700">From:</label>
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
-              />
-              <label className="text-sm font-medium text-gray-700">To:</label>
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
-              />
-              <button
-                onClick={() => {
-                  setCustomStartDate('')
-                  setCustomEndDate('')
-                }}
-                className="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Clear Dates
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
