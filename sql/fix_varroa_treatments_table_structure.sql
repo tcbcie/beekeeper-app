@@ -67,14 +67,24 @@ COMMENT ON COLUMN public.varroa_treatments.temperature IS 'Temperature in Celsiu
 COMMENT ON COLUMN public.varroa_treatments.weather_conditions IS 'Weather conditions during treatment';
 COMMENT ON COLUMN public.varroa_treatments.notes IS 'Additional notes about the treatment';
 
--- Enable RLS
+-- Enable RLS on the varroa_treatments table
 ALTER TABLE public.varroa_treatments ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can view their own varroa treatments" ON public.varroa_treatments;
-DROP POLICY IF EXISTS "Users can insert their own varroa treatments" ON public.varroa_treatments;
-DROP POLICY IF EXISTS "Users can update their own varroa treatments" ON public.varroa_treatments;
-DROP POLICY IF EXISTS "Users can delete their own varroa treatments" ON public.varroa_treatments;
+-- Drop existing policies if they exist (in case table was created before)
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Users can view their own varroa treatments" ON public.varroa_treatments;
+  DROP POLICY IF EXISTS "Users can insert their own varroa treatments" ON public.varroa_treatments;
+  DROP POLICY IF EXISTS "Users can update their own varroa treatments" ON public.varroa_treatments;
+  DROP POLICY IF EXISTS "Users can delete their own varroa treatments" ON public.varroa_treatments;
+EXCEPTION
+  WHEN undefined_column THEN
+    -- Table doesn't have user_id column yet, policies don't exist, ignore
+    NULL;
+  WHEN undefined_table THEN
+    -- Table doesn't exist yet, policies don't exist, ignore
+    NULL;
+END $$;
 
 -- Create RLS policies
 CREATE POLICY "Users can view their own varroa treatments"
