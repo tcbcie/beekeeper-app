@@ -46,6 +46,8 @@ interface TeamInvitation {
   status: 'pending' | 'accepted' | 'declined' | 'expired'
   invited_at: string
   expires_at: string
+  accepted_at?: string
+  declined_at?: string
 }
 
 interface Apiary {
@@ -99,6 +101,8 @@ export default function ProfilePage() {
   const [sendingInvite, setSendingInvite] = useState(false)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([])
+  const [acceptedInvitations, setAcceptedInvitations] = useState<TeamInvitation[]>([])
+  const [declinedInvitations, setDeclinedInvitations] = useState<TeamInvitation[]>([])
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
   const [loadingMembers, setLoadingMembers] = useState(false)
 
@@ -547,6 +551,30 @@ export default function ProfilePage() {
       if (invitationsError) throw invitationsError
 
       setTeamInvitations(invitations || [])
+
+      // Fetch accepted invitations
+      const { data: acceptedInvites, error: acceptedError } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('team_id', teamId)
+        .eq('status', 'accepted')
+        .order('accepted_at', { ascending: false })
+
+      if (!acceptedError) {
+        setAcceptedInvitations(acceptedInvites || [])
+      }
+
+      // Fetch declined invitations
+      const { data: declinedInvites, error: declinedError } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('team_id', teamId)
+        .eq('status', 'declined')
+        .order('declined_at', { ascending: false })
+
+      if (!declinedError) {
+        setDeclinedInvitations(declinedInvites || [])
+      }
 
       // Fetch shared apiaries for this team
       await fetchTeamApiaries(teamId)
@@ -1289,6 +1317,80 @@ export default function ProfilePage() {
                                         <X size={12} />
                                         Cancel
                                       </button>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Accepted Invitations */}
+                          {acceptedInvitations.length > 0 && (
+                            <div className="mt-6 pt-4 border-t border-gray-200">
+                              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <User size={14} className="text-green-600" />
+                                Accepted Invitations
+                              </h5>
+                              <div className="space-y-2">
+                                {acceptedInvitations.map((invitation) => {
+                                  const acceptedDate = invitation.accepted_at ? new Date(invitation.accepted_at) : null
+
+                                  return (
+                                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                                      <div className="flex items-center gap-3 flex-1">
+                                        <User size={16} className="text-green-600" />
+                                        <div className="flex-1">
+                                          <div className="text-sm font-medium text-gray-900">{invitation.email}</div>
+                                          <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                            <Clock size={12} />
+                                            {acceptedDate ? (
+                                              <span>Accepted on {acceptedDate.toLocaleDateString()} at {acceptedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            ) : (
+                                              <span>Accepted</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <span className="px-2 py-1 text-xs rounded font-medium bg-green-100 text-green-800">
+                                          Accepted
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Declined Invitations */}
+                          {declinedInvitations.length > 0 && (
+                            <div className="mt-6 pt-4 border-t border-gray-200">
+                              <h5 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <X size={14} className="text-red-600" />
+                                Declined Invitations
+                              </h5>
+                              <div className="space-y-2">
+                                {declinedInvitations.map((invitation) => {
+                                  const declinedDate = invitation.declined_at ? new Date(invitation.declined_at) : null
+
+                                  return (
+                                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                                      <div className="flex items-center gap-3 flex-1">
+                                        <X size={16} className="text-red-600" />
+                                        <div className="flex-1">
+                                          <div className="text-sm font-medium text-gray-900">{invitation.email}</div>
+                                          <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                                            <Clock size={12} />
+                                            {declinedDate ? (
+                                              <span>Declined on {declinedDate.toLocaleDateString()} at {declinedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            ) : (
+                                              <span>Declined</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <span className="px-2 py-1 text-xs rounded font-medium bg-red-100 text-red-800">
+                                          Declined
+                                        </span>
+                                      </div>
                                     </div>
                                   )
                                 })}
