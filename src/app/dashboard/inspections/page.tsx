@@ -33,6 +33,7 @@ interface Apiary {
 interface Inspection {
   id: string
   hive_id: string
+  user_id: string
   inspection_date: string
   inspection_time: string | null
   weight: number | null
@@ -71,6 +72,10 @@ interface Inspection {
     apiaries?: {
       eircode: string | null
     }
+  }
+  user_profiles?: {
+    full_name: string
+    email: string
   }
 }
 
@@ -207,7 +212,7 @@ export default function InspectionsPage() {
     // Build query based on ownership filter
     let query = supabase
       .from('inspections')
-      .select('*, hives(hive_number, apiaries(eircode))')
+      .select('*, hives(hive_number, apiaries(eircode)), user_profiles(full_name, email)')
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
@@ -2332,6 +2337,11 @@ export default function InspectionsPage() {
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
+                  {inspection.user_profiles && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recorded by: <span className="font-medium text-gray-700">{inspection.user_profiles.full_name}</span>
+                    </p>
+                  )}
                   {inspection.weight && (
                     <p className="text-sm text-gray-600 font-medium mt-1">
                       Weight: {inspection.weight} kg
