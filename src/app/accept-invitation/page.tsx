@@ -30,7 +30,7 @@ function AcceptInvitationContent() {
     if (!checkedAuth) return // Wait until we've checked authentication
 
     const acceptInvitation = async () => {
-      const invitationId = searchParams.get('id')
+      let invitationId = searchParams.get('id')
 
       if (!invitationId) {
         setStatus('error')
@@ -38,6 +38,11 @@ function AcceptInvitationContent() {
         setLoading(false)
         return
       }
+
+      // Clean the invitation ID - remove any trailing # or other URL fragments
+      invitationId = invitationId.trim().replace(/#$/, '')
+
+      console.log('Processing invitation ID:', invitationId)
 
       try {
         // If no user, redirect to login

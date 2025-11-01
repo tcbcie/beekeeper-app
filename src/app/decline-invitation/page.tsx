@@ -15,7 +15,7 @@ function DeclineInvitationContent() {
 
   useEffect(() => {
     const declineInvitation = async () => {
-      const invitationId = searchParams.get('id')
+      let invitationId = searchParams.get('id')
 
       if (!invitationId) {
         setStatus('error')
@@ -23,6 +23,9 @@ function DeclineInvitationContent() {
         setLoading(false)
         return
       }
+
+      // Clean the invitation ID - remove any trailing # or other URL fragments
+      invitationId = invitationId.trim().replace(/#$/, '')
 
       try {
         // Get current user (optional for declining)
