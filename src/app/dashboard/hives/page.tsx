@@ -990,6 +990,22 @@ export default function HivesPage() {
                     {hive.queens.queen_number}
                     <ExternalLink size={12} />
                   </Link>
+                ) : hive.queen_marked || hive.queen_marking_color ? (
+                  <span className="flex items-center gap-1">
+                    <span className="font-medium">Queen recorded</span>
+                    {hive.queen_marking_color && (
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        hive.queen_marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
+                        hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
+                        hive.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
+                        hive.queen_marking_color === 'Green' ? 'bg-green-200 text-green-900' :
+                        hive.queen_marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
+                        'bg-gray-200 text-gray-800'
+                      }`}>
+                        {hive.queen_marking_color}
+                      </span>
+                    )}
+                  </span>
                 ) : (
                   <span>No queen</span>
                 )}
