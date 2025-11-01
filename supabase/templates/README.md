@@ -7,12 +7,65 @@ This directory contains customized email templates for Supabase authentication e
 ### 1. confirm_signup.html
 Welcome email sent to new users to confirm their email address.
 
+**Supabase Template Name:** Confirm signup
+
 **Variables Available:**
 - `{{ .ConfirmationURL }}` - The confirmation link
 - `{{ .SiteURL }}` - Your site URL (https://www.hivecraic.com)
 - `{{ .Email }}` - User's email address
 - `{{ .Token }}` - Confirmation token
 - `{{ .TokenHash }}` - Hashed token
+
+### 2. invite_user.html
+Email sent when an admin invites a user to create an account.
+
+**Supabase Template Name:** Invite user
+
+**Variables Available:**
+- `{{ .ConfirmationURL }}` - The invitation acceptance link
+- `{{ .SiteURL }}` - Your site URL
+- `{{ .Email }}` - Invited user's email address
+
+### 3. magic_link.html
+Passwordless authentication email with a one-time sign-in link.
+
+**Supabase Template Name:** Magic link
+
+**Variables Available:**
+- `{{ .ConfirmationURL }}` - The magic link for sign-in
+- `{{ .SiteURL }}` - Your site URL
+- `{{ .Email }}` - User's email address
+
+### 4. change_email.html
+Email sent to the new email address when a user changes their email.
+
+**Supabase Template Name:** Change email address
+
+**Variables Available:**
+- `{{ .ConfirmationURL }}` - The email change confirmation link
+- `{{ .SiteURL }}` - Your site URL
+- `{{ .Email }}` - New email address
+- `{{ .NewEmail }}` - New email address
+
+### 5. reset_password.html
+Email sent when a user requests to reset their password.
+
+**Supabase Template Name:** Reset password
+
+**Variables Available:**
+- `{{ .ConfirmationURL }}` - The password reset link
+- `{{ .SiteURL }}` - Your site URL
+- `{{ .Email }}` - User's email address
+
+### 6. reauthentication.html
+Email sent when a user needs to confirm their identity for sensitive operations.
+
+**Supabase Template Name:** Reauthentication
+
+**Variables Available:**
+- `{{ .ConfirmationURL }}` - The reauthentication confirmation link
+- `{{ .SiteURL }}` - Your site URL
+- `{{ .Email }}` - User's email address
 
 ## How to Update Email Templates in Supabase
 
@@ -57,15 +110,20 @@ Before deploying to production:
 3. Verify all links work correctly
 4. Test on both desktop and mobile views
 
-## Other Available Email Templates
+## Template Mapping
 
-You can customize these templates in the Supabase Dashboard:
+All templates have been created and are ready to deploy:
 
-- **Confirm signup** - Welcome email with confirmation link
-- **Invite user** - Team member invitation (we use custom edge function instead)
-- **Magic link** - Passwordless login email
-- **Change email address** - Email change confirmation
-- **Reset password** - Password reset instructions
+| Supabase Template Name | File Name | Purpose |
+|------------------------|-----------|---------|
+| Confirm signup | confirm_signup.html | New user email confirmation |
+| Invite user | invite_user.html | Admin invites user to create account |
+| Magic link | magic_link.html | Passwordless sign-in |
+| Change email address | change_email.html | Confirm new email address |
+| Reset password | reset_password.html | Password reset instructions |
+| Reauthentication | reauthentication.html | Identity confirmation for sensitive operations |
+
+**Note:** For team invitations (inviting users to join teams), we use a custom edge function (`send-team-invitation`) instead of the Supabase "Invite user" template, as it provides more control and team-specific information.
 
 ## Additional Resources
 
