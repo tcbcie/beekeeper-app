@@ -31,7 +31,8 @@ interface Harvest {
     hive_number: string
   }
   profiles?: {
-    full_name: string
+    first_name: string | null
+    last_name: string | null
     email: string
   }
 }
@@ -73,7 +74,7 @@ export default function HarvestPage() {
     // Query without user_id filter to avoid conflict with profiles join
     const { data } = await supabase
       .from('harvests')
-      .select('*, hives(hive_number), profiles(full_name, email)')
+      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
       .order('harvest_date', { ascending: false })
 
     // Filter by user_id in memory instead
@@ -85,7 +86,7 @@ export default function HarvestPage() {
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, first_name, last_name, email')
           .in('id', userIds as string[])
 
         if (profilesData) {
@@ -95,7 +96,8 @@ export default function HarvestPage() {
               const profile = profilesMap.get(harvest.user_id)
               if (profile) {
                 harvest.profiles = {
-                  full_name: profile.full_name,
+                  first_name: profile.first_name,
+                  last_name: profile.last_name,
                   email: profile.email
                 }
               }
@@ -409,7 +411,9 @@ export default function HarvestPage() {
                   {harvest.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {harvest.profiles.full_name || harvest.profiles.email}
+                        {(harvest.profiles.first_name && harvest.profiles.last_name)
+                          ? `${harvest.profiles.first_name} ${harvest.profiles.last_name}`
+                          : harvest.profiles.email}
                       </span>
                     </p>
                   )}

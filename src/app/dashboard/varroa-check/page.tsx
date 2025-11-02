@@ -26,7 +26,8 @@ interface VarroaCheck {
     hive_number: string
   }
   profiles?: {
-    full_name: string
+    first_name: string | null
+    last_name: string | null
     email: string
   }
 }
@@ -68,7 +69,7 @@ export default function VarroaCheckPage() {
     // Query without user_id filter to avoid conflict with profiles join
     const { data } = await supabase
       .from('varroa_checks')
-      .select('*, hives(hive_number), profiles(full_name, email)')
+      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
       .order('check_date', { ascending: false })
 
     // Filter by user_id in memory instead
@@ -80,7 +81,7 @@ export default function VarroaCheckPage() {
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, first_name, last_name, email')
           .in('id', userIds as string[])
 
         if (profilesData) {
@@ -90,7 +91,8 @@ export default function VarroaCheckPage() {
               const profile = profilesMap.get(check.user_id)
               if (profile) {
                 check.profiles = {
-                  full_name: profile.full_name,
+                  first_name: profile.first_name,
+                  last_name: profile.last_name,
                   email: profile.email
                 }
               }
@@ -427,7 +429,9 @@ export default function VarroaCheckPage() {
                   {check.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {check.profiles.full_name || check.profiles.email}
+                        {(check.profiles.first_name && check.profiles.last_name)
+                          ? `${check.profiles.first_name} ${check.profiles.last_name}`
+                          : check.profiles.email}
                       </span>
                     </p>
                   )}

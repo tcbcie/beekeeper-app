@@ -74,7 +74,8 @@ interface Inspection {
     }
   }
   profiles?: {
-    full_name: string
+    first_name: string | null
+    last_name: string | null
     email: string
   }
 }
@@ -212,7 +213,7 @@ export default function InspectionsPage() {
     // Build query based on ownership filter
     let query = supabase
       .from('inspections')
-      .select('*, hives(hive_number, apiaries(eircode)), profiles(full_name, email)')
+      .select('*, hives(hive_number, apiaries(eircode)), profiles(first_name, last_name, email)')
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
@@ -259,7 +260,7 @@ export default function InspectionsPage() {
         if (userIds.length > 0) {
           const { data: profilesData, error: profilesError } = await supabase
             .from('profiles')
-            .select('id, full_name, email')
+            .select('id, first_name, last_name, email')
             .in('id', userIds)
 
           if (profilesError) {
@@ -275,7 +276,8 @@ export default function InspectionsPage() {
                 const profile = profilesMap.get(inspection.user_id)
                 if (profile) {
                   inspection.profiles = {
-                    full_name: profile.full_name,
+                    first_name: profile.first_name,
+                    last_name: profile.last_name,
                     email: profile.email
                   }
                 } else {
@@ -2415,7 +2417,9 @@ export default function InspectionsPage() {
                   {inspection.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {inspection.profiles.full_name || inspection.profiles.email}
+                        {(inspection.profiles.first_name && inspection.profiles.last_name)
+                          ? `${inspection.profiles.first_name} ${inspection.profiles.last_name}`
+                          : inspection.profiles.email}
                       </span>
                     </p>
                   )}
