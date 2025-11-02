@@ -65,15 +65,18 @@ export default function VarroaCheckPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    // Query without user_id filter to avoid conflict with profiles join
     const { data } = await supabase
       .from('varroa_checks')
       .select('*, hives(hive_number), profiles(full_name, email)')
-      .eq('user_id', currentUserId)
       .order('check_date', { ascending: false })
 
+    // Filter by user_id in memory instead
+    const filteredData = data?.filter(c => c.user_id === currentUserId)
+
     // Fallback: If profiles data is missing, fetch it manually
-    if (data && data.length > 0 && data[0] && !data[0].profiles) {
-      const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))]
+    if (filteredData && filteredData.length > 0 && filteredData[0] && !filteredData[0].profiles) {
+      const userIds = [...new Set(filteredData.map(c => c.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -82,7 +85,7 @@ export default function VarroaCheckPage() {
 
         if (profilesData) {
           const profilesMap = new Map(profilesData.map(p => [p.id, p]))
-          data.forEach((check: VarroaCheck) => {
+          filteredData.forEach((check: VarroaCheck) => {
             if (check.user_id) {
               const profile = profilesMap.get(check.user_id)
               if (profile) {
@@ -97,7 +100,7 @@ export default function VarroaCheckPage() {
       }
     }
 
-    if (data) setChecks(data as VarroaCheck[])
+    if (filteredData) setChecks(filteredData as VarroaCheck[])
     setLoading(false)
   }, [userId])
 

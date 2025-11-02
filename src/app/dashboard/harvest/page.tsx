@@ -70,15 +70,18 @@ export default function HarvestPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    // Query without user_id filter to avoid conflict with profiles join
     const { data } = await supabase
       .from('harvests')
       .select('*, hives(hive_number), profiles(full_name, email)')
-      .eq('user_id', currentUserId)
       .order('harvest_date', { ascending: false })
 
+    // Filter by user_id in memory instead
+    const filteredData = data?.filter(h => h.user_id === currentUserId)
+
     // Fallback: If profiles data is missing, fetch it manually
-    if (data && data.length > 0 && data[0] && !data[0].profiles) {
-      const userIds = [...new Set(data.map(h => h.user_id).filter(Boolean))]
+    if (filteredData && filteredData.length > 0 && filteredData[0] && !filteredData[0].profiles) {
+      const userIds = [...new Set(filteredData.map(h => h.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -87,7 +90,7 @@ export default function HarvestPage() {
 
         if (profilesData) {
           const profilesMap = new Map(profilesData.map(p => [p.id, p]))
-          data.forEach((harvest: Harvest) => {
+          filteredData.forEach((harvest: Harvest) => {
             if (harvest.user_id) {
               const profile = profilesMap.get(harvest.user_id)
               if (profile) {
@@ -102,7 +105,7 @@ export default function HarvestPage() {
       }
     }
 
-    if (data) setHarvests(data as Harvest[])
+    if (filteredData) setHarvests(filteredData as Harvest[])
     setLoading(false)
   }, [userId])
 
