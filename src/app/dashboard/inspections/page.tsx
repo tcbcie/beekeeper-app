@@ -2374,7 +2374,9 @@ export default function InspectionsPage() {
                   </p>
                   {inspection.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Recorded by: <span className="font-medium text-gray-700">{inspection.profiles.full_name}</span>
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {inspection.profiles.full_name || inspection.profiles.email}
+                      </span>
                     </p>
                   )}
                   {inspection.weight && (
