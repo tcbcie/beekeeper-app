@@ -2930,6 +2930,36 @@ export default function InspectionsPage() {
                       })}
                     </p>
                   </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingTreatment(treatment)
+                        setFormType('varroa_treatment')
+                        setShowForm(true)
+                      }}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit treatment"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!userId) return
+                        if (confirm('Are you sure you want to delete this treatment record?')) {
+                          const { error } = await supabase
+                            .from('varroa_treatments')
+                            .delete()
+                            .eq('id', treatment.id)
+                            .eq('user_id', userId)
+                          if (!error) fetchVarroaTreatments()
+                        }
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete treatment"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm"><span className="font-medium">Treatment:</span> {treatment.treatment_type}</p>
@@ -2973,6 +3003,36 @@ export default function InspectionsPage() {
                         day: 'numeric'
                       })}
                     </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingCheck(check)
+                        setFormType('varroa_check')
+                        setShowForm(true)
+                      }}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit check"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!userId) return
+                        if (confirm('Are you sure you want to delete this check record?')) {
+                          const { error } = await supabase
+                            .from('varroa_checks')
+                            .delete()
+                            .eq('id', check.id)
+                            .eq('user_id', userId)
+                          if (!error) fetchVarroaChecks()
+                        }
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete check"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -3030,6 +3090,36 @@ export default function InspectionsPage() {
                       })}
                     </p>
                   </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingFeeding(feeding)
+                        setFormType('feeding')
+                        setShowForm(true)
+                      }}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit feeding"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!userId) return
+                        if (confirm('Are you sure you want to delete this feeding record?')) {
+                          const { error} = await supabase
+                            .from('feedings')
+                            .delete()
+                            .eq('id', feeding.id)
+                            .eq('user_id', userId)
+                          if (!error) fetchFeedings()
+                        }
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete feeding"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm"><span className="font-medium">Feed Type:</span> {feeding.feed_type}</p>
@@ -3072,6 +3162,36 @@ export default function InspectionsPage() {
                         day: 'numeric'
                       })}
                     </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingHarvest(harvest)
+                        setFormType('harvest')
+                        setShowForm(true)
+                      }}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit harvest"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!userId) return
+                        if (confirm('Are you sure you want to delete this harvest record?')) {
+                          const { error } = await supabase
+                            .from('harvests')
+                            .delete()
+                            .eq('id', harvest.id)
+                            .eq('user_id', userId)
+                          if (!error) fetchHarvests()
+                        }
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete harvest"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
                 <div className="space-y-2">
