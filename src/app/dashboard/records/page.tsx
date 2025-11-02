@@ -1216,6 +1216,8 @@ export default function InspectionsPage() {
                 </button>
                 <button
                   onClick={() => {
+                    // TODO: Implement varroa treatment form on this page
+                    alert('Varroa Treatment form coming soon! For now, use the standalone page.')
                     router.push('/dashboard/varroa-treatment')
                     setShowDropdown(false)
                   }}
@@ -1226,6 +1228,8 @@ export default function InspectionsPage() {
                 </button>
                 <button
                   onClick={() => {
+                    // TODO: Implement varroa check form on this page
+                    alert('Varroa Check form coming soon! For now, use the standalone page.')
                     router.push('/dashboard/varroa-check')
                     setShowDropdown(false)
                   }}
@@ -1236,6 +1240,8 @@ export default function InspectionsPage() {
                 </button>
                 <button
                   onClick={() => {
+                    // TODO: Implement feeding form on this page
+                    alert('Feeding form coming soon! For now, use the standalone page.')
                     router.push('/dashboard/feeding')
                     setShowDropdown(false)
                   }}
@@ -1246,6 +1252,8 @@ export default function InspectionsPage() {
                 </button>
                 <button
                   onClick={() => {
+                    // TODO: Implement harvest form on this page
+                    alert('Harvest form coming soon! For now, use the standalone page.')
                     router.push('/dashboard/harvest')
                     setShowDropdown(false)
                   }}
