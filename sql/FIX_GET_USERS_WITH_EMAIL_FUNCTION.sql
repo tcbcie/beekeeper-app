@@ -44,8 +44,8 @@ BEGIN
     SELECT
       p.id,
       p.role,
-      p.created_at,
-      p.updated_at,  -- Return actual updated_at from profiles
+      au.created_at,  -- Use auth.users timestamps since profiles doesn't have them
+      au.updated_at,
       au.email::TEXT
     FROM public.profiles p
     LEFT JOIN auth.users au ON p.id = au.id
@@ -56,12 +56,12 @@ BEGIN
     SELECT
       p.id,
       p.role,
-      p.created_at,
-      p.updated_at,  -- Return actual updated_at from profiles
+      au.created_at,  -- Use auth.users timestamps since profiles doesn't have them
+      au.updated_at,
       au.email::TEXT
     FROM public.profiles p
     LEFT JOIN auth.users au ON p.id = au.id
-    ORDER BY p.created_at DESC;
+    ORDER BY au.created_at DESC;  -- Also fix ORDER BY
   END IF;
 END;
 $function$;
