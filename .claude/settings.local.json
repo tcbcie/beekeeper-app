@@ -18,7 +18,8 @@
       "Bash(npm run build:check:*)",
       "Bash(npx tsc:*)",
       "Bash(git grep:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(timeout 120 npx tsc:*)"
     ],
     "deny": [],
     "ask": []
