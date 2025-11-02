@@ -20,6 +20,7 @@ interface Hive {
 interface Harvest {
   id: string
   hive_id: string
+  user_id: string
   harvest_date: string
   honey_weight: number | null
   wax_weight: number | null
@@ -74,6 +75,32 @@ export default function HarvestPage() {
       .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('harvest_date', { ascending: false })
+
+    // Fallback: If profiles data is missing, fetch it manually
+    if (data && data.length > 0 && data[0] && !data[0].profiles) {
+      const userIds = [...new Set(data.map(h => h.user_id).filter(Boolean))]
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds as string[])
+
+        if (profilesData) {
+          const profilesMap = new Map(profilesData.map(p => [p.id, p]))
+          data.forEach((harvest: Harvest) => {
+            if (harvest.user_id) {
+              const profile = profilesMap.get(harvest.user_id)
+              if (profile) {
+                harvest.profiles = {
+                  full_name: profile.full_name,
+                  email: profile.email
+                }
+              }
+            }
+          })
+        }
+      }
+    }
 
     if (data) setHarvests(data as Harvest[])
     setLoading(false)

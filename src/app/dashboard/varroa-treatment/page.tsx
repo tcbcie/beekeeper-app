@@ -39,6 +39,7 @@ interface VarroaTreatmentProduct {
 interface VarroaTreatment {
   id: string
   hive_id: string
+  user_id: string
   treatment_date: string
   treatment_type: string
   product_name: string
@@ -100,6 +101,32 @@ export default function VarroaTreatmentPage() {
       .select('*, hives(hive_number, apiary_id), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('treatment_date', { ascending: false })
+
+    // Fallback: If profiles data is missing, fetch it manually
+    if (data && data.length > 0 && data[0] && !data[0].profiles) {
+      const userIds = [...new Set(data.map(t => t.user_id).filter(Boolean))]
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds as string[])
+
+        if (profilesData) {
+          const profilesMap = new Map(profilesData.map(p => [p.id, p]))
+          data.forEach((treatment: VarroaTreatment) => {
+            if (treatment.user_id) {
+              const profile = profilesMap.get(treatment.user_id)
+              if (profile) {
+                treatment.profiles = {
+                  full_name: profile.full_name,
+                  email: profile.email
+                }
+              }
+            }
+          })
+        }
+      }
+    }
 
     if (data) setTreatments(data as VarroaTreatment[])
     setLoading(false)

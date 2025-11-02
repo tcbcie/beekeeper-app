@@ -1,27 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find src/app/dashboard -name \"*.tsx\" -exec wc -l {} +)",
-      "Bash(npm run lint:*)",
       "Bash(npm run build:*)",
-      "Bash(npx supabase:*)",
-      "Bash(git log:*)",
-      "Bash(git pull:*)",
       "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd: Queen assignment validation to prevent duplicate assignments\n\nImplemented validation logic to ensure a queen can only be assigned to one active hive at a time. This prevents data integrity issues where the same queen could be incorrectly assigned to multiple hives.\n\nKey features:\n- Validates queen assignment before saving hive\n- Checks all active hives for existing queen assignments\n- Excludes current hive when editing (allows keeping same queen)\n- Displays clear error message with hive and apiary details\n- Works for both new hive creation and existing hive updates\n\nUser experience:\n- Shows alert: \"Cannot assign queen: Q2024-001 is already assigned to active hive 'Hive 3' at Backyard Apiary. A queen can only be in one active hive at a time.\"\n- Prevents save operation if validation fails\n- No impact when queen is not assigned or manual entry mode is used\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
       "Bash(git commit:*)",
+      "Bash(node scripts/bump-version.mjs:*)",
+      "Bash(git tag:*)",
       "Bash(git push:*)",
-      "Bash(npm run dev)",
-      "Bash(git restore:*)",
-      "Bash(npx tsc:*)",
-      "Bash(timeout 30 npx tsc:*)",
-      "Bash(timeout 45 npx tsc:*)",
-      "Bash(npx next lint:*)",
-      "Bash(supabase functions list:*)",
-      "Bash(supabase secrets:*)",
-      "Bash(supabase functions logs:*)",
-      "Bash(supabase functions --help:*)",
-      "Bash(find:*)",
-      "Bash(supabase functions deploy:*)"
+      "Bash(psql $DATABASE_URL -c \"\\d inspections\")",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

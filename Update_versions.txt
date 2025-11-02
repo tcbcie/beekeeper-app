@@ -1,0 +1,13 @@
+Update About/Changelog, version/build at the login screen, and version details on the dashboard
+
+# Bump patch version (most common)
+npm run version:bump
+
+# Bump minor version
+npm run version:bump minor
+
+# Bump major version
+npm run version:bump major
+
+# Set specific version
+npm run version:update 1.0.12 "December 1, 2025"
