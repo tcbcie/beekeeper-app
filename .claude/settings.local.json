@@ -10,7 +10,10 @@
       "Bash(git tag:*)",
       "Bash(git push:*)",
       "Bash(psql $DATABASE_URL -c \"\\d inspections\")",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(for file in \"varroa-treatment\" \"varroa-check\" \"feeding\" \"harvest\")",
+      "Bash(do echo \"File: $file/page.tsx\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

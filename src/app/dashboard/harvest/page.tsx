@@ -30,9 +30,9 @@ interface Harvest {
   hives?: {
     hive_number: string
   }
-  user_profiles?: {
-    first_name: string
-    last_name: string
+  profiles?: {
+    full_name: string
+    email: string
   }
 }
 
@@ -72,17 +72,17 @@ export default function HarvestPage() {
 
     const { data } = await supabase
       .from('harvests')
-      .select('*, hives(hive_number), user_profiles(first_name, last_name)')
+      .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('harvest_date', { ascending: false })
 
     // Fallback: If profiles data is missing, fetch it manually
-    if (data && data.length > 0 && data[0] && !data[0].user_profiles) {
+    if (data && data.length > 0 && data[0] && !data[0].profiles) {
       const userIds = [...new Set(data.map(h => h.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from('user_profiles')
-          .select('id, first_name, last_name')
+          .from('profiles')
+          .select('id, full_name, email')
           .in('id', userIds as string[])
 
         if (profilesData) {
@@ -91,9 +91,9 @@ export default function HarvestPage() {
             if (harvest.user_id) {
               const profile = profilesMap.get(harvest.user_id)
               if (profile) {
-                harvest.user_profiles = {
-                  first_name: profile.first_name,
-                  last_name: profile.last_name
+                harvest.profiles = {
+                  full_name: profile.full_name,
+                  email: profile.email
                 }
               }
             }
@@ -403,10 +403,10 @@ export default function HarvestPage() {
                 <div>
                   <h3 className="text-lg font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
                   <p className="text-sm text-gray-500">{harvest.harvest_date}</p>
-                  {harvest.user_profiles && (
+                  {harvest.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {`${harvest.user_profiles.first_name || ''} ${harvest.user_profiles.last_name || ''}`.trim() || 'User'}
+                        {harvest.profiles.full_name || harvest.profiles.email}
                       </span>
                     </p>
                   )}
