@@ -339,17 +339,29 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.13</span>
-                November 1, 2025
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.14</span>
+                November 2, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Queen Assignment Validation:</strong> Prevents queens from being assigned to multiple active hives - ensures data integrity</span>
+                  <span><strong>Creator Tracking:</strong> All activity records (inspections, varroa treatments/checks, feedings, harvests) now show who created each entry with &quot;Recorded by&quot; field displaying name or email</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Manual Queen Display:</strong> Hive cards now show &quot;Queen recorded&quot; with color-coded marking badges instead of misleading &quot;No queen&quot; message</span>
+                  <span><strong>Team Collaboration Enhancement:</strong> Team owners can now see inspection and activity records created by team members for shared hives - full visibility across team</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Apiary Filter for Varroa Treatments:</strong> Added apiary dropdown filter to varroa treatments page matching the inspections page functionality</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Database Security:</strong> Implemented comprehensive RLS policies with can_access_hive() security definer function to properly control access to shared hive records</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Foreign Key Relationships:</strong> Added foreign key constraints linking all activity tables to profiles table enabling automatic joins for creator information</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
