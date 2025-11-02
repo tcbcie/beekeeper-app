@@ -1054,9 +1054,53 @@ export default function InspectionsPage() {
     return startDate
   }
 
-  // Filter inspections based on selected apiary, hive and time period
+  // Filter all records based on record type, apiary, hive and time period
+  const filteredRecords = allRecords.filter(record => {
+    // Filter by record type
+    if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) {
+      return false
+    }
+
+    // Filter by apiary (checks if the record's hive belongs to the selected apiary)
+    if (filterApiaryId) {
+      const hive = hives.find(h => h.id === record.hive_id)
+      if (!hive || hive.apiary_id !== filterApiaryId) {
+        return false
+      }
+    }
+
+    // Filter by hive
+    if (filterHiveId && record.hive_id !== filterHiveId) {
+      return false
+    }
+
+    // Filter by time period
+    const startDate = getDateRange()
+    if (startDate) {
+      const recordDate = new Date(record.date)
+
+      // For custom range, check both start and end dates
+      if (timePeriod === 'custom') {
+        if (customStartDate && recordDate < new Date(customStartDate)) {
+          return false
+        }
+        if (customEndDate && recordDate > new Date(customEndDate)) {
+          return false
+        }
+      } else {
+        // For preset ranges, just check start date
+        if (recordDate < startDate) {
+          return false
+        }
+      }
+    }
+
+    return true
+  })
+
+  // Keep the old filteredInspections for the inspection form (still needed for editing inspections)
   const filteredInspections = inspections.filter(inspection => {
-    // Filter by apiary (checks if the inspection's hive belongs to the selected apiary)
+    // Filter by apiary
     if (filterApiaryId) {
       const hive = hives.find(h => h.id === inspection.hive_id)
       if (!hive || hive.apiary_id !== filterApiaryId) {
@@ -1074,7 +1118,6 @@ export default function InspectionsPage() {
     if (startDate) {
       const inspectionDate = new Date(inspection.inspection_date)
 
-      // For custom range, check both start and end dates
       if (timePeriod === 'custom') {
         if (customStartDate && inspectionDate < new Date(customStartDate)) {
           return false
@@ -1083,7 +1126,6 @@ export default function InspectionsPage() {
           return false
         }
       } else {
-        // For preset ranges, just check start date
         if (inspectionDate < startDate) {
           return false
         }
@@ -1093,7 +1135,7 @@ export default function InspectionsPage() {
     return true
   })
 
-  if (loading) return <LoadingSpinner text="Loading inspections..." />
+  if (loading) return <LoadingSpinner text="Loading records..." />
 
   return (
     <div className="space-y-6">
