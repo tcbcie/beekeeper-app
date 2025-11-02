@@ -24,6 +24,10 @@ interface VarroaCheck {
   hives?: {
     hive_number: string
   }
+  profiles?: {
+    full_name: string
+    email: string
+  }
 }
 
 interface FormData {
@@ -62,7 +66,7 @@ export default function VarroaCheckPage() {
 
     const { data } = await supabase
       .from('varroa_checks')
-      .select('*, hives(hive_number)')
+      .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('check_date', { ascending: false })
 
@@ -390,6 +394,13 @@ export default function VarroaCheckPage() {
                 <div>
                   <h3 className="text-lg font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
                   <p className="text-sm text-gray-500">{check.check_date}</p>
+                  {check.profiles && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {check.profiles.full_name || check.profiles.email}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => handleEdit(check)} className="text-blue-600 hover:text-blue-900">
