@@ -2607,8 +2607,12 @@ export default function InspectionsPage() {
       )}
 
       <div className="space-y-4">
-        {filteredInspections.map((inspection) => (
-          <div key={inspection.id} className="bg-white rounded-lg shadow p-6">
+        {filteredRecords.map((record) => {
+          // Render different card types based on record_type
+          if (record.record_type === 'inspection') {
+            const inspection = record
+            return (
+          <div key={`inspection-${inspection.id}`} className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-start mb-4 gap-4">
               <div className="flex items-start gap-3 flex-1">
                 {inspection.image_url && (
@@ -2896,14 +2900,210 @@ export default function InspectionsPage() {
               </div>
             )}
           </div>
-        ))}
+            )
+          } else if (record.record_type === 'varroa_treatment') {
+            const treatment = record
+            return (
+              <div key={`treatment-${treatment.id}`} className="bg-white rounded-lg shadow p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">Varroa Treatment</span>
+                      <h3 className="text-lg font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {new Date(treatment.treatment_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm"><span className="font-medium">Treatment:</span> {treatment.treatment_type}</p>
+                  <p className="text-sm"><span className="font-medium">Product:</span> {treatment.product_name}</p>
+                  <p className="text-sm"><span className="font-medium">Dosage:</span> {treatment.dosage}</p>
+                  {treatment.temperature && <p className="text-sm"><span className="font-medium">Temperature:</span> {treatment.temperature}°C</p>}
+                  {treatment.weather_conditions && <p className="text-sm"><span className="font-medium">Weather:</span> {treatment.weather_conditions}</p>}
+                  {treatment.notes && (
+                    <div className="p-3 bg-red-50 rounded mt-2">
+                      <span className="text-sm font-medium text-gray-700">Notes: </span>
+                      <span className="text-sm text-gray-600">{treatment.notes}</span>
+                    </div>
+                  )}
+                  {treatment.profiles && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {(treatment.profiles.first_name && treatment.profiles.last_name)
+                          ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
+                          : treatment.profiles.email}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          } else if (record.record_type === 'varroa_check') {
+            const check = record
+            return (
+              <div key={`check-${check.id}`} className="bg-white rounded-lg shadow p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Varroa Check</span>
+                      <h3 className="text-lg font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {new Date(check.check_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm"><span className="font-medium">Method:</span> {check.method}</p>
+                  {check.mites_count !== null && <p className="text-sm"><span className="font-medium">Mites Count:</span> {check.mites_count}</p>}
+                  {check.sample_size !== null && <p className="text-sm"><span className="font-medium">Sample Size:</span> {check.sample_size}</p>}
+                  {check.infestation_rate !== null && (
+                    <p className="text-sm">
+                      <span className="font-medium">Infestation Rate:</span>{' '}
+                      <span className={check.infestation_rate > 3 ? 'text-red-600 font-bold' : 'text-green-600'}>
+                        {check.infestation_rate}%
+                      </span>
+                    </p>
+                  )}
+                  <p className="text-sm">
+                    <span className="font-medium">Action Threshold:</span>{' '}
+                    <span className={check.action_threshold_reached ? 'text-red-600 font-bold' : 'text-green-600'}>
+                      {check.action_threshold_reached ? 'Reached - Treatment Needed' : 'Not Reached'}
+                    </span>
+                  </p>
+                  {check.notes && (
+                    <div className="p-3 bg-orange-50 rounded mt-2">
+                      <span className="text-sm font-medium text-gray-700">Notes: </span>
+                      <span className="text-sm text-gray-600">{check.notes}</span>
+                    </div>
+                  )}
+                  {check.profiles && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {(check.profiles.first_name && check.profiles.last_name)
+                          ? `${check.profiles.first_name} ${check.profiles.last_name}`
+                          : check.profiles.email}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          } else if (record.record_type === 'feeding') {
+            const feeding = record
+            return (
+              <div key={`feeding-${feeding.id}`} className="bg-white rounded-lg shadow p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Feeding</span>
+                      <h3 className="text-lg font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {new Date(feeding.feed_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm"><span className="font-medium">Feed Type:</span> {feeding.feed_type}</p>
+                  {feeding.quantity !== null && (
+                    <p className="text-sm"><span className="font-medium">Quantity:</span> {feeding.quantity} {feeding.unit}</p>
+                  )}
+                  {feeding.notes && (
+                    <div className="p-3 bg-yellow-50 rounded mt-2">
+                      <span className="text-sm font-medium text-gray-700">Notes: </span>
+                      <span className="text-sm text-gray-600">{feeding.notes}</span>
+                    </div>
+                  )}
+                  {feeding.profiles && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {(feeding.profiles.first_name && feeding.profiles.last_name)
+                          ? `${feeding.profiles.first_name} ${feeding.profiles.last_name}`
+                          : feeding.profiles.email}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          } else if (record.record_type === 'harvest') {
+            const harvest = record
+            return (
+              <div key={`harvest-${harvest.id}`} className="bg-white rounded-lg shadow p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">Harvest</span>
+                      <h3 className="text-lg font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {new Date(harvest.harvest_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {harvest.honey_weight !== null && (
+                    <p className="text-sm"><span className="font-medium">Honey:</span> {harvest.honey_weight} {harvest.unit}</p>
+                  )}
+                  {harvest.wax_weight !== null && (
+                    <p className="text-sm"><span className="font-medium">Wax:</span> {harvest.wax_weight} {harvest.unit}</p>
+                  )}
+                  {harvest.frames_harvested !== null && (
+                    <p className="text-sm"><span className="font-medium">Frames Harvested:</span> {harvest.frames_harvested}</p>
+                  )}
+                  {harvest.notes && (
+                    <div className="p-3 bg-green-50 rounded mt-2">
+                      <span className="text-sm font-medium text-gray-700">Notes: </span>
+                      <span className="text-sm text-gray-600">{harvest.notes}</span>
+                    </div>
+                  )}
+                  {harvest.profiles && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {(harvest.profiles.first_name && harvest.profiles.last_name)
+                          ? `${harvest.profiles.first_name} ${harvest.profiles.last_name}`
+                          : harvest.profiles.email}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          }
+          return null
+        })}
       </div>
 
-      {filteredInspections.length === 0 && (
+      {filteredRecords.length === 0 && (
         <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
           {filterHiveId
-            ? `No inspections found for this hive. Select "All Hives" or record a new inspection.`
-            : 'No inspections recorded yet. Start tracking your hive inspections!'}
+            ? `No records found for this hive. Select "All Hives" or record a new activity.`
+            : recordTypeFilter !== 'all'
+              ? `No ${recordTypeFilter.replace('_', ' ')} records found. Try changing the filters or record a new activity.`
+              : 'No records found. Start tracking your hive activities!'}
         </div>
       )}
 
