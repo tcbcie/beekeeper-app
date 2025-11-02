@@ -1280,43 +1280,6 @@ export default function InspectionsPage() {
     return true
   })
 
-  // Keep the old filteredInspections for the inspection form (still needed for editing inspections)
-  const filteredInspections = inspections.filter(inspection => {
-    // Filter by apiary
-    if (filterApiaryId) {
-      const hive = hives.find(h => h.id === inspection.hive_id)
-      if (!hive || hive.apiary_id !== filterApiaryId) {
-        return false
-      }
-    }
-
-    // Filter by hive
-    if (filterHiveId && inspection.hive_id !== filterHiveId) {
-      return false
-    }
-
-    // Filter by time period
-    const startDate = getDateRange()
-    if (startDate) {
-      const inspectionDate = new Date(inspection.inspection_date)
-
-      if (timePeriod === 'custom') {
-        if (customStartDate && inspectionDate < new Date(customStartDate)) {
-          return false
-        }
-        if (customEndDate && inspectionDate > new Date(customEndDate)) {
-          return false
-        }
-      } else {
-        if (inspectionDate < startDate) {
-          return false
-        }
-      }
-    }
-
-    return true
-  })
-
   if (loading) return <LoadingSpinner text="Loading records..." />
 
   return (
