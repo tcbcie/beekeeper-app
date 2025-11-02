@@ -249,6 +249,35 @@ export default function InspectionsPage() {
         humidity: data[0].weather_humidity,
         wind: data[0].weather_wind_speed
       })
+
+      // If profiles data is missing, fetch it manually (fallback for missing foreign key)
+      if (data[0] && !data[0].profiles) {
+        console.log('⚠️ Profiles data missing - fetching manually')
+        const userIds = [...new Set(data.map(i => i.user_id).filter(Boolean))]
+
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', userIds)
+
+          if (profilesData) {
+            const profilesMap = new Map(profilesData.map(p => [p.id, p]))
+            data.forEach((inspection: Inspection) => {
+              if (inspection.user_id) {
+                const profile = profilesMap.get(inspection.user_id)
+                if (profile) {
+                  inspection.profiles = {
+                    full_name: profile.full_name,
+                    email: profile.email
+                  }
+                }
+              }
+            })
+            console.log('✅ Manually attached profiles data')
+          }
+        }
+      }
     }
 
     if (data) setInspections(data as Inspection[])

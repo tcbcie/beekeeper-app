@@ -14,6 +14,7 @@ interface Hive {
 interface VarroaCheck {
   id: string
   hive_id: string
+  user_id: string
   check_date: string
   method: string
   mites_count: number | null
@@ -69,6 +70,32 @@ export default function VarroaCheckPage() {
       .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('check_date', { ascending: false })
+
+    // Fallback: If profiles data is missing, fetch it manually
+    if (data && data.length > 0 && data[0] && !data[0].profiles) {
+      const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))]
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds as string[])
+
+        if (profilesData) {
+          const profilesMap = new Map(profilesData.map(p => [p.id, p]))
+          data.forEach((check: VarroaCheck) => {
+            if (check.user_id) {
+              const profile = profilesMap.get(check.user_id)
+              if (profile) {
+                check.profiles = {
+                  full_name: profile.full_name,
+                  email: profile.email
+                }
+              }
+            }
+          })
+        }
+      }
+    }
 
     if (data) setChecks(data as VarroaCheck[])
     setLoading(false)

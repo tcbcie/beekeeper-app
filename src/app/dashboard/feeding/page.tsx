@@ -20,6 +20,7 @@ interface Hive {
 interface Feeding {
   id: string
   hive_id: string
+  user_id: string
   feed_date: string
   feed_type: string
   quantity: number | null
@@ -71,6 +72,32 @@ export default function FeedingPage() {
       .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('feed_date', { ascending: false })
+
+    // Fallback: If profiles data is missing, fetch it manually
+    if (data && data.length > 0 && data[0] && !data[0].profiles) {
+      const userIds = [...new Set(data.map(f => f.user_id).filter(Boolean))]
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds as string[])
+
+        if (profilesData) {
+          const profilesMap = new Map(profilesData.map(p => [p.id, p]))
+          data.forEach((feeding: Feeding) => {
+            if (feeding.user_id) {
+              const profile = profilesMap.get(feeding.user_id)
+              if (profile) {
+                feeding.profiles = {
+                  full_name: profile.full_name,
+                  email: profile.email
+                }
+              }
+            }
+          })
+        }
+      }
+    }
 
     if (data) setFeedings(data as Feeding[])
     setLoading(false)
