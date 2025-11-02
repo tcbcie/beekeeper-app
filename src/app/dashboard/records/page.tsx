@@ -128,6 +128,7 @@ export default function InspectionsPage() {
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
+  const [recordTypeFilter, setRecordTypeFilter] = useState<'all' | 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest'>('all')
   const [showDropdown, setShowDropdown] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_lastInspection, setLastInspection] = useState<Inspection | null>(null)
@@ -943,6 +944,20 @@ export default function InspectionsPage() {
             <option value="my">My Records</option>
             <option value="team">Team Records</option>
             <option value="all">All Records</option>
+          </select>
+          <select
+            value={recordTypeFilter}
+            onChange={(e) => {
+              setRecordTypeFilter(e.target.value as typeof recordTypeFilter)
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+          >
+            <option value="all">All Types</option>
+            <option value="inspection">Hive Inspection</option>
+            <option value="varroa_treatment">Varroa Treatment</option>
+            <option value="varroa_check">Varroa Check</option>
+            <option value="feeding">Feeding</option>
+            <option value="harvest">Harvest</option>
           </select>
           <select
             value={filterApiaryId}
