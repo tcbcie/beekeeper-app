@@ -242,6 +242,8 @@ export default function InspectionsPage() {
   const [diseaseExpanded, setDiseaseExpanded] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
+  const [checkMethodOptions, setCheckMethodOptions] = useState<string[]>([])
+  const [otherCheckMethod, setOtherCheckMethod] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -552,6 +554,38 @@ export default function InspectionsPage() {
     setApiaries(uniqueApiaries)
   }, [userId])
 
+  const fetchCheckMethods = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    try {
+      // Fetch the varroa_check_method category
+      const { data: category } = await supabase
+        .from('dropdown_categories')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .eq('category_key', 'varroa_check_method')
+        .single()
+
+      if (category) {
+        // Fetch active dropdown values for this category
+        const { data: values } = await supabase
+          .from('dropdown_values')
+          .select('value')
+          .eq('category_id', category.id)
+          .eq('is_active', true)
+          .order('display_order')
+
+        if (values) {
+          const methods = values.map(v => v.value)
+          setCheckMethodOptions(methods)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching check methods:', error)
+    }
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -567,9 +601,10 @@ export default function InspectionsPage() {
       fetchHarvests(id)
       fetchHives(id)
       fetchApiaries(id)
+      fetchCheckMethods(id)
     }
     initUser()
-  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries])
+  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods])
 
   // Merge all records whenever any record type changes
   useEffect(() => {
@@ -3013,14 +3048,38 @@ export default function InspectionsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Method *</label>
-              <input
-                type="text"
-                value={editingCheck?.method || ''}
-                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                placeholder="e.g., Sugar roll, Alcohol wash"
+              <select
+                value={editingCheck?.method && checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : 'Other'}
+                onChange={(e) => {
+                  if (e.target.value === 'Other') {
+                    setOtherCheckMethod(editingCheck?.method && !checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : '')
+                  } else {
+                    setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)
+                    setOtherCheckMethod('')
+                  }
+                }}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
                 required
-              />
+              >
+                <option value="">Select method</option>
+                {checkMethodOptions.map((method) => (
+                  <option key={method} value={method}>{method}</option>
+                ))}
+                <option value="Other">Other (specify below)</option>
+              </select>
+              {(editingCheck?.method && !checkMethodOptions.includes(editingCheck.method) || otherCheckMethod) && (
+                <input
+                  type="text"
+                  value={otherCheckMethod || (editingCheck?.method && !checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : '')}
+                  onChange={(e) => {
+                    setOtherCheckMethod(e.target.value)
+                    setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white mt-2"
+                  placeholder="Specify other method"
+                  required
+                />
+              )}
             </div>
 
             <div>
