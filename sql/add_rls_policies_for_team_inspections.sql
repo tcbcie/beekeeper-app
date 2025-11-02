@@ -62,10 +62,12 @@ ALTER TABLE public.harvests ENABLE ROW LEVEL SECURITY;
 -- INSPECTIONS POLICIES
 -- ============================================================================
 
--- Drop existing policies if they exist
+-- Drop existing policies if they exist (both old and new names)
 DROP POLICY IF EXISTS "Users can view their own inspections" ON public.inspections;
 DROP POLICY IF EXISTS "Users can view shared hive inspections" ON public.inspections;
+DROP POLICY IF EXISTS "Users can view accessible hive inspections" ON public.inspections;
 DROP POLICY IF EXISTS "Users can insert their own inspections" ON public.inspections;
+DROP POLICY IF EXISTS "Users can insert inspections for accessible hives" ON public.inspections;
 DROP POLICY IF EXISTS "Users can update their own inspections" ON public.inspections;
 DROP POLICY IF EXISTS "Users can delete their own inspections" ON public.inspections;
 
@@ -103,9 +105,13 @@ USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Users can view their own varroa treatments" ON public.varroa_treatments;
 DROP POLICY IF EXISTS "Users can view shared hive treatments" ON public.varroa_treatments;
+DROP POLICY IF EXISTS "Users can view accessible hive treatments" ON public.varroa_treatments;
 DROP POLICY IF EXISTS "Users can insert their own varroa treatments" ON public.varroa_treatments;
+DROP POLICY IF EXISTS "Users can insert treatments for accessible hives" ON public.varroa_treatments;
 DROP POLICY IF EXISTS "Users can update their own varroa treatments" ON public.varroa_treatments;
+DROP POLICY IF EXISTS "Users can update their own treatments" ON public.varroa_treatments;
 DROP POLICY IF EXISTS "Users can delete their own varroa treatments" ON public.varroa_treatments;
+DROP POLICY IF EXISTS "Users can delete their own treatments" ON public.varroa_treatments;
 
 CREATE POLICY "Users can view accessible hive treatments"
 ON public.varroa_treatments FOR SELECT
@@ -137,9 +143,13 @@ USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Users can view their own varroa checks" ON public.varroa_checks;
 DROP POLICY IF EXISTS "Users can view shared hive checks" ON public.varroa_checks;
+DROP POLICY IF EXISTS "Users can view accessible hive checks" ON public.varroa_checks;
 DROP POLICY IF EXISTS "Users can insert their own varroa checks" ON public.varroa_checks;
+DROP POLICY IF EXISTS "Users can insert checks for accessible hives" ON public.varroa_checks;
 DROP POLICY IF EXISTS "Users can update their own varroa checks" ON public.varroa_checks;
+DROP POLICY IF EXISTS "Users can update their own checks" ON public.varroa_checks;
 DROP POLICY IF EXISTS "Users can delete their own varroa checks" ON public.varroa_checks;
+DROP POLICY IF EXISTS "Users can delete their own checks" ON public.varroa_checks;
 
 CREATE POLICY "Users can view accessible hive checks"
 ON public.varroa_checks FOR SELECT
@@ -171,7 +181,9 @@ USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Users can view their own feedings" ON public.feedings;
 DROP POLICY IF EXISTS "Users can view shared hive feedings" ON public.feedings;
+DROP POLICY IF EXISTS "Users can view accessible hive feedings" ON public.feedings;
 DROP POLICY IF EXISTS "Users can insert their own feedings" ON public.feedings;
+DROP POLICY IF EXISTS "Users can insert feedings for accessible hives" ON public.feedings;
 DROP POLICY IF EXISTS "Users can update their own feedings" ON public.feedings;
 DROP POLICY IF EXISTS "Users can delete their own feedings" ON public.feedings;
 
@@ -205,7 +217,9 @@ USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Users can view their own harvests" ON public.harvests;
 DROP POLICY IF EXISTS "Users can view shared hive harvests" ON public.harvests;
+DROP POLICY IF EXISTS "Users can view accessible hive harvests" ON public.harvests;
 DROP POLICY IF EXISTS "Users can insert their own harvests" ON public.harvests;
+DROP POLICY IF EXISTS "Users can insert harvests for accessible hives" ON public.harvests;
 DROP POLICY IF EXISTS "Users can update their own harvests" ON public.harvests;
 DROP POLICY IF EXISTS "Users can delete their own harvests" ON public.harvests;
 
