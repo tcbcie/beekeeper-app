@@ -67,7 +67,7 @@ export async function getUserRole(): Promise<UserRole> {
   }
 
   const { data, error } = await supabase
-    .from('user_profiles')
+    .from('profiles')
     .select('role')
     .eq('id', userId)
     .single()
@@ -92,7 +92,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   }
 
   const { data, error } = await supabase
-    .from('user_profiles')
+    .from('profiles')
     .select('*')
     .eq('id', userId)
     .single()
