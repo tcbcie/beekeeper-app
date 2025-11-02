@@ -37,13 +37,18 @@ AS $$
     -- User owns the hive directly
     SELECT 1 FROM hives WHERE id = hive_uuid AND user_id = user_uuid
   ) OR EXISTS (
-    -- Hive is in an apiary shared with a team the user is part of
+    -- User owns the apiary directly
+    SELECT 1 FROM hives h
+    INNER JOIN apiaries a ON h.apiary_id = a.id
+    WHERE h.id = hive_uuid AND a.user_id = user_uuid
+  ) OR EXISTS (
+    -- Hive is in an apiary shared with a team the user is a member of
     SELECT 1 FROM hives h
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN team_members tm ON ta.team_id = tm.team_id
     WHERE h.id = hive_uuid AND tm.user_id = user_uuid
   ) OR EXISTS (
-    -- Hive is in an apiary owned by a team the user owns
+    -- Hive is in an apiary shared via a team the user owns
     SELECT 1 FROM hives h
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN teams t ON ta.team_id = t.id
