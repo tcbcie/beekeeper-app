@@ -25,9 +25,9 @@ interface VarroaCheck {
   hives?: {
     hive_number: string
   }
-  user_profiles?: {
-    first_name: string
-    last_name: string
+  profiles?: {
+    full_name: string
+    email: string
   }
 }
 
@@ -67,17 +67,17 @@ export default function VarroaCheckPage() {
 
     const { data } = await supabase
       .from('varroa_checks')
-      .select('*, hives(hive_number), user_profiles(first_name, last_name)')
+      .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('check_date', { ascending: false })
 
     // Fallback: If profiles data is missing, fetch it manually
-    if (data && data.length > 0 && data[0] && !data[0].user_profiles) {
+    if (data && data.length > 0 && data[0] && !data[0].profiles) {
       const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from('user_profiles')
-          .select('id, first_name, last_name')
+          .from('profiles')
+          .select('id, full_name, email')
           .in('id', userIds as string[])
 
         if (profilesData) {
@@ -86,9 +86,9 @@ export default function VarroaCheckPage() {
             if (check.user_id) {
               const profile = profilesMap.get(check.user_id)
               if (profile) {
-                check.user_profiles = {
-                  first_name: profile.first_name,
-                  last_name: profile.last_name
+                check.profiles = {
+                  full_name: profile.full_name,
+                  email: profile.email
                 }
               }
             }
@@ -421,10 +421,10 @@ export default function VarroaCheckPage() {
                 <div>
                   <h3 className="text-lg font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
                   <p className="text-sm text-gray-500">{check.check_date}</p>
-                  {check.user_profiles && (
+                  {check.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {`${check.user_profiles.first_name || ''} ${check.user_profiles.last_name || ''}`.trim() || 'User'}
+                        {check.profiles.full_name || check.profiles.email}
                       </span>
                     </p>
                   )}
