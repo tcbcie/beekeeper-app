@@ -804,6 +804,183 @@ export default function InspectionsPage() {
     })
   }
 
+  // Varroa Treatment CRUD Handler
+  const handleTreatmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId || !editingTreatment) return
+
+    try {
+      const submitData = {
+        hive_id: editingTreatment.hive_id,
+        treatment_date: editingTreatment.treatment_date,
+        treatment_type: editingTreatment.treatment_type,
+        product_name: editingTreatment.product_name || '',
+        dosage: editingTreatment.dosage,
+        temperature: editingTreatment.temperature,
+        weather_conditions: editingTreatment.weather_conditions || '',
+        notes: editingTreatment.notes || '',
+      }
+
+      if (editingTreatment.id) {
+        // Update existing treatment
+        const { error } = await supabase
+          .from('varroa_treatments')
+          .update(submitData)
+          .eq('id', editingTreatment.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        // Insert new treatment
+        const { error } = await supabase
+          .from('varroa_treatments')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+      }
+
+      fetchVarroaTreatments()
+      setShowForm(false)
+      setEditingTreatment(null)
+    } catch (error) {
+      if (error instanceof Error) {
+        alert('Error saving treatment: ' + error.message)
+      }
+    }
+  }
+
+  // Varroa Check CRUD Handler
+  const handleCheckSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId || !editingCheck) return
+
+    try {
+      const submitData = {
+        hive_id: editingCheck.hive_id,
+        check_date: editingCheck.check_date,
+        method: editingCheck.method,
+        mites_count: editingCheck.mites_count,
+        sample_size: editingCheck.sample_size,
+        infestation_rate: editingCheck.infestation_rate,
+        action_threshold_reached: editingCheck.action_threshold_reached,
+        notes: editingCheck.notes || '',
+      }
+
+      if (editingCheck.id) {
+        // Update existing check
+        const { error } = await supabase
+          .from('varroa_checks')
+          .update(submitData)
+          .eq('id', editingCheck.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        // Insert new check
+        const { error } = await supabase
+          .from('varroa_checks')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+      }
+
+      fetchVarroaChecks()
+      setShowForm(false)
+      setEditingCheck(null)
+    } catch (error) {
+      if (error instanceof Error) {
+        alert('Error saving check: ' + error.message)
+      }
+    }
+  }
+
+  // Feeding CRUD Handler
+  const handleFeedingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId || !editingFeeding) return
+
+    try {
+      const submitData = {
+        hive_id: editingFeeding.hive_id,
+        feed_date: editingFeeding.feed_date,
+        feed_type: editingFeeding.feed_type,
+        quantity: editingFeeding.quantity,
+        unit: editingFeeding.unit,
+        notes: editingFeeding.notes || '',
+      }
+
+      if (editingFeeding.id) {
+        // Update existing feeding
+        const { error } = await supabase
+          .from('feedings')
+          .update(submitData)
+          .eq('id', editingFeeding.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        // Insert new feeding
+        const { error } = await supabase
+          .from('feedings')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+      }
+
+      fetchFeedings()
+      setShowForm(false)
+      setEditingFeeding(null)
+    } catch (error) {
+      if (error instanceof Error) {
+        alert('Error saving feeding: ' + error.message)
+      }
+    }
+  }
+
+  // Harvest CRUD Handler
+  const handleHarvestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId || !editingHarvest) return
+
+    try {
+      const submitData = {
+        hive_id: editingHarvest.hive_id,
+        harvest_date: editingHarvest.harvest_date,
+        honey_weight: editingHarvest.honey_weight,
+        wax_weight: editingHarvest.wax_weight,
+        unit: editingHarvest.unit,
+        frames_harvested: editingHarvest.frames_harvested,
+        notes: editingHarvest.notes || '',
+      }
+
+      if (editingHarvest.id) {
+        // Update existing harvest
+        const { error } = await supabase
+          .from('harvests')
+          .update(submitData)
+          .eq('id', editingHarvest.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        // Insert new harvest
+        const { error } = await supabase
+          .from('harvests')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+      }
+
+      fetchHarvests()
+      setShowForm(false)
+      setEditingHarvest(null)
+    } catch (error) {
+      if (error instanceof Error) {
+        alert('Error saving harvest: ' + error.message)
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -1223,6 +1400,18 @@ export default function InspectionsPage() {
                 <button
                   onClick={() => {
                     setFormType('varroa_treatment')
+                    setEditingTreatment({
+                      id: '',
+                      hive_id: '',
+                      user_id: userId || '',
+                      treatment_date: new Date().toISOString().split('T')[0],
+                      treatment_type: '',
+                      product_name: '',
+                      dosage: '',
+                      temperature: null,
+                      weather_conditions: '',
+                      notes: '',
+                    })
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -1234,6 +1423,18 @@ export default function InspectionsPage() {
                 <button
                   onClick={() => {
                     setFormType('varroa_check')
+                    setEditingCheck({
+                      id: '',
+                      hive_id: '',
+                      user_id: userId || '',
+                      check_date: new Date().toISOString().split('T')[0],
+                      method: '',
+                      mites_count: null,
+                      sample_size: null,
+                      infestation_rate: null,
+                      action_threshold_reached: false,
+                      notes: '',
+                    })
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -1245,6 +1446,16 @@ export default function InspectionsPage() {
                 <button
                   onClick={() => {
                     setFormType('feeding')
+                    setEditingFeeding({
+                      id: '',
+                      hive_id: '',
+                      user_id: userId || '',
+                      feed_date: new Date().toISOString().split('T')[0],
+                      feed_type: '',
+                      quantity: null,
+                      unit: 'L',
+                      notes: '',
+                    })
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -1256,6 +1467,17 @@ export default function InspectionsPage() {
                 <button
                   onClick={() => {
                     setFormType('harvest')
+                    setEditingHarvest({
+                      id: '',
+                      hive_id: '',
+                      user_id: userId || '',
+                      harvest_date: new Date().toISOString().split('T')[0],
+                      honey_weight: null,
+                      wax_weight: null,
+                      unit: 'kg',
+                      frames_harvested: null,
+                      notes: '',
+                    })
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -2642,11 +2864,7 @@ export default function InspectionsPage() {
               </button>
             </div>
           </div>
-          <form id="treatment-form" onSubmit={async (e) => {
-            e.preventDefault()
-            // Form submission logic will be added
-            alert('Varroa Treatment form submission - to be implemented')
-          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form id="treatment-form" onSubmit={handleTreatmentSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
               <select
@@ -2787,10 +3005,7 @@ export default function InspectionsPage() {
               </button>
             </div>
           </div>
-          <form id="check-form" onSubmit={async (e) => {
-            e.preventDefault()
-            alert('Varroa Check form submission - to be implemented')
-          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form id="check-form" onSubmit={handleCheckSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
               <select
@@ -2931,10 +3146,7 @@ export default function InspectionsPage() {
               </button>
             </div>
           </div>
-          <form id="feeding-form" onSubmit={async (e) => {
-            e.preventDefault()
-            alert('Feeding form submission - to be implemented')
-          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form id="feeding-form" onSubmit={handleFeedingSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
               <select
@@ -3055,10 +3267,7 @@ export default function InspectionsPage() {
               </button>
             </div>
           </div>
-          <form id="harvest-form" onSubmit={async (e) => {
-            e.preventDefault()
-            alert('Harvest form submission - to be implemented')
-          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form id="harvest-form" onSubmit={handleHarvestSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
               <select
