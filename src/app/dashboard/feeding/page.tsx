@@ -30,7 +30,8 @@ interface Feeding {
     hive_number: string
   }
   profiles?: {
-    full_name: string
+    first_name: string | null
+    last_name: string | null
     email: string
   }
 }
@@ -70,7 +71,7 @@ export default function FeedingPage() {
     // Query without user_id filter to avoid conflict with profiles join
     const { data } = await supabase
       .from('feedings')
-      .select('*, hives(hive_number), profiles(full_name, email)')
+      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
       .order('feed_date', { ascending: false })
 
     // Filter by user_id in memory instead
@@ -82,7 +83,7 @@ export default function FeedingPage() {
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, first_name, last_name, email')
           .in('id', userIds as string[])
 
         if (profilesData) {
@@ -92,7 +93,8 @@ export default function FeedingPage() {
               const profile = profilesMap.get(feeding.user_id)
               if (profile) {
                 feeding.profiles = {
-                  full_name: profile.full_name,
+                  first_name: profile.first_name,
+                  last_name: profile.last_name,
                   email: profile.email
                 }
               }
@@ -399,7 +401,9 @@ export default function FeedingPage() {
                   {feeding.profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {feeding.profiles.full_name || feeding.profiles.email}
+                        {(feeding.profiles.first_name && feeding.profiles.last_name)
+                          ? `${feeding.profiles.first_name} ${feeding.profiles.last_name}`
+                          : feeding.profiles.email}
                       </span>
                     </p>
                   )}
