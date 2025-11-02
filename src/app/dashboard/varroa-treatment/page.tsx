@@ -51,9 +51,9 @@ interface VarroaTreatment {
     hive_number: string
     apiary_id: string | null
   }
-  profiles?: {
-    full_name: string
-    email: string
+  user_profiles?: {
+    first_name: string
+    last_name: string
   }
 }
 
@@ -103,7 +103,7 @@ export default function VarroaTreatmentPage() {
       .order('treatment_date', { ascending: false })
 
     // Fallback: If profiles data is missing, fetch it manually
-    if (data && data.length > 0 && data[0] && !data[0].profiles) {
+    if (data && data.length > 0 && data[0] && !data[0].user_profiles) {
       const userIds = [...new Set(data.map(t => t.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
@@ -117,9 +117,9 @@ export default function VarroaTreatmentPage() {
             if (treatment.user_id) {
               const profile = profilesMap.get(treatment.user_id)
               if (profile) {
-                treatment.profiles = {
-                  full_name: profile.full_name,
-                  email: profile.email
+                treatment.user_profiles = {
+                  first_name: profile.first_name,
+                  last_name: profile.last_name
                 }
               }
             }
@@ -801,10 +801,10 @@ export default function VarroaTreatmentPage() {
               <div>
                 <h3 className="text-lg font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
                 <p className="text-sm text-gray-500">{treatment.treatment_date}</p>
-                {treatment.profiles && (
+                {treatment.user_profiles && (
                   <p className="text-xs text-gray-500 mt-1">
                     Recorded by: <span className="font-medium text-gray-700">
-                      {treatment.profiles.full_name || treatment.profiles.email}
+                      {`${treatment.user_profiles.first_name || ''} ${treatment.user_profiles.last_name || ''}`.trim() || 'User'}
                     </span>
                   </p>
                 )}
