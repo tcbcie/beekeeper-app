@@ -1360,7 +1360,7 @@ export default function InspectionsPage() {
         </div>
       </div>
 
-      {showForm && (
+      {showForm && formType === 'inspection' && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
@@ -2611,6 +2611,553 @@ export default function InspectionsPage() {
               >
                 Cancel
               </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showForm && formType === 'varroa_treatment' && (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h3 className="text-xl font-semibold">
+              {editingTreatment ? 'Edit Varroa Treatment' : 'Record New Varroa Treatment'}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                type="submit"
+                form="treatment-form"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 transition-all touch-manipulation font-medium"
+              >
+                {editingTreatment ? 'Update' : 'Save'} Treatment
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingTreatment(null)
+                }}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <form id="treatment-form" onSubmit={async (e) => {
+            e.preventDefault()
+            // Form submission logic will be added
+            alert('Varroa Treatment form submission - to be implemented')
+          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <select
+                value={formApiaryId}
+                onChange={(e) => setFormApiaryId(e.target.value)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+              >
+                <option value="">All Apiaries</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <select
+                value={editingTreatment?.hive_id || ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, hive_id: e.target.value} : null)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="">Select hive</option>
+                {hives
+                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>{h.hive_number}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Date *</label>
+              <input
+                type="date"
+                value={editingTreatment?.treatment_date || ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, treatment_date: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Type *</label>
+              <input
+                type="text"
+                value={editingTreatment?.treatment_type || ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, treatment_type: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="e.g., Oxalic acid, Apiguard"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+              <input
+                type="text"
+                value={editingTreatment?.product_name || ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, product_name: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dosage *</label>
+              <input
+                type="text"
+                value={editingTreatment?.dosage || ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, dosage: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="e.g., 5ml per hive"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Temperature (°C)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={editingTreatment?.temperature ?? ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, temperature: e.target.value ? parseFloat(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Weather Conditions</label>
+              <input
+                type="text"
+                value={editingTreatment?.weather_conditions || ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, weather_conditions: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
+                value={editingTreatment?.notes || ''}
+                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, notes: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                rows={4}
+                placeholder="Optional notes about the treatment"
+              />
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showForm && formType === 'varroa_check' && (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h3 className="text-xl font-semibold">
+              {editingCheck ? 'Edit Varroa Check' : 'Record New Varroa Check'}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                type="submit"
+                form="check-form"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 transition-all touch-manipulation font-medium"
+              >
+                {editingCheck ? 'Update' : 'Save'} Check
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingCheck(null)
+                }}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <form id="check-form" onSubmit={async (e) => {
+            e.preventDefault()
+            alert('Varroa Check form submission - to be implemented')
+          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <select
+                value={formApiaryId}
+                onChange={(e) => setFormApiaryId(e.target.value)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+              >
+                <option value="">All Apiaries</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <select
+                value={editingCheck?.hive_id || ''}
+                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, hive_id: e.target.value} : null)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="">Select hive</option>
+                {hives
+                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>{h.hive_number}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Check Date *</label>
+              <input
+                type="date"
+                value={editingCheck?.check_date || ''}
+                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, check_date: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Method *</label>
+              <input
+                type="text"
+                value={editingCheck?.method || ''}
+                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="e.g., Sugar roll, Alcohol wash"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mites Count</label>
+              <input
+                type="number"
+                value={editingCheck?.mites_count ?? ''}
+                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, mites_count: e.target.value ? parseInt(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sample Size</label>
+              <input
+                type="number"
+                value={editingCheck?.sample_size ?? ''}
+                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, sample_size: e.target.value ? parseInt(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Infestation Rate (%)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={editingCheck?.infestation_rate ?? ''}
+                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, infestation_rate: e.target.value ? parseFloat(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editingCheck?.action_threshold_reached || false}
+                  onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, action_threshold_reached: e.target.checked} : null)}
+                  className="h-5 w-5 rounded border-gray-300 text-orange-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Action Threshold Reached</span>
+              </label>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
+                value={editingCheck?.notes || ''}
+                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, notes: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                rows={4}
+                placeholder="Optional notes about the check"
+              />
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showForm && formType === 'feeding' && (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h3 className="text-xl font-semibold">
+              {editingFeeding ? 'Edit Feeding' : 'Record New Feeding'}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                type="submit"
+                form="feeding-form"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-all touch-manipulation font-medium"
+              >
+                {editingFeeding ? 'Update' : 'Save'} Feeding
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingFeeding(null)
+                }}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <form id="feeding-form" onSubmit={async (e) => {
+            e.preventDefault()
+            alert('Feeding form submission - to be implemented')
+          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <select
+                value={formApiaryId}
+                onChange={(e) => setFormApiaryId(e.target.value)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+              >
+                <option value="">All Apiaries</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <select
+                value={editingFeeding?.hive_id || ''}
+                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, hive_id: e.target.value} : null)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="">Select hive</option>
+                {hives
+                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>{h.hive_number}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Feed Date *</label>
+              <input
+                type="date"
+                value={editingFeeding?.feed_date || ''}
+                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, feed_date: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Feed Type *</label>
+              <input
+                type="text"
+                value={editingFeeding?.feed_type || ''}
+                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, feed_type: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="e.g., Sugar syrup, Fondant"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+              <input
+                type="number"
+                step="0.1"
+                value={editingFeeding?.quantity ?? ''}
+                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, quantity: e.target.value ? parseFloat(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+              <select
+                value={editingFeeding?.unit || 'L'}
+                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, unit: e.target.value} : null)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="L">Liters (L)</option>
+                <option value="kg">Kilograms (kg)</option>
+                <option value="g">Grams (g)</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
+                value={editingFeeding?.notes || ''}
+                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, notes: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                rows={4}
+                placeholder="Optional notes about the feeding"
+              />
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showForm && formType === 'harvest' && (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h3 className="text-xl font-semibold">
+              {editingHarvest ? 'Edit Harvest' : 'Record New Harvest'}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                type="submit"
+                form="harvest-form"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 active:bg-yellow-800 transition-all touch-manipulation font-medium"
+              >
+                {editingHarvest ? 'Update' : 'Save'} Harvest
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingHarvest(null)
+                }}
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <form id="harvest-form" onSubmit={async (e) => {
+            e.preventDefault()
+            alert('Harvest form submission - to be implemented')
+          }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <select
+                value={formApiaryId}
+                onChange={(e) => setFormApiaryId(e.target.value)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+              >
+                <option value="">All Apiaries</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <select
+                value={editingHarvest?.hive_id || ''}
+                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, hive_id: e.target.value} : null)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="">Select hive</option>
+                {hives
+                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>{h.hive_number}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Harvest Date *</label>
+              <input
+                type="date"
+                value={editingHarvest?.harvest_date || ''}
+                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, harvest_date: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Honey Weight</label>
+              <input
+                type="number"
+                step="0.1"
+                value={editingHarvest?.honey_weight ?? ''}
+                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, honey_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Wax Weight</label>
+              <input
+                type="number"
+                step="0.1"
+                value={editingHarvest?.wax_weight ?? ''}
+                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, wax_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+              <select
+                value={editingHarvest?.unit || 'kg'}
+                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, unit: e.target.value} : null)}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="kg">Kilograms (kg)</option>
+                <option value="lb">Pounds (lb)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Frames Harvested</label>
+              <input
+                type="number"
+                value={editingHarvest?.frames_harvested ?? ''}
+                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, frames_harvested: e.target.value ? parseInt(e.target.value) : null} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
+                value={editingHarvest?.notes || ''}
+                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, notes: e.target.value} : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                rows={4}
+                placeholder="Optional notes about the harvest"
+              />
             </div>
           </form>
         </div>
