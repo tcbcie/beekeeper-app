@@ -67,7 +67,7 @@ export default function VarroaCheckPage() {
 
     const { data } = await supabase
       .from('varroa_checks')
-      .select('*, hives(hive_number), profiles(full_name, email)')
+      .select('*, hives(hive_number), user_profiles(first_name, last_name)')
       .eq('user_id', currentUserId)
       .order('check_date', { ascending: false })
 
@@ -76,8 +76,8 @@ export default function VarroaCheckPage() {
       const userIds = [...new Set(data.map(c => c.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
+          .from('user_profiles')
+          .select('id, first_name, last_name')
           .in('id', userIds as string[])
 
         if (profilesData) {

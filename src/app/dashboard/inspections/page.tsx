@@ -73,9 +73,9 @@ interface Inspection {
       eircode: string | null
     }
   }
-  profiles?: {
-    full_name: string
-    email: string
+  user_profiles?: {
+    first_name: string
+    last_name: string
   }
 }
 
@@ -212,7 +212,7 @@ export default function InspectionsPage() {
     // Build query based on ownership filter
     let query = supabase
       .from('inspections')
-      .select('*, hives(hive_number, apiaries(eircode)), profiles(full_name, email)')
+      .select('*, hives(hive_number, apiaries(eircode)), user_profiles(first_name, last_name)')
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
@@ -250,23 +250,23 @@ export default function InspectionsPage() {
         wind: data[0].weather_wind_speed
       })
 
-      // If profiles data is missing, fetch it manually (fallback for missing foreign key)
-      if (data[0] && !data[0].profiles) {
-        console.log('⚠️ Profiles data missing - fetching manually')
+      // If user_profiles data is missing, fetch it manually (fallback for missing foreign key)
+      if (data[0] && !data[0].user_profiles) {
+        console.log('⚠️ User profiles data missing - fetching manually')
         const userIds = [...new Set(data.map(i => i.user_id).filter(Boolean))]
-        console.log('User IDs to fetch profiles for:', userIds)
+        console.log('User IDs to fetch user_profiles for:', userIds)
 
         if (userIds.length > 0) {
           const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, full_name, email')
+            .from('user_profiles')
+            .select('id, first_name, last_name')
             .in('id', userIds)
 
           if (profilesError) {
-            console.error('❌ Error fetching profiles:', profilesError)
+            console.error('❌ Error fetching user_profiles:', profilesError)
           }
 
-          console.log('Fetched profiles data:', profilesData)
+          console.log('Fetched user_profiles data:', profilesData)
 
           if (profilesData) {
             const profilesMap = new Map(profilesData.map(p => [p.id, p]))
@@ -274,20 +274,20 @@ export default function InspectionsPage() {
               if (inspection.user_id) {
                 const profile = profilesMap.get(inspection.user_id)
                 if (profile) {
-                  inspection.profiles = {
-                    full_name: profile.full_name,
-                    email: profile.email
+                  inspection.user_profiles = {
+                    first_name: profile.first_name,
+                    last_name: profile.last_name
                   }
                 } else {
-                  console.warn(`No profile found for user_id: ${inspection.user_id}`)
+                  console.warn(`No user_profile found for user_id: ${inspection.user_id}`)
                 }
               }
             })
-            console.log('✅ Manually attached profiles data to', data.length, 'inspections')
+            console.log('✅ Manually attached user_profiles data to', data.length, 'inspections')
           }
         }
-      } else if (data[0] && data[0].profiles) {
-        console.log('✅ Profiles data already present via foreign key join')
+      } else if (data[0] && data[0].user_profiles) {
+        console.log('✅ User profiles data already present via foreign key join')
       }
     }
 
@@ -2412,10 +2412,10 @@ export default function InspectionsPage() {
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
-                  {inspection.profiles && (
+                  {inspection.user_profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {inspection.profiles.full_name || inspection.profiles.email}
+                        {`${inspection.user_profiles.first_name || ''} ${inspection.user_profiles.last_name || ''}`.trim() || 'User'}
                       </span>
                     </p>
                   )}
