@@ -986,7 +986,7 @@ export default function InspectionsPage() {
                   className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 rounded-t-lg transition-colors"
                 >
                   <Plus size={16} />
-                  Record Inspection
+                  Hive Inspection
                 </button>
                 <button
                   onClick={() => {

@@ -96,15 +96,18 @@ export default function VarroaTreatmentPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    // Query without user_id filter to avoid conflict with profiles join
     const { data } = await supabase
       .from('varroa_treatments')
       .select('*, hives(hive_number, apiary_id), profiles(full_name, email)')
-      .eq('user_id', currentUserId)
       .order('treatment_date', { ascending: false })
 
+    // Filter by user_id in memory instead
+    const filteredData = data?.filter(t => t.user_id === currentUserId)
+
     // Fallback: If profiles data is missing, fetch it manually
-    if (data && data.length > 0 && data[0] && !data[0].profiles) {
-      const userIds = [...new Set(data.map(t => t.user_id).filter(Boolean))]
+    if (filteredData && filteredData.length > 0 && filteredData[0] && !filteredData[0].profiles) {
+      const userIds = [...new Set(filteredData.map(t => t.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -113,7 +116,7 @@ export default function VarroaTreatmentPage() {
 
         if (profilesData) {
           const profilesMap = new Map(profilesData.map(p => [p.id, p]))
-          data.forEach((treatment: VarroaTreatment) => {
+          filteredData.forEach((treatment: VarroaTreatment) => {
             if (treatment.user_id) {
               const profile = profilesMap.get(treatment.user_id)
               if (profile) {
@@ -128,7 +131,7 @@ export default function VarroaTreatmentPage() {
       }
     }
 
-    if (data) setTreatments(data as VarroaTreatment[])
+    if (filteredData) setTreatments(filteredData as VarroaTreatment[])
     setLoading(false)
   }, [userId])
 
