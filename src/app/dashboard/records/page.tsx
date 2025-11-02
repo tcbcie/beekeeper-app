@@ -393,6 +393,58 @@ export default function InspectionsPage() {
     setLoading(false)
   }, [userId, ownershipFilter])
 
+  const fetchVarroaTreatments = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('varroa_treatments')
+      .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email)')
+      .order('treatment_date', { ascending: false })
+
+    const filteredData = data?.filter(t => t.user_id === currentUserId)
+    if (filteredData) setVarroaTreatments(filteredData as VarroaTreatment[])
+  }, [userId])
+
+  const fetchVarroaChecks = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('varroa_checks')
+      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
+      .order('check_date', { ascending: false })
+
+    const filteredData = data?.filter(c => c.user_id === currentUserId)
+    if (filteredData) setVarroaChecks(filteredData as VarroaCheck[])
+  }, [userId])
+
+  const fetchFeedings = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('feedings')
+      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
+      .order('feed_date', { ascending: false })
+
+    const filteredData = data?.filter(f => f.user_id === currentUserId)
+    if (filteredData) setFeedings(filteredData as Feeding[])
+  }, [userId])
+
+  const fetchHarvests = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data } = await supabase
+      .from('harvests')
+      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
+      .order('harvest_date', { ascending: false })
+
+    const filteredData = data?.filter(h => h.user_id === currentUserId)
+    if (filteredData) setHarvests(filteredData as Harvest[])
+  }, [userId])
+
   const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
@@ -504,11 +556,31 @@ export default function InspectionsPage() {
       }
       setUserId(id)
       fetchInspections(id)
+      fetchVarroaTreatments(id)
+      fetchVarroaChecks(id)
+      fetchFeedings(id)
+      fetchHarvests(id)
       fetchHives(id)
       fetchApiaries(id)
     }
     initUser()
-  }, [router, fetchInspections, fetchHives, fetchApiaries])
+  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries])
+
+  // Merge all records whenever any record type changes
+  useEffect(() => {
+    const merged: UnifiedRecord[] = [
+      ...inspections.map(i => ({ ...i, record_type: 'inspection' as const, date: i.inspection_date })),
+      ...varroaTreatments.map(vt => ({ ...vt, record_type: 'varroa_treatment' as const, date: vt.treatment_date })),
+      ...varroaChecks.map(vc => ({ ...vc, record_type: 'varroa_check' as const, date: vc.check_date })),
+      ...feedings.map(f => ({ ...f, record_type: 'feeding' as const, date: f.feed_date })),
+      ...harvests.map(h => ({ ...h, record_type: 'harvest' as const, date: h.harvest_date }))
+    ]
+
+    // Sort by date descending (most recent first)
+    merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    setAllRecords(merged)
+  }, [inspections, varroaTreatments, varroaChecks, feedings, harvests])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
