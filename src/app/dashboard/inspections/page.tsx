@@ -254,12 +254,19 @@ export default function InspectionsPage() {
       if (data[0] && !data[0].profiles) {
         console.log('⚠️ Profiles data missing - fetching manually')
         const userIds = [...new Set(data.map(i => i.user_id).filter(Boolean))]
+        console.log('User IDs to fetch profiles for:', userIds)
 
         if (userIds.length > 0) {
-          const { data: profilesData } = await supabase
+          const { data: profilesData, error: profilesError } = await supabase
             .from('profiles')
             .select('id, full_name, email')
             .in('id', userIds)
+
+          if (profilesError) {
+            console.error('❌ Error fetching profiles:', profilesError)
+          }
+
+          console.log('Fetched profiles data:', profilesData)
 
           if (profilesData) {
             const profilesMap = new Map(profilesData.map(p => [p.id, p]))
@@ -271,12 +278,16 @@ export default function InspectionsPage() {
                     full_name: profile.full_name,
                     email: profile.email
                   }
+                } else {
+                  console.warn(`No profile found for user_id: ${inspection.user_id}`)
                 }
               }
             })
-            console.log('✅ Manually attached profiles data')
+            console.log('✅ Manually attached profiles data to', data.length, 'inspections')
           }
         }
+      } else if (data[0] && data[0].profiles) {
+        console.log('✅ Profiles data already present via foreign key join')
       }
     }
 
