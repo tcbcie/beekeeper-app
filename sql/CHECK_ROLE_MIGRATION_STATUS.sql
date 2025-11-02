@@ -38,7 +38,19 @@ BEGIN
   END IF;
 END $$;
 
--- Show del_user_profiles columns
+-- Show del_user_profiles columns (if table exists)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'del_user_profiles'
+  ) THEN
+    RAISE NOTICE '========================================';
+    RAISE NOTICE 'del_user_profiles columns:';
+    RAISE NOTICE '========================================';
+  END IF;
+END $$;
+
 SELECT
   column_name,
   data_type,
@@ -49,17 +61,34 @@ WHERE table_schema = 'public'
   AND table_name = 'del_user_profiles'
 ORDER BY ordinal_position;
 
--- Show sample data from del_user_profiles
-SELECT
-  id,
-  CASE
-    WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'del_user_profiles' AND column_name = 'role')
-    THEN 'role column exists'
-    ELSE 'role column missing'
-  END as role_column_status
-FROM information_schema.tables
-WHERE table_schema = 'public' AND table_name = 'del_user_profiles'
-LIMIT 1;
+-- Check if role column exists in del_user_profiles
+DO $$
+DECLARE
+  del_table_exists BOOLEAN;
+  del_has_role BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'del_user_profiles'
+  ) INTO del_table_exists;
+
+  IF del_table_exists THEN
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'del_user_profiles'
+        AND column_name = 'role'
+    ) INTO del_has_role;
+
+    RAISE NOTICE '========================================';
+    IF del_has_role THEN
+      RAISE NOTICE 'del_user_profiles HAS role column - migration possible';
+    ELSE
+      RAISE NOTICE 'del_user_profiles DOES NOT HAVE role column - no data to migrate';
+    END IF;
+    RAISE NOTICE '========================================';
+  END IF;
+END $$;
 
 -- Step 3: Check profiles table structure
 SELECT
