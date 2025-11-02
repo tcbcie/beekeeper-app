@@ -1217,50 +1217,50 @@ export default function InspectionsPage() {
                 <button
                   onClick={() => {
                     // TODO: Implement varroa treatment form on this page
-                    alert('Varroa Treatment form coming soon! For now, use the standalone page.')
-                    router.push('/dashboard/varroa-treatment')
+                    alert('Varroa Treatment form coming soon!\n\nFor now, you can view all existing varroa treatment records on this page. The form will be added in a future update.')
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors text-gray-400 cursor-not-allowed"
+                  disabled
                 >
                   <Plus size={16} />
-                  Varroa Treatment
+                  Varroa Treatment (Coming Soon)
                 </button>
                 <button
                   onClick={() => {
                     // TODO: Implement varroa check form on this page
-                    alert('Varroa Check form coming soon! For now, use the standalone page.')
-                    router.push('/dashboard/varroa-check')
+                    alert('Varroa Check form coming soon!\n\nFor now, you can view all existing varroa check records on this page. The form will be added in a future update.')
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors text-gray-400 cursor-not-allowed"
+                  disabled
                 >
                   <Plus size={16} />
-                  Varroa Check
+                  Varroa Check (Coming Soon)
                 </button>
                 <button
                   onClick={() => {
                     // TODO: Implement feeding form on this page
-                    alert('Feeding form coming soon! For now, use the standalone page.')
-                    router.push('/dashboard/feeding')
+                    alert('Feeding form coming soon!\n\nFor now, you can view all existing feeding records on this page. The form will be added in a future update.')
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors text-gray-400 cursor-not-allowed"
+                  disabled
                 >
                   <Plus size={16} />
-                  Feeding
+                  Feeding (Coming Soon)
                 </button>
                 <button
                   onClick={() => {
                     // TODO: Implement harvest form on this page
-                    alert('Harvest form coming soon! For now, use the standalone page.')
-                    router.push('/dashboard/harvest')
+                    alert('Harvest form coming soon!\n\nFor now, you can view all existing harvest records on this page. The form will be added in a future update.')
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 rounded-b-lg transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 rounded-b-lg transition-colors text-gray-400 cursor-not-allowed"
+                  disabled
                 >
                   <Plus size={16} />
-                  Harvest
+                  Harvest (Coming Soon)
                 </button>
               </div>
             )}
