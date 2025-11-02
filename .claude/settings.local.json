@@ -13,7 +13,12 @@
       "Bash(git log:*)",
       "Bash(for file in \"varroa-treatment\" \"varroa-check\" \"feeding\" \"harvest\")",
       "Bash(do echo \"File: $file/page.tsx\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(psql:*)",
+      "Bash(npm run build:check:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git grep:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

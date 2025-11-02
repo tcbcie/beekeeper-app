@@ -23,7 +23,7 @@ export default function Sidebar() {
     { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/hives', label: 'Hives', icon: Archive },
     { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
-    { href: '/dashboard/inspections', label: 'Records', icon: ClipboardList },
+    { href: '/dashboard/records', label: 'Records', icon: ClipboardList },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
     { href: '/dashboard/profile', label: 'Profile', icon: User },
     { href: '/dashboard/about', label: 'About', icon: Info },
