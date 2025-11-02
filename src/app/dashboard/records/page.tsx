@@ -80,6 +80,96 @@ interface Inspection {
   }
 }
 
+interface VarroaTreatment {
+  id: string
+  hive_id: string
+  user_id: string
+  treatment_date: string
+  treatment_type: string
+  product_name: string
+  dosage: string
+  temperature: number | null
+  weather_conditions: string
+  notes: string
+  hives?: {
+    hive_number: string
+    apiary_id: string | null
+  }
+  profiles?: {
+    first_name: string | null
+    last_name: string | null
+    email: string
+  }
+}
+
+interface VarroaCheck {
+  id: string
+  hive_id: string
+  user_id: string
+  check_date: string
+  method: string
+  mites_count: number | null
+  sample_size: number | null
+  infestation_rate: number | null
+  action_threshold_reached: boolean
+  notes: string
+  hives?: {
+    hive_number: string
+  }
+  profiles?: {
+    first_name: string | null
+    last_name: string | null
+    email: string
+  }
+}
+
+interface Feeding {
+  id: string
+  hive_id: string
+  user_id: string
+  feed_date: string
+  feed_type: string
+  quantity: number | null
+  unit: string
+  notes: string
+  hives?: {
+    hive_number: string
+  }
+  profiles?: {
+    first_name: string | null
+    last_name: string | null
+    email: string
+  }
+}
+
+interface Harvest {
+  id: string
+  hive_id: string
+  user_id: string
+  harvest_date: string
+  honey_weight: number | null
+  wax_weight: number | null
+  unit: string
+  frames_harvested: number | null
+  notes: string
+  hives?: {
+    hive_number: string
+  }
+  profiles?: {
+    first_name: string | null
+    last_name: string | null
+    email: string
+  }
+}
+
+// Unified record type for displaying all records together
+type UnifiedRecord =
+  | (Inspection & { record_type: 'inspection', date: string })
+  | (VarroaTreatment & { record_type: 'varroa_treatment', date: string })
+  | (VarroaCheck & { record_type: 'varroa_check', date: string })
+  | (Feeding & { record_type: 'feeding', date: string })
+  | (Harvest & { record_type: 'harvest', date: string })
+
 interface FormData {
   hive_id: string
   inspection_date: string
@@ -116,6 +206,11 @@ interface FormData {
 export default function InspectionsPage() {
   const router = useRouter()
   const [inspections, setInspections] = useState<Inspection[]>([])
+  const [varroaTreatments, setVarroaTreatments] = useState<VarroaTreatment[]>([])
+  const [varroaChecks, setVarroaChecks] = useState<VarroaCheck[]>([])
+  const [feedings, setFeedings] = useState<Feeding[]>([])
+  const [harvests, setHarvests] = useState<Harvest[]>([])
+  const [allRecords, setAllRecords] = useState<UnifiedRecord[]>([])
   const [hives, setHives] = useState<Hive[]>([])
   const [apiaries, setApiaries] = useState<Apiary[]>([])
   const [showForm, setShowForm] = useState(false)
