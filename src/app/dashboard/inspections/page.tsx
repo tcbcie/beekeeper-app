@@ -213,7 +213,7 @@ export default function InspectionsPage() {
     // Build query based on ownership filter
     let query = supabase
       .from('inspections')
-      .select('*, hives(hive_number, apiaries(eircode)), profiles(first_name, last_name, email)')
+      .select('*, hives(hive_number, apiaries(eircode)), profiles!inspections_user_id_fkey(first_name, last_name, email)')
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
