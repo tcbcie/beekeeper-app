@@ -251,9 +251,9 @@ export default function HarvestPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push('/dashboard/inspections')}
+            onClick={() => router.push('/dashboard/records')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Back to inspections"
+            aria-label="Back to records"
           >
             <ArrowLeft size={24} />
           </button>
