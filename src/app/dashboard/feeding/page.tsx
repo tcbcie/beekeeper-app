@@ -69,7 +69,7 @@ export default function FeedingPage() {
 
     const { data } = await supabase
       .from('feedings')
-      .select('*, hives(hive_number), profiles(full_name, email)')
+      .select('*, hives(hive_number), user_profiles(first_name, last_name)')
       .eq('user_id', currentUserId)
       .order('feed_date', { ascending: false })
 
@@ -78,8 +78,8 @@ export default function FeedingPage() {
       const userIds = [...new Set(data.map(f => f.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
+          .from('user_profiles')
+          .select('id, first_name, last_name')
           .in('id', userIds as string[])
 
         if (profilesData) {

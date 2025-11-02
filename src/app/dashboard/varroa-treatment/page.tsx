@@ -98,7 +98,7 @@ export default function VarroaTreatmentPage() {
 
     const { data } = await supabase
       .from('varroa_treatments')
-      .select('*, hives(hive_number, apiary_id), profiles(full_name, email)')
+      .select('*, hives(hive_number, apiary_id), user_profiles(first_name, last_name)')
       .eq('user_id', currentUserId)
       .order('treatment_date', { ascending: false })
 
@@ -107,8 +107,8 @@ export default function VarroaTreatmentPage() {
       const userIds = [...new Set(data.map(t => t.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
+          .from('user_profiles')
+          .select('id, first_name, last_name')
           .in('id', userIds as string[])
 
         if (profilesData) {
