@@ -214,7 +214,12 @@ export default function InspectionsPage() {
   const [hives, setHives] = useState<Hive[]>([])
   const [apiaries, setApiaries] = useState<Apiary[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [formType, setFormType] = useState<'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest'>('inspection')
   const [editingInspection, setEditingInspection] = useState<Inspection | null>(null)
+  const [editingTreatment, setEditingTreatment] = useState<VarroaTreatment | null>(null)
+  const [editingCheck, setEditingCheck] = useState<VarroaCheck | null>(null)
+  const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null)
+  const [editingHarvest, setEditingHarvest] = useState<Harvest | null>(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [filterHiveId, setFilterHiveId] = useState<string>('')
@@ -1206,6 +1211,7 @@ export default function InspectionsPage() {
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                 <button
                   onClick={() => {
+                    setFormType('inspection')
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -1216,51 +1222,47 @@ export default function InspectionsPage() {
                 </button>
                 <button
                   onClick={() => {
-                    // TODO: Implement varroa treatment form on this page
-                    alert('Varroa Treatment form coming soon!\n\nFor now, you can view all existing varroa treatment records on this page. The form will be added in a future update.')
+                    setFormType('varroa_treatment')
+                    setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors text-gray-400 cursor-not-allowed"
-                  disabled
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
-                  Varroa Treatment (Coming Soon)
+                  Varroa Treatment
                 </button>
                 <button
                   onClick={() => {
-                    // TODO: Implement varroa check form on this page
-                    alert('Varroa Check form coming soon!\n\nFor now, you can view all existing varroa check records on this page. The form will be added in a future update.')
+                    setFormType('varroa_check')
+                    setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors text-gray-400 cursor-not-allowed"
-                  disabled
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
-                  Varroa Check (Coming Soon)
+                  Varroa Check
                 </button>
                 <button
                   onClick={() => {
-                    // TODO: Implement feeding form on this page
-                    alert('Feeding form coming soon!\n\nFor now, you can view all existing feeding records on this page. The form will be added in a future update.')
+                    setFormType('feeding')
+                    setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors text-gray-400 cursor-not-allowed"
-                  disabled
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
-                  Feeding (Coming Soon)
+                  Feeding
                 </button>
                 <button
                   onClick={() => {
-                    // TODO: Implement harvest form on this page
-                    alert('Harvest form coming soon!\n\nFor now, you can view all existing harvest records on this page. The form will be added in a future update.')
+                    setFormType('harvest')
+                    setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 rounded-b-lg transition-colors text-gray-400 cursor-not-allowed"
-                  disabled
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 rounded-b-lg transition-colors"
                 >
                   <Plus size={16} />
-                  Harvest (Coming Soon)
+                  Harvest
                 </button>
               </div>
             )}
