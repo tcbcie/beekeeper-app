@@ -19,7 +19,8 @@
       "Bash(npx tsc:*)",
       "Bash(git grep:*)",
       "Bash(git mv:*)",
-      "Bash(timeout 120 npx tsc:*)"
+      "Bash(timeout 120 npx tsc:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
