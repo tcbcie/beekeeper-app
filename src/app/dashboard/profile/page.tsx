@@ -148,18 +148,15 @@ export default function ProfilePage() {
 
     setSavingProfile(true)
     try {
-      // Use upsert to create profile if it doesn't exist
+      // Update existing profile (profiles are created automatically via trigger on signup)
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId,
+        .update({
           first_name: profileFormData.first_name || null,
           last_name: profileFormData.last_name || null,
           mobile_number: profileFormData.mobile_number || null,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'id'
         })
+        .eq('id', userId)
 
       if (error) {
         console.error('Error updating profile:', error)
