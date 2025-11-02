@@ -339,10 +339,34 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.14</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.15</span>
                 November 2, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Unified Records Page:</strong> Completely redesigned records system - all 5 activity types (Inspections, Varroa Treatments, Varroa Checks, Feeding, Harvests) now unified in single view at /dashboard/records with comprehensive filtering and color-coded badges</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Complete CRUD System:</strong> Implemented full create, read, update, delete functionality for all non-inspection record types with forms, edit buttons, delete confirmations, and automatic data refresh</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Admin Role System:</strong> Restored admin functionality with role migration from old user_profiles table - admin users can now access Settings page with user management, support tickets, and system configuration</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Code Consolidation:</strong> Removed ~2,338 lines of duplicate code by eliminating individual activity pages (feeding, harvest, varroa-check, varroa-treatment) - everything now in unified Records system</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Multi-Type Filtering:</strong> Records page supports filtering by record type, apiary, hive, and time period - see all your beekeeping activities sorted by date across all types</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Database Migration Tools:</strong> Created comprehensive SQL migration scripts with diagnostics for role migration, normalization, and admin user setup</span>
+                </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
                   <span><strong>Creator Tracking:</strong> All activity records (inspections, varroa treatments/checks, feedings, harvests) now show who created each entry with &quot;Recorded by&quot; field displaying name or email</span>
@@ -350,10 +374,6 @@ export default function AboutPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
                   <span><strong>Team Collaboration Enhancement:</strong> Team owners can now see inspection and activity records created by team members for shared hives - full visibility across team</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Apiary Filter for Varroa Treatments:</strong> Added apiary dropdown filter to varroa treatments page matching the inspections page functionality</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
@@ -365,23 +385,11 @@ export default function AboutPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Team Invitation Validation:</strong> Requires at least one apiary to be shared before inviting team members - prevents empty team experience</span>
+                  <span>TypeScript role compliance: All role values normalized to &apos;User&apos; | &apos;Admin&apos; with check constraints and indexes for performance</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Email Spam Prevention:</strong> Rewrote reset password, reauthentication, and change email templates to avoid phishing-like phrases</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Dashboard UI Cleanup:</strong> Removed developer debugging messages from user-facing &quot;No Shared Apiaries&quot; section</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-1">✓</span>
-                  <span>Queen marking colors now display with color-coded badges (White, Yellow, Red, Green, Blue) on hive cards</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 mt-1">✓</span>
-                  <span>Team invitations now validate that apiaries are explicitly in scope for the specific team</span>
+                  <span>Navigation updated: &quot;Inspections&quot; renamed to &quot;Records&quot; in main menu to reflect unified system</span>
                 </li>
               </ul>
             </div>
