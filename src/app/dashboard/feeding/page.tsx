@@ -29,9 +29,9 @@ interface Feeding {
   hives?: {
     hive_number: string
   }
-  profiles?: {
-    full_name: string
-    email: string
+  user_profiles?: {
+    first_name: string
+    last_name: string
   }
 }
 
@@ -74,7 +74,7 @@ export default function FeedingPage() {
       .order('feed_date', { ascending: false })
 
     // Fallback: If profiles data is missing, fetch it manually
-    if (data && data.length > 0 && data[0] && !data[0].profiles) {
+    if (data && data.length > 0 && data[0] && !data[0].user_profiles) {
       const userIds = [...new Set(data.map(f => f.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
@@ -88,9 +88,9 @@ export default function FeedingPage() {
             if (feeding.user_id) {
               const profile = profilesMap.get(feeding.user_id)
               if (profile) {
-                feeding.profiles = {
-                  full_name: profile.full_name,
-                  email: profile.email
+                feeding.user_profiles = {
+                  first_name: profile.first_name,
+                  last_name: profile.last_name
                 }
               }
             }
@@ -393,10 +393,10 @@ export default function FeedingPage() {
                 <div>
                   <h3 className="text-lg font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
                   <p className="text-sm text-gray-500">{feeding.feed_date}</p>
-                  {feeding.profiles && (
+                  {feeding.user_profiles && (
                     <p className="text-xs text-gray-500 mt-1">
                       Recorded by: <span className="font-medium text-gray-700">
-                        {feeding.profiles.full_name || feeding.profiles.email}
+                        {`${feeding.user_profiles.first_name || ''} ${feeding.user_profiles.last_name || ''}`.trim() || 'User'}
                       </span>
                     </p>
                   )}
