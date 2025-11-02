@@ -468,6 +468,15 @@ export default function VarroaTreatmentPage() {
 
   const handleEdit = (treatment: VarroaTreatment) => {
     setEditingTreatment(treatment)
+
+    // Check if the treatment_type matches any product in the list
+    const isFromProductList = treatmentProducts.some(product =>
+      treatment.treatment_type === `${product.product_name} - ${product.active_ingredients} - ${product.application_method}`
+    )
+
+    // Set manual entry mode if the treatment type doesn't match any product
+    setUseManualTreatmentEntry(!isFromProductList)
+
     setFormData({
       hive_id: treatment.hive_id,
       treatment_date: treatment.treatment_date,
