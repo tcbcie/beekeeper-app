@@ -1,8 +1,11 @@
 -- Fix role-related functions to match new role column type (TEXT instead of character varying)
 -- This fixes the "structure of query does not match function result type" error
 
--- 1. Fix get_user_role function
-CREATE OR REPLACE FUNCTION public.get_user_role(user_id uuid)
+-- 1. Drop and recreate get_user_role function
+-- Must drop first because we're changing the return type
+DROP FUNCTION IF EXISTS public.get_user_role(uuid);
+
+CREATE FUNCTION public.get_user_role(user_id uuid)
  RETURNS text  -- Changed from character varying to text
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -18,8 +21,11 @@ BEGIN
 END;
 $function$;
 
--- 2. Fix get_users_with_email function
-CREATE OR REPLACE FUNCTION public.get_users_with_email()
+-- 2. Drop and recreate get_users_with_email function
+-- Must drop first because we're changing the return type
+DROP FUNCTION IF EXISTS public.get_users_with_email();
+
+CREATE FUNCTION public.get_users_with_email()
  RETURNS TABLE(
    id uuid,
    role text,  -- Changed from character varying to text
