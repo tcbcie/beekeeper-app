@@ -3721,7 +3721,22 @@ export default function InspectionsPage() {
                         month: 'short',
                         day: 'numeric'
                       })}
+                      {' at '}
+                      {new Date(check.check_date).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
                     </p>
+                    {check.profiles && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Recorded by: <span className="font-medium text-gray-700">
+                          {(check.profiles.first_name && check.profiles.last_name)
+                            ? `${check.profiles.first_name} ${check.profiles.last_name}`
+                            : check.profiles.email}
+                        </span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -3777,15 +3792,6 @@ export default function InspectionsPage() {
                       <span className="text-sm font-medium text-gray-700">Notes: </span>
                       <span className="text-sm text-gray-600">{check.notes}</span>
                     </div>
-                  )}
-                  {check.profiles && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Recorded by: <span className="font-medium text-gray-700">
-                        {(check.profiles.first_name && check.profiles.last_name)
-                          ? `${check.profiles.first_name} ${check.profiles.last_name}`
-                          : check.profiles.email}
-                      </span>
-                    </p>
                   )}
                 </div>
               </div>
