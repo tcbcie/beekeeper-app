@@ -554,16 +554,12 @@ export default function InspectionsPage() {
     setApiaries(uniqueApiaries)
   }, [userId])
 
-  const fetchCheckMethods = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
+  const fetchCheckMethods = useCallback(async () => {
     try {
-      // Fetch the varroa_check_method category
+      // Fetch the varroa_check_method category (shared across all users)
       const { data: category } = await supabase
         .from('dropdown_categories')
         .select('id')
-        .eq('user_id', currentUserId)
         .eq('category_key', 'varroa_check_method')
         .single()
 
@@ -584,7 +580,7 @@ export default function InspectionsPage() {
     } catch (error) {
       console.error('Error fetching check methods:', error)
     }
-  }, [userId])
+  }, [])
 
   useEffect(() => {
     const initUser = async () => {
@@ -601,7 +597,7 @@ export default function InspectionsPage() {
       fetchHarvests(id)
       fetchHives(id)
       fetchApiaries(id)
-      fetchCheckMethods(id)
+      fetchCheckMethods()
     }
     initUser()
   }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods])
