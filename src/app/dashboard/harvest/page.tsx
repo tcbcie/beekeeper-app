@@ -29,6 +29,10 @@ interface Harvest {
   hives?: {
     hive_number: string
   }
+  profiles?: {
+    full_name: string
+    email: string
+  }
 }
 
 interface FormData {
@@ -67,7 +71,7 @@ export default function HarvestPage() {
 
     const { data } = await supabase
       .from('harvests')
-      .select('*, hives(hive_number)')
+      .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('harvest_date', { ascending: false })
 
@@ -372,6 +376,13 @@ export default function HarvestPage() {
                 <div>
                   <h3 className="text-lg font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
                   <p className="text-sm text-gray-500">{harvest.harvest_date}</p>
+                  {harvest.profiles && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {harvest.profiles.full_name || harvest.profiles.email}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button

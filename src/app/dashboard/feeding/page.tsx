@@ -28,6 +28,10 @@ interface Feeding {
   hives?: {
     hive_number: string
   }
+  profiles?: {
+    full_name: string
+    email: string
+  }
 }
 
 interface FormData {
@@ -64,7 +68,7 @@ export default function FeedingPage() {
 
     const { data } = await supabase
       .from('feedings')
-      .select('*, hives(hive_number)')
+      .select('*, hives(hive_number), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('feed_date', { ascending: false })
 
@@ -362,6 +366,13 @@ export default function FeedingPage() {
                 <div>
                   <h3 className="text-lg font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
                   <p className="text-sm text-gray-500">{feeding.feed_date}</p>
+                  {feeding.profiles && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recorded by: <span className="font-medium text-gray-700">
+                        {feeding.profiles.full_name || feeding.profiles.email}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button

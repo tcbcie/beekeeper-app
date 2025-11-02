@@ -48,6 +48,11 @@ interface VarroaTreatment {
   notes: string
   hives?: {
     hive_number: string
+    apiary_id: string | null
+  }
+  profiles?: {
+    full_name: string
+    email: string
   }
 }
 
@@ -73,6 +78,8 @@ export default function VarroaTreatmentPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [showIPMTips, setShowIPMTips] = useState(false)
   const [useManualTreatmentEntry, setUseManualTreatmentEntry] = useState(false)
+  const [apiaries, setApiaries] = useState<Array<{id: string, name: string}>>([])
+  const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     treatment_date: new Date().toISOString().split('T')[0],
@@ -90,7 +97,7 @@ export default function VarroaTreatmentPage() {
 
     const { data } = await supabase
       .from('varroa_treatments')
-      .select('*, hives(hive_number)')
+      .select('*, hives(hive_number, apiary_id), profiles(full_name, email)')
       .eq('user_id', currentUserId)
       .order('treatment_date', { ascending: false })
 
@@ -159,6 +166,54 @@ export default function VarroaTreatmentPage() {
     setHives(hivesData)
   }, [userId])
 
+  const fetchApiaries = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    // Fetch user's own apiaries
+    const { data: ownApiaries } = await supabase
+      .from('apiaries')
+      .select('id, name')
+      .eq('user_id', currentUserId)
+      .order('name')
+
+    // Fetch team memberships to get shared apiaries
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaries: Array<{id: string, name: string}> = []
+    if (teamIds.length > 0) {
+      const { data: teamApiaryData } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id, apiaries(id, name)')
+        .in('team_id', teamIds)
+
+      if (teamApiaryData) {
+        sharedApiaries = teamApiaryData
+          .filter(ta => ta.apiaries)
+          .map(ta => {
+            const apiary = Array.isArray(ta.apiaries) ? ta.apiaries[0] : ta.apiaries
+            return {
+              id: apiary!.id,
+              name: apiary!.name
+            }
+          })
+      }
+    }
+
+    // Combine own and shared apiaries, removing duplicates
+    const allApiaries = [...(ownApiaries || []), ...sharedApiaries]
+    const uniqueApiaries = Array.from(
+      new Map(allApiaries.map(a => [a.id, a])).values()
+    ).sort((a, b) => a.name.localeCompare(b.name))
+
+    setApiaries(uniqueApiaries)
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -169,10 +224,11 @@ export default function VarroaTreatmentPage() {
       setUserId(id)
       fetchTreatments(id)
       fetchHives(id)
+      fetchApiaries(id)
       fetchTreatmentProducts()
     }
     initUser()
-  }, [router, fetchTreatments, fetchHives])
+  }, [router, fetchTreatments, fetchHives, fetchApiaries])
 
   // Close IPM tips popup when clicking outside
   useEffect(() => {
@@ -490,13 +546,25 @@ export default function VarroaTreatmentPage() {
               </div>
             )}
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2 justify-center"
-          >
-            <Plus size={16} />
-            {showForm ? 'Cancel' : 'Record Treatment'}
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={filterApiaryId}
+              onChange={(e) => setFilterApiaryId(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            >
+              <option value="">All Apiaries</option>
+              {apiaries.map((apiary) => (
+                <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2 justify-center"
+            >
+              <Plus size={16} />
+              {showForm ? 'Cancel' : 'Record Treatment'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -698,12 +766,21 @@ export default function VarroaTreatmentPage() {
       )}
 
       <div className="space-y-4">
-        {treatments.map((treatment) => (
+        {treatments
+          .filter(treatment => !filterApiaryId || treatment.hives?.apiary_id === filterApiaryId)
+          .map((treatment) => (
           <div key={treatment.id} className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
                 <p className="text-sm text-gray-500">{treatment.treatment_date}</p>
+                {treatment.profiles && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Recorded by: <span className="font-medium text-gray-700">
+                      {treatment.profiles.full_name || treatment.profiles.email}
+                    </span>
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 <button onClick={() => handleEdit(treatment)} className="text-blue-600 hover:text-blue-900">
