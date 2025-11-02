@@ -16,33 +16,35 @@ BEGIN
     ADD COLUMN role TEXT NOT NULL DEFAULT 'User';
 
     RAISE NOTICE 'Added role column to profiles table with default "User"';
-
-    -- Add check constraint to ensure valid values
-    ALTER TABLE public.profiles
-    ADD CONSTRAINT profiles_role_check
-    CHECK (role IN ('User', 'Admin'));
-
-    RAISE NOTICE 'Added check constraint for valid role values';
   ELSE
     RAISE NOTICE 'Role column already exists in profiles table';
-
-    -- Ensure check constraint exists
-    IF NOT EXISTS (
-      SELECT 1 FROM information_schema.table_constraints
-      WHERE table_schema = 'public'
-        AND table_name = 'profiles'
-        AND constraint_name = 'profiles_role_check'
-    ) THEN
-      -- Drop old constraint if it exists with wrong values
-      ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
-
-      ALTER TABLE public.profiles
-      ADD CONSTRAINT profiles_role_check
-      CHECK (role IN ('User', 'Admin'));
-
-      RAISE NOTICE 'Added check constraint for valid role values';
-    END IF;
   END IF;
+END $$;
+
+-- Step 1b: Normalize existing role values BEFORE adding constraint
+-- This must happen before the constraint is added
+UPDATE public.profiles
+SET role = CASE
+  WHEN role IS NULL THEN 'User'
+  WHEN LOWER(role) = 'admin' THEN 'Admin'
+  WHEN LOWER(role) = 'user' THEN 'User'
+  ELSE 'User'  -- Default for any unknown values
+END
+WHERE role IS NULL
+  OR role NOT IN ('User', 'Admin');
+
+-- Step 1c: Now add the check constraint (after data is normalized)
+DO $$
+BEGIN
+  -- Drop old constraint if it exists
+  ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+
+  -- Add check constraint to ensure valid values
+  ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_role_check
+  CHECK (role IN ('User', 'Admin'));
+
+  RAISE NOTICE 'Added check constraint for valid role values';
 END $$;
 
 -- Step 2: Migrate role data from del_user_profiles if it exists
@@ -109,31 +111,25 @@ BEGIN
   RAISE NOTICE '========================================';
 END $$;
 
--- Step 3: Normalize role values to match TypeScript expectations
--- Convert any variations to proper case: 'User' or 'Admin'
+-- Step 3: Final normalization check (in case migration added new data)
+-- Re-normalize any roles that might have been added by the migration
 UPDATE public.profiles
 SET role = CASE
   WHEN LOWER(role) = 'admin' THEN 'Admin'
   WHEN LOWER(role) = 'user' THEN 'User'
-  ELSE 'User'  -- Default for any unknown values
+  ELSE 'User'
 END
-WHERE role IS NOT NULL
-  AND role NOT IN ('User', 'Admin');
+WHERE role NOT IN ('User', 'Admin');
 
--- Step 4: Set any NULL roles to 'User' (default)
-UPDATE public.profiles
-SET role = 'User'
-WHERE role IS NULL;
-
--- Step 5: Update the default value and NOT NULL constraint
+-- Step 4: Update the default value and NOT NULL constraint
 ALTER TABLE public.profiles
 ALTER COLUMN role SET DEFAULT 'User',
 ALTER COLUMN role SET NOT NULL;
 
--- Step 6: Create index on role for faster admin checks
+-- Step 5: Create index on role for faster admin checks
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 
--- Step 7: Update the handle_new_user trigger function to set default role
+-- Step 6: Update the handle_new_user trigger function to set default role
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -150,7 +146,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Step 8: Show summary of roles
+-- Step 7: Show summary of roles
 DO $$
 DECLARE
   total_users INT;
@@ -173,7 +169,7 @@ BEGIN
   RAISE NOTICE '========================================';
 END $$;
 
--- Step 9: Display admin users (if any exist)
+-- Step 8: Display admin users (if any exist)
 DO $$
 DECLARE
   admin_count INT;
