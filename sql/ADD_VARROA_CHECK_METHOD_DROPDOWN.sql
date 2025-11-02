@@ -5,28 +5,21 @@
 DO $$
 DECLARE
   category_id_var UUID;
-  user_id_var UUID;
 BEGIN
-  -- Get the first user ID (for single-user installations) or you can specify a specific user
-  SELECT id INTO user_id_var FROM profiles LIMIT 1;
-
-  IF user_id_var IS NULL THEN
-    RAISE EXCEPTION 'No user found. Please create a user first.';
-  END IF;
-
   -- Check if category exists
   SELECT id INTO category_id_var
   FROM dropdown_categories
-  WHERE category_key = 'varroa_check_method' AND user_id = user_id_var;
+  WHERE category_key = 'varroa_check_method';
 
   IF category_id_var IS NULL THEN
     -- Insert the category
-    INSERT INTO dropdown_categories (user_id, category_name, category_key, description)
+    INSERT INTO dropdown_categories (category_name, category_key, description, created_at, updated_at)
     VALUES (
-      user_id_var,
       'Varroa Check Method',
       'varroa_check_method',
-      'Methods for conducting varroa mite checks'
+      'Methods for conducting varroa mite checks',
+      NOW(),
+      NOW()
     )
     RETURNING id INTO category_id_var;
 
