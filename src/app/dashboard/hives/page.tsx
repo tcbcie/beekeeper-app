@@ -362,14 +362,21 @@ export default function HivesPage() {
     }
   }, [userId])
 
-  // Load filters from sessionStorage on mount
+  // Load filters from sessionStorage on mount and validate against available apiaries
   useEffect(() => {
-    if (typeof window !== 'undefined' && !filtersLoaded) {
+    if (typeof window !== 'undefined' && !filtersLoaded && apiaries.length > 0) {
       const savedApiary = sessionStorage.getItem('hives_filter_apiary')
       const savedOwnership = sessionStorage.getItem('hives_filter_ownership')
 
-      if (savedApiary !== null) {
-        setFilterApiaryId(savedApiary)
+      // Only restore apiary filter if it's valid (exists in current apiaries list)
+      if (savedApiary && savedApiary !== '') {
+        const apiaryExists = apiaries.some(a => a.id === savedApiary)
+        if (apiaryExists) {
+          setFilterApiaryId(savedApiary)
+        } else {
+          // Apiary no longer exists, clear the saved filter
+          sessionStorage.removeItem('hives_filter_apiary')
+        }
       }
 
       if (savedOwnership && (savedOwnership === 'my' || savedOwnership === 'team' || savedOwnership === 'all')) {
@@ -378,7 +385,7 @@ export default function HivesPage() {
 
       setFiltersLoaded(true)
     }
-  }, [filtersLoaded])
+  }, [filtersLoaded, apiaries])
 
   useEffect(() => {
     const initUser = async () => {
