@@ -711,10 +711,12 @@ export default function SettingsPage() {
     }
   }, [])
 
-  // Auto-expand Varroa Treatments section when tab is clicked
+  // Auto-expand sections when tabs are clicked
   useEffect(() => {
     if (activeSection === 'treatments') {
       setShowVarroaTreatments(true)
+    } else if (activeSection === 'tickets') {
+      setShowTicketManagement(true)
     }
   }, [activeSection])
 
@@ -1458,14 +1460,8 @@ export default function SettingsPage() {
       {/* Support Ticket Management Section */}
       {activeSection === 'tickets' && (
       <div className="bg-white rounded-lg shadow">
-        <div
-          className="p-6 cursor-pointer"
-          onClick={() => setShowTicketManagement(!showTicketManagement)}
-        >
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center justify-between">
-            Support Ticket Management
-            <span className="text-xl">{showTicketManagement ? '−' : '+'}</span>
-          </h2>
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-gray-900">Support Ticket Management</h2>
           <p className="text-gray-600 mt-2">Manage and respond to user support tickets</p>
         </div>
 
