@@ -1180,17 +1180,17 @@ export default function HivesPage() {
                     </div>
                   )}
 
-                  {/* Full-Size Brood Boxes (top to bottom) */}
-                  {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
-                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold">
-                      🐝 Brood Full {i + 1}
-                    </div>
-                  ))}
-
-                  {/* Half-Size Brood Boxes (same height as honey supers) */}
+                  {/* Half-Size Brood Boxes (same height as honey supers) - Above full boxes */}
                   {Array.from({ length: hive.configuration.brood_boxes_half || 0 }).map((_, i) => (
                     <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-xs font-semibold">
                       🐝 Brood Half {i + 1}
+                    </div>
+                  ))}
+
+                  {/* Full-Size Brood Boxes (top to bottom) - Below half boxes */}
+                  {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
+                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold">
+                      🐝 Brood Full {i + 1}
                     </div>
                   ))}
 
