@@ -2892,6 +2892,23 @@ export default function InspectionsPage() {
               </button>
             </div>
           </div>
+
+          {/* IPM Tips Section */}
+          <div className="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+            <h4 className="text-sm font-semibold text-amber-900 mb-2">
+              Integrated Pest Management (IPM) Tips for Varroa Control in Ireland
+            </h4>
+            <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+              <li>Rotate treatments annually to prevent resistance development.</li>
+              <li>Monitor mite levels regularly using sugar shake or alcohol wash.</li>
+              <li>Apply treatments according to label instructions and seasonal timing.</li>
+              <li>Ensure adequate colony ventilation during treatment.</li>
+              <li>Avoid treating during honey flow unless product is approved for use.</li>
+              <li>Combine chemical treatments with biotechnical methods (e.g., drone brood removal).</li>
+              <li>Maintain strong, healthy colonies through good nutrition and disease management.</li>
+            </ul>
+          </div>
+
           <form id="treatment-form" onSubmit={handleTreatmentSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
