@@ -98,8 +98,23 @@ export default function HivesPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
-  const [filterApiaryId, setFilterApiaryId] = useState<string>('')
-  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
+
+  // Initialize filters from sessionStorage
+  const [filterApiaryId, setFilterApiaryId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('hives_filter_apiary') || ''
+    }
+    return ''
+  })
+  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('hives_filter_ownership')
+      if (saved === 'my' || saved === 'team' || saved === 'all') {
+        return saved
+      }
+    }
+    return 'my'
+  })
   const [formData, setFormData] = useState<FormData>({
     hive_number: '',
     apiary_id: '',
@@ -373,6 +388,19 @@ export default function HivesPage() {
     }
     initUser()
   }, [router, fetchHives, fetchApiaries, fetchQueens])
+
+  // Save filter settings to sessionStorage when they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('hives_filter_apiary', filterApiaryId)
+    }
+  }, [filterApiaryId])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('hives_filter_ownership', ownershipFilter)
+    }
+  }, [ownershipFilter])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
