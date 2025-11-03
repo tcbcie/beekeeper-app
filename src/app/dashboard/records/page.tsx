@@ -260,6 +260,7 @@ export default function InspectionsPage() {
   const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
   const [otherTreatmentType, setOtherTreatmentType] = useState<string>('')
   const [isOtherTreatment, setIsOtherTreatment] = useState<boolean>(false)
+  const [showIpmTips, setShowIpmTips] = useState<boolean>(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -2869,9 +2870,19 @@ export default function InspectionsPage() {
       {showForm && formType === 'varroa_treatment' && (
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h3 className="text-xl font-semibold">
-              {editingTreatment ? 'Edit Varroa Treatment' : 'Record New Varroa Treatment'}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-semibold">
+                {editingTreatment ? 'Edit Varroa Treatment' : 'Record New Varroa Treatment'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowIpmTips(true)}
+                className="text-amber-600 hover:text-amber-700 transition-colors"
+                title="View IPM Tips"
+              >
+                <HelpCircle size={20} />
+              </button>
+            </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
                 type="submit"
@@ -2891,22 +2902,6 @@ export default function InspectionsPage() {
                 Cancel
               </button>
             </div>
-          </div>
-
-          {/* IPM Tips Section */}
-          <div className="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
-            <h4 className="text-sm font-semibold text-amber-900 mb-2">
-              Integrated Pest Management (IPM) Tips for Varroa Control in Ireland
-            </h4>
-            <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
-              <li>Rotate treatments annually to prevent resistance development.</li>
-              <li>Monitor mite levels regularly using sugar shake or alcohol wash.</li>
-              <li>Apply treatments according to label instructions and seasonal timing.</li>
-              <li>Ensure adequate colony ventilation during treatment.</li>
-              <li>Avoid treating during honey flow unless product is approved for use.</li>
-              <li>Combine chemical treatments with biotechnical methods (e.g., drone brood removal).</li>
-              <li>Maintain strong, healthy colonies through good nutrition and disease management.</li>
-            </ul>
           </div>
 
           <form id="treatment-form" onSubmit={handleTreatmentSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -4300,6 +4295,80 @@ export default function InspectionsPage() {
                 sizes="(max-width: 1280px) 100vw, 1280px"
                 priority
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* IPM Tips Modal */}
+      {showIpmTips && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Integrated Pest Management (IPM) Tips for Varroa Control in Ireland
+              </h3>
+              <button
+                onClick={() => setShowIpmTips(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                title="Close"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              <ul className="space-y-3">
+                <li className="flex gap-3">
+                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
+                  <span className="text-gray-700">
+                    <strong>Rotate treatments annually</strong> to prevent resistance development.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
+                  <span className="text-gray-700">
+                    <strong>Monitor mite levels regularly</strong> using sugar shake or alcohol wash.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
+                  <span className="text-gray-700">
+                    <strong>Apply treatments according to label instructions</strong> and seasonal timing.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
+                  <span className="text-gray-700">
+                    <strong>Ensure adequate colony ventilation</strong> during treatment.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
+                  <span className="text-gray-700">
+                    <strong>Avoid treating during honey flow</strong> unless product is approved for use.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
+                  <span className="text-gray-700">
+                    <strong>Combine chemical treatments with biotechnical methods</strong> (e.g., drone brood removal).
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
+                  <span className="text-gray-700">
+                    <strong>Maintain strong, healthy colonies</strong> through good nutrition and disease management.
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowIpmTips(false)}
+                className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
