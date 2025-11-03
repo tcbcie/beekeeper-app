@@ -3024,7 +3024,7 @@ export default function InspectionsPage() {
                 <option value="">Select treatment product</option>
                 {treatmentProducts.map((product) => (
                   <option key={product.id} value={product.product_name}>
-                    {product.product_name}
+                    {product.product_name} - {product.active_ingredient || 'No active ingredient listed'}
                   </option>
                 ))}
                 <option value="Other">Other (specify below)</option>
