@@ -3711,7 +3711,22 @@ export default function InspectionsPage() {
                         month: 'short',
                         day: 'numeric'
                       })}
+                      {' at '}
+                      {new Date(treatment.treatment_date).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
                     </p>
+                    {treatment.profiles && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Recorded by: <span className="font-medium text-gray-700">
+                          {(treatment.profiles.first_name && treatment.profiles.last_name)
+                            ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
+                            : treatment.profiles.email}
+                        </span>
+                      </p>
+                    )}
                     </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
@@ -3756,15 +3771,6 @@ export default function InspectionsPage() {
                       <span className="text-sm font-medium text-gray-700">Notes: </span>
                       <span className="text-sm text-gray-600">{treatment.notes}</span>
                     </div>
-                  )}
-                  {treatment.profiles && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Recorded by: <span className="font-medium text-gray-700">
-                        {(treatment.profiles.first_name && treatment.profiles.last_name)
-                          ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
-                          : treatment.profiles.email}
-                      </span>
-                    </p>
                   )}
                 </div>
               </div>
