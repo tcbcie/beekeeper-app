@@ -323,9 +323,9 @@ export default function InspectionsPage() {
     if (sharedHiveData) {
       sharedHiveData.forEach(tm => {
         if (tm.teams?.team_apiaries) {
-          tm.teams.team_apiaries.forEach((ta: any) => {
+          tm.teams.team_apiaries.forEach((ta: { apiaries?: { hives?: { id: string }[] } }) => {
             if (ta.apiaries?.hives) {
-              ta.apiaries.hives.forEach((h: any) => {
+              ta.apiaries.hives.forEach((h: { id: string }) => {
                 if (h.id) sharedHiveIds.push(h.id)
               })
             }
@@ -362,7 +362,7 @@ export default function InspectionsPage() {
       }
     }
 
-    const { data, error} = await query
+    const { data } = await query
       .order('inspection_date', { ascending: false })
       .limit(500)  // Limit to most recent 500 inspections for performance
 
@@ -372,13 +372,10 @@ export default function InspectionsPage() {
         const userIds = [...new Set(data.map(i => i.user_id).filter(Boolean))]
 
         if (userIds.length > 0) {
-          const { data: profilesData, error: profilesError } = await supabase
+          const { data: profilesData } = await supabase
             .from('profiles')
             .select('id, first_name, last_name, email')
             .in('id', userIds)
-
-          if (profilesError) {
-          }
 
           if (profilesData) {
             const profilesMap = new Map(profilesData.map(p => [p.id, p]))
@@ -583,7 +580,7 @@ export default function InspectionsPage() {
           setCheckMethodOptions(methods)
         }
       }
-    } catch (error) {
+    } catch {
     }
   }, [])
 
@@ -610,7 +607,7 @@ export default function InspectionsPage() {
           setFeedTypeOptions(types)
         }
       }
-    } catch (error) {
+    } catch {
     }
   }, [])
 
@@ -625,7 +622,7 @@ export default function InspectionsPage() {
       } else if (data) {
         setTreatmentProducts(data)
       }
-    } catch (error) {
+    } catch {
     }
   }, [])
 
@@ -740,7 +737,7 @@ export default function InspectionsPage() {
         .getPublicUrl(filePath)
 
       return publicUrl
-    } catch (error) {
+    } catch {
       alert('Failed to upload image')
       return null
     } finally {
@@ -784,7 +781,7 @@ export default function InspectionsPage() {
 
       const { lat, lon } = geocodeData[0]
       return await getWeatherFromCoordinates(lat, lon)
-    } catch (error) {
+    } catch {
       // Fallback to Dublin coordinates on error
       return await getWeatherFromCoordinates('53.3498', '-6.2603')
     }
@@ -834,7 +831,7 @@ export default function InspectionsPage() {
       }
 
       return result
-    } catch (error) {
+    } catch {
       return null
     }
   }
@@ -1071,7 +1068,7 @@ export default function InspectionsPage() {
       const selectedHive = hives.find(h => h.id === formData.hive_id)
 
       if (selectedHive?.apiary_id) {
-        const { data: apiaryData, error: apiaryError } = await supabase
+        const { data: apiaryData } = await supabase
           .from('apiaries')
           .select('eircode')
           .eq('id', selectedHive.apiary_id)
@@ -1123,7 +1120,7 @@ export default function InspectionsPage() {
       if (!userId) return
 
       if (editingInspection) {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('inspections')
           .update(submitData)
           .eq('id', editingInspection.id)
@@ -1134,7 +1131,7 @@ export default function InspectionsPage() {
           throw error
         }
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('inspections')
           .insert([{ ...submitData, user_id: userId }])
           .select()
@@ -2945,7 +2942,7 @@ export default function InspectionsPage() {
                           }
                         }
                       }
-                    } catch (error) {
+                    } catch {
                     } finally {
                       setFetchingWeather(false)
                     }
