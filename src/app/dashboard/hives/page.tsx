@@ -651,34 +651,6 @@ export default function HivesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hive Order at Apiary</label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, order_in_apiary: Math.max(1, (formData.order_in_apiary ?? 1) - 1)})}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-md border border-gray-300 font-bold text-lg"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  value={formData.order_in_apiary ?? ''}
-                  onChange={(e) => setFormData({...formData, order_in_apiary: e.target.value ? parseInt(e.target.value) : null})}
-                  placeholder="Optional"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
-                  min="1"
-                />
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, order_in_apiary: (formData.order_in_apiary ?? 0) + 1})}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-md border border-gray-300 font-bold text-lg"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Row in Apiary</label>
               <div className="flex gap-2">
                 <button
@@ -699,6 +671,34 @@ export default function HivesPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, row_in_apiary: (formData.row_in_apiary ?? 0) + 1})}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-md border border-gray-300 font-bold text-lg"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hive Order in Row</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, order_in_apiary: Math.max(1, (formData.order_in_apiary ?? 1) - 1)})}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-md border border-gray-300 font-bold text-lg"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  value={formData.order_in_apiary ?? ''}
+                  onChange={(e) => setFormData({...formData, order_in_apiary: e.target.value ? parseInt(e.target.value) : null})}
+                  placeholder="Optional"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                  min="1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, order_in_apiary: (formData.order_in_apiary ?? 0) + 1})}
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-md border border-gray-300 font-bold text-lg"
                 >
                   +
