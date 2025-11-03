@@ -331,8 +331,6 @@ export default function InspectionsPage() {
       sharedHiveIds = sharedHives?.map(h => h.id) || []
     }
 
-    console.log('🔍 Shared hive IDs for inspections:', sharedHiveIds)
-
     // Build query based on ownership filter
     let query = supabase
       .from('inspections')
@@ -361,24 +359,14 @@ export default function InspectionsPage() {
       }
     }
 
-    const { data, error} = await query.order('inspection_date', { ascending: false })
-
-    console.log('Fetched inspections:', data)
-    console.log('Fetch error:', error)
+    const { data, error} = await query
+      .order('inspection_date', { ascending: false })
+      .limit(500)  // Limit to most recent 500 inspections for performance
 
     if (data && data.length > 0) {
-      console.log('First inspection weather data:', {
-        temp: data[0].weather_temp,
-        condition: data[0].weather_condition,
-        humidity: data[0].weather_humidity,
-        wind: data[0].weather_wind_speed
-      })
-
       // If profiles data is missing, fetch it manually (fallback for missing foreign key)
       if (data[0] && !data[0].profiles) {
-        console.log('⚠️ Profiles data missing - fetching manually')
         const userIds = [...new Set(data.map(i => i.user_id).filter(Boolean))]
-        console.log('User IDs to fetch profiles for:', userIds)
 
         if (userIds.length > 0) {
           const { data: profilesData, error: profilesError } = await supabase
@@ -387,10 +375,7 @@ export default function InspectionsPage() {
             .in('id', userIds)
 
           if (profilesError) {
-            console.error('❌ Error fetching profiles:', profilesError)
           }
-
-          console.log('Fetched profiles data:', profilesData)
 
           if (profilesData) {
             const profilesMap = new Map(profilesData.map(p => [p.id, p]))
@@ -403,16 +388,11 @@ export default function InspectionsPage() {
                     last_name: profile.last_name,
                     email: profile.email
                   }
-                } else {
-                  console.warn(`No profile found for user_id: ${inspection.user_id}`)
                 }
               }
             })
-            console.log('✅ Manually attached profiles data to', data.length, 'inspections')
           }
         }
-      } else if (data[0] && data[0].profiles) {
-        console.log('✅ Profiles data already present via foreign key join')
       }
     }
 
@@ -427,10 +407,11 @@ export default function InspectionsPage() {
     const { data } = await supabase
       .from('varroa_treatments')
       .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email)')
+      .eq('user_id', currentUserId)
       .order('treatment_date', { ascending: false })
+      .limit(500)  // Limit to most recent 500 treatments for performance
 
-    const filteredData = data?.filter(t => t.user_id === currentUserId)
-    if (filteredData) setVarroaTreatments(filteredData as VarroaTreatment[])
+    if (data) setVarroaTreatments(data as VarroaTreatment[])
   }, [userId])
 
   const fetchVarroaChecks = useCallback(async (userIdParam?: string) => {
@@ -440,10 +421,11 @@ export default function InspectionsPage() {
     const { data } = await supabase
       .from('varroa_checks')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
+      .eq('user_id', currentUserId)
       .order('check_date', { ascending: false })
+      .limit(500)  // Limit to most recent 500 checks for performance
 
-    const filteredData = data?.filter(c => c.user_id === currentUserId)
-    if (filteredData) setVarroaChecks(filteredData as VarroaCheck[])
+    if (data) setVarroaChecks(data as VarroaCheck[])
   }, [userId])
 
   const fetchFeedings = useCallback(async (userIdParam?: string) => {
@@ -453,10 +435,11 @@ export default function InspectionsPage() {
     const { data } = await supabase
       .from('feedings')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
+      .eq('user_id', currentUserId)
       .order('feed_date', { ascending: false })
+      .limit(500)  // Limit to most recent 500 feedings for performance
 
-    const filteredData = data?.filter(f => f.user_id === currentUserId)
-    if (filteredData) setFeedings(filteredData as Feeding[])
+    if (data) setFeedings(data as Feeding[])
   }, [userId])
 
   const fetchHarvests = useCallback(async (userIdParam?: string) => {
@@ -466,10 +449,11 @@ export default function InspectionsPage() {
     const { data } = await supabase
       .from('harvests')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
+      .eq('user_id', currentUserId)
       .order('harvest_date', { ascending: false })
+      .limit(500)  // Limit to most recent 500 harvests for performance
 
-    const filteredData = data?.filter(h => h.user_id === currentUserId)
-    if (filteredData) setHarvests(filteredData as Harvest[])
+    if (data) setHarvests(data as Harvest[])
   }, [userId])
 
   const fetchHives = useCallback(async (userIdParam?: string) => {
@@ -485,7 +469,6 @@ export default function InspectionsPage() {
       .order('hive_number')
 
     if (ownError) {
-      console.error('Error fetching own hives:', ownError)
     }
 
     // Fetch team memberships to get shared hives
@@ -598,7 +581,6 @@ export default function InspectionsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching check methods:', error)
     }
   }, [])
 
@@ -626,7 +608,6 @@ export default function InspectionsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching feed types:', error)
     }
   }, [])
 
@@ -638,12 +619,10 @@ export default function InspectionsPage() {
         .order('product_name')
 
       if (error) {
-        console.error('Error fetching treatment products:', error)
       } else if (data) {
         setTreatmentProducts(data)
       }
     } catch (error) {
-      console.error('Error fetching treatment products:', error)
     }
   }, [])
 
@@ -755,7 +734,6 @@ export default function InspectionsPage() {
 
       return publicUrl
     } catch (error) {
-      console.error('Error uploading image:', error)
       alert('Failed to upload image')
       return null
     } finally {
@@ -767,7 +745,6 @@ export default function InspectionsPage() {
     try {
       // Remove spaces and encode the Eircode for the URL
       const cleanedEircode = eircode.trim().replace(/\s+/g, '').toUpperCase()
-      console.log('Original Eircode:', eircode, 'Cleaned:', cleanedEircode)
 
       // Nominatim requires a User-Agent header
       const headers = {
@@ -775,28 +752,21 @@ export default function InspectionsPage() {
       }
 
       // First, try searching with just the Eircode and Ireland
-      console.log('Trying to geocode:', cleanedEircode)
       const geocodeResponse = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode)},Ireland&format=json&limit=1`,
         { headers }
       )
       const geocodeData = await geocodeResponse.json()
-      console.log('Geocode response:', geocodeData)
 
       if (!geocodeData || geocodeData.length === 0) {
-        console.log('Could not find coordinates for Eircode:', eircode)
-
         // Try with different format - just search term
-        console.log('Trying alternative geocoding...')
         const altResponse = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode + ' Ireland')}&format=json&limit=1`,
           { headers }
         )
         const altData = await altResponse.json()
-        console.log('Alternative geocode response:', altData)
 
         if (!altData || altData.length === 0) {
-          console.log('Alternative geocoding also failed. Using default Dublin coordinates.')
           // Fallback to Dublin city center coordinates if Eircode lookup fails
           return await getWeatherFromCoordinates('53.3498', '-6.2603')
         }
@@ -808,26 +778,20 @@ export default function InspectionsPage() {
       const { lat, lon } = geocodeData[0]
       return await getWeatherFromCoordinates(lat, lon)
     } catch (error) {
-      console.error('Error fetching weather data:', error)
       // Fallback to Dublin coordinates on error
-      console.log('Using fallback Dublin coordinates due to error')
       return await getWeatherFromCoordinates('53.3498', '-6.2603')
     }
   }
 
   const getWeatherFromCoordinates = async (lat: string, lon: string) => {
     try {
-      console.log('Fetching weather for coordinates:', lat, lon)
-
       // Get current weather from Open-Meteo API (free, no API key required)
       const weatherResponse = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe/Dublin`
       )
       const weatherData = await weatherResponse.json()
-      console.log('Weather API response:', weatherData)
 
       if (!weatherData.current) {
-        console.log('No current weather data in response')
         return null
       }
 
@@ -862,10 +826,8 @@ export default function InspectionsPage() {
         wind_speed: Math.round(weatherData.current.wind_speed_10m),
       }
 
-      console.log('Processed weather data:', result)
       return result
     } catch (error) {
-      console.error('Error fetching weather from coordinates:', error)
       return null
     }
   }
@@ -1100,7 +1062,6 @@ export default function InspectionsPage() {
       setFetchingWeather(true)
       let weatherData = null
       const selectedHive = hives.find(h => h.id === formData.hive_id)
-      console.log('Selected hive:', selectedHive)
 
       if (selectedHive?.apiary_id) {
         const { data: apiaryData, error: apiaryError } = await supabase
@@ -1109,17 +1070,9 @@ export default function InspectionsPage() {
           .eq('id', selectedHive.apiary_id)
           .single()
 
-        console.log('Apiary data:', apiaryData, 'Error:', apiaryError)
-
         if (apiaryData?.eircode) {
-          console.log('Fetching weather for Eircode:', apiaryData.eircode)
           weatherData = await fetchWeatherData(apiaryData.eircode)
-          console.log('Weather data received:', weatherData)
-        } else {
-          console.log('No Eircode found for this apiary. Please add an Eircode to the apiary.')
         }
-      } else {
-        console.log('No apiary assigned to this hive')
       }
       setFetchingWeather(false)
 
@@ -1160,8 +1113,6 @@ export default function InspectionsPage() {
         weather_wind_speed: weatherData?.wind_speed || null,
       }
 
-      console.log('Submitting inspection data:', submitData)
-
       if (!userId) return
 
       if (editingInspection) {
@@ -1172,9 +1123,7 @@ export default function InspectionsPage() {
           .eq('user_id', userId)
           .select()
 
-        console.log('Update result:', { data, error })
         if (error) {
-          console.error('Database update error:', error)
           throw error
         }
       } else {
@@ -1183,9 +1132,7 @@ export default function InspectionsPage() {
           .insert([{ ...submitData, user_id: userId }])
           .select()
 
-        console.log('Insert result:', { data, error })
         if (error) {
-          console.error('Database insert error:', error)
           throw error
         }
       }
@@ -2992,7 +2939,6 @@ export default function InspectionsPage() {
                         }
                       }
                     } catch (error) {
-                      console.error('Error fetching weather for treatment:', error)
                     } finally {
                       setFetchingWeather(false)
                     }
@@ -3860,16 +3806,7 @@ export default function InspectionsPage() {
               </div>
             )}
 
-            {(() => {
-              console.log('Inspection weather check:', inspection.id, {
-                temp: inspection.weather_temp,
-                condition: inspection.weather_condition,
-                humidity: inspection.weather_humidity,
-                wind: inspection.weather_wind_speed,
-                shouldShow: inspection.weather_temp !== null || inspection.weather_condition
-              })
-              return (inspection.weather_temp !== null || inspection.weather_condition)
-            })() && (
+            {(inspection.weather_temp !== null || inspection.weather_condition) && (
               <div className="mb-4 p-3 bg-sky-50 rounded border-2 border-sky-200">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🌤️</span>
