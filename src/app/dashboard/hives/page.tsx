@@ -527,7 +527,9 @@ export default function HivesPage() {
       queen_installed_date: '',
       hive_type: '',
       configuration: {
-        brood_boxes: 1,
+        brood_boxes: 1, // Legacy field
+        brood_boxes_full: 1,
+        brood_boxes_half: 0,
         honey_supers: 0,
         queen_excluder: false,
         feeder: false,
