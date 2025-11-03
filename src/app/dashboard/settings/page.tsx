@@ -717,6 +717,8 @@ export default function SettingsPage() {
       setShowVarroaTreatments(true)
     } else if (activeSection === 'tickets') {
       setShowTicketManagement(true)
+    } else if (activeSection === 'users') {
+      setShowUserManagement(true)
     }
   }, [activeSection])
 
@@ -1733,17 +1735,9 @@ export default function SettingsPage() {
       {/* User Management Section */}
       {activeSection === 'users' && (
       <div className="bg-white rounded-lg shadow">
-        <div
-          className="p-6 cursor-pointer hover:bg-gray-50"
-          onClick={() => setShowUserManagement(!showUserManagement)}
-        >
+        <div className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {showUserManagement ? (
-                <ChevronDown size={20} className="text-gray-500" />
-              ) : (
-                <ChevronRight size={20} className="text-gray-500" />
-              )}
               <div className="p-3 bg-purple-100 rounded-lg">
                 <Users size={24} className="text-purple-600" />
               </div>
