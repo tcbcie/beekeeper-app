@@ -4306,7 +4306,7 @@ export default function InspectionsPage() {
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">
-                Integrated Pest Management (IPM) Tips for Varroa Control in Ireland
+                Integrated Pest Management (IPM) Tips for Varroa Control
               </h3>
               <button
                 onClick={() => setShowIpmTips(false)}
