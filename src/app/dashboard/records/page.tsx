@@ -3736,10 +3736,10 @@ export default function InspectionsPage() {
                         setFormType('varroa_treatment')
                         setShowForm(true)
                       }}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit treatment"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Edit treatment"
                     >
-                      <Edit2 size={18} />
+                      <Edit2 size={20} />
                     </button>
                     <button
                       onClick={async () => {
@@ -3753,26 +3753,48 @@ export default function InspectionsPage() {
                           if (!error) fetchVarroaTreatments()
                         }
                       }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete treatment"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Delete treatment"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm"><span className="font-medium">Treatment:</span> {treatment.treatment_type}</p>
-                  <p className="text-sm"><span className="font-medium">Product:</span> {treatment.product_name}</p>
-                  <p className="text-sm"><span className="font-medium">Dosage:</span> {treatment.dosage}</p>
-                  {treatment.temperature && <p className="text-sm"><span className="font-medium">Temperature:</span> {treatment.temperature}°C</p>}
-                  {treatment.weather_conditions && <p className="text-sm"><span className="font-medium">Weather:</span> {treatment.weather_conditions}</p>}
-                  {treatment.notes && (
-                    <div className="p-3 bg-red-50 rounded mt-2">
-                      <span className="text-sm font-medium text-gray-700">Notes: </span>
-                      <span className="text-sm text-gray-600">{treatment.notes}</span>
+
+                {/* Details Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-red-50 rounded-lg">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">Treatment Type</span>
+                    <span className="text-sm font-medium text-gray-900">{treatment.treatment_type}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">Product</span>
+                    <span className="text-sm font-medium text-gray-900">{treatment.product_name}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">Dosage</span>
+                    <span className="text-sm font-medium text-gray-900">{treatment.dosage}</span>
+                  </div>
+                  {treatment.temperature && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Temperature</span>
+                      <span className="text-sm font-medium text-gray-900">{treatment.temperature}°C</span>
+                    </div>
+                  )}
+                  {treatment.weather_conditions && (
+                    <div className="flex flex-col md:col-span-2">
+                      <span className="text-xs text-gray-500 mb-1">Weather Conditions</span>
+                      <span className="text-sm font-medium text-gray-900">{treatment.weather_conditions}</span>
                     </div>
                   )}
                 </div>
+
+                {treatment.notes && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-gray-700">{treatment.notes}</span>
+                  </div>
+                )}
               </div>
             )
           } else if (record.record_type === 'varroa_check') {
@@ -3822,10 +3844,10 @@ export default function InspectionsPage() {
                         setFormType('varroa_check')
                         setShowForm(true)
                       }}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit check"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Edit check"
                     >
-                      <Edit2 size={18} />
+                      <Edit2 size={20} />
                     </button>
                     <button
                       onClick={async () => {
@@ -3839,38 +3861,54 @@ export default function InspectionsPage() {
                           if (!error) fetchVarroaChecks()
                         }
                       }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete check"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Delete check"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm"><span className="font-medium">Method:</span> {check.method}</p>
-                  {check.mites_count !== null && <p className="text-sm"><span className="font-medium">Mites Count:</span> {check.mites_count}</p>}
-                  {check.sample_size !== null && <p className="text-sm"><span className="font-medium">Sample Size:</span> {check.sample_size}</p>}
-                  {check.infestation_rate !== null && (
-                    <p className="text-sm">
-                      <span className="font-medium">Infestation Rate:</span>{' '}
-                      <span className={check.infestation_rate > 3 ? 'text-red-600 font-bold' : 'text-green-600'}>
-                        {check.infestation_rate}%
-                      </span>
-                    </p>
-                  )}
-                  <p className="text-sm">
-                    <span className="font-medium">Action Threshold:</span>{' '}
-                    <span className={check.action_threshold_reached ? 'text-red-600 font-bold' : 'text-green-600'}>
-                      {check.action_threshold_reached ? 'Reached - Treatment Needed' : 'Not Reached'}
-                    </span>
-                  </p>
-                  {check.notes && (
-                    <div className="p-3 bg-orange-50 rounded mt-2">
-                      <span className="text-sm font-medium text-gray-700">Notes: </span>
-                      <span className="text-sm text-gray-600">{check.notes}</span>
+
+                {/* Details Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-orange-50 rounded-lg">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">Method</span>
+                    <span className="text-sm font-medium text-gray-900">{check.method}</span>
+                  </div>
+                  {check.mites_count !== null && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Mites Count</span>
+                      <span className="text-sm font-medium text-gray-900">{check.mites_count}</span>
                     </div>
                   )}
+                  {check.sample_size !== null && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Sample Size</span>
+                      <span className="text-sm font-medium text-gray-900">{check.sample_size}</span>
+                    </div>
+                  )}
+                  {check.infestation_rate !== null && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Infestation Rate</span>
+                      <span className={`text-sm font-bold ${check.infestation_rate > 3 ? 'text-red-600' : 'text-green-600'}`}>
+                        {check.infestation_rate}%
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex flex-col md:col-span-2">
+                    <span className="text-xs text-gray-500 mb-1">Action Threshold</span>
+                    <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-600' : 'text-green-600'}`}>
+                      {check.action_threshold_reached ? '⚠️ Reached - Treatment Needed' : '✓ Not Reached'}
+                    </span>
+                  </div>
                 </div>
+
+                {check.notes && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-gray-700">{check.notes}</span>
+                  </div>
+                )}
               </div>
             )
           } else if (record.record_type === 'feeding') {
@@ -3920,10 +3958,10 @@ export default function InspectionsPage() {
                         setFormType('feeding')
                         setShowForm(true)
                       }}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit feeding"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Edit feeding"
                     >
-                      <Edit2 size={18} />
+                      <Edit2 size={20} />
                     </button>
                     <button
                       onClick={async () => {
@@ -3937,25 +3975,34 @@ export default function InspectionsPage() {
                           if (!error) fetchFeedings()
                         }
                       }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete feeding"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Delete feeding"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm"><span className="font-medium">Feed Type:</span> {feeding.feed_type}</p>
+
+                {/* Details Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-yellow-50 rounded-lg">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">Feed Type</span>
+                    <span className="text-sm font-medium text-gray-900">{feeding.feed_type}</span>
+                  </div>
                   {feeding.quantity !== null && (
-                    <p className="text-sm"><span className="font-medium">Quantity:</span> {feeding.quantity} {feeding.unit}</p>
-                  )}
-                  {feeding.notes && (
-                    <div className="p-3 bg-yellow-50 rounded mt-2">
-                      <span className="text-sm font-medium text-gray-700">Notes: </span>
-                      <span className="text-sm text-gray-600">{feeding.notes}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Quantity</span>
+                      <span className="text-sm font-medium text-gray-900">{feeding.quantity} {feeding.unit}</span>
                     </div>
                   )}
                 </div>
+
+                {feeding.notes && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-gray-700">{feeding.notes}</span>
+                  </div>
+                )}
               </div>
             )
           } else if (record.record_type === 'harvest') {
@@ -4005,10 +4052,10 @@ export default function InspectionsPage() {
                         setFormType('harvest')
                         setShowForm(true)
                       }}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit harvest"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Edit harvest"
                     >
-                      <Edit2 size={18} />
+                      <Edit2 size={20} />
                     </button>
                     <button
                       onClick={async () => {
@@ -4022,30 +4069,42 @@ export default function InspectionsPage() {
                           if (!error) fetchHarvests()
                         }
                       }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete harvest"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      aria-label="Delete harvest"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2">
+
+                {/* Details Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-amber-50 rounded-lg">
                   {harvest.honey_weight !== null && (
-                    <p className="text-sm"><span className="font-medium">Honey:</span> {harvest.honey_weight} {harvest.unit}</p>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Honey Weight</span>
+                      <span className="text-sm font-medium text-gray-900">{harvest.honey_weight} {harvest.unit}</span>
+                    </div>
                   )}
                   {harvest.wax_weight !== null && (
-                    <p className="text-sm"><span className="font-medium">Wax:</span> {harvest.wax_weight} {harvest.unit}</p>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Wax Weight</span>
+                      <span className="text-sm font-medium text-gray-900">{harvest.wax_weight} {harvest.unit}</span>
+                    </div>
                   )}
                   {harvest.frames_harvested !== null && (
-                    <p className="text-sm"><span className="font-medium">Frames Harvested:</span> {harvest.frames_harvested}</p>
-                  )}
-                  {harvest.notes && (
-                    <div className="p-3 bg-green-50 rounded mt-2">
-                      <span className="text-sm font-medium text-gray-700">Notes: </span>
-                      <span className="text-sm text-gray-600">{harvest.notes}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">Frames Harvested</span>
+                      <span className="text-sm font-medium text-gray-900">{harvest.frames_harvested}</span>
                     </div>
                   )}
                 </div>
+
+                {harvest.notes && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-gray-700">{harvest.notes}</span>
+                  </div>
+                )}
               </div>
             )
           }
