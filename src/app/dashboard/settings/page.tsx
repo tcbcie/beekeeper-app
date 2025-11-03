@@ -94,6 +94,7 @@ export default function SettingsPage() {
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [exporting, setExporting] = useState(false)
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all')
 
   // User Management state
   const [showUserManagement, setShowUserManagement] = useState(false)
@@ -1917,17 +1918,30 @@ export default function SettingsPage() {
 
       {/* Dropdown Values Section */}
       {activeSection === 'dropdowns' && (
-        <>
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900">Dropdown Values Management</h2>
-            <button
-              onClick={() => setShowCategoryForm(!showCategoryForm)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
-            >
-              {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
-              {showCategoryForm ? 'Cancel' : 'Add Category'}
-            </button>
-          </div>
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Dropdown Values Management</h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setEditingValue({ categoryId: '', value: null })
+                    setValueFormData({ value: '', display_order: 0 })
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Add Value
+                </button>
+                <button
+                  onClick={() => setShowCategoryForm(!showCategoryForm)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
+                >
+                  {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
+                  {showCategoryForm ? 'Cancel' : 'Add Category'}
+                </button>
+              </div>
+            </div>
 
           {showCategoryForm && (
             <div className="bg-white rounded-lg shadow-lg p-6">
@@ -1997,179 +2011,242 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <div className="space-y-6">
-            {categories.map((category) => {
-              const isExpanded = expandedCategories.has(category.id)
+            {/* Category Filter */}
+            <div className="mb-4 flex items-center gap-4">
+              <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
+              <select
+                value={selectedCategoryFilter}
+                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="all">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                ))}
+              </select>
+              <span className="text-sm text-gray-500">
+                {(() => {
+                  const filtered = categories.flatMap(c =>
+                    selectedCategoryFilter === 'all' || c.id === selectedCategoryFilter
+                      ? c.dropdown_values || []
+                      : []
+                  )
+                  return `Showing ${filtered.length} value${filtered.length !== 1 ? 's' : ''}`
+                })()}
+              </span>
+            </div>
 
-              return (
-                <div key={category.id} className="bg-white rounded-lg shadow">
-                  <div className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div
-                        className="flex-1 cursor-pointer"
-                        onClick={() => toggleCategory(category.id)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isExpanded ? (
-                            <ChevronDown size={20} className="text-gray-500" />
-                          ) : (
-                            <ChevronRight size={20} className="text-gray-500" />
-                          )}
-                          <div>
-                            <h2 className="text-xl font-bold text-gray-900">{category.category_name}</h2>
-                            <p className="text-sm text-gray-500 font-mono">{category.category_key}</p>
-                            {category.description && (
-                              <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+            {/* Add/Edit Value Form */}
+            {editingValue.categoryId !== '' && (
+              <form onSubmit={handleValueSubmit} className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
+                <h3 className="font-semibold text-gray-900">
+                  {editingValue.value ? 'Edit Value' : 'Add New Value'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category *
+                    </label>
+                    <select
+                      value={editingValue.categoryId}
+                      onChange={(e) => setEditingValue({ ...editingValue, categoryId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      required
+                      disabled={!!editingValue.value}
+                    >
+                      <option value="">Select category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Value *
+                    </label>
+                    <input
+                      type="text"
+                      value={valueFormData.value}
+                      onChange={(e) => setValueFormData({ ...valueFormData, value: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder="Enter value"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Display Order
+                    </label>
+                    <input
+                      type="number"
+                      value={valueFormData.display_order}
+                      onChange={(e) => setValueFormData({ ...valueFormData, display_order: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                  >
+                    <Save size={14} className="inline mr-1" />
+                    {editingValue.value ? 'Update' : 'Add'} Value
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingValue({ categoryId: '', value: null })
+                      setValueFormData({ value: '', display_order: 0 })
+                    }}
+                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Values Table */}
+            {categories.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-12 text-center text-gray-500">
+                No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Value
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {categories
+                      .filter(cat => selectedCategoryFilter === 'all' || cat.id === selectedCategoryFilter)
+                      .flatMap(category =>
+                        (category.dropdown_values || [])
+                          .sort((a, b) => a.display_order - b.display_order)
+                          .map(value => ({ category, value }))
+                      )
+                      .map(({ category, value }) => (
+                        <tr key={value.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{category.category_name}</div>
+                              <div className="text-xs text-gray-500 font-mono">{category.category_key}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">{value.value}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm text-gray-500">#{value.display_order}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {value.is_active ? (
+                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Active
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Inactive
+                              </span>
                             )}
-                          </div>
-                        </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => handleEditValue(category.id, value)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Edit"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleToggleValueStatus(value.id, value.is_active)}
+                                className={value.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
+                                title={value.is_active ? 'Deactivate' : 'Activate'}
+                              >
+                                {value.is_active ? <X size={16} /> : <Plus size={16} />}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteValue(value.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                {categories
+                  .filter(cat => selectedCategoryFilter === 'all' || cat.id === selectedCategoryFilter)
+                  .every(cat => !cat.dropdown_values || cat.dropdown_values.length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    No values found. Click &ldquo;Add Value&rdquo; to create the first one.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Categories Management */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Manage Categories</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categories.map((category) => (
+                  <div key={category.id} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{category.category_name}</h4>
+                        <p className="text-xs text-gray-500 font-mono">{category.category_key}</p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <button
                           onClick={() => handleEditCategory(category)}
                           className="text-blue-600 hover:text-blue-900"
+                          title="Edit Category"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={14} />
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(category.id)}
                           className="text-red-600 hover:text-red-900"
+                          title="Delete Category"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
-
-                    {isExpanded && (
-                      <div className="mt-6 space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="font-semibold text-gray-700">Values</h3>
-                          <button
-                            onClick={() => {
-                              setEditingValue({ categoryId: category.id, value: null })
-                              setValueFormData({ value: '', display_order: 0 })
-                            }}
-                            className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm flex items-center gap-1"
-                          >
-                            <Plus size={14} />
-                            Add Value
-                          </button>
-                        </div>
-
-                        {editingValue.categoryId === category.id && (
-                          <form
-                            onSubmit={handleValueSubmit}
-                            className="bg-gray-50 p-4 rounded space-y-3"
-                          >
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Value *
-                                </label>
-                                <input
-                                  type="text"
-                                  value={valueFormData.value}
-                                  onChange={(e) => setValueFormData({ ...valueFormData, value: e.target.value })}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Display Order
-                                </label>
-                                <input
-                                  type="number"
-                                  value={valueFormData.display_order}
-                                  onChange={(e) => setValueFormData({ ...valueFormData, display_order: parseInt(e.target.value) })}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                type="submit"
-                                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
-                              >
-                                {editingValue.value ? 'Update' : 'Add'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingValue({ categoryId: '', value: null })
-                                  setValueFormData({ value: '', display_order: 0 })
-                                }}
-                                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </form>
-                        )}
-
-                        <div className="space-y-2">
-                          {category.dropdown_values && category.dropdown_values.length > 0 ? (
-                            category.dropdown_values
-                              .sort((a, b) => a.display_order - b.display_order)
-                              .map((value) => (
-                                <div
-                                  key={value.id}
-                                  className="flex justify-between items-center p-3 bg-gray-50 rounded border border-gray-200"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-sm text-gray-500 font-mono">
-                                      #{value.display_order}
-                                    </span>
-                                    <span className="font-medium">{value.value}</span>
-                                    {!value.is_active && (
-                                      <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
-                                        Inactive
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => handleEditValue(category.id, value)}
-                                      className="text-blue-600 hover:text-blue-900"
-                                    >
-                                      <Edit2 size={14} />
-                                    </button>
-                                    <button
-                                      onClick={() => handleToggleValueStatus(value.id, value.is_active)}
-                                      className="text-gray-600 hover:text-gray-900"
-                                      title={value.is_active ? 'Deactivate' : 'Activate'}
-                                    >
-                                      {value.is_active ? <X size={14} /> : <Plus size={14} />}
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteValue(value.id)}
-                                      className="text-red-600 hover:text-red-900"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))
-                          ) : (
-                            <p className="text-sm text-gray-500 text-center py-4">
-                              No values yet. Click &ldquo;Add Value&rdquo; to get started.
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                    {category.description && (
+                      <p className="text-xs text-gray-600 mt-1">{category.description}</p>
                     )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      {category.dropdown_values?.length || 0} value{(category.dropdown_values?.length || 0) !== 1 ? 's' : ''}
+                    </p>
                   </div>
-                </div>
-              )
-            })}
-
-            {categories.length === 0 && (
-              <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
-                No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
+                ))}
               </div>
-            )}
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )
