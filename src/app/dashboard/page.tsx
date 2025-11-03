@@ -33,7 +33,7 @@ interface TeamMember {
   teams?: {
     name: string
   }
-  user_profiles?: {
+  profiles?: {
     full_name: string
     email: string
   }
@@ -126,9 +126,9 @@ export default function DashboardPage() {
       // Fetch user statistics (admin only)
       const role = await getUserRole()
       if (role === 'Admin') {
-        // Get total users from user_profiles
+        // Get total users from profiles
         const { count: totalUsers } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .select('id', { count: 'exact', head: true })
 
         // Get total hives across all users
@@ -447,7 +447,7 @@ export default function DashboardPage() {
       // Get team members for these teams (including current user as owner)
       const { data: teamMembers, error: membersError } = await supabase
         .from('team_members')
-        .select('user_id, team_id, role, teams(name), user_profiles(full_name, email)')
+        .select('user_id, team_id, role, teams(name), profiles(full_name, email)')
         .in('team_id', teamIds)
 
       if (membersError) throw membersError
@@ -458,7 +458,7 @@ export default function DashboardPage() {
         team_id: member.team_id,
         role: member.role,
         teams: Array.isArray(member.teams) ? member.teams[0] : member.teams,
-        user_profiles: Array.isArray(member.user_profiles) ? member.user_profiles[0] : member.user_profiles,
+        profiles: Array.isArray(member.profiles) ? member.profiles[0] : member.profiles,
       }))
 
       setMySharedTeamMembers(transformedMembers)
@@ -636,9 +636,9 @@ export default function DashboardPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900">
-                            {member.user_profiles?.full_name || 'Unknown User'}
+                            {member.profiles?.full_name || 'Unknown User'}
                           </h4>
-                          <p className="text-sm text-gray-600">{member.user_profiles?.email}</p>
+                          <p className="text-sm text-gray-600">{member.profiles?.email}</p>
                           <div className="mt-2 flex items-center gap-2">
                             <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
                               {member.teams?.name || 'Unknown Team'}
