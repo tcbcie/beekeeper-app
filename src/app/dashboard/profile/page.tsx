@@ -227,7 +227,8 @@ export default function ProfilePage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `my-beekeeping-data-${new Date().toISOString().split('T')[0]}.json`
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5) // Format: 2025-11-03T14-30-45
+      a.download = `hivecraic-backup-${timestamp}.json`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -292,7 +293,8 @@ export default function ProfilePage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `my-beekeeping-data-${new Date().toISOString().split('T')[0]}.csv`
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5) // Format: 2025-11-03T14-30-45
+      a.download = `hivecraic-backup-${timestamp}.csv`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
