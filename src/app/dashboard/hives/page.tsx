@@ -68,15 +68,6 @@ interface Hive {
   is_shared?: boolean
 }
 
-interface TeamApiaryResponse {
-  team_id: string
-  teams: {
-    name: string
-  } | {
-    name: string
-  }[] | null
-}
-
 interface FormData {
   hive_number: string
   apiary_id: string
@@ -135,87 +126,6 @@ export default function HivesPage() {
     },
   })
 
-  const getLastQueenAndEggsInfo = useCallback(async (hiveId: string, userIdParam: string) => {
-    const { data: inspections } = await supabase
-      .from('inspections')
-      .select('inspection_date, queen_seen, eggs_present')
-      .eq('hive_id', hiveId)
-      .eq('user_id', userIdParam)
-      .order('inspection_date', { ascending: false })
-
-    if (!inspections || inspections.length === 0) {
-      return { queen_last_seen: null, eggs_last_present: null }
-    }
-
-    // Find most recent inspection where queen was seen
-    const queenInspection = inspections.find(i => i.queen_seen === true)
-
-    // Find most recent inspection where eggs were present
-    const eggsInspection = inspections.find(i => i.eggs_present === true)
-
-    return {
-      queen_last_seen: queenInspection?.inspection_date || null,
-      eggs_last_present: eggsInspection?.inspection_date || null,
-    }
-  }, [])
-
-  const calculateInspectionAverages = useCallback(async (hiveId: string, userIdParam: string) => {
-    const { data: inspections } = await supabase
-      .from('inspections')
-      .select('inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength')
-      .eq('hive_id', hiveId)
-      .eq('user_id', userIdParam)
-      .order('inspection_date', { ascending: false })
-
-    if (!inspections || inspections.length === 0) {
-      return null
-    }
-
-    // Filter out null/0 values and calculate averages
-    const broodFrames = inspections
-      .filter(i => i.brood_frames !== null && i.brood_frames > 0)
-      .map(i => i.brood_frames)
-
-    const rightSizedFrames = inspections
-      .filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0)
-      .map(i => i.right_sized_frames)
-
-    const broodPatterns = inspections
-      .filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0)
-      .map(i => i.brood_pattern_rating)
-
-    const temperaments = inspections
-      .filter(i => i.temperament_rating !== null && i.temperament_rating > 0)
-      .map(i => i.temperament_rating)
-
-    const populations = inspections
-      .filter(i => i.population_strength !== null && i.population_strength > 0)
-      .map(i => i.population_strength)
-
-    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
-
-    // Count unique inspections that have at least one recorded metric
-    const inspectionsWithData = new Set<string>()
-    inspections.forEach(inspection => {
-      if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
-          (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
-          (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
-          (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
-          (inspection.population_strength !== null && inspection.population_strength > 0)) {
-        inspectionsWithData.add(inspection.inspection_date)
-      }
-    })
-
-    return {
-      brood_frames: avg(broodFrames),
-      right_sized_frames: avg(rightSizedFrames),
-      brood_pattern: avg(broodPatterns),
-      temperament: avg(temperaments),
-      population: avg(populations),
-      inspection_count: inspectionsWithData.size,
-    }
-  }, [])
-
   const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
@@ -238,12 +148,14 @@ export default function HivesPage() {
       sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
     }
 
-    console.log('🔍 Shared apiary IDs for user:', sharedApiaryIds)
-
-    // Build query based on ownership filter
+    // Build query based on ownership filter with joins for better performance
     let query = supabase
       .from('hives')
-      .select('*')
+      .select(`
+        *,
+        apiaries(name),
+        queens(id, queen_number)
+      `)
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
@@ -273,92 +185,121 @@ export default function HivesPage() {
 
     const { data, error } = await query.order('hive_number')
 
-    console.log('Fetch hives response:', { data, error })
-
     if (error) {
       console.error('Error fetching hives:', error)
       alert(`Error loading hives: ${error.message}`)
-    } else {
-      console.log('Hives data received:', data)
-      console.log('Number of hives:', data?.length || 0)
+      setHives([])
+    } else if (data && data.length > 0) {
+      // Use joined data from query - apiaries and queens are already included
+      const hiveIds = data.map(h => h.id)
 
-      // If we have hives, try to enrich them with apiary and queen data
-      if (data && data.length > 0) {
-        const enrichedHives = await Promise.all(
-          data.map(async (hive) => {
-            let apiaryName = null
-            let queenNumber = null
+      // Batch query for team info for shared apiaries
+      const sharedApiaryIds = [...new Set(
+        data
+          .filter(h => h.user_id !== currentUserId && h.apiary_id)
+          .map(h => h.apiary_id)
+          .filter((id): id is string => id !== null)
+      )]
 
-            // Fetch apiary if exists (remove user_id filter to show shared apiaries)
-            if (hive.apiary_id) {
-              const { data: apiaryData } = await supabase
-                .from('apiaries')
-                .select('name')
-                .eq('id', hive.apiary_id)
-                .maybeSingle()
-              apiaryName = apiaryData?.name
-            }
+      const teamDataMap = new Map<string, { name: string }>()
+      if (sharedApiaryIds.length > 0) {
+        const { data: teamApiaryData } = await supabase
+          .from('team_apiaries')
+          .select('apiary_id, teams(name)')
+          .in('apiary_id', sharedApiaryIds)
 
-            // Fetch queen if exists (remove user_id filter to show shared queens)
-            if (hive.queen_id) {
-              const { data: queenData } = await supabase
-                .from('queens')
-                .select('id, queen_number')
-                .eq('id', hive.queen_id)
-                .maybeSingle()
-              if (queenData) {
-                queenNumber = queenData.queen_number
+        if (teamApiaryData) {
+          teamApiaryData.forEach((ta) => {
+            const typedData = ta as { apiary_id: string; teams: { name: string } | { name: string }[] | null }
+            if (typedData.teams) {
+              const teamName = Array.isArray(typedData.teams)
+                ? typedData.teams[0]?.name || ''
+                : typedData.teams.name
+              if (teamName) {
+                teamDataMap.set(typedData.apiary_id, { name: teamName })
               }
-            }
-
-            // Check if hive is shared and get team name
-            let teamName = null
-            let isShared = false
-            if (hive.user_id !== currentUserId && hive.apiary_id) {
-              // This is a team hive, find which team it's shared through
-              const { data: teamApiaryData } = await supabase
-                .from('team_apiaries')
-                .select('team_id, teams(name)')
-                .eq('apiary_id', hive.apiary_id)
-                .maybeSingle()
-
-              if (teamApiaryData) {
-                isShared = true
-                const typedData = teamApiaryData as TeamApiaryResponse
-                if (typedData.teams) {
-                  teamName = Array.isArray(typedData.teams)
-                    ? typedData.teams[0]?.name || null
-                    : typedData.teams.name
-                }
-              }
-            }
-
-            // Fetch inspection averages
-            const averages = await calculateInspectionAverages(hive.id, currentUserId)
-
-            // Fetch last queen seen and eggs present info
-            const queenEggsInfo = await getLastQueenAndEggsInfo(hive.id, currentUserId)
-
-            return {
-              ...hive,
-              apiaries: apiaryName ? { name: apiaryName } : undefined,
-              queens: hive.queen_id && queenNumber ? { id: hive.queen_id, queen_number: queenNumber } : undefined,
-              averages: averages,
-              queen_last_seen: queenEggsInfo.queen_last_seen,
-              eggs_last_present: queenEggsInfo.eggs_last_present,
-              team_name: teamName,
-              is_shared: isShared,
             }
           })
-        )
-        console.log('Enriched hives:', enrichedHives)
-        setHives(enrichedHives as Hive[])
-      } else {
-        setHives([])
+        }
       }
+
+      // Batch query for all inspections for these hives
+      const { data: allInspections } = await supabase
+        .from('inspections')
+        .select('hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present')
+        .in('hive_id', hiveIds)
+        .eq('user_id', currentUserId)
+        .order('inspection_date', { ascending: false })
+
+      // Group inspections by hive_id
+      const inspectionsByHive = new Map<string, typeof allInspections>()
+      allInspections?.forEach(inspection => {
+        if (!inspectionsByHive.has(inspection.hive_id)) {
+          inspectionsByHive.set(inspection.hive_id, [])
+        }
+        inspectionsByHive.get(inspection.hive_id)!.push(inspection)
+      })
+
+      // Calculate averages and last seen info for each hive
+      const enrichedHives = data.map((hive) => {
+        const inspections = inspectionsByHive.get(hive.id) || []
+
+        // Calculate averages
+        let averages = null
+        if (inspections.length > 0) {
+          const broodFrames = inspections.filter(i => i.brood_frames !== null && i.brood_frames > 0).map(i => i.brood_frames!)
+          const rightSizedFrames = inspections.filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0).map(i => i.right_sized_frames!)
+          const broodPatterns = inspections.filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0).map(i => i.brood_pattern_rating!)
+          const temperaments = inspections.filter(i => i.temperament_rating !== null && i.temperament_rating > 0).map(i => i.temperament_rating!)
+          const populations = inspections.filter(i => i.population_strength !== null && i.population_strength > 0).map(i => i.population_strength!)
+
+          const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+
+          const inspectionsWithData = new Set<string>()
+          inspections.forEach(inspection => {
+            if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
+                (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
+                (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
+                (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
+                (inspection.population_strength !== null && inspection.population_strength > 0)) {
+              inspectionsWithData.add(inspection.inspection_date)
+            }
+          })
+
+          averages = {
+            brood_frames: avg(broodFrames),
+            right_sized_frames: avg(rightSizedFrames),
+            brood_pattern: avg(broodPatterns),
+            temperament: avg(temperaments),
+            population: avg(populations),
+            inspection_count: inspectionsWithData.size,
+          }
+        }
+
+        // Find last queen seen and eggs present
+        const queenInspection = inspections.find(i => i.queen_seen === true)
+        const eggsInspection = inspections.find(i => i.eggs_present === true)
+
+        // Determine team info for shared hives
+        const isShared = hive.user_id !== currentUserId
+        const teamData = hive.apiary_id ? teamDataMap.get(hive.apiary_id) : undefined
+
+        return {
+          ...hive,
+          averages,
+          queen_last_seen: queenInspection?.inspection_date || null,
+          eggs_last_present: eggsInspection?.inspection_date || null,
+          team_name: teamData?.name || null,
+          is_shared: isShared,
+        }
+      })
+
+      setHives(enrichedHives as Hive[])
+    } else {
+      setHives([])
     }
     setLoading(false)
-  }, [userId, ownershipFilter, calculateInspectionAverages, getLastQueenAndEggsInfo])
+  }, [userId, ownershipFilter])
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
@@ -370,9 +311,7 @@ export default function HivesPage() {
       .eq('user_id', currentUserId)
       .order('name')
 
-    if (error) {
-      console.error('Error fetching apiaries:', error)
-    } else if (data) {
+    if (!error && data) {
       setApiaries(data as Apiary[])
     }
   }, [userId])
@@ -388,9 +327,7 @@ export default function HivesPage() {
       .eq('user_id', currentUserId)
       .order('queen_number')
 
-    if (error) {
-      console.error('Error fetching queens:', error)
-    } else if (data) {
+    if (!error && data) {
       setQueens(data as Queen[])
     }
   }, [userId])
@@ -431,7 +368,6 @@ export default function HivesPage() {
           .eq('user_id', userId)
 
         if (checkError) {
-          console.error('Error checking queen assignment:', checkError)
           throw new Error('Failed to validate queen assignment')
         }
 
@@ -462,7 +398,6 @@ export default function HivesPage() {
           .neq('id', editingHive?.id || '')
 
         if (positionError) {
-          console.error('Error checking position assignment:', positionError)
           throw new Error('Failed to validate position assignment')
         }
 
@@ -486,17 +421,13 @@ export default function HivesPage() {
           .from('hives')
           .insert([dataToSubmit])
 
-        if (error) {
-          console.error('Insert error:', error)
-          throw error
-        }
+        if (error) throw error
       }
 
       fetchHives()
       resetForm()
     } catch (error) {
       if (error instanceof Error) {
-        console.error('Submit error:', error)
         alert(`Failed to save hive: ${error.message}`)
       }
     }
