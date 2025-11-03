@@ -203,6 +203,20 @@ interface FormData {
   image_url: string | null
 }
 
+interface TreatmentProduct {
+  id: string
+  product_name: string
+  active_ingredient: string | null
+  dosage_info: string | null
+  min_temperature: number | null
+  max_temperature: number | null
+  withdrawal_period_days: number | null
+  application_method: string | null
+  safety_notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 export default function InspectionsPage() {
   const router = useRouter()
   const [inspections, setInspections] = useState<Inspection[]>([])
@@ -244,7 +258,7 @@ export default function InspectionsPage() {
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
   const [checkMethodOptions, setCheckMethodOptions] = useState<string[]>([])
   const [otherCheckMethod, setOtherCheckMethod] = useState<string>('')
-  const [treatmentProducts, setTreatmentProducts] = useState<any[]>([])
+  const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
   const [otherTreatmentType, setOtherTreatmentType] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
