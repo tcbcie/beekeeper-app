@@ -679,7 +679,10 @@ export default function HivesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hive Order in Row</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Hive Order in Row
+                <span className="block text-xs font-normal text-gray-500 mt-0.5">Left to right looking at the entrances</span>
+              </label>
               <div className="flex gap-2">
                 <button
                   type="button"
