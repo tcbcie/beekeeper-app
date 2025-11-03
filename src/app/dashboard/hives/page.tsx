@@ -1098,6 +1098,14 @@ export default function HivesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredHives.map((hive) => (
           <div key={hive.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            {/* Select & New Record Button - Top of Card */}
+            <button
+              onClick={() => router.push(`/dashboard/hives/${hive.id}`)}
+              className="w-full px-4 py-3 mb-4 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold shadow-sm"
+            >
+              Select & New Record
+            </button>
+
             <div className="flex justify-between items-start mb-3">
               <div className="flex flex-col gap-1">
                 <h3 className="text-xl font-bold text-gray-900">{hive.hive_number}</h3>
@@ -1295,27 +1303,19 @@ export default function HivesPage() {
               </div>
             )}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
               <button
-                onClick={() => router.push(`/dashboard/hives/${hive.id}`)}
-                className="w-full px-4 py-2.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                onClick={() => handleEdit(hive)}
+                className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
               >
-                Select & New Record
+                Edit
               </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(hive)}
-                  className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(hive.id)}
-                  className="flex-1 px-3 py-2 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100"
-                >
-                  Delete
-                </button>
-              </div>
+              <button
+                onClick={() => handleDelete(hive.id)}
+                className="flex-1 px-3 py-2 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
