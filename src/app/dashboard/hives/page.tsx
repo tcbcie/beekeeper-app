@@ -18,7 +18,9 @@ interface Queen {
 }
 
 interface HiveConfiguration {
-  brood_boxes: number
+  brood_boxes: number // Legacy field - will be deprecated
+  brood_boxes_full: number
+  brood_boxes_half: number
   honey_supers: number
   queen_excluder: boolean
   feeder: boolean
@@ -115,7 +117,9 @@ export default function HivesPage() {
     queen_installed_date: '',
     hive_type: '',
     configuration: {
-      brood_boxes: 1,
+      brood_boxes: 1, // Legacy field
+      brood_boxes_full: 1,
+      brood_boxes_half: 0,
       honey_supers: 0,
       queen_excluder: false,
       feeder: false,
@@ -474,15 +478,17 @@ export default function HivesPage() {
       colony_established_date: hive.colony_established_date || '',
       queen_installed_date: hive.queen_installed_date || '',
       hive_type: hive.hive_type || '',
-      configuration: hive.configuration || {
-        brood_boxes: 1,
-        honey_supers: 0,
-        queen_excluder: false,
-        feeder: false,
-        feeder_type: '',
-        entrance_reducer: false,
-        varroa_mesh_floor: 'closed',
-        right_sized_broodbox: false,
+      configuration: {
+        brood_boxes: hive.configuration?.brood_boxes || 1, // Legacy field
+        brood_boxes_full: hive.configuration?.brood_boxes_full ?? (hive.configuration?.brood_boxes || 1),
+        brood_boxes_half: hive.configuration?.brood_boxes_half ?? 0,
+        honey_supers: hive.configuration?.honey_supers || 0,
+        queen_excluder: hive.configuration?.queen_excluder || false,
+        feeder: hive.configuration?.feeder || false,
+        feeder_type: hive.configuration?.feeder_type || '',
+        entrance_reducer: hive.configuration?.entrance_reducer || false,
+        varroa_mesh_floor: hive.configuration?.varroa_mesh_floor || 'closed',
+        right_sized_broodbox: hive.configuration?.right_sized_broodbox || false,
       },
     })
     setShowForm(true)
@@ -892,16 +898,38 @@ export default function HivesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Brood Boxes: {formData.configuration.brood_boxes}
+                    Full-Size Brood Boxes: {formData.configuration.brood_boxes_full}
                   </label>
                   <div className="flex gap-2">
-                    {[1, 2, 3, 4].map((num) => (
+                    {[0, 1, 2, 3, 4].map((num) => (
                       <button
                         key={num}
                         type="button"
-                        onClick={() => setFormData({...formData, configuration: {...formData.configuration, brood_boxes: num}})}
+                        onClick={() => setFormData({...formData, configuration: {...formData.configuration, brood_boxes_full: num}})}
                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                          formData.configuration.brood_boxes === num
+                          formData.configuration.brood_boxes_full === num
+                            ? 'bg-amber-600 text-white shadow-md'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Half-Size Brood Boxes: {formData.configuration.brood_boxes_half}
+                  </label>
+                  <div className="flex gap-2">
+                    {[0, 1, 2, 3, 4].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setFormData({...formData, configuration: {...formData.configuration, brood_boxes_half: num}})}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                          formData.configuration.brood_boxes_half === num
                             ? 'bg-amber-600 text-white shadow-md'
                             : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                         }`}
@@ -1150,10 +1178,17 @@ export default function HivesPage() {
                     </div>
                   )}
 
-                  {/* Brood Boxes (top to bottom) */}
-                  {Array.from({ length: hive.configuration.brood_boxes }).map((_, i) => (
-                    <div key={`brood-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold">
-                      🐝 Brood {i + 1}
+                  {/* Full-Size Brood Boxes (top to bottom) */}
+                  {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
+                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold">
+                      🐝 Brood Full {i + 1}
+                    </div>
+                  ))}
+
+                  {/* Half-Size Brood Boxes (same height as honey supers) */}
+                  {Array.from({ length: hive.configuration.brood_boxes_half || 0 }).map((_, i) => (
+                    <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-xs font-semibold">
+                      🐝 Brood Half {i + 1}
                     </div>
                   ))}
 

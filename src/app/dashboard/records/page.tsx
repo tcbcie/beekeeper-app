@@ -8,7 +8,9 @@ import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface HiveConfiguration {
-  brood_boxes?: number
+  brood_boxes?: number // Legacy field
+  brood_boxes_full?: number
+  brood_boxes_half?: number
   honey_supers?: number
   queen_excluder?: boolean
   feeder?: boolean
