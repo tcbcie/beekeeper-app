@@ -244,6 +244,8 @@ export default function InspectionsPage() {
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
   const [checkMethodOptions, setCheckMethodOptions] = useState<string[]>([])
   const [otherCheckMethod, setOtherCheckMethod] = useState<string>('')
+  const [treatmentProducts, setTreatmentProducts] = useState<any[]>([])
+  const [otherTreatmentType, setOtherTreatmentType] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -582,6 +584,23 @@ export default function InspectionsPage() {
     }
   }, [])
 
+  const fetchTreatmentProducts = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('varroa_treatment_products')
+        .select('*')
+        .order('product_name')
+
+      if (error) {
+        console.error('Error fetching treatment products:', error)
+      } else if (data) {
+        setTreatmentProducts(data)
+      }
+    } catch (error) {
+      console.error('Error fetching treatment products:', error)
+    }
+  }, [])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -598,9 +617,10 @@ export default function InspectionsPage() {
       fetchHives(id)
       fetchApiaries(id)
       fetchCheckMethods()
+      fetchTreatmentProducts()
     }
     initUser()
-  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods])
+  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods, fetchTreatmentProducts])
 
   // Merge all records whenever any record type changes
   useEffect(() => {
@@ -1406,6 +1426,7 @@ export default function InspectionsPage() {
                       weather_conditions: '',
                       notes: '',
                     })
+                    setOtherTreatmentType('')
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -2902,27 +2923,75 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Type *</label>
-              <input
-                type="text"
-                value={editingTreatment?.treatment_type || ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, treatment_type: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                placeholder="e.g., Oxalic acid, Apiguard"
+              <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Product *</label>
+              <select
+                value={
+                  editingTreatment?.treatment_type &&
+                  treatmentProducts.some(p => p.product_name === editingTreatment.treatment_type)
+                    ? editingTreatment.treatment_type
+                    : 'Other'
+                }
+                onChange={(e) => {
+                  if (e.target.value === 'Other') {
+                    // Set to custom value or empty string
+                    setOtherTreatmentType(
+                      editingTreatment?.treatment_type &&
+                      !treatmentProducts.some(p => p.product_name === editingTreatment.treatment_type)
+                        ? editingTreatment.treatment_type
+                        : ''
+                    )
+                  } else {
+                    // Set treatment_type to the selected product name
+                    const selectedProduct = treatmentProducts.find(p => p.product_name === e.target.value)
+                    if (selectedProduct && editingTreatment) {
+                      setEditingTreatment({
+                        ...editingTreatment,
+                        treatment_type: selectedProduct.product_name,
+                        product_name: selectedProduct.product_name
+                      })
+                    }
+                    setOtherTreatmentType('')
+                  }
+                }}
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
                 required
-              />
+              >
+                <option value="">Select treatment product</option>
+                {treatmentProducts.map((product) => (
+                  <option key={product.id} value={product.product_name}>
+                    {product.product_name}
+                  </option>
+                ))}
+                <option value="Other">Other (specify below)</option>
+              </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-              <input
-                type="text"
-                value={editingTreatment?.product_name || ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, product_name: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                placeholder="Optional"
-              />
-            </div>
+            {/* Show manual input if "Other" is selected */}
+            {(editingTreatment?.treatment_type &&
+              !treatmentProducts.some(p => p.product_name === editingTreatment.treatment_type)) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Specify Treatment Type *
+                </label>
+                <input
+                  type="text"
+                  value={otherTreatmentType}
+                  onChange={(e) => {
+                    setOtherTreatmentType(e.target.value)
+                    if (editingTreatment) {
+                      setEditingTreatment({
+                        ...editingTreatment,
+                        treatment_type: e.target.value,
+                        product_name: e.target.value
+                      })
+                    }
+                  }}
+                  className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                  placeholder="Enter custom treatment type"
+                  required
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Dosage *</label>
@@ -3734,6 +3803,12 @@ export default function InspectionsPage() {
                       onClick={() => {
                         setEditingTreatment(treatment)
                         setFormType('varroa_treatment')
+                        // Set otherTreatmentType if the treatment type is not in the products list
+                        if (treatment.treatment_type && !treatmentProducts.some(p => p.product_name === treatment.treatment_type)) {
+                          setOtherTreatmentType(treatment.treatment_type)
+                        } else {
+                          setOtherTreatmentType('')
+                        }
                         setShowForm(true)
                       }}
                       className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
