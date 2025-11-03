@@ -808,20 +808,20 @@ export default function DashboardPage() {
                 </a>
               </div>
             )}
+
+            {/* No Shared Data Message */}
+            {isTeamMember && !hasMySharedData && !hasSharedWithMeData && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center mt-4">
+                <Users size={48} className="mx-auto text-blue-400 mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shared Apiaries Yet</h3>
+                <p className="text-sm text-gray-600">
+                  You&apos;re part of a team, but no apiaries have been shared yet. Team owners need to share apiaries for team data to appear here.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
-
-      {/* No Shared Data Message */}
-      {isTeamMember && !hasMySharedData && !hasSharedWithMeData && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center">
-          <Users size={48} className="mx-auto text-blue-400 mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shared Apiaries Yet</h3>
-          <p className="text-sm text-gray-600">
-            You&apos;re part of a team, but no apiaries have been shared yet. Team owners need to share apiaries for team data to appear here.
-          </p>
-        </div>
-      )}
 
       {/* Data Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
