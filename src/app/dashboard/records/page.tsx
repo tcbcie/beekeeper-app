@@ -205,7 +205,7 @@ interface FormData {
 interface TreatmentProduct {
   id: string
   product_name: string
-  active_ingredient: string | null
+  active_ingredients: string | null
   dosage_info: string | null
   min_temperature: number | null
   max_temperature: number | null
@@ -3019,7 +3019,7 @@ export default function InspectionsPage() {
                 <option value="">Select treatment product</option>
                 {treatmentProducts.map((product) => (
                   <option key={product.id} value={product.product_name}>
-                    {product.product_name} - {product.active_ingredient || 'No active ingredient listed'}
+                    {product.product_name} - {product.active_ingredients || 'No active ingredient listed'}
                   </option>
                 ))}
                 <option value="Other">Other (specify below)</option>
