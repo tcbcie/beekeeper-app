@@ -2975,28 +2975,28 @@ export default function InspectionsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Product *</label>
               <select
                 value={
-                  editingTreatment?.treatment_type &&
-                  treatmentProducts.some(p => p.product_name === editingTreatment.treatment_type)
-                    ? editingTreatment.treatment_type
-                    : 'Other'
+                  otherTreatmentType
+                    ? 'Other'
+                    : editingTreatment?.treatment_type || ''
                 }
                 onChange={(e) => {
                   if (e.target.value === 'Other') {
-                    // Set to custom value or empty string
-                    setOtherTreatmentType(
-                      editingTreatment?.treatment_type &&
-                      !treatmentProducts.some(p => p.product_name === editingTreatment.treatment_type)
-                        ? editingTreatment.treatment_type
-                        : ''
-                    )
-                  } else {
-                    // Set treatment_type to the selected product name
-                    const selectedProduct = treatmentProducts.find(p => p.product_name === e.target.value)
-                    if (selectedProduct && editingTreatment) {
+                    // Switch to manual entry mode
+                    setOtherTreatmentType(editingTreatment?.treatment_type || '')
+                    if (editingTreatment) {
                       setEditingTreatment({
                         ...editingTreatment,
-                        treatment_type: selectedProduct.product_name,
-                        product_name: selectedProduct.product_name
+                        treatment_type: '',
+                        product_name: ''
+                      })
+                    }
+                  } else {
+                    // Set treatment_type to the selected product name
+                    if (editingTreatment) {
+                      setEditingTreatment({
+                        ...editingTreatment,
+                        treatment_type: e.target.value,
+                        product_name: e.target.value
                       })
                     }
                     setOtherTreatmentType('')
@@ -3016,11 +3016,10 @@ export default function InspectionsPage() {
             </div>
 
             {/* Show manual input if "Other" is selected */}
-            {(editingTreatment?.treatment_type &&
-              !treatmentProducts.some(p => p.product_name === editingTreatment.treatment_type)) && (
+            {otherTreatmentType !== '' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Specify Treatment Type *
+                  Specify Treatment Product *
                 </label>
                 <input
                   type="text"
@@ -3036,7 +3035,7 @@ export default function InspectionsPage() {
                     }
                   }}
                   className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
-                  placeholder="Enter custom treatment type"
+                  placeholder="Enter custom treatment product name"
                   required
                 />
               </div>
