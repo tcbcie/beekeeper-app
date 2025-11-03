@@ -2984,46 +2984,108 @@ export default function InspectionsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Product *</label>
-              <select
-                value={
-                  otherTreatmentType
-                    ? 'Other'
-                    : editingTreatment?.treatment_type || ''
-                }
-                onChange={(e) => {
-                  if (e.target.value === 'Other') {
-                    // Switch to manual entry mode
-                    setIsOtherTreatment(true)
-                    setOtherTreatmentType(editingTreatment?.treatment_type || '')
-                    if (editingTreatment) {
-                      setEditingTreatment({
-                        ...editingTreatment,
-                        treatment_type: ''
-                      })
-                    }
-                  } else {
-                    // Set treatment_type to the selected product name
-                    setIsOtherTreatment(false)
-                    if (editingTreatment) {
-                      setEditingTreatment({
-                        ...editingTreatment,
-                        treatment_type: e.target.value
-                      })
-                    }
-                    setOtherTreatmentType('')
+              <div className="relative group">
+                <select
+                  value={
+                    otherTreatmentType
+                      ? 'Other'
+                      : editingTreatment?.treatment_type || ''
                   }
-                }}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
-                required
-              >
-                <option value="">Select treatment product</option>
-                {treatmentProducts.map((product) => (
-                  <option key={product.id} value={product.product_name}>
-                    {product.product_name} - {product.active_ingredients || 'No active ingredient listed'}
-                  </option>
-                ))}
-                <option value="Other">Other (specify below)</option>
-              </select>
+                  onChange={(e) => {
+                    if (e.target.value === 'Other') {
+                      // Switch to manual entry mode
+                      setIsOtherTreatment(true)
+                      setOtherTreatmentType(editingTreatment?.treatment_type || '')
+                      if (editingTreatment) {
+                        setEditingTreatment({
+                          ...editingTreatment,
+                          treatment_type: ''
+                        })
+                      }
+                    } else {
+                      // Set treatment_type to the selected product name
+                      setIsOtherTreatment(false)
+                      if (editingTreatment) {
+                        setEditingTreatment({
+                          ...editingTreatment,
+                          treatment_type: e.target.value
+                        })
+                      }
+                      setOtherTreatmentType('')
+                    }
+                  }}
+                  className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                  required
+                >
+                  <option value="">Select treatment product</option>
+                  {treatmentProducts.map((product) => (
+                    <option key={product.id} value={product.product_name}>
+                      {product.product_name} - {product.active_ingredients || 'No active ingredient listed'}
+                    </option>
+                  ))}
+                  <option value="Other">Other (specify below)</option>
+                </select>
+
+                {/* Product details tooltip - shown on hover when a product is selected */}
+                {editingTreatment?.treatment_type && !isOtherTreatment && treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type) && (
+                  <div className="absolute z-10 invisible group-hover:visible w-full sm:w-96 bg-white border-2 border-blue-500 rounded-lg shadow-xl p-4 mt-1 left-0 sm:left-auto sm:right-0">
+                    {(() => {
+                      const selectedProduct = treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type)
+                      if (!selectedProduct) return null
+                      return (
+                        <>
+                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <h4 className="font-semibold text-gray-900">{selectedProduct.product_name}</h4>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            {selectedProduct.active_ingredients && (
+                              <div>
+                                <span className="font-medium text-gray-700">Active Ingredient:</span>
+                                <span className="text-gray-600 ml-2">{selectedProduct.active_ingredients}</span>
+                              </div>
+                            )}
+                            {selectedProduct.application_method && (
+                              <div>
+                                <span className="font-medium text-gray-700">Application:</span>
+                                <span className="text-gray-600 ml-2">{selectedProduct.application_method}</span>
+                              </div>
+                            )}
+                            {selectedProduct.dosage_info && (
+                              <div>
+                                <span className="font-medium text-gray-700">Dosage:</span>
+                                <span className="text-gray-600 ml-2">{selectedProduct.dosage_info}</span>
+                              </div>
+                            )}
+                            {(selectedProduct.min_temperature !== null || selectedProduct.max_temperature !== null) && (
+                              <div>
+                                <span className="font-medium text-gray-700">Temperature Range:</span>
+                                <span className="text-gray-600 ml-2">
+                                  {selectedProduct.min_temperature !== null ? `${selectedProduct.min_temperature}°C` : 'No min'}
+                                  {' - '}
+                                  {selectedProduct.max_temperature !== null ? `${selectedProduct.max_temperature}°C` : 'No max'}
+                                </span>
+                              </div>
+                            )}
+                            {selectedProduct.withdrawal_period_days !== null && (
+                              <div>
+                                <span className="font-medium text-gray-700">Withdrawal Period:</span>
+                                <span className="text-gray-600 ml-2">{selectedProduct.withdrawal_period_days} days</span>
+                              </div>
+                            )}
+                            {selectedProduct.safety_notes && (
+                              <div className="pt-2 border-t border-gray-200">
+                                <span className="font-medium text-gray-700 block mb-1">Safety Notes:</span>
+                                <span className="text-gray-600 text-xs">{selectedProduct.safety_notes}</span>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Show manual input if "Other" is selected */}
