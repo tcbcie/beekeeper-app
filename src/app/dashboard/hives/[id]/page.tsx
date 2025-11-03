@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Plus, Calendar, Bug, Syringe, Wheat, Droplet } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -107,20 +107,8 @@ export default function HiveDetailPage() {
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [harvests, setHarvests] = useState<Harvest[]>([])
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
 
-  useEffect(() => {
-    const initAuth = async () => {
-      const id = await getCurrentUserId()
-      setUserId(id)
-      if (id) {
-        fetchHiveData(id)
-      }
-    }
-    initAuth()
-  }, [hiveId])
-
-  const fetchHiveData = async (currentUserId: string) => {
+  const fetchHiveData = useCallback(async (currentUserId: string) => {
     setLoading(true)
     try {
       // Fetch hive details
@@ -201,7 +189,17 @@ export default function HiveDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [hiveId])
+
+  useEffect(() => {
+    const initAuth = async () => {
+      const id = await getCurrentUserId()
+      if (id) {
+        fetchHiveData(id)
+      }
+    }
+    initAuth()
+  }, [fetchHiveData])
 
   if (loading) {
     return <LoadingSpinner />
