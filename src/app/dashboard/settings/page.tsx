@@ -1295,6 +1295,9 @@ export default function SettingsPage() {
                         Actions
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Product Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         Active Ingredients
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -1343,6 +1346,15 @@ export default function SettingsPage() {
                                   <X size={18} />
                                 </button>
                               </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={varroaTreatmentFormData.product_name}
+                                onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, product_name: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                placeholder="Product name"
+                              />
                             </td>
                             <td className="px-4 py-3">
                               <input
@@ -1422,6 +1434,9 @@ export default function SettingsPage() {
                                   <Trash2 size={16} />
                                 </button>
                               </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                              {treatment.product_name}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600">
                               {treatment.active_ingredients}
