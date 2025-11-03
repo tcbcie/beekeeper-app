@@ -1079,7 +1079,7 @@ export default function HivesPage() {
                 <span className="font-medium">{hive.apiaries?.name || 'No apiary'}</span>
                 {(hive.order_in_apiary || hive.row_in_apiary) && (
                   <span className="text-xs text-gray-600 ml-1">
-                    ({hive.row_in_apiary ? `Row ${hive.row_in_apiary}` : ''}{hive.row_in_apiary && hive.order_in_apiary ? ', ' : ''}{hive.order_in_apiary ? `Order ${hive.order_in_apiary}` : ''})
+                    ({hive.row_in_apiary ? `Row ${hive.row_in_apiary}` : ''}{hive.row_in_apiary && hive.order_in_apiary ? ', ' : ''}{hive.order_in_apiary ? `Hive ${hive.order_in_apiary}` : ''})
                   </span>
                 )}
               </div>
