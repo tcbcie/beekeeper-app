@@ -92,7 +92,6 @@ export default function SettingsPage() {
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [exporting, setExporting] = useState(false)
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all')
 
@@ -1014,18 +1013,6 @@ export default function SettingsPage() {
     } finally {
       setExporting(false)
     }
-  }
-
-  const toggleCategory = (categoryId: string) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId)
-      } else {
-        newSet.add(categoryId)
-      }
-      return newSet
-    })
   }
 
   if (loading) return <LoadingSpinner text="Loading settings..." />
