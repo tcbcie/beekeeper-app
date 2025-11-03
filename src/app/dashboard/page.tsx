@@ -205,16 +205,7 @@ export default function DashboardPage() {
 
       if (ownedError) throw ownedError
 
-      // Get member count for each owned team
-      const ownedWithCounts = await Promise.all((owned || []).map(async (team) => {
-        const { count } = await supabase
-          .from('team_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', team.id)
-        return { ...team, member_count: count || 0, user_role: 'owner' }
-      }))
-
-      setOwnedTeams(ownedWithCounts)
+      const ownedTeamIds = (owned || []).map(t => t.id)
 
       // Fetch teams where user is a member (not owner)
       const { data: memberData, error: memberError } = await supabase
@@ -226,15 +217,42 @@ export default function DashboardPage() {
 
       if (memberError) throw memberError
 
-      // Get member count for each team
-      const memberWithCounts = await Promise.all((memberData || []).map(async (membership) => {
-        const team = (membership as unknown as { teams: Team }).teams
-        const { count } = await supabase
-          .from('team_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('team_id', team.id)
-        return { ...team, member_count: count || 0, user_role: membership.role }
+      const memberTeamsData = (memberData || []).map(membership => {
+        return (membership as unknown as { teams: Team; role: string }).teams
+      })
+      const memberTeamIds = memberTeamsData.map(t => t.id)
+
+      // Batch query for member counts - get all at once
+      const allTeamIds = [...ownedTeamIds, ...memberTeamIds]
+      const { data: memberCounts } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .in('team_id', allTeamIds)
+
+      // Count members per team
+      const memberCountMap = new Map<string, number>()
+      memberCounts?.forEach(member => {
+        memberCountMap.set(member.team_id, (memberCountMap.get(member.team_id) || 0) + 1)
+      })
+
+      // Add counts to owned teams
+      const ownedWithCounts = (owned || []).map(team => ({
+        ...team,
+        member_count: memberCountMap.get(team.id) || 0,
+        user_role: 'owner'
       }))
+
+      setOwnedTeams(ownedWithCounts)
+
+      // Add counts to member teams
+      const memberWithCounts = (memberData || []).map(membership => {
+        const team = (membership as unknown as { teams: Team }).teams
+        return {
+          ...team,
+          member_count: memberCountMap.get(team.id) || 0,
+          user_role: membership.role
+        }
+      })
 
       setMemberTeams(memberWithCounts)
     } catch (error) {
@@ -258,10 +276,8 @@ export default function DashboardPage() {
       if (membershipError) throw membershipError
 
       const teamIds = (teamMemberships || []).map(m => m.team_id)
-      console.log('🔍 Team IDs for user:', teamIds)
 
       if (teamIds.length === 0) {
-        console.log('❌ User is not a member of any teams')
         setMySharedStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
         setSharedWithMeStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
         return
@@ -276,10 +292,8 @@ export default function DashboardPage() {
       if (apiaryError) throw apiaryError
 
       const apiaryIds = (teamApiaries || []).map(ta => ta.apiary_id)
-      console.log('🏠 Shared apiary IDs:', apiaryIds)
 
       if (apiaryIds.length === 0) {
-        console.log('⚠️ No shared apiaries found for teams. Teams need to share apiaries first!')
         setMySharedStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
         setSharedWithMeStats({ queens: 0, activeQueens: 0, hives: 0, inspections: 0 })
         return
@@ -309,8 +323,6 @@ export default function DashboardPage() {
         })
         .map(ta => ta.apiary_id)
 
-      console.log('👤 My shared apiaries:', myApiaryIds.length, '👥 Others shared with me:', othersApiaryIds.length)
-
       // Fetch hives from MY shared apiaries
       const { data: mySharedHives, error: myHivesError } = await supabase
         .from('hives')
@@ -336,63 +348,43 @@ export default function DashboardPage() {
       const myQueenIds = myHives.map(h => h.queen_id).filter(q => q !== null)
       const othersQueenIds = othersHives.map(h => h.queen_id).filter(q => q !== null)
 
-      console.log('🐝 My shared hives:', myHiveIds.length, 'Others hives:', othersHiveIds.length)
+      // Parallelize all count queries
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-      // Count MY shared queens
-      let myQueensCount = 0
-      let myActiveQueensCount = 0
-      if (myQueenIds.length > 0) {
-        const { count: queensCount } = await supabase
-          .from('queens')
-          .select('id', { count: 'exact', head: true })
-          .in('id', myQueenIds)
-        const { count: activeQueensCount } = await supabase
-          .from('queens')
-          .select('id', { count: 'exact', head: true })
-          .in('id', myQueenIds)
-          .eq('status', 'active')
-        myQueensCount = queensCount || 0
-        myActiveQueensCount = activeQueensCount || 0
-      }
+      const [
+        myQueensResult,
+        myActiveQueensResult,
+        othersQueensResult,
+        othersActiveQueensResult,
+        myInspectionsResult,
+        othersInspectionsResult
+      ] = await Promise.all([
+        myQueenIds.length > 0
+          ? supabase.from('queens').select('id', { count: 'exact', head: true }).in('id', myQueenIds)
+          : Promise.resolve({ count: 0 }),
+        myQueenIds.length > 0
+          ? supabase.from('queens').select('id', { count: 'exact', head: true }).in('id', myQueenIds).eq('status', 'active')
+          : Promise.resolve({ count: 0 }),
+        othersQueenIds.length > 0
+          ? supabase.from('queens').select('id', { count: 'exact', head: true }).in('id', othersQueenIds)
+          : Promise.resolve({ count: 0 }),
+        othersQueenIds.length > 0
+          ? supabase.from('queens').select('id', { count: 'exact', head: true }).in('id', othersQueenIds).eq('status', 'active')
+          : Promise.resolve({ count: 0 }),
+        myHiveIds.length > 0
+          ? supabase.from('inspections').select('id', { count: 'exact', head: true }).in('hive_id', myHiveIds).gte('inspection_date', sevenDaysAgo)
+          : Promise.resolve({ count: 0 }),
+        othersHiveIds.length > 0
+          ? supabase.from('inspections').select('id', { count: 'exact', head: true }).in('hive_id', othersHiveIds).gte('inspection_date', sevenDaysAgo)
+          : Promise.resolve({ count: 0 })
+      ])
 
-      // Count OTHERS' shared queens
-      let othersQueensCount = 0
-      let othersActiveQueensCount = 0
-      if (othersQueenIds.length > 0) {
-        const { count: queensCount } = await supabase
-          .from('queens')
-          .select('id', { count: 'exact', head: true })
-          .in('id', othersQueenIds)
-        const { count: activeQueensCount } = await supabase
-          .from('queens')
-          .select('id', { count: 'exact', head: true })
-          .in('id', othersQueenIds)
-          .eq('status', 'active')
-        othersQueensCount = queensCount || 0
-        othersActiveQueensCount = activeQueensCount || 0
-      }
-
-      // Count MY inspections (last 7 days)
-      let myInspectionsCount = 0
-      if (myHiveIds.length > 0) {
-        const { count: inspectionsCount } = await supabase
-          .from('inspections')
-          .select('id', { count: 'exact', head: true })
-          .in('hive_id', myHiveIds)
-          .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        myInspectionsCount = inspectionsCount || 0
-      }
-
-      // Count OTHERS' inspections (last 7 days)
-      let othersInspectionsCount = 0
-      if (othersHiveIds.length > 0) {
-        const { count: inspectionsCount } = await supabase
-          .from('inspections')
-          .select('id', { count: 'exact', head: true })
-          .in('hive_id', othersHiveIds)
-          .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        othersInspectionsCount = inspectionsCount || 0
-      }
+      const myQueensCount = myQueensResult.count || 0
+      const myActiveQueensCount = myActiveQueensResult.count || 0
+      const othersQueensCount = othersQueensResult.count || 0
+      const othersActiveQueensCount = othersActiveQueensResult.count || 0
+      const myInspectionsCount = myInspectionsResult.count || 0
+      const othersInspectionsCount = othersInspectionsResult.count || 0
 
       const myShared = {
         queens: myQueensCount,
@@ -400,7 +392,6 @@ export default function DashboardPage() {
         hives: myHiveIds.length,
         inspections: myInspectionsCount,
       }
-      console.log('👤 My shared stats:', myShared)
       setMySharedStats(myShared)
 
       const sharedWithMe = {
@@ -409,10 +400,9 @@ export default function DashboardPage() {
         hives: othersHiveIds.length,
         inspections: othersInspectionsCount,
       }
-      console.log('👥 Shared with me stats:', sharedWithMe)
       setSharedWithMeStats(sharedWithMe)
     } catch (error) {
-      console.error('❌ Error fetching team stats:', error)
+      console.error('Error fetching team stats:', error)
     }
   }, [userId])
 
@@ -462,9 +452,6 @@ export default function DashboardPage() {
 
       if (membersError) throw membersError
 
-      console.log('🔍 Debug - Team IDs:', teamIds)
-      console.log('🔍 Debug - Raw team members data:', teamMembers)
-
       // Transform the data to match our interface (Supabase returns arrays for relations)
       const transformedMembers: TeamMember[] = (teamMembers || []).map((member) => ({
         user_id: member.user_id,
@@ -474,11 +461,9 @@ export default function DashboardPage() {
         user_profiles: Array.isArray(member.user_profiles) ? member.user_profiles[0] : member.user_profiles,
       }))
 
-      console.log('🔍 Debug - Transformed members:', transformedMembers)
-
       setMySharedTeamMembers(transformedMembers)
     } catch (error) {
-      console.error('❌ Error fetching team members:', error)
+      console.error('Error fetching team members:', error)
     } finally {
       setLoadingTeamMembers(false)
     }
