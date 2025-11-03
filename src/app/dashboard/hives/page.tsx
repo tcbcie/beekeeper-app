@@ -451,6 +451,27 @@ export default function HivesPage() {
         }
       }
 
+      // Validate row + order combination: check if this combination is already used in the same apiary
+      if (dataToSubmit.apiary_id && dataToSubmit.row_in_apiary !== null && dataToSubmit.order_in_apiary !== null) {
+        const { data: existingPosition, error: positionError } = await supabase
+          .from('hives')
+          .select('id, hive_number')
+          .eq('apiary_id', dataToSubmit.apiary_id)
+          .eq('row_in_apiary', dataToSubmit.row_in_apiary)
+          .eq('order_in_apiary', dataToSubmit.order_in_apiary)
+          .neq('id', editingHive?.id || '')
+
+        if (positionError) {
+          console.error('Error checking position assignment:', positionError)
+          throw new Error('Failed to validate position assignment')
+        }
+
+        if (existingPosition && existingPosition.length > 0) {
+          alert(`Row ${dataToSubmit.row_in_apiary}, Position ${dataToSubmit.order_in_apiary} is already used by hive "${existingPosition[0].hive_number}" in this apiary.\n\nEach hive must have a unique row and order combination within the apiary.`)
+          return
+        }
+      }
+
       if (editingHive) {
         const { error } = await supabase
           .from('hives')
