@@ -721,7 +721,7 @@ export default function HivesPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Hive in Row
                 <span className="block text-xs font-normal text-gray-500 mt-0.5">
-                  Left to right looking at the {formData.order_direction === 'entrances' ? 'entrances' : 'backs'}
+                  For looking left to right choose option
                 </span>
               </label>
               <div className="flex gap-2 mb-2">
