@@ -34,6 +34,7 @@ interface Hive {
   apiary_id: string | null
   order_in_apiary: number | null
   row_in_apiary: number | null
+  order_direction: 'entrances' | 'backs' | null
   queen_id: string | null
   queen_marked: boolean
   queen_marking_color: string | null
@@ -81,6 +82,7 @@ interface FormData {
   apiary_id: string
   order_in_apiary: number | null
   row_in_apiary: number | null
+  order_direction: 'entrances' | 'backs'
   queen_id: string
   queen_marked: boolean
   queen_marking_color: string
@@ -110,6 +112,7 @@ export default function HivesPage() {
     apiary_id: '',
     order_in_apiary: null,
     row_in_apiary: null,
+    order_direction: 'entrances',
     queen_id: '',
     queen_marked: false,
     queen_marking_color: '',
@@ -485,6 +488,7 @@ export default function HivesPage() {
       apiary_id: hive.apiary_id || '',
       order_in_apiary: hive.order_in_apiary ?? null,
       row_in_apiary: hive.row_in_apiary ?? null,
+      order_direction: hive.order_direction || 'entrances',
       queen_id: hive.queen_id || '',
       queen_marked: hive.queen_marked || false,
       queen_marking_color: hive.queen_marking_color || '',
@@ -530,6 +534,7 @@ export default function HivesPage() {
       apiary_id: '',
       order_in_apiary: null,
       row_in_apiary: null,
+      order_direction: 'entrances',
       queen_id: '',
       queen_marked: false,
       queen_marking_color: '',
@@ -684,8 +689,34 @@ export default function HivesPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Hive in Row
-                <span className="block text-xs font-normal text-gray-500 mt-0.5">Left to right looking at the entrances</span>
+                <span className="block text-xs font-normal text-gray-500 mt-0.5">
+                  Left to right looking at the {formData.order_direction === 'entrances' ? 'entrances' : 'backs'}
+                </span>
               </label>
+              <div className="flex gap-2 mb-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="order_direction"
+                    value="entrances"
+                    checked={formData.order_direction === 'entrances'}
+                    onChange={(e) => setFormData({...formData, order_direction: e.target.value as 'entrances' | 'backs'})}
+                    className="w-4 h-4 text-indigo-600"
+                  />
+                  <span className="text-sm text-gray-700">Entrances</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="order_direction"
+                    value="backs"
+                    checked={formData.order_direction === 'backs'}
+                    onChange={(e) => setFormData({...formData, order_direction: e.target.value as 'entrances' | 'backs'})}
+                    className="w-4 h-4 text-indigo-600"
+                  />
+                  <span className="text-sm text-gray-700">Backs</span>
+                </label>
+              </div>
               <div className="flex gap-2">
                 <button
                   type="button"
