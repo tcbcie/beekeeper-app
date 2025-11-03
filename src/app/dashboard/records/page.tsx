@@ -259,6 +259,7 @@ export default function InspectionsPage() {
   const [otherCheckMethod, setOtherCheckMethod] = useState<string>('')
   const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
   const [otherTreatmentType, setOtherTreatmentType] = useState<string>('')
+  const [isOtherTreatment, setIsOtherTreatment] = useState<boolean>(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -1438,6 +1439,7 @@ export default function InspectionsPage() {
                       notes: '',
                     })
                     setOtherTreatmentType('')
+                    setIsOtherTreatment(false)
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -2979,6 +2981,7 @@ export default function InspectionsPage() {
                 onChange={(e) => {
                   if (e.target.value === 'Other') {
                     // Switch to manual entry mode
+                    setIsOtherTreatment(true)
                     setOtherTreatmentType(editingTreatment?.treatment_type || '')
                     if (editingTreatment) {
                       setEditingTreatment({
@@ -2988,6 +2991,7 @@ export default function InspectionsPage() {
                     }
                   } else {
                     // Set treatment_type to the selected product name
+                    setIsOtherTreatment(false)
                     if (editingTreatment) {
                       setEditingTreatment({
                         ...editingTreatment,
@@ -3011,7 +3015,7 @@ export default function InspectionsPage() {
             </div>
 
             {/* Show manual input if "Other" is selected */}
-            {otherTreatmentType !== '' && (
+            {isOtherTreatment && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Specify Treatment Product *
@@ -3861,8 +3865,10 @@ export default function InspectionsPage() {
                         // Set otherTreatmentType if the treatment type is not in the products list
                         if (treatment.treatment_type && !treatmentProducts.some(p => p.product_name === treatment.treatment_type)) {
                           setOtherTreatmentType(treatment.treatment_type)
+                          setIsOtherTreatment(true)
                         } else {
                           setOtherTreatmentType('')
+                          setIsOtherTreatment(false)
                         }
                         setShowForm(true)
                       }}
