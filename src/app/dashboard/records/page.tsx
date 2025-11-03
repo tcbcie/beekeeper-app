@@ -321,11 +321,20 @@ export default function InspectionsPage() {
     // Extract shared hive IDs from the nested structure
     const sharedHiveIds: string[] = []
     if (sharedHiveData) {
-      sharedHiveData.forEach(tm => {
+      type TeamData = {
+        teams?: {
+          team_apiaries?: Array<{
+            apiaries?: {
+              hives?: Array<{ id: string }>
+            }
+          }>
+        }
+      }
+      (sharedHiveData as TeamData[]).forEach(tm => {
         if (tm.teams?.team_apiaries) {
-          tm.teams.team_apiaries.forEach((ta: { apiaries?: { hives?: { id: string }[] } }) => {
+          tm.teams.team_apiaries.forEach(ta => {
             if (ta.apiaries?.hives) {
-              ta.apiaries.hives.forEach((h: { id: string }) => {
+              ta.apiaries.hives.forEach(h => {
                 if (h.id) sharedHiveIds.push(h.id)
               })
             }
