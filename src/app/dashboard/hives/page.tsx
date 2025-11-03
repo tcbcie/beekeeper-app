@@ -651,7 +651,10 @@ export default function HivesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Row in Apiary</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Row in Apiary
+                <span className="block text-xs font-normal text-gray-500 mt-0.5 invisible">Placeholder for alignment</span>
+              </label>
               <div className="flex gap-2">
                 <button
                   type="button"
