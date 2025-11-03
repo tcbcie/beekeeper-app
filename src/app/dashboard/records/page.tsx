@@ -86,7 +86,6 @@ interface VarroaTreatment {
   user_id: string
   treatment_date: string
   treatment_type: string
-  product_name: string
   dosage: string
   temperature: number | null
   weather_conditions: string
@@ -879,7 +878,6 @@ export default function InspectionsPage() {
         hive_id: editingTreatment.hive_id,
         treatment_date: editingTreatment.treatment_date,
         treatment_type: editingTreatment.treatment_type,
-        product_name: editingTreatment.product_name || '',
         dosage: editingTreatment.dosage,
         temperature: editingTreatment.temperature,
         weather_conditions: editingTreatment.weather_conditions || '',
@@ -1434,7 +1432,6 @@ export default function InspectionsPage() {
                       user_id: userId || '',
                       treatment_date: new Date().toISOString().split('T')[0],
                       treatment_type: '',
-                      product_name: '',
                       dosage: '',
                       temperature: null,
                       weather_conditions: '',
@@ -2986,8 +2983,7 @@ export default function InspectionsPage() {
                     if (editingTreatment) {
                       setEditingTreatment({
                         ...editingTreatment,
-                        treatment_type: '',
-                        product_name: ''
+                        treatment_type: ''
                       })
                     }
                   } else {
@@ -2995,8 +2991,7 @@ export default function InspectionsPage() {
                     if (editingTreatment) {
                       setEditingTreatment({
                         ...editingTreatment,
-                        treatment_type: e.target.value,
-                        product_name: e.target.value
+                        treatment_type: e.target.value
                       })
                     }
                     setOtherTreatmentType('')
@@ -3029,8 +3024,7 @@ export default function InspectionsPage() {
                     if (editingTreatment) {
                       setEditingTreatment({
                         ...editingTreatment,
-                        treatment_type: e.target.value,
-                        product_name: e.target.value
+                        treatment_type: e.target.value
                       })
                     }
                   }}
@@ -3900,12 +3894,8 @@ export default function InspectionsPage() {
                 {/* Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-red-50 rounded-lg">
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 mb-1">Treatment Type</span>
+                    <span className="text-xs text-gray-500 mb-1">Treatment Product</span>
                     <span className="text-sm font-medium text-gray-900">{treatment.treatment_type}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 mb-1">Product</span>
-                    <span className="text-sm font-medium text-gray-900">{treatment.product_name}</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs text-gray-500 mb-1">Dosage</span>
