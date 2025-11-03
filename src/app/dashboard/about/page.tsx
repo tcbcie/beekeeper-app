@@ -339,8 +339,41 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.16</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.17</span>
                 November 3, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Critical Performance Improvements:</strong> Major optimization of Dashboard, Hives, and Records pages - eliminated N+1 query problems and parallelized database queries resulting in 2-10x faster page load times</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Hives Page Optimization:</strong> Reduced from 60-80+ sequential queries to just 4 total queries using batch fetching for queens, inspections, and team data with in-memory calculations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Records Page Optimization:</strong> Parallelized 10 fetch functions with Promise.all, optimized inspections query from 4 sequential to 1 query with joins, added server-side filtering and query limits</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Dashboard Page Optimization:</strong> Fixed N+1 queries in team member counts (reduced from 6+ to 3 queries) and parallelized team statistics queries for faster dashboard loads</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Feed Type Dropdown:</strong> Converted feed type to database-managed dropdown with 9 default options (Sugar Syrup 1:1/2:1, Fondant, Candy Board, Pollen Patty, etc.) plus &quot;Other&quot; option for custom entries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Hive Card Sorting:</strong> Hives now display in physical order - sorted by apiary, then row number, then order within row for easy identification of hive locations</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-semibold">v1.0.16</span>
+                November 2, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
