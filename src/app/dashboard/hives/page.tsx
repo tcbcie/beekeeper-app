@@ -1261,19 +1261,27 @@ export default function HivesPage() {
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <button
-                onClick={() => handleEdit(hive)}
-                className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                onClick={() => router.push(`/dashboard/hives/${hive.id}`)}
+                className="w-full px-4 py-2.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
               >
-                Edit
+                Select & New Record
               </button>
-              <button
-                onClick={() => handleDelete(hive.id)}
-                className="flex-1 px-3 py-2 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100"
-              >
-                Delete
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(hive)}
+                  className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(hive.id)}
+                  className="flex-1 px-3 py-2 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}
