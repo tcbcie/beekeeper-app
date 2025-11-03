@@ -128,13 +128,26 @@ export default function HiveDetailPage() {
         .from('hives')
         .select(`
           *,
-          apiaries(name),
-          queens(id, queen_number)
+          apiaries(name)
         `)
         .eq('id', hiveId)
         .single()
 
       if (hiveError) throw hiveError
+
+      // Fetch queen separately if needed
+      if (hiveData.queen_id) {
+        const { data: queenData } = await supabase
+          .from('queens')
+          .select('id, queen_number')
+          .eq('id', hiveData.queen_id)
+          .single()
+
+        if (queenData) {
+          hiveData.queens = queenData
+        }
+      }
+
       setHive(hiveData)
 
       // Fetch all records for this hive
