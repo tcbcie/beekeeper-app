@@ -206,12 +206,12 @@ interface TreatmentProduct {
   id: string
   product_name: string
   active_ingredients: string | null
-  dosage_info: string | null
-  min_temperature: number | null
-  max_temperature: number | null
-  withdrawal_period_days: number | null
   application_method: string | null
-  safety_notes: string | null
+  treatment_duration: string | null
+  temperature_range: string | null
+  honey_flow_restrictions: string | null
+  withdrawal_period_days: number | null
+  notes: string | null
   created_at: string
   updated_at: string
 }
@@ -3041,42 +3041,44 @@ export default function InspectionsPage() {
                           <div className="space-y-2 text-sm">
                             {selectedProduct.active_ingredients && (
                               <div>
-                                <span className="font-medium text-gray-700">Active Ingredient:</span>
+                                <span className="font-medium text-gray-700">Active Ingredients:</span>
                                 <span className="text-gray-600 ml-2">{selectedProduct.active_ingredients}</span>
                               </div>
                             )}
                             {selectedProduct.application_method && (
                               <div>
-                                <span className="font-medium text-gray-700">Application:</span>
+                                <span className="font-medium text-gray-700">Application Method:</span>
                                 <span className="text-gray-600 ml-2">{selectedProduct.application_method}</span>
                               </div>
                             )}
-                            {selectedProduct.dosage_info && (
+                            {selectedProduct.treatment_duration && (
                               <div>
-                                <span className="font-medium text-gray-700">Dosage:</span>
-                                <span className="text-gray-600 ml-2">{selectedProduct.dosage_info}</span>
+                                <span className="font-medium text-gray-700">Duration:</span>
+                                <span className="text-gray-600 ml-2">{selectedProduct.treatment_duration}</span>
                               </div>
                             )}
-                            {(selectedProduct.min_temperature !== null || selectedProduct.max_temperature !== null) && (
+                            {selectedProduct.temperature_range && (
                               <div>
-                                <span className="font-medium text-gray-700">Temperature Range:</span>
-                                <span className="text-gray-600 ml-2">
-                                  {selectedProduct.min_temperature !== null ? `${selectedProduct.min_temperature}°C` : 'No min'}
-                                  {' - '}
-                                  {selectedProduct.max_temperature !== null ? `${selectedProduct.max_temperature}°C` : 'No max'}
-                                </span>
+                                <span className="font-medium text-gray-700">Temperature:</span>
+                                <span className="text-gray-600 ml-2">{selectedProduct.temperature_range}</span>
+                              </div>
+                            )}
+                            {selectedProduct.honey_flow_restrictions && (
+                              <div>
+                                <span className="font-medium text-gray-700">Honey Flow:</span>
+                                <span className="text-gray-600 ml-2">{selectedProduct.honey_flow_restrictions}</span>
                               </div>
                             )}
                             {selectedProduct.withdrawal_period_days !== null && (
                               <div>
-                                <span className="font-medium text-gray-700">Withdrawal Period:</span>
+                                <span className="font-medium text-gray-700">Withdrawal:</span>
                                 <span className="text-gray-600 ml-2">{selectedProduct.withdrawal_period_days} days</span>
                               </div>
                             )}
-                            {selectedProduct.safety_notes && (
+                            {selectedProduct.notes && (
                               <div className="pt-2 border-t border-gray-200">
-                                <span className="font-medium text-gray-700 block mb-1">Safety Notes:</span>
-                                <span className="text-gray-600 text-xs">{selectedProduct.safety_notes}</span>
+                                <span className="font-medium text-gray-700 block mb-1">Notes:</span>
+                                <span className="text-gray-600 text-xs">{selectedProduct.notes}</span>
                               </div>
                             )}
                           </div>
