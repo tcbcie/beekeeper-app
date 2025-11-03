@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -3396,9 +3396,13 @@ export default function InspectionsPage() {
           if (record.record_type === 'inspection') {
             const inspection = record
             return (
-          <div key={`inspection-${inspection.id}`} className="bg-white rounded-lg shadow p-6">
+          <div key={`inspection-${inspection.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
             <div className="flex justify-between items-start mb-4 gap-4">
               <div className="flex items-start gap-3 flex-1">
+                {/* Icon Badge */}
+                <div className="w-12 h-12 flex-shrink-0 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Search size={24} className="text-blue-600" />
+                </div>
                 {inspection.image_url && (
                   <div
                     className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
@@ -3688,13 +3692,18 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_treatment') {
             const treatment = record
             return (
-              <div key={`treatment-${treatment.id}`} className="bg-white rounded-lg shadow p-6">
+              <div key={`treatment-${treatment.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">Varroa Treatment</span>
-                      <h3 className="text-lg font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
+                  <div className="flex items-start gap-3 flex-1">
+                    {/* Icon Badge */}
+                    <div className="w-12 h-12 flex-shrink-0 bg-red-100 rounded-lg flex items-center justify-center">
+                      <Syringe size={24} className="text-red-600" />
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">Varroa Treatment</span>
+                        <h3 className="text-lg font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
+                      </div>
                     <p className="text-sm text-gray-600">
                       {new Date(treatment.treatment_date).toLocaleDateString('en-US', {
                         weekday: 'short',
@@ -3703,8 +3712,9 @@ export default function InspectionsPage() {
                         day: 'numeric'
                       })}
                     </p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => {
                         setEditingTreatment(treatment)
@@ -3762,13 +3772,18 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_check') {
             const check = record
             return (
-              <div key={`check-${check.id}`} className="bg-white rounded-lg shadow p-6">
+              <div key={`check-${check.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Varroa Check</span>
-                      <h3 className="text-lg font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
+                  <div className="flex items-start gap-3 flex-1">
+                    {/* Icon Badge */}
+                    <div className="w-12 h-12 flex-shrink-0 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <Bug size={24} className="text-orange-600" />
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Varroa Check</span>
+                        <h3 className="text-lg font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
+                      </div>
                     <p className="text-sm text-gray-600">
                       {new Date(check.check_date).toLocaleDateString('en-US', {
                         weekday: 'short',
@@ -3792,8 +3807,9 @@ export default function InspectionsPage() {
                         </span>
                       </p>
                     )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => {
                         setEditingCheck(check)
@@ -3854,13 +3870,18 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'feeding') {
             const feeding = record
             return (
-              <div key={`feeding-${feeding.id}`} className="bg-white rounded-lg shadow p-6">
+              <div key={`feeding-${feeding.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Feeding</span>
-                      <h3 className="text-lg font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
+                  <div className="flex items-start gap-3 flex-1">
+                    {/* Icon Badge */}
+                    <div className="w-12 h-12 flex-shrink-0 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <Wheat size={24} className="text-yellow-600" />
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Feeding</span>
+                        <h3 className="text-lg font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
+                      </div>
                     <p className="text-sm text-gray-600">
                       {new Date(feeding.feed_date).toLocaleDateString('en-US', {
                         weekday: 'short',
@@ -3869,8 +3890,9 @@ export default function InspectionsPage() {
                         day: 'numeric'
                       })}
                     </p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => {
                         setEditingFeeding(feeding)
@@ -3927,13 +3949,18 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'harvest') {
             const harvest = record
             return (
-              <div key={`harvest-${harvest.id}`} className="bg-white rounded-lg shadow p-6">
+              <div key={`harvest-${harvest.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-500">
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">Harvest</span>
-                      <h3 className="text-lg font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
+                  <div className="flex items-start gap-3 flex-1">
+                    {/* Icon Badge */}
+                    <div className="w-12 h-12 flex-shrink-0 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Droplet size={24} className="text-amber-600" />
                     </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">Harvest</span>
+                        <h3 className="text-lg font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
+                      </div>
                     <p className="text-sm text-gray-600">
                       {new Date(harvest.harvest_date).toLocaleDateString('en-US', {
                         weekday: 'short',
@@ -3942,8 +3969,9 @@ export default function InspectionsPage() {
                         day: 'numeric'
                       })}
                     </p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => {
                         setEditingHarvest(harvest)
