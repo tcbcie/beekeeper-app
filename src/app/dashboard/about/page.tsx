@@ -339,7 +339,44 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.17</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.18</span>
+                November 3, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Full & Half Brood Boxes:</strong> Enhanced hive configuration to support both full-size and half-size brood boxes with proper visualization - half-size boxes rendered same height as honey supers for accurate representation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Hive Detail Page:</strong> Added comprehensive hive detail view with &quot;Select & New Record&quot; button - displays all hive information, configuration diagram, and all associated records (inspections, varroa checks, treatments, feedings, harvests) in one place</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Quick Record Creation:</strong> Added 5 quick action buttons on hive detail page for creating new inspections, varroa checks, treatments, feedings, and harvests directly for the selected hive</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Filter Persistence:</strong> Hives page now remembers apiary and ownership filter settings throughout the browser session with automatic validation to prevent invalid saved filters</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Data Export Improvements:</strong> Renamed backup files to hivecraic-backup format with full timestamp (date + time) for better organization and identification</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Dashboard UI Updates:</strong> Reorganized dashboard layout - moved My Teams section below Recent Activity and merged &quot;No Shared Apiaries&quot; message into My Teams section for better flow</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">🔧</span>
+                  <span><strong>Bug Fixes:</strong> Fixed 404 errors from user_profiles table references (updated to profiles), resolved queens relationship errors on hive detail page, validated saved apiary filters to prevent &quot;No hives found&quot; messages</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded font-semibold">v1.0.17</span>
                 November 3, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
