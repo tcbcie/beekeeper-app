@@ -153,8 +153,7 @@ export default function HivesPage() {
       .from('hives')
       .select(`
         *,
-        apiaries(name),
-        queens(id, queen_number)
+        apiaries(name)
       `)
 
     // Apply ownership filter
@@ -223,6 +222,26 @@ export default function HivesPage() {
         }
       }
 
+      // Batch query for queens
+      const queenIds = [...new Set(
+        data
+          .filter(h => h.queen_id)
+          .map(h => h.queen_id)
+          .filter((id): id is string => id !== null)
+      )]
+
+      const queensMap = new Map<string, { id: string; queen_number: string }>()
+      if (queenIds.length > 0) {
+        const { data: queensData } = await supabase
+          .from('queens')
+          .select('id, queen_number')
+          .in('id', queenIds)
+
+        queensData?.forEach(queen => {
+          queensMap.set(queen.id, queen)
+        })
+      }
+
       // Batch query for all inspections for these hives
       const { data: allInspections } = await supabase
         .from('inspections')
@@ -284,8 +303,12 @@ export default function HivesPage() {
         const isShared = hive.user_id !== currentUserId
         const teamData = hive.apiary_id ? teamDataMap.get(hive.apiary_id) : undefined
 
+        // Get queen data if queen is assigned
+        const queenData = hive.queen_id ? queensMap.get(hive.queen_id) : undefined
+
         return {
           ...hive,
+          queens: queenData,
           averages,
           queen_last_seen: queenInspection?.inspection_date || null,
           eggs_last_present: eggsInspection?.inspection_date || null,
