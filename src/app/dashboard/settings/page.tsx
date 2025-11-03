@@ -711,6 +711,13 @@ export default function SettingsPage() {
     }
   }, [])
 
+  // Auto-expand Varroa Treatments section when tab is clicked
+  useEffect(() => {
+    if (activeSection === 'treatments') {
+      setShowVarroaTreatments(true)
+    }
+  }, [activeSection])
+
   // Fetch varroa treatments when section is opened
   useEffect(() => {
     if (showVarroaTreatments) {
@@ -1109,16 +1116,10 @@ export default function SettingsPage() {
       {/* Varroa Treatments Section */}
       {activeSection === 'treatments' && (
       <div className="bg-white rounded-lg shadow">
-        <div
-          className="p-6 cursor-pointer hover:bg-gray-50"
-          onClick={() => setShowVarroaTreatments(!showVarroaTreatments)}
-        >
+        <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Varroa Treatments
-                <span className="ml-2 text-xl">{showVarroaTreatments ? '−' : '+'}</span>
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900">Varroa Treatments</h2>
               <p className="text-gray-600 mt-2">Manage approved varroa treatment products for Ireland</p>
             </div>
           </div>
