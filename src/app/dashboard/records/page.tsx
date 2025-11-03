@@ -262,6 +262,8 @@ export default function InspectionsPage() {
   const [isOtherTreatment, setIsOtherTreatment] = useState<boolean>(false)
   const [showIpmTips, setShowIpmTips] = useState<boolean>(false)
   const [feedTypeOptions, setFeedTypeOptions] = useState<string[]>([])
+  const [otherFeedType, setOtherFeedType] = useState<string>('')
+  const [isOtherFeedType, setIsOtherFeedType] = useState<boolean>(false)
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -995,10 +997,13 @@ export default function InspectionsPage() {
     if (!userId || !editingFeeding) return
 
     try {
+      // Use otherFeedType if "Other" is selected, otherwise use the dropdown value
+      const finalFeedType = isOtherFeedType ? otherFeedType : editingFeeding.feed_type
+
       const submitData = {
         hive_id: editingFeeding.hive_id,
         feed_date: editingFeeding.feed_date,
-        feed_type: editingFeeding.feed_type,
+        feed_type: finalFeedType,
         quantity: editingFeeding.quantity,
         unit: editingFeeding.unit,
         notes: editingFeeding.notes || '',
@@ -1025,6 +1030,8 @@ export default function InspectionsPage() {
       fetchFeedings()
       setShowForm(false)
       setEditingFeeding(null)
+      setIsOtherFeedType(false)
+      setOtherFeedType('')
     } catch (error) {
       if (error instanceof Error) {
         alert('Error saving feeding: ' + error.message)
@@ -1515,6 +1522,8 @@ export default function InspectionsPage() {
                       unit: 'L',
                       notes: '',
                     })
+                    setIsOtherFeedType(false)
+                    setOtherFeedType('')
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
@@ -3391,6 +3400,8 @@ export default function InspectionsPage() {
                 onClick={() => {
                   setShowForm(false)
                   setEditingFeeding(null)
+                  setIsOtherFeedType(false)
+                  setOtherFeedType('')
                 }}
                 className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
               >
@@ -3445,7 +3456,14 @@ export default function InspectionsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Feed Type *</label>
               <select
                 value={editingFeeding?.feed_type || ''}
-                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, feed_type: e.target.value} : null)}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setEditingFeeding(editingFeeding ? {...editingFeeding, feed_type: value} : null)
+                  setIsOtherFeedType(value === 'Other')
+                  if (value !== 'Other') {
+                    setOtherFeedType('')
+                  }
+                }}
                 className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
                 required
               >
@@ -3454,6 +3472,16 @@ export default function InspectionsPage() {
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
+              {isOtherFeedType && (
+                <input
+                  type="text"
+                  value={otherFeedType}
+                  onChange={(e) => setOtherFeedType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white mt-2"
+                  placeholder="Enter custom feed type"
+                  required
+                />
+              )}
             </div>
 
             <div>
@@ -4195,7 +4223,18 @@ export default function InspectionsPage() {
                   <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => {
-                        setEditingFeeding(feeding)
+                        // Check if feed_type is in dropdown options or is a custom value
+                        const isInDropdown = feedTypeOptions.includes(feeding.feed_type)
+                        if (!isInDropdown && feeding.feed_type) {
+                          // Custom feed type - set to "Other" and store actual value
+                          setIsOtherFeedType(true)
+                          setOtherFeedType(feeding.feed_type)
+                          setEditingFeeding({...feeding, feed_type: 'Other'})
+                        } else {
+                          setIsOtherFeedType(false)
+                          setOtherFeedType('')
+                          setEditingFeeding(feeding)
+                        }
                         setFormType('feeding')
                         setShowForm(true)
                       }}
