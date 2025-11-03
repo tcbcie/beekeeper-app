@@ -301,34 +301,37 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // First, get list of shared apiary IDs for this user
-    const { data: teamMemberships } = await supabase
+    // Optimize: Get shared hive IDs using a single query with joins
+    // This replaces 3 sequential queries with 1 query
+    const { data: sharedHiveData } = await supabase
       .from('team_members')
-      .select('team_id')
+      .select(`
+        team_id,
+        teams!inner(
+          team_apiaries!inner(
+            apiary_id,
+            apiaries!inner(
+              hives!inner(id)
+            )
+          )
+        )
+      `)
       .eq('user_id', currentUserId)
 
-    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-
-    let sharedApiaryIds: string[] = []
-    if (teamIds.length > 0) {
-      const { data: sharedApiaries } = await supabase
-        .from('team_apiaries')
-        .select('apiary_id')
-        .in('team_id', teamIds)
-
-      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
-    }
-
-    // Get hives from shared apiaries to filter inspections
-    let sharedHiveIds: string[] = []
-    if (sharedApiaryIds.length > 0) {
-      const { data: sharedHives } = await supabase
-        .from('hives')
-        .select('id')
-        .in('apiary_id', sharedApiaryIds)
-        .neq('user_id', currentUserId)
-
-      sharedHiveIds = sharedHives?.map(h => h.id) || []
+    // Extract shared hive IDs from the nested structure
+    const sharedHiveIds: string[] = []
+    if (sharedHiveData) {
+      sharedHiveData.forEach(tm => {
+        if (tm.teams?.team_apiaries) {
+          tm.teams.team_apiaries.forEach((ta: any) => {
+            if (ta.apiaries?.hives) {
+              ta.apiaries.hives.forEach((h: any) => {
+                if (h.id) sharedHiveIds.push(h.id)
+              })
+            }
+          })
+        }
+      })
     }
 
     // Build query based on ownership filter
@@ -634,16 +637,20 @@ export default function InspectionsPage() {
         return
       }
       setUserId(id)
-      fetchInspections(id)
-      fetchVarroaTreatments(id)
-      fetchVarroaChecks(id)
-      fetchFeedings(id)
-      fetchHarvests(id)
-      fetchHives(id)
-      fetchApiaries(id)
-      fetchCheckMethods()
-      fetchFeedTypes()
-      fetchTreatmentProducts()
+
+      // Fetch all data in parallel for better performance
+      await Promise.all([
+        fetchInspections(id),
+        fetchVarroaTreatments(id),
+        fetchVarroaChecks(id),
+        fetchFeedings(id),
+        fetchHarvests(id),
+        fetchHives(id),
+        fetchApiaries(id),
+        fetchCheckMethods(),
+        fetchFeedTypes(),
+        fetchTreatmentProducts()
+      ])
     }
     initUser()
   }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts])
