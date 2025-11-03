@@ -261,6 +261,7 @@ export default function InspectionsPage() {
   const [otherTreatmentType, setOtherTreatmentType] = useState<string>('')
   const [isOtherTreatment, setIsOtherTreatment] = useState<boolean>(false)
   const [showIpmTips, setShowIpmTips] = useState<boolean>(false)
+  const [feedTypeOptions, setFeedTypeOptions] = useState<string[]>([])
   const [formData, setFormData] = useState<FormData>({
     hive_id: '',
     inspection_date: new Date().toISOString().split('T')[0],
@@ -599,6 +600,34 @@ export default function InspectionsPage() {
     }
   }, [])
 
+  const fetchFeedTypes = useCallback(async () => {
+    try {
+      // Fetch the feed_type category (shared across all users)
+      const { data: category } = await supabase
+        .from('dropdown_categories')
+        .select('id')
+        .eq('category_key', 'feed_type')
+        .single()
+
+      if (category) {
+        // Fetch active dropdown values for this category
+        const { data: values } = await supabase
+          .from('dropdown_values')
+          .select('value')
+          .eq('category_id', category.id)
+          .eq('is_active', true)
+          .order('display_order')
+
+        if (values) {
+          const types = values.map(v => v.value)
+          setFeedTypeOptions(types)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching feed types:', error)
+    }
+  }, [])
+
   const fetchTreatmentProducts = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -632,10 +661,11 @@ export default function InspectionsPage() {
       fetchHives(id)
       fetchApiaries(id)
       fetchCheckMethods()
+      fetchFeedTypes()
       fetchTreatmentProducts()
     }
     initUser()
-  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods, fetchTreatmentProducts])
+  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts])
 
   // Merge all records whenever any record type changes
   useEffect(() => {
@@ -3413,14 +3443,17 @@ export default function InspectionsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Feed Type *</label>
-              <input
-                type="text"
+              <select
                 value={editingFeeding?.feed_type || ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, feed_type: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                placeholder="e.g., Sugar syrup, Fondant"
+                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
                 required
-              />
+              >
+                <option value="">Select feed type</option>
+                {feedTypeOptions.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
             </div>
 
             <div>
