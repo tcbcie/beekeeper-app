@@ -356,6 +356,22 @@ export default function AboutPage() {
                   <span><strong>Admin Role System:</strong> Restored admin functionality with role migration from old user_profiles table - admin users can now access Settings page with user management, support tickets, and system configuration</span>
                 </li>
                 <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Hive Physical Organization:</strong> Added row_in_apiary and order_in_apiary fields to track physical hive layout within apiaries with combined uniqueness constraint allowing multiple hives per row and per order number</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Order Direction Feature:</strong> Added order_direction field (entrances/backs) with radio button selection to specify perspective when numbering hives left-to-right in rows</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Hive Position UI:</strong> Added intuitive +/- increment buttons for row and order fields with validation to prevent duplicate row+order combinations within same apiary</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Hive Card Display:</strong> Position information now shows as &quot;(Row 1, Hive 4)&quot; on hive cards for easy identification of physical location</span>
+                </li>
+                <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
                   <span><strong>Code Consolidation:</strong> Removed ~2,338 lines of duplicate code by eliminating individual activity pages (feeding, harvest, varroa-check, varroa-treatment) - everything now in unified Records system</span>
                 </li>
@@ -365,7 +381,7 @@ export default function AboutPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Database Migration Tools:</strong> Created comprehensive SQL migration scripts with diagnostics for role migration, normalization, and admin user setup</span>
+                  <span><strong>Database Migration Tools:</strong> Created comprehensive SQL migration scripts with diagnostics for role migration, normalization, admin user setup, and hive organization fields</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>

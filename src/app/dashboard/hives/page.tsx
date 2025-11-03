@@ -579,13 +579,39 @@ export default function HivesPage() {
     })
   }
 
-  // Filter hives based on selected apiary
-  const filteredHives = hives.filter(hive => {
-    if (filterApiaryId && hive.apiary_id !== filterApiaryId) {
-      return false
-    }
-    return true
-  })
+  // Filter and sort hives based on selected apiary and position
+  const filteredHives = [...hives]
+    .filter(hive => {
+      if (filterApiaryId && hive.apiary_id !== filterApiaryId) {
+        return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      // First, sort by apiary name
+      const apiaryA = a.apiaries?.name || ''
+      const apiaryB = b.apiaries?.name || ''
+      if (apiaryA !== apiaryB) {
+        return apiaryA.localeCompare(apiaryB)
+      }
+
+      // Within same apiary, sort by row (nulls last)
+      const rowA = a.row_in_apiary ?? Number.MAX_SAFE_INTEGER
+      const rowB = b.row_in_apiary ?? Number.MAX_SAFE_INTEGER
+      if (rowA !== rowB) {
+        return rowA - rowB
+      }
+
+      // Within same row, sort by order (nulls last)
+      const orderA = a.order_in_apiary ?? Number.MAX_SAFE_INTEGER
+      const orderB = b.order_in_apiary ?? Number.MAX_SAFE_INTEGER
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+
+      // Finally, sort by hive number as fallback
+      return a.hive_number.localeCompare(b.hive_number)
+    })
 
   if (loading) return <LoadingSpinner text="Loading hives..." />
 
