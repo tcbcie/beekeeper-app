@@ -2912,7 +2912,42 @@ export default function InspectionsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
               <select
                 value={editingTreatment?.hive_id || ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, hive_id: e.target.value} : null)}
+                onChange={async (e) => {
+                  const hiveId = e.target.value
+                  if (!editingTreatment) return
+
+                  setEditingTreatment({...editingTreatment, hive_id: hiveId})
+
+                  // Fetch weather data for the selected hive
+                  if (hiveId) {
+                    setFetchingWeather(true)
+                    try {
+                      const selectedHive = hives.find(h => h.id === hiveId)
+                      if (selectedHive?.apiary_id) {
+                        const { data: apiaryData } = await supabase
+                          .from('apiaries')
+                          .select('eircode')
+                          .eq('id', selectedHive.apiary_id)
+                          .single()
+
+                        if (apiaryData?.eircode) {
+                          const weatherData = await fetchWeatherData(apiaryData.eircode)
+                          if (weatherData) {
+                            setEditingTreatment(prev => prev ? {
+                              ...prev,
+                              temperature: weatherData.temp,
+                              weather_conditions: `${weatherData.condition}, ${weatherData.humidity}% humidity, ${weatherData.wind_speed} km/h wind`
+                            } : null)
+                          }
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error fetching weather for treatment:', error)
+                    } finally {
+                      setFetchingWeather(false)
+                    }
+                  }
+                }}
                 className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
                 required
               >
@@ -3020,26 +3055,39 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Temperature (°C)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Temperature (°C)
+                {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
+              </label>
               <input
                 type="number"
                 step="0.1"
                 value={editingTreatment?.temperature ?? ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, temperature: e.target.value ? parseFloat(e.target.value) : null} : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                placeholder="Optional"
+                placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
+                disabled={fetchingWeather}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Weather Conditions</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Weather Conditions
+                {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
+              </label>
               <input
                 type="text"
                 value={editingTreatment?.weather_conditions || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, weather_conditions: e.target.value} : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                placeholder="Optional"
+                placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
+                disabled={fetchingWeather}
               />
+              {editingTreatment?.hive_id && !fetchingWeather && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Weather data auto-populated based on hive location. You can edit if needed.
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
