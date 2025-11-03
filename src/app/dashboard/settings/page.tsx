@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Save, ChevronDown, ChevronRight, Download, Shield, Users, Search, User, MessageCircle, Bug, List } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
