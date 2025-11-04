@@ -2201,7 +2201,7 @@ export default function InspectionsPage() {
                     <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
-                        onClick={() => setFormData({...formData, frames_foundation: Math.max(0, formData.frames_foundation - 1)})}
+                        onClick={() => setFormData({...formData, frames_foundation: formData.frames_foundation - 1})}
                         className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
                         <Minus size={16} className="sm:hidden" />
@@ -2210,9 +2210,8 @@ export default function InspectionsPage() {
                       <input
                         type="number"
                         value={formData.frames_foundation}
-                        onChange={(e) => setFormData({...formData, frames_foundation: Math.max(0, parseInt(e.target.value) || 0)})}
+                        onChange={(e) => setFormData({...formData, frames_foundation: parseInt(e.target.value) || 0})}
                         className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
-                        min="0"
                       />
                       <button
                         type="button"
@@ -2234,7 +2233,7 @@ export default function InspectionsPage() {
                     <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
-                        onClick={() => setFormData({...formData, frames_brood: Math.max(0, formData.frames_brood - 1)})}
+                        onClick={() => setFormData({...formData, frames_brood: formData.frames_brood - 1})}
                         className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
                         <Minus size={16} className="sm:hidden" />
@@ -2243,9 +2242,8 @@ export default function InspectionsPage() {
                       <input
                         type="number"
                         value={formData.frames_brood}
-                        onChange={(e) => setFormData({...formData, frames_brood: Math.max(0, parseInt(e.target.value) || 0)})}
+                        onChange={(e) => setFormData({...formData, frames_brood: parseInt(e.target.value) || 0})}
                         className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
-                        min="0"
                       />
                       <button
                         type="button"
@@ -2267,7 +2265,7 @@ export default function InspectionsPage() {
                     <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
-                        onClick={() => setFormData({...formData, frames_drawn: Math.max(0, formData.frames_drawn - 1)})}
+                        onClick={() => setFormData({...formData, frames_drawn: formData.frames_drawn - 1})}
                         className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
                         <Minus size={16} className="sm:hidden" />
@@ -2276,9 +2274,8 @@ export default function InspectionsPage() {
                       <input
                         type="number"
                         value={formData.frames_drawn}
-                        onChange={(e) => setFormData({...formData, frames_drawn: Math.max(0, parseInt(e.target.value) || 0)})}
+                        onChange={(e) => setFormData({...formData, frames_drawn: parseInt(e.target.value) || 0})}
                         className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
-                        min="0"
                       />
                       <button
                         type="button"
@@ -2300,7 +2297,7 @@ export default function InspectionsPage() {
                     <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
-                        onClick={() => setFormData({...formData, honey_supers: Math.max(0, formData.honey_supers - 1)})}
+                        onClick={() => setFormData({...formData, honey_supers: formData.honey_supers - 1})}
                         className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
                         <Minus size={16} className="sm:hidden" />
@@ -2309,9 +2306,8 @@ export default function InspectionsPage() {
                       <input
                         type="number"
                         value={formData.honey_supers}
-                        onChange={(e) => setFormData({...formData, honey_supers: Math.max(0, parseInt(e.target.value) || 0)})}
+                        onChange={(e) => setFormData({...formData, honey_supers: parseInt(e.target.value) || 0})}
                         className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
-                        min="0"
                       />
                       <button
                         type="button"
@@ -2333,7 +2329,7 @@ export default function InspectionsPage() {
                     <div className="flex items-center gap-1.5 sm:gap-3">
                       <button
                         type="button"
-                        onClick={() => setFormData({...formData, drone_frames: Math.max(0, formData.drone_frames - 1)})}
+                        onClick={() => setFormData({...formData, drone_frames: formData.drone_frames - 1})}
                         className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
                       >
                         <Minus size={16} className="sm:hidden" />
@@ -2342,9 +2338,8 @@ export default function InspectionsPage() {
                       <input
                         type="number"
                         value={formData.drone_frames}
-                        onChange={(e) => setFormData({...formData, drone_frames: Math.max(0, parseInt(e.target.value) || 0)})}
+                        onChange={(e) => setFormData({...formData, drone_frames: parseInt(e.target.value) || 0})}
                         className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
-                        min="0"
                       />
                       <button
                         type="button"
