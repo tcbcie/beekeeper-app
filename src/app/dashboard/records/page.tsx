@@ -673,18 +673,74 @@ export default function InspectionsPage() {
       // Set the hive filter
       setFilterHiveId(hiveParam)
 
-      // Set formData hive_id
-      setFormData(prev => ({
-        ...prev,
-        hive_id: hiveParam
-      }))
-
       // Set the form type and open the form
       const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest']
       if (validTypes.includes(typeParam)) {
         const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
                           typeParam === 'varroa-treatment' ? 'varroa_treatment' :
                           typeParam as 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest'
+
+        const currentDate = new Date().toISOString().split('T')[0]
+
+        // Set the appropriate form data based on type
+        if (mappedType === 'inspection') {
+          setFormData(prev => ({
+            ...prev,
+            hive_id: hiveParam
+          }))
+        } else if (mappedType === 'varroa_treatment') {
+          setEditingTreatment({
+            id: '',
+            hive_id: hiveParam,
+            treatment_date: currentDate,
+            treatment_type: '',
+            dosage: null,
+            notes: '',
+            user_id: userId || '',
+            created_at: '',
+            updated_at: '',
+            treatment_product: null,
+            application_method: null,
+            repeat_application: false,
+            withdrawal_period_days: null,
+          })
+        } else if (mappedType === 'varroa_check') {
+          setEditingCheck({
+            id: '',
+            hive_id: hiveParam,
+            check_date: currentDate,
+            mite_count: null,
+            check_method: '',
+            notes: '',
+            user_id: userId || '',
+            created_at: '',
+            updated_at: '',
+          })
+        } else if (mappedType === 'feeding') {
+          setEditingFeeding({
+            id: '',
+            hive_id: hiveParam,
+            feeding_date: currentDate,
+            feed_type: '',
+            amount: null,
+            notes: '',
+            user_id: userId || '',
+            created_at: '',
+            updated_at: '',
+          })
+        } else if (mappedType === 'harvest') {
+          setEditingHarvest({
+            id: '',
+            hive_id: hiveParam,
+            harvest_date: currentDate,
+            frames_harvested: null,
+            honey_weight: null,
+            notes: '',
+            user_id: userId || '',
+            created_at: '',
+            updated_at: '',
+          })
+        }
 
         setFormType(mappedType)
         setShowForm(true)
@@ -693,7 +749,7 @@ export default function InspectionsPage() {
         router.replace('/dashboard/records')
       }
     }
-  }, [searchParams, hives, router])
+  }, [searchParams, hives, router, userId])
 
   // Merge all records whenever any record type changes
   useEffect(() => {
