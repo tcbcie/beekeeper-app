@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet, ExternalLink, Home } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -246,6 +246,7 @@ export default function InspectionsPage() {
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [recordTypeFilter, setRecordTypeFilter] = useState<'all' | 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest'>('all')
   const [showDropdown, setShowDropdown] = useState(false)
+  const [sourceHiveId, setSourceHiveId] = useState<string>('')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_lastInspection, setLastInspection] = useState<Inspection | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -670,8 +671,9 @@ export default function InspectionsPage() {
     const typeParam = searchParams.get('type')
 
     if (hiveParam && typeParam && hives.length > 0) {
-      // Set the hive filter
+      // Set the hive filter and source hive ID for navigation
       setFilterHiveId(hiveParam)
+      setSourceHiveId(hiveParam)
 
       // Set the form type and open the form
       const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest']
@@ -1433,7 +1435,29 @@ export default function InspectionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-responsive-3xl font-bold text-gray-900">Records 📋</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-responsive-3xl font-bold text-gray-900">Records 📋</h1>
+          {sourceHiveId && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push(`/dashboard/hives/${sourceHiveId}`)}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                title="View hive detail"
+              >
+                <ExternalLink size={18} />
+                Hive Detail
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/hives')}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                title="Go to hives page"
+              >
+                <Home size={18} />
+                Hives
+              </button>
+            </div>
+          )}
+        </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <select
             value={ownershipFilter}
