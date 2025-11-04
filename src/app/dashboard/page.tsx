@@ -858,7 +858,7 @@ export default function DashboardPage() {
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow p-6 border border-blue-100">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hive Craic</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">HiveCraic</h3>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Version:</span>

@@ -37,7 +37,7 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
               <Menu size={24} />
             </button>
             <h1 className="text-xl sm:text-2xl font-bold text-amber-600 whitespace-nowrap">
-              🐝 Hive Craic
+              🐝 HiveCraic
             </h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">

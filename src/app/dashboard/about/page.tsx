@@ -292,10 +292,10 @@ export default function AboutPage() {
 
           <div className="space-y-6">
             <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="text-lg font-semibold text-gray-900">Hive Craic Launch</h3>
+              <h3 className="text-lg font-semibold text-gray-900">HiveCraic Launch</h3>
               <p className="text-sm text-gray-500 mb-2">October 2025</p>
               <p className="text-gray-700">
-                We&apos;re excited to announce the official launch of Hive Craic! Our comprehensive
+                We&apos;re excited to announce the official launch of HiveCraic! Our comprehensive
                 beekeeping management platform is now available to help beekeepers manage their operations
                 more efficiently.
               </p>
@@ -855,7 +855,7 @@ export default function AboutPage() {
               <ul className="mt-3 space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span>Initial release of Hive Craic</span>
+                  <span>Initial release of HiveCraic</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
@@ -1134,26 +1134,26 @@ export default function AboutPage() {
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4">
               <p className="font-semibold text-amber-900">Important Notice</p>
               <p className="text-amber-800 mt-2">
-                Please read this disclaimer carefully before using Hive Craic.
+                Please read this disclaimer carefully before using HiveCraic.
               </p>
             </div>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">General Information</h3>
             <p>
-              Hive Craic is provided as a tool to assist beekeepers in managing their beekeeping operations.
+              HiveCraic is provided as a tool to assist beekeepers in managing their beekeeping operations.
               The information and features provided are for informational and organizational purposes only.
             </p>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">No Professional Advice</h3>
             <p>
-              The content and functionality provided by Hive Craic does not constitute professional beekeeping,
+              The content and functionality provided by HiveCraic does not constitute professional beekeeping,
               veterinary, or agricultural advice. Users should consult with qualified beekeeping experts,
               veterinarians, or agricultural extension services for specific advice regarding their beekeeping operations.
             </p>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Data Accuracy</h3>
             <p>
-              While we strive to provide accurate and reliable features, Hive Craic makes no warranties or
+              While we strive to provide accurate and reliable features, HiveCraic makes no warranties or
               representations regarding the accuracy, completeness, or reliability of any data entered,
               calculated, or displayed within the application. Users are responsible for verifying the
               accuracy of their own data.
@@ -1175,7 +1175,7 @@ export default function AboutPage() {
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Limitation of Liability</h3>
             <p>
-              To the fullest extent permitted by law, Hive Craic, its creators, contributors, and associated
+              To the fullest extent permitted by law, HiveCraic, its creators, contributors, and associated
               organizations (tcbc.ie, Tribes Beekeepers Association, Tribes QRBG) shall not be liable for any
               direct, indirect, incidental, special, or consequential damages arising from the use or inability
               to use this application, including but not limited to loss of data, loss of colonies, or any
@@ -1196,14 +1196,14 @@ export default function AboutPage() {
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">No Guarantee of Service</h3>
             <p>
-              Hive Craic is provided &quot;as is&quot; without any guarantee of continuous availability,
+              HiveCraic is provided &quot;as is&quot; without any guarantee of continuous availability,
               functionality, or service. We reserve the right to modify, suspend, or discontinue any aspect
               of the service at any time without notice.
             </p>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Changes to Disclaimer</h3>
             <p>
-              We reserve the right to update or modify this disclaimer at any time. Continued use of Hive Craic
+              We reserve the right to update or modify this disclaimer at any time. Continued use of HiveCraic
               after any changes constitutes acceptance of the updated disclaimer.
             </p>
           </div>
@@ -1219,7 +1219,7 @@ export default function AboutPage() {
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
               <p className="font-semibold text-blue-900">Your Privacy Matters</p>
               <p className="text-blue-800 mt-2">
-                This privacy notice explains how Hive Craic collects, uses, and protects your personal information.
+                This privacy notice explains how HiveCraic collects, uses, and protects your personal information.
               </p>
             </div>
 
@@ -1227,7 +1227,7 @@ export default function AboutPage() {
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Information We Collect</h3>
             <p>
-              Hive Craic collects and stores the following types of information:
+              HiveCraic collects and stores the following types of information:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li><strong>Account Information:</strong> Email address, password (encrypted), and user profile data</li>
@@ -1240,7 +1240,7 @@ export default function AboutPage() {
               Your information is used solely for:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Providing and maintaining the Hive Craic service</li>
+              <li>Providing and maintaining the HiveCraic service</li>
               <li>Authenticating your access to the application</li>
               <li>Storing and managing your beekeeping records</li>
               <li>Enabling multi-user collaboration features</li>
@@ -1260,12 +1260,12 @@ export default function AboutPage() {
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Data Sharing</h3>
             <p>
-              Hive Craic does not sell, trade, or share your personal information with third parties except:
+              HiveCraic does not sell, trade, or share your personal information with third parties except:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>With your explicit consent</li>
               <li>When required by law or legal process</li>
-              <li>To protect the rights, property, or safety of Hive Craic, its users, or the public</li>
+              <li>To protect the rights, property, or safety of HiveCraic, its users, or the public</li>
             </ul>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Multi-User Access</h3>
@@ -1281,7 +1281,7 @@ export default function AboutPage() {
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Third-Party Services</h3>
             <p>
-              Hive Craic integrates with the following third-party services:
+              HiveCraic integrates with the following third-party services:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li><strong>Supabase:</strong> Database and authentication services</li>
@@ -1296,7 +1296,7 @@ export default function AboutPage() {
               You have the right to:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Access your personal data stored in Hive Craic</li>
+              <li>Access your personal data stored in HiveCraic</li>
               <li>Export your data using the database export feature</li>
               <li>Request correction of inaccurate data</li>
               <li>Delete your account and associated data</li>
@@ -1311,7 +1311,7 @@ export default function AboutPage() {
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Cookies and Tracking</h3>
             <p>
-              Hive Craic uses essential cookies for:
+              HiveCraic uses essential cookies for:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Maintaining your logged-in session</li>
@@ -1323,7 +1323,7 @@ export default function AboutPage() {
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">Children&apos;s Privacy</h3>
             <p>
-              Hive Craic is not intended for use by individuals under the age of 16. We do not knowingly
+              HiveCraic is not intended for use by individuals under the age of 16. We do not knowingly
               collect personal information from children under 16.
             </p>
 
@@ -1340,14 +1340,14 @@ export default function AboutPage() {
               please contact us at:
             </p>
             <div className="bg-gray-50 p-4 rounded-lg mt-2">
-              <p className="font-semibold">Hive Craic Support</p>
+              <p className="font-semibold">HiveCraic Support</p>
               <p>Email: support@tcbc.ie</p>
               <p>Website: tcbc.ie</p>
             </div>
 
             <h3 className="text-lg font-semibold text-gray-900 mt-6">GDPR Compliance</h3>
             <p>
-              For users in the European Union, Hive Craic is committed to compliance with the General
+              For users in the European Union, HiveCraic is committed to compliance with the General
               Data Protection Regulation (GDPR). You have additional rights under GDPR including the
               right to data portability and the right to lodge a complaint with a supervisory authority.
             </p>
