@@ -694,51 +694,47 @@ export default function InspectionsPage() {
             hive_id: hiveParam,
             treatment_date: currentDate,
             treatment_type: '',
-            dosage: null,
+            dosage: '',
+            temperature: null,
+            weather_conditions: '',
             notes: '',
             user_id: userId || '',
-            created_at: '',
-            updated_at: '',
-            treatment_product: null,
-            application_method: null,
-            repeat_application: false,
-            withdrawal_period_days: null,
           })
         } else if (mappedType === 'varroa_check') {
           setEditingCheck({
             id: '',
             hive_id: hiveParam,
             check_date: currentDate,
-            mite_count: null,
-            check_method: '',
+            method: '',
+            mites_count: null,
+            sample_size: null,
+            infestation_rate: null,
+            action_threshold_reached: false,
             notes: '',
             user_id: userId || '',
-            created_at: '',
-            updated_at: '',
           })
         } else if (mappedType === 'feeding') {
           setEditingFeeding({
             id: '',
             hive_id: hiveParam,
-            feeding_date: currentDate,
+            feed_date: currentDate,
             feed_type: '',
-            amount: null,
+            quantity: null,
+            unit: '',
             notes: '',
             user_id: userId || '',
-            created_at: '',
-            updated_at: '',
           })
         } else if (mappedType === 'harvest') {
           setEditingHarvest({
             id: '',
             hive_id: hiveParam,
             harvest_date: currentDate,
-            frames_harvested: null,
             honey_weight: null,
+            wax_weight: null,
+            unit: '',
+            frames_harvested: null,
             notes: '',
             user_id: userId || '',
-            created_at: '',
-            updated_at: '',
           })
         }
 
