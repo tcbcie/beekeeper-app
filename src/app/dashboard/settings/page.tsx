@@ -875,7 +875,7 @@ export default function SettingsPage() {
     setExporting(true)
     try {
       let sqlContent = `-- =====================================================\n`
-      sqlContent += `-- Hive Craic Database Export\n`
+      sqlContent += `-- HiveCraic Database Export\n`
       sqlContent += `-- Generated on: ${new Date().toISOString()}\n`
       sqlContent += `-- =====================================================\n\n`
       sqlContent += `-- This export includes:\n`
