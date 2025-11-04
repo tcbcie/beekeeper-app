@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ExternalLink, Home } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -431,38 +431,16 @@ export default function HiveDetailPage() {
               {inspections.map((inspection) => (
                 <div key={inspection.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <span className="font-medium text-gray-900">
-                        {new Date(inspection.inspection_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-2">
-                        {inspection.queen_seen && (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">👑 Queen Seen</span>
-                        )}
-                        {inspection.eggs_present && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">🥚 Eggs</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 ml-2">
-                        <button
-                          onClick={() => router.push('/dashboard/records')}
-                          className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg"
-                          aria-label="View full record details"
-                          title="View full record details"
-                        >
-                          <ExternalLink size={18} />
-                        </button>
-                        <button
-                          onClick={() => router.push('/dashboard/hives')}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-                          aria-label="Go to hives page"
-                          title="Go to hives page"
-                        >
-                          <Home size={18} />
-                        </button>
-                      </div>
+                    <span className="font-medium text-gray-900">
+                      {new Date(inspection.inspection_date).toLocaleDateString()}
+                    </span>
+                    <div className="flex gap-2">
+                      {inspection.queen_seen && (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">👑 Queen Seen</span>
+                      )}
+                      {inspection.eggs_present && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">🥚 Eggs</span>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
@@ -504,7 +482,7 @@ export default function HiveDetailPage() {
               {varroaChecks.map((check) => (
                 <div key={check.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
+                    <div>
                       <span className="font-medium text-gray-900">
                         {new Date(check.check_date).toLocaleDateString()}
                       </span>
@@ -512,35 +490,15 @@ export default function HiveDetailPage() {
                         <span className="ml-3 text-sm text-gray-600">Method: {check.check_method}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {check.mite_count !== null && (
-                        <span className={`px-3 py-1 rounded font-medium ${
-                          check.mite_count > 10 ? 'bg-red-100 text-red-800' :
-                          check.mite_count > 5 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {check.mite_count} mites
-                        </span>
-                      )}
-                      <div className="flex gap-2 ml-2">
-                        <button
-                          onClick={() => router.push('/dashboard/records')}
-                          className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg"
-                          aria-label="View full record details"
-                          title="View full record details"
-                        >
-                          <ExternalLink size={18} />
-                        </button>
-                        <button
-                          onClick={() => router.push('/dashboard/hives')}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-                          aria-label="Go to hives page"
-                          title="Go to hives page"
-                        >
-                          <Home size={18} />
-                        </button>
-                      </div>
-                    </div>
+                    {check.mite_count !== null && (
+                      <span className={`px-3 py-1 rounded font-medium ${
+                        check.mite_count > 10 ? 'bg-red-100 text-red-800' :
+                        check.mite_count > 5 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {check.mite_count} mites
+                      </span>
+                    )}
                   </div>
                   {check.notes && (
                     <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{check.notes}</p>
@@ -564,35 +522,15 @@ export default function HiveDetailPage() {
               {varroaTreatments.map((treatment) => (
                 <div key={treatment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
+                    <div>
                       <span className="font-medium text-gray-900">
                         {new Date(treatment.treatment_date).toLocaleDateString()}
                       </span>
                       <span className="ml-3 text-sm font-medium text-red-700">{treatment.treatment_type}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {treatment.dosage && (
-                        <span className="text-sm text-gray-600">Dosage: {treatment.dosage}</span>
-                      )}
-                      <div className="flex gap-2 ml-2">
-                        <button
-                          onClick={() => router.push('/dashboard/records')}
-                          className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg"
-                          aria-label="View full record details"
-                          title="View full record details"
-                        >
-                          <ExternalLink size={18} />
-                        </button>
-                        <button
-                          onClick={() => router.push('/dashboard/hives')}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-                          aria-label="Go to hives page"
-                          title="Go to hives page"
-                        >
-                          <Home size={18} />
-                        </button>
-                      </div>
-                    </div>
+                    {treatment.dosage && (
+                      <span className="text-sm text-gray-600">Dosage: {treatment.dosage}</span>
+                    )}
                   </div>
                   {treatment.notes && (
                     <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{treatment.notes}</p>
@@ -616,35 +554,15 @@ export default function HiveDetailPage() {
               {feedings.map((feeding) => (
                 <div key={feeding.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
+                    <div>
                       <span className="font-medium text-gray-900">
                         {new Date(feeding.feeding_date).toLocaleDateString()}
                       </span>
                       <span className="ml-3 text-sm font-medium text-orange-700">{feeding.feed_type}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {feeding.amount !== null && (
-                        <span className="text-sm text-gray-600">{feeding.amount} kg</span>
-                      )}
-                      <div className="flex gap-2 ml-2">
-                        <button
-                          onClick={() => router.push('/dashboard/records')}
-                          className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg"
-                          aria-label="View full record details"
-                          title="View full record details"
-                        >
-                          <ExternalLink size={18} />
-                        </button>
-                        <button
-                          onClick={() => router.push('/dashboard/hives')}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-                          aria-label="Go to hives page"
-                          title="Go to hives page"
-                        >
-                          <Home size={18} />
-                        </button>
-                      </div>
-                    </div>
+                    {feeding.amount !== null && (
+                      <span className="text-sm text-gray-600">{feeding.amount} kg</span>
+                    )}
                   </div>
                   {feeding.notes && (
                     <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{feeding.notes}</p>
@@ -668,38 +586,16 @@ export default function HiveDetailPage() {
               {harvests.map((harvest) => (
                 <div key={harvest.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <span className="font-medium text-gray-900">
-                        {new Date(harvest.harvest_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        {harvest.frames_harvested !== null && (
-                          <div className="text-sm text-gray-600">{harvest.frames_harvested} frames</div>
-                        )}
-                        {harvest.honey_weight !== null && (
-                          <div className="text-sm font-medium text-yellow-700">{harvest.honey_weight} kg</div>
-                        )}
-                      </div>
-                      <div className="flex gap-2 ml-2">
-                        <button
-                          onClick={() => router.push('/dashboard/records')}
-                          className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg"
-                          aria-label="View full record details"
-                          title="View full record details"
-                        >
-                          <ExternalLink size={18} />
-                        </button>
-                        <button
-                          onClick={() => router.push('/dashboard/hives')}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
-                          aria-label="Go to hives page"
-                          title="Go to hives page"
-                        >
-                          <Home size={18} />
-                        </button>
-                      </div>
+                    <span className="font-medium text-gray-900">
+                      {new Date(harvest.harvest_date).toLocaleDateString()}
+                    </span>
+                    <div className="text-right">
+                      {harvest.frames_harvested !== null && (
+                        <div className="text-sm text-gray-600">{harvest.frames_harvested} frames</div>
+                      )}
+                      {harvest.honey_weight !== null && (
+                        <div className="text-sm font-medium text-yellow-700">{harvest.honey_weight} kg</div>
+                      )}
                     </div>
                   </div>
                   {harvest.notes && (
