@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -220,6 +220,7 @@ interface TreatmentProduct {
 
 export default function InspectionsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [varroaTreatments, setVarroaTreatments] = useState<VarroaTreatment[]>([])
   const [varroaChecks, setVarroaChecks] = useState<VarroaCheck[]>([])
@@ -662,6 +663,37 @@ export default function InspectionsPage() {
     }
     initUser()
   }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts])
+
+  // Handle URL query parameters to open specific form dialogs
+  useEffect(() => {
+    const hiveParam = searchParams.get('hive')
+    const typeParam = searchParams.get('type')
+
+    if (hiveParam && typeParam && hives.length > 0) {
+      // Set the hive filter
+      setFilterHiveId(hiveParam)
+
+      // Set formData hive_id
+      setFormData(prev => ({
+        ...prev,
+        hive_id: hiveParam
+      }))
+
+      // Set the form type and open the form
+      const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest']
+      if (validTypes.includes(typeParam)) {
+        const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
+                          typeParam === 'varroa-treatment' ? 'varroa_treatment' :
+                          typeParam as 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest'
+
+        setFormType(mappedType)
+        setShowForm(true)
+
+        // Clear the URL parameters after opening the form
+        router.replace('/dashboard/records')
+      }
+    }
+  }, [searchParams, hives, router])
 
   // Merge all records whenever any record type changes
   useEffect(() => {
