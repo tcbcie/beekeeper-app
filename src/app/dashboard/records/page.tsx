@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet, ExternalLink, Home } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -3761,6 +3761,22 @@ export default function InspectionsPage() {
                 </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => router.push(`/dashboard/hives/${inspection.hive_id}`)}
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600 hover:text-green-900 hover:bg-green-50 active:bg-green-100 rounded-lg touch-manipulation"
+                  aria-label="View hive detail"
+                  title="View hive detail"
+                >
+                  <ExternalLink size={20} />
+                </button>
+                <button
+                  onClick={() => router.push('/dashboard/hives')}
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-50 active:bg-gray-100 rounded-lg touch-manipulation"
+                  aria-label="Go to hives page"
+                  title="Go to hives page"
+                >
+                  <Home size={20} />
+                </button>
                 <button
                   onClick={() => handleEdit(inspection)}
                   className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation"
