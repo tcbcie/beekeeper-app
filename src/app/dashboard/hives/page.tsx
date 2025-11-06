@@ -30,6 +30,14 @@ interface HiveConfiguration {
   right_sized_broodbox: boolean
 }
 
+interface Colony {
+  id: string
+  colony_number: string
+  origin_type: string
+  origin_date: string
+  status: string
+}
+
 interface Hive {
   id: string
   hive_number: string
@@ -48,6 +56,7 @@ interface Hive {
   queen_installed_date: string | null
   hive_type: string | null
   configuration: HiveConfiguration | null
+  colony_id: string | null
   user_id?: string
   apiaries?: {
     name: string
@@ -57,6 +66,7 @@ interface Hive {
     queen_number: string
     marking_color?: string
   }
+  colonies?: Colony
   queen_last_seen?: string | null
   eggs_last_present?: string | null
   team_name?: string | null
@@ -157,7 +167,8 @@ export default function HivesPage() {
       .from('hives')
       .select(`
         *,
-        apiaries(name)
+        apiaries(name),
+        colonies(id, colony_number, origin_type, origin_date, status)
       `)
 
     // Apply ownership filter
@@ -1232,6 +1243,18 @@ export default function HivesPage() {
                   <span>No details</span>
                 )}
               </div>
+              {hive.colonies && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">🧬</span>
+                  <span className="flex items-center gap-1">
+                    <span className="font-medium">Colony</span>
+                    <span className="text-blue-600">{hive.colonies.colony_number}</span>
+                    <span className="text-xs text-gray-500">
+                      ({hive.colonies.origin_type.replace('_', ' ')})
+                    </span>
+                  </span>
+                </div>
+              )}
               {hive.last_record && (
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">📋</span>
