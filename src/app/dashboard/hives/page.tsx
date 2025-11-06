@@ -1192,7 +1192,7 @@ export default function HivesPage() {
                 <span className="text-gray-500">👑</span>
                 {hive.queens?.id ? (
                   <span className="flex items-center gap-1">
-                    {hive.queens.queen_marked && hive.queens.queen_marking_color && (
+                    {hive.queens.queen_marking_color && (
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         hive.queens.queen_marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
                         hive.queens.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
