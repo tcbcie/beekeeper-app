@@ -6,14 +6,15 @@ import Link from 'next/link'
 
 interface UpcomingEvent {
   id: string
-  batch_name?: string
-  title?: string
+  title: string
   date: string
-  date_type: 'acceptance_check' | 'first_cage' | 'second_cage' | 'hatch' | 'task' | 'event' | 'reminder'
+  event_type: 'task' | 'event' | 'reminder'
   days_until: number
-  event_category?: string
+  category?: string
   priority?: 'low' | 'normal' | 'high' | 'urgent'
-  source: 'batch' | 'task'
+  batch_id?: string
+  hive_id?: string
+  apiary_id?: string
 }
 
 export default function UpcomingEvents({ userId }: { userId: string }) {
@@ -28,115 +29,42 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
     const sevenDaysFromNow = new Date(today)
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
 
-    const upcomingEvents: UpcomingEvent[] = []
-
-    // Fetch queen rearing batch events
-    const { data: batches } = await supabase
-      .from('rearing_batches')
-      .select('id, batch_name, acceptance_check_date, first_option_to_cage_date, second_option_to_cage_date, emergence_date')
-      .eq('user_id', userId)
-      .order('graft_date', { ascending: false })
-
-    if (batches) {
-      batches.forEach(batch => {
-        // Check acceptance date
-        if (batch.acceptance_check_date) {
-          const eventDate = new Date(batch.acceptance_check_date)
-          eventDate.setHours(0, 0, 0, 0)
-          if (eventDate >= today && eventDate <= sevenDaysFromNow) {
-            const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-            upcomingEvents.push({
-              id: batch.id,
-              batch_name: batch.batch_name,
-              date: batch.acceptance_check_date,
-              date_type: 'acceptance_check',
-              days_until: daysUntil,
-              source: 'batch'
-            })
-          }
-        }
-
-        // Check first cage date
-        if (batch.first_option_to_cage_date) {
-          const eventDate = new Date(batch.first_option_to_cage_date)
-          eventDate.setHours(0, 0, 0, 0)
-          if (eventDate >= today && eventDate <= sevenDaysFromNow) {
-            const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-            upcomingEvents.push({
-              id: batch.id,
-              batch_name: batch.batch_name,
-              date: batch.first_option_to_cage_date,
-              date_type: 'first_cage',
-              days_until: daysUntil,
-              source: 'batch'
-            })
-          }
-        }
-
-        // Check second cage date
-        if (batch.second_option_to_cage_date) {
-          const eventDate = new Date(batch.second_option_to_cage_date)
-          eventDate.setHours(0, 0, 0, 0)
-          if (eventDate >= today && eventDate <= sevenDaysFromNow) {
-            const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-            upcomingEvents.push({
-              id: batch.id,
-              batch_name: batch.batch_name,
-              date: batch.second_option_to_cage_date,
-              date_type: 'second_cage',
-              days_until: daysUntil,
-              source: 'batch'
-            })
-          }
-        }
-
-        // Check hatch date
-        if (batch.emergence_date) {
-          const eventDate = new Date(batch.emergence_date)
-          eventDate.setHours(0, 0, 0, 0)
-          if (eventDate >= today && eventDate <= sevenDaysFromNow) {
-            const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-            upcomingEvents.push({
-              id: batch.id,
-              batch_name: batch.batch_name,
-              date: batch.emergence_date,
-              date_type: 'hatch',
-              days_until: daysUntil,
-              source: 'batch'
-            })
-          }
-        }
-      })
-    }
-
-    // Fetch tasks and events
-    const { data: tasks } = await supabase
+    // Fetch all tasks and events from tasks_events table
+    const { data: tasks, error } = await supabase
       .from('tasks_events')
-      .select('id, title, event_type, category, priority, start_date, completed')
+      .select('id, title, event_type, category, priority, start_date, batch_id, hive_id, apiary_id, completed')
       .eq('user_id', userId)
       .eq('completed', false)
       .gte('start_date', today.toISOString().split('T')[0])
       .lte('start_date', sevenDaysFromNow.toISOString().split('T')[0])
+      .order('start_date', { ascending: true })
 
-    if (tasks) {
-      tasks.forEach(task => {
-        const eventDate = new Date(task.start_date)
-        eventDate.setHours(0, 0, 0, 0)
-        const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-        upcomingEvents.push({
-          id: task.id,
-          title: task.title,
-          date: task.start_date,
-          date_type: task.event_type as 'task' | 'event' | 'reminder',
-          days_until: daysUntil,
-          event_category: task.category || undefined,
-          priority: task.priority || undefined,
-          source: 'task'
-        })
-      })
+    if (error) {
+      console.error('Error fetching events:', error)
+      setLoading(false)
+      return
     }
 
-    // Sort by days until (soonest first), then by priority for tasks
+    const upcomingEvents: UpcomingEvent[] = (tasks || []).map(task => {
+      const eventDate = new Date(task.start_date)
+      eventDate.setHours(0, 0, 0, 0)
+      const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+      return {
+        id: task.id,
+        title: task.title,
+        date: task.start_date,
+        event_type: task.event_type as 'task' | 'event' | 'reminder',
+        days_until: daysUntil,
+        category: task.category || undefined,
+        priority: task.priority || undefined,
+        batch_id: task.batch_id || undefined,
+        hive_id: task.hive_id || undefined,
+        apiary_id: task.apiary_id || undefined
+      }
+    })
+
+    // Sort by days until (soonest first), then by priority
     upcomingEvents.sort((a, b) => {
       if (a.days_until !== b.days_until) {
         return a.days_until - b.days_until
@@ -158,10 +86,6 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
 
   const getEventLabel = (type: string) => {
     switch (type) {
-      case 'acceptance_check': return 'Acceptance Check'
-      case 'first_cage': return '1st Cage Option'
-      case 'second_cage': return '2nd Cage Option'
-      case 'hatch': return 'Expected Hatch'
       case 'task': return 'Task'
       case 'event': return 'Event'
       case 'reminder': return 'Reminder'
@@ -232,22 +156,22 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
       <div className="space-y-3">
         {events.map((event, index) => (
           <Link
-            key={`${event.id}-${event.date_type}-${index}`}
-            href={event.source === 'batch' ? '/dashboard/batches' : '/dashboard/tasks'}
+            key={`${event.id}-${index}`}
+            href="/dashboard/tasks"
             className="block p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Bell size={14} className="text-gray-400 flex-shrink-0" />
-                  <p className={`font-medium text-gray-900 text-sm truncate ${event.priority ? getPriorityColor(event.priority) : ''}`}>
-                    {event.source === 'batch' ? event.batch_name : event.title}
+                  <p className={`font-medium text-sm truncate ${event.priority ? getPriorityColor(event.priority) : 'text-gray-900'}`}>
+                    {event.title}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs text-gray-600">{getEventLabel(event.date_type)}</p>
-                  {event.event_category && (
-                    <span className="text-xs text-gray-500">• {getCategoryLabel(event.event_category)}</span>
+                  <p className="text-xs text-gray-600">{getEventLabel(event.event_type)}</p>
+                  {event.category && (
+                    <span className="text-xs text-gray-500">• {getCategoryLabel(event.category)}</span>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">{formatDate(event.date)}</p>
