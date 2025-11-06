@@ -873,7 +873,11 @@ export default function HivesPage() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
-                      onClick={() => setFormData({...formData, queen_marked: !formData.queen_marked})}
+                      onClick={() => setFormData({
+                        ...formData,
+                        queen_marked: !formData.queen_marked,
+                        queen_marking_color: !formData.queen_marked ? formData.queen_marking_color : ''
+                      })}
                       className={`px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.queen_marked
                           ? 'bg-amber-600 text-white shadow-md hover:bg-amber-700 active:bg-amber-800'
@@ -1152,7 +1156,7 @@ export default function HivesPage() {
                     {hive.queens.queen_number}
                     <ExternalLink size={12} />
                   </Link>
-                ) : hive.queen_marked || hive.queen_marking_color ? (
+                ) : hive.queen_marked ? (
                   <span className="flex items-center gap-1">
                     <span className="font-medium">Queen recorded</span>
                     {hive.queen_marking_color && (
