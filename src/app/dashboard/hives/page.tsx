@@ -238,16 +238,22 @@ export default function HivesPage() {
       const queensMap = new Map<string, { id: string; queen_number: string; queen_marked?: boolean; queen_marking_color?: string }>()
       if (queenIds.length > 0) {
         console.log('Fetching queens for IDs:', queenIds)
-        const { data: queensData } = await supabase
+        const { data: queensData, error: queensError } = await supabase
           .from('queens')
           .select('id, queen_number, queen_marked, queen_marking_color')
           .in('id', queenIds)
 
-        console.log('Queens data received:', queensData)
-        queensData?.forEach(queen => {
-          queensMap.set(queen.id, queen)
-        })
-        console.log('Queens map:', queensMap)
+        if (queensError) {
+          console.error('Error fetching queens:', queensError)
+        } else {
+          console.log('Queens data received:', queensData)
+          console.log('Number of queens found:', queensData?.length || 0)
+          queensData?.forEach(queen => {
+            console.log('Adding queen to map:', queen.id, queen)
+            queensMap.set(queen.id, queen)
+          })
+          console.log('Queens map size:', queensMap.size)
+        }
       } else {
         console.log('No queen IDs found in hives')
       }
