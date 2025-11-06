@@ -44,6 +44,15 @@ interface Hive {
   }
 }
 
+interface InspectionAverages {
+  brood_frames: number | null
+  right_sized_frames: number | null
+  brood_pattern: number | null
+  temperament: number | null
+  population: number | null
+  inspection_count: number
+}
+
 interface Inspection {
   id: string
   inspection_date: string
@@ -106,6 +115,7 @@ export default function HiveDetailPage() {
   const [varroaTreatments, setVarroaTreatments] = useState<VarroaTreatment[]>([])
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [harvests, setHarvests] = useState<Harvest[]>([])
+  const [averages, setAverages] = useState<InspectionAverages | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchHiveData = useCallback(async (currentUserId: string) => {
@@ -183,6 +193,39 @@ export default function HiveDetailPage() {
       setVarroaTreatments(varroaTreatmentsData || [])
       setFeedings(feedingsData || [])
       setHarvests(harvestsData || [])
+
+      // Calculate inspection averages
+      if (inspectionsData && inspectionsData.length > 0) {
+        const broodFrames = inspectionsData.filter(i => i.brood_frames !== null && i.brood_frames > 0).map(i => i.brood_frames!)
+        const rightSizedFrames = inspectionsData.filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0).map(i => i.right_sized_frames!)
+        const broodPatterns = inspectionsData.filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0).map(i => i.brood_pattern_rating!)
+        const temperaments = inspectionsData.filter(i => i.temperament_rating !== null && i.temperament_rating > 0).map(i => i.temperament_rating!)
+        const populations = inspectionsData.filter(i => i.population_strength !== null && i.population_strength > 0).map(i => i.population_strength!)
+
+        const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+
+        const inspectionsWithData = new Set<string>()
+        inspectionsData.forEach(inspection => {
+          if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
+              (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
+              (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
+              (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
+              (inspection.population_strength !== null && inspection.population_strength > 0)) {
+            inspectionsWithData.add(inspection.inspection_date)
+          }
+        })
+
+        setAverages({
+          brood_frames: avg(broodFrames),
+          right_sized_frames: avg(rightSizedFrames),
+          brood_pattern: avg(broodPatterns),
+          temperament: avg(temperaments),
+          population: avg(populations),
+          inspection_count: inspectionsWithData.size,
+        })
+      } else {
+        setAverages(null)
+      }
     } catch (error) {
       console.error('Error fetching hive data:', error)
       alert('Failed to load hive data')
@@ -375,6 +418,45 @@ export default function HiveDetailPage() {
           <div className="mt-6">
             <h3 className="font-semibold text-gray-700 mb-2">Notes</h3>
             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{hive.notes}</p>
+          </div>
+        )}
+
+        {/* Inspection Averages */}
+        {averages && averages.inspection_count > 0 && (
+          <div className="mt-6">
+            <h3 className="font-semibold text-gray-700 mb-3">Inspection Averages ({averages.inspection_count} inspection{averages.inspection_count !== 1 ? 's' : ''})</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+              {averages.brood_frames !== null && (
+                <div className="bg-blue-50 p-3 rounded">
+                  <div className="text-xs text-blue-600 mb-1">Frames with Brood</div>
+                  <div className="text-lg font-semibold text-blue-900">{averages.brood_frames.toFixed(1)}</div>
+                </div>
+              )}
+              {averages.right_sized_frames !== null && hive.configuration.right_sized_broodbox && (
+                <div className="bg-green-50 p-3 rounded">
+                  <div className="text-xs text-green-600 mb-1">Right-Sized Frames</div>
+                  <div className="text-lg font-semibold text-green-900">{averages.right_sized_frames.toFixed(1)}</div>
+                </div>
+              )}
+              {averages.brood_pattern !== null && (
+                <div className="bg-purple-50 p-3 rounded">
+                  <div className="text-xs text-purple-600 mb-1">Brood Pattern</div>
+                  <div className="text-lg font-semibold text-purple-900">{'⭐'.repeat(Math.round(averages.brood_pattern))}</div>
+                </div>
+              )}
+              {averages.temperament !== null && (
+                <div className="bg-amber-50 p-3 rounded">
+                  <div className="text-xs text-amber-600 mb-1">Temperament</div>
+                  <div className="text-lg font-semibold text-amber-900">{'⭐'.repeat(Math.round(averages.temperament))}</div>
+                </div>
+              )}
+              {averages.population !== null && (
+                <div className="bg-orange-50 p-3 rounded">
+                  <div className="text-xs text-orange-600 mb-1">Population</div>
+                  <div className="text-lg font-semibold text-orange-900">{'⭐'.repeat(Math.round(averages.population))}</div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
