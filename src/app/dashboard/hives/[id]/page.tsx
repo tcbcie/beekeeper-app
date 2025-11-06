@@ -432,7 +432,7 @@ export default function HiveDetailPage() {
                   <div className="text-lg font-semibold text-blue-900">{averages.brood_frames.toFixed(1)}</div>
                 </div>
               )}
-              {averages.right_sized_frames !== null && hive.configuration.right_sized_broodbox && (
+              {averages.right_sized_frames !== null && hive.configuration?.right_sized_broodbox && (
                 <div className="bg-green-50 p-3 rounded">
                   <div className="text-xs text-green-600 mb-1">Right-Sized Frames</div>
                   <div className="text-lg font-semibold text-green-900">{averages.right_sized_frames.toFixed(1)}</div>
