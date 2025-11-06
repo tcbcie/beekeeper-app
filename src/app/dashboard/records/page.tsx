@@ -41,6 +41,7 @@ interface Inspection {
   weight: number | null
   queen_seen: boolean
   eggs_present: boolean
+  drones_present: boolean
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -178,6 +179,7 @@ interface FormData {
   weight: number | null
   queen_seen: boolean
   eggs_present: boolean
+  drones_present: boolean
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -275,6 +277,7 @@ export default function InspectionsPage() {
     weight: null,
     queen_seen: false,
     eggs_present: false,
+    drones_present: false,
     brood_frames: null,
     right_sized_frames: null,
     brood_pattern_rating: 3,
@@ -1184,6 +1187,7 @@ export default function InspectionsPage() {
         weight: formData.weight,
         queen_seen: formData.queen_seen,
         eggs_present: formData.eggs_present,
+        drones_present: formData.drones_present,
         brood_frames: formData.brood_frames,
         right_sized_frames: formData.right_sized_frames,
         brood_pattern_rating: formData.brood_pattern_rating,
@@ -1265,6 +1269,7 @@ export default function InspectionsPage() {
       weight: inspection.weight ?? null,
       queen_seen: inspection.queen_seen || false,
       eggs_present: inspection.eggs_present || false,
+      drones_present: inspection.drones_present || false,
       brood_frames: inspection.brood_frames ?? null,
       right_sized_frames: inspection.right_sized_frames ?? null,
       brood_pattern_rating: inspection.brood_pattern_rating ?? 3,
@@ -1823,7 +1828,7 @@ export default function InspectionsPage() {
             <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
               <h4 className="text-sm font-semibold text-gray-900 mb-4">Queen & Brood</h4>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
                   <input
                     type="checkbox"
@@ -1842,6 +1847,16 @@ export default function InspectionsPage() {
                     className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
                   <span className="text-sm font-medium text-gray-700">Eggs Present</span>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
+                  <input
+                    type="checkbox"
+                    checked={formData.drones_present}
+                    onChange={(e) => setFormData({...formData, drones_present: e.target.checked})}
+                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Drones Present</span>
                 </label>
               </div>
 
@@ -3804,6 +3819,10 @@ export default function InspectionsPage() {
                 <div className="text-center p-3 bg-white rounded shadow-sm">
                   <div className="text-xs text-gray-500 mb-1">Eggs</div>
                   <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Drones</div>
+                  <div className="text-2xl">{inspection.drones_present ? '✅' : '❌'}</div>
                 </div>
                 <div className="text-center p-3 bg-white rounded shadow-sm">
                   <div className="text-xs text-gray-500 mb-1">Brood Frames</div>
