@@ -1158,7 +1158,6 @@ export default function HivesPage() {
                   </Link>
                 ) : hive.queen_marked ? (
                   <span className="flex items-center gap-1">
-                    <span className="font-medium">Queen recorded</span>
                     {hive.queen_marking_color && (
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         hive.queen_marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
@@ -1171,6 +1170,7 @@ export default function HivesPage() {
                         {hive.queen_marking_color}
                       </span>
                     )}
+                    <span className="font-medium">Queen</span>
                   </span>
                 ) : (
                   <span>No details</span>
