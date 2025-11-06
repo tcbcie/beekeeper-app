@@ -116,8 +116,8 @@ export default function HivesPage() {
     queen_clipped: false,
     status: 'active',
     notes: '',
-    colony_established_date: '',
-    queen_installed_date: '',
+    colony_established_date: new Date().toISOString().split('T')[0],
+    queen_installed_date: new Date().toISOString().split('T')[0],
     hive_type: '',
     configuration: {
       brood_boxes: 1, // Legacy field
@@ -564,8 +564,8 @@ export default function HivesPage() {
       queen_clipped: false,
       status: 'active',
       notes: '',
-      colony_established_date: '',
-      queen_installed_date: '',
+      colony_established_date: new Date().toISOString().split('T')[0],
+      queen_installed_date: new Date().toISOString().split('T')[0],
       hive_type: '',
       configuration: {
         brood_boxes: 1, // Legacy field
