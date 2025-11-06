@@ -237,14 +237,19 @@ export default function HivesPage() {
 
       const queensMap = new Map<string, { id: string; queen_number: string; queen_marked?: boolean; queen_marking_color?: string }>()
       if (queenIds.length > 0) {
+        console.log('Fetching queens for IDs:', queenIds)
         const { data: queensData } = await supabase
           .from('queens')
           .select('id, queen_number, queen_marked, queen_marking_color')
           .in('id', queenIds)
 
+        console.log('Queens data received:', queensData)
         queensData?.forEach(queen => {
           queensMap.set(queen.id, queen)
         })
+        console.log('Queens map:', queensMap)
+      } else {
+        console.log('No queen IDs found in hives')
       }
 
       // Batch query for all inspections for these hives
@@ -351,6 +356,9 @@ export default function HivesPage() {
 
         // Get queen data if queen is assigned
         const queenData = hive.queen_id ? queensMap.get(hive.queen_id) : undefined
+        if (hive.queen_id) {
+          console.log(`Hive ${hive.hive_number}: queen_id=${hive.queen_id}, queenData=`, queenData)
+        }
 
         // Get last record for this hive
         const lastRecord = lastRecordByHive.get(hive.id) || null
