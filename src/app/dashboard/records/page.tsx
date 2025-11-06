@@ -42,7 +42,7 @@ interface Inspection {
   queen_seen: boolean
   eggs_present: boolean
   drones_present: number
-  drone_brood_present: boolean
+  drone_brood_present: boolean | null
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -181,7 +181,7 @@ interface FormData {
   queen_seen: boolean
   eggs_present: boolean
   drones_present: number
-  drone_brood_present: boolean
+  drone_brood_present: boolean | null
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -281,7 +281,7 @@ export default function InspectionsPage() {
     queen_seen: false,
     eggs_present: false,
     drones_present: -1,
-    drone_brood_present: false,
+    drone_brood_present: null,
     brood_frames: null,
     right_sized_frames: null,
     brood_pattern_rating: 3,
@@ -1275,7 +1275,7 @@ export default function InspectionsPage() {
       queen_seen: inspection.queen_seen || false,
       eggs_present: inspection.eggs_present || false,
       drones_present: inspection.drones_present ?? -1,
-      drone_brood_present: inspection.drone_brood_present || false,
+      drone_brood_present: inspection.drone_brood_present ?? null,
       brood_frames: inspection.brood_frames ?? null,
       right_sized_frames: inspection.right_sized_frames ?? null,
       brood_pattern_rating: inspection.brood_pattern_rating ?? 3,
@@ -2409,7 +2409,7 @@ export default function InspectionsPage() {
                 onClick={() => setDronesExpanded(!dronesExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-amber-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-gray-900">DRONES</h4>
+                <h4 className="text-sm font-semibold text-gray-900">Drones</h4>
                 {dronesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -2439,17 +2439,17 @@ export default function InspectionsPage() {
                     </div>
                   </div>
 
-                  {/* Drone brood present YES/NO buttons */}
+                  {/* Drone brood present YES/NO buttons with null state */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Drone brood present
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <button
                         type="button"
                         onClick={() => setFormData({...formData, drone_brood_present: true})}
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
-                          formData.drone_brood_present
+                          formData.drone_brood_present === true
                             ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
                             : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                         }`}
@@ -2461,13 +2461,24 @@ export default function InspectionsPage() {
                         type="button"
                         onClick={() => setFormData({...formData, drone_brood_present: false})}
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
-                          !formData.drone_brood_present
+                          formData.drone_brood_present === false
                             ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
                             : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                         }`}
                       >
                         <span className="text-xl">✕</span>
                         <span>NO</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, drone_brood_present: null})}
+                        className={`min-h-[48px] rounded-lg font-medium text-xs transition-all touch-manipulation ${
+                          formData.drone_brood_present === null
+                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        Not Recorded
                       </button>
                     </div>
                   </div>
@@ -3909,25 +3920,28 @@ export default function InspectionsPage() {
               </div>
             </div>
 
-            {/* Drones Section Display */}
-            {inspection.drones_present !== -1 && (
+            {/* Drones Section Display - Only show if any value is recorded */}
+            {(inspection.drones_present !== -1 || inspection.drone_brood_present !== null) && (
             <div className="mb-4 p-4 bg-amber-50 rounded-lg border-2 border-amber-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">DRONES</h4>
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Drones</h4>
               <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Drones present</div>
-                  <div className="text-lg font-bold text-amber-600">
-                    {inspection.drones_present === 0 && 'Low'}
-                    {inspection.drones_present === 1 && 'Medium'}
-                    {inspection.drones_present === 2 && 'High'}
-                    {inspection.drones_present === 3 && 'Extreme'}
-                    {inspection.drones_present === -1 && 'Not recorded'}
+                {inspection.drones_present !== -1 && (
+                  <div className="text-center p-3 bg-white rounded shadow-sm">
+                    <div className="text-xs text-gray-500 mb-1">Drones present</div>
+                    <div className="text-lg font-bold text-amber-600">
+                      {inspection.drones_present === 0 && 'Low'}
+                      {inspection.drones_present === 1 && 'Medium'}
+                      {inspection.drones_present === 2 && 'High'}
+                      {inspection.drones_present === 3 && 'Extreme'}
+                    </div>
                   </div>
-                </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Drone brood present</div>
-                  <div className="text-2xl">{inspection.drone_brood_present ? '✅' : '❌'}</div>
-                </div>
+                )}
+                {inspection.drone_brood_present !== null && (
+                  <div className="text-center p-3 bg-white rounded shadow-sm">
+                    <div className="text-xs text-gray-500 mb-1">Drone brood present</div>
+                    <div className="text-2xl">{inspection.drone_brood_present ? '✅' : '❌'}</div>
+                  </div>
+                )}
               </div>
             </div>
             )}

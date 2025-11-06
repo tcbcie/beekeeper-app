@@ -9,7 +9,7 @@ ALTER TABLE public.inspections
 ADD COLUMN drones_present INTEGER DEFAULT -1 CHECK (drones_present >= -1 AND drones_present <= 3);
 
 ALTER TABLE public.inspections
-ADD COLUMN IF NOT EXISTS drone_brood_present BOOLEAN DEFAULT false;
+ADD COLUMN IF NOT EXISTS drone_brood_present BOOLEAN DEFAULT NULL;
 
 COMMENT ON COLUMN public.inspections.drones_present IS 'Level of drones observed: -1=Not recorded, 0=Low, 1=Medium, 2=High, 3=Extreme';
 COMMENT ON COLUMN public.inspections.drone_brood_present IS 'Whether drone brood was observed during the inspection';
