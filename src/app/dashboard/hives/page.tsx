@@ -58,14 +58,6 @@ interface Hive {
     queen_marked?: boolean
     queen_marking_color?: string
   }
-  averages?: {
-    brood_frames: number | null
-    right_sized_frames: number | null
-    brood_pattern: number | null
-    temperament: number | null
-    population: number | null
-    inspection_count: number
-  }
   queen_last_seen?: string | null
   eggs_last_present?: string | null
   team_name?: string | null
@@ -345,41 +337,9 @@ export default function HivesPage() {
         }
       })
 
-      // Calculate averages and last seen info for each hive
+      // Enrich hives with last seen info for each hive
       const enrichedHives = data.map((hive) => {
         const inspections = inspectionsByHive.get(hive.id) || []
-
-        // Calculate averages
-        let averages = null
-        if (inspections.length > 0) {
-          const broodFrames = inspections.filter(i => i.brood_frames !== null && i.brood_frames > 0).map(i => i.brood_frames!)
-          const rightSizedFrames = inspections.filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0).map(i => i.right_sized_frames!)
-          const broodPatterns = inspections.filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0).map(i => i.brood_pattern_rating!)
-          const temperaments = inspections.filter(i => i.temperament_rating !== null && i.temperament_rating > 0).map(i => i.temperament_rating!)
-          const populations = inspections.filter(i => i.population_strength !== null && i.population_strength > 0).map(i => i.population_strength!)
-
-          const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
-
-          const inspectionsWithData = new Set<string>()
-          inspections.forEach(inspection => {
-            if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
-                (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
-                (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
-                (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
-                (inspection.population_strength !== null && inspection.population_strength > 0)) {
-              inspectionsWithData.add(inspection.inspection_date)
-            }
-          })
-
-          averages = {
-            brood_frames: avg(broodFrames),
-            right_sized_frames: avg(rightSizedFrames),
-            brood_pattern: avg(broodPatterns),
-            temperament: avg(temperaments),
-            population: avg(populations),
-            inspection_count: inspectionsWithData.size,
-          }
-        }
 
         // Find last queen seen and eggs present
         const queenInspection = inspections.find(i => i.queen_seen === true)
@@ -398,7 +358,6 @@ export default function HivesPage() {
         return {
           ...hive,
           queens: queenData,
-          averages,
           queen_last_seen: queenInspection?.inspection_date || null,
           eggs_last_present: eggsInspection?.inspection_date || null,
           team_name: teamData?.name || null,
@@ -1342,49 +1301,6 @@ export default function HivesPage() {
                     <div className="flex items-center gap-1">
                       <span>🚪</span>
                       <span>Entrance reducer</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {hive.averages && (
-              <div className="mb-4 p-3 bg-indigo-50 rounded border border-indigo-200">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-semibold text-indigo-900">Inspection Averages</span>
-                  <span className="text-xs text-indigo-600 font-medium">
-                    {hive.averages.inspection_count} inspection{hive.averages.inspection_count !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <div className="space-y-1 text-xs">
-                  {hive.averages.brood_frames !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Frames with Brood:</span>
-                      <span className="font-semibold text-indigo-700">{hive.averages.brood_frames.toFixed(1)}</span>
-                    </div>
-                  )}
-                  {hive.configuration?.right_sized_broodbox && hive.averages.right_sized_frames !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Right-Sized Frames:</span>
-                      <span className="font-semibold text-amber-700">{hive.averages.right_sized_frames.toFixed(1)}</span>
-                    </div>
-                  )}
-                  {hive.averages.brood_pattern !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Brood Pattern:</span>
-                      <span className="font-semibold text-indigo-700">{'⭐'.repeat(Math.round(hive.averages.brood_pattern))}</span>
-                    </div>
-                  )}
-                  {hive.averages.temperament !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Temperament:</span>
-                      <span className="font-semibold text-indigo-700">{'⭐'.repeat(Math.round(hive.averages.temperament))}</span>
-                    </div>
-                  )}
-                  {hive.averages.population !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Population:</span>
-                      <span className="font-semibold text-indigo-700">{'⭐'.repeat(Math.round(hive.averages.population))}</span>
                     </div>
                   )}
                 </div>
