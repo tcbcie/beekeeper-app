@@ -259,8 +259,9 @@ export default function InspectionsPage() {
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
-  const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
+  const [dronesExpanded, setDronesExpanded] = useState(false)
   const [diseaseExpanded, setDiseaseExpanded] = useState(false)
+  const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
   const [checkMethodOptions, setCheckMethodOptions] = useState<string[]>([])
@@ -279,7 +280,7 @@ export default function InspectionsPage() {
     weight: null,
     queen_seen: false,
     eggs_present: false,
-    drones_present: 0,
+    drones_present: -1,
     drone_brood_present: false,
     brood_frames: null,
     right_sized_frames: null,
@@ -1273,7 +1274,7 @@ export default function InspectionsPage() {
       weight: inspection.weight ?? null,
       queen_seen: inspection.queen_seen || false,
       eggs_present: inspection.eggs_present || false,
-      drones_present: inspection.drones_present ?? 0,
+      drones_present: inspection.drones_present ?? -1,
       drone_brood_present: inspection.drone_brood_present || false,
       brood_frames: inspection.brood_frames ?? null,
       right_sized_frames: inspection.right_sized_frames ?? null,
@@ -1332,8 +1333,9 @@ export default function InspectionsPage() {
     setImageFile(null)
     setImagePreview(null)
     setGivenTakenExpanded(false)
-    setHygienicBehaviourExpanded(false)
+    setDronesExpanded(false)
     setDiseaseExpanded(false)
+    setHygienicBehaviourExpanded(false)
     setFormData({
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
@@ -1926,67 +1928,6 @@ export default function InspectionsPage() {
               )}
             </div>
 
-            {/* Drones Section */}
-            <div className="md:col-span-2 bg-amber-50 p-4 rounded-lg border-2 border-amber-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-4">DRONES</h4>
-
-              {/* Drones present slider */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Drones present
-                </label>
-                <div className="px-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max="3"
-                    value={formData.drones_present}
-                    onChange={(e) => setFormData({...formData, drones_present: parseInt(e.target.value)})}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
-                  />
-                  <div className="flex justify-between text-xs text-gray-600 mt-2">
-                    <span>Low</span>
-                    <span>Medium</span>
-                    <span>High</span>
-                    <span>Extreme</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Drone brood present YES/NO buttons */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Drone brood present
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, drone_brood_present: true})}
-                    className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
-                      formData.drone_brood_present
-                        ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
-                    }`}
-                  >
-                    <span className="text-xl">✓</span>
-                    <span>YES</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, drone_brood_present: false})}
-                    className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
-                      !formData.drone_brood_present
-                        ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
-                    }`}
-                  >
-                    <span className="text-xl">✕</span>
-                    <span>NO</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* Behaviour Section - Grouped */}
             <div className="md:col-span-2 bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
               <h4 className="text-sm font-semibold text-gray-900 mb-4">Behaviour</h4>
@@ -2454,6 +2395,79 @@ export default function InspectionsPage() {
                       >
                         <Plus size={16} className="sm:hidden" />
                         <Plus size={20} className="hidden sm:block" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Drones Section - Collapsible */}
+            <div className="md:col-span-2 bg-amber-50 rounded-lg border-2 border-amber-200">
+              <button
+                type="button"
+                onClick={() => setDronesExpanded(!dronesExpanded)}
+                className="w-full p-4 flex items-center justify-between hover:bg-amber-100 transition-colors rounded-t-lg"
+              >
+                <h4 className="text-sm font-semibold text-gray-900">DRONES</h4>
+                {dronesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+
+              {dronesExpanded && (
+                <div className="p-4 pt-0 space-y-6">
+                  {/* Drones present slider with Not recorded option */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Drones present
+                    </label>
+                    <div className="px-2 mb-4">
+                      <input
+                        type="range"
+                        min="-1"
+                        max="3"
+                        value={formData.drones_present}
+                        onChange={(e) => setFormData({...formData, drones_present: parseInt(e.target.value)})}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                      />
+                      <div className="flex justify-between text-xs text-gray-600 mt-2">
+                        <span>Not recorded</span>
+                        <span>Low</span>
+                        <span>Medium</span>
+                        <span>High</span>
+                        <span>Extreme</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Drone brood present YES/NO buttons */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Drone brood present
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, drone_brood_present: true})}
+                        className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
+                          formData.drone_brood_present
+                            ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        <span className="text-xl">✓</span>
+                        <span>YES</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, drone_brood_present: false})}
+                        className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
+                          !formData.drone_brood_present
+                            ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        }`}
+                      >
+                        <span className="text-xl">✕</span>
+                        <span>NO</span>
                       </button>
                     </div>
                   </div>
@@ -3896,6 +3910,7 @@ export default function InspectionsPage() {
             </div>
 
             {/* Drones Section Display */}
+            {inspection.drones_present !== -1 && (
             <div className="mb-4 p-4 bg-amber-50 rounded-lg border-2 border-amber-200">
               <h4 className="text-sm font-semibold text-gray-900 mb-3">DRONES</h4>
               <div className="grid grid-cols-2 gap-3">
@@ -3906,6 +3921,7 @@ export default function InspectionsPage() {
                     {inspection.drones_present === 1 && 'Medium'}
                     {inspection.drones_present === 2 && 'High'}
                     {inspection.drones_present === 3 && 'Extreme'}
+                    {inspection.drones_present === -1 && 'Not recorded'}
                   </div>
                 </div>
                 <div className="text-center p-3 bg-white rounded shadow-sm">
@@ -3914,6 +3930,7 @@ export default function InspectionsPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Behaviour Section - Grouped Display */}
             <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
