@@ -1178,18 +1178,6 @@ export default function HivesPage() {
                   <span className="font-medium text-amber-700">{hive.hive_type}</span>
                 </div>
               )}
-              {hive.colony_established_date && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">📅</span>
-                  <span className="text-xs">Colony est: {new Date(hive.colony_established_date).toLocaleDateString()}</span>
-                </div>
-              )}
-              {hive.queen_installed_date && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">👑📅</span>
-                  <span className="text-xs">Queen since: {new Date(hive.queen_installed_date).toLocaleDateString()}</span>
-                </div>
-              )}
               {hive.queen_last_seen && (
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">👑👁️</span>
