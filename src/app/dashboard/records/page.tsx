@@ -65,6 +65,21 @@ interface Inspection {
   nosemosis_disease: number
   dwv_disease: number
   iapv_cbpv_disease: number
+  queen_cups: boolean
+  queen_cups_number: number
+  queen_cups_removed_all: boolean
+  swarm_cells: boolean
+  swarm_cells_number: number
+  swarm_cells_removed_all: boolean
+  supercedure_cells: boolean
+  supercedure_cells_number: number
+  supercedure_cells_removed_all: boolean
+  emergency_cells: boolean
+  emergency_cells_number: number
+  emergency_cells_removed_all: boolean
+  removed_cells: number
+  remaining_cells: number
+  queen_cells_notes: string
   notes: string
   image_url: string | null
   weather_temp: number | null
@@ -204,6 +219,21 @@ interface FormData {
   nosemosis_disease: number
   dwv_disease: number
   iapv_cbpv_disease: number
+  queen_cups: boolean
+  queen_cups_number: number
+  queen_cups_removed_all: boolean
+  swarm_cells: boolean
+  swarm_cells_number: number
+  swarm_cells_removed_all: boolean
+  supercedure_cells: boolean
+  supercedure_cells_number: number
+  supercedure_cells_removed_all: boolean
+  emergency_cells: boolean
+  emergency_cells_number: number
+  emergency_cells_removed_all: boolean
+  removed_cells: number
+  remaining_cells: number
+  queen_cells_notes: string
   notes: string
   image_url: string | null
 }
@@ -262,6 +292,7 @@ export default function InspectionsPage() {
   const [dronesExpanded, setDronesExpanded] = useState(false)
   const [diseaseExpanded, setDiseaseExpanded] = useState(false)
   const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
+  const [queenCellsExpanded, setQueenCellsExpanded] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
   const [checkMethodOptions, setCheckMethodOptions] = useState<string[]>([])
@@ -304,6 +335,21 @@ export default function InspectionsPage() {
     nosemosis_disease: 0,
     dwv_disease: 0,
     iapv_cbpv_disease: 0,
+    queen_cups: false,
+    queen_cups_number: 0,
+    queen_cups_removed_all: false,
+    swarm_cells: false,
+    swarm_cells_number: 0,
+    swarm_cells_removed_all: false,
+    supercedure_cells: false,
+    supercedure_cells_number: 0,
+    supercedure_cells_removed_all: false,
+    emergency_cells: false,
+    emergency_cells_number: 0,
+    emergency_cells_removed_all: false,
+    removed_cells: 0,
+    remaining_cells: 0,
+    queen_cells_notes: '',
     notes: '',
     image_url: null,
   })
@@ -1298,6 +1344,21 @@ export default function InspectionsPage() {
       nosemosis_disease: inspection.nosemosis_disease ?? 0,
       dwv_disease: inspection.dwv_disease ?? 0,
       iapv_cbpv_disease: inspection.iapv_cbpv_disease ?? 0,
+      queen_cups: inspection.queen_cups ?? false,
+      queen_cups_number: inspection.queen_cups_number ?? 0,
+      queen_cups_removed_all: inspection.queen_cups_removed_all ?? false,
+      swarm_cells: inspection.swarm_cells ?? false,
+      swarm_cells_number: inspection.swarm_cells_number ?? 0,
+      swarm_cells_removed_all: inspection.swarm_cells_removed_all ?? false,
+      supercedure_cells: inspection.supercedure_cells ?? false,
+      supercedure_cells_number: inspection.supercedure_cells_number ?? 0,
+      supercedure_cells_removed_all: inspection.supercedure_cells_removed_all ?? false,
+      emergency_cells: inspection.emergency_cells ?? false,
+      emergency_cells_number: inspection.emergency_cells_number ?? 0,
+      emergency_cells_removed_all: inspection.emergency_cells_removed_all ?? false,
+      removed_cells: inspection.removed_cells ?? 0,
+      remaining_cells: inspection.remaining_cells ?? 0,
+      queen_cells_notes: inspection.queen_cells_notes || '',
       notes: inspection.notes || '',
       image_url: inspection.image_url || null,
     })
@@ -1336,6 +1397,7 @@ export default function InspectionsPage() {
     setDronesExpanded(false)
     setDiseaseExpanded(false)
     setHygienicBehaviourExpanded(false)
+    setQueenCellsExpanded(false)
     setFormData({
       hive_id: '',
       inspection_date: new Date().toISOString().split('T')[0],
@@ -1343,8 +1405,8 @@ export default function InspectionsPage() {
       weight: null,
       queen_seen: false,
       eggs_present: false,
-      drones_present: 0,
-      drone_brood_present: false,
+      drones_present: -1,
+      drone_brood_present: null,
       brood_frames: null,
       right_sized_frames: null,
       brood_pattern_rating: 3,
@@ -1367,6 +1429,21 @@ export default function InspectionsPage() {
       nosemosis_disease: 0,
       dwv_disease: 0,
       iapv_cbpv_disease: 0,
+      queen_cups: false,
+      queen_cups_number: 0,
+      queen_cups_removed_all: false,
+      swarm_cells: false,
+      swarm_cells_number: 0,
+      swarm_cells_removed_all: false,
+      supercedure_cells: false,
+      supercedure_cells_number: 0,
+      supercedure_cells_removed_all: false,
+      emergency_cells: false,
+      emergency_cells_number: 0,
+      emergency_cells_removed_all: false,
+      removed_cells: 0,
+      remaining_cells: 0,
+      queen_cells_notes: '',
       notes: '',
       image_url: null,
     })
@@ -1893,7 +1970,7 @@ export default function InspectionsPage() {
               </div>
 
               {hives.find(h => h.id === formData.hive_id)?.configuration?.right_sized_broodbox && (
-                <div>
+                <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Right-Sized to How Many Frames {formData.right_sized_frames !== null ? `(${formData.right_sized_frames})` : ''}
                   </label>
@@ -1926,6 +2003,446 @@ export default function InspectionsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Queen Cells Subsection - Collapsible */}
+              <div className="mt-4 bg-purple-100 rounded-lg border-2 border-purple-300">
+                <button
+                  type="button"
+                  onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
+                  className="w-full p-3 flex items-center justify-between hover:bg-purple-200 transition-colors rounded-t-lg"
+                >
+                  <h5 className="text-sm font-semibold text-gray-900">Queen Cells</h5>
+                  {queenCellsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+
+                {queenCellsExpanded && (
+                  <div className="p-4 pt-0 space-y-4">
+                    {/* Queen Cups */}
+                    <div className="bg-white p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-medium text-gray-700">Queen cups</label>
+                        <div className="flex gap-2 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, queen_cups: true})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.queen_cups === true
+                                ? 'bg-green-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✓</span> YES
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, queen_cups: false, queen_cups_number: 0, queen_cups_removed_all: false})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.queen_cups === false
+                                ? 'bg-red-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✕</span> NO
+                          </button>
+                        </div>
+                      </div>
+                      {formData.queen_cups && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, queen_cups_number: Math.max(0, formData.queen_cups_number - 1)})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                value={formData.queen_cups_number}
+                                onChange={(e) => setFormData({...formData, queen_cups_number: parseInt(e.target.value) || 0})}
+                                className="w-20 px-3 py-2 border rounded text-center"
+                                min="0"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, queen_cups_number: formData.queen_cups_number + 1})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, queen_cups_removed_all: true})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.queen_cups_removed_all === true
+                                    ? 'bg-green-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                YES
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, queen_cups_removed_all: false})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.queen_cups_removed_all === false
+                                    ? 'bg-red-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                NO
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Swarm Cells */}
+                    <div className="bg-white p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-medium text-gray-700">Swarm cell</label>
+                        <div className="flex gap-2 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, swarm_cells: true})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.swarm_cells === true
+                                ? 'bg-green-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✓</span> YES
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, swarm_cells: false, swarm_cells_number: 0, swarm_cells_removed_all: false})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.swarm_cells === false
+                                ? 'bg-red-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✕</span> NO
+                          </button>
+                        </div>
+                      </div>
+                      {formData.swarm_cells && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, swarm_cells_number: Math.max(0, formData.swarm_cells_number - 1)})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                value={formData.swarm_cells_number}
+                                onChange={(e) => setFormData({...formData, swarm_cells_number: parseInt(e.target.value) || 0})}
+                                className="w-20 px-3 py-2 border rounded text-center"
+                                min="0"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, swarm_cells_number: formData.swarm_cells_number + 1})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, swarm_cells_removed_all: true})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.swarm_cells_removed_all === true
+                                    ? 'bg-green-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                YES
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, swarm_cells_removed_all: false})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.swarm_cells_removed_all === false
+                                    ? 'bg-red-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                NO
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Supercedure Cells */}
+                    <div className="bg-white p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-medium text-gray-700">Supercedure cell</label>
+                        <div className="flex gap-2 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, supercedure_cells: true})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.supercedure_cells === true
+                                ? 'bg-green-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✓</span> YES
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, supercedure_cells: false, supercedure_cells_number: 0, supercedure_cells_removed_all: false})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.supercedure_cells === false
+                                ? 'bg-red-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✕</span> NO
+                          </button>
+                        </div>
+                      </div>
+                      {formData.supercedure_cells && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, supercedure_cells_number: Math.max(0, formData.supercedure_cells_number - 1)})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                value={formData.supercedure_cells_number}
+                                onChange={(e) => setFormData({...formData, supercedure_cells_number: parseInt(e.target.value) || 0})}
+                                className="w-20 px-3 py-2 border rounded text-center"
+                                min="0"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, supercedure_cells_number: formData.supercedure_cells_number + 1})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, supercedure_cells_removed_all: true})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.supercedure_cells_removed_all === true
+                                    ? 'bg-green-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                YES
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, supercedure_cells_removed_all: false})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.supercedure_cells_removed_all === false
+                                    ? 'bg-red-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                NO
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Emergency Cells */}
+                    <div className="bg-white p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-medium text-gray-700">Emergency cell</label>
+                        <div className="flex gap-2 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, emergency_cells: true})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.emergency_cells === true
+                                ? 'bg-green-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✓</span> YES
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, emergency_cells: false, emergency_cells_number: 0, emergency_cells_removed_all: false})}
+                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                              formData.emergency_cells === false
+                                ? 'bg-red-600 text-white shadow-lg'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>✕</span> NO
+                          </button>
+                        </div>
+                      </div>
+                      {formData.emergency_cells && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, emergency_cells_number: Math.max(0, formData.emergency_cells_number - 1)})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                value={formData.emergency_cells_number}
+                                onChange={(e) => setFormData({...formData, emergency_cells_number: parseInt(e.target.value) || 0})}
+                                className="w-20 px-3 py-2 border rounded text-center"
+                                min="0"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, emergency_cells_number: formData.emergency_cells_number + 1})}
+                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, emergency_cells_removed_all: true})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.emergency_cells_removed_all === true
+                                    ? 'bg-green-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                YES
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, emergency_cells_removed_all: false})}
+                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
+                                  formData.emergency_cells_removed_all === false
+                                    ? 'bg-red-600 text-white shadow-lg'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                NO
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Removed cells and Remaining cells */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-2">Removed cells</label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, removed_cells: Math.max(0, formData.removed_cells - 1)})}
+                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            value={formData.removed_cells}
+                            onChange={(e) => setFormData({...formData, removed_cells: parseInt(e.target.value) || 0})}
+                            className="w-16 px-2 py-2 border rounded text-center"
+                            min="0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, removed_cells: formData.removed_cells + 1})}
+                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-2">Remaining cells</label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, remaining_cells: Math.max(0, formData.remaining_cells - 1)})}
+                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            value={formData.remaining_cells}
+                            onChange={(e) => setFormData({...formData, remaining_cells: parseInt(e.target.value) || 0})}
+                            className="w-16 px-2 py-2 border rounded text-center"
+                            min="0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData({...formData, remaining_cells: formData.remaining_cells + 1})}
+                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Note field */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">Note</label>
+                      <textarea
+                        value={formData.queen_cells_notes}
+                        onChange={(e) => setFormData({...formData, queen_cells_notes: e.target.value})}
+                        rows={2}
+                        maxLength={2500}
+                        placeholder="Additional notes about queen cells..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      />
+                      <div className="text-right text-xs text-gray-500 mt-1">
+                        {formData.queen_cells_notes.length} / 2500
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Behaviour Section - Grouped */}
