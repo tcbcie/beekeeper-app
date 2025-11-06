@@ -55,8 +55,6 @@ interface Hive {
   queens?: {
     id: string
     queen_number: string
-    queen_marked?: boolean
-    queen_marking_color?: string
   }
   queen_last_seen?: string | null
   eggs_last_present?: string | null
@@ -235,27 +233,16 @@ export default function HivesPage() {
           .filter((id): id is string => id !== null)
       )]
 
-      const queensMap = new Map<string, { id: string; queen_number: string; queen_marked?: boolean; queen_marking_color?: string }>()
+      const queensMap = new Map<string, { id: string; queen_number: string }>()
       if (queenIds.length > 0) {
-        console.log('Fetching queens for IDs:', queenIds)
-        const { data: queensData, error: queensError } = await supabase
+        const { data: queensData } = await supabase
           .from('queens')
-          .select('id, queen_number, queen_marked, queen_marking_color')
+          .select('id, queen_number')
           .in('id', queenIds)
 
-        if (queensError) {
-          console.error('Error fetching queens:', queensError)
-        } else {
-          console.log('Queens data received:', queensData)
-          console.log('Number of queens found:', queensData?.length || 0)
-          queensData?.forEach(queen => {
-            console.log('Adding queen to map:', queen.id, queen)
-            queensMap.set(queen.id, queen)
-          })
-          console.log('Queens map size:', queensMap.size)
-        }
-      } else {
-        console.log('No queen IDs found in hives')
+        queensData?.forEach(queen => {
+          queensMap.set(queen.id, queen)
+        })
       }
 
       // Batch query for all inspections for these hives
@@ -362,9 +349,6 @@ export default function HivesPage() {
 
         // Get queen data if queen is assigned
         const queenData = hive.queen_id ? queensMap.get(hive.queen_id) : undefined
-        if (hive.queen_id) {
-          console.log(`Hive ${hive.hive_number}: queen_id=${hive.queen_id}, queenData=`, queenData)
-        }
 
         // Get last record for this hive
         const lastRecord = lastRecordByHive.get(hive.id) || null
@@ -1206,18 +1190,6 @@ export default function HivesPage() {
                 <span className="text-gray-500">👑</span>
                 {hive.queens?.id ? (
                   <span className="flex items-center gap-1">
-                    {hive.queens.queen_marking_color && (
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        hive.queens.queen_marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
-                        hive.queens.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
-                        hive.queens.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
-                        hive.queens.queen_marking_color === 'Green' ? 'bg-green-200 text-green-900' :
-                        hive.queens.queen_marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
-                        'bg-gray-200 text-gray-800'
-                      }`}>
-                        {hive.queens.queen_marking_color}
-                      </span>
-                    )}
                     <span className="font-medium">Queen</span>
                     <Link
                       href={`/dashboard/queens?id=${hive.queens.id}`}
