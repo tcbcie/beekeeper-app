@@ -14,6 +14,7 @@
 DO $$
 DECLARE
   hive_record RECORD;
+  new_colony_id UUID;
   colony_count INTEGER := 0;
 BEGIN
   RAISE NOTICE 'Starting colony migration...';
@@ -51,14 +52,12 @@ BEGIN
       hive_record.created_at
     )
     ON CONFLICT (colony_number) DO NOTHING  -- Skip if colony number already exists
-    RETURNING id INTO hive_record;
+    RETURNING id INTO new_colony_id;
 
     -- If insert succeeded, update the hive with the new colony_id
     IF FOUND THEN
       UPDATE hives
-      SET colony_id = (
-        SELECT id FROM colonies WHERE colony_number = 'COL-' || hive_record.hive_number
-      )
+      SET colony_id = new_colony_id
       WHERE id = hive_record.hive_id;
 
       colony_count := colony_count + 1;
