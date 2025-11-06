@@ -1173,7 +1173,7 @@ export default function HivesPage() {
                     )}
                   </span>
                 ) : (
-                  <span>No queen</span>
+                  <span>No details</span>
                 )}
               </div>
               {hive.hive_type && (
