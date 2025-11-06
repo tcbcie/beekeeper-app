@@ -56,7 +56,7 @@ export default function TasksEventsPage() {
   // Filter states
   const [filterType, setFilterType] = useState<string>('all')
   const [filterCategory, setFilterCategory] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('active')
   const [filterHive, setFilterHive] = useState<string>('all')
   const [filterApiary, setFilterApiary] = useState<string>('all')
 
