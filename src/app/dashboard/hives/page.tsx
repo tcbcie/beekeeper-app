@@ -1193,24 +1193,6 @@ export default function HivesPage() {
                   <span>No details</span>
                 )}
               </div>
-              {hive.hive_type && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">🏷️</span>
-                  <span className="font-medium text-amber-700">{hive.hive_type}</span>
-                </div>
-              )}
-              {hive.queen_last_seen && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">👑👁️</span>
-                  <span className="text-xs text-green-700 font-medium">Last seen: {new Date(hive.queen_last_seen).toLocaleDateString()}</span>
-                </div>
-              )}
-              {hive.eggs_last_present && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">🥚</span>
-                  <span className="text-xs text-blue-700 font-medium">Eggs: {new Date(hive.eggs_last_present).toLocaleDateString()}</span>
-                </div>
-              )}
               {hive.notes && (
                 <div className="mt-3 p-2 bg-gray-50 rounded text-gray-700 text-xs">
                   {hive.notes}
