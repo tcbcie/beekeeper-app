@@ -339,7 +339,44 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.19</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.20</span>
+                November 6, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Unified Events System:</strong> Implemented automatic synchronization of queen rearing events to tasks_events table - all events now managed from single Tasks & Events page with full edit capabilities</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Database Triggers:</strong> Created triggers to automatically create/update/delete events when batch dates change - acceptance checks, cage dates, and emergence dates sync instantly</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Tasks & Events Page:</strong> Complete task and event management system with create, edit, delete, and completion tracking - supports tasks, events, and reminders with priority levels and categories</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Advanced Filtering:</strong> Filter events by type, category, status, hive, and apiary - batch events fully editable with ability to change dates, add notes, and set reminders</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Dashboard Integration:</strong> Upcoming Events widget now shows all events from tasks_events table - displays next 7 days with priority color coding and smart sorting</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Event Associations:</strong> Link events to specific hives, apiaries, or queen batches - queen rearing events automatically associated with their batch</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">🔧</span>
+                  <span><strong>Migration Tools:</strong> Complete database migration scripts with verification queries and comprehensive documentation for upgrading existing installations</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded font-semibold">v1.0.19</span>
                 November 4, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
@@ -350,6 +387,14 @@ export default function AboutPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
                   <span><strong>Branding Update:</strong> Changed application name from &quot;Hive Craic&quot; (two words) to &quot;HiveCraic&quot; (one word) throughout the application including page titles, navbar, and all user-facing text</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Negative Values Support:</strong> Allow negative values in Given/Taken section fields during inspections to record items taken from hives</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Hygienic Behaviour Defaults:</strong> Changed default values from &quot;Moderate&quot; to &quot;Not Recorded&quot; for all hygienic behaviour metrics to prevent unintentional data entry</span>
                 </li>
               </ul>
             </div>
