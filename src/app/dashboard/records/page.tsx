@@ -41,7 +41,8 @@ interface Inspection {
   weight: number | null
   queen_seen: boolean
   eggs_present: boolean
-  drones_present: boolean
+  drones_present: number
+  drone_brood_present: boolean
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -179,7 +180,8 @@ interface FormData {
   weight: number | null
   queen_seen: boolean
   eggs_present: boolean
-  drones_present: boolean
+  drones_present: number
+  drone_brood_present: boolean
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -277,7 +279,8 @@ export default function InspectionsPage() {
     weight: null,
     queen_seen: false,
     eggs_present: false,
-    drones_present: false,
+    drones_present: 0,
+    drone_brood_present: false,
     brood_frames: null,
     right_sized_frames: null,
     brood_pattern_rating: 3,
@@ -1188,6 +1191,7 @@ export default function InspectionsPage() {
         queen_seen: formData.queen_seen,
         eggs_present: formData.eggs_present,
         drones_present: formData.drones_present,
+        drone_brood_present: formData.drone_brood_present,
         brood_frames: formData.brood_frames,
         right_sized_frames: formData.right_sized_frames,
         brood_pattern_rating: formData.brood_pattern_rating,
@@ -1269,7 +1273,8 @@ export default function InspectionsPage() {
       weight: inspection.weight ?? null,
       queen_seen: inspection.queen_seen || false,
       eggs_present: inspection.eggs_present || false,
-      drones_present: inspection.drones_present || false,
+      drones_present: inspection.drones_present ?? 0,
+      drone_brood_present: inspection.drone_brood_present || false,
       brood_frames: inspection.brood_frames ?? null,
       right_sized_frames: inspection.right_sized_frames ?? null,
       brood_pattern_rating: inspection.brood_pattern_rating ?? 3,
@@ -1829,7 +1834,7 @@ export default function InspectionsPage() {
             <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
               <h4 className="text-sm font-semibold text-gray-900 mb-4">Queen & Brood</h4>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
                   <input
                     type="checkbox"
@@ -1848,16 +1853,6 @@ export default function InspectionsPage() {
                     className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
                   <span className="text-sm font-medium text-gray-700">Eggs Present</span>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
-                  <input
-                    type="checkbox"
-                    checked={formData.drones_present}
-                    onChange={(e) => setFormData({...formData, drones_present: e.target.checked})}
-                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Drones Present</span>
                 </label>
               </div>
 
@@ -1928,6 +1923,67 @@ export default function InspectionsPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Drones Section */}
+            <div className="md:col-span-2 bg-amber-50 p-4 rounded-lg border-2 border-amber-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-4">DRONES</h4>
+
+              {/* Drones present slider */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Drones present
+                </label>
+                <div className="px-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="3"
+                    value={formData.drones_present}
+                    onChange={(e) => setFormData({...formData, drones_present: parseInt(e.target.value)})}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                  />
+                  <div className="flex justify-between text-xs text-gray-600 mt-2">
+                    <span>Low</span>
+                    <span>Medium</span>
+                    <span>High</span>
+                    <span>Extreme</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Drone brood present YES/NO buttons */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Drone brood present
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, drone_brood_present: true})}
+                    className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
+                      formData.drone_brood_present
+                        ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    <span className="text-xl">✓</span>
+                    <span>YES</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, drone_brood_present: false})}
+                    className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
+                      !formData.drone_brood_present
+                        ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                    }`}
+                  >
+                    <span className="text-xl">✕</span>
+                    <span>NO</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Behaviour Section - Grouped */}
@@ -3822,10 +3878,6 @@ export default function InspectionsPage() {
                   <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
                 </div>
                 <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Drones</div>
-                  <div className="text-2xl">{inspection.drones_present ? '✅' : '❌'}</div>
-                </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
                   <div className="text-xs text-gray-500 mb-1">Brood Frames</div>
                   <div className="text-2xl font-bold text-purple-600">
                     {inspection.brood_frames ?? '-'}
@@ -3839,6 +3891,26 @@ export default function InspectionsPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Drones Section Display */}
+            <div className="mb-4 p-4 bg-amber-50 rounded-lg border-2 border-amber-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">DRONES</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Drones present</div>
+                  <div className="text-lg font-bold text-amber-600">
+                    {inspection.drones_present === 0 && 'Low'}
+                    {inspection.drones_present === 1 && 'Medium'}
+                    {inspection.drones_present === 2 && 'High'}
+                    {inspection.drones_present === 3 && 'Extreme'}
+                  </div>
+                </div>
+                <div className="text-center p-3 bg-white rounded shadow-sm">
+                  <div className="text-xs text-gray-500 mb-1">Drone brood present</div>
+                  <div className="text-2xl">{inspection.drone_brood_present ? '✅' : '❌'}</div>
+                </div>
               </div>
             </div>
 
