@@ -70,6 +70,10 @@ interface Hive {
   eggs_last_present?: string | null
   team_name?: string | null
   is_shared?: boolean
+  last_record?: {
+    date: string
+    type: string
+  } | null
 }
 
 interface FormData {
@@ -268,6 +272,79 @@ export default function HivesPage() {
         inspectionsByHive.get(inspection.hive_id)!.push(inspection)
       })
 
+      // Batch query for last record of each type for these hives
+      const [
+        { data: lastInspections },
+        { data: lastTreatments },
+        { data: lastChecks },
+        { data: lastFeedings },
+        { data: lastHarvests }
+      ] = await Promise.all([
+        supabase
+          .from('inspections')
+          .select('hive_id, inspection_date')
+          .in('hive_id', hiveIds)
+          .eq('user_id', currentUserId)
+          .order('inspection_date', { ascending: false })
+          .limit(hiveIds.length),
+        supabase
+          .from('varroa_treatments')
+          .select('hive_id, treatment_date')
+          .in('hive_id', hiveIds)
+          .eq('user_id', currentUserId)
+          .order('treatment_date', { ascending: false })
+          .limit(hiveIds.length),
+        supabase
+          .from('varroa_checks')
+          .select('hive_id, check_date')
+          .in('hive_id', hiveIds)
+          .eq('user_id', currentUserId)
+          .order('check_date', { ascending: false })
+          .limit(hiveIds.length),
+        supabase
+          .from('feedings')
+          .select('hive_id, feed_date')
+          .in('hive_id', hiveIds)
+          .eq('user_id', currentUserId)
+          .order('feed_date', { ascending: false })
+          .limit(hiveIds.length),
+        supabase
+          .from('harvests')
+          .select('hive_id, harvest_date')
+          .in('hive_id', hiveIds)
+          .eq('user_id', currentUserId)
+          .order('harvest_date', { ascending: false })
+          .limit(hiveIds.length)
+      ])
+
+      // Build map of most recent record for each hive
+      const lastRecordByHive = new Map<string, { date: string; type: string }>()
+
+      hiveIds.forEach(hiveId => {
+        const records: Array<{ date: string; type: string }> = []
+
+        const inspection = lastInspections?.find(i => i.hive_id === hiveId)
+        if (inspection) records.push({ date: inspection.inspection_date, type: 'Inspection' })
+
+        const treatment = lastTreatments?.find(t => t.hive_id === hiveId)
+        if (treatment) records.push({ date: treatment.treatment_date, type: 'Varroa Treatment' })
+
+        const check = lastChecks?.find(c => c.hive_id === hiveId)
+        if (check) records.push({ date: check.check_date, type: 'Varroa Check' })
+
+        const feeding = lastFeedings?.find(f => f.hive_id === hiveId)
+        if (feeding) records.push({ date: feeding.feed_date, type: 'Feeding' })
+
+        const harvest = lastHarvests?.find(h => h.hive_id === hiveId)
+        if (harvest) records.push({ date: harvest.harvest_date, type: 'Harvest' })
+
+        // Find the most recent record
+        if (records.length > 0) {
+          records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          lastRecordByHive.set(hiveId, records[0])
+        }
+      })
+
       // Calculate averages and last seen info for each hive
       const enrichedHives = data.map((hive) => {
         const inspections = inspectionsByHive.get(hive.id) || []
@@ -315,6 +392,9 @@ export default function HivesPage() {
         // Get queen data if queen is assigned
         const queenData = hive.queen_id ? queensMap.get(hive.queen_id) : undefined
 
+        // Get last record for this hive
+        const lastRecord = lastRecordByHive.get(hive.id) || null
+
         return {
           ...hive,
           queens: queenData,
@@ -323,6 +403,7 @@ export default function HivesPage() {
           eggs_last_present: eggsInspection?.inspection_date || null,
           team_name: teamData?.name || null,
           is_shared: isShared,
+          last_record: lastRecord,
         }
       })
 
@@ -1193,6 +1274,15 @@ export default function HivesPage() {
                   <span>No details</span>
                 )}
               </div>
+              {hive.last_record && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">📋</span>
+                  <span className="text-xs">
+                    <span className="font-medium text-gray-700">{hive.last_record.type}</span>
+                    <span className="text-gray-500"> • {new Date(hive.last_record.date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                  </span>
+                </div>
+              )}
               {hive.notes && (
                 <div className="mt-3 p-2 bg-gray-50 rounded text-gray-700 text-xs">
                   {hive.notes}
