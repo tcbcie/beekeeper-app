@@ -1336,6 +1336,7 @@ export default function InspectionsPage() {
       weight: null,
       queen_seen: false,
       eggs_present: false,
+      drones_present: false,
       brood_frames: null,
       right_sized_frames: null,
       brood_pattern_rating: 3,
