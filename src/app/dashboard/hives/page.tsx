@@ -1243,18 +1243,6 @@ export default function HivesPage() {
                   <span>No details</span>
                 )}
               </div>
-              {hive.colonies && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">🧬</span>
-                  <span className="flex items-center gap-1">
-                    <span className="font-medium">Colony</span>
-                    <span className="text-blue-600">{hive.colonies.colony_number}</span>
-                    <span className="text-xs text-gray-500">
-                      ({hive.colonies.origin_type.replace('_', ' ')})
-                    </span>
-                  </span>
-                </div>
-              )}
               {hive.last_record && (
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">📋</span>

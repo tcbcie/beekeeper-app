@@ -35,6 +35,8 @@ interface Hive {
   queen_installed_date: string | null
   hive_type: string | null
   configuration: HiveConfiguration | null
+  queen_last_seen?: string | null
+  eggs_last_present?: string | null
   apiaries?: {
     name: string
   }
@@ -193,6 +195,16 @@ export default function HiveDetailPage() {
       setVarroaTreatments(varroaTreatmentsData || [])
       setFeedings(feedingsData || [])
       setHarvests(harvestsData || [])
+
+      // Calculate queen last seen and eggs last present
+      if (inspectionsData && inspectionsData.length > 0) {
+        const queenSeenInspection = inspectionsData.find(i => i.queen_seen === true)
+        const eggsSeenInspection = inspectionsData.find(i => i.eggs_present === true)
+
+        hiveData.queen_last_seen = queenSeenInspection?.inspection_date || null
+        hiveData.eggs_last_present = eggsSeenInspection?.inspection_date || null
+        setHive(hiveData)
+      }
 
       // Calculate inspection averages
       if (inspectionsData && inspectionsData.length > 0) {
@@ -355,64 +367,21 @@ export default function HiveDetailPage() {
                 <span className="text-gray-600">Queen Clipped:</span>
                 <span className="font-medium">{hive.queen_clipped ? 'Yes' : 'No'}</span>
               </div>
+              {hive.queen_last_seen && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Queen Last Seen:</span>
+                  <span className="font-medium">{new Date(hive.queen_last_seen).toLocaleDateString()}</span>
+                </div>
+              )}
+              {hive.eggs_last_present && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Eggs Last Present:</span>
+                  <span className="font-medium">{new Date(hive.eggs_last_present).toLocaleDateString()}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
-
-        {hive.configuration && (
-          <div className="mt-6">
-            <h3 className="font-semibold text-gray-700 mb-3">Hive Configuration</h3>
-            <div className="flex justify-center">
-              <div className="flex flex-col items-center gap-1 w-48">
-                {/* Honey Supers */}
-                {Array.from({ length: hive.configuration.honey_supers || 0 }).map((_, i) => (
-                  <div key={`super-${i}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-center text-xs font-semibold">
-                    🍯 Super {i + 1}
-                  </div>
-                ))}
-
-                {/* Queen Excluder */}
-                {hive.configuration.queen_excluder && (
-                  <div className="w-full h-3 bg-gray-400 border-2 border-gray-600 rounded flex items-center justify-center text-xs font-bold">
-                    ═══
-                  </div>
-                )}
-
-                {/* Half-Size Brood Boxes */}
-                {Array.from({ length: hive.configuration.brood_boxes_half || 0 }).map((_, i) => (
-                  <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-xs font-semibold">
-                    🐝 Brood Half {i + 1}
-                  </div>
-                ))}
-
-                {/* Full-Size Brood Boxes */}
-                {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
-                  <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold">
-                    🐝 Brood Full {i + 1}
-                  </div>
-                ))}
-
-                {/* Varroa Mesh Floor */}
-                <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-gray-200' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
-                  {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
-              {hive.configuration.feeder_type && (
-                <div className="bg-amber-50 p-2 rounded text-center">
-                  <span className="text-amber-800 font-medium capitalize">{hive.configuration.feeder_type} Feeder</span>
-                </div>
-              )}
-              {hive.configuration.entrance_reducer && (
-                <div className="bg-amber-50 p-2 rounded text-center">
-                  <span className="text-amber-800 font-medium">Entrance Reducer</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {hive.notes && (
           <div className="mt-6">
