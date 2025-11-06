@@ -55,6 +55,8 @@ interface Hive {
   queens?: {
     id: string
     queen_number: string
+    queen_marked?: boolean
+    queen_marking_color?: string
   }
   averages?: {
     brood_frames: number | null
@@ -237,11 +239,11 @@ export default function HivesPage() {
           .filter((id): id is string => id !== null)
       )]
 
-      const queensMap = new Map<string, { id: string; queen_number: string }>()
+      const queensMap = new Map<string, { id: string; queen_number: string; queen_marked?: boolean; queen_marking_color?: string }>()
       if (queenIds.length > 0) {
         const { data: queensData } = await supabase
           .from('queens')
-          .select('id, queen_number')
+          .select('id, queen_number, queen_marked, queen_marking_color')
           .in('id', queenIds)
 
         queensData?.forEach(queen => {
@@ -1149,13 +1151,28 @@ export default function HivesPage() {
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">👑</span>
                 {hive.queens?.id ? (
-                  <Link
-                    href={`/dashboard/queens?id=${hive.queens.id}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
-                  >
-                    {hive.queens.queen_number}
-                    <ExternalLink size={12} />
-                  </Link>
+                  <span className="flex items-center gap-1">
+                    {hive.queens.queen_marked && hive.queens.queen_marking_color && (
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        hive.queens.queen_marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
+                        hive.queens.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
+                        hive.queens.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
+                        hive.queens.queen_marking_color === 'Green' ? 'bg-green-200 text-green-900' :
+                        hive.queens.queen_marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
+                        'bg-gray-200 text-gray-800'
+                      }`}>
+                        {hive.queens.queen_marking_color}
+                      </span>
+                    )}
+                    <span className="font-medium">Queen</span>
+                    <Link
+                      href={`/dashboard/queens?id=${hive.queens.id}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                    >
+                      {hive.queens.queen_number}
+                      <ExternalLink size={12} />
+                    </Link>
+                  </span>
                 ) : hive.queen_marked ? (
                   <span className="flex items-center gap-1">
                     {hive.queen_marking_color && (
