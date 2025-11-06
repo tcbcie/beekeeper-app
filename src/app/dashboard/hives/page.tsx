@@ -55,6 +55,7 @@ interface Hive {
   queens?: {
     id: string
     queen_number: string
+    marking_color?: string
   }
   queen_last_seen?: string | null
   eggs_last_present?: string | null
@@ -233,11 +234,11 @@ export default function HivesPage() {
           .filter((id): id is string => id !== null)
       )]
 
-      const queensMap = new Map<string, { id: string; queen_number: string }>()
+      const queensMap = new Map<string, { id: string; queen_number: string; marking_color?: string }>()
       if (queenIds.length > 0) {
         const { data: queensData } = await supabase
           .from('queens')
-          .select('id, queen_number')
+          .select('id, queen_number, marking_color')
           .in('id', queenIds)
 
         queensData?.forEach(queen => {
@@ -1190,6 +1191,18 @@ export default function HivesPage() {
                 <span className="text-gray-500">👑</span>
                 {hive.queens?.id ? (
                   <span className="flex items-center gap-1">
+                    {hive.queens.marking_color && (
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        hive.queens.marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
+                        hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
+                        hive.queens.marking_color === 'Red' ? 'bg-red-200 text-red-900' :
+                        hive.queens.marking_color === 'Green' ? 'bg-green-200 text-green-900' :
+                        hive.queens.marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
+                        'bg-gray-200 text-gray-800'
+                      }`}>
+                        {hive.queens.marking_color}
+                      </span>
+                    )}
                     <span className="font-medium">Queen</span>
                     <Link
                       href={`/dashboard/queens?id=${hive.queens.id}`}
