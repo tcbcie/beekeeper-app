@@ -36,6 +36,20 @@ interface UserProfile {
   first_name?: string
   last_name?: string
   mobile_number?: string
+  is_active?: boolean
+}
+
+interface RegistrationCode {
+  id: string
+  code: string
+  description: string | null
+  created_by: string | null
+  created_at: string
+  expires_at: string
+  is_active: boolean
+  max_uses: number | null
+  current_uses: number
+  updated_at: string
 }
 
 interface SupportTicket {
@@ -88,7 +102,7 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'users' | 'tickets' | 'treatments' | 'dropdowns'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'users' | 'tickets' | 'treatments' | 'dropdowns' | 'registration'>('profile')
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
@@ -114,6 +128,17 @@ export default function SettingsPage() {
   const [loadingVarroaTreatments, setLoadingVarroaTreatments] = useState(false)
   const [editingVarroaTreatment, setEditingVarroaTreatment] = useState<VarroaTreatment | null>(null)
   const [showAddVarroaTreatment, setShowAddVarroaTreatment] = useState(false)
+
+  // Registration Codes state
+  const [registrationCodes, setRegistrationCodes] = useState<RegistrationCode[]>([])
+  const [loadingCodes, setLoadingCodes] = useState(false)
+  const [showAddCodeModal, setShowAddCodeModal] = useState(false)
+  const [newCodeData, setNewCodeData] = useState({
+    code: '',
+    description: '',
+    expires_at: '',
+    max_uses: '',
+  })
 
   const [categoryFormData, setCategoryFormData] = useState({
     category_name: '',
