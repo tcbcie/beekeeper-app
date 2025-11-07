@@ -144,7 +144,7 @@ export default function HivesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // First, get list of shared apiary IDs for this user (apiaries shared WITH teams they're in)
+    // Fetch team memberships first
     const { data: teamMemberships } = await supabase
       .from('team_members')
       .select('team_id')
@@ -152,6 +152,7 @@ export default function HivesPage() {
 
     const teamIds = teamMemberships?.map(tm => tm.team_id) || []
 
+    // Fetch shared apiaries if user is in any teams
     let sharedApiaryIds: string[] = []
     if (teamIds.length > 0) {
       const { data: sharedApiaries } = await supabase
@@ -167,8 +168,7 @@ export default function HivesPage() {
       .from('hives')
       .select(`
         *,
-        apiaries(name),
-        colonies(id, colony_number, origin_type, origin_date, status)
+        apiaries(name)
       `)
 
     // Apply ownership filter

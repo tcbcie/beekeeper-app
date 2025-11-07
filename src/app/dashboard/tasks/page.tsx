@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter } from 'lucide-react'
 
@@ -31,6 +32,7 @@ interface TaskEvent {
 interface Hive {
   id: string
   hive_number: string
+  apiary_id: string | null
 }
 
 interface Apiary {
@@ -44,6 +46,7 @@ interface Batch {
 }
 
 export default function TasksEventsPage() {
+  const searchParams = useSearchParams()
   const [userId, setUserId] = useState<string>('')
   const [tasks, setTasks] = useState<TaskEvent[]>([])
   const [hives, setHives] = useState<Hive[]>([])
@@ -114,12 +117,12 @@ export default function TasksEventsPage() {
     if (!userId) return
 
     const [hivesRes, apiariesRes, batchesRes] = await Promise.all([
-      supabase.from('hives').select('id, hive_number').eq('user_id', userId).order('hive_number'),
+      supabase.from('hives').select('id, hive_number, apiary_id').eq('user_id', userId).order('hive_number'),
       supabase.from('apiaries').select('id, name').eq('user_id', userId).order('name'),
       supabase.from('rearing_batches').select('id, batch_name').eq('user_id', userId).order('batch_name')
     ])
 
-    if (hivesRes.data) setHives(hivesRes.data)
+    if (hivesRes.data) setHives(hivesRes.data as Hive[])
     if (apiariesRes.data) setApiaries(apiariesRes.data)
     if (batchesRes.data) setBatches(batchesRes.data)
   }, [userId])
@@ -130,6 +133,31 @@ export default function TasksEventsPage() {
       fetchAssociations()
     }
   }, [userId, fetchTasks, fetchAssociations])
+
+  // Handle URL parameters for opening form with pre-filled hive
+  useEffect(() => {
+    const create = searchParams.get('create')
+    const hiveId = searchParams.get('hive')
+
+    if (hiveId && hives.length > 0) {
+      // Find the hive to get its apiary_id
+      const selectedHive = hives.find(h => h.id === hiveId)
+
+      // Set filter to the specific hive
+      setFilterHive(hiveId)
+
+      // If create=true, open form with pre-filled hive and apiary
+      if (create === 'true' && selectedHive) {
+        setFormData(prev => ({
+          ...prev,
+          hive_id: hiveId,
+          apiary_id: selectedHive.apiary_id || '',
+          start_date: new Date().toISOString().split('T')[0] // Set today's date
+        }))
+        setShowForm(true)
+      }
+    }
+  }, [searchParams, hives])
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -691,12 +719,20 @@ export default function TasksEventsPage() {
               </div>
 
               {/* Associations */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Hive</label>
                   <select
                     value={formData.hive_id}
-                    onChange={(e) => setFormData({ ...formData, hive_id: e.target.value })}
+                    onChange={(e) => {
+                      const selectedHiveId = e.target.value
+                      const selectedHive = hives.find(h => h.id === selectedHiveId)
+                      setFormData({
+                        ...formData,
+                        hive_id: selectedHiveId,
+                        apiary_id: selectedHive?.apiary_id || ''
+                      })
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">None</option>
@@ -716,20 +752,6 @@ export default function TasksEventsPage() {
                     <option value="">None</option>
                     {apiaries.map(apiary => (
                       <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch</label>
-                  <select
-                    value={formData.batch_id}
-                    onChange={(e) => setFormData({ ...formData, batch_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">None</option>
-                    {batches.map(batch => (
-                      <option key={batch.id} value={batch.id}>{batch.batch_name}</option>
                     ))}
                   </select>
                 </div>
