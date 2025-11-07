@@ -2238,9 +2238,6 @@ export default function SettingsPage() {
                       Subscription Duration
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Code Expires
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Usage
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2253,8 +2250,6 @@ export default function SettingsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {registrationCodes.map((code) => {
-                    const expiryDate = new Date(code.expires_at)
-                    const isExpired = expiryDate < new Date() && expiryDate.getFullYear() <= new Date().getFullYear() + 50
                     const isMaxedOut = code.max_uses !== null && code.current_uses >= code.max_uses
                     return (
                       <tr key={code.id} className="hover:bg-gray-50">
@@ -2279,37 +2274,6 @@ export default function SettingsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          {(() => {
-                            const expiryDate = new Date(code.expires_at)
-                            const isExpired = expiryDate < new Date()
-                            const isDistantFuture = expiryDate.getFullYear() > new Date().getFullYear() + 50
-
-                            if (isDistantFuture) {
-                              return (
-                                <span className="text-gray-500 italic text-xs">
-                                  Never (active until disabled)
-                                </span>
-                              )
-                            } else if (isExpired) {
-                              return (
-                                <div className="flex flex-col">
-                                  <span className="text-red-600 font-medium">{expiryDate.toLocaleDateString()}</span>
-                                  <span className="text-xs text-red-500">Expired</span>
-                                </div>
-                              )
-                            } else {
-                              return (
-                                <div className="flex flex-col">
-                                  <span>{expiryDate.toLocaleDateString()}</span>
-                                  <span className="text-xs text-gray-500">
-                                    {Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days left
-                                  </span>
-                                </div>
-                              )
-                            }
-                          })()}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
                             <span>
                               {code.current_uses} / {code.max_uses === null ? '∞' : code.max_uses}
@@ -2323,15 +2287,11 @@ export default function SettingsPage() {
                         </td>
                         <td className="px-4 py-4 text-sm">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            code.is_active && !isMaxedOut && !isExpired
+                            code.is_active && !isMaxedOut
                               ? 'bg-green-100 text-green-800'
                               : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {code.is_active ? (
-                              isExpired ? 'Expired' :
-                              isMaxedOut ? 'Maxed Out' :
-                              'Active'
-                            ) : 'Disabled'}
+                            {code.is_active ? (isMaxedOut ? 'Maxed Out' : 'Active') : 'Disabled'}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-sm">
