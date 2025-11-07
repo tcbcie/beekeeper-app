@@ -415,9 +415,10 @@ BEGIN
   RAISE NOTICE '- Implement renewal UI in profile page';
   RAISE NOTICE '- Set up email notification system';
   RAISE NOTICE '- Configure cron job for reminder emails';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Test the system:';
+  RAISE NOTICE '- Sign in to your account first';
+  RAISE NOTICE '- Then run: SELECT * FROM get_subscription_status();';
+  RAISE NOTICE '- View reminder queue: SELECT * FROM users_needing_subscription_reminder;';
   RAISE NOTICE '============================================';
 END $$;
-
--- Test queries
-SELECT * FROM get_subscription_status();
-SELECT * FROM users_needing_subscription_reminder;
