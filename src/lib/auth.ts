@@ -125,3 +125,42 @@ export async function requireAdmin(): Promise<void> {
     throw new Error('Admin access required')
   }
 }
+
+/**
+ * Check if the current user's account is active
+ * @returns true if account is active, false if disabled
+ */
+export async function isAccountActive(): Promise<boolean> {
+  const userId = await getCurrentUserId()
+
+  if (!userId) {
+    return false
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_active')
+    .eq('id', userId)
+    .single()
+
+  if (error || !data) {
+    console.error('Error fetching account status:', error)
+    return false
+  }
+
+  return data.is_active === true
+}
+
+/**
+ * Require the current user's account to be active, throw error if disabled
+ * @throws Error if account is disabled
+ */
+export async function requireActiveAccount(): Promise<void> {
+  const active = await isAccountActive()
+
+  if (!active) {
+    // Sign out the user since their account is disabled
+    await supabase.auth.signOut()
+    throw new Error('Your account has been disabled. Please contact an administrator.')
+  }
+}

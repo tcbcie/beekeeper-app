@@ -7,6 +7,7 @@ import Link from 'next/link'
 function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [registrationCode, setRegistrationCode] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -38,15 +39,42 @@ function LoginForm() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        // Validate registration code before allowing sign-up
+        if (!registrationCode.trim()) {
+          throw new Error('Registration code is required')
+        }
+
+        // Call RPC function to validate the registration code
+        const { data: validationResult, error: validationError } = await supabase
+          .rpc('validate_registration_code', { reg_code: registrationCode.trim() })
+
+        if (validationError) {
+          console.error('Registration code validation error:', validationError)
+          throw new Error('Failed to validate registration code')
+        }
+
+        if (!validationResult || !validationResult.valid) {
+          throw new Error(validationResult?.message || 'Invalid registration code')
+        }
+
+        // Registration code is valid, proceed with sign-up
+        const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: email.split('@')[0] },
+            data: {
+              full_name: email.split('@')[0],
+              registration_code_id: validationResult.code_id
+            },
             emailRedirectTo: `${window.location.origin}${redirectUrl}`
           }
         })
         if (error) throw error
+
+        // Increment the code usage count
+        if (data.user) {
+          await supabase.rpc('increment_code_usage', { code_id: validationResult.code_id })
+        }
 
         // If email confirmation is disabled, redirect immediately
         // Otherwise show message to check email
@@ -60,6 +88,7 @@ function LoginForm() {
           }
           setMessage('Account created! Please check your email to confirm your account. After confirming, you will be automatically redirected to complete your team invitation.')
           setIsSignUp(false)
+          setRegistrationCode('')
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -150,6 +179,23 @@ function LoginForm() {
               minLength={6}
             />
           </div>
+          {isSignUp && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Registration Code</label>
+              <input
+                type="text"
+                value={registrationCode}
+                onChange={(e) => setRegistrationCode(e.target.value.toUpperCase())}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md font-mono"
+                required={isSignUp}
+                placeholder="Enter registration code"
+                autoComplete="off"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                A registration code is required to create an account. Contact an admin if you need one.
+              </p>
+            </div>
+          )}
           {message && (
             <div className={`text-sm text-center p-3 rounded ${
               message.includes('created') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
