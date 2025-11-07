@@ -39,6 +39,9 @@ interface UserProfile {
   is_active?: boolean
   registration_code?: string
   code_description?: string
+  subscription_expires_at?: string | null
+  subscription_status?: 'active' | 'expiring_soon' | 'expiring_very_soon' | 'expired' | 'no_subscription'
+  days_remaining?: number
 }
 
 interface RegistrationCode {
@@ -1998,6 +2001,12 @@ export default function SettingsPage() {
                         Registration Code
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Subscription
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Expires
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Joined
                       </th>
                     </tr>
@@ -2085,6 +2094,59 @@ export default function SettingsPage() {
                               </div>
                             ) : (
                               <span className="text-gray-400 text-xs italic">Legacy user</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-sm">
+                            {user.subscription_status ? (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                user.subscription_status === 'active'
+                                  ? 'bg-green-100 text-green-800'
+                                  : user.subscription_status === 'expiring_soon'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : user.subscription_status === 'expiring_very_soon'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : user.subscription_status === 'expired'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {user.subscription_status === 'active'
+                                  ? 'Active'
+                                  : user.subscription_status === 'expiring_soon'
+                                  ? 'Expiring Soon'
+                                  : user.subscription_status === 'expiring_very_soon'
+                                  ? 'Expires Very Soon'
+                                  : user.subscription_status === 'expired'
+                                  ? 'Expired'
+                                  : 'No Subscription'}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">No subscription</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-700">
+                            {user.subscription_expires_at ? (
+                              <div className="flex flex-col">
+                                <span className="text-xs">
+                                  {new Date(user.subscription_expires_at).toLocaleDateString()}
+                                </span>
+                                {user.days_remaining !== undefined && (
+                                  <span className={`text-xs font-medium ${
+                                    user.days_remaining > 30
+                                      ? 'text-green-600'
+                                      : user.days_remaining > 7
+                                      ? 'text-yellow-600'
+                                      : user.days_remaining >= 0
+                                      ? 'text-orange-600'
+                                      : 'text-red-600'
+                                  }`}>
+                                    {user.days_remaining >= 0
+                                      ? `${user.days_remaining} days left`
+                                      : `${Math.abs(user.days_remaining)} days overdue`}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">Never</span>
                             )}
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-500">

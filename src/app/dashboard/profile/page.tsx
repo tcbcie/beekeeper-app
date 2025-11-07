@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2 } from 'lucide-react'
+import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
+import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
+import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
 
 interface UserProfile {
   id: string
@@ -122,6 +125,10 @@ export default function ProfilePage() {
   const [showRenameTeamModal, setShowRenameTeamModal] = useState(false)
   const [renameTeamName, setRenameTeamName] = useState('')
   const [renamingTeam, setRenamingTeam] = useState(false)
+
+  // Subscription state
+  const [showRenewSubscriptionModal, setShowRenewSubscriptionModal] = useState(false)
+  const [subscriptionRefreshKey, setSubscriptionRefreshKey] = useState(0)
 
   const fetchUserProfile = useCallback(async () => {
     if (!userId) return
@@ -2025,6 +2032,21 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Subscription Management */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Calendar size={28} className="text-amber-600" />
+          <h2 className="text-2xl font-semibold text-gray-900">Subscription</h2>
+        </div>
+
+        <SubscriptionStatusCard
+          key={subscriptionRefreshKey}
+          onRenewClick={() => setShowRenewSubscriptionModal(true)}
+        />
+
+        <SubscriptionHistoryTable key={subscriptionRefreshKey} />
+      </div>
+
       {/* Danger Zone */}
       <div className="bg-white rounded-lg shadow p-6 border border-red-200">
         <h2 className="text-xl font-semibold text-red-900 mb-4">Danger Zone</h2>
@@ -2133,6 +2155,17 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Renew Subscription Modal */}
+      <RenewSubscriptionModal
+        isOpen={showRenewSubscriptionModal}
+        onClose={() => setShowRenewSubscriptionModal(false)}
+        onSuccess={() => {
+          // Increment the key to force re-render of subscription components
+          setSubscriptionRefreshKey(prev => prev + 1)
+          setShowRenewSubscriptionModal(false)
+        }}
+      />
     </div>
   )
 }
