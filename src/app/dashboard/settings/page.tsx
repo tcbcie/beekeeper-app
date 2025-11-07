@@ -143,6 +143,7 @@ export default function SettingsPage() {
     description: '',
     expires_at: '',
     max_uses: '',
+    subscription_duration_days: '365',
   })
 
   const [categoryFormData, setCategoryFormData] = useState({
@@ -940,6 +941,7 @@ export default function SettingsPage() {
           description: newCodeData.description.trim() || null,
           expires_at: newCodeData.expires_at,
           max_uses: newCodeData.max_uses ? parseInt(newCodeData.max_uses) : null,
+          subscription_duration_days: parseInt(newCodeData.subscription_duration_days),
           created_by: userId
         }])
 
@@ -947,7 +949,7 @@ export default function SettingsPage() {
 
       alert('Registration code created successfully!')
       setShowAddCodeModal(false)
-      setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '' })
+      setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '', subscription_duration_days: '365' })
       fetchRegistrationCodes()
     } catch (error) {
       console.error('Error creating registration code:', error)
@@ -2332,7 +2334,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   setShowAddCodeModal(false)
-                  setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '' })
+                  setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '', subscription_duration_days: '365' })
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -2403,12 +2405,32 @@ export default function SettingsPage() {
                 </p>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subscription Duration <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newCodeData.subscription_duration_days}
+                  onChange={(e) => setNewCodeData({ ...newCodeData, subscription_duration_days: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  required
+                >
+                  <option value="30">30 days (1 month)</option>
+                  <option value="90">90 days (3 months)</option>
+                  <option value="180">180 days (6 months)</option>
+                  <option value="365">365 days (1 year)</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Duration of subscription when this code is activated
+                </p>
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAddCodeModal(false)
-                    setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '' })
+                    setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '', subscription_duration_days: '365' })
                   }}
                   className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
