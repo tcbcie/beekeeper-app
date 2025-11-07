@@ -55,6 +55,7 @@ interface RegistrationCode {
   max_uses: number | null
   current_uses: number
   updated_at: string
+  subscription_duration_days: number
 }
 
 interface SupportTicket {
@@ -2234,7 +2235,7 @@ export default function SettingsPage() {
                       Description
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Expires
+                      Subscription Duration
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Usage
@@ -2249,7 +2250,6 @@ export default function SettingsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {registrationCodes.map((code) => {
-                    const isExpired = new Date(code.expires_at) < new Date()
                     const isMaxedOut = code.max_uses !== null && code.current_uses >= code.max_uses
                     return (
                       <tr key={code.id} className="hover:bg-gray-50">
@@ -2260,13 +2260,17 @@ export default function SettingsPage() {
                           {code.description || <span className="italic text-gray-400">No description</span>}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          <div>
-                            {new Date(code.expires_at).toLocaleDateString()}
-                            {isExpired && (
-                              <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
-                                Expired
-                              </span>
-                            )}
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900">
+                              {code.subscription_duration_days || 365} days
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              ({code.subscription_duration_days === 30 ? '1 month' :
+                                code.subscription_duration_days === 90 ? '3 months' :
+                                code.subscription_duration_days === 180 ? '6 months' :
+                                code.subscription_duration_days === 365 ? '1 year' :
+                                Math.round((code.subscription_duration_days || 365) / 30) + ' months'})
+                            </span>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
@@ -2283,11 +2287,11 @@ export default function SettingsPage() {
                         </td>
                         <td className="px-4 py-4 text-sm">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            code.is_active && !isExpired && !isMaxedOut
+                            code.is_active && !isMaxedOut
                               ? 'bg-green-100 text-green-800'
                               : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {code.is_active ? (isExpired || isMaxedOut ? 'Inactive' : 'Active') : 'Disabled'}
+                            {code.is_active ? (isMaxedOut ? 'Maxed Out' : 'Active') : 'Disabled'}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-sm">
