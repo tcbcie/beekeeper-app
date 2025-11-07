@@ -339,7 +339,36 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.25</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.26</span>
+                January 7, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>OAuth Bypass Prevention:</strong> Implemented multi-layered security to prevent users from bypassing registration code requirement via Google OAuth - detects unauthorized new accounts within 10 seconds and automatically deletes them</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Dual Google OAuth Buttons:</strong> Separated sign-in and sign-up flows with distinct buttons - existing users click gray &quot;Sign in with Google&quot; for direct access, new users click green &quot;Sign up with Google&quot; which prompts for registration code via modal</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Registration Code Modal:</strong> Beautiful modal interface for Google OAuth sign-ups with auto-uppercase input, validation feedback, and loading states - prevents confusing password fields for OAuth users</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Registration Code Tracking:</strong> Admins can now see which registration code each user signed up with in Settings → Users table - displays code and description, or &quot;Legacy user&quot; for pre-feature accounts</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">🔧</span>
+                  <span><strong>OAuth Security Documentation:</strong> Comprehensive OAUTH_BYPASS_PREVENTION.md covering attack vectors, testing procedures, and troubleshooting for the multi-layered security system</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded font-semibold">v1.0.25</span>
                 January 7, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
