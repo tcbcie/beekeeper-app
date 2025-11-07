@@ -345,10 +345,30 @@ export default function AboutPage() {
               <ul className="mt-3 space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 mt-1">★</span>
-                  <span><strong>Unified Events System:</strong> Implemented automatic synchronization of queen rearing events to tasks_events table - all events now managed from single Tasks & Events page with full edit capabilities</span>
+                  <span><strong>Google OAuth Authentication:</strong> Added Google sign-in integration with automatic profile creation - users can now sign up and log in using their Google accounts with seamless authentication flow</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Registration Code System:</strong> Implemented invitation-only registration system with expiration dates and usage limits - admins can create time-limited codes with optional max uses to control new user sign-ups</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>User Account Management:</strong> Admins can now enable/disable user accounts directly from Settings page - disabled users are automatically signed out and prevented from accessing the system</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Self-Service Account Deletion:</strong> Users can permanently delete their own accounts from Profile page with confirmation - all associated data is automatically removed</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Registration Codes Admin UI:</strong> Complete management interface in Settings with create, activate/deactivate, and delete functionality - displays code details including usage statistics, expiration dates, and active status</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Unified Events System:</strong> Implemented automatic synchronization of queen rearing events to tasks_events table - all events now managed from single Tasks & Events page with full edit capabilities</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
                   <span><strong>Database Triggers:</strong> Created triggers to automatically create/update/delete events when batch dates change - acceptance checks, cage dates, and emergence dates sync instantly</span>
                 </li>
                 <li className="flex items-start gap-2">

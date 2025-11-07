@@ -114,6 +114,29 @@ function LoginForm() {
     setMessage('')
 
     try {
+      // For new OAuth sign-ups, require registration code
+      if (isSignUp) {
+        if (!registrationCode.trim()) {
+          throw new Error('Registration code is required for sign-up')
+        }
+
+        // Validate registration code before OAuth
+        const { data: validationResult, error: validationError } = await supabase
+          .rpc('validate_registration_code', { reg_code: registrationCode.trim() })
+
+        if (validationError) {
+          throw new Error(`Registration code validation failed: ${validationError.message}`)
+        }
+
+        if (!validationResult || !validationResult.valid) {
+          throw new Error(validationResult?.message || 'Invalid registration code')
+        }
+
+        // Store validated code for the callback
+        localStorage.setItem('oauth_reg_code', registrationCode.trim())
+        localStorage.setItem('oauth_code_id', validationResult.code_id)
+      }
+
       // Store redirect URL in localStorage for after OAuth callback
       if (redirectUrl !== '/dashboard') {
         localStorage.setItem('pendingRedirect', redirectUrl)
