@@ -862,7 +862,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Version:</span>
-                <span className="font-bold text-indigo-700">v1.0.24</span>
+                <span className="font-bold text-indigo-700">v1.0.25</span>
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Last Updated:</span>
