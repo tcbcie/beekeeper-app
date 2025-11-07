@@ -339,8 +339,8 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.22</span>
-                November 6, 2025
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.23</span>
+                January 7, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
