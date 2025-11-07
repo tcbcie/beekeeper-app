@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import MobileDrawer from '@/components/MobileDrawer'
+import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -142,6 +143,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setIsMobileMenuOpen(true)
         }}
       />
+      <SubscriptionWarningBanner />
       <MobileDrawer
         isOpen={isMobileMenuOpen}
         onClose={() => {
