@@ -37,6 +37,8 @@ interface UserProfile {
   last_name?: string
   mobile_number?: string
   is_active?: boolean
+  registration_code?: string
+  code_description?: string
 }
 
 interface RegistrationCode {
@@ -342,6 +344,7 @@ export default function SettingsPage() {
 
   // User Management Functions
   const fetchUsers = async () => {
+    console.log('👥 fetchUsers called')
     setLoadingUsers(true)
     try {
       // Call the function that joins user_profiles with auth.users to get emails
@@ -349,13 +352,21 @@ export default function SettingsPage() {
       const { data, error } = await supabase
         .rpc('get_users_with_email')
 
+      console.log('📥 fetchUsers response:', { dataCount: data?.length, error })
+
       if (error) throw error
 
       if (data) {
+        console.log('📊 Users data:', data.map((u: UserProfile) => ({
+          email: u.email,
+          role: u.role,
+          is_active: u.is_active
+        })))
         setUsers(data as UserProfile[])
+        console.log('✅ Users state updated')
       }
     } catch (error) {
-      console.error('Error fetching users:', error)
+      console.error('❌ Error fetching users:', error)
       alert('Failed to fetch users. Make sure you have admin permissions.')
     } finally {
       setLoadingUsers(false)
@@ -374,8 +385,8 @@ export default function SettingsPage() {
 
     try {
       const { error } = await supabase
-        .from('user_profiles')
-        .update({ role: newRole, updated_at: new Date().toISOString() })
+        .from('profiles')
+        .update({ role: newRole })
         .eq('id', targetUserId)
 
       if (error) throw error
@@ -514,30 +525,36 @@ export default function SettingsPage() {
       }
       console.log('✅ Support tickets deleted')
 
-      console.log('🗑️ Step 2: Deleting user profiles...')
-
-      // Step 2a: Delete from user_profiles table
-      console.log('🗑️ Deleting from user_profiles...')
-      const { data: userProfileData, error: userProfileError } = await supabase
-        .from('user_profiles')
-        .delete()
-        .eq('id', targetUserId)
-        .select()
-
-      console.log('🗑️ user_profiles deletion response:', { data: userProfileData, error: userProfileError })
-
-      if (userProfileError) {
-        console.error('❌ Delete user_profiles error:', userProfileError)
-        throw new Error(`Failed to delete from user_profiles: ${userProfileError.message}`)
+      // Delete tasks and events
+      console.log('🗑️ Deleting tasks and events...')
+      const { error: tasksError } = await supabase.from('tasks_events').delete().eq('user_id', targetUserId)
+      if (tasksError) {
+        console.error('❌ Failed to delete tasks_events:', tasksError)
+        throw new Error(`Failed to delete tasks_events: ${tasksError.message}`)
       }
+      console.log('✅ Tasks and events deleted')
 
-      if (!userProfileData || userProfileData.length === 0) {
-        console.warn('⚠️ No user_profiles record was deleted (may not exist)')
-      } else {
-        console.log('✅ user_profiles deleted:', userProfileData)
+      // Delete feedings
+      console.log('🗑️ Deleting feedings...')
+      const { error: feedingsError } = await supabase.from('feedings').delete().eq('user_id', targetUserId)
+      if (feedingsError) {
+        console.error('❌ Failed to delete feedings:', feedingsError)
+        throw new Error(`Failed to delete feedings: ${feedingsError.message}`)
       }
+      console.log('✅ Feedings deleted')
 
-      // Step 2b: Delete from profiles table (this is the one blocking auth deletion)
+      // Delete harvests
+      console.log('🗑️ Deleting harvests...')
+      const { error: harvestsError } = await supabase.from('harvests').delete().eq('user_id', targetUserId)
+      if (harvestsError) {
+        console.error('❌ Failed to delete harvests:', harvestsError)
+        throw new Error(`Failed to delete harvests: ${harvestsError.message}`)
+      }
+      console.log('✅ Harvests deleted')
+
+      console.log('🗑️ Step 2: Deleting user profile...')
+
+      // Delete from profiles table
       console.log('🗑️ Deleting from profiles...')
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -633,52 +650,29 @@ export default function SettingsPage() {
       if (ticketsData && ticketsData.length > 0) {
         const enrichedTickets = await Promise.all(
           ticketsData.map(async (ticket) => {
-            // Try to get user email - first from user_profiles, then from RPC call to get auth user
+            // Get user email from profiles table
             let userEmail = null
-
-            // Try user_profiles first
-            const { data: userProfile } = await supabase
-              .from('user_profiles')
+            const { data: authUser } = await supabase
+              .from('profiles')
               .select('email')
-              .eq('user_id', ticket.user_id)
+              .eq('id', ticket.user_id)
               .maybeSingle()
 
-            if (userProfile?.email) {
-              userEmail = userProfile.email
-            } else {
-              // Fallback: try to get email using RPC function or from profiles table
-              const { data: authUser } = await supabase
-                .from('profiles')
-                .select('email')
-                .eq('id', ticket.user_id)
-                .maybeSingle()
-
-              if (authUser?.email) {
-                userEmail = authUser.email
-              }
+            if (authUser?.email) {
+              userEmail = authUser.email
             }
 
             // Fetch resolver email if exists
             let resolverEmail = null
             if (ticket.resolved_by) {
-              const { data: resolver } = await supabase
-                .from('user_profiles')
+              const { data: authResolver } = await supabase
+                .from('profiles')
                 .select('email')
-                .eq('user_id', ticket.resolved_by)
+                .eq('id', ticket.resolved_by)
                 .maybeSingle()
 
-              if (resolver?.email) {
-                resolverEmail = resolver.email
-              } else {
-                const { data: authResolver } = await supabase
-                  .from('profiles')
-                  .select('email')
-                  .eq('id', ticket.resolved_by)
-                  .maybeSingle()
-
-                if (authResolver?.email) {
-                  resolverEmail = authResolver.email
-                }
+              if (authResolver?.email) {
+                resolverEmail = authResolver.email
               }
             }
 
@@ -999,29 +993,42 @@ export default function SettingsPage() {
 
   // User Account Toggle Function
   const handleToggleUserAccount = async (targetUserId: string, currentStatus: boolean, userEmail: string) => {
+    console.log('🔄 handleToggleUserAccount called:', { targetUserId, currentStatus, userEmail })
+
     if (targetUserId === userId) {
       alert('You cannot disable your own account.')
       return
     }
 
     const action = currentStatus ? 'disable' : 'enable'
+    const newStatus = !currentStatus
+    console.log(`📋 Action: ${action}, New status: ${newStatus}`)
+
     if (!confirm(`Are you sure you want to ${action} the account for "${userEmail}"?`)) {
+      console.log('❌ User cancelled')
       return
     }
 
     try {
+      console.log('🚀 Calling toggle_user_account RPC...')
       const { data, error } = await supabase
         .rpc('toggle_user_account', {
           target_user_id: targetUserId,
-          enable_account: !currentStatus
+          enable_account: newStatus
         })
+
+      console.log('📥 RPC Response:', { data, error })
 
       if (error) throw error
 
+      console.log('✅ Toggle successful, showing alert...')
       alert(data.message || `Account ${action}d successfully!`)
-      fetchUsers()
+
+      console.log('🔄 Calling fetchUsers to refresh...')
+      await fetchUsers()
+      console.log('✅ Users refreshed')
     } catch (error) {
-      console.error('Error toggling user account:', error)
+      console.error('❌ Error toggling user account:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       alert(`Failed to ${action} account: ${errorMessage}`)
     }
@@ -1973,6 +1980,9 @@ export default function SettingsPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Email
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1985,10 +1995,10 @@ export default function SettingsPage() {
                         Status
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Joined
+                        Registration Code
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Joined
                       </th>
                     </tr>
                   </thead>
@@ -2001,6 +2011,38 @@ export default function SettingsPage() {
                       )
                       .map((user) => (
                         <tr key={user.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 text-sm">
+                            {user.id === userId ? (
+                              <span className="text-gray-400 text-xs italic">Cannot modify own account</span>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Admin')}
+                                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                                  <option value="User">User</option>
+                                  <option value="Admin">Admin</option>
+                                </select>
+                                <button
+                                  onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
+                                  className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
+                                    user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
+                                  }`}
+                                  title={user.is_active !== false ? 'Disable account' : 'Enable account'}
+                                >
+                                  {user.is_active !== false ? 'Disable' : 'Enable'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
+                                  className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                                  title="Delete user"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </td>
                           <td className="px-4 py-4 text-sm text-gray-900">
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{user.email || 'No email'}</span>
@@ -2033,40 +2075,20 @@ export default function SettingsPage() {
                               {user.is_active !== false ? 'Active' : 'Disabled'}
                             </span>
                           </td>
+                          <td className="px-4 py-4 text-sm text-gray-700">
+                            {user.registration_code ? (
+                              <div className="flex flex-col">
+                                <span className="font-mono text-xs font-semibold text-indigo-600">{user.registration_code}</span>
+                                {user.code_description && (
+                                  <span className="text-xs text-gray-500 italic">{user.code_description}</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">Legacy user</span>
+                            )}
+                          </td>
                           <td className="px-4 py-4 text-sm text-gray-500">
                             {new Date(user.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-4 text-sm">
-                            {user.id === userId ? (
-                              <span className="text-gray-400 text-xs italic">Cannot modify own account</span>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <select
-                                  value={user.role}
-                                  onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Admin')}
-                                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                >
-                                  <option value="User">User</option>
-                                  <option value="Admin">Admin</option>
-                                </select>
-                                <button
-                                  onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
-                                  className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
-                                    user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
-                                  }`}
-                                  title={user.is_active !== false ? 'Disable account' : 'Enable account'}
-                                >
-                                  {user.is_active !== false ? 'Disable' : 'Enable'}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
-                                  className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
-                                  title="Delete user"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            )}
                           </td>
                         </tr>
                       ))}

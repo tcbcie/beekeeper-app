@@ -31,6 +31,9 @@ export async function GET(request: Request) {
       console.error('Error exchanging code for session:', error)
       return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
     }
+
+    // Note: Registration code validation for OAuth is handled client-side
+    // in the dashboard layout since we can't access localStorage here (server-side)
   }
 
   // URL to redirect to after sign in process completes

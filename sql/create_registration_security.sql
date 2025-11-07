@@ -111,8 +111,7 @@ BEGIN
 
   -- Update the user's is_active status
   UPDATE public.profiles
-  SET is_active = enable_account,
-      updated_at = NOW()
+  SET is_active = enable_account
   WHERE id = target_user_id;
 
   RETURN json_build_object(
