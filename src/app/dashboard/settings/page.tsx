@@ -141,7 +141,6 @@ export default function SettingsPage() {
   const [newCodeData, setNewCodeData] = useState({
     code: '',
     description: '',
-    expires_at: '',
     max_uses: '',
     subscription_duration_days: '365',
   })
@@ -928,18 +927,17 @@ export default function SettingsPage() {
       return
     }
 
-    if (!newCodeData.expires_at) {
-      alert('Expiration date is required')
-      return
-    }
-
     try {
+      // Set expiration to 100 years in the future (effectively no expiration)
+      const farFutureDate = new Date()
+      farFutureDate.setFullYear(farFutureDate.getFullYear() + 100)
+
       const { error } = await supabase
         .from('registration_codes')
         .insert([{
           code: newCodeData.code.toUpperCase().trim(),
           description: newCodeData.description.trim() || null,
-          expires_at: newCodeData.expires_at,
+          expires_at: farFutureDate.toISOString(),
           max_uses: newCodeData.max_uses ? parseInt(newCodeData.max_uses) : null,
           subscription_duration_days: parseInt(newCodeData.subscription_duration_days),
           created_by: userId
@@ -947,9 +945,9 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Registration code created successfully!')
+      alert('Subscription code created successfully!')
       setShowAddCodeModal(false)
-      setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '', subscription_duration_days: '365' })
+      setNewCodeData({ code: '', description: '', max_uses: '', subscription_duration_days: '365' })
       fetchRegistrationCodes()
     } catch (error) {
       console.error('Error creating registration code:', error)
@@ -2211,8 +2209,8 @@ export default function SettingsPage() {
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
               <li><strong>New User Registration:</strong> Users enter a code during sign-up to create their account and receive initial subscription</li>
               <li><strong>Subscription Renewal:</strong> Existing users can enter codes to extend their subscription from the Profile page</li>
-              <li><strong>Code Expiration:</strong> The date when the code itself becomes invalid and can no longer be used</li>
-              <li><strong>Subscription Duration:</strong> How many days of subscription time the code grants when activated</li>
+              <li><strong>Subscription Duration:</strong> How many days of subscription time the code grants when activated (30, 90, 180, or 365 days)</li>
+              <li><strong>Code Management:</strong> Codes remain active until you manually deactivate them - no automatic expiration</li>
             </ul>
           </div>
 
@@ -2342,7 +2340,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   setShowAddCodeModal(false)
-                  setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '', subscription_duration_days: '365' })
+                  setNewCodeData({ code: '', description: '', max_uses: '', subscription_duration_days: '365' })
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -2379,20 +2377,6 @@ export default function SettingsPage() {
                   placeholder="Optional description for internal reference"
                   rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Expiration Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={newCodeData.expires_at}
-                  onChange={(e) => setNewCodeData({ ...newCodeData, expires_at: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  required
                 />
               </div>
 
@@ -2438,7 +2422,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => {
                     setShowAddCodeModal(false)
-                    setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '', subscription_duration_days: '365' })
+                    setNewCodeData({ code: '', description: '', max_uses: '', subscription_duration_days: '365' })
                   }}
                   className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
