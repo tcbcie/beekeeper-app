@@ -1222,7 +1222,7 @@ export default function SettingsPage() {
   const sections = [
     { id: 'profile' as const, label: 'Profile & Export', icon: User, adminOnly: false },
     { id: 'users' as const, label: 'User Management', icon: Users, adminOnly: true },
-    { id: 'registration' as const, label: 'Registration Codes', icon: Shield, adminOnly: true },
+    { id: 'registration' as const, label: 'Subscription Codes', icon: Shield, adminOnly: true },
     { id: 'tickets' as const, label: 'Support Tickets', icon: MessageCircle, adminOnly: true },
     { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true },
     { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true },
@@ -2000,7 +2000,7 @@ export default function SettingsPage() {
                         Status
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Registration Code
+                        Subscription Code
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Subscription
@@ -2173,7 +2173,7 @@ export default function SettingsPage() {
       </div>
       )}
 
-      {/* Registration Codes Section */}
+      {/* Subscription Codes Section */}
       {activeSection === 'registration' && (
       <div className="bg-white rounded-lg shadow">
         <div className="p-6">
@@ -2184,13 +2184,13 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-gray-900">Registration Codes</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Subscription Codes</h2>
                   <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full flex items-center gap-1">
                     <Shield size={12} />
                     Admin Only
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">Manage registration codes for new user sign-ups</p>
+                <p className="text-sm text-gray-500">Manage codes for new user registration and subscription renewals</p>
               </div>
             </div>
             <button
@@ -2204,17 +2204,25 @@ export default function SettingsPage() {
         </div>
 
         <div className="px-6 pb-6 border-t border-gray-200 pt-6">
-          <p className="text-sm text-gray-600 mb-4">
-            Registration codes are required for new users to sign up. Codes can have expiration dates and usage limits.
-          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-900 font-medium mb-2">
+              How Subscription Codes Work:
+            </p>
+            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+              <li><strong>New User Registration:</strong> Users enter a code during sign-up to create their account and receive initial subscription</li>
+              <li><strong>Subscription Renewal:</strong> Existing users can enter codes to extend their subscription from the Profile page</li>
+              <li><strong>Code Expiration:</strong> The date when the code itself becomes invalid and can no longer be used</li>
+              <li><strong>Subscription Duration:</strong> How many days of subscription time the code grants when activated</li>
+            </ul>
+          </div>
 
           {loadingCodes ? (
             <div className="text-center py-8">
-              <LoadingSpinner text="Loading registration codes..." />
+              <LoadingSpinner text="Loading subscription codes..." />
             </div>
           ) : registrationCodes.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No registration codes found. Create one to allow new user sign-ups.
+              No subscription codes found. Create codes for new user registration and renewals.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -2330,7 +2338,7 @@ export default function SettingsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Create Registration Code</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Create Subscription Code</h3>
               <button
                 onClick={() => {
                   setShowAddCodeModal(false)
