@@ -88,6 +88,11 @@ export default function ProfilePage() {
   // Data export state
   const [exportingMyData, setExportingMyData] = useState(false)
 
+  // Account deletion state
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deletingAccount, setDeletingAccount] = useState(false)
+
   // Teams state
   const [ownedTeams, setOwnedTeams] = useState<Team[]>([])
   const [memberTeams, setMemberTeams] = useState<Team[]>([])
@@ -306,6 +311,47 @@ export default function ProfilePage() {
       alert('Failed to export data. Check console for details.')
     } finally {
       setExportingMyData(false)
+    }
+  }
+
+  // Delete account handler
+  const handleDeleteAccount = async () => {
+    if (!userId) return
+
+    // Verify confirmation text
+    if (deleteConfirmText !== 'DELETE') {
+      alert('Please type DELETE to confirm account deletion.')
+      return
+    }
+
+    setDeletingAccount(true)
+    try {
+      // Call the delete_own_account RPC function
+      const { data, error } = await supabase.rpc('delete_own_account')
+
+      if (error) {
+        console.error('Error deleting account:', error)
+        throw error
+      }
+
+      console.log('Account deletion response:', data)
+
+      // Sign out the user
+      await supabase.auth.signOut()
+
+      // Show success message
+      alert('Your account and all associated data have been permanently deleted.')
+
+      // Redirect to home/login page
+      router.push('/')
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to delete account: ${errorMessage}\n\nPlease try again or contact support.`)
+    } finally {
+      setDeletingAccount(false)
+      setShowDeleteAccountModal(false)
+      setDeleteConfirmText('')
     }
   }
 
@@ -1987,11 +2033,106 @@ export default function ProfilePage() {
             <div className="font-medium text-red-900">Delete Account</div>
             <div className="text-sm text-red-700">Permanently delete your account and all data</div>
           </div>
-          <button className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
-            Coming Soon
+          <button
+            onClick={() => setShowDeleteAccountModal(true)}
+            className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+          >
+            <Trash2 size={16} />
+            Delete Account
           </button>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-red-900 flex items-center gap-2">
+                <Trash2 size={24} className="text-red-600" />
+                Delete Account
+              </h3>
+              <button
+                onClick={() => {
+                  setShowDeleteAccountModal(false)
+                  setDeleteConfirmText('')
+                }}
+                disabled={deletingAccount}
+                className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
+                <p className="text-red-900 font-semibold mb-2">Warning: This action cannot be undone!</p>
+                <p className="text-red-800 text-sm">
+                  Deleting your account will permanently remove:
+                </p>
+                <ul className="list-disc list-inside text-red-800 text-sm mt-2 space-y-1">
+                  <li>All your apiaries and hives</li>
+                  <li>All queens and inspection records</li>
+                  <li>All varroa checks and treatments</li>
+                  <li>All feeding and harvest records</li>
+                  <li>All tasks and events</li>
+                  <li>All team memberships and owned teams</li>
+                  <li>Your user profile and login credentials</li>
+                </ul>
+              </div>
+
+              <p className="text-gray-700 text-sm mb-4">
+                Before deleting your account, we recommend exporting your data using the &quot;Export as JSON&quot; or &quot;Export as CSV&quot; buttons in the Data Export section above.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Type <span className="font-mono bg-gray-100 px-2 py-1 rounded text-red-600">DELETE</span> to confirm:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE here"
+                  disabled={deletingAccount}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteAccountModal(false)
+                  setDeleteConfirmText('')
+                }}
+                disabled={deletingAccount}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount || deleteConfirmText !== 'DELETE'}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deletingAccount ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Deleting Account...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Permanently Delete Account
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
