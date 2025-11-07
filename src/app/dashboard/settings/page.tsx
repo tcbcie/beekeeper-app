@@ -754,6 +754,13 @@ export default function SettingsPage() {
     }
   }, [showVarroaTreatments, fetchVarroaTreatments])
 
+  // Fetch registration codes when section is opened
+  useEffect(() => {
+    if (activeSection === 'registration') {
+      fetchRegistrationCodes()
+    }
+  }, [activeSection])
+
   const handleTicketUpdate = async (ticketId: string, updates: TicketUpdate) => {
     try {
       const updateData: TicketUpdate & { resolved_by?: string; resolved_at?: string } = { ...updates }
@@ -894,6 +901,130 @@ export default function SettingsPage() {
       honey_flow_restrictions: '',
       withdrawal_period_days: 0,
     })
+  }
+
+  // Registration Codes Functions
+  const fetchRegistrationCodes = async () => {
+    setLoadingCodes(true)
+    try {
+      const { data, error } = await supabase
+        .from('registration_codes')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setRegistrationCodes(data || [])
+    } catch (error) {
+      console.error('Error fetching registration codes:', error)
+      alert('Failed to fetch registration codes.')
+    } finally {
+      setLoadingCodes(false)
+    }
+  }
+
+  const handleCreateCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newCodeData.code.trim()) {
+      alert('Code is required')
+      return
+    }
+
+    if (!newCodeData.expires_at) {
+      alert('Expiration date is required')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('registration_codes')
+        .insert([{
+          code: newCodeData.code.toUpperCase().trim(),
+          description: newCodeData.description.trim() || null,
+          expires_at: newCodeData.expires_at,
+          max_uses: newCodeData.max_uses ? parseInt(newCodeData.max_uses) : null,
+          created_by: userId
+        }])
+
+      if (error) throw error
+
+      alert('Registration code created successfully!')
+      setShowAddCodeModal(false)
+      setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '' })
+      fetchRegistrationCodes()
+    } catch (error) {
+      console.error('Error creating registration code:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to create code: ${errorMessage}`)
+    }
+  }
+
+  const handleToggleCodeActive = async (codeId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('registration_codes')
+        .update({ is_active: !currentStatus })
+        .eq('id', codeId)
+
+      if (error) throw error
+
+      alert(`Code ${!currentStatus ? 'activated' : 'deactivated'} successfully!`)
+      fetchRegistrationCodes()
+    } catch (error) {
+      console.error('Error toggling code status:', error)
+      alert('Failed to update code status.')
+    }
+  }
+
+  const handleDeleteCode = async (codeId: string, code: string) => {
+    if (!confirm(`Are you sure you want to delete the code "${code}"?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('registration_codes')
+        .delete()
+        .eq('id', codeId)
+
+      if (error) throw error
+
+      alert('Code deleted successfully!')
+      fetchRegistrationCodes()
+    } catch (error) {
+      console.error('Error deleting code:', error)
+      alert('Failed to delete code.')
+    }
+  }
+
+  // User Account Toggle Function
+  const handleToggleUserAccount = async (targetUserId: string, currentStatus: boolean, userEmail: string) => {
+    if (targetUserId === userId) {
+      alert('You cannot disable your own account.')
+      return
+    }
+
+    const action = currentStatus ? 'disable' : 'enable'
+    if (!confirm(`Are you sure you want to ${action} the account for "${userEmail}"?`)) {
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .rpc('toggle_user_account', {
+          target_user_id: targetUserId,
+          enable_account: !currentStatus
+        })
+
+      if (error) throw error
+
+      alert(data.message || `Account ${action}d successfully!`)
+      fetchUsers()
+    } catch (error) {
+      console.error('Error toggling user account:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to ${action} account: ${errorMessage}`)
+    }
   }
 
   const exportDatabase = async () => {
@@ -1079,6 +1210,7 @@ export default function SettingsPage() {
   const sections = [
     { id: 'profile' as const, label: 'Profile & Export', icon: User, adminOnly: false },
     { id: 'users' as const, label: 'User Management', icon: Users, adminOnly: true },
+    { id: 'registration' as const, label: 'Registration Codes', icon: Shield, adminOnly: true },
     { id: 'tickets' as const, label: 'Support Tickets', icon: MessageCircle, adminOnly: true },
     { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true },
     { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true },
@@ -1850,6 +1982,9 @@ export default function SettingsPage() {
                         Role
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Joined
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1889,6 +2024,15 @@ export default function SettingsPage() {
                               {user.role}
                             </span>
                           </td>
+                          <td className="px-4 py-4 text-sm">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              user.is_active !== false
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.is_active !== false ? 'Active' : 'Disabled'}
+                            </span>
+                          </td>
                           <td className="px-4 py-4 text-sm text-gray-500">
                             {new Date(user.created_at).toLocaleDateString()}
                           </td>
@@ -1905,6 +2049,15 @@ export default function SettingsPage() {
                                   <option value="User">User</option>
                                   <option value="Admin">Admin</option>
                                 </select>
+                                <button
+                                  onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
+                                  className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
+                                    user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
+                                  }`}
+                                  title={user.is_active !== false ? 'Disable account' : 'Enable account'}
+                                >
+                                  {user.is_active !== false ? 'Disable' : 'Enable'}
+                                </button>
                                 <button
                                   onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
                                   className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
@@ -1932,6 +2085,261 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
+
+      {/* Registration Codes Section */}
+      {activeSection === 'registration' && (
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-indigo-100 rounded-lg">
+                <Shield size={24} className="text-indigo-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900">Registration Codes</h2>
+                  <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full flex items-center gap-1">
+                    <Shield size={12} />
+                    Admin Only
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">Manage registration codes for new user sign-ups</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAddCodeModal(true)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Code
+            </button>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+          <p className="text-sm text-gray-600 mb-4">
+            Registration codes are required for new users to sign up. Codes can have expiration dates and usage limits.
+          </p>
+
+          {loadingCodes ? (
+            <div className="text-center py-8">
+              <LoadingSpinner text="Loading registration codes..." />
+            </div>
+          ) : registrationCodes.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No registration codes found. Create one to allow new user sign-ups.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Code
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Expires
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usage
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {registrationCodes.map((code) => {
+                    const isExpired = new Date(code.expires_at) < new Date()
+                    const isMaxedOut = code.max_uses !== null && code.current_uses >= code.max_uses
+                    return (
+                      <tr key={code.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 text-sm font-mono font-bold text-gray-900">
+                          {code.code}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
+                          {code.description || <span className="italic text-gray-400">No description</span>}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
+                          <div>
+                            {new Date(code.expires_at).toLocaleDateString()}
+                            {isExpired && (
+                              <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                                Expired
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {code.current_uses} / {code.max_uses === null ? '∞' : code.max_uses}
+                            </span>
+                            {isMaxedOut && (
+                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
+                                Maxed
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            code.is_active && !isExpired && !isMaxedOut
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {code.is_active ? (isExpired || isMaxedOut ? 'Inactive' : 'Active') : 'Disabled'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleToggleCodeActive(code.id, code.is_active)}
+                              className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
+                                code.is_active ? 'bg-orange-600' : 'bg-green-600'
+                              }`}
+                              title={code.is_active ? 'Deactivate code' : 'Activate code'}
+                            >
+                              {code.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCode(code.id, code.code)}
+                              className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                              title="Delete code"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="mt-4 text-sm text-gray-500">
+            <p className="mb-2"><strong>Code Status:</strong></p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li><strong>Active:</strong> Code is valid and can be used for registration</li>
+              <li><strong>Disabled:</strong> Code has been manually deactivated</li>
+              <li><strong>Expired:</strong> Code has passed its expiration date</li>
+              <li><strong>Maxed:</strong> Code has reached its maximum usage limit</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* Add Code Modal */}
+      {showAddCodeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Create Registration Code</h3>
+              <button
+                onClick={() => {
+                  setShowAddCodeModal(false)
+                  setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '' })
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCode} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCodeData.code}
+                  onChange={(e) => setNewCodeData({ ...newCodeData, code: e.target.value.toUpperCase() })}
+                  placeholder="e.g., BEEKEEPER2025"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                  required
+                  autoComplete="off"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Will be automatically converted to uppercase
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={newCodeData.description}
+                  onChange={(e) => setNewCodeData({ ...newCodeData, description: e.target.value })}
+                  placeholder="Optional description for internal reference"
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expiration Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={newCodeData.expires_at}
+                  onChange={(e) => setNewCodeData({ ...newCodeData, expires_at: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Uses
+                </label>
+                <input
+                  type="number"
+                  value={newCodeData.max_uses}
+                  onChange={(e) => setNewCodeData({ ...newCodeData, max_uses: e.target.value })}
+                  placeholder="Leave empty for unlimited"
+                  min="1"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Leave empty for unlimited uses
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddCodeModal(false)
+                    setNewCodeData({ code: '', description: '', expires_at: '', max_uses: '' })
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  Create Code
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Dropdown Values Section */}
