@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -29,7 +29,7 @@ interface CategoryWithValues extends DropdownCategory {
 
 interface UserProfile {
   id: string
-  role: 'User' | 'Admin'
+  role: 'User' | 'Power User' | 'Admin'
   created_at: string
   updated_at: string
   email?: string
@@ -120,6 +120,10 @@ export default function SettingsPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [userSearch, setUserSearch] = useState('')
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
+  const [roleFilter, setRoleFilter] = useState<'all' | 'User' | 'Power User' | 'Admin'>('all')
+  const [accountStatusFilter, setAccountStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
+  const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'none'>('all')
 
   // Support Tickets state
   const [showTicketManagement, setShowTicketManagement] = useState(false)
@@ -377,7 +381,7 @@ export default function SettingsPage() {
     }
   }
 
-  const handleRoleChange = async (targetUserId: string, newRole: 'User' | 'Admin') => {
+  const handleRoleChange = async (targetUserId: string, newRole: 'User' | 'Power User' | 'Admin') => {
     if (targetUserId === userId) {
       alert('You cannot change your own role.')
       return
@@ -1940,12 +1944,82 @@ export default function SettingsPage() {
 
         {showUserManagement && (
           <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+            {/* Legend and Role Descriptions */}
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {/* Role Descriptions */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="font-semibold text-gray-900 mb-2">Role Descriptions</p>
+                <ul className="space-y-1 text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium mt-0.5">User</span>
+                    <span>Standard access to their own beekeeping data</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium mt-0.5">Power</span>
+                    <span>Enhanced access with additional features and data management</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium mt-0.5 flex items-center gap-0.5">
+                      <Shield size={10} />Admin
+                    </span>
+                    <span>Full access including user management and settings</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Status Legend */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="font-semibold text-gray-900 mb-2">Status Symbols</p>
+                <div className="space-y-2 text-gray-700">
+                  <div>
+                    <p className="font-medium text-xs text-gray-600 mb-1">Account Status:</p>
+                    <div className="flex items-center gap-3 ml-2">
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">●</span>
+                        Active
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-medium">○</span>
+                        Disabled
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium text-xs text-gray-600 mb-1">Subscription Status:</p>
+                    <div className="grid grid-cols-2 gap-1 ml-2 text-xs">
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded font-medium">✓</span>
+                        Active
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded font-medium">7d</span>
+                        Expiring soon
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded font-medium">3d!</span>
+                        Expiring very soon
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded font-medium">✗</span>
+                        Expired
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded font-medium">−</span>
+                        No subscription
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <p className="text-sm text-gray-600 mb-4">
-              View and manage all user accounts. Change user roles between User and Admin.
+              View and manage all user accounts. Change user roles between User, Power User, and Admin.
             </p>
 
-            {/* Search Bar */}
-            <div className="mb-4">
+            {/* Search and Filters */}
+            <div className="mb-4 space-y-3">
+              {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
@@ -1956,217 +2030,309 @@ export default function SettingsPage() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
+
+              {/* Filter Row */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Role Filter */}
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value as 'all' | 'User' | 'Power User' | 'Admin')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="User">Users</option>
+                  <option value="Power User">Power Users</option>
+                  <option value="Admin">Admins</option>
+                </select>
+
+                {/* Account Status Filter */}
+                <select
+                  value={accountStatusFilter}
+                  onChange={(e) => setAccountStatusFilter(e.target.value as 'all' | 'active' | 'disabled')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Accounts</option>
+                  <option value="active">Active</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+
+                {/* Subscription Filter */}
+                <select
+                  value={subscriptionFilter}
+                  onChange={(e) => setSubscriptionFilter(e.target.value as 'all' | 'active' | 'expiring' | 'expired' | 'none')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Subscriptions</option>
+                  <option value="active">Active</option>
+                  <option value="expiring">Expiring Soon</option>
+                  <option value="expired">Expired</option>
+                  <option value="none">No Subscription</option>
+                </select>
+
+                {/* Refresh Button */}
+                <button
+                  onClick={fetchUsers}
+                  disabled={loadingUsers}
+                  className="ml-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loadingUsers ? 'Loading...' : 'Refresh'}
+                </button>
+              </div>
             </div>
 
-            {/* Refresh Button */}
-            <div className="mb-4">
-              <button
-                onClick={fetchUsers}
-                disabled={loadingUsers}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
-              >
-                {loadingUsers ? 'Loading...' : 'Refresh Users'}
-              </button>
-            </div>
-
-            {/* Users Table */}
+            {/* Users List - Compact Single Line Layout */}
             {loadingUsers ? (
               <div className="text-center py-8">
                 <LoadingSpinner text="Loading users..." />
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No users found. Click &quot;Refresh Users&quot; to load.
+                No users found. Click &quot;Refresh&quot; to load.
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User ID
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Subscription Code
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Subscription
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Expires
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Joined
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users
-                      .filter(user =>
-                        !userSearch ||
-                        user.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
-                        user.id.toLowerCase().includes(userSearch.toLowerCase())
-                      )
-                      .map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4 text-sm">
-                            {user.id === userId ? (
-                              <span className="text-gray-400 text-xs italic">Cannot modify own account</span>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <select
-                                  value={user.role}
-                                  onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Admin')}
-                                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                >
-                                  <option value="User">User</option>
-                                  <option value="Admin">Admin</option>
-                                </select>
-                                <button
-                                  onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
-                                  className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
-                                    user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
-                                  }`}
-                                  title={user.is_active !== false ? 'Disable account' : 'Enable account'}
-                                >
-                                  {user.is_active !== false ? 'Disable' : 'Enable'}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
-                                  className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
-                                  title="Delete user"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-900">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{user.email || 'No email'}</span>
+            ) : (() => {
+              // Apply all filters
+              const filteredUsers = users
+                .filter(user => {
+                  // Search filter
+                  if (userSearch) {
+                    const searchLower = userSearch.toLowerCase()
+                    const matchesSearch =
+                      user.email?.toLowerCase().includes(searchLower) ||
+                      user.id.toLowerCase().includes(searchLower)
+                    if (!matchesSearch) return false
+                  }
+
+                  // Role filter
+                  if (roleFilter !== 'all' && user.role !== roleFilter) {
+                    return false
+                  }
+
+                  // Account status filter
+                  if (accountStatusFilter !== 'all') {
+                    const isActive = user.is_active !== false
+                    if (accountStatusFilter === 'active' && !isActive) return false
+                    if (accountStatusFilter === 'disabled' && isActive) return false
+                  }
+
+                  // Subscription filter
+                  if (subscriptionFilter !== 'all') {
+                    const subStatus = user.subscription_status
+                    if (subscriptionFilter === 'active' && subStatus !== 'active') return false
+                    if (subscriptionFilter === 'expiring' &&
+                        subStatus !== 'expiring_soon' &&
+                        subStatus !== 'expiring_very_soon') return false
+                    if (subscriptionFilter === 'expired' && subStatus !== 'expired') return false
+                    if (subscriptionFilter === 'none' && subStatus !== 'no_subscription') return false
+                  }
+
+                  return true
+                })
+
+              return (
+                <>
+                  {/* Results Count */}
+                  <div className="mb-3 text-sm text-gray-600">
+                    Showing {filteredUsers.length} of {users.length} users
+                  </div>
+
+                  <div className="space-y-2">
+                    {filteredUsers.map((user) => {
+                      const isExpanded = expandedUserId === user.id
+
+                      return (
+                      <div key={user.id} className="bg-white border border-gray-200 rounded hover:border-gray-300 transition-all">
+                        {/* Compact Single Line */}
+                        <div className="px-3 py-2">
+                          <div className="flex items-center gap-3">
+                            {/* Expand Button */}
+                            <button
+                              onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
+                              className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+                              title={isExpanded ? 'Hide details' : 'Show details'}
+                            >
+                              <ChevronDown
+                                size={16}
+                                className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              />
+                            </button>
+
+                            {/* Email */}
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900 truncate">{user.email || 'No email'}</span>
                               {user.id === userId && (
-                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-sans">
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded flex-shrink-0">
                                   You
                                 </span>
                               )}
                             </div>
-                          </td>
-                          <td className="px-4 py-4 text-xs text-gray-500 font-mono max-w-xs truncate" title={user.id}>
-                            {user.id.substring(0, 8)}...
-                          </td>
-                          <td className="px-4 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              user.role === 'Admin'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {user.role === 'Admin' && <Shield size={12} className="inline mr-1" />}
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              user.is_active !== false
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {user.is_active !== false ? 'Active' : 'Disabled'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-700">
-                            {user.registration_code ? (
-                              <div className="flex flex-col">
-                                <span className="font-mono text-xs font-semibold text-indigo-600">{user.registration_code}</span>
-                                {user.code_description && (
-                                  <span className="text-xs text-gray-500 italic">{user.code_description}</span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">Legacy user</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-sm">
-                            {user.subscription_status ? (
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user.subscription_status === 'active'
-                                  ? 'bg-green-100 text-green-800'
-                                  : user.subscription_status === 'expiring_soon'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : user.subscription_status === 'expiring_very_soon'
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : user.subscription_status === 'expired'
-                                  ? 'bg-red-100 text-red-800'
+
+                            {/* Status Badges */}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {/* Role Badge */}
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                user.role === 'Admin'
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : user.role === 'Power User'
+                                  ? 'bg-blue-100 text-blue-800'
                                   : 'bg-gray-100 text-gray-800'
                               }`}>
-                                {user.subscription_status === 'active'
-                                  ? 'Active'
-                                  : user.subscription_status === 'expiring_soon'
-                                  ? 'Expiring Soon'
-                                  : user.subscription_status === 'expiring_very_soon'
-                                  ? 'Expires Very Soon'
-                                  : user.subscription_status === 'expired'
-                                  ? 'Expired'
-                                  : 'No Subscription'}
+                                {user.role === 'Admin' && <Shield size={10} className="inline mr-0.5" />}
+                                {user.role === 'Power User' ? 'Power' : user.role}
                               </span>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">No subscription</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-700">
-                            {user.subscription_expires_at ? (
-                              <div className="flex flex-col">
-                                <span className="text-xs">
-                                  {new Date(user.subscription_expires_at).toLocaleDateString()}
+
+                              {/* Account Status */}
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                user.is_active !== false
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {user.is_active !== false ? '●' : '○'}
+                              </span>
+
+                              {/* Subscription Status */}
+                              {user.subscription_status && (
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  user.subscription_status === 'active'
+                                    ? 'bg-green-100 text-green-800'
+                                    : user.subscription_status === 'expiring_soon'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : user.subscription_status === 'expiring_very_soon'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : user.subscription_status === 'expired'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {user.subscription_status === 'active' ? '✓' :
+                                   user.subscription_status === 'expiring_soon' ? `${user.days_remaining}d` :
+                                   user.subscription_status === 'expiring_very_soon' ? `${user.days_remaining}d!` :
+                                   user.subscription_status === 'expired' ? '✗' : '−'}
                                 </span>
-                                {user.days_remaining !== undefined && (
-                                  <span className={`text-xs font-medium ${
-                                    user.days_remaining > 30
-                                      ? 'text-green-600'
-                                      : user.days_remaining > 7
-                                      ? 'text-yellow-600'
-                                      : user.days_remaining >= 0
-                                      ? 'text-orange-600'
-                                      : 'text-red-600'
-                                  }`}>
-                                    {user.days_remaining >= 0
-                                      ? `${user.days_remaining} days left`
-                                      : `${Math.abs(user.days_remaining)} days overdue`}
-                                  </span>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {user.id === userId ? (
+                                <span className="text-gray-400 text-xs italic px-2">Your account</span>
+                              ) : (
+                                <>
+                                  {/* Role Selector */}
+                                  <select
+                                    value={user.role}
+                                    onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Power User' | 'Admin')}
+                                    className="px-2 py-0.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  >
+                                    <option value="User">User</option>
+                                    <option value="Power User">Power User</option>
+                                    <option value="Admin">Admin</option>
+                                  </select>
+
+                                  {/* Enable/Disable Button */}
+                                  <button
+                                    onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
+                                    className={`px-2 py-0.5 text-white rounded hover:opacity-90 text-xs ${
+                                      user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
+                                    }`}
+                                    title={user.is_active !== false ? 'Disable' : 'Enable'}
+                                  >
+                                    {user.is_active !== false ? 'Off' : 'On'}
+                                  </button>
+
+                                  {/* Delete Button */}
+                                  <button
+                                    onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
+                                    className="p-0.5 bg-red-600 text-white rounded hover:bg-red-700"
+                                    title="Delete"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Expanded Details */}
+                          {isExpanded && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                              {/* User ID */}
+                              <div>
+                                <span className="text-gray-500 block mb-1">User ID</span>
+                                <p className="font-mono text-gray-700 truncate" title={user.id}>
+                                  {user.id.substring(0, 12)}...
+                                </p>
+                              </div>
+
+                              {/* Joined Date */}
+                              <div>
+                                <span className="text-gray-500 block mb-1">Joined</span>
+                                <p className="text-gray-900">
+                                  {new Date(user.created_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </p>
+                              </div>
+
+                              {/* Subscription Code */}
+                              <div>
+                                <span className="text-gray-500 block mb-1">Sub Code</span>
+                                {user.registration_code ? (
+                                  <div>
+                                    <p className="font-mono font-semibold text-indigo-600">{user.registration_code}</p>
+                                    {user.code_description && (
+                                      <p className="text-gray-500 italic truncate" title={user.code_description}>
+                                        {user.code_description}
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-400 italic">None</p>
                                 )}
                               </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">Never</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-500">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
 
-            <div className="mt-4 text-sm text-gray-500">
-              <p className="mb-2"><strong>Role Descriptions:</strong></p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li><strong>User:</strong> Standard access to their own beekeeping data</li>
-                <li><strong>Admin:</strong> Full access including user management and settings</li>
-              </ul>
-            </div>
+                              {/* Subscription Expires */}
+                              <div>
+                                <span className="text-gray-500 block mb-1">Expires</span>
+                                {user.subscription_expires_at ? (
+                                  <div>
+                                    <p className="text-gray-900">
+                                      {new Date(user.subscription_expires_at).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                    {user.days_remaining !== undefined && (
+                                      <p className={`font-medium ${
+                                        user.days_remaining > 30
+                                          ? 'text-green-600'
+                                          : user.days_remaining > 7
+                                          ? 'text-yellow-600'
+                                          : user.days_remaining >= 0
+                                          ? 'text-orange-600'
+                                          : 'text-red-600'
+                                      }`}>
+                                        {user.days_remaining >= 0
+                                          ? `${user.days_remaining}d left`
+                                          : `${Math.abs(user.days_remaining)}d overdue`}
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-400 italic">Never</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )}
       </div>
@@ -2238,6 +2404,9 @@ export default function SettingsPage() {
                       Subscription Duration
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Subscription Expires
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Usage
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2260,18 +2429,56 @@ export default function SettingsPage() {
                           {code.description || <span className="italic text-gray-400">No description</span>}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900">
-                              {code.subscription_duration_days || 365} days
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              ({code.subscription_duration_days === 30 ? '1 month' :
-                                code.subscription_duration_days === 90 ? '3 months' :
-                                code.subscription_duration_days === 180 ? '6 months' :
-                                code.subscription_duration_days === 365 ? '1 year' :
-                                Math.round((code.subscription_duration_days || 365) / 30) + ' months'})
-                            </span>
-                          </div>
+                          {code.subscription_duration_days === 0 ? (
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-indigo-600">
+                                Never expires
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                (lifetime)
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900">
+                                {code.subscription_duration_days || 365} days
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                ({code.subscription_duration_days === 30 ? '1 month' :
+                                  code.subscription_duration_days === 90 ? '3 months' :
+                                  code.subscription_duration_days === 180 ? '6 months' :
+                                  code.subscription_duration_days === 365 ? '1 year' :
+                                  Math.round((code.subscription_duration_days || 365) / 30) + ' months'})
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
+                          {code.subscription_duration_days === 0 ? (
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-indigo-600">
+                                Never
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Lifetime access
+                              </span>
+                            </div>
+                          ) : (
+                            (() => {
+                              const expiryDate = new Date()
+                              expiryDate.setDate(expiryDate.getDate() + (code.subscription_duration_days || 365))
+                              return (
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-gray-900">
+                                    {expiryDate.toLocaleDateString()}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    If activated today
+                                  </span>
+                                </div>
+                              )
+                            })()
+                          )}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
@@ -2415,6 +2622,7 @@ export default function SettingsPage() {
                   <option value="90">90 days (3 months)</option>
                   <option value="180">180 days (6 months)</option>
                   <option value="365">365 days (1 year)</option>
+                  <option value="0">Never expires (lifetime)</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
                   Duration of subscription when this code is activated
