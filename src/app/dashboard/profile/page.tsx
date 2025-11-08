@@ -1210,6 +1210,21 @@ export default function ProfilePage() {
         )}
       </div>
 
+      {/* Subscription Management */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Calendar size={28} className="text-amber-600" />
+          <h2 className="text-2xl font-semibold text-gray-900">Subscription</h2>
+        </div>
+
+        <SubscriptionStatusCard
+          key={subscriptionRefreshKey}
+          onRenewClick={() => setShowRenewSubscriptionModal(true)}
+        />
+
+        <SubscriptionHistoryTable key={subscriptionRefreshKey} />
+      </div>
+
       {/* Team Management */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
@@ -1376,7 +1391,7 @@ export default function ProfilePage() {
                                 Pending Invitations
                               </h5>
                               <div className="space-y-2">
-                                {teamInvitations.map((invitation) => {
+                                {teamInvitations.map((invitation, index) => {
                                   const expiresAt = new Date(invitation.expires_at)
                                   const now = new Date()
                                   const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
@@ -1384,7 +1399,7 @@ export default function ProfilePage() {
                                   const isExpired = daysLeft < 0
 
                                   return (
-                                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                    <div key={`pending-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
                                       <div className="flex items-center gap-3 flex-1">
                                         <Mail size={16} className="text-orange-400" />
                                         <div className="flex-1">
@@ -1427,11 +1442,11 @@ export default function ProfilePage() {
                                 Accepted Invitations
                               </h5>
                               <div className="space-y-2">
-                                {acceptedInvitations.map((invitation) => {
+                                {acceptedInvitations.map((invitation, index) => {
                                   const acceptedDate = invitation.accepted_at ? new Date(invitation.accepted_at) : null
 
                                   return (
-                                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                                    <div key={`accepted-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                                       <div className="flex items-center gap-3 flex-1">
                                         <User size={16} className="text-green-600" />
                                         <div className="flex-1">
@@ -1464,11 +1479,11 @@ export default function ProfilePage() {
                                 Declined Invitations
                               </h5>
                               <div className="space-y-2">
-                                {declinedInvitations.map((invitation) => {
+                                {declinedInvitations.map((invitation, index) => {
                                   const declinedDate = invitation.declined_at ? new Date(invitation.declined_at) : null
 
                                   return (
-                                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                                    <div key={`declined-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                                       <div className="flex items-center gap-3 flex-1">
                                         <X size={16} className="text-red-600" />
                                         <div className="flex-1">
@@ -2030,21 +2045,6 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Subscription Management */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Calendar size={28} className="text-amber-600" />
-          <h2 className="text-2xl font-semibold text-gray-900">Subscription</h2>
-        </div>
-
-        <SubscriptionStatusCard
-          key={subscriptionRefreshKey}
-          onRenewClick={() => setShowRenewSubscriptionModal(true)}
-        />
-
-        <SubscriptionHistoryTable key={subscriptionRefreshKey} />
       </div>
 
       {/* Danger Zone */}

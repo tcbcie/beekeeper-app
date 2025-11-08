@@ -12,6 +12,13 @@ export default function SubscriptionWarningBanner() {
 
   useEffect(() => {
     fetchSubscriptionStatus()
+
+    // Poll for subscription status every 30 seconds to catch updates
+    const interval = setInterval(() => {
+      fetchSubscriptionStatus()
+    }, 30000)
+
+    return () => clearInterval(interval)
   }, [])
 
   const fetchSubscriptionStatus = async () => {
@@ -78,7 +85,7 @@ export default function SubscriptionWarningBanner() {
       case 'expired':
         return 'Your subscription has expired. Renew now to continue using the app.'
       case 'no_subscription':
-        return 'You don\'t have an active subscription. Contact an administrator for a subscription code.'
+        return 'You don\'t have an active subscription. Go to your profile section to activate.'
       default:
         return ''
     }

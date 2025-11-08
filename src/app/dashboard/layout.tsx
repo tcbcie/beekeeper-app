@@ -19,50 +19,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const checkUser = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (session) {
-      const oauthRegCode = localStorage.getItem('oauth_reg_code')
-      const oauthCodeId = localStorage.getItem('oauth_code_id')
-
-      if (oauthRegCode && oauthCodeId) {
-        // This is a new OAuth user with valid code - store code reference and increment usage
-        try {
-          // Store the registration code ID in the user's profile
-          await supabase
-            .from('profiles')
-            .update({ used_registration_code_id: oauthCodeId })
-            .eq('id', session.user.id)
-
-          // Increment code usage counter
-          await supabase.rpc('increment_code_usage', { code_id: oauthCodeId })
-
-          localStorage.removeItem('oauth_reg_code')
-          localStorage.removeItem('oauth_code_id')
-        } catch (error) {
-          console.error('Failed to process OAuth registration code:', error)
-          // Continue anyway - user is already registered
-        }
-      } else {
-        // Check if this is a new OAuth user without registration code
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('created_at, used_registration_code_id')
-          .eq('id', session.user.id)
-          .single()
-
-        // Check if user was created very recently (within last 10 seconds) without a registration code
-        const isNewUser = profile &&
-          new Date().getTime() - new Date(profile.created_at).getTime() < 10000
-
-        if (isNewUser && !profile.used_registration_code_id) {
-          // New OAuth user tried to bypass registration code requirement
-          await supabase.auth.signOut()
-          // Delete the profile that was just created
-          await supabase.from('profiles').delete().eq('id', session.user.id)
-          alert('Registration code required. Please click "Sign Up" and enter a registration code before signing in with Google.')
-          router.push('/login')
-          return
-        }
-      }
-
       // Check if account is active
       const accountActive = await isAccountActive()
       if (!accountActive) {

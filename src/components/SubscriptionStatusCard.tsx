@@ -219,7 +219,7 @@ export default function SubscriptionStatusCard({ onRenewClick }: SubscriptionSta
       {subscriptionStatus.status === 'no_subscription' && (
         <div className="mt-4 p-3 bg-gray-100 border border-gray-200 rounded-md">
           <p className="text-sm text-gray-800">
-            You don&apos;t have an active subscription. Contact an admin for a subscription code.
+            You don&apos;t have an active subscription. Click &quot;Renew Subscription&quot; above to activate with a code.
           </p>
         </div>
       )}
