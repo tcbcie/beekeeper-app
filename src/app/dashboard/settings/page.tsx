@@ -584,10 +584,15 @@ export default function SettingsPage() {
 
   // Fetch users when user management section is opened
   useEffect(() => {
-    if (showUserManagement && users.length === 0) {
-      fetchUsers()
+    if (showUserManagement) {
+      if (users.length === 0) {
+        fetchUsers()
+      }
+      if (deletedUsers.length === 0) {
+        fetchDeletedUsers()
+      }
     }
-  }, [showUserManagement, users.length])
+  }, [showUserManagement, users.length, deletedUsers.length])
 
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true)
