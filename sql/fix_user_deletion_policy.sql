@@ -4,8 +4,11 @@
 -- Replace direct deletion with soft delete to prevent data loss
 -- ============================================================================
 
--- Drop the current deletion policy that allows users to delete themselves
+-- Drop ALL existing deletion and update policies
 DROP POLICY IF EXISTS "Users can delete profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Prevent direct profile deletion" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
 
 -- Create new policy: Only allow soft delete (via function)
 -- Users should NOT be able to directly DELETE from profiles table
@@ -18,8 +21,6 @@ COMMENT ON POLICY "Prevent direct profile deletion" ON public.profiles IS
   'Users must use soft_delete_user() function instead of direct DELETE to preserve subscription history';
 
 -- Allow users to update their own profile (for soft delete function)
-DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-
 CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE
 TO authenticated
