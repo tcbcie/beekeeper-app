@@ -97,9 +97,8 @@ END $$;
 -- ============================================================================
 -- DELETION BLOCK - DELETE ALL SOFT-DELETED USERS AND ALL THEIR DATA
 -- ============================================================================
--- UNCOMMENT THE BLOCK BELOW TO EXECUTE THE DELETION
+-- ⚠️ DELETION BLOCK IS NOW ACTIVE - THIS WILL DELETE ALL SOFT-DELETED USERS!
 -- ============================================================================
-/*
 DO $$
 DECLARE
   user_id_to_delete UUID;
@@ -225,7 +224,6 @@ BEGIN
   RAISE NOTICE 'All data has been permanently removed.';
   RAISE NOTICE '============================================';
 END $$;
-*/
 
 -- Verification (run after deletion)
 SELECT
