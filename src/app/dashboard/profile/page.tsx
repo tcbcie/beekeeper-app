@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2 } from 'lucide-react'
@@ -77,6 +77,8 @@ export default function ProfilePage() {
   const [createdAt, setCreatedAt] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
 
   // Profile editing state
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
@@ -974,6 +976,28 @@ export default function ProfilePage() {
       }
     }
   }
+
+  // Handle payment status from URL
+  useEffect(() => {
+    const payment = searchParams.get('payment')
+    if (payment) {
+      setPaymentStatus(payment)
+      // Clear the payment parameter from URL
+      const newUrl = window.location.pathname
+      window.history.replaceState({}, '', newUrl)
+
+      // Show alert based on payment status
+      if (payment === 'success') {
+        setTimeout(() => {
+          alert('✅ Payment successful! Your subscription has been activated.\n\nPlease refresh the page to see your updated subscription status.')
+        }, 500)
+      } else if (payment === 'cancelled') {
+        setTimeout(() => {
+          alert('Payment was cancelled. You can try again whenever you\'re ready.')
+        }, 500)
+      }
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const initUser = async () => {
