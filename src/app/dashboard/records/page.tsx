@@ -4005,32 +4005,81 @@ export default function InspectionsPage() {
               <input
                 type="number"
                 value={editingCheck?.mites_count ?? ''}
-                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, mites_count: e.target.value ? parseInt(e.target.value) : null} : null)}
+                onChange={(e) => {
+                  const mitesCount = e.target.value ? parseInt(e.target.value) : null
+                  const sampleSize = editingCheck?.sample_size
+                  const method = editingCheck?.method
+                  let infestationRate = null
+
+                  if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
+                    if (method === 'Natural Mite Drop') {
+                      // Daily Mite Drop = Total Mites / Number of Days
+                      infestationRate = parseFloat((mitesCount / sampleSize).toFixed(2))
+                    } else {
+                      // Standard Infestation Rate = (Mites / Sample Size) * 100
+                      infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
+                    }
+                  }
+
+                  setEditingCheck(editingCheck ? {
+                    ...editingCheck,
+                    mites_count: mitesCount,
+                    infestation_rate: infestationRate
+                  } : null)
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sample Size</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {editingCheck?.method === 'Natural Mite Drop' ? 'Number of Days' : 'Sample Size'}
+              </label>
               <input
                 type="number"
                 value={editingCheck?.sample_size ?? ''}
-                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, sample_size: e.target.value ? parseInt(e.target.value) : null} : null)}
+                onChange={(e) => {
+                  const sampleSize = e.target.value ? parseInt(e.target.value) : null
+                  const mitesCount = editingCheck?.mites_count
+                  const method = editingCheck?.method
+                  let infestationRate = null
+
+                  if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
+                    if (method === 'Natural Mite Drop') {
+                      // Daily Mite Drop = Total Mites / Number of Days
+                      infestationRate = parseFloat((mitesCount / sampleSize).toFixed(2))
+                    } else {
+                      // Standard Infestation Rate = (Mites / Sample Size) * 100
+                      infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
+                    }
+                  }
+
+                  setEditingCheck(editingCheck ? {
+                    ...editingCheck,
+                    sample_size: sampleSize,
+                    infestation_rate: infestationRate
+                  } : null)
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Infestation Rate (%)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {editingCheck?.method === 'Natural Mite Drop' ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
+                {editingCheck?.mites_count !== null && editingCheck?.sample_size !== null && editingCheck?.sample_size > 0 && (
+                  <span className="ml-2 text-xs text-green-600 font-normal">(Auto-calculated)</span>
+                )}
+              </label>
               <input
                 type="number"
                 step="0.01"
                 value={editingCheck?.infestation_rate ?? ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, infestation_rate: e.target.value ? parseFloat(e.target.value) : null} : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                placeholder="Optional"
+                placeholder="Optional (or auto-calculated)"
               />
             </div>
 
