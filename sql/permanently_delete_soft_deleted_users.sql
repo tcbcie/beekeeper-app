@@ -37,7 +37,7 @@ BEGIN
   FOR user_record IN
     SELECT
       id,
-      COALESCE(original_email, email) as display_email,
+      email as display_email,
       first_name,
       last_name,
       role,
@@ -85,7 +85,7 @@ BEGIN
   FOR user_record IN
     SELECT
       id,
-      COALESCE(original_email, email) as display_email,
+      email as display_email,
       first_name,
       last_name
     FROM public.profiles
