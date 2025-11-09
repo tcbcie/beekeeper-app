@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown } from 'lucide-react'
+import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -50,12 +50,18 @@ interface RegistrationCode {
   description: string | null
   created_by: string | null
   created_at: string
-  expires_at: string
   is_active: boolean
   max_uses: number | null
   current_uses: number
   updated_at: string
-  subscription_duration_days: number
+  subscription_expires_at: string
+  code_type: 'individual' | 'association'
+  association_id: string | null
+  association?: {
+    name: string
+    jurisdiction: string
+    county_area: string | null
+  }
 }
 
 interface SupportTicket {
@@ -93,6 +99,15 @@ interface VarroaTreatment {
   updated_at?: string
 }
 
+interface Association {
+  id: string
+  name: string
+  jurisdiction: string
+  county_area: string
+  created_at?: string
+  updated_at?: string
+}
+
 interface TicketUpdate {
   status?: 'open' | 'in_progress' | 'resolved' | 'closed'
   priority?: 'low' | 'normal' | 'high' | 'urgent'
@@ -108,7 +123,7 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'users' | 'tickets' | 'treatments' | 'dropdowns' | 'registration'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration'>('profile')
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
@@ -139,15 +154,34 @@ export default function SettingsPage() {
   const [editingVarroaTreatment, setEditingVarroaTreatment] = useState<VarroaTreatment | null>(null)
   const [showAddVarroaTreatment, setShowAddVarroaTreatment] = useState(false)
 
+  // Associations state
+  const [showAssociations, setShowAssociations] = useState(false)
+  const [associations, setAssociations] = useState<Association[]>([])
+  const [loadingAssociations, setLoadingAssociations] = useState(false)
+  const [editingAssociation, setEditingAssociation] = useState<Association | null>(null)
+  const [showAddAssociation, setShowAddAssociation] = useState(false)
+  const [jurisdictionFilter, setJurisdictionFilter] = useState<'all' | 'NI' | 'ROI'>('all')
+  const [countyFilter, setCountyFilter] = useState<string>('all')
+
   // Registration Codes state
   const [registrationCodes, setRegistrationCodes] = useState<RegistrationCode[]>([])
   const [loadingCodes, setLoadingCodes] = useState(false)
   const [showAddCodeModal, setShowAddCodeModal] = useState(false)
+  const [editingCodeId, setEditingCodeId] = useState<string | null>(null)
+  const [editingCodeData, setEditingCodeData] = useState<{
+    subscription_expires_at: string
+    max_uses: string
+  }>({
+    subscription_expires_at: '',
+    max_uses: '',
+  })
   const [newCodeData, setNewCodeData] = useState({
     code: '',
     description: '',
     max_uses: '',
-    subscription_duration_days: '365',
+    subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0], // Default: 1 year from now
+    code_type: 'individual' as 'individual' | 'association',
+    association_id: '',
   })
 
   const [categoryFormData, setCategoryFormData] = useState({
@@ -170,6 +204,12 @@ export default function SettingsPage() {
     temperature_range: '',
     honey_flow_restrictions: '',
     withdrawal_period_days: 0,
+  })
+
+  const [associationFormData, setAssociationFormData] = useState({
+    name: '',
+    jurisdiction: '',
+    county_area: '',
   })
 
   useEffect(() => {
@@ -404,6 +444,31 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error updating user role:', error)
       alert('Failed to update user role.')
+    }
+  }
+
+  const handleExpiryDateChange = async (targetUserId: string, newExpiryDate: string) => {
+    if (!newExpiryDate) {
+      alert('Please enter a valid date.')
+      return
+    }
+
+    try {
+      // Convert to ISO string for database
+      const expiryTimestamp = new Date(newExpiryDate).toISOString()
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ subscription_expires_at: expiryTimestamp })
+        .eq('id', targetUserId)
+
+      if (error) throw error
+
+      alert('Subscription expiry date updated successfully!')
+      fetchUsers() // Refresh the list
+    } catch (error) {
+      console.error('Error updating subscription expiry date:', error)
+      alert('Failed to update subscription expiry date.')
     }
   }
 
@@ -742,6 +807,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeSection === 'treatments') {
       setShowVarroaTreatments(true)
+    } else if (activeSection === 'associations') {
+      setShowAssociations(true)
     } else if (activeSection === 'tickets') {
       setShowTicketManagement(true)
     } else if (activeSection === 'users') {
@@ -755,6 +822,37 @@ export default function SettingsPage() {
       fetchVarroaTreatments()
     }
   }, [showVarroaTreatments, fetchVarroaTreatments])
+
+  // Fetch Associations
+  const fetchAssociations = useCallback(async () => {
+    setLoadingAssociations(true)
+    try {
+      const { data, error } = await supabase
+        .from('beekeeping_associations')
+        .select('*')
+        .order('name')
+
+      if (error) {
+        console.error('Error fetching associations:', error)
+        alert('Failed to fetch beekeeping associations.')
+        return
+      }
+
+      setAssociations(data || [])
+    } catch (error) {
+      console.error('Error fetching associations:', error)
+      alert('Failed to fetch beekeeping associations.')
+    } finally {
+      setLoadingAssociations(false)
+    }
+  }, [])
+
+  // Fetch associations when section is opened
+  useEffect(() => {
+    if (showAssociations) {
+      fetchAssociations()
+    }
+  }, [showAssociations, fetchAssociations])
 
   // Fetch registration codes when section is opened
   useEffect(() => {
@@ -905,22 +1003,127 @@ export default function SettingsPage() {
     })
   }
 
+  // Association CRUD functions
+  const handleAssociationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      if (editingAssociation) {
+        // Update existing association
+        const { error } = await supabase
+          .from('beekeeping_associations')
+          .update({
+            ...associationFormData,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingAssociation.id)
+
+        if (error) throw error
+        alert('Beekeeping association updated successfully!')
+      } else {
+        // Create new association
+        const { error } = await supabase
+          .from('beekeeping_associations')
+          .insert([associationFormData])
+
+        if (error) throw error
+        alert('Beekeeping association added successfully!')
+      }
+
+      fetchAssociations()
+      resetAssociationForm()
+    } catch (error) {
+      console.error('Error saving beekeeping association:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to save beekeeping association: ${errorMessage}`)
+    }
+  }
+
+  const handleEditAssociation = (association: Association) => {
+    setEditingAssociation(association)
+    setAssociationFormData({
+      name: association.name,
+      jurisdiction: association.jurisdiction,
+      county_area: association.county_area,
+    })
+    // Don't show the add form - we're doing inline editing in the table
+  }
+
+  const handleDeleteAssociation = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this beekeeping association? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('beekeeping_associations')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      alert('Beekeeping association deleted successfully!')
+      fetchAssociations()
+    } catch (error) {
+      console.error('Error deleting beekeeping association:', error)
+      alert('Failed to delete beekeeping association.')
+    }
+  }
+
+  const resetAssociationForm = () => {
+    setShowAddAssociation(false)
+    setEditingAssociation(null)
+    setAssociationFormData({
+      name: '',
+      jurisdiction: '',
+      county_area: '',
+    })
+  }
+
   // Registration Codes Functions
   const fetchRegistrationCodes = async () => {
     setLoadingCodes(true)
     try {
       const { data, error } = await supabase
         .from('registration_codes')
-        .select('*')
+        .select(`
+          *,
+          beekeeping_associations!registration_codes_association_id_fkey(name, jurisdiction, county_area)
+        `)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setRegistrationCodes(data || [])
+
+      // Transform the data to match our interface
+      const transformedData = (data || []).map((code: any) => ({
+        ...code,
+        association: code.beekeeping_associations || null
+      }))
+
+      setRegistrationCodes(transformedData || [])
     } catch (error) {
       console.error('Error fetching registration codes:', error)
       alert('Failed to fetch registration codes.')
     } finally {
       setLoadingCodes(false)
+    }
+  }
+
+  const fetchAssociationsForCodes = async () => {
+    setLoadingAssociations(true)
+    try {
+      const { data, error } = await supabase
+        .from('beekeeping_associations')
+        .select('id, name, jurisdiction, county_area')
+        .eq('is_active', true)
+        .order('name')
+
+      if (error) throw error
+      setAssociations(data || [])
+    } catch (error) {
+      console.error('Error fetching associations:', error)
+    } finally {
+      setLoadingAssociations(false)
     }
   }
 
@@ -932,19 +1135,26 @@ export default function SettingsPage() {
       return
     }
 
+    // Validate association code has association selected
+    if (newCodeData.code_type === 'association' && !newCodeData.association_id) {
+      alert('Please select an association for association codes')
+      return
+    }
+
     try {
-      // Set expiration to 100 years in the future (effectively no expiration)
-      const farFutureDate = new Date()
-      farFutureDate.setFullYear(farFutureDate.getFullYear() + 100)
+      // Convert date to end of day (23:59:59)
+      const subscriptionExpiryDate = new Date(newCodeData.subscription_expires_at)
+      subscriptionExpiryDate.setHours(23, 59, 59, 999)
 
       const { error } = await supabase
         .from('registration_codes')
         .insert([{
           code: newCodeData.code.toUpperCase().trim(),
           description: newCodeData.description.trim() || null,
-          expires_at: farFutureDate.toISOString(),
           max_uses: newCodeData.max_uses ? parseInt(newCodeData.max_uses) : null,
-          subscription_duration_days: parseInt(newCodeData.subscription_duration_days),
+          subscription_expires_at: subscriptionExpiryDate.toISOString(),
+          code_type: newCodeData.code_type,
+          association_id: newCodeData.code_type === 'association' ? newCodeData.association_id : null,
           created_by: userId
         }])
 
@@ -952,12 +1162,25 @@ export default function SettingsPage() {
 
       alert('Subscription code created successfully!')
       setShowAddCodeModal(false)
-      setNewCodeData({ code: '', description: '', max_uses: '', subscription_duration_days: '365' })
+      setNewCodeData({
+        code: '',
+        description: '',
+        max_uses: '',
+        subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        code_type: 'individual' as 'individual' | 'association',
+        association_id: '',
+      })
       fetchRegistrationCodes()
     } catch (error) {
       console.error('Error creating registration code:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to create code: ${errorMessage}`)
+
+      // Check if it's a duplicate code error
+      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
+        alert(`This code already exists. Please choose a different code.`)
+      } else {
+        alert(`Failed to create code: ${errorMessage}`)
+      }
     }
   }
 
@@ -976,6 +1199,47 @@ export default function SettingsPage() {
       console.error('Error toggling code status:', error)
       alert('Failed to update code status.')
     }
+  }
+
+  const handleEditCode = (code: RegistrationCode) => {
+    setEditingCodeId(code.id)
+    setEditingCodeData({
+      subscription_expires_at: new Date(code.subscription_expires_at).toISOString().split('T')[0],
+      max_uses: code.max_uses?.toString() || '',
+    })
+  }
+
+  const handleSaveCodeEdit = async (codeId: string) => {
+    try {
+      // Convert date to end of day (23:59:59)
+      const subscriptionExpiryDate = new Date(editingCodeData.subscription_expires_at)
+      subscriptionExpiryDate.setHours(23, 59, 59, 999)
+
+      const { error } = await supabase
+        .from('registration_codes')
+        .update({
+          subscription_expires_at: subscriptionExpiryDate.toISOString(),
+          max_uses: editingCodeData.max_uses ? parseInt(editingCodeData.max_uses) : null,
+        })
+        .eq('id', codeId)
+
+      if (error) throw error
+
+      alert('Code updated successfully!')
+      setEditingCodeId(null)
+      fetchRegistrationCodes()
+    } catch (error) {
+      console.error('Error updating code:', error)
+      alert('Failed to update code.')
+    }
+  }
+
+  const handleCancelCodeEdit = () => {
+    setEditingCodeId(null)
+    setEditingCodeData({
+      subscription_expires_at: '',
+      max_uses: '',
+    })
   }
 
   const handleDeleteCode = async (codeId: string, code: string) => {
@@ -1045,150 +1309,130 @@ export default function SettingsPage() {
   const exportDatabase = async () => {
     setExporting(true)
     try {
-      let sqlContent = `-- =====================================================\n`
-      sqlContent += `-- HiveCraic Database Export\n`
-      sqlContent += `-- Generated on: ${new Date().toISOString()}\n`
-      sqlContent += `-- =====================================================\n\n`
-      sqlContent += `-- This export includes:\n`
-      sqlContent += `--   1. Complete database schema (tables, columns, constraints, indexes)\n`
-      sqlContent += `--   2. All data from all tables\n\n`
-      sqlContent += `-- To restore this database:\n`
-      sqlContent += `--   1. Create a new PostgreSQL database\n`
-      sqlContent += `--   2. Run this SQL file against the new database\n`
-      sqlContent += `--   3. Set up Supabase authentication and configure RLS policies\n\n`
-      sqlContent += `-- =====================================================\n`
-      sqlContent += `-- SECTION 1: DATABASE SCHEMA (from live database)\n`
-      sqlContent += `-- =====================================================\n\n`
+      // If user is admin, use admin API to export ALL users' data
+      if (userIsAdmin) {
+        console.log('Admin export: fetching all users data via API...')
 
-      // Fetch all table names from information_schema
-      const { data: tablesData, error: tablesError } = await supabase.rpc('exec_sql', {
-        query: `
-          SELECT table_name
-          FROM information_schema.tables
-          WHERE table_schema = 'public'
-          AND table_type = 'BASE TABLE'
-          ORDER BY table_name
-        `
-      })
+        // Get the current session to get auth token
+        const { data: { session } } = await supabase.auth.getSession()
 
-      let tables: string[]
-      if (tablesError) {
-        console.error('Cannot fetch schema via RPC, using direct query method')
-        // Fallback: get tables from known list
-        tables = ['apiaries', 'hives', 'queens', 'inspections', 'varroa_checks', 'varroa_treatments', 'dropdown_categories', 'dropdown_values', 'feedings', 'harvests', 'rearing_batches', 'support_tickets', 'user_profiles']
+        if (!session) {
+          alert('Session expired. Please log in again.')
+          return
+        }
+
+        // Call admin API to export all data (bypasses RLS)
+        const response = await fetch('/api/admin/export-all-data', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to export database')
+        }
+
+        // Get the SQL content from response
+        const sqlContent = await response.text()
+
+        // Create and download file
+        const blob = new Blob([sqlContent], { type: 'text/sql' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `hivecraic-complete-export-${new Date().toISOString().split('T')[0]}.sql`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+        alert('✅ Complete database exported successfully!\n\nThis export includes ALL users\' data from ALL tables including tasks_events.')
       } else {
-        tables = tablesData.map((t: { table_name: string }) => t.table_name)
-      }
+        // Regular user: export only their own data
+        console.log('User export: fetching current user data only...')
 
-      // Get schema information for each table
-      for (const tableName of tables) {
-        // Fetch column information
-        const { data: columnsData } = await supabase
-          .from(tableName)
-          .select('*')
-          .limit(1)
+        const tables = [
+          'apiaries',
+          'colonies',
+          'colony_movements',
+          'feedings',
+          'harvests',
+          'hives',
+          'inspections',
+          'queens',
+          'rearing_batches',
+          'tasks_events',
+          'team_apiaries',
+          'team_invitations',
+          'team_members',
+          'teams',
+          'varroa_checks',
+          'varroa_treatments'
+        ]
 
-        if (columnsData && columnsData.length > 0) {
-          const sampleRow = columnsData[0]
-          const columns = Object.keys(sampleRow)
+        let sqlContent = `-- =====================================================\n`
+        sqlContent += `-- HiveCraic Personal Data Export\n`
+        sqlContent += `-- Generated on: ${new Date().toISOString()}\n`
+        sqlContent += `-- =====================================================\n\n`
+        sqlContent += `-- This export includes YOUR data only\n`
+        sqlContent += `-- Tables: ${tables.join(', ')}\n\n`
 
-          sqlContent += `\n-- Table: ${tableName}\n`
-          sqlContent += `CREATE TABLE IF NOT EXISTS public.${tableName} (\n`
+        // Fetch and export data from each table (RLS will filter to user's data)
+        for (const table of tables) {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
 
-          // Add columns with basic type inference
-          const columnDefs = columns.map(col => {
-            const value = sampleRow[col]
-            let dataType = 'TEXT'
-
-            if (col === 'id' || col.endsWith('_id')) {
-              dataType = 'UUID'
-            } else if (typeof value === 'number') {
-              if (Number.isInteger(value)) {
-                dataType = 'INTEGER'
-              } else {
-                dataType = 'NUMERIC'
-              }
-            } else if (typeof value === 'boolean') {
-              dataType = 'BOOLEAN'
-            } else if (value instanceof Date || col.includes('date') || col.includes('_at')) {
-              if (col.includes('_at') || col === 'created_at' || col === 'updated_at') {
-                dataType = 'TIMESTAMP WITH TIME ZONE'
-              } else {
-                dataType = 'DATE'
-              }
-            } else if (typeof value === 'object' && value !== null) {
-              dataType = 'JSONB'
-            }
-
-            return `  ${col} ${dataType}`
-          }).join(',\n')
-
-          sqlContent += columnDefs
-          sqlContent += `,\n  CONSTRAINT ${tableName}_pkey PRIMARY KEY (id)\n`
-          sqlContent += `);\n\n`
-        }
-      }
-
-      sqlContent += `-- Note: This schema is inferred from live data.\n`
-      sqlContent += `-- Foreign key constraints, indexes, triggers, and RLS policies\n`
-      sqlContent += `-- should be recreated based on your specific requirements.\n\n`
-
-      sqlContent += `-- =====================================================\n`
-      sqlContent += `-- SECTION 2: DATA EXPORT\n`
-      sqlContent += `-- =====================================================\n\n`
-
-      // Fetch and export data from each table
-      for (const table of tables) {
-        const { data, error } = await supabase
-          .from(table)
-          .select('*')
-
-        if (error) {
-          console.error(`Error fetching ${table}:`, error)
-          continue
-        }
-
-        if (data && data.length > 0) {
-          sqlContent += `\n-- Table: ${table}\n`
-          sqlContent += `-- Records: ${data.length}\n\n`
-
-          // Get column names from first record
-          const columns = Object.keys(data[0])
-
-          for (const row of data) {
-            const values = columns.map(col => {
-              const value = row[col]
-              if (value === null) return 'NULL'
-              if (typeof value === 'boolean') return value ? 'true' : 'false'
-              if (typeof value === 'number') return value.toString()
-              if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`
-              if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'`
-              return `'${value}'`
-            }).join(', ')
-
-            sqlContent += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values});\n`
+          if (error) {
+            console.error(`Error fetching ${table}:`, error)
+            continue
           }
 
-          sqlContent += '\n'
+          if (data && data.length > 0) {
+            sqlContent += `\n-- Table: ${table}\n`
+            sqlContent += `-- Records: ${data.length}\n\n`
+
+            // Get column names from first record
+            const columns = Object.keys(data[0])
+
+            for (const row of data) {
+              const values = columns.map(col => {
+                const value = row[col]
+                if (value === null) return 'NULL'
+                if (typeof value === 'boolean') return value ? 'true' : 'false'
+                if (typeof value === 'number') return value.toString()
+                if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`
+                if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'`
+                return `'${value}'`
+              }).join(', ')
+
+              sqlContent += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values});\n`
+            }
+
+            sqlContent += '\n'
+          }
         }
+
+        sqlContent += `\n-- =====================================================\n`
+        sqlContent += `-- END OF EXPORT\n`
+        sqlContent += `-- =====================================================\n`
+
+        // Create and download file
+        const blob = new Blob([sqlContent], { type: 'text/sql' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `my-beekeeping-data-${new Date().toISOString().split('T')[0]}.sql`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+        alert('✅ Your personal data exported successfully!\n\nThis export includes your data from all tables including tasks and events.')
       }
-
-      sqlContent += `\n-- =====================================================\n`
-      sqlContent += `-- END OF EXPORT\n`
-      sqlContent += `-- =====================================================\n`
-
-      // Create and download file
-      const blob = new Blob([sqlContent], { type: 'text/sql' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `hive-craic-complete-${new Date().toISOString().split('T')[0]}.sql`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      alert('Database exported successfully with complete schema!')
     } catch (error) {
       console.error('Error exporting database:', error)
       alert('Failed to export database. Check console for details.')
@@ -1228,6 +1472,7 @@ export default function SettingsPage() {
     { id: 'registration' as const, label: 'Subscription Codes', icon: Shield, adminOnly: true },
     { id: 'tickets' as const, label: 'Support Tickets', icon: MessageCircle, adminOnly: true },
     { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true },
+    { id: 'associations' as const, label: 'Beekeeping Associations', icon: Building2, adminOnly: true },
     { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true },
   ].filter(section => !section.adminOnly || userIsAdmin)
 
@@ -1276,14 +1521,22 @@ export default function SettingsPage() {
           {/* Export Database Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-700">Export Your Data</h3>
-            <p className="text-sm text-gray-600">Download all your beekeeping data in JSON format.</p>
+            {userIsAdmin ? (
+              <p className="text-sm text-gray-600">
+                <strong>Admin Export:</strong> Download complete database backup with ALL users&apos; data from ALL tables including apiaries, hives, queens, inspections, tasks, events, and more.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                Download your personal beekeeping data including apiaries, hives, queens, inspections, tasks, events, and more in SQL format.
+              </p>
+            )}
             <button
               onClick={exportDatabase}
               disabled={exporting}
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium flex items-center gap-2"
             >
               <Download size={16} />
-              {exporting ? 'Exporting...' : 'Export Database'}
+              {exporting ? 'Exporting...' : userIsAdmin ? 'Export Complete Database (All Users)' : 'Export My Data'}
             </button>
           </div>
         </div>
@@ -1641,6 +1894,288 @@ export default function SettingsPage() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Beekeeping Associations Section */}
+      {activeSection === 'associations' && (
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Beekeeping Associations</h2>
+              <p className="text-gray-600 mt-2">Manage beekeeping associations across Ireland</p>
+            </div>
+          </div>
+        </div>
+
+        {showAssociations && (
+          <div className="px-6 pb-6 border-t border-gray-200 pt-6 space-y-4">
+            {/* Add Association Button */}
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-600">
+                Beekeeping associations from Northern Ireland and the Republic of Ireland.
+              </p>
+              <button
+                onClick={() => setShowAddAssociation(!showAddAssociation)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+              >
+                {showAddAssociation ? <X size={16} /> : <Plus size={16} />}
+                {showAddAssociation ? 'Cancel' : 'Add Association'}
+              </button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex gap-4 items-center bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Jurisdiction:</label>
+                <select
+                  value={jurisdictionFilter}
+                  onChange={(e) => setJurisdictionFilter(e.target.value as 'all' | 'NI' | 'ROI')}
+                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="all">All Jurisdictions</option>
+                  <option value="NI">Northern Ireland</option>
+                  <option value="ROI">Republic of Ireland</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">County/Area:</label>
+                <select
+                  value={countyFilter}
+                  onChange={(e) => setCountyFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="all">All Counties/Areas</option>
+                  {Array.from(new Set(associations.map(a => a.county_area))).sort().map(county => (
+                    <option key={county} value={county}>{county}</option>
+                  ))}
+                </select>
+              </div>
+
+              {(jurisdictionFilter !== 'all' || countyFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setJurisdictionFilter('all')
+                    setCountyFilter('all')
+                  }}
+                  className="ml-auto px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-100"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
+            {/* Add/Edit Form */}
+            {showAddAssociation && (
+              <form onSubmit={handleAssociationSubmit} className="bg-gray-50 p-6 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editingAssociation ? 'Edit Association' : 'Add New Association'}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Association Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={associationFormData.name}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Jurisdiction *
+                    </label>
+                    <input
+                      type="text"
+                      value={associationFormData.jurisdiction}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, jurisdiction: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="e.g., Northern Ireland, Republic of Ireland"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      County/Area *
+                    </label>
+                    <input
+                      type="text"
+                      value={associationFormData.county_area}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, county_area: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="e.g., County Antrim, Dublin"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <Save size={16} />
+                    {editingAssociation ? 'Update' : 'Add'} Association
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetAssociationForm}
+                    className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Associations Table */}
+            {loadingAssociations ? (
+              <div className="text-center py-8">
+                <LoadingSpinner text="Loading associations..." />
+              </div>
+            ) : associations.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No associations found. Add your first association above.
+              </div>
+            ) : (() => {
+              // Apply filters
+              const filteredAssociations = associations.filter(association => {
+                if (jurisdictionFilter !== 'all' && association.jurisdiction !== jurisdictionFilter) {
+                  return false
+                }
+                if (countyFilter !== 'all' && association.county_area !== countyFilter) {
+                  return false
+                }
+                return true
+              })
+
+              return filteredAssociations.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No associations match the selected filters.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 border-b-2 border-gray-300">
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Actions
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Association Name
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Jurisdiction
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          County/Area
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredAssociations.map((association) => (
+                      <tr key={association.id} className="hover:bg-gray-50">
+                        {editingAssociation?.id === association.id ? (
+                          /* Inline Edit Mode */
+                          <>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleAssociationSubmit(e)
+                                  }}
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Save"
+                                >
+                                  <Save size={18} />
+                                </button>
+                                <button
+                                  onClick={() => resetAssociationForm()}
+                                  className="text-gray-600 hover:text-gray-900"
+                                  title="Cancel"
+                                >
+                                  <X size={18} />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={associationFormData.name}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, name: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                placeholder="Association name"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={associationFormData.jurisdiction}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, jurisdiction: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                placeholder="Jurisdiction"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={associationFormData.county_area}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, county_area: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                placeholder="County/Area"
+                              />
+                            </td>
+                          </>
+                        ) : (
+                          /* Display Mode */
+                          <>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => handleEditAssociation(association)}
+                                  className="text-blue-600 hover:text-blue-900"
+                                  title="Edit"
+                                >
+                                  <Edit2 size={18} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteAssociation(association.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {association.name}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {association.jurisdiction}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {association.county_area}
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>
@@ -2294,34 +2829,29 @@ export default function SettingsPage() {
                               {/* Subscription Expires */}
                               <div>
                                 <span className="text-gray-500 block mb-1">Expires</span>
-                                {user.subscription_expires_at ? (
-                                  <div>
-                                    <p className="text-gray-900">
-                                      {new Date(user.subscription_expires_at).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                      })}
+                                <div className="flex flex-col gap-1">
+                                  <input
+                                    type="date"
+                                    value={user.subscription_expires_at ? new Date(user.subscription_expires_at).toISOString().split('T')[0] : ''}
+                                    onChange={(e) => handleExpiryDateChange(user.id, e.target.value)}
+                                    className="px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  />
+                                  {user.days_remaining !== undefined && user.subscription_expires_at && (
+                                    <p className={`text-xs font-medium ${
+                                      user.days_remaining > 30
+                                        ? 'text-green-600'
+                                        : user.days_remaining > 7
+                                        ? 'text-yellow-600'
+                                        : user.days_remaining >= 0
+                                        ? 'text-orange-600'
+                                        : 'text-red-600'
+                                    }`}>
+                                      {user.days_remaining >= 0
+                                        ? `${user.days_remaining}d left`
+                                        : `${Math.abs(user.days_remaining)}d overdue`}
                                     </p>
-                                    {user.days_remaining !== undefined && (
-                                      <p className={`font-medium ${
-                                        user.days_remaining > 30
-                                          ? 'text-green-600'
-                                          : user.days_remaining > 7
-                                          ? 'text-yellow-600'
-                                          : user.days_remaining >= 0
-                                          ? 'text-orange-600'
-                                          : 'text-red-600'
-                                      }`}>
-                                        {user.days_remaining >= 0
-                                          ? `${user.days_remaining}d left`
-                                          : `${Math.abs(user.days_remaining)}d overdue`}
-                                      </p>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="text-gray-400 italic">Never</p>
-                                )}
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -2401,6 +2931,9 @@ export default function SettingsPage() {
                       Description
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type / Association
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Subscription Duration
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2429,68 +2962,119 @@ export default function SettingsPage() {
                           {code.description || <span className="italic text-gray-400">No description</span>}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          {code.subscription_duration_days === 0 ? (
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-indigo-600">
-                                Never expires
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                (lifetime)
-                              </span>
-                            </div>
+                          {code.code_type === 'individual' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              Individual
+                            </span>
                           ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900">
-                                {code.subscription_duration_days || 365} days
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                Association
                               </span>
-                              <span className="text-xs text-gray-500">
-                                ({code.subscription_duration_days === 30 ? '1 month' :
-                                  code.subscription_duration_days === 90 ? '3 months' :
-                                  code.subscription_duration_days === 180 ? '6 months' :
-                                  code.subscription_duration_days === 365 ? '1 year' :
-                                  Math.round((code.subscription_duration_days || 365) / 30) + ' months'})
-                              </span>
+                              {code.association && (
+                                <span className="text-xs text-gray-600">
+                                  {code.association.name}
+                                </span>
+                              )}
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          {code.subscription_duration_days === 0 ? (
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-indigo-600">
-                                Never
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                Lifetime access
-                              </span>
-                            </div>
-                          ) : (
-                            (() => {
-                              const expiryDate = new Date()
-                              expiryDate.setDate(expiryDate.getDate() + (code.subscription_duration_days || 365))
+                          {(() => {
+                            const expiryDate = new Date(code.subscription_expires_at)
+                            const isLifetime = expiryDate.getFullYear() > new Date().getFullYear() + 50
+                            const daysUntil = Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+
+                            if (isLifetime) {
                               return (
-                                <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-indigo-600">
+                                    Lifetime
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    (Never expires)
+                                  </span>
+                                </div>
+                              )
+                            } else {
+                              return (
+                                <div className="flex items-center gap-2">
                                   <span className="font-semibold text-gray-900">
                                     {expiryDate.toLocaleDateString()}
                                   </span>
                                   <span className="text-xs text-gray-500">
-                                    If activated today
+                                    ({daysUntil > 0 ? `in ${daysUntil} days` : 'expired'})
                                   </span>
                                 </div>
                               )
+                            }
+                          })()}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
+                          {editingCodeId === code.id ? (
+                            <input
+                              type="date"
+                              value={editingCodeData.subscription_expires_at}
+                              onChange={(e) => setEditingCodeData({...editingCodeData, subscription_expires_at: e.target.value})}
+                              className="px-2 py-1 border border-gray-300 rounded text-sm"
+                              min={new Date().toISOString().split('T')[0]}
+                            />
+                          ) : (
+                            (() => {
+                              const expiryDate = new Date(code.subscription_expires_at)
+                              const isLifetime = expiryDate.getFullYear() > new Date().getFullYear() + 50
+
+                              if (isLifetime) {
+                                return (
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold text-indigo-600">
+                                      Never
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      Lifetime access
+                                    </span>
+                                  </div>
+                                )
+                              } else {
+                                return (
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold text-gray-900">
+                                      {expiryDate.toLocaleDateString()}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      Fixed expiration
+                                    </span>
+                                  </div>
+                                )
+                              }
                             })()
                           )}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <span>
-                              {code.current_uses} / {code.max_uses === null ? '∞' : code.max_uses}
-                            </span>
-                            {isMaxedOut && (
-                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
-                                Maxed
+                          {editingCodeId === code.id ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600">{code.current_uses} /</span>
+                              <input
+                                type="number"
+                                value={editingCodeData.max_uses}
+                                onChange={(e) => setEditingCodeData({...editingCodeData, max_uses: e.target.value})}
+                                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                                min="0"
+                                placeholder="∞"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span>
+                                {code.current_uses} / {code.max_uses === null ? '∞' : code.max_uses}
                               </span>
-                            )}
-                          </div>
+                              {isMaxedOut && (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
+                                  Maxed
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-4 text-sm">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -2502,24 +3086,51 @@ export default function SettingsPage() {
                           </span>
                         </td>
                         <td className="px-4 py-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleToggleCodeActive(code.id, code.is_active)}
-                              className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
-                                code.is_active ? 'bg-orange-600' : 'bg-green-600'
-                              }`}
-                              title={code.is_active ? 'Deactivate code' : 'Activate code'}
-                            >
-                              {code.is_active ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCode(code.id, code.code)}
-                              className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
-                              title="Delete code"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                          {editingCodeId === code.id ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleSaveCodeEdit(code.id)}
+                                className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                                title="Save changes"
+                              >
+                                <Check size={14} />
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancelCodeEdit}
+                                className="px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-1"
+                                title="Cancel editing"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEditCode(code)}
+                                className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                                title="Edit code"
+                              >
+                                <Edit size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleToggleCodeActive(code.id, code.is_active)}
+                                className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
+                                  code.is_active ? 'bg-orange-600' : 'bg-green-600'
+                                }`}
+                                title={code.is_active ? 'Deactivate code' : 'Activate code'}
+                              >
+                                {code.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCode(code.id, code.code)}
+                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                                title="Delete code"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )
@@ -2551,7 +3162,14 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   setShowAddCodeModal(false)
-                  setNewCodeData({ code: '', description: '', max_uses: '', subscription_duration_days: '365' })
+                  setNewCodeData({
+                    code: '',
+                    description: '',
+                    max_uses: '',
+                    subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+                    code_type: 'individual' as 'individual' | 'association',
+                    association_id: '',
+                  })
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -2577,6 +3195,66 @@ export default function SettingsPage() {
                   Will be automatically converted to uppercase
                 </p>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Code Type <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="code_type"
+                      value="individual"
+                      checked={newCodeData.code_type === 'individual'}
+                      onChange={(e) => setNewCodeData({ ...newCodeData, code_type: e.target.value as 'individual' | 'association', association_id: '' })}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Individual</span>
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="code_type"
+                      value="association"
+                      checked={newCodeData.code_type === 'association'}
+                      onChange={(e) => {
+                        setNewCodeData({ ...newCodeData, code_type: e.target.value as 'individual' | 'association' })
+                        if (!associations.length) fetchAssociationsForCodes()
+                      }}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">Association Member</span>
+                  </label>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  {newCodeData.code_type === 'individual' ? 'For direct user subscriptions' : 'For beekeeping association members'}
+                </p>
+              </div>
+
+              {newCodeData.code_type === 'association' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Association <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newCodeData.association_id}
+                    onChange={(e) => setNewCodeData({ ...newCodeData, association_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    required={newCodeData.code_type === 'association'}
+                  >
+                    <option value="">Select an association...</option>
+                    {associations.map((assoc) => (
+                      <option key={assoc.id} value={assoc.id}>
+                        {assoc.name} ({assoc.jurisdiction})
+                      </option>
+                    ))}
+                  </select>
+                  {loadingAssociations && (
+                    <p className="mt-1 text-xs text-gray-500">Loading associations...</p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2610,23 +3288,65 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subscription Duration <span className="text-red-500">*</span>
+                  Subscription Expiration Date <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={newCodeData.subscription_duration_days}
-                  onChange={(e) => setNewCodeData({ ...newCodeData, subscription_duration_days: e.target.value })}
+                <input
+                  type="date"
+                  value={newCodeData.subscription_expires_at}
+                  onChange={(e) => setNewCodeData({ ...newCodeData, subscription_expires_at: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
-                >
-                  <option value="30">30 days (1 month)</option>
-                  <option value="90">90 days (3 months)</option>
-                  <option value="180">180 days (6 months)</option>
-                  <option value="365">365 days (1 year)</option>
-                  <option value="0">Never expires (lifetime)</option>
-                </select>
+                />
                 <p className="mt-1 text-xs text-gray-500">
-                  Duration of subscription when this code is activated
+                  Fixed date when subscriptions activated with this code will expire
                 </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const date = new Date()
+                      date.setMonth(date.getMonth() + 1)
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                    }}
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    +1 month
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const date = new Date()
+                      date.setMonth(date.getMonth() + 6)
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                    }}
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    +6 months
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const date = new Date()
+                      date.setFullYear(date.getFullYear() + 1)
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                    }}
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    +1 year
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const date = new Date()
+                      date.setFullYear(date.getFullYear() + 100)
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                    }}
+                    className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+                  >
+                    Lifetime
+                  </button>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -2634,7 +3354,14 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => {
                     setShowAddCodeModal(false)
-                    setNewCodeData({ code: '', description: '', max_uses: '', subscription_duration_days: '365' })
+                    setNewCodeData({
+                      code: '',
+                      description: '',
+                      max_uses: '',
+                      subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+                      code_type: 'individual' as 'individual' | 'association',
+                      association_id: ''
+                    })
                   }}
                   className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >

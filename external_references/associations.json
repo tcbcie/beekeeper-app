@@ -1,0 +1,626 @@
+[
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "(Coleraine area)",
+    "Association": "The Cornfield Project",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "(Mid Ulster)",
+    "Association": "Mid Ulster Beekeepers’ Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "(unspecified)",
+    "Association": "Low County Native Irish Honey Bee",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Antrim",
+    "Association": "East Antrim Beekeepers’ Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Antrim",
+    "Association": "Mid Antrim Beekeeping Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Antrim",
+    "Association": "Randalstown & District Beekeepers’ Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Antrim",
+    "Association": "Rasharkin Beekeepers’ Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Armagh/Monaghan",
+    "Association": "Armagh & Monaghan Beekeepers Association",
+    "Website/URL": "https://www.facebook.com/armagh.monaghan.beekeepers",
+    "Email/Contact": "sec.ambka@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Belfast",
+    "Association": "Belfast & District Beekeepers’ Association",
+    "Website/URL": "https://belfastbees.co.uk/",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Cavan",
+    "Association": "County Cavan Beekeepers Association",
+    "Email/Contact": "cavanbeekeepers@gamil.com (sic)",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Derry",
+    "Association": "Derry & District Beekeepers Association",
+    "Email/Contact": "ogbarr@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Derry",
+    "Association": "Foyle Beekeepers Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Derry",
+    "Association": "Roe Valley Beekeepers’ Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Donegal (Inishowen)",
+    "Association": "Inishowen Beekeepers Association",
+    "Email/Contact": "inishowenbeekeeper@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Donegal (Letterkenny)",
+    "Association": "Northwest Beekeepers Association",
+    "Email/Contact": "bluecrann2@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Donegal (South)",
+    "Association": "South Donegal Beekeepers Association",
+    "Email/Contact": "sdonbees@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Down",
+    "Association": "Dromore Beekeepers Association",
+    "Website/URL": "https://dromorebeekeepers.co.uk/",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Down",
+    "Association": "Killinchy & District Beekeeping Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Fermanagh",
+    "Association": "Fermanagh Beekeepers’ Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Tyrone",
+    "Association": "Three Rivers Beekeepers Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "NI",
+    "County/Area": "Tyrone/Fermanagh",
+    "Association": "Clogher Valley Beekeepers’ Association",
+    "Affiliation": "UBKA",
+    "Source": "ubka.org/about/local-associations"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Carlow",
+    "Association": "County Carlow Beekeepers Association",
+    "Website/URL": "http://www.carlowbeekeepers.com",
+    "Email/Contact": "carlowbeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cavan (Corlough)",
+    "Association": "Digges Beekeepers’ Association",
+    "Email/Contact": "secretarydigges@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Clare",
+    "Association": "Banner Beekeepers Association",
+    "Email/Contact": "bannerbees@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork",
+    "Association": "Beachairí Chorcaigh (Cork Beekeepers)",
+    "Website/URL": "https://www.beachairichorcaigh.org/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (Ballyvourney)",
+    "Association": "Beacharí Mhuscraí (Ballyvourney)",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (City/County)",
+    "Association": "County Cork Beekeepers Association",
+    "Website/URL": "https://cocorkbka.org",
+    "Email/Contact": "secretaryccbka@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (Duhallow)",
+    "Association": "Duhallow Beekeepers Association",
+    "Email/Contact": "secretaryduhallowbeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (Dunmanway)",
+    "Association": "Dunmanway & District Beekeepers Association",
+    "Website/URL": "https://www.facebook.com/profile.php?id=100064381521487",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (East)",
+    "Association": "East Cork Beekeepers Association",
+    "Email/Contact": "eastcorkbeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (North)",
+    "Association": "North Cork Beekeepers Association",
+    "Email/Contact": "ivan.oconnell@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (Skibbereen)",
+    "Association": "Carbery Beekeepers’ Association",
+    "Website/URL": "https://www.facebook.com/carberybeekeepersassociation",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork (South West)",
+    "Association": "South West Cork Beekeepers’ Association",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Cork/Limerick/Kerry",
+    "Association": "Sliabh Luachra Beekeepers’ Association",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Dublin",
+    "Association": "County Dublin Beekeepers Association",
+    "Email/Contact": "secretary@dublinbees.org",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Dublin (Fingal)",
+    "Association": "Fingal North Dublin Beekeepers Association",
+    "Website/URL": "https://fingalbeekeepers.net",
+    "Email/Contact": "info@fingalbeekeepers.net",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Dublin (Kilternan)",
+    "Association": "Kilternan Beekeepers Association",
+    "Email/Contact": "yram@xmail.connect.ie",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Dublin (Lucan)",
+    "Association": "Eblana Beekeeping Association",
+    "Website/URL": "https://www.facebook.com/profile.php?id=100067015697542",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Galway",
+    "Association": "Galway Beekeepers’ Association",
+    "Website/URL": "http://galwaybeekeepers.com/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Galway (Clarinbridge)",
+    "Association": "Tribes Beekeepers Association",
+    "Website/URL": "https://TribesBeekeepersAssociation.com",
+    "Email/Contact": "secretary@tribesbeekeepersassociation.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Galway (Connemara)",
+    "Association": "Connemara Beekeepers Association",
+    "Website/URL": "https://ConnemaraBeekeepers.ie",
+    "Email/Contact": "secretary.connemarabeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kerry",
+    "Association": "Kerry Beekeepers Association",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kerry (Beaufort)",
+    "Association": "Beaufort Beekeepers Association",
+    "Website/URL": "http://beaufortbeekeepers.org/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kerry (Iveragh)",
+    "Association": "Iveragh Beekeepers Association",
+    "Email/Contact": "ibeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kerry (Killorglin)",
+    "Association": "Killorglin Beekeepers Association",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kerry (Sneem)",
+    "Association": "Sneem Beekeepers’ Association",
+    "Website/URL": "https://www.sneembeekeepers.com/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kerry (Tralee)",
+    "Association": "Collis Sandes Tralee Beekeepers",
+    "Website/URL": "https://www.facebook.com/CollisSandesHouse/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kildare (North)",
+    "Association": "North Kildare Beekeepers Association",
+    "Website/URL": "https://www.nkbka.com/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kildare (South/West Wicklow)",
+    "Association": "South Kildare Beekeepers Association (SKBA)",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kilkenny (North)",
+    "Association": "Mid Kilkenny Beekeepers Association",
+    "Website/URL": "http://midkilkennybees.wordpress.com",
+    "Email/Contact": "secmbka@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Kilkenny (South)",
+    "Association": "South Kilkenny Beekeepers Association",
+    "Email/Contact": "secretaryskbka@hotmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Laois (Abbeyleix)",
+    "Association": "Laois Beekeepers Association",
+    "Website/URL": "https://www.facebook.com/SouthLaoisBKA/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Laois (Portlaoise)",
+    "Association": "Dunamaise Beekeepers Association",
+    "Email/Contact": "dunamaisebees@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Limerick",
+    "Association": "County Limerick Beekeepers Association",
+    "Email/Contact": "secretarylimerickbee@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Limerick (Knocklong)",
+    "Association": "Three Counties Beekeeping Association",
+    "Website/URL": "https://www.facebook.com/3CountiesBeekeepingAssociation/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Longford",
+    "Association": "Longford Beekeepers Association",
+    "Website/URL": "https://www.longfordbeekeepers.com/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Louth (Dundalk)",
+    "Association": "County Louth Beekeepers Association",
+    "Website/URL": "https://louthbeekeeping.com",
+    "Email/Contact": "lbkasec@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Mayo (Ballina)",
+    "Association": "County Mayo Beekeepers Association",
+    "Email/Contact": "judewalsh30@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Mayo (Ballyhaunis)",
+    "Association": "Ballyhaunis Beekeepers Association",
+    "Email/Contact": "ballyhaunisbees@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Mayo (Erris)",
+    "Association": "Erris Beekeepers Association",
+    "Email/Contact": "mcdermottireland@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Mayo (Westport)",
+    "Association": "Westport Beekeepers Association",
+    "Website/URL": "https://wbkc.info",
+    "Email/Contact": "secretarywbka@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Meath",
+    "Association": "The Royal County Beekeepers Association",
+    "Email/Contact": "royalcountybeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Offaly",
+    "Association": "County Offaly Beekeepers Association",
+    "Email/Contact": "geraldinebyrne.gb@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Roscommon/Galway (Suck Valley)",
+    "Association": "Suck Valley Beekeepers Association",
+    "Email/Contact": "SVBKAsecretary@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Sligo/Leitrim (Collooney)",
+    "Association": "Sligo/Leitrim Beekeepers Association",
+    "Email/Contact": "slba.secretary@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Tipperary (North)",
+    "Association": "North Tipperary Beekeepers Association",
+    "Website/URL": "https://www.northtippbees.com",
+    "Email/Contact": "northtippbees.secretary@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Tipperary (South)",
+    "Association": "South Tipperary Beekeepers Association",
+    "Website/URL": "https://southtippbees.com",
+    "Email/Contact": "southtippbees@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Waterford",
+    "Association": "Bee Happy Beekeepers Waterford",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Waterford",
+    "Association": "Co. Waterford Beekeepers Association (Co. WBKA)",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Waterford (East)",
+    "Association": "East Waterford Beekeepers Association",
+    "Email/Contact": "waterfordbees@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Westmeath",
+    "Association": "Belvedere Beekeepers Association",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Westmeath (Mullingar)",
+    "Association": "Lake County Beekeepers Association",
+    "Website/URL": "https://www.instagram.com/lakecountybeekeeping | https://www.facebook.com/lakecountybeekeeping",
+    "Email/Contact": "Lcba24sec@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Wexford",
+    "Association": "County Wexford Beekeepers Association",
+    "Website/URL": "https://countywexfordbeekeepersassociation.com",
+    "Email/Contact": "countywexfordbeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Wexford",
+    "Association": "Menapian Beekeepers (Wexford)",
+    "Website/URL": "https://www.facebook.com/menapianbee/",
+    "Affiliation": "IBA",
+    "Source": "irishbeekeepers.ie/membership/affiliated_clubs"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Wexford (Gorey)",
+    "Association": "Gorey Beekeepers Association",
+    "Website/URL": "https://goreybeekeepers.com",
+    "Email/Contact": "secretary.goreybeekeepers@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Wexford (New Ross)",
+    "Association": "New Ross Beekeepers Association",
+    "Email/Contact": "Timnuttall2003@yahoo.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Wexford (South)",
+    "Association": "South Wexford Beekeepers Association",
+    "Email/Contact": "secretaryswbka@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Wicklow (Ashford)",
+    "Association": "Ashford Beekeepers Association",
+    "Email/Contact": "wicklowbees@gmail.com; abka.secretary@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  },
+  {
+    "Jurisdiction": "ROI",
+    "County/Area": "Wicklow (Roundwood)",
+    "Association": "Roundwood Beekeepers Association",
+    "Email/Contact": "secretary.roundwoodbka@gmail.com",
+    "Affiliation": "FIBKA",
+    "Source": "irishbeekeeping.ie/beekeeping-near-you"
+  }
+]

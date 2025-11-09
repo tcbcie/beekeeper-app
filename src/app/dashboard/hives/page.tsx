@@ -509,13 +509,19 @@ export default function HivesPage() {
 
       // Validate row + order combination: check if this combination is already used in the same apiary
       if (dataToSubmit.apiary_id && dataToSubmit.row_in_apiary !== null && dataToSubmit.order_in_apiary !== null) {
-        const { data: existingPosition, error: positionError } = await supabase
+        let query = supabase
           .from('hives')
           .select('id, hive_number')
           .eq('apiary_id', dataToSubmit.apiary_id)
           .eq('row_in_apiary', dataToSubmit.row_in_apiary)
           .eq('order_in_apiary', dataToSubmit.order_in_apiary)
-          .neq('id', editingHive?.id || '')
+
+        // Only exclude current hive when editing (not when creating new)
+        if (editingHive?.id) {
+          query = query.neq('id', editingHive.id)
+        }
+
+        const { data: existingPosition, error: positionError } = await query
 
         if (positionError) {
           throw new Error('Failed to validate position assignment')

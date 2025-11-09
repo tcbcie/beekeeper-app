@@ -18,10 +18,11 @@ export interface SubscriptionStatusResponse {
 
 export interface SubscriptionHistoryItem {
   id: string
-  code: string
+  code: string | null
   activated_at: string
   expires_at: string
-  duration_days: number
+  subscription_type: string
+  price_paid: number
   is_current: boolean
 }
 
@@ -29,7 +30,6 @@ export interface ActivateSubscriptionResponse {
   success: boolean
   message: string
   expires_at?: string
-  duration_days?: number
 }
 
 export interface SubscriptionBadgeProps {

@@ -2165,6 +2165,7 @@ export default function ProfilePage() {
           setSubscriptionRefreshKey(prev => prev + 1)
           setShowRenewSubscriptionModal(false)
         }}
+        userId={userId || ''}
       />
     </div>
   )
