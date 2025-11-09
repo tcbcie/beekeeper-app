@@ -42,6 +42,7 @@ interface UserProfile {
   subscription_expires_at?: string | null
   subscription_status?: 'active' | 'expiring_soon' | 'expiring_very_soon' | 'expired' | 'no_subscription'
   days_remaining?: number
+  deleted_at?: string | null
 }
 
 interface RegistrationCode {
@@ -133,12 +134,15 @@ export default function SettingsPage() {
   // User Management state
   const [showUserManagement, setShowUserManagement] = useState(false)
   const [users, setUsers] = useState<UserProfile[]>([])
+  const [deletedUsers, setDeletedUsers] = useState<UserProfile[]>([])
+  const [showDeletedUsers, setShowDeletedUsers] = useState(false)
   const [userSearch, setUserSearch] = useState('')
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
   const [roleFilter, setRoleFilter] = useState<'all' | 'User' | 'Power User' | 'Admin'>('all')
   const [accountStatusFilter, setAccountStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
   const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'none'>('all')
+  const [restoringUserId, setRestoringUserId] = useState<string | null>(null)
 
   // Support Tickets state
   const [showTicketManagement, setShowTicketManagement] = useState(false)
@@ -421,6 +425,73 @@ export default function SettingsPage() {
     }
   }
 
+  const fetchDeletedUsers = async () => {
+    console.log('🗑️ fetchDeletedUsers called')
+    setLoadingUsers(true)
+    try {
+      const { data, error } = await supabase
+        .from('deleted_profiles')
+        .select('*')
+        .order('deleted_at', { ascending: false })
+
+      console.log('📥 fetchDeletedUsers response:', { dataCount: data?.length, error })
+
+      if (error) throw error
+
+      if (data) {
+        setDeletedUsers(data as UserProfile[])
+        console.log('✅ Deleted users state updated')
+      }
+    } catch (error) {
+      console.error('❌ Error fetching deleted users:', error)
+      alert('Failed to fetch deleted users. Make sure you have admin permissions.')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const handleRestoreUser = async (targetUserId: string, userEmail: string) => {
+    const newEmail = prompt(`Restore user account?\n\nCurrent email: ${userEmail}\n\nEnter a NEW email address for this user:`)
+
+    if (!newEmail) {
+      return // User cancelled
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(newEmail)) {
+      alert('Invalid email format. Please enter a valid email address.')
+      return
+    }
+
+    setRestoringUserId(targetUserId)
+
+    try {
+      const { data, error } = await supabase
+        .rpc('restore_deleted_user', {
+          p_user_id: targetUserId,
+          p_new_email: newEmail
+        })
+
+      if (error) throw error
+
+      if (data && !data.success) {
+        alert(`Failed to restore user: ${data.message}`)
+        return
+      }
+
+      alert('User account restored successfully!')
+      // Refresh both lists
+      fetchDeletedUsers()
+      fetchUsers()
+    } catch (error) {
+      console.error('Error restoring user:', error)
+      alert('Failed to restore user account.')
+    } finally {
+      setRestoringUserId(null)
+    }
+  }
+
   const handleRoleChange = async (targetUserId: string, newRole: 'User' | 'Power User' | 'Admin') => {
     if (targetUserId === userId) {
       alert('You cannot change your own role.')
@@ -478,205 +549,31 @@ export default function SettingsPage() {
       return
     }
 
-    if (!confirm(`⚠️ WARNING: Are you sure you want to delete the user "${userEmail}"?\n\nThis will permanently delete:\n- User account\n- All apiaries, hives, and queens\n- All inspections and treatments\n- All team memberships\n- All data associated with this user\n\nThis action CANNOT be undone!`)) {
-      return
-    }
-
-    // Double confirmation for safety
-    const confirmText = prompt('Type "DELETE" (in capital letters) to confirm deletion:')
-    if (confirmText !== 'DELETE') {
-      alert('Deletion cancelled. Confirmation text did not match.')
+    if (!confirm(`⚠️ WARNING: Are you sure you want to delete the user "${userEmail}"?\n\n✅ SOFT DELETE - Preserves all data:\n- User will be marked as deleted\n- Account will be disabled (cannot login)\n- All subscription history PRESERVED\n- All beekeeping data PRESERVED\n- Account can be restored later\n\nThis is a SAFE deletion that preserves payment history.`)) {
       return
     }
 
     try {
-      console.log('🗑️ Attempting to delete user:', { targetUserId, userEmail })
+      console.log('🗑️ Soft deleting user:', { targetUserId, userEmail })
 
-      // Step 1: Delete all user data in order (to avoid foreign key constraints)
-      console.log('🗑️ Step 1: Deleting user data...')
+      // Call soft_delete_user function
+      const { data, error } = await supabase
+        .rpc('soft_delete_user', {
+          p_user_id: targetUserId
+        })
 
-      // Delete inspections
-      console.log('🗑️ Deleting inspections...')
-      const { error: inspError } = await supabase.from('inspections').delete().eq('user_id', targetUserId)
-      if (inspError) {
-        console.error('❌ Failed to delete inspections:', inspError)
-        throw new Error(`Failed to delete inspections: ${inspError.message}`)
-      }
-      console.log('✅ Inspections deleted')
+      if (error) throw error
 
-      // Delete varroa checks
-      console.log('🗑️ Deleting varroa checks...')
-      const { error: varroaCheckError } = await supabase.from('varroa_checks').delete().eq('user_id', targetUserId)
-      if (varroaCheckError) {
-        console.error('❌ Failed to delete varroa checks:', varroaCheckError)
-        throw new Error(`Failed to delete varroa checks: ${varroaCheckError.message}`)
-      }
-      console.log('✅ Varroa checks deleted')
-
-      // Delete varroa treatments (through hives relationship)
-      console.log('🗑️ Deleting varroa treatments...')
-      // First get all user's hive IDs
-      const { data: userHives } = await supabase
-        .from('hives')
-        .select('id')
-        .eq('user_id', targetUserId)
-
-      if (userHives && userHives.length > 0) {
-        const hiveIds = userHives.map(h => h.id)
-        const { error: varroaTreatError } = await supabase
-          .from('varroa_treatments')
-          .delete()
-          .in('hive_id', hiveIds)
-
-        if (varroaTreatError) {
-          console.error('❌ Failed to delete varroa treatments:', varroaTreatError)
-          throw new Error(`Failed to delete varroa treatments: ${varroaTreatError.message}`)
-        }
-      }
-      console.log('✅ Varroa treatments deleted')
-
-      // Delete queens (must be before hives due to FK)
-      console.log('🗑️ Deleting queens...')
-      const { error: queensError } = await supabase.from('queens').delete().eq('user_id', targetUserId)
-      if (queensError) {
-        console.error('❌ Failed to delete queens:', queensError)
-        throw new Error(`Failed to delete queens: ${queensError.message}`)
-      }
-      console.log('✅ Queens deleted')
-
-      // Delete hives
-      console.log('🗑️ Deleting hives...')
-      const { error: hivesError } = await supabase.from('hives').delete().eq('user_id', targetUserId)
-      if (hivesError) {
-        console.error('❌ Failed to delete hives:', hivesError)
-        throw new Error(`Failed to delete hives: ${hivesError.message}`)
-      }
-      console.log('✅ Hives deleted')
-
-      // Delete apiaries
-      console.log('🗑️ Deleting apiaries...')
-      const { error: apiariesError } = await supabase.from('apiaries').delete().eq('user_id', targetUserId)
-      if (apiariesError) {
-        console.error('❌ Failed to delete apiaries:', apiariesError)
-        throw new Error(`Failed to delete apiaries: ${apiariesError.message}`)
-      }
-      console.log('✅ Apiaries deleted')
-
-      // Delete rearing batches
-      console.log('🗑️ Deleting rearing batches...')
-      const { error: batchesError } = await supabase.from('rearing_batches').delete().eq('user_id', targetUserId)
-      if (batchesError) {
-        console.error('❌ Failed to delete rearing batches:', batchesError)
-        throw new Error(`Failed to delete rearing batches: ${batchesError.message}`)
-      }
-      console.log('✅ Rearing batches deleted')
-
-      // Delete team memberships
-      console.log('🗑️ Deleting team memberships...')
-      const { error: memberError } = await supabase.from('team_members').delete().eq('user_id', targetUserId)
-      if (memberError) {
-        console.error('❌ Failed to delete team memberships:', memberError)
-        throw new Error(`Failed to delete team memberships: ${memberError.message}`)
-      }
-      console.log('✅ Team memberships deleted')
-
-      // Delete teams owned by user
-      console.log('🗑️ Deleting owned teams...')
-      const { error: teamsError } = await supabase.from('teams').delete().eq('owner_id', targetUserId)
-      if (teamsError) {
-        console.error('❌ Failed to delete teams:', teamsError)
-        throw new Error(`Failed to delete teams: ${teamsError.message}`)
-      }
-      console.log('✅ Teams deleted')
-
-      // Delete support tickets
-      console.log('🗑️ Deleting support tickets...')
-      const { error: ticketsError } = await supabase.from('support_tickets').delete().eq('user_id', targetUserId)
-      if (ticketsError) {
-        console.error('❌ Failed to delete support tickets:', ticketsError)
-        throw new Error(`Failed to delete support tickets: ${ticketsError.message}`)
-      }
-      console.log('✅ Support tickets deleted')
-
-      // Delete tasks and events
-      console.log('🗑️ Deleting tasks and events...')
-      const { error: tasksError } = await supabase.from('tasks_events').delete().eq('user_id', targetUserId)
-      if (tasksError) {
-        console.error('❌ Failed to delete tasks_events:', tasksError)
-        throw new Error(`Failed to delete tasks_events: ${tasksError.message}`)
-      }
-      console.log('✅ Tasks and events deleted')
-
-      // Delete feedings
-      console.log('🗑️ Deleting feedings...')
-      const { error: feedingsError } = await supabase.from('feedings').delete().eq('user_id', targetUserId)
-      if (feedingsError) {
-        console.error('❌ Failed to delete feedings:', feedingsError)
-        throw new Error(`Failed to delete feedings: ${feedingsError.message}`)
-      }
-      console.log('✅ Feedings deleted')
-
-      // Delete harvests
-      console.log('🗑️ Deleting harvests...')
-      const { error: harvestsError } = await supabase.from('harvests').delete().eq('user_id', targetUserId)
-      if (harvestsError) {
-        console.error('❌ Failed to delete harvests:', harvestsError)
-        throw new Error(`Failed to delete harvests: ${harvestsError.message}`)
-      }
-      console.log('✅ Harvests deleted')
-
-      console.log('🗑️ Step 2: Deleting user profile...')
-
-      // Delete from profiles table
-      console.log('🗑️ Deleting from profiles...')
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', targetUserId)
-        .select()
-
-      console.log('🗑️ profiles deletion response:', { data: profileData, error: profileError })
-
-      if (profileError) {
-        console.error('❌ Delete profiles error:', profileError)
-        throw new Error(`Failed to delete from profiles: ${profileError.message}`)
+      if (data && !data.success) {
+        alert(`Failed to delete user: ${data.message}`)
+        return
       }
 
-      if (!profileData || profileData.length === 0) {
-        console.warn('⚠️ No profiles record was deleted (may not exist)')
-      } else {
-        console.log('✅ profiles deleted:', profileData)
-      }
+      alert(`✅ User "${userEmail}" has been soft deleted successfully!\n\n✅ Preserved:\n• All subscription history\n• All payment records\n• All beekeeping data (hives, inspections, etc.)\n• All team memberships\n\n🚫 Account Status:\n• User cannot log in\n• Marked as deleted\n• Can be restored by admin at any time\n\nThis is a SAFE deletion that preserves all data for compliance and recovery.`)
 
-      console.log('🗑️ Step 3: Attempting to delete auth user...')
-
-      // Step 3: Try to delete from auth.users via RPC function
-      let authDeleted = false
-      let authDeleteError = null
-
-      try {
-        const { data: rpcData, error: rpcError } = await supabase.rpc('delete_user', { user_id: targetUserId })
-        console.log('🗑️ RPC delete_user response:', { data: rpcData, error: rpcError })
-
-        if (rpcError) {
-          console.warn('⚠️ RPC error:', rpcError)
-          authDeleteError = rpcError.message
-        } else {
-          console.log('✅ Auth user deleted via RPC')
-          authDeleted = true
-        }
-      } catch (authError) {
-        console.warn('⚠️ Could not delete auth user:', authError)
-        authDeleteError = authError instanceof Error ? authError.message : 'Unknown error'
-      }
-
-      // Show appropriate success message based on whether auth was deleted
-      if (authDeleted) {
-        alert(`✅ User "${userEmail}" has been completely deleted!\n\n• All user data removed\n• All associated records deleted\n• Authentication account deleted\n\nThe user has been completely removed from the system.`)
-      } else {
-        alert(`⚠️ User "${userEmail}" has been partially deleted.\n\n✅ Deleted:\n• All user data and records\n• User profile\n\n❌ Not Deleted:\n• Authentication account (still exists in Supabase Auth)\n\nReason: ${authDeleteError || 'RPC function may not exist or lack permissions'}\n\nTo complete deletion:\n1. Run SQL: sql/create_delete_auth_user_function.sql\n2. Or manually delete from Supabase Dashboard → Authentication → Users`)
-      }
-      fetchUsers() // Refresh the list
+      // Refresh both user lists
+      fetchUsers()
+      fetchDeletedUsers()
     } catch (error) {
       console.error('❌ Error deleting user:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -2552,6 +2449,36 @@ export default function SettingsPage() {
               View and manage all user accounts. Change user roles between User, Power User, and Admin.
             </p>
 
+            {/* Tabs for Active/Deleted Users */}
+            <div className="mb-4 flex gap-2 border-b border-gray-200">
+              <button
+                onClick={() => {
+                  setShowDeletedUsers(false)
+                  fetchUsers()
+                }}
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                  !showDeletedUsers
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Active Users ({users.length})
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeletedUsers(true)
+                  fetchDeletedUsers()
+                }}
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                  showDeletedUsers
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Deleted Users ({deletedUsers.length})
+              </button>
+            </div>
+
             {/* Search and Filters */}
             <div className="mb-4 space-y-3">
               {/* Search Bar */}
@@ -2606,7 +2533,7 @@ export default function SettingsPage() {
 
                 {/* Refresh Button */}
                 <button
-                  onClick={fetchUsers}
+                  onClick={() => showDeletedUsers ? fetchDeletedUsers() : fetchUsers()}
                   disabled={loadingUsers}
                   className="ml-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
                 >
@@ -2618,15 +2545,20 @@ export default function SettingsPage() {
             {/* Users List - Compact Single Line Layout */}
             {loadingUsers ? (
               <div className="text-center py-8">
-                <LoadingSpinner text="Loading users..." />
+                <LoadingSpinner text={showDeletedUsers ? "Loading deleted users..." : "Loading users..."} />
               </div>
-            ) : users.length === 0 ? (
+            ) : (!showDeletedUsers && users.length === 0) ? (
               <div className="text-center py-8 text-gray-500">
                 No users found. Click &quot;Refresh&quot; to load.
               </div>
+            ) : (showDeletedUsers && deletedUsers.length === 0) ? (
+              <div className="text-center py-8 text-gray-500">
+                No deleted users found.
+              </div>
             ) : (() => {
-              // Apply all filters
-              const filteredUsers = users
+              // Apply all filters to the appropriate user list
+              const sourceUsers = showDeletedUsers ? deletedUsers : users
+              const filteredUsers = sourceUsers
                 .filter(user => {
                   // Search filter
                   if (userSearch) {
@@ -2637,20 +2569,20 @@ export default function SettingsPage() {
                     if (!matchesSearch) return false
                   }
 
-                  // Role filter
-                  if (roleFilter !== 'all' && user.role !== roleFilter) {
+                  // Role filter (only for active users)
+                  if (!showDeletedUsers && roleFilter !== 'all' && user.role !== roleFilter) {
                     return false
                   }
 
-                  // Account status filter
-                  if (accountStatusFilter !== 'all') {
+                  // Account status filter (only for active users)
+                  if (!showDeletedUsers && accountStatusFilter !== 'all') {
                     const isActive = user.is_active !== false
                     if (accountStatusFilter === 'active' && !isActive) return false
                     if (accountStatusFilter === 'disabled' && isActive) return false
                   }
 
-                  // Subscription filter
-                  if (subscriptionFilter !== 'all') {
+                  // Subscription filter (only for active users)
+                  if (!showDeletedUsers && subscriptionFilter !== 'all') {
                     const subStatus = user.subscription_status
                     if (subscriptionFilter === 'active' && subStatus !== 'active') return false
                     if (subscriptionFilter === 'expiring' &&
@@ -2667,7 +2599,7 @@ export default function SettingsPage() {
                 <>
                   {/* Results Count */}
                   <div className="mb-3 text-sm text-gray-600">
-                    Showing {filteredUsers.length} of {users.length} users
+                    Showing {filteredUsers.length} of {sourceUsers.length} {showDeletedUsers ? 'deleted ' : ''}users
                   </div>
 
                   <div className="space-y-2">
@@ -2762,25 +2694,39 @@ export default function SettingsPage() {
                                     <option value="Admin">Admin</option>
                                   </select>
 
-                                  {/* Enable/Disable Button */}
-                                  <button
-                                    onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
-                                    className={`px-2 py-0.5 text-white rounded hover:opacity-90 text-xs ${
-                                      user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
-                                    }`}
-                                    title={user.is_active !== false ? 'Disable' : 'Enable'}
-                                  >
-                                    {user.is_active !== false ? 'Off' : 'On'}
-                                  </button>
+                                  {showDeletedUsers ? (
+                                    /* Restore Button for Deleted Users */
+                                    <button
+                                      onClick={() => handleRestoreUser(user.id, user.email || 'Unknown')}
+                                      disabled={restoringUserId === user.id}
+                                      className="px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-xs disabled:opacity-50"
+                                      title="Restore user account"
+                                    >
+                                      {restoringUserId === user.id ? 'Restoring...' : 'Restore'}
+                                    </button>
+                                  ) : (
+                                    <>
+                                      {/* Enable/Disable Button */}
+                                      <button
+                                        onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
+                                        className={`px-2 py-0.5 text-white rounded hover:opacity-90 text-xs ${
+                                          user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
+                                        }`}
+                                        title={user.is_active !== false ? 'Disable' : 'Enable'}
+                                      >
+                                        {user.is_active !== false ? 'Off' : 'On'}
+                                      </button>
 
-                                  {/* Delete Button */}
-                                  <button
-                                    onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
-                                    className="p-0.5 bg-red-600 text-white rounded hover:bg-red-700"
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
+                                      {/* Delete Button */}
+                                      <button
+                                        onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
+                                        className="p-0.5 bg-red-600 text-white rounded hover:bg-red-700"
+                                        title="Delete"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -2853,6 +2799,30 @@ export default function SettingsPage() {
                                   )}
                                 </div>
                               </div>
+
+                              {/* Deleted At (only show for deleted users) */}
+                              {showDeletedUsers && user.deleted_at && (
+                                <div className="col-span-2">
+                                  <span className="text-gray-500 block mb-1">Deleted On</span>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-red-600 font-medium">
+                                      {new Date(user.deleted_at).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                    <span className="text-xs text-gray-500">
+                                      ({Math.floor((Date.now() - new Date(user.deleted_at).getTime()) / (1000 * 60 * 60 * 24))} days ago)
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-green-600 mt-1">
+                                    ✓ All subscription history and data preserved
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
