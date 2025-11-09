@@ -312,7 +312,8 @@ WHERE id = 'user-uuid';
 ## Summary
 
 ### Current State
-- ❌ Cannot delete users with subscription history (foreign key error)
+- ❌ RLS policy allows users to delete their own profiles
+- ❌ Deletion fails for users with subscription history (foreign key error)
 - ❌ Hard delete would lose all payment records
 - ❌ No way to restore accidentally deleted accounts
 
@@ -322,10 +323,43 @@ WHERE id = 'user-uuid';
 - ✅ Allows account restoration
 - ✅ Supports compliance requirements
 - ✅ Better user experience
+- ✅ Prevents direct deletion via RLS policy
 
-### Action Items
+## Action Items
 
-1. **Immediate**: Run `migrations/add_soft_delete_for_users.sql`
-2. **Soon**: Update Settings page to use soft delete
-3. **Later**: Add admin restoration UI
-4. **Optional**: Implement data retention policy
+### Step 1: Check Current Constraints (Immediate)
+
+Run this to see the deletion impact:
+
+```sql
+\i sql/check_foreign_key_constraints.sql
+```
+
+This shows:
+- All foreign key constraints
+- ON DELETE behavior for each table
+- How many records would be affected
+
+### Step 2: Install Soft Delete System (Immediate)
+
+```sql
+-- Install soft delete functions and views
+\i migrations/add_soft_delete_for_users.sql
+
+-- Update RLS policies to prevent direct deletion
+\i sql/fix_user_deletion_policy.sql
+```
+
+### Step 3: Update Settings Page (Soon)
+
+Replace the delete account button handler with soft delete.
+
+See "User Management UI Changes" section above for code examples.
+
+### Step 4: Add Admin Restoration UI (Later)
+
+Add ability for admins to restore deleted users.
+
+### Step 5: Implement Data Retention Policy (Optional)
+
+Set up scheduled job to permanently delete old soft-deleted accounts after grace period.
