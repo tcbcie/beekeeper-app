@@ -42,12 +42,12 @@ ORDER BY tc.table_name, tc.constraint_name;
 -- Specifically check subscription_history constraints
 SELECT
   'subscription_history' as table_name,
-  constraint_name,
+  conname as constraint_name,
   pg_get_constraintdef(oid) as full_definition
 FROM pg_constraint
 WHERE conrelid = 'public.subscription_history'::regclass
   AND contype = 'f'
-ORDER BY constraint_name;
+ORDER BY conname;
 
 -- Check what happens if we try to delete a specific user
 -- (This won't actually delete, just shows what would be affected)
