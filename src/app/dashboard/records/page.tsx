@@ -4007,7 +4007,7 @@ export default function InspectionsPage() {
                 value={editingCheck?.mites_count ?? ''}
                 onChange={(e) => {
                   const mitesCount = e.target.value ? parseInt(e.target.value) : null
-                  const sampleSize = editingCheck?.sample_size
+                  const sampleSize = editingCheck?.sample_size ?? null
                   const method = editingCheck?.method
                   let infestationRate = null
 
@@ -4041,7 +4041,7 @@ export default function InspectionsPage() {
                 value={editingCheck?.sample_size ?? ''}
                 onChange={(e) => {
                   const sampleSize = e.target.value ? parseInt(e.target.value) : null
-                  const mitesCount = editingCheck?.mites_count
+                  const mitesCount = editingCheck?.mites_count ?? null
                   const method = editingCheck?.method
                   let infestationRate = null
 
