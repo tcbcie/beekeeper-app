@@ -100,9 +100,6 @@ export default function SubscriptionHistoryTable() {
                 Expires
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Duration
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
             </tr>
@@ -131,12 +128,6 @@ export default function SubscriptionHistoryTable() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {formatDate(item.expires_at)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1 text-sm text-gray-700">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span>{item.duration_days} days</span>
-                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {isExpired ? (

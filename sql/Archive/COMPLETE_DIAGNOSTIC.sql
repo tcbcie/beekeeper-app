@@ -1,87 +1,87 @@
--- Complete diagnostic to understand the current database state
+-- COMPLETE DIAGNOSTIC: Power User Role Issue
+-- Run this to see EXACTLY what's preventing Power User from working
 
--- 1. Check what profiles is (table or view)
-SELECT
-  'What is profiles?' as info,
-  table_name,
-  table_type
-FROM information_schema.tables
-WHERE table_schema = 'public'
-  AND table_name = 'profiles';
+\echo '============================================'
+\echo 'POWER USER DIAGNOSTIC REPORT'
+\echo '============================================'
+\echo ''
 
--- 2. Check profiles columns
+-- 1. Column Type
+\echo '1. COLUMN TYPE:'
 SELECT
-  'profiles columns' as info,
   column_name,
   data_type,
-  is_nullable,
+  udt_name,
   column_default,
-  is_generated,
-  generation_expression
-FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'profiles'
-ORDER BY ordinal_position;
-
--- 3. Check if user_profiles exists
-SELECT
-  'What is user_profiles?' as info,
-  table_name,
-  table_type
-FROM information_schema.tables
-WHERE table_schema = 'public'
-  AND table_name = 'user_profiles';
-
--- 4. Check user_profiles columns if it exists
-SELECT
-  'user_profiles columns' as info,
-  column_name,
-  data_type,
   is_nullable
 FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'user_profiles'
-ORDER BY ordinal_position;
-
--- 5. Check for any views that contain 'profile' in their name
-SELECT
-  'Views with profile in name' as info,
-  table_name,
-  view_definition
-FROM information_schema.views
 WHERE table_schema = 'public'
-  AND table_name LIKE '%profile%'
-ORDER BY table_name;
+  AND table_name = 'profiles'
+  AND column_name = 'role';
 
--- 6. Check existing foreign keys
+\echo ''
+\echo '2. CHECK CONSTRAINTS:'
 SELECT
-  'Existing foreign keys to profiles/user_profiles' as info,
-  tc.table_name,
   tc.constraint_name,
-  kcu.column_name,
-  ccu.table_name AS foreign_table_name,
-  ccu.column_name AS foreign_column_name
-FROM information_schema.table_constraints AS tc
-JOIN information_schema.key_column_usage AS kcu
-  ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.constraint_column_usage AS ccu
-  ON ccu.constraint_name = tc.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY'
-  AND tc.table_name IN ('inspections', 'varroa_treatments', 'varroa_checks', 'feedings', 'harvests')
-  AND ccu.table_name IN ('profiles', 'user_profiles')
-ORDER BY tc.table_name;
+  cc.check_clause
+FROM information_schema.table_constraints tc
+JOIN information_schema.check_constraints cc
+  ON tc.constraint_name = cc.constraint_name
+WHERE tc.table_schema = 'public'
+  AND tc.table_name = 'profiles'
+  AND tc.constraint_type = 'CHECK';
 
--- 7. Count records
-DO $$
-DECLARE
-  profiles_count INT := 0;
-  user_profiles_count INT := 0;
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles') THEN
-    EXECUTE 'SELECT COUNT(*) FROM profiles' INTO profiles_count;
-    RAISE NOTICE 'profiles record count: %', profiles_count;
-  END IF;
+\echo ''
+\echo '3. RLS POLICIES:'
+SELECT
+  policyname,
+  permissive,
+  roles,
+  cmd as command,
+  qual as using_expression,
+  with_check as with_check_expression
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename = 'profiles';
 
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_profiles') THEN
-    EXECUTE 'SELECT COUNT(*) FROM user_profiles' INTO user_profiles_count;
-    RAISE NOTICE 'user_profiles record count: %', user_profiles_count;
-  END IF;
-END $$;
+\echo ''
+\echo '4. TRIGGERS:'
+SELECT
+  trigger_name,
+  event_manipulation as event,
+  action_timing as timing,
+  action_statement
+FROM information_schema.triggers
+WHERE event_object_schema = 'public'
+  AND event_object_table = 'profiles';
+
+\echo ''
+\echo '5. CURRENT ROLES IN DATABASE:'
+SELECT
+  role,
+  COUNT(*) as user_count
+FROM public.profiles
+GROUP BY role
+ORDER BY role;
+
+\echo ''
+\echo '6. ENUM CHECK (if applicable):'
+SELECT
+  t.typname as enum_name,
+  e.enumlabel as allowed_value,
+  e.enumsortorder as sort_order
+FROM pg_type t
+JOIN pg_enum e ON t.oid = e.enumtypid
+WHERE t.typname LIKE '%role%'
+ORDER BY t.typname, e.enumsortorder;
+
+\echo ''
+\echo '============================================'
+\echo 'DIAGNOSTIC COMPLETE'
+\echo '============================================'
+\echo 'Next steps:'
+\echo '1. Review the CHECK CONSTRAINTS section'
+\echo '2. If constraint does NOT include "Power User", run force_fix_power_user.sql'
+\echo '3. Check RLS POLICIES for any that might filter role updates'
+\echo '4. Check TRIGGERS for any that might revert role changes'
+\echo '============================================'

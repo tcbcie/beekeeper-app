@@ -24,7 +24,9 @@
       "Bash(git checkout:*)",
       "Bash(npm run dev:*)",
       "Bash(node scripts/update-version.mjs:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(node -e:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
