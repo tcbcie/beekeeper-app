@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-10-29.clover'
-})
+// Initialize Stripe with error handling
+let stripe: Stripe
+try {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.error('[Stripe Checkout] STRIPE_SECRET_KEY not set!')
+  }
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-10-29.clover'
+  })
+} catch (error) {
+  console.error('[Stripe Checkout] Failed to initialize Stripe:', error)
+  throw error
+}
 
+// Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -79,6 +90,17 @@ export async function POST(request: NextRequest) {
       associationName = association?.name
     }
 
+    // Validate required environment variables
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+      console.error('[Stripe Checkout] NEXT_PUBLIC_APP_URL not set!')
+      return NextResponse.json(
+        { error: 'Server configuration error: APP_URL missing' },
+        { status: 500 }
+      )
+    }
+
+    console.log('[Stripe Checkout] Creating session with price:', priceInCents / 100, 'EUR')
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -113,6 +135,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    console.log('[Stripe Checkout] Session created successfully:', session.id)
+
     // Update user's Stripe customer ID if this is their first payment
     if (session.customer) {
       await supabase
@@ -127,9 +151,20 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Stripe checkout error:', error)
+    console.error('[Stripe Checkout] Error:', error)
+
+    // Provide more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorDetails = error instanceof Error ? error.stack : String(error)
+
+    console.error('[Stripe Checkout] Error details:', errorDetails)
+
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      {
+        error: 'Failed to create checkout session',
+        message: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      },
       { status: 500 }
     )
   }
