@@ -67,9 +67,8 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- UNCOMMENT THE SECTION BELOW TO ACTUALLY DELETE THE USERS
+-- PERMANENT DELETION BLOCK - UNCOMMENTED AND READY TO RUN
 -- ============================================================================
-/*
 DO $$
 DECLARE
   deleted_profiles_count INTEGER;
@@ -130,7 +129,6 @@ BEGIN
   RAISE NOTICE 'All data for these users has been permanently removed.';
   RAISE NOTICE '============================================';
 END $$;
-*/
 
 -- ============================================================================
 -- VERIFICATION QUERIES (safe to run anytime)
