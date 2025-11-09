@@ -74,7 +74,8 @@ export async function POST(request: NextRequest) {
           p_stripe_payment_intent_id: session.payment_intent as string,
           p_is_association_member: isAssociationMember,
           p_association_id: associationId,
-          p_price_paid: priceEur
+          p_price_paid: priceEur,
+          p_association_code: associationCode
         })
 
         if (error) {
