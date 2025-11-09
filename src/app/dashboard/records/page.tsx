@@ -4069,7 +4069,9 @@ export default function InspectionsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {editingCheck?.method === 'Natural Mite Drop' ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
-                {editingCheck?.mites_count !== null && editingCheck?.sample_size !== null && editingCheck?.sample_size > 0 && (
+                {editingCheck?.mites_count !== null && editingCheck?.mites_count !== undefined &&
+                 editingCheck?.sample_size !== null && editingCheck?.sample_size !== undefined &&
+                 editingCheck.sample_size > 0 && (
                   <span className="ml-2 text-xs text-green-600 font-normal">(Auto-calculated)</span>
                 )}
               </label>
