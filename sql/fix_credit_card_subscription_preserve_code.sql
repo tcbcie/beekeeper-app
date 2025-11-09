@@ -6,6 +6,11 @@
 -- even when they switch to credit card payment
 -- ============================================================================
 
+-- Drop all existing versions of the function
+DROP FUNCTION IF EXISTS public.activate_credit_card_subscription(uuid, text, boolean, uuid, numeric);
+DROP FUNCTION IF EXISTS public.activate_credit_card_subscription(uuid, text, boolean, uuid, numeric, text);
+
+-- Create the new version with association code support
 CREATE OR REPLACE FUNCTION public.activate_credit_card_subscription(
   p_user_id uuid,
   p_stripe_payment_intent_id text,
