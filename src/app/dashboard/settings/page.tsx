@@ -1095,12 +1095,12 @@ export default function SettingsPage() {
       if (error) throw error
 
       // Transform the data to match our interface
-      const transformedData = (data || []).map((code: any) => ({
+      const transformedData = (data || []).map((code) => ({
         ...code,
         association: code.beekeeping_associations || null
-      }))
+      })) as RegistrationCode[]
 
-      setRegistrationCodes(transformedData || [])
+      setRegistrationCodes(transformedData)
     } catch (error) {
       console.error('Error fetching registration codes:', error)
       alert('Failed to fetch registration codes.')

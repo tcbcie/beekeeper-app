@@ -30,7 +30,6 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
   // Association code payment state
   const [associationCode, setAssociationCode] = useState('')
   const [associations, setAssociations] = useState<Association[]>([])
-  const [loadingAssociations, setLoadingAssociations] = useState(false)
 
   // Load associations when modal opens and association code payment is selected
   useEffect(() => {
@@ -41,7 +40,6 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
   }, [isOpen, paymentMethod])
 
   const loadAssociations = async () => {
-    setLoadingAssociations(true)
     try {
       const { data, error } = await supabase
         .from('beekeeping_associations')
@@ -55,8 +53,6 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
     } catch (err) {
       console.error('Error loading associations:', err)
       setError('Failed to load associations')
-    } finally {
-      setLoadingAssociations(false)
     }
   }
 
