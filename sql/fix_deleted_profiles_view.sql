@@ -18,7 +18,6 @@ SELECT
   p.is_active,
   p.created_at,
   p.deleted_at,
-  p.deleted_by,
   p.current_subscription_code_id,
   p.subscription_type,
   p.subscription_expires_at,
@@ -74,7 +73,7 @@ BEGIN
   RAISE NOTICE '  - Role';
   RAISE NOTICE '  - Subscription details';
   RAISE NOTICE '  - Registration code';
-  RAISE NOTICE '  - Deleted timestamp and who deleted it';
+  RAISE NOTICE '  - Deleted timestamp';
   RAISE NOTICE '';
   RAISE NOTICE 'Total deleted users: %', deleted_count;
   RAISE NOTICE 'Users in view: %', view_count;
