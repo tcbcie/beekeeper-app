@@ -16,10 +16,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userId, isAssociationMember, associationId, associationCode } = body
 
+    console.log('[Stripe Checkout] Request received:', {
+      userId,
+      isAssociationMember,
+      associationId,
+      associationCode: associationCode ? '***' : null
+    })
+
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
         { status: 400 }
+      )
+    }
+
+    // Check environment variables
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[Stripe Checkout] SUPABASE_SERVICE_ROLE_KEY not set!')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
       )
     }
 
@@ -30,12 +46,23 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
       .single()
 
-    if (profileError || !profile) {
+    if (profileError) {
+      console.error('[Stripe Checkout] Profile query error:', profileError)
+      return NextResponse.json(
+        { error: 'User not found', details: profileError.message },
+        { status: 404 }
+      )
+    }
+
+    if (!profile) {
+      console.error('[Stripe Checkout] Profile not found for userId:', userId)
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
+
+    console.log('[Stripe Checkout] Profile found:', profile.email)
 
     // Calculate price based on membership status
     const priceInCents = isAssociationMember ? 1200 : 2400 // €12 or €24
