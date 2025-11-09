@@ -1237,7 +1237,7 @@ export default function InspectionsPage() {
         weight: formData.weight,
         queen_seen: formData.queen_seen,
         eggs_present: formData.eggs_present,
-        drones_present: formData.drones_present,
+        drones_present: formData.drones_present === -1 ? null : formData.drones_present,
         drone_brood_present: formData.drone_brood_present,
         brood_frames: formData.brood_frames,
         right_sized_frames: formData.right_sized_frames,

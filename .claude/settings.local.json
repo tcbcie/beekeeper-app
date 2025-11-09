@@ -26,7 +26,11 @@
       "Bash(node scripts/update-version.mjs:*)",
       "Bash(where:*)",
       "Bash(node -e:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(where.exe:*)",
+      "Bash(nul)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
