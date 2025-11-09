@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { SubscriptionHistoryItem } from '@/types/subscription'
-import { Calendar, TrendingUp, Clock } from 'lucide-react'
+import { Calendar, Clock } from 'lucide-react'
 
 export default function SubscriptionHistoryTable() {
   const [history, setHistory] = useState<SubscriptionHistoryItem[]>([])
