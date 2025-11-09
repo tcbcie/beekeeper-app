@@ -39,6 +39,7 @@ interface UserProfile {
   is_active?: boolean
   registration_code?: string
   code_description?: string
+  subscription_type?: string
   subscription_expires_at?: string | null
   subscription_status?: 'active' | 'expiring_soon' | 'expiring_very_soon' | 'expired' | 'no_subscription'
   days_remaining?: number
