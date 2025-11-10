@@ -118,6 +118,17 @@ interface TicketUpdate {
   resolved_at?: string
 }
 
+interface ReactivationRequest {
+  id: string
+  user_id: string
+  original_email: string
+  requested_at: string
+  status: 'pending' | 'approved' | 'rejected'
+  processed_at: string | null
+  processed_by: string | null
+  admin_notes: string | null
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
@@ -137,6 +148,9 @@ export default function SettingsPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [deletedUsers, setDeletedUsers] = useState<UserProfile[]>([])
   const [showDeletedUsers, setShowDeletedUsers] = useState(false)
+  const [showReactivationRequests, setShowReactivationRequests] = useState(false)
+  const [reactivationRequests, setReactivationRequests] = useState<ReactivationRequest[]>([])
+  const [loadingRequests, setLoadingRequests] = useState(false)
   const [userSearch, setUserSearch] = useState('')
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
@@ -448,6 +462,89 @@ export default function SettingsPage() {
       alert('Failed to fetch deleted users. Make sure you have admin permissions.')
     } finally {
       setLoadingUsers(false)
+    }
+  }
+
+  const fetchReactivationRequests = async () => {
+    console.log('🔄 fetchReactivationRequests called')
+    setLoadingRequests(true)
+    try {
+      const { data, error } = await supabase
+        .from('reactivation_requests')
+        .select('*')
+        .order('requested_at', { ascending: false })
+
+      console.log('📥 fetchReactivationRequests response:', { dataCount: data?.length, error })
+
+      if (error) throw error
+
+      if (data) {
+        setReactivationRequests(data as ReactivationRequest[])
+        console.log('✅ Reactivation requests state updated')
+      }
+    } catch (error) {
+      console.error('❌ Error fetching reactivation requests:', error)
+      alert('Failed to fetch reactivation requests. Make sure you have admin permissions and the table exists.')
+    } finally {
+      setLoadingRequests(false)
+    }
+  }
+
+  const handleApproveReactivation = async (requestId: string, email: string) => {
+    if (!confirm(`✅ Approve reactivation request for ${email}?\n\nThis will restore their account and allow them to log in.`)) return
+
+    const notes = prompt('Optional admin notes (e.g., "Verified via email"):')
+
+    try {
+      const { data, error } = await supabase.rpc('reactivate_user_account', {
+        p_request_id: requestId,
+        p_admin_notes: notes || null
+      })
+
+      if (error) throw error
+
+      if (data && typeof data === 'object' && 'success' in data) {
+        if (data.success) {
+          alert(`✅ Account reactivated successfully for ${email}!\n\nThe user can now log in with their original email and password.`)
+          fetchReactivationRequests() // Refresh requests list
+          fetchUsers() // Refresh active users list
+        } else {
+          alert(`❌ Failed to reactivate: ${data.message}`)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error approving reactivation:', error)
+      alert('Failed to approve reactivation request. Please try again.')
+    }
+  }
+
+  const handleRejectReactivation = async (requestId: string, email: string) => {
+    const notes = prompt(`❌ Reject reactivation request for ${email}?\n\nPlease provide a reason (required):`)
+
+    if (!notes || notes.trim() === '') {
+      alert('Rejection reason is required')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('reject_reactivation_request', {
+        p_request_id: requestId,
+        p_admin_notes: notes
+      })
+
+      if (error) throw error
+
+      if (data && typeof data === 'object' && 'success' in data) {
+        if (data.success) {
+          alert(`✅ Reactivation request rejected for ${email}`)
+          fetchReactivationRequests() // Refresh list
+        } else {
+          alert(`❌ Failed to reject: ${data.message}`)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error rejecting reactivation:', error)
+      alert('Failed to reject reactivation request. Please try again.')
     }
   }
 
@@ -2455,15 +2552,16 @@ export default function SettingsPage() {
               View and manage all user accounts. Change user roles between User, Power User, and Admin.
             </p>
 
-            {/* Tabs for Active/Deleted Users */}
+            {/* Tabs for Active/Deleted Users/Reactivation Requests */}
             <div className="mb-4 flex gap-2 border-b border-gray-200">
               <button
                 onClick={() => {
                   setShowDeletedUsers(false)
+                  setShowReactivationRequests(false)
                   fetchUsers()
                 }}
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  !showDeletedUsers
+                  !showDeletedUsers && !showReactivationRequests
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
@@ -2473,15 +2571,30 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   setShowDeletedUsers(true)
+                  setShowReactivationRequests(false)
                   fetchDeletedUsers()
                 }}
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  showDeletedUsers
+                  showDeletedUsers && !showReactivationRequests
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 Deleted Users ({deletedUsers.length})
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeletedUsers(false)
+                  setShowReactivationRequests(true)
+                  fetchReactivationRequests()
+                }}
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                  showReactivationRequests
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Reactivation Requests ({reactivationRequests.filter(r => r.status === 'pending').length})
               </button>
             </div>
 
@@ -2839,6 +2952,122 @@ export default function SettingsPage() {
                 </>
               )
             })()}
+
+            {/* Reactivation Requests Display */}
+            {showReactivationRequests && (
+              <div className="space-y-4 mt-4">
+                {loadingRequests ? (
+                  <div className="text-center py-8">
+                    <LoadingSpinner text="Loading reactivation requests..." />
+                  </div>
+                ) : reactivationRequests.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="mb-2">No reactivation requests found.</p>
+                    <p className="text-sm">Deleted users can request reactivation at /reactivate</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Filter tabs for pending/approved/rejected */}
+                    <div className="flex gap-2 text-sm">
+                      <button
+                        onClick={() => {/* Could add status filtering here */}}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded"
+                      >
+                        All ({reactivationRequests.length})
+                      </button>
+                      <button
+                        onClick={() => {/* Could add status filtering here */}}
+                        className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded"
+                      >
+                        Pending ({reactivationRequests.filter(r => r.status === 'pending').length})
+                      </button>
+                      <button
+                        onClick={() => {/* Could add status filtering here */}}
+                        className="px-3 py-1 bg-green-100 text-green-800 rounded"
+                      >
+                        Approved ({reactivationRequests.filter(r => r.status === 'approved').length})
+                      </button>
+                      <button
+                        onClick={() => {/* Could add status filtering here */}}
+                        className="px-3 py-1 bg-red-100 text-red-800 rounded"
+                      >
+                        Rejected ({reactivationRequests.filter(r => r.status === 'rejected').length})
+                      </button>
+                    </div>
+
+                    {/* Requests list */}
+                    {reactivationRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className={`bg-white border-2 rounded-lg p-4 ${
+                          request.status === 'pending' ? 'border-yellow-200 bg-yellow-50' :
+                          request.status === 'approved' ? 'border-green-200 bg-green-50' :
+                          'border-red-200 bg-red-50'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold text-gray-900 text-lg">{request.original_email}</h4>
+                              <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                                request.status === 'pending' ? 'bg-yellow-200 text-yellow-900' :
+                                request.status === 'approved' ? 'bg-green-200 text-green-900' :
+                                'bg-red-200 text-red-900'
+                              }`}>
+                                {request.status}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-700 space-y-1">
+                              <p>
+                                <span className="font-medium">Requested:</span>{' '}
+                                {new Date(request.requested_at).toLocaleString('en-US', {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short'
+                                })}
+                              </p>
+                              {request.processed_at && (
+                                <p>
+                                  <span className="font-medium">Processed:</span>{' '}
+                                  {new Date(request.processed_at).toLocaleString('en-US', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short'
+                                  })}
+                                </p>
+                              )}
+                              {request.admin_notes && (
+                                <p className="mt-2 p-2 bg-white rounded border border-gray-200">
+                                  <span className="font-medium">Admin Notes:</span> {request.admin_notes}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action buttons for pending requests */}
+                          {request.status === 'pending' && (
+                            <div className="flex gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => handleApproveReactivation(request.id, request.original_email)}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium text-sm transition-colors"
+                                title="Approve and restore account"
+                              >
+                                ✓ Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectReactivation(request.id, request.original_email)}
+                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium text-sm transition-colors"
+                                title="Reject request"
+                              >
+                                ✗ Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
