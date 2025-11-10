@@ -2594,7 +2594,7 @@ export default function SettingsPage() {
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Reactivation Requests ({reactivationRequests.filter(r => r.status === 'pending').length})
+                Reactivation Requests{showReactivationRequests && reactivationRequests.length > 0 ? ` (${reactivationRequests.filter(r => r.status === 'pending').length})` : ''}
               </button>
             </div>
 
