@@ -151,6 +151,7 @@ export default function SettingsPage() {
   const [showReactivationRequests, setShowReactivationRequests] = useState(false)
   const [reactivationRequests, setReactivationRequests] = useState<ReactivationRequest[]>([])
   const [loadingRequests, setLoadingRequests] = useState(false)
+  const [reactivationRequestsFetched, setReactivationRequestsFetched] = useState(false)
   const [userSearch, setUserSearch] = useState('')
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
@@ -480,6 +481,7 @@ export default function SettingsPage() {
 
       if (data) {
         setReactivationRequests(data as ReactivationRequest[])
+        setReactivationRequestsFetched(true)
         console.log('✅ Reactivation requests state updated')
       }
     } catch (error) {
@@ -2613,7 +2615,7 @@ export default function SettingsPage() {
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Reactivation Requests{showReactivationRequests && reactivationRequests.length > 0 ? ` (${reactivationRequests.filter(r => r.status === 'pending').length})` : ''}
+                Reactivation Requests{reactivationRequestsFetched ? ` (${reactivationRequests.filter(r => r.status === 'pending').length})` : ''}
               </button>
             </div>
 
