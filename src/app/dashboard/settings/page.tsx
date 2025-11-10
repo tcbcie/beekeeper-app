@@ -514,44 +514,36 @@ export default function SettingsPage() {
     console.log('📜 fetchSubscriptionHistory called')
     setLoadingHistory(true)
     try {
-      const { data, error } = await supabase
+      // Fetch subscription history
+      const { data: historyData, error: historyError } = await supabase
         .from('subscription_history')
-        .select(`
-          id,
-          user_id,
-          code,
-          code_id,
-          activated_at,
-          expires_at,
-          subscription_type,
-          price_paid,
-          payment_method,
-          stripe_payment_intent_id,
-          profiles!inner(email)
-        `)
+        .select('*')
         .order('activated_at', { ascending: false })
 
-      console.log('📥 fetchSubscriptionHistory response:', { dataCount: data?.length, error })
+      if (historyError) throw historyError
 
-      if (error) throw error
+      console.log('📥 fetchSubscriptionHistory response:', {
+        historyCount: historyData?.length
+      })
 
-      if (data) {
-        const formattedData = data.map((record) => {
-          const profiles = Array.isArray(record.profiles) ? record.profiles[0] : record.profiles
-          return {
-            id: record.id,
-            user_id: record.user_id,
-            code: record.code,
-            code_id: record.code_id,
-            activated_at: record.activated_at,
-            expires_at: record.expires_at,
-            subscription_type: record.subscription_type,
-            price_paid: record.price_paid,
-            payment_method: record.payment_method,
-            stripe_payment_intent_id: record.stripe_payment_intent_id,
-            user_email: profiles?.email || 'Unknown'
-          }
-        })
+      if (historyData) {
+        // Create a map of user_id to email from existing users data
+        const emailMap = new Map(users.map(u => [u.id, u.email]))
+
+        const formattedData = historyData.map((record) => ({
+          id: record.id,
+          user_id: record.user_id,
+          code: record.code,
+          code_id: record.code_id,
+          activated_at: record.activated_at,
+          expires_at: record.expires_at,
+          subscription_type: record.subscription_type,
+          price_paid: record.price_paid,
+          payment_method: record.payment_method,
+          stripe_payment_intent_id: record.stripe_payment_intent_id,
+          user_email: emailMap.get(record.user_id) || 'Unknown'
+        }))
+
         setSubscriptionHistory(formattedData as SubscriptionHistoryRecord[])
         console.log('✅ Subscription history state updated')
       }
