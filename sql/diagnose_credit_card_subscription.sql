@@ -90,7 +90,12 @@ BEGIN
     SELECT 1
     FROM information_schema.parameters
     WHERE specific_schema = 'public'
-      AND routine_name = 'activate_credit_card_subscription'
+      AND specific_name IN (
+        SELECT specific_name
+        FROM information_schema.routines
+        WHERE routine_schema = 'public'
+          AND routine_name = 'activate_credit_card_subscription'
+      )
       AND parameter_name = 'p_association_code'
   ) INTO param_exists;
 
@@ -140,7 +145,12 @@ BEGIN
     SELECT 1
     FROM information_schema.parameters
     WHERE specific_schema = 'public'
-      AND routine_name = 'activate_credit_card_subscription'
+      AND specific_name IN (
+        SELECT specific_name
+        FROM information_schema.routines
+        WHERE routine_schema = 'public'
+          AND routine_name = 'activate_credit_card_subscription'
+      )
       AND parameter_name = 'p_association_code'
   ) INTO param_exists;
 
