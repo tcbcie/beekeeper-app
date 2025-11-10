@@ -49,7 +49,30 @@ function LoginForm() {
             emailRedirectTo: `${window.location.origin}${redirectUrl}`
           }
         })
-        if (error) throw error
+
+        if (error) {
+          // Check if this is a deleted account error
+          if (error.message.includes('deleted_') && error.message.includes('@deleted.local')) {
+            // Check if this email has a deleted account
+            const { data: checkData } = await supabase
+              .from('profiles')
+              .select('id, deleted_at, original_email')
+              .eq('original_email', email)
+              .not('deleted_at', 'is', null)
+              .single()
+
+            if (checkData) {
+              setMessage('⚠️ This account has been deleted. Redirecting to account reactivation page...')
+              setLoading(false)
+              // Wait a moment then redirect to reactivation page
+              setTimeout(() => {
+                router.push(`/reactivate?email=${encodeURIComponent(email)}`)
+              }, 2000)
+              return
+            }
+          }
+          throw error
+        }
 
         // If email confirmation is disabled, redirect immediately
         // Otherwise show message to check email
@@ -179,6 +202,17 @@ function LoginForm() {
             </button>
           </div>
         </form>
+
+        {/* Account Reactivation Link */}
+        <div className="text-center text-sm">
+          <p className="text-gray-600">
+            Deleted account?{' '}
+            <Link href="/reactivate" className="text-amber-600 hover:text-amber-700 font-medium">
+              Request reactivation
+            </Link>
+          </p>
+        </div>
+
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300"></div>
