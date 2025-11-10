@@ -17,15 +17,19 @@ function LoginForm() {
   // Check for pending redirect after email confirmation
   useEffect(() => {
     const checkPendingRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        const pendingRedirect = localStorage.getItem('pendingRedirect')
-        if (pendingRedirect) {
-          localStorage.removeItem('pendingRedirect')
-          router.push(pendingRedirect)
-        } else if (!searchParams.get('redirect')) {
-          router.push('/dashboard')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          const pendingRedirect = localStorage.getItem('pendingRedirect')
+          if (pendingRedirect) {
+            localStorage.removeItem('pendingRedirect')
+            router.push(pendingRedirect)
+          } else if (!searchParams.get('redirect')) {
+            router.push('/dashboard')
+          }
         }
+      } catch (error) {
+        console.error('Error checking pending redirect:', error)
       }
     }
     checkPendingRedirect()

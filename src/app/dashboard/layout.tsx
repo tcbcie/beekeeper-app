@@ -17,23 +17,29 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const hasShownDisabledAlert = useRef(false)
 
   const checkUser = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      // Check if account is active
-      const accountActive = await isAccountActive()
-      if (!accountActive) {
-        // Account is disabled - sign out and redirect
-        if (!hasShownDisabledAlert.current) {
-          hasShownDisabledAlert.current = true
-          await supabase.auth.signOut()
-          alert('Your account has been deactivated. You can request account reactivation from the login page.')
-          router.push('/login')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // Check if account is active
+        const accountActive = await isAccountActive()
+        if (!accountActive) {
+          // Account is disabled - sign out and redirect
+          if (!hasShownDisabledAlert.current) {
+            hasShownDisabledAlert.current = true
+            await supabase.auth.signOut()
+            alert('Your account has been deactivated. You can request account reactivation from the login page.')
+            router.push('/login')
+          }
+          return
         }
-        return
+        setCurrentUser(session.user)
+        setLoading(false)
+      } else {
+        router.push('/login')
       }
-      setCurrentUser(session.user)
+    } catch (error) {
+      console.error('Error checking user:', error)
       setLoading(false)
-    } else {
       router.push('/login')
     }
   }, [router])
@@ -42,6 +48,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     checkUser()
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip the initial INITIAL_SESSION event since checkUser() already handles it
+      if (event === 'INITIAL_SESSION') {
+        return
+      }
+
       if (session) {
         // Check if account is active on auth state change
         const accountActive = await isAccountActive()
@@ -55,6 +66,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           return
         }
         setCurrentUser(session.user)
+        setLoading(false)
       } else {
         router.push('/login')
       }
