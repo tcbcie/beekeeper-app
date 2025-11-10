@@ -177,6 +177,7 @@ export default function SettingsPage() {
   const [showSubscriptionHistory, setShowSubscriptionHistory] = useState(false)
   const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistoryRecord[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [subscriptionHistoryFetched, setSubscriptionHistoryFetched] = useState(false)
 
   // Support Tickets state
   const [showTicketManagement, setShowTicketManagement] = useState(false)
@@ -545,6 +546,7 @@ export default function SettingsPage() {
         }))
 
         setSubscriptionHistory(formattedData as SubscriptionHistoryRecord[])
+        setSubscriptionHistoryFetched(true)
         console.log('✅ Subscription history state updated')
       }
     } catch (error) {
@@ -2684,19 +2686,15 @@ export default function SettingsPage() {
                 Reactivation Requests{reactivationRequestsFetched ? ` (${reactivationRequests.filter(r => r.status === 'pending').length})` : ''}
               </button>
               <button
-                onClick={() => {
-                  setShowDeletedUsers(false)
-                  setShowReactivationRequests(false)
-                  setShowSubscriptionHistory(true)
-                  fetchSubscriptionHistory()
+                onClick={async () => {
+                  if (!subscriptionHistoryFetched) {
+                    await fetchSubscriptionHistory()
+                  }
+                  router.push('/dashboard/settings/subscription-history')
                 }}
-                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  showSubscriptionHistory
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className="px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors"
               >
-                Subscription History ({subscriptionHistory.length})
+                Subscription History{subscriptionHistoryFetched ? ` (${subscriptionHistory.length})` : ''}
               </button>
             </div>
 
@@ -3190,119 +3188,6 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Subscription History Tab */}
-            {showSubscriptionHistory && (
-              <div className="space-y-4 mt-4">
-                {loadingHistory ? (
-                  <div className="text-center py-8">
-                    <LoadingSpinner text="Loading subscription history..." />
-                  </div>
-                ) : subscriptionHistory.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p className="mb-2">No subscription history found.</p>
-                    <p className="text-sm">Credit card payment records will appear here.</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            User Email
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Type
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Code
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Price
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Payment Method
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Transaction ID
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Activated
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Expires
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {subscriptionHistory.map((record) => (
-                          <tr key={record.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {record.user_email}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                record.subscription_type === 'credit_card'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {record.subscription_type}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {record.code ? (
-                                <span className="font-mono text-indigo-600">{record.code}</span>
-                              ) : (
-                                <span className="text-gray-400 italic">None</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              €{Number(record.price_paid).toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {record.payment_method}
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              {record.stripe_payment_intent_id ? (
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-mono text-xs text-blue-600 break-all">
-                                    {record.stripe_payment_intent_id}
-                                  </span>
-                                  <a
-                                    href={`https://dashboard.stripe.com/payments/${record.stripe_payment_intent_id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-500 hover:text-blue-700 underline"
-                                  >
-                                    View in Stripe →
-                                  </a>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 italic text-xs">N/A</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {new Date(record.activated_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {new Date(record.expires_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
                   </div>
                 )}
               </div>
