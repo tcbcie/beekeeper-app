@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -24,7 +24,7 @@ interface FormData {
   description: string
 }
 
-export default function AboutPage() {
+function AboutPageContent() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState<'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support'>('about')
@@ -1519,5 +1519,13 @@ export default function AboutPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AboutPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner text="Loading..." />}>
+      <AboutPageContent />
+    </Suspense>
   )
 }
