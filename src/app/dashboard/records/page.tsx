@@ -4027,8 +4027,9 @@ export default function InspectionsPage() {
                   const mitesCount = e.target.value ? parseInt(e.target.value) : null
                   const sampleSize = editingCheck?.sample_size ?? null
                   const method = editingCheck?.method
+                  const checkDate = editingCheck?.check_date || new Date().toISOString().split('T')[0]
                   let infestationRate = null
-                  let actionThreshold = editingCheck?.action_threshold_reached || false
+                  let actionThreshold = false
 
                   if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
                     // Check if this is a daily mite drop method
@@ -4042,6 +4043,18 @@ export default function InspectionsPage() {
                     } else {
                       // Standard Infestation Rate = (Mites / Sample Size) * 100
                       infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
+
+                      // Determine season based on check date
+                      const month = new Date(checkDate).getMonth() + 1 // 1-12
+                      const isSpring = month >= 3 && month <= 5 // March-May
+                      const isMidLate = month >= 6 && month <= 10 // June-October
+
+                      // Apply treatment thresholds based on season
+                      if (isSpring && infestationRate >= 1) {
+                        actionThreshold = true
+                      } else if (isMidLate && infestationRate >= 3) {
+                        actionThreshold = true
+                      }
                     }
                   }
 
@@ -4068,8 +4081,9 @@ export default function InspectionsPage() {
                   const sampleSize = e.target.value ? parseInt(e.target.value) : null
                   const mitesCount = editingCheck?.mites_count ?? null
                   const method = editingCheck?.method
+                  const checkDate = editingCheck?.check_date || new Date().toISOString().split('T')[0]
                   let infestationRate = null
-                  let actionThreshold = editingCheck?.action_threshold_reached || false
+                  let actionThreshold = false
 
                   if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
                     // Check if this is a daily mite drop method
@@ -4083,6 +4097,18 @@ export default function InspectionsPage() {
                     } else {
                       // Standard Infestation Rate = (Mites / Sample Size) * 100
                       infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
+
+                      // Determine season based on check date
+                      const month = new Date(checkDate).getMonth() + 1 // 1-12
+                      const isSpring = month >= 3 && month <= 5 // March-May
+                      const isMidLate = month >= 6 && month <= 10 // June-October
+
+                      // Apply treatment thresholds based on season
+                      if (isSpring && infestationRate >= 1) {
+                        actionThreshold = true
+                      } else if (isMidLate && infestationRate >= 3) {
+                        actionThreshold = true
+                      }
                     }
                   }
 
@@ -4115,6 +4141,32 @@ export default function InspectionsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                 placeholder="Optional (or auto-calculated)"
               />
+              {/* Season-based interpretation guidance */}
+              {editingCheck?.infestation_rate !== null && editingCheck?.infestation_rate !== undefined &&
+               !(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') && (
+                <div className="mt-2 text-xs">
+                  {(() => {
+                    const rate = editingCheck.infestation_rate
+                    const checkDate = editingCheck?.check_date || new Date().toISOString().split('T')[0]
+                    const month = new Date(checkDate).getMonth() + 1
+                    const isSpring = month >= 3 && month <= 5
+                    const isMidLate = month >= 6 && month <= 10
+
+                    if (rate < 1) {
+                      return <span className="text-green-600">✓ Usually safe, but monitor.</span>
+                    } else if (isSpring && rate >= 1) {
+                      return <span className="text-orange-600 font-semibold">⚠ Spring: Treat (≥1%)</span>
+                    } else if (isMidLate && rate >= 3) {
+                      return <span className="text-red-600 font-semibold">⚠ Mid/Late Season: Treat immediately (≥3%)</span>
+                    } else if (isMidLate && rate >= 1) {
+                      return <span className="text-yellow-600">⚠ Monitor closely - approaching treatment threshold</span>
+                    } else if (rate >= 1) {
+                      return <span className="text-yellow-600">⚠ Monitor closely</span>
+                    }
+                    return null
+                  })()}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center">
@@ -4127,8 +4179,10 @@ export default function InspectionsPage() {
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Action Threshold Reached
-                  {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') && (
-                    <span className="ml-2 text-xs text-gray-500 font-normal">(Auto-checked if ≥ 5)</span>
+                  {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? (
+                    <span className="ml-2 text-xs text-gray-500 font-normal">(Auto-checked if ≥ 5 mites/day)</span>
+                  ) : (
+                    <span className="ml-2 text-xs text-gray-500 font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
                   )}
                 </span>
               </label>
