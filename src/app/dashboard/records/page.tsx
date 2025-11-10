@@ -4984,21 +4984,29 @@ export default function InspectionsPage() {
                   </div>
                   {check.mites_count !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Mites Count</span>
+                      <span className="text-xs text-gray-500 mb-1">
+                        {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
+                      </span>
                       <span className="text-sm font-medium text-gray-900">{check.mites_count}</span>
                     </div>
                   )}
                   {check.sample_size !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Sample Size</span>
+                      <span className="text-xs text-gray-500 mb-1">
+                        {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Days' : 'Sample Size'}
+                      </span>
                       <span className="text-sm font-medium text-gray-900">{check.sample_size}</span>
                     </div>
                   )}
                   {check.infestation_rate !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Infestation Rate</span>
+                      <span className="text-xs text-gray-500 mb-1">
+                        {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Daily Mite Drop' : 'Infestation Rate'}
+                      </span>
                       <span className={`text-sm font-bold ${check.infestation_rate > 3 ? 'text-red-600' : 'text-green-600'}`}>
-                        {check.infestation_rate}%
+                        {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board')
+                          ? check.infestation_rate
+                          : `${check.infestation_rate}%`}
                       </span>
                     </div>
                   )}
