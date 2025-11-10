@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet, ExternalLink, Home } from 'lucide-react'
@@ -802,8 +802,8 @@ export default function InspectionsPage() {
     }
   }, [searchParams, hives, router, userId])
 
-  // Merge all records whenever any record type changes
-  useEffect(() => {
+  // Merge all records - memoized for performance
+  const mergedRecords = useMemo(() => {
     const merged: UnifiedRecord[] = [
       ...inspections.map(i => ({ ...i, record_type: 'inspection' as const, date: i.inspection_date })),
       ...varroaTreatments.map(vt => ({ ...vt, record_type: 'varroa_treatment' as const, date: vt.treatment_date })),
@@ -815,8 +815,13 @@ export default function InspectionsPage() {
     // Sort by date descending (most recent first)
     merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-    setAllRecords(merged)
+    return merged
   }, [inspections, varroaTreatments, varroaChecks, feedings, harvests])
+
+  // Update state when merged records change
+  useEffect(() => {
+    setAllRecords(mergedRecords)
+  }, [mergedRecords])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1477,49 +1482,60 @@ export default function InspectionsPage() {
     return startDate
   }
 
-  // Filter all records based on record type, apiary, hive and time period
-  const filteredRecords = allRecords.filter(record => {
-    // Filter by record type
-    if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) {
-      return false
-    }
+  // Create hive lookup map for O(1) access - memoized for performance
+  const hiveMap = useMemo(() =>
+    new Map(hives.map(h => [h.id, h])),
+    [hives]
+  )
 
-    // Filter by apiary (checks if the record's hive belongs to the selected apiary)
-    if (filterApiaryId) {
-      const hive = hives.find(h => h.id === record.hive_id)
-      if (!hive || hive.apiary_id !== filterApiaryId) {
+  // Memoize date range calculation
+  const dateRangeStart = useMemo(() => getDateRange(), [timePeriod, customStartDate])
+
+  // Filter all records - memoized for performance
+  const filteredRecords = useMemo(() => {
+    return allRecords.filter(record => {
+      // Filter by record type
+      if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) {
         return false
       }
-    }
 
-    // Filter by hive
-    if (filterHiveId && record.hive_id !== filterHiveId) {
-      return false
-    }
-
-    // Filter by time period
-    const startDate = getDateRange()
-    if (startDate) {
-      const recordDate = new Date(record.date)
-
-      // For custom range, check both start and end dates
-      if (timePeriod === 'custom') {
-        if (customStartDate && recordDate < new Date(customStartDate)) {
-          return false
-        }
-        if (customEndDate && recordDate > new Date(customEndDate)) {
-          return false
-        }
-      } else {
-        // For preset ranges, just check start date
-        if (recordDate < startDate) {
+      // Filter by apiary (checks if the record's hive belongs to the selected apiary)
+      // Using Map lookup for O(1) instead of O(n)
+      if (filterApiaryId) {
+        const hive = hiveMap.get(record.hive_id)
+        if (!hive || hive.apiary_id !== filterApiaryId) {
           return false
         }
       }
-    }
 
-    return true
-  })
+      // Filter by hive
+      if (filterHiveId && record.hive_id !== filterHiveId) {
+        return false
+      }
+
+      // Filter by time period
+      if (dateRangeStart) {
+        const recordDate = new Date(record.date)
+
+        // For custom range, check both start and end dates
+        if (timePeriod === 'custom') {
+          if (customStartDate && recordDate < new Date(customStartDate)) {
+            return false
+          }
+          if (customEndDate && recordDate > new Date(customEndDate)) {
+            return false
+          }
+        } else {
+          // For preset ranges, just check start date
+          if (recordDate < dateRangeStart) {
+            return false
+          }
+        }
+      }
+
+      return true
+    })
+  }, [allRecords, recordTypeFilter, filterApiaryId, filterHiveId, timePeriod, customStartDate, customEndDate, hiveMap, dateRangeStart])
 
   if (loading) return <LoadingSpinner text="Loading records..." />
 
