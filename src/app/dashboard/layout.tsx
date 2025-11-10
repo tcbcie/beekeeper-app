@@ -26,7 +26,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (!hasShownDisabledAlert.current) {
           hasShownDisabledAlert.current = true
           await supabase.auth.signOut()
-          alert('Your account has been disabled. Please contact an administrator.')
+          alert('Your account has been deactivated. You can request account reactivation from the login page.')
           router.push('/login')
         }
         return
@@ -49,7 +49,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           if (!hasShownDisabledAlert.current) {
             hasShownDisabledAlert.current = true
             await supabase.auth.signOut()
-            alert('Your account has been disabled. Please contact an administrator.')
+            alert('Your account has been deactivated. You can request account reactivation from the login page.')
             router.push('/login')
           }
           return
@@ -69,7 +69,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           if (!hasShownDisabledAlert.current) {
             hasShownDisabledAlert.current = true
             await supabase.auth.signOut()
-            alert('Your account has been disabled. Please contact an administrator.')
+            alert('Your account has been deactivated. You can request account reactivation from the login page.')
             router.push('/login')
           }
         }
