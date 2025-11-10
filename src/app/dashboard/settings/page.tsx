@@ -501,7 +501,22 @@ export default function SettingsPage() {
         p_admin_notes: notes || null
       })
 
-      if (error) throw error
+      console.log('Reactivation response:', { data, error })
+
+      if (error) {
+        console.error('❌ Error approving reactivation:', error)
+        let errorMessage = 'Failed to approve reactivation request.'
+
+        // Handle specific error codes
+        if (error.code === '23505' || (error.message && error.message.includes('unique'))) {
+          errorMessage = `❌ Email conflict: The email ${email} may already be in use by another account.\n\nPlease check if there are duplicate accounts or if the user created a new account after deletion.`
+        } else if (error.message) {
+          errorMessage = `❌ Error: ${error.message}`
+        }
+
+        alert(errorMessage)
+        return
+      }
 
       if (data && typeof data === 'object' && 'success' in data) {
         if (data.success) {
@@ -509,12 +524,16 @@ export default function SettingsPage() {
           fetchReactivationRequests() // Refresh requests list
           fetchUsers() // Refresh active users list
         } else {
-          alert(`❌ Failed to reactivate: ${data.message}`)
+          // Function returned success: false with a message
+          alert(`❌ Failed to reactivate:\n\n${data.message || 'Unknown error'}`)
         }
+      } else {
+        alert('❌ Unexpected response from server. Please try again.')
       }
     } catch (error) {
-      console.error('❌ Error approving reactivation:', error)
-      alert('Failed to approve reactivation request. Please try again.')
+      console.error('❌ Exception approving reactivation:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`❌ Failed to approve reactivation request:\n\n${errorMessage}`)
     }
   }
 
