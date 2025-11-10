@@ -1457,7 +1457,7 @@ export default function InspectionsPage() {
   const renderStars = (rating: number) => '⭐'.repeat(rating || 0)
 
   // Calculate date range based on time period
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     const today = new Date()
     let startDate: Date | null = null
 
@@ -1480,7 +1480,7 @@ export default function InspectionsPage() {
     }
 
     return startDate
-  }
+  }, [timePeriod, customStartDate])
 
   // Create hive lookup map for O(1) access - memoized for performance
   const hiveMap = useMemo(() =>
@@ -1489,7 +1489,7 @@ export default function InspectionsPage() {
   )
 
   // Memoize date range calculation
-  const dateRangeStart = useMemo(() => getDateRange(), [timePeriod, customStartDate, getDateRange])
+  const dateRangeStart = useMemo(() => getDateRange(), [getDateRange])
 
   // Filter all records - memoized for performance
   const filteredRecords = useMemo(() => {
