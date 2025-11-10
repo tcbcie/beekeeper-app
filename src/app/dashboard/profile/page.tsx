@@ -343,16 +343,16 @@ export default function ProfilePage() {
         throw error
       }
 
-      console.log('Account deletion response:', data)
+      console.log('Account deactivation response:', data)
 
       // Sign out the user
       await supabase.auth.signOut()
 
-      // Show success message
-      alert('Your account and all associated data have been permanently deleted.')
+      // Show success message with reactivation info
+      alert('Your account has been deactivated.\n\nAll your data has been preserved and you can request account reactivation at any time by visiting the reactivation page.')
 
-      // Redirect to home/login page
-      router.push('/')
+      // Redirect to reactivation page
+      router.push('/reactivate')
     } catch (error) {
       console.error('Error deleting account:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -2077,7 +2077,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
           <div>
             <div className="font-medium text-red-900">Delete Account</div>
-            <div className="text-sm text-red-700">Permanently delete your account and all data</div>
+            <div className="text-sm text-red-700">Deactivate your account (can be reactivated later)</div>
           </div>
           <button
             onClick={() => setShowDeleteAccountModal(true)}
@@ -2111,25 +2111,25 @@ export default function ProfilePage() {
             </div>
 
             <div className="mb-6">
-              <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
-                <p className="text-red-900 font-semibold mb-2">Warning: This action cannot be undone!</p>
-                <p className="text-red-800 text-sm">
-                  Deleting your account will permanently remove:
+              <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
+                <p className="text-blue-900 font-semibold mb-2">Account Deactivation</p>
+                <p className="text-blue-800 text-sm mb-2">
+                  Deleting your account will deactivate it and prevent you from logging in. However:
                 </p>
-                <ul className="list-disc list-inside text-red-800 text-sm mt-2 space-y-1">
-                  <li>All your apiaries and hives</li>
-                  <li>All queens and inspection records</li>
-                  <li>All varroa checks and treatments</li>
-                  <li>All feeding and harvest records</li>
-                  <li>All tasks and events</li>
-                  <li>All team memberships and owned teams</li>
-                  <li>Your user profile and login credentials</li>
+                <ul className="list-disc list-inside text-blue-800 text-sm space-y-1">
+                  <li><strong>All your data will be preserved:</strong> apiaries, hives, queens, inspections, treatments, etc.</li>
+                  <li><strong>Your account can be reactivated</strong> by visiting the reactivation page and submitting a request</li>
+                  <li><strong>An administrator will review</strong> your reactivation request</li>
+                  <li><strong>Once approved,</strong> you&apos;ll regain full access to all your data</li>
                 </ul>
               </div>
 
-              <p className="text-gray-700 text-sm mb-4">
-                Before deleting your account, we recommend exporting your data using the &quot;Export as JSON&quot; or &quot;Export as CSV&quot; buttons in the Data Export section above.
-              </p>
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
+                <p className="text-amber-900 font-semibold mb-1">📋 Optional: Export Your Data</p>
+                <p className="text-amber-800 text-sm">
+                  Before deactivating, you may want to export your data using the &quot;Export as JSON&quot; or &quot;Export as CSV&quot; buttons in the Data Export section above.
+                </p>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
