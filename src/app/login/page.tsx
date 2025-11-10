@@ -39,14 +39,16 @@ function LoginForm() {
     try {
       if (isSignUp) {
         // FIRST: Check if this email belongs to a deleted account BEFORE attempting signup
-        const { data: checkData } = await supabase
+        const { data: checkData, error: checkError } = await supabase
           .from('profiles')
           .select('id, deleted_at, original_email')
           .eq('original_email', email)
           .not('deleted_at', 'is', null)
-          .single()
+          .maybeSingle()
 
-        if (checkData) {
+        console.log('Deleted account check:', { checkData, checkError, email })
+
+        if (checkData && checkData.deleted_at) {
           // This email belongs to a deleted account - redirect to reactivation
           setMessage('⚠️ This account has been deactivated. Redirecting to account reactivation page...')
           setLoading(false)
@@ -69,7 +71,23 @@ function LoginForm() {
           }
         })
 
-        if (error) throw error
+        if (error) {
+          // If signup fails, check again if it's because of a deleted account
+          // (in case RLS prevented the initial check)
+          console.error('Signup error:', error)
+
+          // Check if the error message contains the deleted email pattern
+          if (error.message && error.message.includes('deleted_') && error.message.includes('@deleted.local')) {
+            setMessage('⚠️ This account has been deactivated. Redirecting to account reactivation page...')
+            setLoading(false)
+            setTimeout(() => {
+              router.push(`/reactivate?email=${encodeURIComponent(email)}`)
+            }, 2000)
+            return
+          }
+
+          throw error
+        }
 
         // If email confirmation is disabled, redirect immediately
         // Otherwise show message to check email
