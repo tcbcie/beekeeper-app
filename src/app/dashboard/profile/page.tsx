@@ -349,10 +349,10 @@ export default function ProfilePage() {
       await supabase.auth.signOut()
 
       // Show success message with reactivation info
-      alert('Your account has been deactivated.\n\nAll your data has been preserved and you can request account reactivation at any time by visiting the reactivation page.')
+      alert('Your account has been deactivated.\n\nAll your data has been preserved. You can request account reactivation at any time from the login page.')
 
-      // Redirect to reactivation page
-      router.push('/reactivate')
+      // Redirect to login page
+      router.push('/login')
     } catch (error) {
       console.error('Error deleting account:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
