@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle } from 'lucide-react'
@@ -29,15 +29,15 @@ export default function AboutPage() {
   const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState<'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support'>('about')
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Check URL for section parameter on mount
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const section = urlParams.get('section')
+    const section = searchParams.get('section')
     if (section && ['about', 'news', 'changes', 'disclaimer', 'privacy', 'support'].includes(section)) {
       setActiveSection(section as 'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support')
     }
-  }, [])
+  }, [searchParams])
 
   // Support ticket states
   const [tickets, setTickets] = useState<SupportTicket[]>([])
