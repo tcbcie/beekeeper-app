@@ -1316,24 +1316,24 @@ export default function HivesPage() {
 
                   {/* Full-Size Brood Boxes (top to bottom) - Below half boxes */}
                   {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
-                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex flex-col items-center justify-center text-xs font-semibold relative">
+                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold relative">
                       <span className="relative z-10">🐝 Brood Full {i + 1}</span>
                       {/* Frame orientation visualization - show on bottom brood box */}
                       {i === (hive.configuration?.brood_boxes_full || hive.configuration?.brood_boxes || 1) - 1 && hive.configuration?.frame_orientation && (
-                        <div className="absolute bottom-1 flex items-center justify-center pointer-events-none">
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none">
                           {hive.configuration?.frame_orientation === 'warm' ? (
                             // Warm way: horizontal lines (parallel to entrance)
-                            <div className="flex flex-col gap-0.5 w-16">
-                              <div className="h-0.5 bg-amber-700 opacity-50"></div>
-                              <div className="h-0.5 bg-amber-700 opacity-50"></div>
-                              <div className="h-0.5 bg-amber-700 opacity-50"></div>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
+                              <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
+                              <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
                             </div>
                           ) : (
                             // Cold way: vertical lines (perpendicular to entrance)
-                            <div className="flex gap-0.5 h-4">
-                              <div className="w-0.5 bg-amber-700 opacity-50"></div>
-                              <div className="w-0.5 bg-amber-700 opacity-50"></div>
-                              <div className="w-0.5 bg-amber-700 opacity-50"></div>
+                            <div className="flex gap-0.5">
+                              <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
+                              <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
+                              <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
                             </div>
                           )}
                         </div>
