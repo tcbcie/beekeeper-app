@@ -1370,12 +1370,6 @@ export default function HivesPage() {
                       <span>Entrance reducer</span>
                     </div>
                   )}
-                  {hive.configuration.frame_orientation && (
-                    <div className="flex items-center gap-1">
-                      <span>{hive.configuration.frame_orientation === 'warm' ? '═' : '║'}</span>
-                      <span className="capitalize">{hive.configuration.frame_orientation} way</span>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
