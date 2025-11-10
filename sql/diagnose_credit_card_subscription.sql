@@ -111,15 +111,15 @@ BEGIN
   END IF;
 END $$;
 
--- 6. Check subscription_codes table
+-- 6. Check registration_codes table
 DO $$
 BEGIN
   RAISE NOTICE '';
   RAISE NOTICE '============================================';
-  RAISE NOTICE 'SUBSCRIPTION CODES';
+  RAISE NOTICE 'REGISTRATION CODES';
   RAISE NOTICE '============================================';
-  RAISE NOTICE 'Total codes: %', (SELECT COUNT(*) FROM public.subscription_codes);
-  RAISE NOTICE 'Active codes: %', (SELECT COUNT(*) FROM public.subscription_codes WHERE is_active = TRUE);
+  RAISE NOTICE 'Total codes: %', (SELECT COUNT(*) FROM public.registration_codes);
+  RAISE NOTICE 'Active codes: %', (SELECT COUNT(*) FROM public.registration_codes WHERE is_active = TRUE);
 END $$;
 
 SELECT
@@ -129,7 +129,7 @@ SELECT
   is_active,
   times_used,
   max_uses
-FROM public.subscription_codes
+FROM public.registration_codes
 WHERE is_active = TRUE
 LIMIT 10;
 
