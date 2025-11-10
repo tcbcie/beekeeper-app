@@ -28,6 +28,7 @@ interface HiveConfiguration {
   entrance_reducer: boolean
   varroa_mesh_floor: string
   right_sized_broodbox: boolean
+  frame_orientation: string | null
 }
 
 interface Colony {
@@ -137,6 +138,7 @@ export default function HivesPage() {
       entrance_reducer: false,
       varroa_mesh_floor: 'closed',
       right_sized_broodbox: false,
+      frame_orientation: null,
     },
   })
 
@@ -588,6 +590,7 @@ export default function HivesPage() {
         entrance_reducer: hive.configuration?.entrance_reducer || false,
         varroa_mesh_floor: hive.configuration?.varroa_mesh_floor || 'closed',
         right_sized_broodbox: hive.configuration?.right_sized_broodbox || false,
+        frame_orientation: hive.configuration?.frame_orientation || null,
       },
     })
     setShowForm(true)
@@ -636,6 +639,7 @@ export default function HivesPage() {
         entrance_reducer: false,
         varroa_mesh_floor: 'closed',
         right_sized_broodbox: false,
+        frame_orientation: null,
       },
     })
   }
@@ -1130,6 +1134,24 @@ export default function HivesPage() {
                   >
                     {formData.configuration.right_sized_broodbox ? '✓' : '○'} Right-Sized Broodbox
                   </button>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Frame Orientation
+                    <span className="ml-2 text-xs text-gray-500 font-normal">
+                      (Warm way: frames parallel to entrance, Cold way: frames perpendicular to entrance)
+                    </span>
+                  </label>
+                  <select
+                    value={formData.configuration.frame_orientation ?? ''}
+                    onChange={(e) => setFormData({...formData, configuration: {...formData.configuration, frame_orientation: e.target.value || null}})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  >
+                    <option value="">Not specified</option>
+                    <option value="warm">Warm Way</option>
+                    <option value="cold">Cold Way</option>
+                  </select>
                 </div>
               </div>
             </div>
