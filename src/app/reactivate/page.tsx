@@ -1,12 +1,22 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { AlertCircle, CheckCircle, Mail } from 'lucide-react'
 
-export default function ReactivateAccountPage() {
+function ReactivateForm() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
+
+  // Pre-fill email from URL parameter
+  useEffect(() => {
+    const emailParam = searchParams.get('email')
+    if (emailParam) {
+      setEmail(emailParam)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,5 +159,17 @@ export default function ReactivateAccountPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ReactivateAccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
+        <div className="text-xl">Loading...</div>
+      </div>
+    }>
+      <ReactivateForm />
+    </Suspense>
   )
 }
