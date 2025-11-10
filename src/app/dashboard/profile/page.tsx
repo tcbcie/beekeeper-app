@@ -2084,19 +2084,19 @@ export default function ProfilePage() {
             className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
           >
             <Trash2 size={16} />
-            Delete Account
+            Deactivate Account
           </button>
         </div>
       </div>
 
-      {/* Delete Account Confirmation Modal */}
+      {/* Deactivate Account Confirmation Modal */}
       {showDeleteAccountModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-red-900 flex items-center gap-2">
                 <Trash2 size={24} className="text-red-600" />
-                Delete Account
+                Deactivate Account
               </h3>
               <button
                 onClick={() => {
@@ -2166,12 +2166,12 @@ export default function ProfilePage() {
                 {deletingAccount ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    Deleting Account...
+                    Deactivating Account...
                   </>
                 ) : (
                   <>
                     <Trash2 size={16} />
-                    Permanently Delete Account
+                    Deactivate Account
                   </>
                 )}
               </button>
