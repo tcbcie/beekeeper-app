@@ -28,16 +28,23 @@ function AboutPageContent() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState<'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support'>('about')
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  // Wait for client-side mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Check URL for section parameter on mount
   useEffect(() => {
+    if (!mounted) return
     const section = searchParams.get('section')
     if (section && ['about', 'news', 'changes', 'disclaimer', 'privacy', 'support'].includes(section)) {
       setActiveSection(section as 'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support')
     }
-  }, [searchParams])
+  }, [searchParams, mounted])
 
   // Support ticket states
   const [tickets, setTickets] = useState<SupportTicket[]>([])
