@@ -536,10 +536,22 @@ export default function SettingsPage() {
       if (error) throw error
 
       if (data) {
-        const formattedData = data.map((record: any) => ({
-          ...record,
-          user_email: record.profiles?.email || 'Unknown'
-        }))
+        const formattedData = data.map((record) => {
+          const profiles = Array.isArray(record.profiles) ? record.profiles[0] : record.profiles
+          return {
+            id: record.id,
+            user_id: record.user_id,
+            code: record.code,
+            code_id: record.code_id,
+            activated_at: record.activated_at,
+            expires_at: record.expires_at,
+            subscription_type: record.subscription_type,
+            price_paid: record.price_paid,
+            payment_method: record.payment_method,
+            stripe_payment_intent_id: record.stripe_payment_intent_id,
+            user_email: profiles?.email || 'Unknown'
+          }
+        })
         setSubscriptionHistory(formattedData as SubscriptionHistoryRecord[])
         console.log('✅ Subscription history state updated')
       }
