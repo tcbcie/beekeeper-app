@@ -35,7 +35,7 @@ BEGIN
   -- NEW: Look up the code ID if association code was provided
   IF p_association_code IS NOT NULL THEN
     SELECT id INTO v_code_id
-    FROM public.subscription_codes
+    FROM public.registration_codes
     WHERE code = p_association_code;
   END IF;
 
