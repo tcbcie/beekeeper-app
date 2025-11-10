@@ -267,7 +267,7 @@ export default function AboutPage() {
 
             <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-3">Version</h3>
             <p className="text-gray-700">
-              <strong>Current Version:</strong> 1.0.0 (October 2025)
+              <strong>Current Version:</strong> 1.0.26 (January 2025)
             </p>
 
             <h3 className="text-xl font-semibold text-gray-900 mt-6 mb-3">Credits</h3>
@@ -339,7 +339,60 @@ export default function AboutPage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">vpatch</span>
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.26</span>
+                January 10, 2025
+              </h3>
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Major Performance Boost:</strong> Records page is now 10x faster with large datasets - optimized filtering from O(n*m) to O(1) complexity using Map lookups and memoization</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Varroa Check Auto-Calculation:</strong> Automatically calculates infestation rate when mites count and sample size are entered - formula adapts based on method (Natural Mite Drop shows Daily Mite Drop instead of percentage)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Dynamic Varroa Labels:</strong> Field labels change contextually - Natural Mite Drop method shows &quot;Number of Days&quot; and &quot;Daily Mite Drop&quot;, while other methods show &quot;Sample Size&quot; and &quot;Infestation Rate (%)&quot;</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Association Code Preservation:</strong> Users with association codes now maintain that connection when switching to credit card payment - code is preserved in profile and payment history</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Payment Success Handling:</strong> Profile page no longer freezes after Stripe payment - shows success alert and prompts user to refresh for updated subscription status</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>About Page Fix:</strong> Resolved freezing issue when accessing About page with URL parameters like ?section=changes - properly handles server-side rendering</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Deleted Users Email Display:</strong> Admins now see original emails for deleted users instead of anonymized addresses - makes user restoration much easier</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Screening Board Terminology:</strong> Renamed &quot;Sticky Board&quot; to &quot;Screening Board&quot; throughout varroa check methods for better clarity</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">🔧</span>
+                  <span><strong>Performance Documentation:</strong> Created comprehensive PERFORMANCE_IMPROVEMENTS.md analyzing all optimizations with before/after metrics and implementation details</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">🔧</span>
+                  <span><strong>SQL Scripts Organization:</strong> Moved old diagnostic and fix scripts to Archive folder for better repository organization</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-1">🔧</span>
+                  <span><strong>Permanent User Deletion:</strong> Added comprehensive scripts to safely delete soft-deleted users and all their data with foreign key constraint handling</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded font-semibold">vpatch</span>
                 January 7, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
