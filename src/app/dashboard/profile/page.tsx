@@ -78,7 +78,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
+  const [, setPaymentStatus] = useState<string | null>(null)
 
   // Profile editing state
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)

@@ -1489,7 +1489,7 @@ export default function InspectionsPage() {
   )
 
   // Memoize date range calculation
-  const dateRangeStart = useMemo(() => getDateRange(), [timePeriod, customStartDate])
+  const dateRangeStart = useMemo(() => getDateRange(), [timePeriod, customStartDate, getDateRange])
 
   // Filter all records - memoized for performance
   const filteredRecords = useMemo(() => {
