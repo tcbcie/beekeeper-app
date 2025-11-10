@@ -38,7 +38,26 @@ function LoginForm() {
 
     try {
       if (isSignUp) {
-        // Sign up without registration code requirement
+        // FIRST: Check if this email belongs to a deleted account BEFORE attempting signup
+        const { data: checkData } = await supabase
+          .from('profiles')
+          .select('id, deleted_at, original_email')
+          .eq('original_email', email)
+          .not('deleted_at', 'is', null)
+          .single()
+
+        if (checkData) {
+          // This email belongs to a deleted account - redirect to reactivation
+          setMessage('⚠️ This account has been deactivated. Redirecting to account reactivation page...')
+          setLoading(false)
+          // Wait a moment then redirect to reactivation page
+          setTimeout(() => {
+            router.push(`/reactivate?email=${encodeURIComponent(email)}`)
+          }, 2000)
+          return
+        }
+
+        // If not a deleted account, proceed with normal signup
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -50,29 +69,7 @@ function LoginForm() {
           }
         })
 
-        if (error) {
-          // Check if user has a deleted account (do this check for ANY signup error)
-          const { data: checkData } = await supabase
-            .from('profiles')
-            .select('id, deleted_at, original_email')
-            .eq('original_email', email)
-            .not('deleted_at', 'is', null)
-            .single()
-
-          if (checkData) {
-            // This email belongs to a deleted account
-            setMessage('⚠️ This account has been deleted. Redirecting to account reactivation page...')
-            setLoading(false)
-            // Wait a moment then redirect to reactivation page
-            setTimeout(() => {
-              router.push(`/reactivate?email=${encodeURIComponent(email)}`)
-            }, 2000)
-            return
-          }
-
-          // If not a deleted account, throw the original error
-          throw error
-        }
+        if (error) throw error
 
         // If email confirmation is disabled, redirect immediately
         // Otherwise show message to check email
