@@ -16,7 +16,6 @@ WHERE routine_schema = 'public'
 
 -- 2. Check function parameters
 SELECT
-  routine_name,
   parameter_name,
   data_type,
   parameter_mode,
