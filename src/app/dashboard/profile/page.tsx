@@ -18,6 +18,18 @@ interface UserProfile {
   last_name?: string
   mobile_number?: string
   user_id?: string
+  association_id?: string | null
+  member_fibka?: boolean
+  member_iba?: boolean
+  member_nihbs?: boolean
+}
+
+interface Association {
+  id: string
+  name: string
+  jurisdiction: string
+  county_area: string
+  affiliation: string
 }
 
 interface Team {
@@ -87,8 +99,14 @@ export default function ProfilePage() {
     first_name: '',
     last_name: '',
     mobile_number: '',
+    association_id: null as string | null,
+    member_fibka: false,
+    member_iba: false,
+    member_nihbs: false,
   })
   const [savingProfile, setSavingProfile] = useState(false)
+  const [associations, setAssociations] = useState<Association[]>([])
+  const [loadingAssociations, setLoadingAssociations] = useState(false)
 
   // Data export state
   const [exportingMyData, setExportingMyData] = useState(false)
@@ -132,6 +150,25 @@ export default function ProfilePage() {
   const [showRenewSubscriptionModal, setShowRenewSubscriptionModal] = useState(false)
   const [subscriptionRefreshKey, setSubscriptionRefreshKey] = useState(0)
 
+  const fetchAssociations = useCallback(async () => {
+    setLoadingAssociations(true)
+    try {
+      const { data, error } = await supabase
+        .from('beekeeping_associations')
+        .select('id, name, jurisdiction, county_area, affiliation')
+        .order('jurisdiction', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (error) throw error
+
+      setAssociations(data || [])
+    } catch (error) {
+      console.error('Error fetching associations:', error)
+    } finally {
+      setLoadingAssociations(false)
+    }
+  }, [])
+
   const fetchUserProfile = useCallback(async () => {
     if (!userId) return
 
@@ -150,6 +187,10 @@ export default function ProfilePage() {
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           mobile_number: data.mobile_number || '',
+          association_id: data.association_id || null,
+          member_fibka: data.member_fibka || false,
+          member_iba: data.member_iba || false,
+          member_nihbs: data.member_nihbs || false,
         })
       }
     } catch (error) {
@@ -169,6 +210,10 @@ export default function ProfilePage() {
           first_name: profileFormData.first_name || null,
           last_name: profileFormData.last_name || null,
           mobile_number: profileFormData.mobile_number || null,
+          association_id: profileFormData.association_id || null,
+          member_fibka: profileFormData.member_fibka,
+          member_iba: profileFormData.member_iba,
+          member_nihbs: profileFormData.member_nihbs,
         })
         .eq('id', userId)
 
@@ -197,6 +242,10 @@ export default function ProfilePage() {
         first_name: userProfile.first_name || '',
         last_name: userProfile.last_name || '',
         mobile_number: userProfile.mobile_number || '',
+        association_id: userProfile.association_id || null,
+        member_fibka: userProfile.member_fibka || false,
+        member_iba: userProfile.member_iba || false,
+        member_nihbs: userProfile.member_nihbs || false,
       })
     }
   }
@@ -1030,8 +1079,9 @@ export default function ProfilePage() {
       fetchUserProfile()
       fetchTeams()
       fetchUserApiaries()
+      fetchAssociations()
     }
-  }, [userId, fetchUserProfile, fetchTeams, fetchUserApiaries])
+  }, [userId, fetchUserProfile, fetchTeams, fetchUserApiaries, fetchAssociations])
 
   if (loading) {
     return (
@@ -1115,6 +1165,86 @@ export default function ProfilePage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>
+
+              {/* Association Membership */}
+              <div className="md:col-span-2 pt-4 border-t">
+                <h3 className="text-md font-medium text-gray-900 mb-3">Association Membership</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Local Beekeeping Association
+                      <span className="ml-2 text-xs text-gray-500 font-normal">
+                        (If you are a member of a local association, select from list below)
+                      </span>
+                    </label>
+                    <select
+                      value={profileFormData.association_id || ''}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, association_id: e.target.value || null })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                      disabled={loadingAssociations}
+                    >
+                      <option value="">Not a member of any local association</option>
+                      {associations.map((assoc) => (
+                        <option key={assoc.id} value={assoc.id}>
+                          {assoc.name} - {assoc.county_area} ({assoc.jurisdiction})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      National Organization Memberships
+                    </label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={profileFormData.member_fibka}
+                          onChange={(e) =>
+                            setProfileFormData({ ...profileFormData, member_fibka: e.target.checked })
+                          }
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          FIBKA (Federation of Irish Beekeepers Associations)
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={profileFormData.member_iba}
+                          onChange={(e) =>
+                            setProfileFormData({ ...profileFormData, member_iba: e.target.checked })
+                          }
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          IBA (Irish Beekeepers Association)
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={profileFormData.member_nihbs}
+                          onChange={(e) =>
+                            setProfileFormData({ ...profileFormData, member_nihbs: e.target.checked })
+                          }
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          NIHBS (Native Irish Honey Bee Society)
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -1177,6 +1307,31 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Association Membership Display */}
+              {(userProfile?.association_id || userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
+                <div className="md:col-span-2 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-sm font-semibold text-green-900 mb-2">Association Memberships</div>
+                  <div className="space-y-2">
+                    {userProfile?.association_id && (
+                      <div className="text-sm text-gray-900">
+                        <span className="font-medium">Local Association:</span>{' '}
+                        {associations.find(a => a.id === userProfile.association_id)?.name || 'Unknown'}
+                      </div>
+                    )}
+                    {(userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
+                      <div className="text-sm text-gray-900">
+                        <span className="font-medium">National Organizations:</span>{' '}
+                        {[
+                          userProfile?.member_fibka && 'FIBKA',
+                          userProfile?.member_iba && 'IBA',
+                          userProfile?.member_nihbs && 'NIHBS'
+                        ].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>
