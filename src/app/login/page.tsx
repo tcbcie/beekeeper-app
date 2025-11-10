@@ -51,26 +51,26 @@ function LoginForm() {
         })
 
         if (error) {
-          // Check if this is a deleted account error
-          if (error.message.includes('deleted_') && error.message.includes('@deleted.local')) {
-            // Check if this email has a deleted account
-            const { data: checkData } = await supabase
-              .from('profiles')
-              .select('id, deleted_at, original_email')
-              .eq('original_email', email)
-              .not('deleted_at', 'is', null)
-              .single()
+          // Check if user has a deleted account (do this check for ANY signup error)
+          const { data: checkData } = await supabase
+            .from('profiles')
+            .select('id, deleted_at, original_email')
+            .eq('original_email', email)
+            .not('deleted_at', 'is', null)
+            .single()
 
-            if (checkData) {
-              setMessage('⚠️ This account has been deleted. Redirecting to account reactivation page...')
-              setLoading(false)
-              // Wait a moment then redirect to reactivation page
-              setTimeout(() => {
-                router.push(`/reactivate?email=${encodeURIComponent(email)}`)
-              }, 2000)
-              return
-            }
+          if (checkData) {
+            // This email belongs to a deleted account
+            setMessage('⚠️ This account has been deleted. Redirecting to account reactivation page...')
+            setLoading(false)
+            // Wait a moment then redirect to reactivation page
+            setTimeout(() => {
+              router.push(`/reactivate?email=${encodeURIComponent(email)}`)
+            }, 2000)
+            return
           }
+
+          // If not a deleted account, throw the original error
           throw error
         }
 
