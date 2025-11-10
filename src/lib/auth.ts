@@ -126,8 +126,13 @@ export async function requireAdmin(): Promise<void> {
   }
 }
 
+// Cache for account active status (5 second TTL)
+const accountActiveCache = new Map<string, { value: boolean; timestamp: number }>()
+const CACHE_TTL = 5000 // 5 seconds
+
 /**
  * Check if the current user's account is active
+ * Uses a short-lived cache to avoid repeated database calls
  * @returns true if account is active, false if disabled
  */
 export async function isAccountActive(): Promise<boolean> {
@@ -135,6 +140,12 @@ export async function isAccountActive(): Promise<boolean> {
 
   if (!userId) {
     return false
+  }
+
+  // Check cache
+  const cached = accountActiveCache.get(userId)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.value
   }
 
   const { data, error } = await supabase
@@ -148,7 +159,12 @@ export async function isAccountActive(): Promise<boolean> {
     return false
   }
 
-  return data.is_active === true
+  const isActive = data.is_active === true
+
+  // Update cache
+  accountActiveCache.set(userId, { value: isActive, timestamp: Date.now() })
+
+  return isActive
 }
 
 /**
