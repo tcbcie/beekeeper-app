@@ -715,7 +715,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Teams Section */}
+      {/* Teams Section - Only show if user has teams */}
+      {(loadingTeams || ownedTeams.length > 0 || memberTeams.length > 0) && (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -794,21 +795,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Empty State */}
-            {ownedTeams.length === 0 && memberTeams.length === 0 && (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <Users size={48} className="mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-600 mb-2">You haven&apos;t created or joined any teams yet.</p>
-                <p className="text-sm text-gray-500 mb-4">Create a team to collaborate with other beekeepers!</p>
-                <a
-                  href="/dashboard/profile#teams"
-                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                >
-                  Get Started
-                </a>
-              </div>
-            )}
-
             {/* No Shared Data Message */}
             {isTeamMember && !hasMySharedData && !hasSharedWithMeData && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center mt-4">
@@ -822,6 +808,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Data Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -862,11 +849,11 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Version:</span>
-                <span className="font-bold text-indigo-700">v1.0.38</span>
+                <span className="font-bold text-indigo-700">v1.0.27</span>
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Last Updated:</span>
-                <span className="font-semibold text-blue-700">9 November 2025</span>
+                <span className="font-semibold text-blue-700">November 10, 2025</span>
               </span>
             </div>
           </div>
