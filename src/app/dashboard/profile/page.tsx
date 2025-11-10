@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Mail, Shield, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2 } from 'lucide-react'
+import { User, Mail, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2 } from 'lucide-react'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
@@ -73,8 +73,8 @@ interface TeamApiary {
 export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string>('')
-  const [userRole, setUserRole] = useState<UserRole>('User')
-  const [createdAt, setCreatedAt] = useState<string>('')
+  const [, setUserRole] = useState<UserRole>('User')
+  const [, setCreatedAt] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -1178,57 +1178,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Account Information - Read-only fields in compact layout */}
-              <div className="md:col-span-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <Mail size={16} className="text-blue-600 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-blue-900">Email</div>
-                      <div className="text-sm text-gray-900 truncate">{userEmail}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Shield size={16} className="text-blue-600 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-blue-900">Role</div>
-                      <div className="text-sm">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          userRole === 'Admin'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {userRole === 'Admin' && <Shield size={12} className="mr-1" />}
-                          {userRole}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <User size={16} className="text-blue-600 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-blue-900">User ID</div>
-                      <div className="text-xs text-gray-900 font-mono truncate">{userId}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-blue-600 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-blue-900">Created</div>
-                      <div className="text-sm text-gray-900">
-                        {createdAt ? new Date(createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        }) : 'Unknown'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

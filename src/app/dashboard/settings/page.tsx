@@ -176,7 +176,7 @@ export default function SettingsPage() {
   const [restoringUserId, setRestoringUserId] = useState<string | null>(null)
   const [showSubscriptionHistory, setShowSubscriptionHistory] = useState(false)
   const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistoryRecord[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [, setLoadingHistory] = useState(false)
   const [subscriptionHistoryFetched, setSubscriptionHistoryFetched] = useState(false)
 
   // Support Tickets state
