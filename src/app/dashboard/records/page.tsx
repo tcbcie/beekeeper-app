@@ -4017,7 +4017,9 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mites Count</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
+              </label>
               <input
                 type="number"
                 value={editingCheck?.mites_count ?? ''}
@@ -4026,11 +4028,17 @@ export default function InspectionsPage() {
                   const sampleSize = editingCheck?.sample_size ?? null
                   const method = editingCheck?.method
                   let infestationRate = null
+                  let actionThreshold = editingCheck?.action_threshold_reached || false
 
                   if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
-                    if (method === 'Natural Mite Drop') {
+                    // Check if this is a daily mite drop method
+                    if (method === 'Natural Mite Drop' || method === 'Screening Board') {
                       // Daily Mite Drop = Total Mites / Number of Days
                       infestationRate = parseFloat((mitesCount / sampleSize).toFixed(2))
+                      // Auto-check action threshold if daily mite drop >= 5
+                      if (infestationRate >= 5) {
+                        actionThreshold = true
+                      }
                     } else {
                       // Standard Infestation Rate = (Mites / Sample Size) * 100
                       infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
@@ -4040,7 +4048,8 @@ export default function InspectionsPage() {
                   setEditingCheck(editingCheck ? {
                     ...editingCheck,
                     mites_count: mitesCount,
-                    infestation_rate: infestationRate
+                    infestation_rate: infestationRate,
+                    action_threshold_reached: actionThreshold
                   } : null)
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
@@ -4050,7 +4059,7 @@ export default function InspectionsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {editingCheck?.method === 'Natural Mite Drop' ? 'Number of Days' : 'Sample Size'}
+                {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Days' : 'Sample Size'}
               </label>
               <input
                 type="number"
@@ -4060,11 +4069,17 @@ export default function InspectionsPage() {
                   const mitesCount = editingCheck?.mites_count ?? null
                   const method = editingCheck?.method
                   let infestationRate = null
+                  let actionThreshold = editingCheck?.action_threshold_reached || false
 
                   if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
-                    if (method === 'Natural Mite Drop') {
+                    // Check if this is a daily mite drop method
+                    if (method === 'Natural Mite Drop' || method === 'Screening Board') {
                       // Daily Mite Drop = Total Mites / Number of Days
                       infestationRate = parseFloat((mitesCount / sampleSize).toFixed(2))
+                      // Auto-check action threshold if daily mite drop >= 5
+                      if (infestationRate >= 5) {
+                        actionThreshold = true
+                      }
                     } else {
                       // Standard Infestation Rate = (Mites / Sample Size) * 100
                       infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
@@ -4074,7 +4089,8 @@ export default function InspectionsPage() {
                   setEditingCheck(editingCheck ? {
                     ...editingCheck,
                     sample_size: sampleSize,
-                    infestation_rate: infestationRate
+                    infestation_rate: infestationRate,
+                    action_threshold_reached: actionThreshold
                   } : null)
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
@@ -4084,7 +4100,7 @@ export default function InspectionsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {editingCheck?.method === 'Natural Mite Drop' ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
+                {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
                 {editingCheck?.mites_count !== null && editingCheck?.mites_count !== undefined &&
                  editingCheck?.sample_size !== null && editingCheck?.sample_size !== undefined &&
                  editingCheck.sample_size > 0 && (
@@ -4109,7 +4125,12 @@ export default function InspectionsPage() {
                   onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, action_threshold_reached: e.target.checked} : null)}
                   className="h-5 w-5 rounded border-gray-300 text-orange-600"
                 />
-                <span className="text-sm font-medium text-gray-700">Action Threshold Reached</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Action Threshold Reached
+                  {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') && (
+                    <span className="ml-2 text-xs text-gray-500 font-normal">(Auto-checked if ≥ 5)</span>
+                  )}
+                </span>
               </label>
             </div>
 
