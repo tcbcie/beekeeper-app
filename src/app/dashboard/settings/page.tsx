@@ -44,6 +44,21 @@ interface UserProfile {
   subscription_status?: 'active' | 'expiring_soon' | 'expiring_very_soon' | 'expired' | 'no_subscription'
   days_remaining?: number
   deleted_at?: string | null
+  latest_transaction_id?: string | null
+}
+
+interface SubscriptionHistoryRecord {
+  id: string
+  user_id: string
+  user_email?: string
+  code?: string | null
+  code_id?: string | null
+  activated_at: string
+  expires_at: string
+  subscription_type: string
+  price_paid: number
+  payment_method: string
+  stripe_payment_intent_id?: string | null
 }
 
 interface RegistrationCode {
@@ -159,6 +174,9 @@ export default function SettingsPage() {
   const [accountStatusFilter, setAccountStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
   const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'none'>('all')
   const [restoringUserId, setRestoringUserId] = useState<string | null>(null)
+  const [showSubscriptionHistory, setShowSubscriptionHistory] = useState(false)
+  const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistoryRecord[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
   // Support Tickets state
   const [showTicketManagement, setShowTicketManagement] = useState(false)
@@ -489,6 +507,47 @@ export default function SettingsPage() {
       alert('Failed to fetch reactivation requests. Make sure you have admin permissions and the table exists.')
     } finally {
       setLoadingRequests(false)
+    }
+  }
+
+  const fetchSubscriptionHistory = async () => {
+    console.log('📜 fetchSubscriptionHistory called')
+    setLoadingHistory(true)
+    try {
+      const { data, error } = await supabase
+        .from('subscription_history')
+        .select(`
+          id,
+          user_id,
+          code,
+          code_id,
+          activated_at,
+          expires_at,
+          subscription_type,
+          price_paid,
+          payment_method,
+          stripe_payment_intent_id,
+          profiles!inner(email)
+        `)
+        .order('activated_at', { ascending: false })
+
+      console.log('📥 fetchSubscriptionHistory response:', { dataCount: data?.length, error })
+
+      if (error) throw error
+
+      if (data) {
+        const formattedData = data.map((record: any) => ({
+          ...record,
+          user_email: record.profiles?.email || 'Unknown'
+        }))
+        setSubscriptionHistory(formattedData as SubscriptionHistoryRecord[])
+        console.log('✅ Subscription history state updated')
+      }
+    } catch (error) {
+      console.error('❌ Error fetching subscription history:', error)
+      alert('Failed to fetch subscription history. Make sure you have admin permissions.')
+    } finally {
+      setLoadingHistory(false)
     }
   }
 
@@ -2573,16 +2632,17 @@ export default function SettingsPage() {
               View and manage all user accounts. Change user roles between User, Power User, and Admin.
             </p>
 
-            {/* Tabs for Active/Deleted Users/Reactivation Requests */}
+            {/* Tabs for Active/Deleted Users/Reactivation Requests/Subscription History */}
             <div className="mb-4 flex gap-2 border-b border-gray-200">
               <button
                 onClick={() => {
                   setShowDeletedUsers(false)
                   setShowReactivationRequests(false)
+                  setShowSubscriptionHistory(false)
                   fetchUsers()
                 }}
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  !showDeletedUsers && !showReactivationRequests
+                  !showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
@@ -2593,10 +2653,11 @@ export default function SettingsPage() {
                 onClick={() => {
                   setShowDeletedUsers(true)
                   setShowReactivationRequests(false)
+                  setShowSubscriptionHistory(false)
                   fetchDeletedUsers()
                 }}
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  showDeletedUsers && !showReactivationRequests
+                  showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
@@ -2607,15 +2668,31 @@ export default function SettingsPage() {
                 onClick={() => {
                   setShowDeletedUsers(false)
                   setShowReactivationRequests(true)
+                  setShowSubscriptionHistory(false)
                   fetchReactivationRequests()
                 }}
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  showReactivationRequests
+                  showReactivationRequests && !showSubscriptionHistory
                     ? 'border-purple-500 text-purple-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 Reactivation Requests{reactivationRequestsFetched ? ` (${reactivationRequests.filter(r => r.status === 'pending').length})` : ''}
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeletedUsers(false)
+                  setShowReactivationRequests(false)
+                  setShowSubscriptionHistory(true)
+                  fetchSubscriptionHistory()
+                }}
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                  showSubscriptionHistory
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Subscription History ({subscriptionHistory.length})
               </button>
             </div>
 
@@ -2912,6 +2989,30 @@ export default function SettingsPage() {
                                 )}
                               </div>
 
+                              {/* Transaction ID (for credit card payments) */}
+                              {user.subscription_type === 'credit_card' && (
+                                <div>
+                                  <span className="text-gray-500 block mb-1">Transaction ID</span>
+                                  {user.latest_transaction_id ? (
+                                    <div>
+                                      <p className="font-mono text-xs text-blue-600 break-all" title={user.latest_transaction_id}>
+                                        {user.latest_transaction_id}
+                                      </p>
+                                      <a
+                                        href={`https://dashboard.stripe.com/payments/${user.latest_transaction_id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-blue-500 hover:text-blue-700 underline mt-1 inline-block"
+                                      >
+                                        View in Stripe →
+                                      </a>
+                                    </div>
+                                  ) : (
+                                    <p className="text-gray-400 italic text-xs">No transaction</p>
+                                  )}
+                                </div>
+                              )}
+
                               {/* Subscription Expires */}
                               <div>
                                 <span className="text-gray-500 block mb-1">Expires</span>
@@ -3085,6 +3186,119 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Subscription History Tab */}
+            {showSubscriptionHistory && (
+              <div className="space-y-4 mt-4">
+                {loadingHistory ? (
+                  <div className="text-center py-8">
+                    <LoadingSpinner text="Loading subscription history..." />
+                  </div>
+                ) : subscriptionHistory.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="mb-2">No subscription history found.</p>
+                    <p className="text-sm">Credit card payment records will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            User Email
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Code
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Price
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Payment Method
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Transaction ID
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Activated
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Expires
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {subscriptionHistory.map((record) => (
+                          <tr key={record.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {record.user_email}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                record.subscription_type === 'credit_card'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {record.subscription_type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {record.code ? (
+                                <span className="font-mono text-indigo-600">{record.code}</span>
+                              ) : (
+                                <span className="text-gray-400 italic">None</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              €{Number(record.price_paid).toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {record.payment_method}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              {record.stripe_payment_intent_id ? (
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-mono text-xs text-blue-600 break-all">
+                                    {record.stripe_payment_intent_id}
+                                  </span>
+                                  <a
+                                    href={`https://dashboard.stripe.com/payments/${record.stripe_payment_intent_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-500 hover:text-blue-700 underline"
+                                  >
+                                    View in Stripe →
+                                  </a>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic text-xs">N/A</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {new Date(record.activated_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {new Date(record.expires_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
