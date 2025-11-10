@@ -136,11 +136,11 @@ export default function SubscriptionHistoryPage() {
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => router.push('/dashboard/settings')}
+            onClick={() => router.push('/dashboard/settings?section=users')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeft size={20} />
-            Back to Settings
+            Back to User Management
           </button>
           <h1 className="text-3xl font-bold text-gray-900">Subscription History</h1>
           <p className="text-gray-600 mt-2">View all subscription activations and payments</p>

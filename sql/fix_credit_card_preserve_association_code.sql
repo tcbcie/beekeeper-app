@@ -69,7 +69,7 @@ BEGIN
     new_expiry,
     'credit_card',
     calculated_price,
-    'stripe',
+    'credit_card',              -- FIXED: Should be 'credit_card' not 'stripe'
     p_stripe_payment_intent_id
   );
 
