@@ -13,13 +13,18 @@ CREATE TABLE IF NOT EXISTS public.reactivation_requests (
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   processed_at TIMESTAMPTZ,
   processed_by UUID REFERENCES auth.users(id),
-  admin_notes TEXT,
-  UNIQUE(user_id, status) -- Only one pending request per user
+  admin_notes TEXT
 );
 
 -- Add index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_reactivation_requests_status ON public.reactivation_requests(status);
 CREATE INDEX IF NOT EXISTS idx_reactivation_requests_original_email ON public.reactivation_requests(original_email);
+
+-- Partial unique index: only one pending request per user
+-- This allows multiple approved/rejected requests but prevents duplicate pending requests
+CREATE UNIQUE INDEX IF NOT EXISTS reactivation_requests_user_pending_idx
+  ON public.reactivation_requests(user_id)
+  WHERE status = 'pending';
 
 -- Enable RLS
 ALTER TABLE public.reactivation_requests ENABLE ROW LEVEL SECURITY;
