@@ -3,12 +3,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { MessageCircle, Plus, Edit2, X, AlertCircle, Lightbulb, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { MessageCircle, Plus, Edit2, X, AlertCircle, Lightbulb, Clock, CheckCircle, XCircle, CreditCard } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface SupportTicket {
   id: string
-  ticket_type: 'problem' | 'suggestion'
+  ticket_type: 'problem' | 'suggestion' | 'subscription'
   subject: string
   description: string
   status: 'open' | 'in_progress' | 'resolved' | 'closed'
@@ -19,7 +19,7 @@ interface SupportTicket {
 }
 
 interface FormData {
-  ticket_type: 'problem' | 'suggestion'
+  ticket_type: 'problem' | 'suggestion' | 'subscription'
   subject: string
   description: string
 }
@@ -223,19 +223,19 @@ export default function SupportPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Ticket Type *
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, ticket_type: 'problem' })}
-                  className={`p-4 border-2 rounded-lg transition-colors flex items-center gap-3 ${
+                  className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'problem'
                       ? 'border-red-500 bg-red-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                   disabled={!!editingTicket}
                 >
-                  <AlertCircle size={20} className="text-red-600" />
-                  <div className="text-left">
+                  <AlertCircle size={24} className="text-red-600" />
+                  <div className="text-center">
                     <div className="font-semibold">Problem</div>
                     <div className="text-xs text-gray-500">Report an issue</div>
                   </div>
@@ -243,17 +243,33 @@ export default function SupportPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, ticket_type: 'suggestion' })}
-                  className={`p-4 border-2 rounded-lg transition-colors flex items-center gap-3 ${
+                  className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'suggestion'
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                   disabled={!!editingTicket}
                 >
-                  <Lightbulb size={20} className="text-blue-600" />
-                  <div className="text-left">
+                  <Lightbulb size={24} className="text-blue-600" />
+                  <div className="text-center">
                     <div className="font-semibold">Suggestion</div>
                     <div className="text-xs text-gray-500">Share an idea</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, ticket_type: 'subscription' })}
+                  className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
+                    formData.ticket_type === 'subscription'
+                      ? 'border-amber-500 bg-amber-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  disabled={!!editingTicket}
+                >
+                  <CreditCard size={24} className="text-amber-600" />
+                  <div className="text-center">
+                    <div className="font-semibold">Subscription</div>
+                    <div className="text-xs text-gray-500">Billing/subscription</div>
                   </div>
                 </button>
               </div>
@@ -321,6 +337,8 @@ export default function SupportPage() {
                   <div className="flex items-center gap-3">
                     {ticket.ticket_type === 'problem' ? (
                       <AlertCircle size={20} className="text-red-600" />
+                    ) : ticket.ticket_type === 'subscription' ? (
+                      <CreditCard size={20} className="text-amber-600" />
                     ) : (
                       <Lightbulb size={20} className="text-blue-600" />
                     )}
