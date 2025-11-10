@@ -1316,14 +1316,43 @@ export default function HivesPage() {
 
                   {/* Full-Size Brood Boxes (top to bottom) - Below half boxes */}
                   {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
-                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold">
-                      🐝 Brood Full {i + 1}
+                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold relative">
+                      {/* Frame orientation visualization - show on bottom brood box */}
+                      {i === (hive.configuration?.brood_boxes_full || hive.configuration?.brood_boxes || 1) - 1 && hive.configuration?.frame_orientation && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          {hive.configuration?.frame_orientation === 'warm' ? (
+                            // Warm way: horizontal lines (parallel to entrance)
+                            <div className="flex flex-col gap-0.5 w-3/4">
+                              <div className="h-0.5 bg-amber-700 opacity-40"></div>
+                              <div className="h-0.5 bg-amber-700 opacity-40"></div>
+                              <div className="h-0.5 bg-amber-700 opacity-40"></div>
+                            </div>
+                          ) : (
+                            // Cold way: vertical lines (perpendicular to entrance)
+                            <div className="flex gap-0.5 h-3/4">
+                              <div className="w-0.5 bg-amber-700 opacity-40"></div>
+                              <div className="w-0.5 bg-amber-700 opacity-40"></div>
+                              <div className="w-0.5 bg-amber-700 opacity-40"></div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <span className="relative z-10">🐝 Brood Full {i + 1}</span>
                     </div>
                   ))}
 
-                  {/* Varroa Mesh Floor - always at the very bottom */}
-                  <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-gray-200' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
-                    {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
+                  {/* Varroa Mesh Floor - always at the very bottom with feet */}
+                  <div className="w-full relative">
+                    <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-gray-200' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
+                      {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
+                    </div>
+                    {/* Hive stand feet */}
+                    <div className="flex justify-between px-2 mt-0.5">
+                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
+                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
+                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
+                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
+                    </div>
                   </div>
                 </div>
 
@@ -1339,6 +1368,12 @@ export default function HivesPage() {
                     <div className="flex items-center gap-1">
                       <span>🚪</span>
                       <span>Entrance reducer</span>
+                    </div>
+                  )}
+                  {hive.configuration.frame_orientation && (
+                    <div className="flex items-center gap-1">
+                      <span>{hive.configuration.frame_orientation === 'warm' ? '═' : '║'}</span>
+                      <span className="capitalize">{hive.configuration.frame_orientation} way</span>
                     </div>
                   )}
                 </div>
