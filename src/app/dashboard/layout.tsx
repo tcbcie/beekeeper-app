@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { isAccountActive } from '@/lib/auth'
@@ -9,7 +9,7 @@ import Sidebar from '@/components/Sidebar'
 import MobileDrawer from '@/components/MobileDrawer'
 import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -114,5 +114,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-xl">Loading...</div>
+        </div>
+      }
+    >
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </Suspense>
   )
 }
