@@ -73,6 +73,9 @@ interface Hive {
   eggs_last_present?: string | null
   team_name?: string | null
   is_shared?: boolean
+  archived_at?: string | null
+  archive_reason_id?: string | null
+  archive_notes?: string | null
   last_record?: {
     date: string
     type: string
@@ -111,6 +114,7 @@ export default function HivesPage() {
   // Initialize filters from sessionStorage
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
+  const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active')
   const [filtersLoaded, setFiltersLoaded] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     hive_number: '',
@@ -200,6 +204,14 @@ export default function HivesPage() {
         query = query.eq('user_id', currentUserId)
       }
     }
+
+    // Apply archive filter
+    if (archiveFilter === 'active') {
+      query = query.is('archived_at', null)
+    } else if (archiveFilter === 'archived') {
+      query = query.not('archived_at', 'is', null)
+    }
+    // 'all' shows both active and archived hives
 
     const { data, error } = await query.order('hive_number')
 
@@ -385,7 +397,7 @@ export default function HivesPage() {
       setHives([])
     }
     setLoading(false)
-  }, [userId, ownershipFilter])
+  }, [userId, ownershipFilter, archiveFilter])
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
@@ -472,13 +484,13 @@ export default function HivesPage() {
     }
   }, [ownershipFilter, filtersLoaded])
 
-  // Refetch hives when ownership filter changes
+  // Refetch hives when ownership or archive filter changes
   useEffect(() => {
     if (userId && filtersLoaded) {
       fetchHives(userId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownershipFilter, userId, filtersLoaded])
+  }, [ownershipFilter, archiveFilter, userId, filtersLoaded])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -719,6 +731,15 @@ export default function HivesPage() {
             {apiaries.map((apiary) => (
               <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
             ))}
+          </select>
+          <select
+            value={archiveFilter}
+            onChange={(e) => setArchiveFilter(e.target.value as 'active' | 'archived' | 'all')}
+            className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all"
+          >
+            <option value="active">Active Hives</option>
+            <option value="archived">Archived Hives</option>
+            <option value="all">All (Active + Archived)</option>
           </select>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -1231,6 +1252,12 @@ export default function HivesPage() {
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded flex items-center gap-1 w-fit">
                     <span>👥</span>
                     <span>Shared via {hive.team_name}</span>
+                  </span>
+                )}
+                {hive.archived_at && (
+                  <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-xs font-medium rounded flex items-center gap-1 w-fit">
+                    <span>📦</span>
+                    <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
                   </span>
                 )}
               </div>
