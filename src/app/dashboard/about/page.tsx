@@ -85,7 +85,8 @@ function AboutPageContent() {
       setLoading(false)
     }
     initUser()
-  }, [router, fetchTickets])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

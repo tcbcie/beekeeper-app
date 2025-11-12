@@ -487,7 +487,8 @@ export default function DashboardPage() {
       fetchTeamStats()
     }
     initUser()
-  }, [router, fetchDashboardData, fetchTeams, fetchTeamStats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
 
   if (loading) return <LoadingSpinner text="Loading dashboard..." />
 
