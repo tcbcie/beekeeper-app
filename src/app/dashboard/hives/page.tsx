@@ -29,6 +29,7 @@ interface HiveConfiguration {
   varroa_mesh_floor: string
   right_sized_broodbox: boolean
   frame_orientation: string | null
+  hive_size: 'full' | 'nuc'
 }
 
 interface Colony {
@@ -139,6 +140,7 @@ export default function HivesPage() {
       varroa_mesh_floor: 'closed',
       right_sized_broodbox: false,
       frame_orientation: null,
+      hive_size: 'full' as 'full' | 'nuc',
     },
   })
 
@@ -591,6 +593,7 @@ export default function HivesPage() {
         varroa_mesh_floor: hive.configuration?.varroa_mesh_floor || 'closed',
         right_sized_broodbox: hive.configuration?.right_sized_broodbox || false,
         frame_orientation: hive.configuration?.frame_orientation || null,
+        hive_size: (hive.configuration?.hive_size as 'full' | 'nuc') || 'full',
       },
     })
     setShowForm(true)
@@ -640,6 +643,7 @@ export default function HivesPage() {
         varroa_mesh_floor: 'closed',
         right_sized_broodbox: false,
         frame_orientation: null,
+        hive_size: 'full' as 'full' | 'nuc',
       },
     })
   }
@@ -1153,6 +1157,20 @@ export default function HivesPage() {
                     <option value="cold">Cold Way</option>
                   </select>
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hive Size
+                  </label>
+                  <select
+                    value={formData.configuration.hive_size}
+                    onChange={(e) => setFormData({...formData, configuration: {...formData.configuration, hive_size: e.target.value as 'full' | 'nuc'}})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  >
+                    <option value="full">Full Size Hive</option>
+                    <option value="nuc">Nucleus Colony (Nuc)</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -1289,10 +1307,21 @@ export default function HivesPage() {
 
             {hive.configuration && (
               <div className="mb-4 p-3 bg-amber-50 rounded border border-amber-200">
-                <div className="text-xs font-semibold text-amber-900 mb-3">Hive Setup</div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-semibold text-amber-900">Hive Setup</div>
+                  {hive.configuration.hive_size && (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      hive.configuration.hive_size === 'nuc'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {hive.configuration.hive_size === 'nuc' ? 'Nuc' : 'Full Size'}
+                    </span>
+                  )}
+                </div>
 
-                {/* Visual Hive Stack */}
-                <div className="flex flex-col items-center gap-1 mb-3">
+                {/* Visual Hive Stack - Half width for Nuc, full width for standard hive */}
+                <div className={`flex flex-col items-center gap-1 mb-3 ${hive.configuration.hive_size === 'nuc' ? 'w-1/2 mx-auto' : 'w-full'}`}>
                   {/* Honey Supers (top to bottom) */}
                   {Array.from({ length: hive.configuration.honey_supers }).map((_, i) => (
                     <div key={`super-${i}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-center text-xs font-semibold">
