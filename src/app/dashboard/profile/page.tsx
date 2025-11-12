@@ -1081,7 +1081,8 @@ export default function ProfilePage() {
       fetchUserApiaries()
       fetchAssociations()
     }
-  }, [userId, fetchUserProfile, fetchTeams, fetchUserApiaries, fetchAssociations])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
 
   if (loading) {
     return (
