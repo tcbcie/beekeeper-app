@@ -1801,6 +1801,156 @@ export default function InspectionsPage() {
         </div>
       </div>
 
+      {/* Archive Hive Form */}
+      {showForm && formType === 'archive' && (
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-red-700">Archive Hive</h3>
+            <button
+              onClick={() => {
+                setShowForm(false)
+                setArchiveData({
+                  hive_id: '',
+                  archive_reason_id: '',
+                  archive_notes: ''
+                })
+              }}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <div className="flex items-start">
+              <Archive className="text-red-600 mt-0.5 mr-3 flex-shrink-0" size={20} />
+              <div>
+                <p className="text-sm font-semibold text-red-900 mb-1">
+                  Warning: Archiving a hive
+                </p>
+                <p className="text-sm text-red-800">
+                  Archiving will remove this hive from active hive lists. The hive and all its records will be preserved and accessible in the archived hives view. You can restore the hive later if needed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            if (!userId || !archiveData.hive_id || !archiveData.archive_reason_id) {
+              alert('Please select a hive and a reason for archiving')
+              return
+            }
+
+            try {
+              const { error } = await supabase
+                .from('hives')
+                .update({
+                  archived_at: new Date().toISOString(),
+                  archive_reason_id: archiveData.archive_reason_id,
+                  archive_notes: archiveData.archive_notes || null
+                })
+                .eq('id', archiveData.hive_id)
+                .eq('user_id', userId)
+
+              if (error) throw error
+
+              alert('Hive archived successfully!')
+              setShowForm(false)
+              setArchiveData({
+                hive_id: '',
+                archive_reason_id: '',
+                archive_notes: ''
+              })
+              // Refresh hives list
+              fetchHives(userId)
+            } catch (error) {
+              console.error('Error archiving hive:', error)
+              alert(error instanceof Error ? error.message : 'Failed to archive hive')
+            }
+          }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Hive to Archive *
+              </label>
+              <select
+                value={archiveData.hive_id}
+                onChange={(e) => setArchiveData({ ...archiveData, hive_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="">-- Select Hive --</option>
+                {hives
+                  .filter(h => h.status === 'active')
+                  .map((hive) => (
+                    <option key={hive.id} value={hive.id}>
+                      {hive.hive_number}
+                      {hive.apiary_id && apiaries.find(a => a.id === hive.apiary_id)
+                        ? ` - ${apiaries.find(a => a.id === hive.apiary_id)?.name}`
+                        : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Reason for Archiving *
+              </label>
+              <select
+                value={archiveData.archive_reason_id}
+                onChange={(e) => setArchiveData({ ...archiveData, archive_reason_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                required
+              >
+                <option value="">-- Select Reason --</option>
+                {archiveReasons.map((reason) => (
+                  <option key={reason.id} value={reason.id}>
+                    {reason.value}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Additional Notes (Optional)
+              </label>
+              <textarea
+                value={archiveData.archive_notes}
+                onChange={(e) => setArchiveData({ ...archiveData, archive_notes: e.target.value })}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Add any additional details about why this hive is being archived..."
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              >
+                Archive Hive
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false)
+                  setArchiveData({
+                    hive_id: '',
+                    archive_reason_id: '',
+                    archive_notes: ''
+                  })
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Time Period Filter */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex flex-col gap-4">
@@ -5417,156 +5567,6 @@ export default function InspectionsPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Archive Hive Form */}
-      {showForm && formType === 'archive' && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-red-700">Archive Hive</h3>
-            <button
-              onClick={() => {
-                setShowForm(false)
-                setArchiveData({
-                  hive_id: '',
-                  archive_reason_id: '',
-                  archive_notes: ''
-                })
-              }}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-            <div className="flex items-start">
-              <Archive className="text-red-600 mt-0.5 mr-3 flex-shrink-0" size={20} />
-              <div>
-                <p className="text-sm font-semibold text-red-900 mb-1">
-                  Warning: Archiving a hive
-                </p>
-                <p className="text-sm text-red-800">
-                  Archiving will remove this hive from active hive lists. The hive and all its records will be preserved and accessible in the archived hives view. You can restore the hive later if needed.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            if (!userId || !archiveData.hive_id || !archiveData.archive_reason_id) {
-              alert('Please select a hive and a reason for archiving')
-              return
-            }
-
-            try {
-              const { error } = await supabase
-                .from('hives')
-                .update({
-                  archived_at: new Date().toISOString(),
-                  archive_reason_id: archiveData.archive_reason_id,
-                  archive_notes: archiveData.archive_notes || null
-                })
-                .eq('id', archiveData.hive_id)
-                .eq('user_id', userId)
-
-              if (error) throw error
-
-              alert('Hive archived successfully!')
-              setShowForm(false)
-              setArchiveData({
-                hive_id: '',
-                archive_reason_id: '',
-                archive_notes: ''
-              })
-              // Refresh hives list
-              fetchHives(userId)
-            } catch (error) {
-              console.error('Error archiving hive:', error)
-              alert(error instanceof Error ? error.message : 'Failed to archive hive')
-            }
-          }} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select Hive to Archive *
-              </label>
-              <select
-                value={archiveData.hive_id}
-                onChange={(e) => setArchiveData({ ...archiveData, hive_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                required
-              >
-                <option value="">-- Select Hive --</option>
-                {hives
-                  .filter(h => h.status === 'active')
-                  .map((hive) => (
-                    <option key={hive.id} value={hive.id}>
-                      {hive.hive_number}
-                      {hive.apiary_id && apiaries.find(a => a.id === hive.apiary_id)
-                        ? ` - ${apiaries.find(a => a.id === hive.apiary_id)?.name}`
-                        : ''}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reason for Archiving *
-              </label>
-              <select
-                value={archiveData.archive_reason_id}
-                onChange={(e) => setArchiveData({ ...archiveData, archive_reason_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
-                required
-              >
-                <option value="">-- Select Reason --</option>
-                {archiveReasons.map((reason) => (
-                  <option key={reason.id} value={reason.id}>
-                    {reason.value}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Notes (Optional)
-              </label>
-              <textarea
-                value={archiveData.archive_notes}
-                onChange={(e) => setArchiveData({ ...archiveData, archive_notes: e.target.value })}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="Add any additional details about why this hive is being archived..."
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
-              >
-                Archive Hive
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setArchiveData({
-                    hive_id: '',
-                    archive_reason_id: '',
-                    archive_notes: ''
-                  })
-                }}
-                className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
         </div>
       )}
     </div>
