@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -598,7 +598,7 @@ export default function HiveDetailPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
         <Link
           href={`/dashboard/records?hive=${hiveId}&type=inspection`}
           className="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 text-center"
@@ -640,6 +640,13 @@ export default function HiveDetailPage() {
         >
           <Plus className="mx-auto mb-2" size={24} />
           <div className="font-medium text-sm">Create Task</div>
+        </Link>
+        <Link
+          href={`/dashboard/records?hive=${hiveId}&type=archive`}
+          className="bg-gray-600 text-white p-4 rounded-lg hover:bg-gray-700 text-center border-2 border-gray-400"
+        >
+          <Archive className="mx-auto mb-2" size={24} />
+          <div className="font-medium text-sm">Archive Hive</div>
         </Link>
       </div>
 
