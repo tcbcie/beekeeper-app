@@ -3,12 +3,12 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface SupportTicket {
   id: string
-  ticket_type: 'problem' | 'suggestion'
+  ticket_type: 'problem' | 'suggestion' | 'subscription'
   subject: string
   description: string
   status: 'open' | 'in_progress' | 'resolved' | 'closed'
@@ -19,7 +19,7 @@ interface SupportTicket {
 }
 
 interface FormData {
-  ticket_type: 'problem' | 'suggestion'
+  ticket_type: 'problem' | 'suggestion' | 'subscription'
   subject: string
   description: string
 }
@@ -346,10 +346,30 @@ function AboutPageContent() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.26</span>
-                January 10, 2025
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">v1.0.27</span>
+                November 10, 2025
               </h3>
               <ul className="mt-3 space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Transaction ID Tracking:</strong> Stripe payment transaction IDs now displayed in user management - admins can view payment intent IDs and click through to Stripe dashboard for full payment details</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Subscription History View:</strong> New admin tab showing complete audit trail of all subscriptions - includes user email, type, association code, price, transaction ID, and activation/expiry dates</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Admin Role Management Fix:</strong> Resolved RLS policy issue preventing admins from changing user roles - admins can now properly assign User, Power User, or Admin roles</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Dashboard Load Performance:</strong> Implemented 5-second cache for account status checks reducing page load time from 2-3s to under 1s - eliminates redundant database queries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Reactivation Tab Count:</strong> User management reactivation tab now shows pending request count only after clicking - prevents showing incorrect (0) before data loads</span>
+                </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 mt-1">★</span>
                   <span><strong>Major Performance Boost:</strong> Records page is now 10x faster with large datasets - optimized filtering from O(n*m) to O(1) complexity using Map lookups and memoization</span>
@@ -1129,19 +1149,19 @@ function AboutPageContent() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Ticket Type *
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, ticket_type: 'problem' })}
-                      className={`p-4 border-2 rounded-lg transition-colors flex items-center gap-3 ${
+                      className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                         formData.ticket_type === 'problem'
                           ? 'border-red-500 bg-red-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                       disabled={!!editingTicket}
                     >
-                      <AlertTriangle size={20} className="text-red-600" />
-                      <div className="text-left">
+                      <AlertTriangle size={24} className="text-red-600" />
+                      <div className="text-center">
                         <div className="font-semibold">Problem</div>
                         <div className="text-xs text-gray-500">Report an issue</div>
                       </div>
@@ -1149,17 +1169,33 @@ function AboutPageContent() {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, ticket_type: 'suggestion' })}
-                      className={`p-4 border-2 rounded-lg transition-colors flex items-center gap-3 ${
+                      className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                         formData.ticket_type === 'suggestion'
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                       disabled={!!editingTicket}
                     >
-                      <Lightbulb size={20} className="text-blue-600" />
-                      <div className="text-left">
+                      <Lightbulb size={24} className="text-blue-600" />
+                      <div className="text-center">
                         <div className="font-semibold">Suggestion</div>
                         <div className="text-xs text-gray-500">Share an idea</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, ticket_type: 'subscription' })}
+                      className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
+                        formData.ticket_type === 'subscription'
+                          ? 'border-amber-500 bg-amber-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      disabled={!!editingTicket}
+                    >
+                      <CreditCard size={24} className="text-amber-600" />
+                      <div className="text-center">
+                        <div className="font-semibold">Subscription</div>
+                        <div className="text-xs text-gray-500">Billing/subscription</div>
                       </div>
                     </button>
                   </div>
@@ -1227,6 +1263,8 @@ function AboutPageContent() {
                       <div className="flex items-center gap-3">
                         {ticket.ticket_type === 'problem' ? (
                           <AlertTriangle size={20} className="text-red-600" />
+                        ) : ticket.ticket_type === 'subscription' ? (
+                          <CreditCard size={20} className="text-amber-600" />
                         ) : (
                           <Lightbulb size={20} className="text-blue-600" />
                         )}
