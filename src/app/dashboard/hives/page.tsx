@@ -456,7 +456,8 @@ export default function HivesPage() {
       fetchQueens(id)
     }
     initUser()
-  }, [router, fetchHives, fetchApiaries, fetchQueens])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
 
   // Save filter settings to sessionStorage when they change
   useEffect(() => {
@@ -470,6 +471,14 @@ export default function HivesPage() {
       sessionStorage.setItem('hives_filter_ownership', ownershipFilter)
     }
   }, [ownershipFilter, filtersLoaded])
+
+  // Refetch hives when ownership filter changes
+  useEffect(() => {
+    if (userId && filtersLoaded) {
+      fetchHives(userId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownershipFilter, userId, filtersLoaded])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

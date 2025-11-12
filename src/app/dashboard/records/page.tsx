@@ -716,7 +716,16 @@ export default function InspectionsPage() {
       ])
     }
     initUser()
-  }, [router, fetchInspections, fetchVarroaTreatments, fetchVarroaChecks, fetchFeedings, fetchHarvests, fetchHives, fetchApiaries, fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
+
+  // Refetch inspections when ownership filter changes
+  useEffect(() => {
+    if (userId) {
+      fetchInspections(userId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownershipFilter, userId])
 
   // Handle URL query parameters to open specific form dialogs
   useEffect(() => {
