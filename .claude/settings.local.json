@@ -31,7 +31,13 @@
       "Bash(where.exe:*)",
       "Bash(nul)",
       "Bash(git reset:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(node:*)",
+      "Bash(cd:*)",
+      "Bash(echo:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(if exist .next rmdir /s /q .next)"
     ],
     "deny": [],
     "ask": []
