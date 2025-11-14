@@ -45,6 +45,9 @@ interface UserProfile {
   days_remaining?: number
   deleted_at?: string | null
   latest_transaction_id?: string | null
+  apiaries_count?: number
+  hives_count?: number
+  last_sign_in_at?: string | null
 }
 
 interface SubscriptionHistoryRecord {
@@ -3041,6 +3044,46 @@ export default function SettingsPage() {
                                     </p>
                                   )}
                                 </div>
+                              </div>
+
+                              {/* Apiaries Count */}
+                              <div>
+                                <span className="text-gray-500 block mb-1">Apiaries</span>
+                                <p className="text-gray-900 font-semibold text-lg">
+                                  {user.apiaries_count !== undefined ? user.apiaries_count : '−'}
+                                </p>
+                              </div>
+
+                              {/* Hives Count */}
+                              <div>
+                                <span className="text-gray-500 block mb-1">Hives</span>
+                                <p className="text-gray-900 font-semibold text-lg">
+                                  {user.hives_count !== undefined ? user.hives_count : '−'}
+                                </p>
+                              </div>
+
+                              {/* Last Login */}
+                              <div>
+                                <span className="text-gray-500 block mb-1">Last Login</span>
+                                {user.last_sign_in_at ? (
+                                  <div>
+                                    <p className="text-gray-900">
+                                      {new Date(user.last_sign_in_at).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(user.last_sign_in_at).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-400 italic">Never</p>
+                                )}
                               </div>
 
                               {/* Deleted At (only show for deleted users) */}
