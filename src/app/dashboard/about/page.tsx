@@ -353,6 +353,38 @@ function AboutPageContent() {
               <ul className="mt-3 space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>User Management Statistics:</strong> Added apiary count, hive count, and last login timestamp to user details - admins can now see user activity and engagement at a glance</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Subscription-Based Data Export:</strong> Data export feature now requires active subscription - helps monetize premium features while admins retain full access</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Hive Archiving System:</strong> New archiving feature with 11 predefined reasons (Winter Loss, Drone Laying Queen, etc.) - archived hives show in records with full history, can be unarchived from hive page or list context menu</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Active Hive Filtering:</strong> Record forms now only show active (non-archived) hives - prevents accidentally creating records for archived hives</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
+                  <span><strong>Apiary Requirement Enforcement:</strong> Apiary selection now required when creating hives with helpful hint about weather data - guides users through proper workflow</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Logout Fix:</strong> Resolved 403 errors on logout by clearing browser storage directly - users can now log out reliably without API errors</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>Account Active Default:</strong> Fixed false "account disabled" messages for users with null is_active field - now defaults to active unless explicitly disabled</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 mt-1">✓</span>
+                  <span><strong>ESLint Warnings Fixed:</strong> Resolved React Hook dependency and TypeScript any type warnings - cleaner codebase with better type safety</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 mt-1">★</span>
                   <span><strong>Transaction ID Tracking:</strong> Stripe payment transaction IDs now displayed in user management - admins can view payment intent IDs and click through to Stripe dashboard for full payment details</span>
                 </li>
                 <li className="flex items-start gap-2">
