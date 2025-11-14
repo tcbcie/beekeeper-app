@@ -182,6 +182,16 @@ interface Harvest {
   }
 }
 
+interface ArchiveRecord {
+  id: string
+  hive_id: string
+  hive_number: string
+  archived_at: string
+  archive_reason_id: string | null
+  archive_notes: string | null
+  archive_reason_value?: string
+}
+
 // Unified record type for displaying all records together
 type UnifiedRecord =
   | (Inspection & { record_type: 'inspection', date: string })
@@ -189,6 +199,7 @@ type UnifiedRecord =
   | (VarroaCheck & { record_type: 'varroa_check', date: string })
   | (Feeding & { record_type: 'feeding', date: string })
   | (Harvest & { record_type: 'harvest', date: string })
+  | (ArchiveRecord & { record_type: 'archive', date: string })
 
 interface FormData {
   hive_id: string
@@ -263,6 +274,7 @@ export default function InspectionsPage() {
   const [varroaChecks, setVarroaChecks] = useState<VarroaCheck[]>([])
   const [feedings, setFeedings] = useState<Feeding[]>([])
   const [harvests, setHarvests] = useState<Harvest[]>([])
+  const [archiveRecords, setArchiveRecords] = useState<ArchiveRecord[]>([])
   const [allRecords, setAllRecords] = useState<UnifiedRecord[]>([])
   const [hives, setHives] = useState<Hive[]>([])
   const [apiaries, setApiaries] = useState<Apiary[]>([])
@@ -291,7 +303,7 @@ export default function InspectionsPage() {
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
-  const [recordTypeFilter, setRecordTypeFilter] = useState<'all' | 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest'>('all')
+  const [recordTypeFilter, setRecordTypeFilter] = useState<'all' | 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest' | 'archive'>('all')
   const [showDropdown, setShowDropdown] = useState(false)
   const [sourceHiveId, setSourceHiveId] = useState<string>('')
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -535,16 +547,53 @@ export default function InspectionsPage() {
     if (data) setHarvests(data as Harvest[])
   }, [userId])
 
+  const fetchArchiveRecords = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    // Fetch archived hives with their archive reason
+    const { data } = await supabase
+      .from('hives')
+      .select(`
+        id,
+        hive_id:id,
+        hive_number,
+        archived_at,
+        archive_reason_id,
+        archive_notes,
+        archive_reason_value:dropdown_values(value)
+      `)
+      .eq('user_id', currentUserId)
+      .not('archived_at', 'is', null)
+      .order('archived_at', { ascending: false })
+      .limit(500)
+
+    if (data) {
+      // Transform the data to match ArchiveRecord interface
+      const archiveRecords = data.map(record => ({
+        id: record.id,
+        hive_id: record.hive_id,
+        hive_number: record.hive_number,
+        archived_at: record.archived_at || '',
+        archive_reason_id: record.archive_reason_id,
+        archive_notes: record.archive_notes,
+        archive_reason_value: Array.isArray(record.archive_reason_value)
+          ? record.archive_reason_value[0]?.value
+          : (record.archive_reason_value as any)?.value
+      }))
+      setArchiveRecords(archiveRecords)
+    }
+  }, [userId])
+
   const fetchHives = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch user's own hives
+    // Fetch user's own hives (including archived)
     const { data: ownHives, error: ownError } = await supabase
       .from('hives')
       .select('*')
       .eq('user_id', currentUserId)
-      .eq('status', 'active')
       .order('hive_number')
 
     if (ownError) {
@@ -572,7 +621,6 @@ export default function InspectionsPage() {
           .from('hives')
           .select('*')
           .in('apiary_id', sharedApiaryIds)
-          .eq('status', 'active')
           .order('hive_number')
 
         sharedHives = sharedHivesData || []
@@ -747,6 +795,7 @@ export default function InspectionsPage() {
         fetchVarroaChecks(id),
         fetchFeedings(id),
         fetchHarvests(id),
+        fetchArchiveRecords(id),
         fetchHives(id),
         fetchApiaries(id),
         fetchCheckMethods(),
@@ -869,14 +918,15 @@ export default function InspectionsPage() {
       ...varroaTreatments.map(vt => ({ ...vt, record_type: 'varroa_treatment' as const, date: vt.treatment_date })),
       ...varroaChecks.map(vc => ({ ...vc, record_type: 'varroa_check' as const, date: vc.check_date })),
       ...feedings.map(f => ({ ...f, record_type: 'feeding' as const, date: f.feed_date })),
-      ...harvests.map(h => ({ ...h, record_type: 'harvest' as const, date: h.harvest_date }))
+      ...harvests.map(h => ({ ...h, record_type: 'harvest' as const, date: h.harvest_date })),
+      ...archiveRecords.map(a => ({ ...a, record_type: 'archive' as const, date: a.archived_at }))
     ]
 
     // Sort by date descending (most recent first)
     merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return merged
-  }, [inspections, varroaTreatments, varroaChecks, feedings, harvests])
+  }, [inspections, varroaTreatments, varroaChecks, feedings, harvests, archiveRecords])
 
   // Update state when merged records change
   useEffect(() => {
@@ -1651,6 +1701,7 @@ export default function InspectionsPage() {
             <option value="varroa_check">Varroa Check</option>
             <option value="feeding">Feeding</option>
             <option value="harvest">Harvest</option>
+            <option value="archive">Hive Archived</option>
           </select>
           <select
             value={filterApiaryId}
@@ -5458,6 +5509,46 @@ export default function InspectionsPage() {
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <span className="text-xs text-gray-500 mb-1 block">Notes</span>
                     <span className="text-sm text-gray-700">{harvest.notes}</span>
+                  </div>
+                )}
+              </div>
+            )
+          } else if (record.record_type === 'archive') {
+            const archiveRecord = record
+            return (
+              <div key={`archive-${archiveRecord.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-gray-500">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    {/* Icon Badge */}
+                    <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Archive size={24} className="text-gray-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold">Hive Archived: {archiveRecord.hive_number}</h3>
+                      <p className="text-sm text-gray-500">
+                        {new Date(archiveRecord.archived_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {archiveRecord.archive_reason_value && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-3">
+                    <span className="text-xs text-gray-500 mb-1 block">Reason</span>
+                    <span className="text-sm font-medium text-gray-900">{archiveRecord.archive_reason_value}</span>
+                  </div>
+                )}
+
+                {archiveRecord.archive_notes && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 mb-1 block">Additional Notes</span>
+                    <span className="text-sm text-gray-700">{archiveRecord.archive_notes}</span>
                   </div>
                 )}
               </div>
