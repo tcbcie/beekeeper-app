@@ -94,6 +94,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       authListener.subscription.unsubscribe()
       clearInterval(accountCheckInterval)
     }
+    // Router is stable from Next.js, safe to not include in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkUser])
 
   if (loading) {
