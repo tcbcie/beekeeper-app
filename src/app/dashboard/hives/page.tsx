@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, ExternalLink } from 'lucide-react'
+import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -116,6 +116,7 @@ export default function HivesPage() {
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active')
   const [filtersLoaded, setFiltersLoaded] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     hive_number: '',
     apiary_id: '',
@@ -520,6 +521,21 @@ export default function HivesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownershipFilter, archiveFilter, userId])
 
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (openMenuId && !target.closest('.context-menu-container')) {
+        setOpenMenuId(null)
+      }
+    }
+
+    if (openMenuId) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [openMenuId])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
@@ -658,6 +674,45 @@ export default function HivesPage() {
         .eq('user_id', userId)
 
       if (!error && userId) fetchHives(userId)
+    }
+  }
+
+  const handleUnarchive = async (hive: Hive) => {
+    if (!userId) return
+
+    const confirmed = window.confirm(
+      `Are you sure you want to unarchive hive ${hive.hive_number}?\n\n` +
+      'This will:\n' +
+      '- Set the hive status back to active\n' +
+      '- Clear the archive date and reason\n' +
+      '- Make the hive visible in your active hives list'
+    )
+
+    if (!confirmed) return
+
+    try {
+      const { error } = await supabase
+        .from('hives')
+        .update({
+          archived_at: null,
+          archive_reason_id: null,
+          archive_notes: null,
+          status: 'active'
+        })
+        .eq('id', hive.id)
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Error unarchiving hive:', error)
+        alert('Failed to unarchive hive: ' + error.message)
+      } else {
+        alert(`Hive ${hive.hive_number} has been successfully unarchived!`)
+        setOpenMenuId(null) // Close the menu
+        fetchHives(userId) // Refresh hives list
+      }
+    } catch (error) {
+      console.error('Error unarchiving hive:', error)
+      alert('Failed to unarchive hive')
     }
   }
 
@@ -1292,14 +1347,44 @@ export default function HivesPage() {
                   </span>
                 )}
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                hive.status === 'active' ? 'bg-green-100 text-green-800' :
-                hive.status === 'queenless' ? 'bg-red-100 text-red-800' :
-                hive.status === 'archived' ? 'bg-gray-100 text-gray-700' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {hive.status}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  hive.status === 'active' ? 'bg-green-100 text-green-800' :
+                  hive.status === 'queenless' ? 'bg-red-100 text-red-800' :
+                  hive.status === 'archived' ? 'bg-gray-100 text-gray-700' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {hive.status}
+                </span>
+                {hive.archived_at && (
+                  <div className="relative context-menu-container">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setOpenMenuId(openMenuId === hive.id ? null : hive.id)
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      aria-label="More options"
+                    >
+                      <MoreVertical size={16} className="text-gray-600" />
+                    </button>
+                    {openMenuId === hive.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[160px]">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleUnarchive(hive)
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 rounded-lg transition-colors"
+                        >
+                          <ArchiveRestore size={16} />
+                          <span>Unarchive</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2 text-sm mb-4">

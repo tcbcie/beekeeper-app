@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -37,6 +37,9 @@ interface Hive {
   configuration: HiveConfiguration | null
   queen_last_seen?: string | null
   eggs_last_present?: string | null
+  archived_at?: string | null
+  archive_reason_id?: string | null
+  archive_notes?: string | null
   apiaries?: {
     name: string
   }
@@ -295,6 +298,51 @@ export default function HiveDetailPage() {
     } catch (error) {
       console.error('Error completing task:', error)
       alert('Failed to complete task')
+    }
+  }
+
+  const handleUnarchive = async () => {
+    if (!hive) return
+
+    const confirmed = window.confirm(
+      `Are you sure you want to unarchive hive ${hive.hive_number}?\n\n` +
+      'This will:\n' +
+      '- Set the hive status back to active\n' +
+      '- Clear the archive date and reason\n' +
+      '- Make the hive visible in your active hives list'
+    )
+
+    if (!confirmed) return
+
+    try {
+      const userId = await getCurrentUserId()
+      if (!userId) {
+        alert('You must be logged in to unarchive a hive')
+        return
+      }
+
+      const { error } = await supabase
+        .from('hives')
+        .update({
+          archived_at: null,
+          archive_reason_id: null,
+          archive_notes: null,
+          status: 'active'
+        })
+        .eq('id', hive.id)
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Error unarchiving hive:', error)
+        alert('Failed to unarchive hive: ' + error.message)
+      } else {
+        alert(`Hive ${hive.hive_number} has been successfully unarchived!`)
+        // Refresh hive data to reflect changes
+        fetchHiveData(userId)
+      }
+    } catch (error) {
+      console.error('Error unarchiving hive:', error)
+      alert('Failed to unarchive hive')
     }
   }
 
@@ -644,13 +692,23 @@ export default function HiveDetailPage() {
           <Plus className="mx-auto mb-2" size={24} />
           <div className="font-medium text-sm">Create Task</div>
         </Link>
-        <Link
-          href={`/dashboard/records?hive=${hiveId}&type=archive`}
-          className="bg-gray-600 text-white p-4 rounded-lg hover:bg-gray-700 text-center border-2 border-gray-400"
-        >
-          <Archive className="mx-auto mb-2" size={24} />
-          <div className="font-medium text-sm">Archive Hive</div>
-        </Link>
+        {hive.archived_at ? (
+          <button
+            onClick={handleUnarchive}
+            className="bg-emerald-600 text-white p-4 rounded-lg hover:bg-emerald-700 text-center border-2 border-emerald-400"
+          >
+            <ArchiveRestore className="mx-auto mb-2" size={24} />
+            <div className="font-medium text-sm">Unarchive Hive</div>
+          </button>
+        ) : (
+          <Link
+            href={`/dashboard/records?hive=${hiveId}&type=archive`}
+            className="bg-gray-600 text-white p-4 rounded-lg hover:bg-gray-700 text-center border-2 border-gray-400"
+          >
+            <Archive className="mx-auto mb-2" size={24} />
+            <div className="font-medium text-sm">Archive Hive</div>
+          </Link>
+        )}
       </div>
 
       {/* Records Sections */}
