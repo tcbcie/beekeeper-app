@@ -24,60 +24,75 @@ RETURNS TABLE (
   subscription_expires_at TIMESTAMPTZ,
   subscription_status TEXT,
   days_remaining INTEGER,
+  deleted_at TIMESTAMPTZ,
   latest_transaction_id TEXT,
   apiaries_count BIGINT,
   hives_count BIGINT,
   last_sign_in_at TIMESTAMPTZ
 )
-LANGUAGE plpgsql
+LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
 AS $$
-BEGIN
-  RETURN QUERY
   SELECT
-    up.id,
-    up.role,
-    up.created_at,
-    up.updated_at,
+    p.id,
+    p.role,
+    p.created_at,
+    p.created_at AS updated_at,
     au.email,
-    up.first_name,
-    up.last_name,
-    up.mobile_number,
-    up.is_active,
-    up.registration_code,
+    p.first_name,
+    p.last_name,
+    p.mobile_number,
+    p.is_active,
+    rc.code AS registration_code,
     rc.description AS code_description,
-    up.subscription_type,
-    up.subscription_expires_at,
+    p.subscription_type,
+    p.subscription_expires_at,
     CASE
-      WHEN up.subscription_expires_at IS NULL THEN 'no_subscription'
-      WHEN up.subscription_expires_at < NOW() THEN 'expired'
-      WHEN up.subscription_expires_at < NOW() + INTERVAL '3 days' THEN 'expiring_very_soon'
-      WHEN up.subscription_expires_at < NOW() + INTERVAL '7 days' THEN 'expiring_soon'
-      ELSE 'active'
+      WHEN p.subscription_expires_at IS NULL THEN 'no_subscription'::TEXT
+      WHEN p.subscription_expires_at < NOW() THEN 'expired'::TEXT
+      WHEN p.subscription_expires_at < NOW() + INTERVAL '7 days' THEN 'expiring_very_soon'::TEXT
+      WHEN p.subscription_expires_at < NOW() + INTERVAL '30 days' THEN 'expiring_soon'::TEXT
+      ELSE 'active'::TEXT
     END AS subscription_status,
     CASE
-      WHEN up.subscription_expires_at IS NOT NULL THEN
-        EXTRACT(DAY FROM (up.subscription_expires_at - NOW()))::INTEGER
-      ELSE NULL
+      WHEN p.subscription_expires_at IS NULL THEN NULL
+      ELSE EXTRACT(DAY FROM (p.subscription_expires_at - NOW()))::INTEGER
     END AS days_remaining,
-    up.latest_transaction_id,
+    p.deleted_at,
+    sh.stripe_payment_intent_id AS latest_transaction_id,
     -- Count of apiaries for this user
-    (SELECT COUNT(*) FROM apiaries WHERE user_id = up.id)::BIGINT AS apiaries_count,
+    (SELECT COUNT(*)::BIGINT FROM apiaries WHERE user_id = p.id) AS apiaries_count,
     -- Count of hives for this user
-    (SELECT COUNT(*) FROM hives WHERE user_id = up.id)::BIGINT AS hives_count,
+    (SELECT COUNT(*)::BIGINT FROM hives WHERE user_id = p.id) AS hives_count,
     -- Last sign-in from auth.users
     au.last_sign_in_at
-  FROM user_profiles up
-  LEFT JOIN auth.users au ON up.id = au.id
-  LEFT JOIN registration_codes rc ON up.registration_code = rc.code
-  WHERE up.deleted_at IS NULL
-  ORDER BY up.created_at DESC;
-END;
+  FROM public.profiles p
+  LEFT JOIN auth.users au ON p.id = au.id
+  LEFT JOIN public.registration_codes rc ON p.current_subscription_code_id = rc.id
+  LEFT JOIN LATERAL (
+    SELECT stripe_payment_intent_id
+    FROM public.subscription_history
+    WHERE user_id = p.id
+      AND subscription_type = 'credit_card'
+      AND stripe_payment_intent_id IS NOT NULL
+    ORDER BY activated_at DESC
+    LIMIT 1
+  ) sh ON TRUE
+  WHERE p.deleted_at IS NULL
+  ORDER BY p.created_at DESC;
 $$;
 
--- Grant execute permission to authenticated users (admin check happens in RLS)
+-- Grant permissions
 GRANT EXECUTE ON FUNCTION public.get_users_with_email() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_users_with_email() TO anon;
+GRANT EXECUTE ON FUNCTION public.get_users_with_email() TO service_role;
+
+-- Set owner
+ALTER FUNCTION public.get_users_with_email() OWNER TO postgres;
+
+-- Add comment
+COMMENT ON FUNCTION public.get_users_with_email IS
+'Returns all active users with email addresses, apiaries count, hives count, and last sign-in time.';
 
 -- Verify the update
 SELECT
@@ -91,12 +106,26 @@ WHERE routine_schema = 'public'
 -- Summary
 DO $$
 BEGIN
-  RAISE NOTICE '========================================';
-  RAISE NOTICE 'Updated get_users_with_email Function!';
-  RAISE NOTICE '========================================';
+  RAISE NOTICE '============================================';
+  RAISE NOTICE '✅ GET_USERS FUNCTION UPDATED WITH STATS';
+  RAISE NOTICE '============================================';
   RAISE NOTICE 'New fields added:';
-  RAISE NOTICE '  - apiaries_count: Number of apiaries per user';
-  RAISE NOTICE '  - hives_count: Number of hives per user';
-  RAISE NOTICE '  - last_sign_in_at: Last login timestamp';
-  RAISE NOTICE '========================================';
+  RAISE NOTICE '  • apiaries_count: Number of apiaries per user';
+  RAISE NOTICE '  • hives_count: Number of hives per user';
+  RAISE NOTICE '  • last_sign_in_at: Last login timestamp';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Try user management page again!';
+  RAISE NOTICE '============================================';
+END $$;
+
+-- Test the function
+DO $$
+DECLARE
+  test_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO test_count FROM public.get_users_with_email();
+  RAISE NOTICE '✅ Function test successful! Found % users', test_count;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE '❌ Function test failed: %', SQLERRM;
 END $$;
