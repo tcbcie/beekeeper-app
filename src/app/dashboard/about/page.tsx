@@ -377,7 +377,7 @@ function AboutPageContent() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>
-                  <span><strong>Account Active Default:</strong> Fixed false "account disabled" messages for users with null is_active field - now defaults to active unless explicitly disabled</span>
+                  <span><strong>Account Active Default:</strong> Fixed false &quot;account disabled&quot; messages for users with null is_active field - now defaults to active unless explicitly disabled</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-600 mt-1">✓</span>

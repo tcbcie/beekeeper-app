@@ -2719,6 +2719,7 @@ export default function SettingsPage() {
 
             {/* Search and Filters - Only show for Active/Deleted Users tabs */}
             {!showReactivationRequests && !showSubscriptionHistory && (
+            <>
             <div className="mb-4 space-y-3">
               {/* Search Bar */}
               <div className="relative">
@@ -3136,6 +3137,7 @@ export default function SettingsPage() {
                 </>
               )
             })()}
+            </>
             )}
 
             {/* Reactivation Requests Display */}
