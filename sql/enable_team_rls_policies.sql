@@ -11,6 +11,12 @@
 -- - Team members have READ access to shared data
 -- - Only the data owner can WRITE/UPDATE/DELETE their own records
 -- - Team owners can manage team membership and share their apiaries
+--
+-- IMPORTANT - ARCHIVED HIVES:
+-- - Archived hives (archived_at IS NOT NULL) are EXCLUDED from team sharing
+-- - Only active hives (archived_at IS NULL) are visible to team members
+-- - Owners can always see their own archived hives
+-- - This ensures historical/closed hives don't clutter team views
 -- ============================================================================
 
 -- ============================================================================
@@ -45,6 +51,7 @@ AS $$
 $$;
 
 -- Check if user can access a specific hive (owns it or it's in a shared apiary)
+-- IMPORTANT: Archived hives are EXCLUDED from team sharing
 CREATE OR REPLACE FUNCTION can_access_hive(hive_uuid uuid, user_uuid uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -52,20 +59,26 @@ SECURITY DEFINER
 STABLE
 AS $$
   SELECT EXISTS (
-    -- User owns the hive directly
+    -- User owns the hive directly (can see even if archived)
     SELECT 1 FROM hives WHERE id = hive_uuid AND user_id = user_uuid
   ) OR EXISTS (
     -- Hive is in an apiary shared with a team the user is a member of
+    -- ONLY if the hive is NOT archived (archived_at IS NULL)
     SELECT 1 FROM hives h
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN team_members tm ON ta.team_id = tm.team_id
-    WHERE h.id = hive_uuid AND tm.user_id = user_uuid
+    WHERE h.id = hive_uuid
+      AND tm.user_id = user_uuid
+      AND h.archived_at IS NULL  -- Exclude archived hives from team sharing
   ) OR EXISTS (
     -- Hive is in an apiary shared via a team the user owns
+    -- ONLY if the hive is NOT archived (archived_at IS NULL)
     SELECT 1 FROM hives h
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN teams t ON ta.team_id = t.id
-    WHERE h.id = hive_uuid AND t.owner_id = user_uuid
+    WHERE h.id = hive_uuid
+      AND t.owner_id = user_uuid
+      AND h.archived_at IS NULL  -- Exclude archived hives from team sharing
   );
 $$;
 
@@ -93,6 +106,7 @@ AS $$
 $$;
 
 -- Check if user can access a specific queen (owns it or it's in a shared hive)
+-- IMPORTANT: Queens in archived hives are EXCLUDED from team sharing
 CREATE OR REPLACE FUNCTION can_access_queen(queen_uuid uuid, user_uuid uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -100,22 +114,28 @@ SECURITY DEFINER
 STABLE
 AS $$
   SELECT EXISTS (
-    -- User owns the queen directly
+    -- User owns the queen directly (can see even if in archived hive)
     SELECT 1 FROM queens WHERE id = queen_uuid AND user_id = user_uuid
   ) OR EXISTS (
     -- Queen is assigned to a hive in a shared apiary
+    -- ONLY if the hive is NOT archived
     SELECT 1 FROM queens q
     INNER JOIN hives h ON q.id = h.queen_id
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN team_members tm ON ta.team_id = tm.team_id
-    WHERE q.id = queen_uuid AND tm.user_id = user_uuid
+    WHERE q.id = queen_uuid
+      AND tm.user_id = user_uuid
+      AND h.archived_at IS NULL  -- Exclude queens in archived hives
   ) OR EXISTS (
     -- Queen is assigned to a hive in an apiary shared via team ownership
+    -- ONLY if the hive is NOT archived
     SELECT 1 FROM queens q
     INNER JOIN hives h ON q.id = h.queen_id
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN teams t ON ta.team_id = t.id
-    WHERE q.id = queen_uuid AND t.owner_id = user_uuid
+    WHERE q.id = queen_uuid
+      AND t.owner_id = user_uuid
+      AND h.archived_at IS NULL  -- Exclude queens in archived hives
   );
 $$;
 
@@ -748,7 +768,9 @@ BEGIN
   RAISE NOTICE 'Team collaboration features are now secured with RLS';
   RAISE NOTICE '';
   RAISE NOTICE 'Key Points:';
-  RAISE NOTICE '  • Team members have READ access to shared apiaries and their hives';
+  RAISE NOTICE '  • Team members have READ access to shared apiaries and their ACTIVE hives';
+  RAISE NOTICE '  • ARCHIVED hives are EXCLUDED from team sharing (archived_at IS NOT NULL)';
+  RAISE NOTICE '  • Owners can always see their own archived hives';
   RAISE NOTICE '  • Only data owners can WRITE/UPDATE/DELETE their own records';
   RAISE NOTICE '  • Team owners can manage members and share apiaries';
   RAISE NOTICE '  • All policies enforce proper access control at database level';
@@ -756,6 +778,7 @@ BEGIN
   RAISE NOTICE 'Next Steps:';
   RAISE NOTICE '  1. Test team collaboration with multiple users';
   RAISE NOTICE '  2. Verify team members can view but not modify shared data';
-  RAISE NOTICE '  3. Ensure owners retain full control of their data';
+  RAISE NOTICE '  3. Verify archived hives are NOT visible to team members';
+  RAISE NOTICE '  4. Ensure owners retain full control of their data';
   RAISE NOTICE '============================================';
 END $$;
