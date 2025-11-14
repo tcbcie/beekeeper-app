@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId, isAdmin } from '@/lib/auth'
+import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
 import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
@@ -151,6 +151,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
   const [userIsAdmin, setUserIsAdmin] = useState(false)
+  const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
@@ -266,6 +267,10 @@ export default function SettingsPage() {
       // Check if user has admin access
       const adminAccess = await isAdmin()
       setUserIsAdmin(adminAccess)
+
+      // Check if user has active subscription
+      const hasSubscription = await hasActiveSubscription()
+      setUserHasActiveSubscription(hasSubscription)
 
       if (!adminAccess) {
         setAccessDenied(true)
@@ -1614,19 +1619,30 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-600">
                 <strong>Admin Export:</strong> Download complete database backup with ALL users&apos; data from ALL tables including apiaries, hives, queens, inspections, tasks, events, and more.
               </p>
-            ) : (
+            ) : userHasActiveSubscription ? (
               <p className="text-sm text-gray-600">
                 Download your personal beekeeping data including apiaries, hives, queens, inspections, tasks, events, and more in SQL format.
               </p>
+            ) : (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800 font-medium">
+                  Data export is available to users with an active subscription.
+                </p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Please renew your subscription to export your beekeeping data.
+                </p>
+              </div>
             )}
-            <button
-              onClick={exportDatabase}
-              disabled={exporting}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium flex items-center gap-2"
-            >
-              <Download size={16} />
-              {exporting ? 'Exporting...' : userIsAdmin ? 'Export Complete Database (All Users)' : 'Export My Data'}
-            </button>
+            {(userIsAdmin || userHasActiveSubscription) && (
+              <button
+                onClick={exportDatabase}
+                disabled={exporting}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium flex items-center gap-2"
+              >
+                <Download size={16} />
+                {exporting ? 'Exporting...' : userIsAdmin ? 'Export Complete Database (All Users)' : 'Export My Data'}
+              </button>
+            )}
           </div>
         </div>
       )}
