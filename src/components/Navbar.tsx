@@ -14,19 +14,30 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      // Check if we have a session first
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (session) {
-        // Only attempt signOut if we have a valid session
-        const { error } = await supabase.auth.signOut({ scope: 'local' })
-
-        if (error && error.message !== 'Auth session missing!') {
-          console.error('Logout error:', error)
+      // Clear local storage manually to avoid 403 errors from Supabase
+      // This is a workaround for Supabase signOut 403 issues
+      if (typeof window !== 'undefined') {
+        // Remove all Supabase auth keys from localStorage
+        const keysToRemove: string[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('sb-')) {
+            keysToRemove.push(key)
+          }
         }
+        keysToRemove.forEach(key => localStorage.removeItem(key))
+
+        // Also clear sessionStorage
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i)
+          if (key && key.startsWith('sb-')) {
+            keysToRemove.push(key)
+          }
+        }
+        keysToRemove.forEach(key => sessionStorage.removeItem(key))
       }
 
-      // Always redirect to login regardless of session state
+      // Redirect to login
       router.push('/login')
     } catch (error) {
       console.error('Logout failed:', error)
