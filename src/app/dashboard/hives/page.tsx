@@ -171,13 +171,22 @@ export default function HivesPage() {
       sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
     }
 
-    // Build query based on ownership filter with joins for better performance
+    // Build base query with archive filter applied first (important for PostgREST)
     let query = supabase
       .from('hives')
       .select(`
         *,
         apiaries(name)
       `)
+
+    // Apply archive filter FIRST (before ownership filter for better SQL generation)
+    if (archiveFilter === 'active') {
+      query = query.is('archived_at', null)
+    } else if (archiveFilter === 'archived') {
+      // Filter for hives where archived_at is NOT NULL
+      query = query.not('archived_at', 'is', null)
+    }
+    // 'all' shows both active and archived hives (no archive filter applied)
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
@@ -204,15 +213,6 @@ export default function HivesPage() {
         query = query.eq('user_id', currentUserId)
       }
     }
-
-    // Apply archive filter
-    if (archiveFilter === 'active') {
-      query = query.is('archived_at', null)
-    } else if (archiveFilter === 'archived') {
-      // Filter for hives where archived_at is NOT NULL
-      query = query.not('archived_at', 'is', null)
-    }
-    // 'all' shows both active and archived hives (no filter applied)
 
     const { data, error } = await query.order('hive_number')
 
