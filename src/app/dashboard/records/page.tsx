@@ -2185,6 +2185,7 @@ export default function InspectionsPage() {
                   >
                     <option value="">Select hive</option>
                     {hives
+                      .filter(h => !h.archived_at) // Only show active (non-archived) hives
                       .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
                       .map((h) => (
                         <option key={h.id} value={h.id}>{h.hive_number}</option>
@@ -4000,6 +4001,7 @@ export default function InspectionsPage() {
               >
                 <option value="">Select hive</option>
                 {hives
+                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
                   .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
                   .map((h) => (
                     <option key={h.id} value={h.id}>{h.hive_number}</option>
@@ -4264,6 +4266,7 @@ export default function InspectionsPage() {
               >
                 <option value="">Select hive</option>
                 {hives
+                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
                   .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
                   .map((h) => (
                     <option key={h.id} value={h.id}>{h.hive_number}</option>
@@ -4557,6 +4560,7 @@ export default function InspectionsPage() {
               >
                 <option value="">Select hive</option>
                 {hives
+                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
                   .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
                   .map((h) => (
                     <option key={h.id} value={h.id}>{h.hive_number}</option>
@@ -4698,6 +4702,7 @@ export default function InspectionsPage() {
               >
                 <option value="">Select hive</option>
                 {hives
+                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
                   .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
                   .map((h) => (
                     <option key={h.id} value={h.id}>{h.hive_number}</option>
