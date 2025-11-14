@@ -4,6 +4,9 @@
 -- Adds apiary count, hive count, and last sign-in time to user management
 -- ============================================================================
 
+-- Drop existing function first (required when changing return type)
+DROP FUNCTION IF EXISTS public.get_users_with_email();
+
 CREATE OR REPLACE FUNCTION public.get_users_with_email()
 RETURNS TABLE (
   id UUID,
