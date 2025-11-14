@@ -127,7 +127,7 @@ SELECT
   code,
   code_type,
   is_active,
-  times_used,
+  current_uses,
   max_uses
 FROM public.registration_codes
 WHERE is_active = TRUE

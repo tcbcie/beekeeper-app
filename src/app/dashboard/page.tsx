@@ -860,7 +860,7 @@ export default function DashboardPage() {
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
                 <span className="font-medium text-gray-600">Last Updated:</span>
-                <span className="font-semibold text-blue-700">November 10, 2025</span>
+                <span className="font-semibold text-blue-700">November 14, 2025</span>
               </span>
             </div>
           </div>
