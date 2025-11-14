@@ -1,6 +1,5 @@
 'use client'
 import { LogOut, Menu } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 
