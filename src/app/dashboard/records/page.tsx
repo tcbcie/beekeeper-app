@@ -1843,7 +1843,7 @@ export default function InspectionsPage() {
             }
 
             try {
-              const { error } = await supabase
+              const { error, data: updatedData } = await supabase
                 .from('hives')
                 .update({
                   archived_at: new Date().toISOString(),
@@ -1852,10 +1852,12 @@ export default function InspectionsPage() {
                 })
                 .eq('id', archiveData.hive_id)
                 .eq('user_id', userId)
+                .select()
 
               if (error) throw error
 
-              alert('Hive archived successfully!')
+              console.log('✅ Hive archived:', updatedData)
+              alert('Hive archived successfully! Go to Hives page and select "Archived" or "All" filter to see it.')
               setShowForm(false)
               setArchiveData({
                 hive_id: '',

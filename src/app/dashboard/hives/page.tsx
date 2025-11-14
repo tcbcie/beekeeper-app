@@ -209,11 +209,22 @@ export default function HivesPage() {
     if (archiveFilter === 'active') {
       query = query.is('archived_at', null)
     } else if (archiveFilter === 'archived') {
+      // Filter for hives where archived_at is NOT NULL
       query = query.not('archived_at', 'is', null)
     }
-    // 'all' shows both active and archived hives
+    // 'all' shows both active and archived hives (no filter applied)
 
     const { data, error } = await query.order('hive_number')
+
+    console.log(`📊 Hives query (filter: ${archiveFilter}):`, {
+      count: data?.length,
+      hasError: !!error,
+      sampleArchiveData: data?.[0] ? {
+        hive_number: data[0].hive_number,
+        archived_at: data[0].archived_at,
+        archive_reason_id: data[0].archive_reason_id
+      } : null
+    })
 
     if (error) {
       console.error('Error fetching hives:', error)
