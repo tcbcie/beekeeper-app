@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet, ExternalLink, Home, Archive } from 'lucide-react'
@@ -257,6 +257,7 @@ interface TreatmentProduct {
 export default function InspectionsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const formRef = useRef<HTMLDivElement>(null)
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [varroaTreatments, setVarroaTreatments] = useState<VarroaTreatment[]>([])
   const [varroaChecks, setVarroaChecks] = useState<VarroaCheck[]>([])
@@ -777,16 +778,22 @@ export default function InspectionsPage() {
       setSourceHiveId(hiveParam)
 
       // Set the form type and open the form
-      const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest']
+      const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest', 'archive']
       if (validTypes.includes(typeParam)) {
         const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
                           typeParam === 'varroa-treatment' ? 'varroa_treatment' :
-                          typeParam as 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest'
+                          typeParam as 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest' | 'archive'
 
         const currentDate = new Date().toISOString().split('T')[0]
 
         // Set the appropriate form data based on type
-        if (mappedType === 'inspection') {
+        if (mappedType === 'archive') {
+          setArchiveData({
+            hive_id: hiveParam,
+            archive_reason_id: '',
+            archive_notes: ''
+          })
+        } else if (mappedType === 'inspection') {
           setFormData(prev => ({
             ...prev,
             hive_id: hiveParam
@@ -843,6 +850,11 @@ export default function InspectionsPage() {
 
         setFormType(mappedType)
         setShowForm(true)
+
+        // Scroll to form after it renders
+        setTimeout(() => {
+          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 100)
 
         // Clear the URL parameters after opening the form
         router.replace('/dashboard/records')
@@ -1803,7 +1815,7 @@ export default function InspectionsPage() {
 
       {/* Archive Hive Form */}
       {showForm && formType === 'archive' && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div ref={formRef} className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-red-700">Archive Hive</h3>
             <button
