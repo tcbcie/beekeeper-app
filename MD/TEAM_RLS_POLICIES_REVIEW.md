@@ -27,9 +27,11 @@ This document provides a comprehensive review of the Team collaboration feature'
 The team collaboration system uses **apiary-level sharing**:
 - Teams are created by owners who can invite members
 - **Apiaries are shared**, not individual hives
-- When an apiary is shared with a team (via `team_apiaries`), ALL hives in that apiary become visible to team members
+- When an apiary is shared with a team (via `team_apiaries`), ALL **ACTIVE** hives in that apiary become visible to team members
+- **ARCHIVED hives are EXCLUDED** from team sharing (`archived_at IS NOT NULL`)
 - Team members have **READ** access to shared data
 - Only the original data owner can **WRITE/UPDATE/DELETE** their records
+- Owners can always see their own archived hives
 
 ### Database Schema
 
@@ -66,14 +68,15 @@ The team collaboration system uses **apiary-level sharing**:
 ### Data Access Flow
 
 ```
-User → Team Member → Team → Team Apiary → Apiary → Hives → Queens/Inspections/etc.
+User → Team Member → Team → Team Apiary → Apiary → ACTIVE Hives → Queens/Inspections/etc.
 ```
 
 1. User is a member of a team (via `team_members`)
 2. Team has shared apiaries (via `team_apiaries`)
-3. User can VIEW all hives in shared apiaries
-4. User can VIEW all data (queens, inspections, etc.) for shared hives
+3. User can VIEW all **ACTIVE** hives in shared apiaries (archived_at IS NULL)
+4. User can VIEW all data (queens, inspections, etc.) for shared **ACTIVE** hives
 5. User can ONLY MODIFY their own data (user_id = auth.uid())
+6. **ARCHIVED hives are NOT visible** to team members (only to owners)
 
 ---
 
@@ -124,24 +127,32 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 #### 3. `can_access_hive(hive_uuid, user_uuid)`
 Checks if a user can access a hive (owns it OR it's in a shared apiary).
 
+**IMPORTANT**: Archived hives (archived_at IS NOT NULL) are EXCLUDED from team sharing.
+
 ```sql
 CREATE OR REPLACE FUNCTION can_access_hive(hive_uuid uuid, user_uuid uuid)
 RETURNS boolean AS $$
   SELECT EXISTS (
-    -- User owns the hive directly
+    -- User owns the hive directly (can see even if archived)
     SELECT 1 FROM hives WHERE id = hive_uuid AND user_id = user_uuid
   ) OR EXISTS (
     -- Hive is in an apiary shared with a team the user is a member of
+    -- ONLY if the hive is NOT archived (archived_at IS NULL)
     SELECT 1 FROM hives h
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN team_members tm ON ta.team_id = tm.team_id
-    WHERE h.id = hive_uuid AND tm.user_id = user_uuid
+    WHERE h.id = hive_uuid
+      AND tm.user_id = user_uuid
+      AND h.archived_at IS NULL  -- Exclude archived hives from team sharing
   ) OR EXISTS (
     -- Hive is in an apiary shared via a team the user owns
+    -- ONLY if the hive is NOT archived (archived_at IS NULL)
     SELECT 1 FROM hives h
     INNER JOIN team_apiaries ta ON h.apiary_id = ta.apiary_id
     INNER JOIN teams t ON ta.team_id = t.id
-    WHERE h.id = hive_uuid AND t.owner_id = user_uuid
+    WHERE h.id = hive_uuid
+      AND t.owner_id = user_uuid
+      AND h.archived_at IS NULL  -- Exclude archived hives from team sharing
   );
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 ```
@@ -435,6 +446,71 @@ SELECT * FROM teams WHERE name = 'Bee Squad';
 SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
 ```
 
+### Scenario 5: Archived Hives Exclusion from Team Sharing
+
+**Setup**:
+1. User A (owner) shares "North Yard" with "Bee Squad"
+2. "North Yard" has 3 active hives: Hive 1, Hive 2, Hive 3
+3. User A archives Hive 2 (winter loss)
+4. User B is a member of "Bee Squad"
+
+**Expected Results**:
+- ✓ User A can see all 3 hives (owns them)
+- ✓ User B can see Hive 1 (active, in shared apiary)
+- ✗ User B CANNOT see Hive 2 (archived, excluded from sharing)
+- ✓ User B can see Hive 3 (active, in shared apiary)
+- ✓ User A can see Hive 2's archive reason and notes
+- ✗ User B cannot see any inspections for archived Hive 2
+
+**SQL Tests**:
+
+```sql
+-- User A archives Hive 2
+UPDATE hives
+SET
+  archived_at = NOW(),
+  archive_reason_id = '[winter_loss_reason_id]',
+  archive_notes = 'Did not survive winter'
+WHERE id = '[hive_2_id]' AND user_id = '[user_a_id]';
+
+-- As User A (owner)
+SET LOCAL request.jwt.claim.sub = '[user_a_id]';
+
+-- Should return 3 rows (all hives, including archived)
+SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
+
+-- Should return Hive 2 with archive info
+SELECT id, hive_number, archived_at, archive_notes
+FROM hives WHERE id = '[hive_2_id]';
+
+-- As User B (member)
+SET LOCAL request.jwt.claim.sub = '[user_b_id]';
+
+-- Should return 2 rows (Hive 1 and Hive 3, NOT Hive 2)
+-- RLS filters out archived hives from team sharing
+SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
+
+-- Should return 0 rows (cannot access archived hive)
+SELECT * FROM hives WHERE id = '[hive_2_id]';
+
+-- Should return 0 rows (cannot see inspections for archived hive)
+SELECT * FROM inspections WHERE hive_id = '[hive_2_id]';
+
+-- User A unarchives Hive 2
+UPDATE hives
+SET
+  archived_at = NULL,
+  archive_reason_id = NULL,
+  archive_notes = NULL
+WHERE id = '[hive_2_id]' AND user_id = '[user_a_id]';
+
+-- As User B (member)
+SET LOCAL request.jwt.claim.sub = '[user_b_id]';
+
+-- Should NOW return 3 rows (all active hives, including un-archived Hive 2)
+SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
+```
+
 ---
 
 ## Security Guarantees
@@ -457,6 +533,12 @@ SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
    - Only team owners can share/unshare apiaries
    - Only team owners can delete teams
 
+4. **Archived Hive Privacy**
+   - Archived hives are NEVER visible to team members
+   - Only the hive owner can see archived hives
+   - This protects sensitive historical data (winter losses, failed colonies, etc.)
+   - Team members cannot see inspections, treatments, or any data for archived hives
+
 ### What RLS Does NOT Prevent
 
 1. **Data Owner Actions**
@@ -473,7 +555,23 @@ SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
 
 ## Known Issues and Limitations
 
-### 1. Performance Considerations
+### 1. Archived Hives and Team Sharing
+
+**Behavior**: Archived hives (archived_at IS NOT NULL) are automatically excluded from team sharing.
+
+**Impact**:
+- Team members cannot see archived hives even if the apiary is shared
+- When a hive is archived, it immediately becomes invisible to team members
+- When a hive is unarchived, it immediately becomes visible to team members again
+
+**Rationale**:
+- Protects sensitive historical data (winter losses, failed requeening, etc.)
+- Reduces clutter in team views (only show active, actionable hives)
+- Maintains privacy for potentially embarrassing failures
+
+**Status**: This is BY DESIGN and intentional.
+
+### 2. Performance Considerations
 
 **Issue**: The `can_access_*` helper functions perform JOINs which can be slow for large datasets.
 
@@ -484,7 +582,7 @@ SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
 - Indexes exist on foreign keys (team_id, apiary_id, hive_id, user_id)
 - Consider adding materialized views for very large installations
 
-### 2. No Write Access for Team Members
+### 3. No Write Access for Team Members
 
 **Issue**: Team members have READ-ONLY access to shared data.
 
@@ -507,7 +605,7 @@ WITH CHECK (
 
 This means members CAN create inspections/feedings/etc. for shared hives, but they will own those records (user_id = their id).
 
-### 3. Deleted Team Members Retain Their Data
+### 4. Deleted Team Members Retain Their Data
 
 **Issue**: When a user is removed from a team, their contributed data (inspections, etc.) remains in the database.
 
@@ -522,7 +620,7 @@ This means members CAN create inspections/feedings/etc. for shared hives, but th
 
 **Future Enhancement**: Could add soft-delete flags or data transfer mechanisms.
 
-### 4. No Granular Permissions
+### 5. No Granular Permissions
 
 **Issue**: All team members have the same access level (except owners).
 
@@ -535,7 +633,7 @@ This means members CAN create inspections/feedings/etc. for shared hives, but th
 - Per-apiary access levels
 - Feature-specific permissions (can inspect but not treat)
 
-### 5. Invitation Email Visibility
+### 6. Invitation Email Visibility
 
 **Issue**: The RLS policy allows anyone to view invitations sent to their email address, but Supabase auth.users.email is not directly accessible in RLS.
 
