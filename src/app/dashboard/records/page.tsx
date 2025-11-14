@@ -551,8 +551,10 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    console.log('📦 Fetching archive records for user:', currentUserId)
+
     // Fetch archived hives with their archive reason
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('hives')
       .select(`
         id,
@@ -568,6 +570,13 @@ export default function InspectionsPage() {
       .order('archived_at', { ascending: false })
       .limit(500)
 
+    if (error) {
+      console.error('❌ Error fetching archive records:', error)
+      return
+    }
+
+    console.log('📦 Archived hives found:', data?.length || 0, data)
+
     if (data) {
       // Transform the data to match ArchiveRecord interface
       const archiveRecords = data.map(record => ({
@@ -581,6 +590,7 @@ export default function InspectionsPage() {
           ? record.archive_reason_value[0]?.value
           : (record.archive_reason_value as any)?.value
       }))
+      console.log('📦 Transformed archive records:', archiveRecords)
       setArchiveRecords(archiveRecords)
     }
   }, [userId])
@@ -921,6 +931,16 @@ export default function InspectionsPage() {
       ...harvests.map(h => ({ ...h, record_type: 'harvest' as const, date: h.harvest_date })),
       ...archiveRecords.map(a => ({ ...a, record_type: 'archive' as const, date: a.archived_at }))
     ]
+
+    console.log('📊 Merged records breakdown:', {
+      inspections: inspections.length,
+      varroaTreatments: varroaTreatments.length,
+      varroaChecks: varroaChecks.length,
+      feedings: feedings.length,
+      harvests: harvests.length,
+      archiveRecords: archiveRecords.length,
+      total: merged.length
+    })
 
     // Sort by date descending (most recent first)
     merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -1725,7 +1745,9 @@ export default function InspectionsPage() {
             {hives
               .filter(hive => !filterApiaryId || hive.apiary_id === filterApiaryId)
               .map((hive) => (
-                <option key={hive.id} value={hive.id}>{hive.hive_number}</option>
+                <option key={hive.id} value={hive.id}>
+                  {hive.hive_number}{hive.archived_at ? ' (Archived)' : ''}
+                </option>
               ))}
           </select>
           <div className="relative dropdown-container">
