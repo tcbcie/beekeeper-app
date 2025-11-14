@@ -588,7 +588,7 @@ export default function InspectionsPage() {
         archive_notes: record.archive_notes,
         archive_reason_value: Array.isArray(record.archive_reason_value)
           ? record.archive_reason_value[0]?.value
-          : (record.archive_reason_value as any)?.value
+          : (record.archive_reason_value as { value?: string } | undefined)?.value
       }))
       console.log('📦 Transformed archive records:', archiveRecords)
       setArchiveRecords(archiveRecords)
