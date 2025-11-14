@@ -1848,7 +1848,8 @@ export default function InspectionsPage() {
                 .update({
                   archived_at: new Date().toISOString(),
                   archive_reason_id: archiveData.archive_reason_id,
-                  archive_notes: archiveData.archive_notes || null
+                  archive_notes: archiveData.archive_notes || null,
+                  status: 'archived'
                 })
                 .eq('id', archiveData.hive_id)
                 .eq('user_id', userId)
