@@ -180,3 +180,36 @@ export async function requireActiveAccount(): Promise<void> {
     throw new Error('Your account has been disabled. Please contact an administrator.')
   }
 }
+
+/**
+ * Check if the current user has an active subscription
+ * @returns true if subscription is active, false otherwise
+ */
+export async function hasActiveSubscription(): Promise<boolean> {
+  const userId = await getCurrentUserId()
+
+  if (!userId) {
+    return false
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('subscription_expires_at')
+    .eq('id', userId)
+    .single()
+
+  if (error || !data) {
+    console.error('Error fetching subscription status:', error)
+    return false
+  }
+
+  // Check if subscription_expires_at exists and is in the future
+  if (!data.subscription_expires_at) {
+    return false
+  }
+
+  const expiryDate = new Date(data.subscription_expires_at)
+  const now = new Date()
+
+  return expiryDate > now
+}
