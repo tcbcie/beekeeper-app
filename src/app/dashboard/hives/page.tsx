@@ -603,7 +603,7 @@ export default function HivesPage() {
         if (error) throw error
       }
 
-      fetchHives()
+      if (userId) fetchHives(userId)
       resetForm()
     } catch (error) {
       if (error instanceof Error) {
@@ -657,7 +657,7 @@ export default function HivesPage() {
         .eq('id', id)
         .eq('user_id', userId)
 
-      if (!error) fetchHives()
+      if (!error && userId) fetchHives(userId)
     }
   }
 
@@ -742,7 +742,7 @@ export default function HivesPage() {
             value={ownershipFilter}
             onChange={(e) => {
               setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
-              fetchHives()
+              if (userId) fetchHives(userId)
             }}
             className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
           >
