@@ -874,17 +874,28 @@ export default function HivesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Apiary *
+                <span className="block text-xs font-normal text-gray-500 mt-0.5">
+                  Required for weather data in inspection records
+                </span>
+              </label>
               <select
                 value={formData.apiary_id}
                 onChange={(e) => setFormData({...formData, apiary_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                required
               >
                 <option value="">Select apiary</option>
                 {apiaries.map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
+              {apiaries.length === 0 && (
+                <p className="mt-1 text-xs text-amber-600">
+                  ⚠️ No apiaries available. Please create an apiary first to enable weather data for inspections.
+                </p>
+              )}
             </div>
 
             <div>
