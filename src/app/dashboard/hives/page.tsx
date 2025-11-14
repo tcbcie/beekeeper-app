@@ -180,11 +180,16 @@ export default function HivesPage() {
       `)
 
     // Apply archive filter FIRST (before ownership filter for better SQL generation)
+    console.log('🔍 Archive filter value:', archiveFilter, 'Type:', typeof archiveFilter)
     if (archiveFilter === 'active') {
+      console.log('  → Applying: archived_at IS NULL')
       query = query.is('archived_at', null)
     } else if (archiveFilter === 'archived') {
+      console.log('  → Applying: archived_at IS NOT NULL')
       // Filter for hives where archived_at is NOT NULL
       query = query.not('archived_at', 'is', null)
+    } else {
+      console.log('  → No archive filter (showing all)')
     }
     // 'all' shows both active and archived hives (no archive filter applied)
 
@@ -219,11 +224,11 @@ export default function HivesPage() {
     console.log(`📊 Hives query (filter: ${archiveFilter}):`, {
       count: data?.length,
       hasError: !!error,
-      sampleArchiveData: data?.[0] ? {
-        hive_number: data[0].hive_number,
-        archived_at: data[0].archived_at,
-        archive_reason_id: data[0].archive_reason_id
-      } : null
+      allHives: data?.map(h => ({
+        hive_number: h.hive_number,
+        archived_at: h.archived_at,
+        status: h.status
+      })) || []
     })
 
     if (error) {
@@ -500,8 +505,17 @@ export default function HivesPage() {
 
   // Refetch hives when ownership or archive filter changes
   useEffect(() => {
+    console.log('⚡ Filter useEffect triggered:', {
+      userId: !!userId,
+      filtersLoaded,
+      ownershipFilter,
+      archiveFilter
+    })
     if (userId && filtersLoaded) {
+      console.log('  → Calling fetchHives')
       fetchHives(userId)
+    } else {
+      console.log('  → Skipping fetchHives (userId or filtersLoaded is false)')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownershipFilter, archiveFilter, userId, filtersLoaded])
@@ -748,7 +762,10 @@ export default function HivesPage() {
           </select>
           <select
             value={archiveFilter}
-            onChange={(e) => setArchiveFilter(e.target.value as 'active' | 'archived' | 'all')}
+            onChange={(e) => {
+              console.log('🔄 Archive filter changed from', archiveFilter, 'to', e.target.value)
+              setArchiveFilter(e.target.value as 'active' | 'archived' | 'all')
+            }}
             className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all"
           >
             <option value="active">Active Hives</option>
