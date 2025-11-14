@@ -13,8 +13,21 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      // Use local scope to avoid global logout issues with some auth configurations
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
+
+      if (error) {
+        console.error('Logout error:', error)
+        // Even if there's an error, clear local session and redirect
+      }
+
+      router.push('/login')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Force redirect to login even if logout fails
+      router.push('/login')
+    }
   }
 
   return (
