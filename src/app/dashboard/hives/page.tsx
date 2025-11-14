@@ -397,7 +397,10 @@ export default function HivesPage() {
       setHives([])
     }
     setLoading(false)
-  }, [userId, ownershipFilter, archiveFilter])
+    // ownershipFilter and archiveFilter are read inside but don't need to be deps
+    // The useEffect at line 495 will call fetchHives when these change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
