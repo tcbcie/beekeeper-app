@@ -24,14 +24,25 @@ This document provides a comprehensive review of the Team collaboration feature'
 
 ### Core Concept
 
-The team collaboration system uses **apiary-level sharing**:
+The team collaboration system uses **apiary-level sharing** with **collaborative permissions**:
+
+**Sharing Model**:
 - Teams are created by owners who can invite members
 - **Apiaries are shared**, not individual hives
-- When an apiary is shared with a team (via `team_apiaries`), ALL **ACTIVE** hives in that apiary become visible to team members
+- When an apiary is shared with a team (via `team_apiaries`), ALL **ACTIVE** hives become accessible
 - **ARCHIVED hives are EXCLUDED** from team sharing (`archived_at IS NOT NULL`)
-- Team members have **READ** access to shared data
-- Only the original data owner can **WRITE/UPDATE/DELETE** their records
-- Owners can always see their own archived hives
+
+**Team Member Permissions**:
+- **VIEW**: All active hives, queens, apiaries, and ALL historical inspection records
+- **CREATE**: New inspections, varroa checks/treatments, feedings, harvests for shared hives
+- **UPDATE**: Hive configuration (queen assignment, status, notes)
+- **UPDATE/DELETE**: Only their own inspection records (not others')
+- **CANNOT**: Delete hives, modify queens, view/access archived hives
+
+**Owner Permissions**:
+- Full CRUD access to all their data (including archived hives)
+- Can see ALL team member contributions
+- Can share/unshare apiaries with teams
 
 ### Database Schema
 
@@ -68,15 +79,22 @@ The team collaboration system uses **apiary-level sharing**:
 ### Data Access Flow
 
 ```
-User → Team Member → Team → Team Apiary → Apiary → ACTIVE Hives → Queens/Inspections/etc.
+User → Team Member → Team → Team Apiary → Apiary → ACTIVE Hives → Collaborative Work
 ```
 
+**Viewing** (Read Access):
 1. User is a member of a team (via `team_members`)
 2. Team has shared apiaries (via `team_apiaries`)
 3. User can VIEW all **ACTIVE** hives in shared apiaries (archived_at IS NULL)
 4. User can VIEW all data (queens, inspections, etc.) for shared **ACTIVE** hives
-5. User can ONLY MODIFY their own data (user_id = auth.uid())
+5. User can see ALL historical records from all team members
 6. **ARCHIVED hives are NOT visible** to team members (only to owners)
+
+**Contributing** (Write Access):
+1. Team members can CREATE new inspection records for any accessible hive
+2. Team members can UPDATE hive configuration (queen, status, notes)
+3. Team members can UPDATE/DELETE only their own inspection records
+4. Team members CANNOT delete hives or modify queens/apiaries
 
 ---
 
@@ -87,10 +105,13 @@ User → Team Member → Team → Team Apiary → Apiary → ACTIVE Hives → Qu
 1. **Separation of Concerns**
    - Team management (teams, members, invitations) - managed by team owners
    - Data access (apiaries, hives, etc.) - based on ownership + team sharing
+   - Collaborative data entry - team members can contribute
 
 2. **Read vs Write Permissions**
-   - READ: Owner OR team member can view shared data
-   - WRITE: ONLY owner can create/update/delete
+   - **READ**: Owner OR team member can view shared active data
+   - **WRITE (Hives)**: Team members can UPDATE configuration (not delete)
+   - **WRITE (Inspections/etc.)**: Team members can CREATE new, UPDATE/DELETE only their own
+   - **WRITE (Queens/Apiaries)**: ONLY owners can modify
 
 3. **Helper Functions**
    - Use SECURITY DEFINER functions to prevent infinite recursion
@@ -165,7 +186,7 @@ Checks if a user can access a queen (owns it OR it's in a shared hive).
 
 ### Policy Pattern
 
-All data tables follow this pattern:
+#### For Apiaries and Queens (Owner-Only Modification)
 
 **SELECT** - User can view if they own it OR have team access:
 ```sql
@@ -175,20 +196,58 @@ TO authenticated
 USING (can_access_[entity](id, auth.uid()));
 ```
 
-**INSERT** - User must own the record AND have access to parent entities:
+**INSERT/UPDATE/DELETE** - ONLY owners can modify:
 ```sql
-CREATE POLICY "Users can insert [table] for accessible entities"
+CREATE POLICY "Users can update their own [table]"
+ON [table] FOR UPDATE
+TO authenticated
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+```
+
+#### For Hives (Team Members Can Update Configuration)
+
+**UPDATE** - Owners OR team members with access can update:
+```sql
+CREATE POLICY "Users can update accessible hives"
+ON hives FOR UPDATE
+TO authenticated
+USING (can_access_hive(id, auth.uid()))
+WITH CHECK (user_id = auth.uid() OR (can_access_hive(id, auth.uid()) AND user_id = user_id));
+```
+
+**DELETE** - ONLY owners can delete:
+```sql
+CREATE POLICY "Users can delete their own hives"
+ON hives FOR DELETE
+TO authenticated
+USING (user_id = auth.uid());
+```
+
+#### For Inspections/Varroa/Feedings/Harvests (Collaborative with Ownership)
+
+**SELECT** - View all records for accessible hives:
+```sql
+CREATE POLICY "Users can view accessible hive [records]"
+ON [table] FOR SELECT
+TO authenticated
+USING (can_access_hive(hive_id, auth.uid()));
+```
+
+**INSERT** - Team members can create records for accessible hives:
+```sql
+CREATE POLICY "Users can insert [records] for accessible hives"
 ON [table] FOR INSERT
 TO authenticated
 WITH CHECK (
   user_id = auth.uid()
-  AND can_access_[parent](parent_id, auth.uid())
+  AND can_access_hive(hive_id, auth.uid())
 );
 ```
 
-**UPDATE/DELETE** - User can ONLY modify their own records:
+**UPDATE/DELETE** - Can ONLY modify own records:
 ```sql
-CREATE POLICY "Users can update their own [table]"
+CREATE POLICY "Users can update their own [records]"
 ON [table] FOR UPDATE
 TO authenticated
 USING (user_id = auth.uid())
@@ -324,9 +383,12 @@ SELECT
 - ✓ User B can see team "Bee Squad" (via `team_members`)
 - ✓ User B can see "North Yard" apiary
 - ✓ User B can see all 3 hives in "North Yard"
-- ✓ User B can create inspections for shared hives
-- ✗ User B CANNOT update/delete User A's hives
+- ✓ User B can CREATE inspections for shared hives
+- ✓ User B can UPDATE hive configuration (queen, status, notes)
+- ✓ User B can UPDATE/DELETE their own inspections
+- ✗ User B CANNOT delete User A's hives
 - ✗ User B CANNOT update/delete User A's inspections
+- ✗ User B CANNOT modify queens or apiaries
 
 **SQL Tests**:
 
@@ -354,8 +416,25 @@ SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
 INSERT INTO inspections (hive_id, user_id, inspection_date, ...)
 VALUES ('[hive_id]', '[user_b_id]', NOW(), ...);
 
--- Should FAIL (member cannot update owner's hive)
-UPDATE hives SET name = 'Modified' WHERE id = '[hive_id]';
+-- Should SUCCEED (member can update hive configuration)
+UPDATE hives SET queen_id = '[new_queen_id]', notes = 'Updated by team member'
+WHERE id = '[hive_id]';
+
+-- Should SUCCEED (member can update their own inspection)
+UPDATE inspections SET notes = 'Corrected notes'
+WHERE id = '[user_b_inspection_id]' AND user_id = '[user_b_id]';
+
+-- Should FAIL (member cannot delete owner's hive)
+DELETE FROM hives WHERE id = '[hive_id]';
+-- Error: new row violates row-level security policy
+
+-- Should FAIL (member cannot update owner's inspection)
+UPDATE inspections SET notes = 'Modified'
+WHERE id = '[user_a_inspection_id]';
+-- Error: new row violates row-level security policy
+
+-- Should FAIL (member cannot modify queens)
+UPDATE queens SET notes = 'Modified' WHERE id = '[queen_id]';
 -- Error: new row violates row-level security policy
 ```
 
@@ -582,28 +661,27 @@ SELECT * FROM hives WHERE apiary_id = '[north_yard_id]';
 - Indexes exist on foreign keys (team_id, apiary_id, hive_id, user_id)
 - Consider adding materialized views for very large installations
 
-### 3. No Write Access for Team Members
+### 3. Collaborative Write Model
 
-**Issue**: Team members have READ-ONLY access to shared data.
+**Behavior**: Team members have selective write access for collaborative beekeeping.
 
-**Impact**: Team members cannot add inspections, feedings, etc. to shared hives.
+**What Team Members CAN Do**:
+- CREATE new inspection records (inspections, varroa checks/treatments, feedings, harvests)
+- UPDATE hive configuration (queen assignment, status, notes)
+- UPDATE/DELETE their own inspection records
 
-**Status**: This is BY DESIGN for v1 of the feature.
+**What Team Members CANNOT Do**:
+- Delete hives (only owners can remove hives)
+- Modify queens or apiaries (owner-only)
+- UPDATE/DELETE other members' inspection records (only your own)
 
-**Future Enhancement**: Could add role-based write permissions:
-- Team "admins" could have write access
-- Configurable per-apiary permissions
-- Owner approval workflow for member changes
+**Rationale**:
+- Enables true collaborative hive management
+- Team members can contribute inspection data
+- Protects data integrity (can't delete hives or change ownership)
+- Maintains accountability (each record has a creator user_id)
 
-**Workaround**: The INSERT policies allow team members to create records for accessible hives:
-```sql
-WITH CHECK (
-  user_id = auth.uid()
-  AND can_access_hive(hive_id, auth.uid())
-);
-```
-
-This means members CAN create inspections/feedings/etc. for shared hives, but they will own those records (user_id = their id).
+**Status**: This is the IMPLEMENTED model for team collaboration.
 
 ### 4. Deleted Team Members Retain Their Data
 
@@ -685,13 +763,13 @@ This works but requires a subquery on each policy check.
 | team_invitations | Invitee OR Owner | Owner | Owner OR Invitee | Owner | Invitee can accept/decline |
 | team_apiaries | Owner OR Member OR Apiary Owner | Apiary Owner + Team Owner | - | Team Owner OR Apiary Owner | Link table |
 | apiaries | Owner OR Shared | Owner | Owner | Owner | Shared via team_apiaries |
-| hives | Owner OR Shared | Owner | Owner | Owner | Shared if apiary shared |
-| queens | Owner OR Shared | Owner | Owner | Owner | Shared if in shared hive |
-| inspections | Owner OR Shared | Self + Access | Self | Self | Can create for shared hives |
-| varroa_treatments | Owner OR Shared | Self + Access | Self | Self | Can create for shared hives |
-| varroa_checks | Owner OR Shared | Self + Access | Self | Self | Can create for shared hives |
-| feedings | Owner OR Shared | Self + Access | Self | Self | Can create for shared hives |
-| harvests | Owner OR Shared | Self + Access | Self | Self | Can create for shared hives |
+| hives | Owner OR Shared | Owner | **Owner OR Access** | Owner | **Team members can update config** |
+| queens | Owner OR Shared | Owner | Owner | Owner | Shared if in shared hive (read-only for members) |
+| inspections | Owner OR Shared | Self + Access | **Self** | **Self** | **Members can modify own records** |
+| varroa_treatments | Owner OR Shared | Self + Access | **Self** | **Self** | **Members can modify own records** |
+| varroa_checks | Owner OR Shared | Self + Access | **Self** | **Self** | **Members can modify own records** |
+| feedings | Owner OR Shared | Self + Access | **Self** | **Self** | **Members can modify own records** |
+| harvests | Owner OR Shared | Self + Access | **Self** | **Self** | **Members can modify own records** |
 | rearing_batches | Owner | Owner | Owner | Owner | Not shared with teams |
 
 **Legend**:
@@ -700,6 +778,7 @@ This works but requires a subquery on each policy check.
 - **Member**: User is a team member
 - **Self**: User's own record
 - **Access**: User has access to parent entity (hive/apiary)
+- **Bold text**: Indicates collaborative write permissions for team members
 
 ---
 

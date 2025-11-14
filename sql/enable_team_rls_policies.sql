@@ -7,10 +7,14 @@
 -- TEAM MODEL ARCHITECTURE:
 -- - Teams are created by owners who can invite members
 -- - Apiaries are shared at the apiary level (not individual hives)
--- - When an apiary is shared via team_apiaries, ALL hives in that apiary become accessible
--- - Team members have READ access to shared data
--- - Only the data owner can WRITE/UPDATE/DELETE their own records
--- - Team owners can manage team membership and share their apiaries
+-- - When an apiary is shared via team_apiaries, ALL ACTIVE hives become accessible
+--
+-- TEAM MEMBER PERMISSIONS:
+-- - Hives: Can UPDATE configuration (e.g., queen assignment, status) but NOT delete
+-- - Inspections/Varroa/Feedings/Harvests: Can CREATE new records, UPDATE/DELETE only their own
+-- - Queens: READ only
+-- - Apiaries: READ only
+-- - Team members can see all historical records but can only modify what they created
 --
 -- IMPORTANT - ARCHIVED HIVES:
 -- - Archived hives (archived_at IS NOT NULL) are EXCLUDED from team sharing
@@ -403,12 +407,17 @@ WITH CHECK (
   )
 );
 
--- UPDATE: Users can only update their own hives
-CREATE POLICY "Users can update their own hives"
+-- UPDATE: Owners can update their hives, team members can update hive configuration
+CREATE POLICY "Users can update accessible hives"
 ON hives FOR UPDATE
 TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
+USING (can_access_hive(id, auth.uid()))
+WITH CHECK (
+  -- Owner can change anything
+  user_id = auth.uid()
+  -- Team members cannot change ownership
+  OR (can_access_hive(id, auth.uid()) AND user_id = user_id)
+);
 
 -- DELETE: Users can only delete their own hives
 CREATE POLICY "Users can delete their own hives"
@@ -767,18 +776,28 @@ BEGIN
   RAISE NOTICE '============================================';
   RAISE NOTICE 'Team collaboration features are now secured with RLS';
   RAISE NOTICE '';
-  RAISE NOTICE 'Key Points:';
-  RAISE NOTICE '  • Team members have READ access to shared apiaries and their ACTIVE hives';
-  RAISE NOTICE '  • ARCHIVED hives are EXCLUDED from team sharing (archived_at IS NOT NULL)';
-  RAISE NOTICE '  • Owners can always see their own archived hives';
-  RAISE NOTICE '  • Only data owners can WRITE/UPDATE/DELETE their own records';
-  RAISE NOTICE '  • Team owners can manage members and share apiaries';
-  RAISE NOTICE '  • All policies enforce proper access control at database level';
+  RAISE NOTICE 'Team Member Permissions:';
+  RAISE NOTICE '  • VIEW: All active hives, queens, and historical records in shared apiaries';
+  RAISE NOTICE '  • CREATE: New inspections, varroa checks/treatments, feedings, harvests';
+  RAISE NOTICE '  • UPDATE: Hive configuration (queen, status, notes)';
+  RAISE NOTICE '  • UPDATE/DELETE: Only their own inspection records';
+  RAISE NOTICE '  • CANNOT: Delete hives, modify queens, see archived hives';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Owner Permissions:';
+  RAISE NOTICE '  • Full CRUD access to all their data (including archived)';
+  RAISE NOTICE '  • Can share/unshare apiaries with teams';
+  RAISE NOTICE '  • Can see all team member contributions';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Security:';
+  RAISE NOTICE '  • ARCHIVED hives excluded from team sharing';
+  RAISE NOTICE '  • Team members cannot transfer ownership';
+  RAISE NOTICE '  • All policies enforced at database level';
   RAISE NOTICE '';
   RAISE NOTICE 'Next Steps:';
   RAISE NOTICE '  1. Test team collaboration with multiple users';
-  RAISE NOTICE '  2. Verify team members can view but not modify shared data';
-  RAISE NOTICE '  3. Verify archived hives are NOT visible to team members';
-  RAISE NOTICE '  4. Ensure owners retain full control of their data';
+  RAISE NOTICE '  2. Verify team members can create and edit their own records';
+  RAISE NOTICE '  3. Verify team members can update hive configuration';
+  RAISE NOTICE '  4. Verify archived hives are NOT visible to team members';
+  RAISE NOTICE '  5. Ensure owners retain full control';
   RAISE NOTICE '============================================';
 END $$;
