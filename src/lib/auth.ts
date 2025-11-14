@@ -159,7 +159,9 @@ export async function isAccountActive(): Promise<boolean> {
     return false
   }
 
-  const isActive = data.is_active === true
+  // Default to true if is_active is null/undefined
+  // Only return false if explicitly set to false
+  const isActive = data.is_active !== false
 
   // Update cache
   accountActiveCache.set(userId, { value: isActive, timestamp: Date.now() })
