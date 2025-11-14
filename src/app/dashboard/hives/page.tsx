@@ -511,14 +511,14 @@ export default function HivesPage() {
       ownershipFilter,
       archiveFilter
     })
-    if (userId && filtersLoaded) {
+    if (userId) {
       console.log('  → Calling fetchHives')
       fetchHives(userId)
     } else {
-      console.log('  → Skipping fetchHives (userId or filtersLoaded is false)')
+      console.log('  → Skipping fetchHives (userId is false)')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownershipFilter, archiveFilter, userId, filtersLoaded])
+  }, [ownershipFilter, archiveFilter, userId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
