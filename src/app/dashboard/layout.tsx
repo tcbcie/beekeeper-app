@@ -42,7 +42,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       setLoading(false)
       router.push('/login')
     }
-  }, [router])
+    // Router is stable from Next.js, safe to not include in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     checkUser()
@@ -92,7 +94,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       authListener.subscription.unsubscribe()
       clearInterval(accountCheckInterval)
     }
-  }, [router, checkUser])
+  }, [checkUser])
 
   if (loading) {
     return (

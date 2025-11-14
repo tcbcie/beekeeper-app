@@ -482,13 +482,19 @@ export default function DashboardPage() {
       const role = await getUserRole()
       setUserRole(role)
 
+      // Call fetch functions directly with the ID
       fetchDashboardData(id)
+    }
+    initUser()
+  }, [router, fetchDashboardData])
+
+  // Separate effect for team data that depends on userId being set
+  useEffect(() => {
+    if (userId) {
       fetchTeams()
       fetchTeamStats()
     }
-    initUser()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router])
+  }, [userId, fetchTeams, fetchTeamStats])
 
   if (loading) return <LoadingSpinner text="Loading dashboard..." />
 
