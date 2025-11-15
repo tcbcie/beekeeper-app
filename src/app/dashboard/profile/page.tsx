@@ -2197,10 +2197,11 @@ export default function ProfilePage() {
       {/* Delete Account Confirmation Modal */}
       {showDeleteAccountModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-red-900 flex items-center gap-2">
-                <Trash2 size={24} className="text-red-600" />
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[85vh] flex flex-col">
+            {/* Header - Sticky */}
+            <div className="flex-shrink-0 border-b border-gray-200 p-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-red-900 flex items-center gap-2">
+                <Trash2 size={20} className="text-red-600" />
                 Delete Account
               </h3>
               <button
@@ -2211,48 +2212,42 @@ export default function ProfilePage() {
                 disabled={deletingAccount}
                 className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
 
-            <div className="mb-6">
-              <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
-                <p className="text-blue-900 font-semibold mb-2">🔒 12-Month Data Retention Policy</p>
-                <p className="text-blue-800 text-sm mb-2">
-                  When you delete your account:
-                </p>
-                <ul className="list-disc list-inside text-blue-800 text-sm space-y-1">
-                  <li><strong>Account is immediately deactivated</strong> - you cannot log in</li>
-                  <li><strong>All your data is preserved for 12 months:</strong> apiaries, hives, queens, inspections, treatments, etc.</li>
-                  <li><strong>Reactivation available:</strong> Submit a request at any time within 12 months</li>
-                  <li><strong>Admin review:</strong> An administrator will review and approve your reactivation request</li>
-                  <li><strong>Full data recovery:</strong> Once approved, you regain complete access to all your data</li>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {/* What Happens */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-blue-900 font-semibold text-sm mb-1.5">What Happens:</p>
+                <ul className="text-blue-800 text-xs space-y-1">
+                  <li>• Account deactivated immediately</li>
+                  <li>• Data retained for 12 months</li>
+                  <li>• Reactivation available anytime</li>
                 </ul>
               </div>
 
-              <div className="bg-red-50 border border-red-300 rounded-lg p-4 mb-4">
-                <p className="text-red-900 font-semibold mb-2">⚠️ Permanent Deletion After 12 Months</p>
-                <p className="text-red-800 text-sm mb-2">
-                  If you do not reactivate your account within 12 months:
-                </p>
-                <ul className="list-disc list-inside text-red-800 text-sm space-y-1">
-                  <li><strong>All data will be permanently deleted</strong></li>
-                  <li><strong>This includes:</strong> All hives, queens, inspections, varroa records, feedings, harvests, and team data</li>
-                  <li><strong>Cannot be recovered:</strong> Permanent deletion cannot be undone</li>
-                  <li><strong>No exceptions:</strong> Data cannot be retrieved after the 12-month period</li>
-                </ul>
-              </div>
-
-              <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
-                <p className="text-amber-900 font-semibold mb-1">📋 Recommended: Export Your Data</p>
-                <p className="text-amber-800 text-sm">
-                  Before deleting your account, we strongly recommend exporting your data using the &quot;Export as JSON&quot; or &quot;Export as CSV&quot; buttons in the Data Export section above. This ensures you have a backup even after permanent deletion.
+              {/* After 12 Months */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-900 font-semibold text-sm mb-1.5">⚠️ After 12 Months:</p>
+                <p className="text-red-800 text-xs">
+                  All data permanently deleted. Cannot be recovered.
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Type <span className="font-mono bg-gray-100 px-2 py-1 rounded text-red-600">DELETE</span> to confirm:
+              {/* Export Recommendation */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-amber-900 font-semibold text-sm mb-1.5">💡 Recommended:</p>
+                <p className="text-amber-800 text-xs">
+                  Export your data first (JSON/CSV options above)
+                </p>
+              </div>
+
+              {/* Confirmation Input */}
+              <div className="pt-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                  Type <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-red-600 text-xs">DELETE</span> to confirm:
                 </label>
                 <input
                   type="text"
@@ -2260,13 +2255,14 @@ export default function ProfilePage() {
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Type DELETE here"
                   disabled={deletingAccount}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   autoComplete="off"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {/* Footer - Sticky */}
+            <div className="flex-shrink-0 border-t border-gray-200 p-4 flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteAccountModal(false)
