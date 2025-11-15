@@ -254,7 +254,7 @@ CREATE POLICY "Users can view their invitations"
 ON team_invitations FOR SELECT
 TO authenticated
 USING (
-  invitee_email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  email = (SELECT email FROM auth.users WHERE id = auth.uid())
   OR is_team_owner(team_id, auth.uid())
 );
 
@@ -277,8 +277,8 @@ WITH CHECK (is_team_owner(team_id, auth.uid()));
 CREATE POLICY "Invitees can update their invitations"
 ON team_invitations FOR UPDATE
 TO authenticated
-USING (invitee_email = (SELECT email FROM auth.users WHERE id = auth.uid()))
-WITH CHECK (invitee_email = (SELECT email FROM auth.users WHERE id = auth.uid()));
+USING (email = (SELECT email FROM auth.users WHERE id = auth.uid()))
+WITH CHECK (email = (SELECT email FROM auth.users WHERE id = auth.uid()));
 
 -- DELETE: Team owners can delete invitations
 CREATE POLICY "Team owners can delete invitations"
