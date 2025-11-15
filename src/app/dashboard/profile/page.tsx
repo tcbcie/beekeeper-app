@@ -398,7 +398,7 @@ export default function ProfilePage() {
       await supabase.auth.signOut()
 
       // Show success message with reactivation info
-      alert('Your account has been deactivated.\n\nAll your data has been preserved. You can request account reactivation at any time from the login page.')
+      alert('Your account has been deleted.\n\n✅ Data Retention:\n• All your data will be retained for 12 months\n• You can request reactivation at any time within this period\n• Visit the login page and use the reactivation option\n\n⚠️ Important:\n• If you do not reactivate within 12 months, all data will be permanently deleted\n• After permanent deletion, your data cannot be recovered')
 
       // Redirect to login page
       router.push('/login')
@@ -2182,26 +2182,26 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
           <div>
             <div className="font-medium text-red-900">Delete Account</div>
-            <div className="text-sm text-red-700">Deactivate your account (can be reactivated later)</div>
+            <div className="text-sm text-red-700">Delete your account - data retained for 12 months</div>
           </div>
           <button
             onClick={() => setShowDeleteAccountModal(true)}
             className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
           >
             <Trash2 size={16} />
-            Deactivate Account
+            Delete Account
           </button>
         </div>
       </div>
 
-      {/* Deactivate Account Confirmation Modal */}
+      {/* Delete Account Confirmation Modal */}
       {showDeleteAccountModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-red-900 flex items-center gap-2">
                 <Trash2 size={24} className="text-red-600" />
-                Deactivate Account
+                Delete Account
               </h3>
               <button
                 onClick={() => {
@@ -2217,22 +2217,36 @@ export default function ProfilePage() {
 
             <div className="mb-6">
               <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4">
-                <p className="text-blue-900 font-semibold mb-2">Account Deactivation</p>
+                <p className="text-blue-900 font-semibold mb-2">🔒 12-Month Data Retention Policy</p>
                 <p className="text-blue-800 text-sm mb-2">
-                  Deleting your account will deactivate it and prevent you from logging in. However:
+                  When you delete your account:
                 </p>
                 <ul className="list-disc list-inside text-blue-800 text-sm space-y-1">
-                  <li><strong>All your data will be preserved:</strong> apiaries, hives, queens, inspections, treatments, etc.</li>
-                  <li><strong>Your account can be reactivated</strong> by visiting the reactivation page and submitting a request</li>
-                  <li><strong>An administrator will review</strong> your reactivation request</li>
-                  <li><strong>Once approved,</strong> you&apos;ll regain full access to all your data</li>
+                  <li><strong>Account is immediately deactivated</strong> - you cannot log in</li>
+                  <li><strong>All your data is preserved for 12 months:</strong> apiaries, hives, queens, inspections, treatments, etc.</li>
+                  <li><strong>Reactivation available:</strong> Submit a request at any time within 12 months</li>
+                  <li><strong>Admin review:</strong> An administrator will review and approve your reactivation request</li>
+                  <li><strong>Full data recovery:</strong> Once approved, you regain complete access to all your data</li>
+                </ul>
+              </div>
+
+              <div className="bg-red-50 border border-red-300 rounded-lg p-4 mb-4">
+                <p className="text-red-900 font-semibold mb-2">⚠️ Permanent Deletion After 12 Months</p>
+                <p className="text-red-800 text-sm mb-2">
+                  If you do not reactivate your account within 12 months:
+                </p>
+                <ul className="list-disc list-inside text-red-800 text-sm space-y-1">
+                  <li><strong>All data will be permanently deleted</strong></li>
+                  <li><strong>This includes:</strong> All hives, queens, inspections, varroa records, feedings, harvests, and team data</li>
+                  <li><strong>Cannot be recovered:</strong> Permanent deletion cannot be undone</li>
+                  <li><strong>No exceptions:</strong> Data cannot be retrieved after the 12-month period</li>
                 </ul>
               </div>
 
               <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
-                <p className="text-amber-900 font-semibold mb-1">📋 Optional: Export Your Data</p>
+                <p className="text-amber-900 font-semibold mb-1">📋 Recommended: Export Your Data</p>
                 <p className="text-amber-800 text-sm">
-                  Before deactivating, you may want to export your data using the &quot;Export as JSON&quot; or &quot;Export as CSV&quot; buttons in the Data Export section above.
+                  Before deleting your account, we strongly recommend exporting your data using the &quot;Export as JSON&quot; or &quot;Export as CSV&quot; buttons in the Data Export section above. This ensures you have a backup even after permanent deletion.
                 </p>
               </div>
 
@@ -2271,12 +2285,12 @@ export default function ProfilePage() {
                 {deletingAccount ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    Deactivating Account...
+                    Deleting Account...
                   </>
                 ) : (
                   <>
                     <Trash2 size={16} />
-                    Deactivate Account
+                    Delete Account
                   </>
                 )}
               </button>
