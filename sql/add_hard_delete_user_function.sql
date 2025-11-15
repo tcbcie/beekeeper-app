@@ -62,7 +62,7 @@ BEGIN
     'team_invitations_sent', (SELECT COUNT(*) FROM team_invitations WHERE invited_by = p_user_id),
     'team_invitations_received', (SELECT COUNT(*) FROM team_invitations WHERE email = v_profile.email OR email = v_profile.original_email),
     'subscription_history', (SELECT COUNT(*) FROM subscription_history WHERE user_id = p_user_id),
-    'reactivation_requests', (SELECT COUNT(*) FROM account_reactivation_requests WHERE user_id = p_user_id)
+    'reactivation_requests', (SELECT COUNT(*) FROM reactivation_requests WHERE user_id = p_user_id)
   ) INTO v_counts;
 
   -- HARD DELETE - POINT OF NO RETURN
@@ -80,7 +80,7 @@ BEGIN
      OR (v_profile.original_email IS NOT NULL AND email = v_profile.original_email);
 
   -- Delete reactivation requests
-  DELETE FROM account_reactivation_requests WHERE user_id = p_user_id;
+  DELETE FROM reactivation_requests WHERE user_id = p_user_id;
 
   -- Try to delete subscription history (this might fail if RESTRICT constraint exists)
   BEGIN
