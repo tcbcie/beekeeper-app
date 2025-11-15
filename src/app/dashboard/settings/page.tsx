@@ -773,6 +773,59 @@ export default function SettingsPage() {
     }
   }
 
+  const handleHardDeleteUser = async (targetUserId: string, userEmail: string) => {
+    if (targetUserId === userId) {
+      alert('You cannot delete your own account.')
+      return
+    }
+
+    // First confirmation
+    if (!confirm(`🚨 PERMANENT DELETION WARNING 🚨\n\nYou are about to PERMANENTLY DELETE user "${userEmail}".\n\n❌ HARD DELETE - Destroys ALL data:\n• User profile and account\n• All apiaries, hives, queens\n• All inspections and records\n• All varroa checks/treatments\n• All feedings and harvests\n• All teams owned\n• All team memberships\n• ALL subscription history\n• ALL payment records\n\n⚠️ THIS CANNOT BE UNDONE!\n⚠️ THIS IS PERMANENT!\n⚠️ ALL DATA WILL BE LOST FOREVER!\n\nAre you ABSOLUTELY SURE?`)) {
+      return
+    }
+
+    // Second confirmation to prevent accidents
+    if (!confirm(`⛔ FINAL WARNING ⛔\n\nThis is your last chance to cancel.\n\nDeleting "${userEmail}" will:\n• Remove ALL their data from the database\n• Delete their authentication account\n• Cannot be recovered or restored\n• Violates no regulatory retention requirements\n\nOnly proceed if:\n✓ This is a GDPR/data deletion request\n✓ This is a confirmed spam/test account\n✓ You have written authorization\n\nType YES in the next prompt to confirm permanent deletion.`)) {
+      return
+    }
+
+    // Final typed confirmation
+    const confirmation = prompt(`Type "DELETE ${userEmail}" exactly to confirm permanent deletion:`)
+    if (confirmation !== `DELETE ${userEmail}`) {
+      alert('Deletion cancelled - confirmation text did not match.')
+      return
+    }
+
+    try {
+      console.log('💀 HARD deleting user:', { targetUserId, userEmail })
+
+      // Call hard_delete_user function
+      const { data, error } = await supabase
+        .rpc('hard_delete_user', {
+          p_user_id: targetUserId
+        })
+
+      if (error) throw error
+
+      if (data && !data.success) {
+        alert(`Failed to hard delete user: ${data.message}`)
+        return
+      }
+
+      // Show what was deleted
+      const counts = data.deleted_counts || {}
+      alert(`💀 User "${userEmail}" has been PERMANENTLY DELETED!\n\n🗑️ Deleted Records:\n• Apiaries: ${counts.apiaries || 0}\n• Hives: ${counts.hives || 0}\n• Queens: ${counts.queens || 0}\n• Inspections: ${counts.inspections || 0}\n• Varroa Checks: ${counts.varroa_checks || 0}\n• Varroa Treatments: ${counts.varroa_treatments || 0}\n• Feedings: ${counts.feedings || 0}\n• Harvests: ${counts.harvests || 0}\n• Rearing Batches: ${counts.rearing_batches || 0}\n• Teams Owned: ${counts.teams_owned || 0}\n• Team Memberships: ${counts.team_memberships || 0}\n• Subscription History: ${counts.subscription_history || 0}\n\n⚠️ This data is gone forever and cannot be recovered.`)
+
+      // Refresh both user lists
+      fetchUsers()
+      fetchDeletedUsers()
+    } catch (error) {
+      console.error('❌ Error hard deleting user:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to hard delete user: ${errorMessage}`)
+    }
+  }
+
   // Fetch users when user management section is opened
   useEffect(() => {
     if (showUserManagement) {
@@ -2935,15 +2988,26 @@ export default function SettingsPage() {
                                   </select>
 
                                   {showDeletedUsers ? (
-                                    /* Restore Button for Deleted Users */
-                                    <button
-                                      onClick={() => handleRestoreUser(user.id, user.email || 'Unknown')}
-                                      disabled={restoringUserId === user.id}
-                                      className="px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-xs disabled:opacity-50"
-                                      title="Restore user account"
-                                    >
-                                      {restoringUserId === user.id ? 'Restoring...' : 'Restore'}
-                                    </button>
+                                    <>
+                                      {/* Restore Button for Deleted Users */}
+                                      <button
+                                        onClick={() => handleRestoreUser(user.id, user.email || 'Unknown')}
+                                        disabled={restoringUserId === user.id}
+                                        className="px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-xs disabled:opacity-50"
+                                        title="Restore user account"
+                                      >
+                                        {restoringUserId === user.id ? 'Restoring...' : 'Restore'}
+                                      </button>
+
+                                      {/* Hard Delete Button for Deleted Users */}
+                                      <button
+                                        onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
+                                        className="p-0.5 bg-black text-white rounded hover:bg-gray-800"
+                                        title="Permanently Delete (CANNOT BE UNDONE)"
+                                      >
+                                        <Trash2 size={12} className="text-red-500" />
+                                      </button>
+                                    </>
                                   ) : (
                                     <>
                                       {/* Enable/Disable Button */}
@@ -2957,13 +3021,22 @@ export default function SettingsPage() {
                                         {user.is_active !== false ? 'Off' : 'On'}
                                       </button>
 
-                                      {/* Delete Button */}
+                                      {/* Soft Delete Button */}
                                       <button
                                         onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
                                         className="p-0.5 bg-red-600 text-white rounded hover:bg-red-700"
-                                        title="Delete"
+                                        title="Soft Delete (Recoverable)"
                                       >
                                         <Trash2 size={12} />
+                                      </button>
+
+                                      {/* Hard Delete Button */}
+                                      <button
+                                        onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
+                                        className="p-0.5 bg-black text-white rounded hover:bg-gray-800"
+                                        title="Hard Delete (PERMANENT)"
+                                      >
+                                        <Trash2 size={12} className="text-red-500" />
                                       </button>
                                     </>
                                   )}
