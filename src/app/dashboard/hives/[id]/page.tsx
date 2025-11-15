@@ -40,6 +40,9 @@ interface Hive {
   archived_at?: string | null
   archive_reason_id?: string | null
   archive_notes?: string | null
+  archive_reason_value?: {
+    value?: string
+  }
   apiaries?: {
     name: string
   }
@@ -151,7 +154,8 @@ export default function HiveDetailPage() {
         .from('hives')
         .select(`
           *,
-          apiaries(name)
+          apiaries(name),
+          archive_reason_value:dropdown_values!archive_reason_id(value)
         `)
         .eq('id', hiveId)
         .single()
@@ -417,6 +421,24 @@ export default function HiveDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Colony Established:</span>
                   <span className="font-medium text-xs">{new Date(hive.colony_established_date).toLocaleDateString()}</span>
+                </div>
+              )}
+              {hive.archived_at && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Archived:</span>
+                  <span className="font-medium text-xs">{new Date(hive.archived_at).toLocaleDateString()}</span>
+                </div>
+              )}
+              {hive.archived_at && hive.archive_reason_value?.value && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Archive Reason:</span>
+                  <span className="font-medium text-xs">{hive.archive_reason_value.value}</span>
+                </div>
+              )}
+              {hive.archived_at && hive.archive_notes && (
+                <div className="pt-2">
+                  <span className="text-gray-600 block mb-1 text-xs">Archive Notes:</span>
+                  <span className="text-gray-700 text-xs italic">{hive.archive_notes}</span>
                 </div>
               )}
             </div>
