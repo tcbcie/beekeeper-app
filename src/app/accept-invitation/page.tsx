@@ -15,6 +15,10 @@ function AcceptInvitationContent() {
   const [userId, setUserId] = useState<string | null>(null)
   const [checkedAuth, setCheckedAuth] = useState(false)
   const [invitedEmail, setInvitedEmail] = useState<string>('')
+  const [needsPassword, setNeedsPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [teamName, setTeamName] = useState<string>('')
 
   // First useEffect: Check authentication status
   useEffect(() => {
@@ -53,9 +57,12 @@ function AcceptInvitationContent() {
         // We need to fetch this before auth check to get the invited email
         const { data: invitation, error: invitationError } = await supabase
           .from('team_invitations')
-          .select('*, teams(name)')
+          .select(`
+            *,
+            teams!inner(name)
+          `)
           .eq('id', invitationId)
-          .maybeSingle()
+          .single()
 
         console.log('📦 Invitation data:', invitation)
         console.log('❌ Invitation error:', invitationError)
@@ -85,6 +92,13 @@ function AcceptInvitationContent() {
 
         console.log('✅ Invitation found:', invitation.id, 'Status:', invitation.status)
 
+        // Extract team name (handle both object and array responses from Supabase)
+        const extractedTeamName = Array.isArray(invitation.teams)
+          ? invitation.teams[0]?.name
+          : invitation.teams?.name
+
+        setTeamName(extractedTeamName || 'the team')
+
         // Check if invitation has expired
         const expiresAt = new Date(invitation.expires_at)
         if (expiresAt < new Date()) {
@@ -105,7 +119,7 @@ function AcceptInvitationContent() {
         // Check if invitation is already accepted
         if (invitation.status === 'accepted') {
           setStatus('already-accepted')
-          setMessage(`You have already accepted the invitation to join ${invitation.teams?.name}`)
+          setMessage(`You have already accepted the invitation to join ${extractedTeamName || 'this team'}`)
           setLoading(false)
           return
         }
@@ -130,7 +144,7 @@ function AcceptInvitationContent() {
             setMessage('Failed to send verification email. Please try again.')
           } else {
             setStatus('magic-link-sent')
-            setMessage(`We've sent a verification link to ${invitation.email}. Click the link in the email to join ${invitation.teams?.name}.`)
+            setMessage(`We've sent a verification link to ${invitation.email}. Click the link in the email to join ${extractedTeamName || 'the team'}.`)
           }
 
           setLoading(false)
@@ -138,6 +152,20 @@ function AcceptInvitationContent() {
         }
 
         console.log('👤 Current user ID:', userId)
+
+        // Check if user just authenticated via magic link and needs to set password
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+        const hasPassword = currentUser?.app_metadata?.provider === 'email' &&
+                           currentUser?.user_metadata?.email_verified
+
+        // If user was created via magic link, they need to set a password
+        if (!hasPassword && currentUser?.email === invitation.email) {
+          console.log('🔐 User needs to set password')
+          setInvitedEmail(invitation.email)
+          setNeedsPassword(true)
+          setLoading(false)
+          return
+        }
 
         // Add user to team FIRST (before updating invitation status)
         const { error: memberError } = await supabase
@@ -152,7 +180,7 @@ function AcceptInvitationContent() {
           // Check if user is already a member
           if (memberError.code === '23505') {
             setStatus('already-accepted')
-            setMessage(`You are already a member of ${invitation.teams?.name}`)
+            setMessage(`You are already a member of ${extractedTeamName || 'this team'}`)
           } else {
             throw memberError
           }
@@ -169,7 +197,7 @@ function AcceptInvitationContent() {
           }
 
           setStatus('success')
-          setMessage(`Successfully joined ${invitation.teams?.name}!`)
+          setMessage(`Successfully joined ${extractedTeamName || 'the team'}!`)
         }
 
         setLoading(false)
@@ -190,8 +218,143 @@ function AcceptInvitationContent() {
     acceptInvitation()
   }, [checkedAuth, userId, searchParams, router])
 
+  const handlePasswordSetup = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (password !== confirmPassword) {
+      alert('Passwords do not match')
+      return
+    }
+
+    if (password.length < 8) {
+      alert('Password must be at least 8 characters')
+      return
+    }
+
+    try {
+      // Update user password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password
+      })
+
+      if (updateError) throw updateError
+
+      // Now complete the invitation acceptance
+      const invitationId = searchParams.get('id')
+      if (!invitationId) return
+
+      // Fetch invitation again
+      const { data: invitation } = await supabase
+        .from('team_invitations')
+        .select('*, teams!inner(name)')
+        .eq('id', invitationId)
+        .single()
+
+      if (!invitation) return
+
+      // Add user to team
+      await supabase
+        .from('team_members')
+        .insert({
+          team_id: invitation.team_id,
+          user_id: userId!,
+          role: 'member',
+        })
+
+      // Update invitation status
+      await supabase
+        .from('team_invitations')
+        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .eq('id', invitationId)
+
+      setStatus('success')
+      const extractedTeamName = Array.isArray(invitation.teams)
+        ? invitation.teams[0]?.name
+        : invitation.teams?.name
+      setMessage(`Password set! Successfully joined ${extractedTeamName || 'the team'}!`)
+      setNeedsPassword(false)
+
+      // Redirect to dashboard
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+
+    } catch (error) {
+      console.error('Error setting password:', error)
+      alert('Failed to set password. Please try again.')
+    }
+  }
+
   if (loading) {
     return <LoadingSpinner text="Processing invitation..." />
+  }
+
+  // Show password setup form if needed
+  if (needsPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+          <div className="text-center mb-6">
+            <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Set Your Password</h1>
+            <p className="text-gray-600">
+              Welcome to {teamName}! Please set a password to secure your account.
+            </p>
+          </div>
+
+          <form onSubmit={handlePasswordSetup} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={invitedEmail}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password *
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="At least 8 characters"
+                required
+                minLength={8}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password *
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Re-enter your password"
+                required
+                minLength={8}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              Set Password & Join Team
+            </button>
+          </form>
+        </div>
+      </div>
+    )
   }
 
   return (
