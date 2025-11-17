@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface Queen {
   id: string
+  user_id: string
   queen_number: string
   birth_date: string
   marking_color: string
@@ -110,6 +111,7 @@ export default function QueensPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingQueen, setEditingQueen] = useState<Queen | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
@@ -403,11 +405,24 @@ export default function QueensPage() {
     a.click()
   }
 
-  const filteredQueens = queens.filter(
-    (q) =>
+  const filteredQueens = queens.filter((q) => {
+    // Apply search filter
+    const matchesSearch =
       q.queen_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (q.subspecies && q.subspecies.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+
+    if (!matchesSearch) return false
+
+    // Apply ownership filter
+    if (ownershipFilter === 'my') {
+      return q.user_id === userId
+    } else if (ownershipFilter === 'team') {
+      return q.user_id !== userId
+    } else {
+      // 'all' shows both
+      return true
+    }
+  })
 
   const colorOptions = ['White', 'Yellow', 'Red', 'Green', 'Blue', 'None']
 
@@ -608,8 +623,8 @@ export default function QueensPage() {
       )}
 
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="mb-4">
-          <div className="relative">
+        <div className="mb-4 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               size={20}
@@ -622,6 +637,15 @@ export default function QueensPage() {
               className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg"
             />
           </div>
+          <select
+            value={ownershipFilter}
+            onChange={(e) => setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')}
+            className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all"
+          >
+            <option value="my">My Queens</option>
+            <option value="team">Team Queens</option>
+            <option value="all">All Queens</option>
+          </select>
         </div>
 
         <div className="overflow-x-auto">
