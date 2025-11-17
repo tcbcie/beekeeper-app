@@ -1632,6 +1632,12 @@ export default function InspectionsPage() {
         return false
       }
 
+      // Filter by ownership - archive records are always user's own records
+      // So exclude them when filtering for 'team' records
+      if (ownershipFilter === 'team' && record.record_type === 'archive') {
+        return false
+      }
+
       // Filter by apiary (checks if the record's hive belongs to the selected apiary)
       // Using Map lookup for O(1) instead of O(n)
       if (filterApiaryId) {
@@ -1668,7 +1674,7 @@ export default function InspectionsPage() {
 
       return true
     })
-  }, [allRecords, recordTypeFilter, filterApiaryId, filterHiveId, timePeriod, customStartDate, customEndDate, hiveMap, dateRangeStart])
+  }, [allRecords, recordTypeFilter, ownershipFilter, filterApiaryId, filterHiveId, timePeriod, customStartDate, customEndDate, hiveMap, dateRangeStart])
 
   if (loading) return <LoadingSpinner text="Loading records..." />
 
