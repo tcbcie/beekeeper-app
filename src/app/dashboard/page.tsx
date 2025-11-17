@@ -596,12 +596,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Team Statistics Cards - Shared by Me */}
+      {/* Team Statistics Cards - Shared by Me - Compact Version */}
       {isTeamMember && hasMySharedData && (
-        <div>
+        <div className="bg-white rounded-lg shadow p-4 border-2 border-blue-200">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Users size={20} className="text-blue-600" />
+            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <Users size={18} className="text-blue-600" />
               Shared by Me
             </h2>
             <button
@@ -611,58 +611,56 @@ export default function DashboardPage() {
                 }
                 setShowMySharedDetails(!showMySharedDetails)
               }}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
             >
-              {showMySharedDetails ? 'Hide Details' : 'Show Details'}
+              {showMySharedDetails ? 'Hide' : 'Show'} Details
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {mySharedCards.map((card) => (
-              <StatCard
-                key={card.label}
-                label={card.label}
-                value={card.value}
-                icon={card.icon}
-                color={card.color}
-              />
+              <div key={card.label} className="flex flex-col">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-lg">{card.icon}</span>
+                  <span className="text-xs text-gray-600">{card.label}</span>
+                </div>
+                <span className="text-2xl font-bold text-gray-900">{card.value}</span>
+              </div>
             ))}
           </div>
 
-          {/* Team Members Detail View */}
+          {/* Team Members Detail View - Compact */}
           {showMySharedDetails && (
-            <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-              <h3 className="text-md font-semibold text-gray-900 mb-4">Team Members with Access</h3>
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Team Members with Access</h3>
               {loadingTeamMembers ? (
                 <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-600 border-t-transparent"></div>
                 </div>
               ) : mySharedTeamMembers.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
                   {mySharedTeamMembers.map((member) => (
-                    <div key={`${member.team_id}-${member.user_id}`} className="bg-white border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">
-                            {member.profiles?.full_name || 'Unknown User'}
-                          </h4>
-                          <p className="text-sm text-gray-600">{member.profiles?.email}</p>
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
-                              {member.teams?.name || 'Unknown Team'}
-                            </span>
-                            <span className={`text-xs px-2 py-1 rounded font-medium ${
-                              member.role === 'owner' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {member.role}
-                            </span>
-                          </div>
-                        </div>
+                    <div key={`${member.team_id}-${member.user_id}`} className="bg-white border border-blue-200 rounded-lg p-2.5 flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 text-sm truncate">
+                          {member.profiles?.full_name || 'Unknown User'}
+                        </h4>
+                        <p className="text-xs text-gray-600 truncate">{member.profiles?.email}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                        <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-medium">
+                          {member.teams?.name || 'Unknown'}
+                        </span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                          member.role === 'owner' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {member.role}
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-600 text-center py-4">No team members found</p>
+                <p className="text-gray-600 text-center py-4 text-sm">No team members found</p>
               )}
             </div>
           )}
