@@ -385,6 +385,7 @@ export default function InspectionsPage() {
 
     // Optimize: Get shared hive IDs using a single query with joins
     // This replaces 3 sequential queries with 1 query
+    // Exclude hives owned by the current user (team filter = other team members' hives only)
     const { data: sharedHiveData } = await supabase
       .from('team_members')
       .select(`
@@ -393,7 +394,7 @@ export default function InspectionsPage() {
           team_apiaries!inner(
             apiary_id,
             apiaries!inner(
-              hives!inner(id)
+              hives!inner(id, user_id)
             )
           )
         )
@@ -401,13 +402,14 @@ export default function InspectionsPage() {
       .eq('user_id', currentUserId)
 
     // Extract shared hive IDs from the nested structure
+    // Exclude hives owned by the current user
     const sharedHiveIds: string[] = []
     if (sharedHiveData) {
       type TeamData = {
         teams?: {
           team_apiaries?: Array<{
             apiaries?: {
-              hives?: Array<{ id: string }>
+              hives?: Array<{ id: string; user_id: string }>
             }
           }>
         }
@@ -417,7 +419,8 @@ export default function InspectionsPage() {
           tm.teams.team_apiaries.forEach(ta => {
             if (ta.apiaries?.hives) {
               ta.apiaries.hives.forEach(h => {
-                if (h.id) sharedHiveIds.push(h.id)
+                // Only include hives NOT owned by current user
+                if (h.id && h.user_id !== currentUserId) sharedHiveIds.push(h.id)
               })
             }
           })
