@@ -10,10 +10,11 @@ function AcceptInvitationContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<'success' | 'error' | 'expired' | 'already-accepted'>('success')
+  const [status, setStatus] = useState<'success' | 'error' | 'expired' | 'already-accepted' | 'magic-link-sent'>('success')
   const [message, setMessage] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [checkedAuth, setCheckedAuth] = useState(false)
+  const [invitedEmail, setInvitedEmail] = useState<string>('')
 
   // First useEffect: Check authentication status
   useEffect(() => {
@@ -45,17 +46,11 @@ function AcceptInvitationContent() {
       console.log('Processing invitation ID:', invitationId)
 
       try {
-        // If no user, redirect to login
-        if (!userId) {
-          setLoading(false)
-          router.push(`/login?redirect=/accept-invitation?id=${invitationId}`)
-          return
-        }
-
-        // Fetch invitation details
+        // Fetch invitation details first (before checking auth)
         console.log('🔍 Fetching invitation with ID:', invitationId)
-        console.log('👤 Current user ID:', userId)
 
+        // Use service role or admin context to fetch invitation
+        // We need to fetch this before auth check to get the invited email
         const { data: invitation, error: invitationError } = await supabase
           .from('team_invitations')
           .select('*, teams(name)')
@@ -90,14 +85,6 @@ function AcceptInvitationContent() {
 
         console.log('✅ Invitation found:', invitation.id, 'Status:', invitation.status)
 
-        // Check if invitation is already accepted
-        if (invitation.status === 'accepted') {
-          setStatus('already-accepted')
-          setMessage(`You have already accepted the invitation to join ${invitation.teams?.name}`)
-          setLoading(false)
-          return
-        }
-
         // Check if invitation has expired
         const expiresAt = new Date(invitation.expires_at)
         if (expiresAt < new Date()) {
@@ -114,6 +101,43 @@ function AcceptInvitationContent() {
           setLoading(false)
           return
         }
+
+        // Check if invitation is already accepted
+        if (invitation.status === 'accepted') {
+          setStatus('already-accepted')
+          setMessage(`You have already accepted the invitation to join ${invitation.teams?.name}`)
+          setLoading(false)
+          return
+        }
+
+        // If no user, send magic link for auto-registration/login
+        if (!userId) {
+          console.log('👤 No user logged in, sending magic link to:', invitation.email)
+          setInvitedEmail(invitation.email)
+
+          // Send magic link that will redirect back to this invitation
+          const redirectUrl = `${window.location.origin}/accept-invitation?id=${invitationId}`
+          const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+            email: invitation.email,
+            options: {
+              emailRedirectTo: redirectUrl,
+            }
+          })
+
+          if (magicLinkError) {
+            console.error('Error sending magic link:', magicLinkError)
+            setStatus('error')
+            setMessage('Failed to send verification email. Please try again.')
+          } else {
+            setStatus('magic-link-sent')
+            setMessage(`We've sent a verification link to ${invitation.email}. Click the link in the email to join ${invitation.teams?.name}.`)
+          }
+
+          setLoading(false)
+          return
+        }
+
+        console.log('👤 Current user ID:', userId)
 
         // Add user to team FIRST (before updating invitation status)
         const { error: memberError } = await supabase
@@ -194,6 +218,25 @@ function AcceptInvitationContent() {
               >
                 Go to Dashboard
               </button>
+            </>
+          )}
+
+          {status === 'magic-link-sent' && (
+            <>
+              <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h1>
+              <p className="text-gray-600 mb-4">{message}</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left mb-4">
+                <p className="font-medium text-blue-900 mb-2">What happens next:</p>
+                <ol className="list-decimal list-inside space-y-1 text-blue-800">
+                  <li>Check your email inbox ({invitedEmail})</li>
+                  <li>Click the verification link in the email</li>
+                  <li>You&apos;ll be automatically logged in and added to the team</li>
+                </ol>
+              </div>
+              <p className="text-xs text-gray-500">
+                Didn&apos;t receive the email? Check your spam folder or contact the team owner.
+              </p>
             </>
           )}
 
