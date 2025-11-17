@@ -194,9 +194,9 @@ export default function ApiariesPage() {
               <input
                 type="text"
                 value={formData.eircode}
-                onChange={(e) => setFormData({...formData, eircode: e.target.value})}
+                onChange={(e) => setFormData({...formData, eircode: e.target.value.toUpperCase()})}
                 placeholder="e.g., D02 XY45"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md uppercase"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">Required for automatic weather data on inspections</p>

@@ -454,7 +454,7 @@ export default function DashboardPage() {
       // Get team members for these teams (including current user as owner)
       const { data: teamMembers, error: membersError } = await supabase
         .from('team_members')
-        .select('user_id, team_id, role, teams(name), profiles(full_name, email)')
+        .select('user_id, team_id, role, teams(name), profiles!team_members_user_id_fkey(full_name, email)')
         .in('team_id', teamIds)
 
       console.log('👤 Team members raw:', teamMembers)
