@@ -451,22 +451,46 @@ export default function DashboardPage() {
         return
       }
 
-      // Get team members for these teams (including current user as owner)
+      // Get team members for these teams (without profiles join)
       const { data: teamMembers, error: membersError } = await supabase
         .from('team_members')
-        .select('user_id, team_id, role, teams(name), profiles!team_members_user_id_fkey(full_name, email)')
+        .select('user_id, team_id, role, teams(name)')
         .in('team_id', teamIds)
 
       console.log('👤 Team members raw:', teamMembers)
       if (membersError) throw membersError
 
-      // Transform the data to match our interface (Supabase returns arrays for relations)
-      const transformedMembers: TeamMember[] = (teamMembers || []).map((member) => ({
+      if (!teamMembers || teamMembers.length === 0) {
+        setMySharedTeamMembers([])
+        setLoadingTeamMembers(false)
+        return
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(teamMembers.map(m => m.user_id))]
+      console.log('👥 User IDs to fetch:', userIds)
+
+      // Fetch profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds)
+
+      console.log('👤 Profiles data:', profilesData)
+      if (profilesError) throw profilesError
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.id, { full_name: p.full_name, email: p.email }])
+      )
+
+      // Transform the data to match our interface
+      const transformedMembers: TeamMember[] = teamMembers.map((member) => ({
         user_id: member.user_id,
         team_id: member.team_id,
         role: member.role,
         teams: Array.isArray(member.teams) ? member.teams[0] : member.teams,
-        profiles: Array.isArray(member.profiles) ? member.profiles[0] : member.profiles,
+        profiles: profilesMap.get(member.user_id) || { full_name: null, email: 'Unknown' },
       }))
 
       console.log('✅ Transformed members:', transformedMembers)
