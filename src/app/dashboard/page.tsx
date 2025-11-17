@@ -412,17 +412,21 @@ export default function DashboardPage() {
     setLoadingTeamMembers(true)
 
     try {
+      console.log('🔍 Fetching my shared team members...')
+
       // Get apiaries owned by the current user
       const { data: myApiaries, error: apiariesError } = await supabase
         .from('apiaries')
         .select('id, name')
         .eq('user_id', userId)
 
+      console.log('📍 My apiaries:', myApiaries)
       if (apiariesError) throw apiariesError
 
       const myApiaryIds = (myApiaries || []).map(a => a.id)
 
       if (myApiaryIds.length === 0) {
+        console.log('⚠️ No apiaries found for user')
         setMySharedTeamMembers([])
         setLoadingTeamMembers(false)
         return
@@ -434,11 +438,14 @@ export default function DashboardPage() {
         .select('team_id, teams(name)')
         .in('apiary_id', myApiaryIds)
 
+      console.log('🔗 Team apiaries:', teamApiaries)
       if (teamApiariesError) throw teamApiariesError
 
       const teamIds = [...new Set((teamApiaries || []).map(ta => ta.team_id))]
+      console.log('👥 Team IDs:', teamIds)
 
       if (teamIds.length === 0) {
+        console.log('⚠️ No teams sharing these apiaries')
         setMySharedTeamMembers([])
         setLoadingTeamMembers(false)
         return
@@ -450,6 +457,7 @@ export default function DashboardPage() {
         .select('user_id, team_id, role, teams(name), profiles(full_name, email)')
         .in('team_id', teamIds)
 
+      console.log('👤 Team members raw:', teamMembers)
       if (membersError) throw membersError
 
       // Transform the data to match our interface (Supabase returns arrays for relations)
@@ -461,9 +469,10 @@ export default function DashboardPage() {
         profiles: Array.isArray(member.profiles) ? member.profiles[0] : member.profiles,
       }))
 
+      console.log('✅ Transformed members:', transformedMembers)
       setMySharedTeamMembers(transformedMembers)
     } catch (error) {
-      console.error('Error fetching team members:', error)
+      console.error('❌ Error fetching team members:', error)
     } finally {
       setLoadingTeamMembers(false)
     }
