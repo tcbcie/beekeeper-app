@@ -59,10 +59,10 @@ function AcceptInvitationContent() {
           .from('team_invitations')
           .select(`
             *,
-            teams!inner(name)
+            teams(name)
           `)
           .eq('id', invitationId)
-          .single()
+          .maybeSingle()
 
         console.log('📦 Invitation data:', invitation)
         console.log('❌ Invitation error:', invitationError)
