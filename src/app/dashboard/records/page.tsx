@@ -515,7 +515,7 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch user's own hive IDs to show all treatments for those hives
+    // Fetch user's own hive IDs
     const { data: ownHivesData } = await supabase
       .from('hives')
       .select('id')
@@ -523,15 +523,59 @@ export default function InspectionsPage() {
 
     const ownHiveIds = ownHivesData?.map(h => h.id) || []
 
-    // Build query to show treatments for all hives owned by current user
+    // Get shared hive IDs (hives in team apiaries)
+    const { data: sharedHiveData } = await supabase
+      .from('team_members')
+      .select(`
+        team_id,
+        teams!inner(
+          team_apiaries!inner(
+            apiary_id,
+            apiaries!inner(
+              hives!inner(id)
+            )
+          )
+        )
+      `)
+      .eq('user_id', currentUserId)
+
+    // Extract shared hive IDs from the nested structure
+    const sharedHiveIds: string[] = []
+    if (sharedHiveData) {
+      type TeamData = {
+        teams?: {
+          team_apiaries?: Array<{
+            apiaries?: {
+              hives?: Array<{ id: string }>
+            }
+          }>
+        }
+      }
+      (sharedHiveData as TeamData[]).forEach(tm => {
+        if (tm.teams?.team_apiaries) {
+          tm.teams.team_apiaries.forEach(ta => {
+            if (ta.apiaries?.hives) {
+              ta.apiaries.hives.forEach(h => {
+                if (h.id) sharedHiveIds.push(h.id)
+              })
+            }
+          })
+        }
+      })
+    }
+
+    // Combine own hives and shared hives
+    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+
+    // Build query to show treatments for all accessible hives
     let query = supabase
       .from('varroa_treatments')
       .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email)')
 
-    if (ownHiveIds.length > 0) {
-      query = query.in('hive_id', ownHiveIds)
+    if (allAccessibleHiveIds.length > 0) {
+      query = query.in('hive_id', allAccessibleHiveIds)
     } else {
-      // No own hives, return empty result
+      // No accessible hives, return empty result
       setVarroaTreatments([])
       return
     }
@@ -547,7 +591,7 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch user's own hive IDs to show all checks for those hives
+    // Fetch user's own hive IDs
     const { data: ownHivesData } = await supabase
       .from('hives')
       .select('id')
@@ -555,15 +599,59 @@ export default function InspectionsPage() {
 
     const ownHiveIds = ownHivesData?.map(h => h.id) || []
 
-    // Build query to show checks for all hives owned by current user
+    // Get shared hive IDs (hives in team apiaries)
+    const { data: sharedHiveData } = await supabase
+      .from('team_members')
+      .select(`
+        team_id,
+        teams!inner(
+          team_apiaries!inner(
+            apiary_id,
+            apiaries!inner(
+              hives!inner(id)
+            )
+          )
+        )
+      `)
+      .eq('user_id', currentUserId)
+
+    // Extract shared hive IDs from the nested structure
+    const sharedHiveIds: string[] = []
+    if (sharedHiveData) {
+      type TeamData = {
+        teams?: {
+          team_apiaries?: Array<{
+            apiaries?: {
+              hives?: Array<{ id: string }>
+            }
+          }>
+        }
+      }
+      (sharedHiveData as TeamData[]).forEach(tm => {
+        if (tm.teams?.team_apiaries) {
+          tm.teams.team_apiaries.forEach(ta => {
+            if (ta.apiaries?.hives) {
+              ta.apiaries.hives.forEach(h => {
+                if (h.id) sharedHiveIds.push(h.id)
+              })
+            }
+          })
+        }
+      })
+    }
+
+    // Combine own hives and shared hives
+    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+
+    // Build query to show checks for all accessible hives
     let query = supabase
       .from('varroa_checks')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
 
-    if (ownHiveIds.length > 0) {
-      query = query.in('hive_id', ownHiveIds)
+    if (allAccessibleHiveIds.length > 0) {
+      query = query.in('hive_id', allAccessibleHiveIds)
     } else {
-      // No own hives, return empty result
+      // No accessible hives, return empty result
       setVarroaChecks([])
       return
     }
@@ -579,7 +667,7 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch user's own hive IDs to show all feedings for those hives
+    // Fetch user's own hive IDs
     const { data: ownHivesData } = await supabase
       .from('hives')
       .select('id')
@@ -587,15 +675,59 @@ export default function InspectionsPage() {
 
     const ownHiveIds = ownHivesData?.map(h => h.id) || []
 
-    // Build query to show feedings for all hives owned by current user
+    // Get shared hive IDs (hives in team apiaries)
+    const { data: sharedHiveData } = await supabase
+      .from('team_members')
+      .select(`
+        team_id,
+        teams!inner(
+          team_apiaries!inner(
+            apiary_id,
+            apiaries!inner(
+              hives!inner(id)
+            )
+          )
+        )
+      `)
+      .eq('user_id', currentUserId)
+
+    // Extract shared hive IDs from the nested structure
+    const sharedHiveIds: string[] = []
+    if (sharedHiveData) {
+      type TeamData = {
+        teams?: {
+          team_apiaries?: Array<{
+            apiaries?: {
+              hives?: Array<{ id: string }>
+            }
+          }>
+        }
+      }
+      (sharedHiveData as TeamData[]).forEach(tm => {
+        if (tm.teams?.team_apiaries) {
+          tm.teams.team_apiaries.forEach(ta => {
+            if (ta.apiaries?.hives) {
+              ta.apiaries.hives.forEach(h => {
+                if (h.id) sharedHiveIds.push(h.id)
+              })
+            }
+          })
+        }
+      })
+    }
+
+    // Combine own hives and shared hives
+    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+
+    // Build query to show feedings for all accessible hives
     let query = supabase
       .from('feedings')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
 
-    if (ownHiveIds.length > 0) {
-      query = query.in('hive_id', ownHiveIds)
+    if (allAccessibleHiveIds.length > 0) {
+      query = query.in('hive_id', allAccessibleHiveIds)
     } else {
-      // No own hives, return empty result
+      // No accessible hives, return empty result
       setFeedings([])
       return
     }
@@ -611,7 +743,7 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch user's own hive IDs to show all harvests for those hives
+    // Fetch user's own hive IDs
     const { data: ownHivesData } = await supabase
       .from('hives')
       .select('id')
@@ -619,15 +751,59 @@ export default function InspectionsPage() {
 
     const ownHiveIds = ownHivesData?.map(h => h.id) || []
 
-    // Build query to show harvests for all hives owned by current user
+    // Get shared hive IDs (hives in team apiaries)
+    const { data: sharedHiveData } = await supabase
+      .from('team_members')
+      .select(`
+        team_id,
+        teams!inner(
+          team_apiaries!inner(
+            apiary_id,
+            apiaries!inner(
+              hives!inner(id)
+            )
+          )
+        )
+      `)
+      .eq('user_id', currentUserId)
+
+    // Extract shared hive IDs from the nested structure
+    const sharedHiveIds: string[] = []
+    if (sharedHiveData) {
+      type TeamData = {
+        teams?: {
+          team_apiaries?: Array<{
+            apiaries?: {
+              hives?: Array<{ id: string }>
+            }
+          }>
+        }
+      }
+      (sharedHiveData as TeamData[]).forEach(tm => {
+        if (tm.teams?.team_apiaries) {
+          tm.teams.team_apiaries.forEach(ta => {
+            if (ta.apiaries?.hives) {
+              ta.apiaries.hives.forEach(h => {
+                if (h.id) sharedHiveIds.push(h.id)
+              })
+            }
+          })
+        }
+      })
+    }
+
+    // Combine own hives and shared hives
+    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+
+    // Build query to show harvests for all accessible hives
     let query = supabase
       .from('harvests')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
 
-    if (ownHiveIds.length > 0) {
-      query = query.in('hive_id', ownHiveIds)
+    if (allAccessibleHiveIds.length > 0) {
+      query = query.in('hive_id', allAccessibleHiveIds)
     } else {
-      // No own hives, return empty result
+      // No accessible hives, return empty result
       setHarvests([])
       return
     }
