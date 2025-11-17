@@ -685,11 +685,11 @@ export default function HivesPage() {
       }
 
       if (editingHive) {
+        // Update hive - RLS policies will handle permissions for both owned and shared hives
         const { error } = await supabase
           .from('hives')
           .update(dataToSubmit)
           .eq('id', editingHive.id)
-          .eq('user_id', userId)
 
         if (error) throw error
       } else {
@@ -773,6 +773,7 @@ export default function HivesPage() {
     if (!confirmed) return
 
     try {
+      // Unarchive hive - RLS policies will handle permissions for both owned and shared hives
       const { error } = await supabase
         .from('hives')
         .update({
@@ -782,7 +783,6 @@ export default function HivesPage() {
           status: 'active'
         })
         .eq('id', hive.id)
-        .eq('user_id', userId)
 
       if (error) {
         console.error('Error unarchiving hive:', error)
