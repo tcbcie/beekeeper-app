@@ -32,6 +32,7 @@ interface Hive {
 interface Apiary {
   id: string
   name: string
+  is_shared?: boolean
 }
 
 interface Inspection {
@@ -924,7 +925,7 @@ export default function InspectionsPage() {
     // Fetch user's own apiaries
     const { data: ownApiaries } = await supabase
       .from('apiaries')
-      .select('id, name')
+      .select('id, name, user_id')
       .eq('user_id', currentUserId)
       .order('name')
 
@@ -940,7 +941,7 @@ export default function InspectionsPage() {
     if (teamIds.length > 0) {
       const { data: teamApiaryData } = await supabase
         .from('team_apiaries')
-        .select('apiary_id, apiaries(id, name)')
+        .select('apiary_id, apiaries(id, name, user_id)')
         .in('team_id', teamIds)
 
       if (teamApiaryData) {
@@ -950,19 +951,24 @@ export default function InspectionsPage() {
             const apiary = Array.isArray(ta.apiaries) ? ta.apiaries[0] : ta.apiaries
             return {
               id: apiary!.id,
-              name: apiary!.name
+              name: apiary!.name,
+              is_shared: apiary!.user_id !== currentUserId // Mark as shared if not owned by current user
             }
           })
+          .filter(apiary => apiary.is_shared) // Only include apiaries not owned by current user
       }
     }
 
-    // Combine own and shared apiaries, removing duplicates
-    const allApiaries = [...(ownApiaries || []), ...sharedApiaries]
-    const uniqueApiaries = Array.from(
-      new Map(allApiaries.map(a => [a.id, a])).values()
-    ).sort((a, b) => a.name.localeCompare(b.name))
+    // Combine own and shared apiaries
+    const allApiaries = [
+      ...(ownApiaries || []).map(a => ({ ...a, is_shared: false })),
+      ...sharedApiaries
+    ]
 
-    setApiaries(uniqueApiaries)
+    // Sort by name
+    const sortedApiaries = allApiaries.sort((a, b) => a.name.localeCompare(b.name))
+
+    setApiaries(sortedApiaries)
   }, [userId])
 
   const fetchCheckMethods = useCallback(async () => {
@@ -2012,7 +2018,9 @@ export default function InspectionsPage() {
           >
             <option value="">All Apiaries</option>
             {apiaries.map((apiary) => (
-              <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+              <option key={apiary.id} value={apiary.id}>
+                {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+              </option>
             ))}
           </select>
           <select
@@ -2449,7 +2457,9 @@ export default function InspectionsPage() {
                   >
                     <option value="">All Apiaries</option>
                     {apiaries.map((apiary) => (
-                      <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                      <option key={apiary.id} value={apiary.id}>
+                        {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -4231,7 +4241,9 @@ export default function InspectionsPage() {
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                  <option key={apiary.id} value={apiary.id}>
+                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -4530,7 +4542,9 @@ export default function InspectionsPage() {
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                  <option key={apiary.id} value={apiary.id}>
+                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -4824,7 +4838,9 @@ export default function InspectionsPage() {
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                  <option key={apiary.id} value={apiary.id}>
+                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -4966,7 +4982,9 @@ export default function InspectionsPage() {
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                  <option key={apiary.id} value={apiary.id}>
+                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+                  </option>
                 ))}
               </select>
             </div>
