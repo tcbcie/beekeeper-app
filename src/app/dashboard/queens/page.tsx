@@ -114,6 +114,7 @@ export default function QueensPage() {
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isTeamMember, setIsTeamMember] = useState(false)
   const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
   const [sourceOptions, setSourceOptions] = useState<string[]>([])
   const [formData, setFormData] = useState<FormData>({
@@ -140,6 +141,9 @@ export default function QueensPage() {
       .eq('user_id', currentUserId)
 
     const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    // Update isTeamMember state based on whether user has any team memberships
+    setIsTeamMember(teamIds.length > 0)
 
     let sharedApiaryIds: string[] = []
     if (teamIds.length > 0) {
@@ -637,15 +641,17 @@ export default function QueensPage() {
               className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg"
             />
           </div>
-          <select
-            value={ownershipFilter}
-            onChange={(e) => setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')}
-            className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all"
-          >
-            <option value="my">My Queens</option>
-            <option value="team">Team Queens</option>
-            <option value="all">All Queens</option>
-          </select>
+          {isTeamMember && (
+            <select
+              value={ownershipFilter}
+              onChange={(e) => setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')}
+              className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all"
+            >
+              <option value="my">My Queens</option>
+              <option value="team">Team Queens</option>
+              <option value="all">All Queens</option>
+            </select>
+          )}
         </div>
 
         <div className="overflow-x-auto">

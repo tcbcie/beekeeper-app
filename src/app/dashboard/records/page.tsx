@@ -297,6 +297,7 @@ export default function InspectionsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isTeamMember, setIsTeamMember] = useState(false)
   const [filterHiveId, setFilterHiveId] = useState<string>('')
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [timePeriod, setTimePeriod] = useState<string>('all')
@@ -619,6 +620,9 @@ export default function InspectionsPage() {
       .eq('user_id', currentUserId)
 
     const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    // Update isTeamMember state based on whether user has any team memberships
+    setIsTeamMember(teamIds.length > 0)
 
     let sharedHives: Hive[] = []
     if (teamIds.length > 0) {
@@ -1705,18 +1709,20 @@ export default function InspectionsPage() {
           )}
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <select
-            value={ownershipFilter}
-            onChange={(e) => {
-              setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
-              fetchInspections()
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-          >
-            <option value="my">My Records</option>
-            <option value="team">Team Records</option>
-            <option value="all">All Records</option>
-          </select>
+          {isTeamMember && (
+            <select
+              value={ownershipFilter}
+              onChange={(e) => {
+                setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
+                fetchInspections()
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+            >
+              <option value="my">My Records</option>
+              <option value="team">Team Records</option>
+              <option value="all">All Records</option>
+            </select>
+          )}
           <select
             value={recordTypeFilter}
             onChange={(e) => {

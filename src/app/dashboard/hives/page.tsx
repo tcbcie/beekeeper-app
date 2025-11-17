@@ -117,6 +117,7 @@ export default function HivesPage() {
   const [editingHive, setEditingHive] = useState<Hive | null>(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isTeamMember, setIsTeamMember] = useState(false)
   const router = useRouter()
 
   // Initialize filters from sessionStorage
@@ -168,6 +169,9 @@ export default function HivesPage() {
       .eq('user_id', currentUserId)
 
     const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    // Update isTeamMember state based on whether user has any team memberships
+    setIsTeamMember(teamIds.length > 0)
 
     // Fetch shared apiaries if user is in any teams
     let sharedApiaryIds: string[] = []
@@ -875,18 +879,20 @@ export default function HivesPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-responsive-3xl font-bold text-gray-900">Hives 🐝</h1>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <select
-            value={ownershipFilter}
-            onChange={(e) => {
-              setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
-              if (userId) fetchHives(userId)
-            }}
-            className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-          >
-            <option value="my">My Hives</option>
-            <option value="team">Team Hives</option>
-            <option value="all">All Hives</option>
-          </select>
+          {isTeamMember && (
+            <select
+              value={ownershipFilter}
+              onChange={(e) => {
+                setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
+                if (userId) fetchHives(userId)
+              }}
+              className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+            >
+              <option value="my">My Hives</option>
+              <option value="team">Team Hives</option>
+              <option value="all">All Hives</option>
+            </select>
+          )}
           <select
             value={filterApiaryId}
             onChange={(e) => setFilterApiaryId(e.target.value)}
