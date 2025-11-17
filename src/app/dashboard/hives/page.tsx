@@ -10,6 +10,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 interface Apiary {
   id: string
   name: string
+  user_id?: string
+  is_shared?: boolean
 }
 
 interface Queen {
@@ -430,15 +432,61 @@ export default function HivesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data, error } = await supabase
+    // Fetch user's own apiaries
+    const { data: ownApiaries, error: ownError } = await supabase
       .from('apiaries')
-      .select('id, name')
+      .select('id, name, user_id')
       .eq('user_id', currentUserId)
       .order('name')
 
-    if (!error && data) {
-      setApiaries(data as Apiary[])
+    if (ownError) {
+      console.error('Error fetching own apiaries:', ownError)
+      return
     }
+
+    // Fetch team memberships to get shared apiaries
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaries: Apiary[] = []
+    if (teamIds.length > 0) {
+      // Get shared apiary IDs
+      const { data: teamApiaries } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      const sharedApiaryIds = teamApiaries?.map(ta => ta.apiary_id) || []
+
+      if (sharedApiaryIds.length > 0) {
+        // Fetch the actual apiary details for shared apiaries (excluding user's own)
+        const { data: sharedApiaryData } = await supabase
+          .from('apiaries')
+          .select('id, name, user_id')
+          .in('id', sharedApiaryIds)
+          .neq('user_id', currentUserId)
+          .order('name')
+
+        if (sharedApiaryData) {
+          sharedApiaries = sharedApiaryData.map(apiary => ({
+            ...apiary,
+            is_shared: true
+          }))
+        }
+      }
+    }
+
+    // Combine own apiaries and shared apiaries
+    const allApiaries = [
+      ...(ownApiaries || []).map(a => ({ ...a, is_shared: false })),
+      ...sharedApiaries
+    ]
+
+    setApiaries(allApiaries as Apiary[])
   }, [userId])
 
   const fetchQueens = useCallback(async (userIdParam?: string) => {
@@ -846,7 +894,9 @@ export default function HivesPage() {
           >
             <option value="">All Apiaries</option>
             {apiaries.map((apiary) => (
-              <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+              <option key={apiary.id} value={apiary.id}>
+                {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+              </option>
             ))}
           </select>
           <select
@@ -922,7 +972,9 @@ export default function HivesPage() {
               >
                 <option value="">Select apiary</option>
                 {apiaries.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
+                  <option key={a.id} value={a.id}>
+                    {a.name}{a.is_shared ? ' (Shared)' : ''}
+                  </option>
                 ))}
               </select>
               {apiaries.length === 0 && (
