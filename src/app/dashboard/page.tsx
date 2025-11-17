@@ -669,22 +669,24 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Team Statistics Cards - Shared with Me */}
+      {/* Team Statistics Cards - Shared with Me - Compact Version */}
       {isTeamMember && hasSharedWithMeData && (
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Users size={20} className="text-green-600" />
-            Shared with Me
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-lg shadow p-4 border-2 border-green-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <Users size={18} className="text-green-600" />
+              Shared with Me
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {sharedWithMeCards.map((card) => (
-              <StatCard
-                key={card.label}
-                label={card.label}
-                value={card.value}
-                icon={card.icon}
-                color={card.color}
-              />
+              <div key={card.label} className="flex flex-col">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-lg">{card.icon}</span>
+                  <span className="text-xs text-gray-600">{card.label}</span>
+                </div>
+                <span className="text-2xl font-bold text-gray-900">{card.value}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -744,28 +746,27 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Owned Teams */}
+            {/* Owned Teams - Compact List */}
             {ownedTeams.length > 0 && (
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Crown size={18} className="text-amber-600" />
-                  <h3 className="font-semibold text-gray-900">Teams I Own</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <Crown size={16} className="text-amber-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm">Teams I Own ({ownedTeams.length})</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="space-y-2">
                   {ownedTeams.map((team) => (
-                    <div key={team.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-gray-900">{team.name}</h4>
-                        <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-medium">
+                    <div key={team.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-2.5 hover:border-amber-300 hover:bg-amber-50 transition-all">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900 text-sm">{team.name}</h4>
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-medium">
                           Owner
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600">
-                        <Users size={14} className="inline mr-1" />
-                        {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Created {new Date(team.created_at).toLocaleDateString()}
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Users size={12} />
+                          {team.member_count || 0}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -773,28 +774,27 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Member Teams */}
+            {/* Member Teams - Compact List */}
             {memberTeams.length > 0 && (
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <UserCheck size={18} className="text-green-600" />
-                  <h3 className="font-semibold text-gray-900">Teams I&apos;m In</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <UserCheck size={16} className="text-green-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm">Teams I&apos;m In ({memberTeams.length})</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="space-y-2">
                   {memberTeams.map((team) => (
-                    <div key={team.id} className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-gray-900">{team.name}</h4>
-                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium capitalize">
+                    <div key={team.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-2.5 hover:border-green-300 hover:bg-green-50 transition-all">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900 text-sm">{team.name}</h4>
+                        <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium capitalize">
                           {team.user_role}
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600">
-                        <Users size={14} className="inline mr-1" />
-                        {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Joined {new Date(team.created_at).toLocaleDateString()}
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Users size={12} />
+                          {team.member_count || 0}
+                        </span>
                       </div>
                     </div>
                   ))}
