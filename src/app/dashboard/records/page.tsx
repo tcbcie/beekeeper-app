@@ -384,9 +384,15 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Optimize: Get shared hive IDs using a single query with joins
-    // This replaces 3 sequential queries with 1 query
-    // Exclude hives owned by the current user (team filter = other team members' hives only)
+    // Fetch user's own hive IDs
+    const { data: ownHivesData } = await supabase
+      .from('hives')
+      .select('id')
+      .eq('user_id', currentUserId)
+
+    const ownHiveIds = ownHivesData?.map(h => h.id) || []
+
+    // Get shared hive IDs (hives in team apiaries that are NOT owned by current user)
     const { data: sharedHiveData } = await supabase
       .from('team_members')
       .select(`
@@ -402,9 +408,8 @@ export default function InspectionsPage() {
       `)
       .eq('user_id', currentUserId)
 
-    // Extract shared hive IDs from the nested structure
-    // Exclude hives owned by the current user
-    const sharedHiveIds: string[] = []
+    // Extract team hive IDs (hives NOT owned by current user)
+    const teamHiveIds: string[] = []
     if (sharedHiveData) {
       type TeamData = {
         teams?: {
@@ -421,7 +426,7 @@ export default function InspectionsPage() {
             if (ta.apiaries?.hives) {
               ta.apiaries.hives.forEach(h => {
                 // Only include hives NOT owned by current user
-                if (h.id && h.user_id !== currentUserId) sharedHiveIds.push(h.id)
+                if (h.id && h.user_id !== currentUserId) teamHiveIds.push(h.id)
               })
             }
           })
@@ -436,24 +441,35 @@ export default function InspectionsPage() {
 
     // Apply ownership filter
     if (ownershipFilter === 'my') {
-      query = query.eq('user_id', currentUserId)
-    } else if (ownershipFilter === 'team') {
-      // Only inspections for hives from shared apiaries
-      if (sharedHiveIds.length > 0) {
-        query = query.in('hive_id', sharedHiveIds)
+      // Show inspections for hives I own (created by me or team members)
+      if (ownHiveIds.length > 0) {
+        query = query.in('hive_id', ownHiveIds)
       } else {
-        // No shared hives, return empty result
+        // No own hives, return empty result
+        setInspections([])
+        setLoading(false)
+        return
+      }
+    } else if (ownershipFilter === 'team') {
+      // Only inspections for hives from team apiaries (not owned by me)
+      if (teamHiveIds.length > 0) {
+        query = query.in('hive_id', teamHiveIds)
+      } else {
+        // No team hives, return empty result
         setInspections([])
         setLoading(false)
         return
       }
     } else {
-      // 'all' = my inspections + inspections for hives from shared apiaries
-      if (sharedHiveIds.length > 0) {
-        query = query.or(`user_id.eq.${currentUserId},hive_id.in.(${sharedHiveIds.join(',')})`)
+      // 'all' = inspections for my hives + inspections for team hives
+      const allAccessibleHiveIds = [...ownHiveIds, ...teamHiveIds]
+      if (allAccessibleHiveIds.length > 0) {
+        query = query.in('hive_id', allAccessibleHiveIds)
       } else {
-        // No shared hives, only show my inspections
-        query = query.eq('user_id', currentUserId)
+        // No accessible hives, return empty result
+        setInspections([])
+        setLoading(false)
+        return
       }
     }
 
@@ -499,10 +515,28 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    // Fetch user's own hive IDs to show all treatments for those hives
+    const { data: ownHivesData } = await supabase
+      .from('hives')
+      .select('id')
+      .eq('user_id', currentUserId)
+
+    const ownHiveIds = ownHivesData?.map(h => h.id) || []
+
+    // Build query to show treatments for all hives owned by current user
+    let query = supabase
       .from('varroa_treatments')
       .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email)')
-      .eq('user_id', currentUserId)
+
+    if (ownHiveIds.length > 0) {
+      query = query.in('hive_id', ownHiveIds)
+    } else {
+      // No own hives, return empty result
+      setVarroaTreatments([])
+      return
+    }
+
+    const { data } = await query
       .order('treatment_date', { ascending: false })
       .limit(500)  // Limit to most recent 500 treatments for performance
 
@@ -513,10 +547,28 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    // Fetch user's own hive IDs to show all checks for those hives
+    const { data: ownHivesData } = await supabase
+      .from('hives')
+      .select('id')
+      .eq('user_id', currentUserId)
+
+    const ownHiveIds = ownHivesData?.map(h => h.id) || []
+
+    // Build query to show checks for all hives owned by current user
+    let query = supabase
       .from('varroa_checks')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-      .eq('user_id', currentUserId)
+
+    if (ownHiveIds.length > 0) {
+      query = query.in('hive_id', ownHiveIds)
+    } else {
+      // No own hives, return empty result
+      setVarroaChecks([])
+      return
+    }
+
+    const { data } = await query
       .order('check_date', { ascending: false })
       .limit(500)  // Limit to most recent 500 checks for performance
 
@@ -527,10 +579,28 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    // Fetch user's own hive IDs to show all feedings for those hives
+    const { data: ownHivesData } = await supabase
+      .from('hives')
+      .select('id')
+      .eq('user_id', currentUserId)
+
+    const ownHiveIds = ownHivesData?.map(h => h.id) || []
+
+    // Build query to show feedings for all hives owned by current user
+    let query = supabase
       .from('feedings')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-      .eq('user_id', currentUserId)
+
+    if (ownHiveIds.length > 0) {
+      query = query.in('hive_id', ownHiveIds)
+    } else {
+      // No own hives, return empty result
+      setFeedings([])
+      return
+    }
+
+    const { data } = await query
       .order('feed_date', { ascending: false })
       .limit(500)  // Limit to most recent 500 feedings for performance
 
@@ -541,10 +611,28 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    // Fetch user's own hive IDs to show all harvests for those hives
+    const { data: ownHivesData } = await supabase
+      .from('hives')
+      .select('id')
+      .eq('user_id', currentUserId)
+
+    const ownHiveIds = ownHivesData?.map(h => h.id) || []
+
+    // Build query to show harvests for all hives owned by current user
+    let query = supabase
       .from('harvests')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-      .eq('user_id', currentUserId)
+
+    if (ownHiveIds.length > 0) {
+      query = query.in('hive_id', ownHiveIds)
+    } else {
+      // No own hives, return empty result
+      setHarvests([])
+      return
+    }
+
+    const { data } = await query
       .order('harvest_date', { ascending: false })
       .limit(500)  // Limit to most recent 500 harvests for performance
 
