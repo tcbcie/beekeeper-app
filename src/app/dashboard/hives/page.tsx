@@ -60,6 +60,12 @@ interface Hive {
   configuration: HiveConfiguration | null
   colony_id: string | null
   user_id?: string
+  configuration_changed_at?: string | null
+  configuration_changed_by?: string | null
+  configuration_changer?: {
+    full_name: string | null
+    email: string
+  } | null
   apiaries?: {
     name: string
   }
@@ -177,7 +183,8 @@ export default function HivesPage() {
       .from('hives')
       .select(`
         *,
-        apiaries(name)
+        apiaries(name),
+        configuration_changer:profiles!configuration_changed_by(full_name, email)
       `)
 
     // Apply archive filter FIRST (before ownership filter for better SQL generation)
@@ -541,10 +548,37 @@ export default function HivesPage() {
     if (!userId) return
 
     try {
-      const dataToSubmit = {
+      type HiveSubmitData = Omit<typeof formData, 'apiary_id' | 'queen_id'> & {
+        apiary_id: string | null
+        queen_id: string | null
+        configuration_changed_at?: string
+        configuration_changed_by?: string
+      }
+
+      let dataToSubmit: HiveSubmitData = {
         ...formData,
         apiary_id: formData.apiary_id || null,
         queen_id: formData.queen_id || null,
+      }
+
+      // Check if configuration has changed (for existing hives)
+      if (editingHive) {
+        const configChanged = JSON.stringify(editingHive.configuration) !== JSON.stringify(formData.configuration)
+
+        if (configChanged) {
+          dataToSubmit = {
+            ...dataToSubmit,
+            configuration_changed_at: new Date().toISOString(),
+            configuration_changed_by: userId,
+          }
+        }
+      } else {
+        // New hive - set initial configuration tracking
+        dataToSubmit = {
+          ...dataToSubmit,
+          configuration_changed_at: new Date().toISOString(),
+          configuration_changed_by: userId,
+        }
       }
 
       // Validate queen assignment: check if queen is already assigned to another active hive
@@ -1483,6 +1517,30 @@ export default function HivesPage() {
                     </span>
                   )}
                 </div>
+
+                {/* Configuration Change Tracking */}
+                {hive.configuration_changed_at && (
+                  <div className="mb-3 pb-2 border-b border-amber-300">
+                    <div className="text-xs text-amber-800">
+                      <span className="font-medium">Last changed:</span>{' '}
+                      {new Date(hive.configuration_changed_at).toLocaleDateString('en-IE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                      {hive.configuration_changer && (
+                        <>
+                          {' by '}
+                          <span className="font-medium">
+                            {hive.configuration_changer.full_name || hive.configuration_changer.email}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Visual Hive Stack - Half width for Nuc, full width for standard hive */}
                 <div className={`flex flex-col items-center gap-1 mb-3 ${hive.configuration.hive_size === 'nuc' ? 'w-1/2 mx-auto' : 'w-full'}`}>
