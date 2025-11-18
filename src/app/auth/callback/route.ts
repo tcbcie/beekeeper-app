@@ -6,6 +6,8 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
 
+  console.log('OAuth callback received:', { code: code ? 'present' : 'missing' })
+
   if (code) {
     const cookieStore = await cookies()
     const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
@@ -19,6 +21,7 @@ export async function GET(request: Request) {
             return cookieStore.getAll()
           },
           setAll(cookiesToSet) {
+            console.log('Setting cookies:', cookiesToSet.length)
             cookiesToSet.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, options)
             })
@@ -34,6 +37,8 @@ export async function GET(request: Request) {
       console.error('Error exchanging code for session:', error)
       return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
     }
+
+    console.log('Session exchange successful:', { userId: sessionData?.user?.id })
 
     // Check if this user account has been deleted
     if (sessionData?.user) {

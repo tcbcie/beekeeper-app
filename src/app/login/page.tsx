@@ -206,6 +206,7 @@ function LoginForm() {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
               required
               minLength={6}
+              autoComplete={isSignUp ? "new-password" : "current-password"}
             />
           </div>
           {message && (

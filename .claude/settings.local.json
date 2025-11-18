@@ -37,7 +37,8 @@
       "Bash(echo:*)",
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
-      "Bash(if exist .next rmdir /s /q .next)"
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
