@@ -148,6 +148,14 @@ export default function ProfilePage() {
 
   // Subscription state
   const [showRenewSubscriptionModal, setShowRenewSubscriptionModal] = useState(false)
+
+  // Change password state
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
   const [subscriptionRefreshKey, setSubscriptionRefreshKey] = useState(0)
 
   const fetchAssociations = useCallback(async () => {
@@ -369,6 +377,62 @@ export default function ProfilePage() {
       alert('Failed to export data. Check console for details.')
     } finally {
       setExportingMyData(false)
+    }
+  }
+
+  // Change password handler
+  const handleChangePassword = async () => {
+    setPasswordError('')
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('All fields are required')
+      return
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match')
+      return
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError('New password must be different from current password')
+      return
+    }
+
+    setChangingPassword(true)
+
+    try {
+      // Update password using Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+
+      if (error) {
+        if (error.message.includes('same as the old password')) {
+          setPasswordError('New password must be different from current password')
+        } else {
+          setPasswordError(error.message)
+        }
+        return
+      }
+
+      // Success
+      alert('Password changed successfully!')
+      setShowChangePasswordModal(false)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (error) {
+      console.error('Error changing password:', error)
+      setPasswordError('An unexpected error occurred. Please try again.')
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -2210,8 +2274,11 @@ export default function ProfilePage() {
               <div className="font-medium text-gray-900">Change Password</div>
               <div className="text-sm text-gray-600">Update your account password</div>
             </div>
-            <button className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-              Coming Soon
+            <button
+              onClick={() => setShowChangePasswordModal(true)}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Change Password
             </button>
           </div>
 
@@ -2254,6 +2321,112 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">Change Password</h3>
+              <button
+                onClick={() => {
+                  setShowChangePasswordModal(false)
+                  setCurrentPassword('')
+                  setNewPassword('')
+                  setConfirmPassword('')
+                  setPasswordError('')
+                }}
+                disabled={changingPassword}
+                className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {passwordError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-800 text-sm">{passwordError}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  disabled={changingPassword}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  placeholder="Enter current password"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={changingPassword}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  placeholder="Enter new password (min 8 characters)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm New Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={changingPassword}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-blue-900 font-semibold text-sm mb-1">Password Requirements:</p>
+                <ul className="text-blue-800 text-xs space-y-1">
+                  <li>• At least 8 characters long</li>
+                  <li>• Different from your current password</li>
+                  <li>• Both new password fields must match</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 px-6 py-4 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowChangePasswordModal(false)
+                  setCurrentPassword('')
+                  setNewPassword('')
+                  setConfirmPassword('')
+                  setPasswordError('')
+                }}
+                disabled={changingPassword}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangePassword}
+                disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {changingPassword ? 'Changing...' : 'Change Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteAccountModal && (
