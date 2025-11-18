@@ -226,24 +226,27 @@ function AcceptInvitationContent() {
           {status === 'needs-signup' && (
             <>
               <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Create an Account</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign Up Required</h1>
               <p className="text-gray-600 mb-4">
                 You&apos;ve been invited to join <strong>{teamName}</strong>!
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left mb-4">
                 <p className="font-medium text-blue-900 mb-2">To accept this invitation:</p>
                 <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                  <li>Create an account using the email: <strong>{invitedEmail}</strong></li>
-                  <li>After signing up, return to this invitation link</li>
-                  <li>You&apos;ll be automatically added to the team</li>
+                  <li>Sign up for an account using: <strong>{invitedEmail}</strong></li>
+                  <li>Check your email and confirm your account</li>
+                  <li>Return to this invitation link to join the team</li>
                 </ol>
               </div>
+              <p className="text-xs text-gray-500 mb-4">
+                Important: You must use the email address <strong>{invitedEmail}</strong> when signing up.
+              </p>
               <div className="space-y-3">
                 <button
                   onClick={() => router.push(`/login?signup=true&email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
                   className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                 >
-                  Create Account
+                  Sign Up
                 </button>
                 <button
                   onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
