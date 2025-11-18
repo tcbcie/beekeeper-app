@@ -40,6 +40,7 @@ interface Hive {
   archived_at?: string | null
   archive_reason_id?: string | null
   archive_notes?: string | null
+  user_id: string
   archive_reason_value?: {
     value?: string
   }
@@ -145,6 +146,7 @@ export default function HiveDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [averages, setAverages] = useState<InspectionAverages | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isOwner, setIsOwner] = useState(false)
 
   const fetchHiveData = useCallback(async (currentUserId: string) => {
     setLoading(true)
@@ -176,6 +178,9 @@ export default function HiveDetailPage() {
       }
 
       setHive(hiveData)
+
+      // Check if current user is the hive owner
+      setIsOwner(hiveData.user_id === currentUserId)
 
       // Fetch all records for this hive
       const [
@@ -714,22 +719,26 @@ export default function HiveDetailPage() {
           <Plus className="mx-auto mb-2" size={24} />
           <div className="font-medium text-sm">Create Task</div>
         </Link>
-        {hive.archived_at ? (
-          <button
-            onClick={handleUnarchive}
-            className="bg-emerald-600 text-white p-4 rounded-lg hover:bg-emerald-700 text-center border-2 border-emerald-400"
-          >
-            <ArchiveRestore className="mx-auto mb-2" size={24} />
-            <div className="font-medium text-sm">Unarchive Hive</div>
-          </button>
-        ) : (
-          <Link
-            href={`/dashboard/records?hive=${hiveId}&type=archive`}
-            className="bg-gray-600 text-white p-4 rounded-lg hover:bg-gray-700 text-center border-2 border-gray-400"
-          >
-            <Archive className="mx-auto mb-2" size={24} />
-            <div className="font-medium text-sm">Archive Hive</div>
-          </Link>
+        {isOwner && (
+          <>
+            {hive.archived_at ? (
+              <button
+                onClick={handleUnarchive}
+                className="bg-emerald-600 text-white p-4 rounded-lg hover:bg-emerald-700 text-center border-2 border-emerald-400"
+              >
+                <ArchiveRestore className="mx-auto mb-2" size={24} />
+                <div className="font-medium text-sm">Unarchive Hive</div>
+              </button>
+            ) : (
+              <Link
+                href={`/dashboard/records?hive=${hiveId}&type=archive`}
+                className="bg-gray-600 text-white p-4 rounded-lg hover:bg-gray-700 text-center border-2 border-gray-400"
+              >
+                <Archive className="mx-auto mb-2" size={24} />
+                <div className="font-medium text-sm">Archive Hive</div>
+              </Link>
+            )}
+          </>
         )}
       </div>
 
