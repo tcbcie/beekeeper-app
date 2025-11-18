@@ -27,17 +27,21 @@ interface TaskEvent {
   notes: string | null
   created_at: string
   updated_at: string
+  is_team_task?: boolean
 }
 
 interface Hive {
   id: string
   hive_number: string
   apiary_id: string | null
+  user_id: string
+  is_shared?: boolean
 }
 
 interface Apiary {
   id: string
   name: string
+  is_shared?: boolean
 }
 
 interface Batch {
@@ -62,6 +66,7 @@ export default function TasksEventsPage() {
   const [filterStatus, setFilterStatus] = useState<string>('active')
   const [filterHive, setFilterHive] = useState<string>('all')
   const [filterApiary, setFilterApiary] = useState<string>('all')
+  const [filterOwnership, setFilterOwnership] = useState<'all' | 'my' | 'team'>('all')
 
   // Form state
   const [formData, setFormData] = useState({
@@ -94,14 +99,13 @@ export default function TasksEventsPage() {
     getUser()
   }, [])
 
-  // Fetch tasks/events
+  // Fetch tasks/events (RLS handles permissions - both own and team tasks)
   const fetchTasks = useCallback(async () => {
     if (!userId) return
 
     const { data, error } = await supabase
       .from('tasks_events')
       .select('*')
-      .eq('user_id', userId)
       .order('start_date', { ascending: true })
 
     if (error) {
@@ -112,18 +116,67 @@ export default function TasksEventsPage() {
     setLoading(false)
   }, [userId])
 
-  // Fetch hives, apiaries, batches for associations
+  // Fetch hives, apiaries, batches for associations (both own and shared)
   const fetchAssociations = useCallback(async () => {
     if (!userId) return
 
-    const [hivesRes, apiariesRes, batchesRes] = await Promise.all([
-      supabase.from('hives').select('id, hive_number, apiary_id').eq('user_id', userId).order('hive_number'),
+    // Fetch own hives and apiaries
+    const [ownHivesRes, ownApiariesRes, batchesRes] = await Promise.all([
+      supabase.from('hives').select('id, hive_number, apiary_id, user_id').eq('user_id', userId).order('hive_number'),
       supabase.from('apiaries').select('id, name').eq('user_id', userId).order('name'),
       supabase.from('rearing_batches').select('id, batch_name').eq('user_id', userId).order('batch_name')
     ])
 
-    if (hivesRes.data) setHives(hivesRes.data as Hive[])
-    if (apiariesRes.data) setApiaries(apiariesRes.data)
+    const ownHives = (ownHivesRes.data || []) as Hive[]
+    const ownApiaries = (ownApiariesRes.data || []) as Apiary[]
+
+    // Fetch team memberships
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', userId)
+
+    const teamIds = (teamMemberships || []).map(tm => tm.team_id)
+
+    // Fetch shared hives and apiaries if user is in any teams
+    let sharedHives: Hive[] = []
+    let sharedApiaries: Apiary[] = []
+
+    if (teamIds.length > 0) {
+      // Fetch shared apiaries via team_apiaries
+      const { data: teamApiariesData } = await supabase
+        .from('team_apiaries')
+        .select('apiaries(id, name)')
+        .in('team_id', teamIds)
+
+      if (teamApiariesData) {
+        const extractedApiaries = teamApiariesData
+          .map(ta => ta.apiaries)
+          .filter(Boolean)
+          .flat()
+
+        sharedApiaries = Array.isArray(extractedApiaries)
+          ? extractedApiaries.map(a => ({ ...a, is_shared: true }))
+          : extractedApiaries
+            ? [{ ...extractedApiaries, is_shared: true }]
+            : []
+      }
+
+      // Fetch shared hives from those apiaries
+      const sharedApiaryIds = sharedApiaries.map(a => a.id)
+      if (sharedApiaryIds.length > 0) {
+        const { data: sharedHivesData } = await supabase
+          .from('hives')
+          .select('id, hive_number, apiary_id, user_id')
+          .in('apiary_id', sharedApiaryIds)
+
+        sharedHives = (sharedHivesData || []).map(h => ({ ...h, is_shared: true }))
+      }
+    }
+
+    // Combine own and shared resources
+    setHives([...ownHives, ...sharedHives])
+    setApiaries([...ownApiaries, ...sharedApiaries])
     if (batchesRes.data) setBatches(batchesRes.data)
   }, [userId])
 
@@ -299,6 +352,11 @@ export default function TasksEventsPage() {
     if (filterStatus === 'active' && task.completed) return false
     if (filterHive !== 'all' && task.hive_id !== filterHive) return false
     if (filterApiary !== 'all' && task.apiary_id !== filterApiary) return false
+
+    // Ownership filter
+    if (filterOwnership === 'my' && task.user_id !== userId) return false
+    if (filterOwnership === 'team' && (task.user_id === userId || !task.is_team_task)) return false
+
     return true
   })
 
@@ -366,7 +424,7 @@ export default function TasksEventsPage() {
           <Filter size={18} className="text-gray-600" />
           <h2 className="font-semibold text-gray-900">Filters</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select
@@ -414,6 +472,19 @@ export default function TasksEventsPage() {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ownership</label>
+            <select
+              value={filterOwnership}
+              onChange={(e) => setFilterOwnership(e.target.value as 'all' | 'my' | 'team')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Tasks</option>
+              <option value="my">My Tasks</option>
+              <option value="team">Team Tasks</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Hive</label>
             <select
               value={filterHive}
@@ -456,7 +527,9 @@ export default function TasksEventsPage() {
             <div
               key={task.id}
               className={`bg-white rounded-lg shadow p-4 border-l-4 ${
-                task.completed ? 'border-green-500 opacity-60' : 'border-blue-500'
+                task.completed ? 'border-green-500 opacity-60' :
+                task.is_team_task ? 'border-purple-500' :
+                'border-blue-500'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -488,6 +561,16 @@ export default function TasksEventsPage() {
                       {task.category && (
                         <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
                           {getCategoryLabel(task.category)}
+                        </span>
+                      )}
+                      {task.is_team_task && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                          Team Task
+                        </span>
+                      )}
+                      {task.user_id !== userId && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          Created by team member
                         </span>
                       )}
                     </div>
@@ -736,9 +819,20 @@ export default function TasksEventsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">None</option>
-                    {hives.map(hive => (
-                      <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
-                    ))}
+                    {hives.filter(h => !h.is_shared).length > 0 && (
+                      <optgroup label="My Hives">
+                        {hives.filter(h => !h.is_shared).map(hive => (
+                          <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {hives.filter(h => h.is_shared).length > 0 && (
+                      <optgroup label="Shared Hives">
+                        {hives.filter(h => h.is_shared).map(hive => (
+                          <option key={hive.id} value={hive.id}>Hive {hive.hive_number} (Shared)</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
 
@@ -750,9 +844,20 @@ export default function TasksEventsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">None</option>
-                    {apiaries.map(apiary => (
-                      <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
-                    ))}
+                    {apiaries.filter(a => !a.is_shared).length > 0 && (
+                      <optgroup label="My Apiaries">
+                        {apiaries.filter(a => !a.is_shared).map(apiary => (
+                          <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {apiaries.filter(a => a.is_shared).length > 0 && (
+                      <optgroup label="Shared Apiaries">
+                        {apiaries.filter(a => a.is_shared).map(apiary => (
+                          <option key={apiary.id} value={apiary.id}>{apiary.name} (Shared)</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
               </div>
