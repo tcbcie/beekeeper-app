@@ -155,11 +155,11 @@ export default function TasksEventsPage() {
           .filter(Boolean)
           .flat()
 
-        sharedApiaries = Array.isArray(extractedApiaries)
-          ? extractedApiaries.map(a => ({ ...a, is_shared: true }))
-          : extractedApiaries
-            ? [{ ...extractedApiaries, is_shared: true }]
-            : []
+        sharedApiaries = extractedApiaries.map(a => ({
+          id: a.id,
+          name: a.name,
+          is_shared: true
+        }))
       }
 
       // Fetch shared hives from those apiaries
