@@ -59,6 +59,7 @@ export default function TasksEventsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState<TaskEvent | null>(null)
+  const [isTeamMember, setIsTeamMember] = useState(false)
 
   // Filter states
   const [filterType, setFilterType] = useState<string>('all')
@@ -137,6 +138,9 @@ export default function TasksEventsPage() {
       .eq('user_id', userId)
 
     const teamIds = (teamMemberships || []).map(tm => tm.team_id)
+
+    // Set team member status
+    setIsTeamMember(teamIds.length > 0)
 
     // Fetch shared hives and apiaries if user is in any teams
     let sharedHives: Hive[] = []
@@ -424,7 +428,7 @@ export default function TasksEventsPage() {
           <Filter size={18} className="text-gray-600" />
           <h2 className="font-semibold text-gray-900">Filters</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isTeamMember ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-4`}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select
@@ -471,18 +475,20 @@ export default function TasksEventsPage() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ownership</label>
-            <select
-              value={filterOwnership}
-              onChange={(e) => setFilterOwnership(e.target.value as 'all' | 'my' | 'team')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Tasks</option>
-              <option value="my">My Tasks</option>
-              <option value="team">Team Tasks</option>
-            </select>
-          </div>
+          {isTeamMember && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ownership</label>
+              <select
+                value={filterOwnership}
+                onChange={(e) => setFilterOwnership(e.target.value as 'all' | 'my' | 'team')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Tasks</option>
+                <option value="my">My Tasks</option>
+                <option value="team">Team Tasks</option>
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Hive</label>
