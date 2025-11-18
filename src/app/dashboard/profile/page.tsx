@@ -1697,19 +1697,37 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   {memberTeams.map((team) => (
                     <div key={team.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+                      <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-gray-900">{team.name}</h4>
                           <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded font-medium capitalize">
                             {team.user_role}
                           </span>
                         </div>
-                        <button
-                          onClick={() => handleLeaveTeam(team.id, team.name)}
-                          className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 w-full sm:w-auto"
-                        >
-                          Leave Team
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (expandedTeamId === team.id) {
+                                setExpandedTeamId(null)
+                              } else {
+                                setExpandedTeamId(team.id)
+                                setLoadingMembers(true)
+                                fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
+                              }
+                            }}
+                            className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center gap-1"
+                          >
+                            <Users size={14} />
+                            <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
+                            <span className="sm:hidden">Members</span>
+                          </button>
+                          <button
+                            onClick={() => handleLeaveTeam(team.id, team.name)}
+                            className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                          >
+                            Leave Team
+                          </button>
+                        </div>
                       </div>
                       <div className="text-sm text-gray-600">
                         <span className="font-medium">{team.member_count || 0}</span> member{(team.member_count || 0) !== 1 ? 's' : ''}
@@ -1717,6 +1735,49 @@ export default function ProfilePage() {
                       <div className="text-xs text-gray-500 mt-1">
                         Joined {new Date(team.created_at).toLocaleDateString()}
                       </div>
+
+                      {/* Expanded Member List */}
+                      {expandedTeamId === team.id && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h5 className="text-sm font-semibold text-gray-900 mb-3">Team Members</h5>
+                          {loadingMembers ? (
+                            <div className="flex justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+                            </div>
+                          ) : teamMembers.length > 0 ? (
+                            <div className="space-y-2">
+                              {teamMembers.map((member) => (
+                                <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <User size={16} className="text-gray-400" />
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {member.first_name && member.last_name
+                                          ? `${member.first_name} ${member.last_name}`
+                                          : member.user_email}
+                                      </div>
+                                      {member.first_name && member.last_name && (
+                                        <div className="text-xs text-gray-500">{member.user_email}</div>
+                                      )}
+                                    </div>
+                                    <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
+                                      member.role === 'owner'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : member.role === 'admin'
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {member.role}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 text-center py-4">No members found.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
