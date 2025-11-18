@@ -10,14 +10,11 @@ function AcceptInvitationContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<'success' | 'error' | 'expired' | 'already-accepted' | 'magic-link-sent'>('success')
+  const [status, setStatus] = useState<'success' | 'error' | 'expired' | 'already-accepted' | 'needs-signup'>('success')
   const [message, setMessage] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [checkedAuth, setCheckedAuth] = useState(false)
   const [invitedEmail, setInvitedEmail] = useState<string>('')
-  const [needsPassword, setNeedsPassword] = useState(false)
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [teamName, setTeamName] = useState<string>('')
 
   // First useEffect: Check authentication status
@@ -124,45 +121,22 @@ function AcceptInvitationContent() {
           return
         }
 
-        // If no user, send magic link for auto-registration/login
+        // If no user logged in, direct them to create an account
         if (!userId) {
-          console.log('👤 No user logged in, sending magic link to:', invitation.email)
+          console.log('👤 No user logged in, directing to signup')
           setInvitedEmail(invitation.email)
-
-          // Send magic link that will redirect back to this invitation
-          const redirectUrl = `${window.location.origin}/accept-invitation?id=${invitationId}`
-          const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-            email: invitation.email,
-            options: {
-              emailRedirectTo: redirectUrl,
-            }
-          })
-
-          if (magicLinkError) {
-            console.error('Error sending magic link:', magicLinkError)
-            setStatus('error')
-            setMessage('Failed to send verification email. Please try again.')
-          } else {
-            setStatus('magic-link-sent')
-            setMessage(`We've sent a verification link to ${invitation.email}. Click the link in the email to join ${extractedTeamName || 'the team'}.`)
-          }
-
+          setStatus('needs-signup')
           setLoading(false)
           return
         }
 
         console.log('👤 Current user ID:', userId)
 
-        // Check if user just authenticated via magic link and needs to set password
+        // Verify the logged-in user's email matches the invitation
         const { data: { user: currentUser } } = await supabase.auth.getUser()
-        const hasPassword = currentUser?.app_metadata?.provider === 'email' &&
-                           currentUser?.user_metadata?.email_verified
-
-        // If user was created via magic link, they need to set a password
-        if (!hasPassword && currentUser?.email === invitation.email) {
-          console.log('🔐 User needs to set password')
-          setInvitedEmail(invitation.email)
-          setNeedsPassword(true)
+        if (currentUser?.email !== invitation.email) {
+          setStatus('error')
+          setMessage(`This invitation was sent to ${invitation.email}. Please log in with that email address or sign out and create a new account.`)
           setLoading(false)
           return
         }
@@ -218,143 +192,8 @@ function AcceptInvitationContent() {
     acceptInvitation()
   }, [checkedAuth, userId, searchParams, router])
 
-  const handlePasswordSetup = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (password !== confirmPassword) {
-      alert('Passwords do not match')
-      return
-    }
-
-    if (password.length < 8) {
-      alert('Password must be at least 8 characters')
-      return
-    }
-
-    try {
-      // Update user password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password
-      })
-
-      if (updateError) throw updateError
-
-      // Now complete the invitation acceptance
-      const invitationId = searchParams.get('id')
-      if (!invitationId) return
-
-      // Fetch invitation again
-      const { data: invitation } = await supabase
-        .from('team_invitations')
-        .select('*, teams!inner(name)')
-        .eq('id', invitationId)
-        .single()
-
-      if (!invitation) return
-
-      // Add user to team
-      await supabase
-        .from('team_members')
-        .insert({
-          team_id: invitation.team_id,
-          user_id: userId!,
-          role: 'member',
-        })
-
-      // Update invitation status
-      await supabase
-        .from('team_invitations')
-        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-        .eq('id', invitationId)
-
-      setStatus('success')
-      const extractedTeamName = Array.isArray(invitation.teams)
-        ? invitation.teams[0]?.name
-        : invitation.teams?.name
-      setMessage(`Password set! Successfully joined ${extractedTeamName || 'the team'}!`)
-      setNeedsPassword(false)
-
-      // Redirect to dashboard
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
-
-    } catch (error) {
-      console.error('Error setting password:', error)
-      alert('Failed to set password. Please try again.')
-    }
-  }
-
   if (loading) {
     return <LoadingSpinner text="Processing invitation..." />
-  }
-
-  // Show password setup form if needed
-  if (needsPassword) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-          <div className="text-center mb-6">
-            <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Set Your Password</h1>
-            <p className="text-gray-600">
-              Welcome to {teamName}! Please set a password to secure your account.
-            </p>
-          </div>
-
-          <form onSubmit={handlePasswordSetup} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={invitedEmail}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password *
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="At least 8 characters"
-                required
-                minLength={8}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password *
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Re-enter your password"
-                required
-                minLength={8}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-            >
-              Set Password & Join Team
-            </button>
-          </form>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -384,22 +223,35 @@ function AcceptInvitationContent() {
             </>
           )}
 
-          {status === 'magic-link-sent' && (
+          {status === 'needs-signup' && (
             <>
               <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Create an Account</h1>
+              <p className="text-gray-600 mb-4">
+                You&apos;ve been invited to join <strong>{teamName}</strong>!
+              </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left mb-4">
-                <p className="font-medium text-blue-900 mb-2">What happens next:</p>
+                <p className="font-medium text-blue-900 mb-2">To accept this invitation:</p>
                 <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                  <li>Check your email inbox ({invitedEmail})</li>
-                  <li>Click the verification link in the email</li>
-                  <li>You&apos;ll be automatically logged in and added to the team</li>
+                  <li>Create an account using the email: <strong>{invitedEmail}</strong></li>
+                  <li>After signing up, return to this invitation link</li>
+                  <li>You&apos;ll be automatically added to the team</li>
                 </ol>
               </div>
-              <p className="text-xs text-gray-500">
-                Didn&apos;t receive the email? Check your spam folder or contact the team owner.
-              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => router.push(`/login?signup=true&email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
+                  className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Create Account
+                </button>
+                <button
+                  onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
+                  className="w-full px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+                >
+                  Already have an account? Sign In
+                </button>
+              </div>
             </>
           )}
 

@@ -14,6 +14,19 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect') || '/dashboard'
 
+  // Handle URL parameters for pre-filling form (from invitation flow)
+  useEffect(() => {
+    const emailParam = searchParams.get('email')
+    const signupParam = searchParams.get('signup')
+
+    if (emailParam) {
+      setEmail(decodeURIComponent(emailParam))
+    }
+    if (signupParam === 'true') {
+      setIsSignUp(true)
+    }
+  }, [searchParams])
+
   // Check for pending redirect after email confirmation
   useEffect(() => {
     const checkPendingRedirect = async () => {
