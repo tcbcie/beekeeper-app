@@ -33,6 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
+      console.log('Session check:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id
+      })
+
       if (session?.user) {
         setUser(session.user)
         setUserId(session.user.id)
