@@ -564,36 +564,36 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+            <h1 className="text-3xl font-bold text-slate-100">Dashboard Overview</h1>
             {userRole === 'Admin' && (
-              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
+              <span className="px-3 py-1 bg-purple-900/50 text-purple-300 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-700">
                 <Shield size={14} />
                 Admin
               </span>
             )}
           </div>
           {userRole === 'Admin' && userStats.totalUsers > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-slate-400">
               <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <strong className="text-green-700">{userStats.onlineUsers}</strong> of <strong>{userStats.totalUsers}</strong> users online
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                <strong className="text-emerald-400">{userStats.onlineUsers}</strong> of <strong className="text-slate-300">{userStats.totalUsers}</strong> users online
               </span>
-              <span className="hidden sm:inline text-gray-400">•</span>
+              <span className="hidden sm:inline text-slate-600">•</span>
               <span className="inline-flex items-center gap-1">
-                🐝 <strong className="text-amber-700">{userStats.totalHives}</strong> hives managed
+                🐝 <strong className="text-orange-400">{userStats.totalHives}</strong> hives managed
               </span>
-              <span className="hidden sm:inline text-gray-400">•</span>
+              <span className="hidden sm:inline text-slate-600">•</span>
               <span className="inline-flex items-center gap-1">
-                📍 <strong className="text-blue-700">{userStats.totalApiaries}</strong> apiaries
+                📍 <strong className="text-blue-400">{userStats.totalApiaries}</strong> apiaries
               </span>
               {ticketStats.totalTickets > 0 && (
                 <>
-                  <span className="hidden sm:inline text-gray-400">•</span>
+                  <span className="hidden sm:inline text-slate-600">•</span>
                   <span className="inline-flex items-center gap-1">
-                    🎫 <strong className={ticketStats.openTickets > 0 ? "text-red-700" : "text-blue-700"}>{ticketStats.openTickets}</strong> open tickets
+                    🎫 <strong className={ticketStats.openTickets > 0 ? "text-red-400" : "text-blue-400"}>{ticketStats.openTickets}</strong> open tickets
                     {ticketStats.inProgressTickets > 0 && (
-                      <span className="text-gray-600">
-                        (<strong className="text-yellow-700">{ticketStats.inProgressTickets}</strong> in progress)
+                      <span className="text-slate-400">
+                        (<strong className="text-yellow-400">{ticketStats.inProgressTickets}</strong> in progress)
                       </span>
                     )}
                   </span>
@@ -607,7 +607,7 @@ export default function DashboardPage() {
             fetchDashboardData()
             fetchTeamStats()
           }}
-          className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          className="px-4 py-2 text-sm bg-slate-800 text-slate-200 rounded-lg hover:bg-slate-700 border border-slate-700 min-h-[44px]"
         >
           Refresh
         </button>
@@ -615,7 +615,7 @@ export default function DashboardPage() {
 
       {/* My Statistics Cards */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">My Beekeeping</h2>
+        <h2 className="text-lg font-semibold text-slate-100 mb-3">My Beekeeping</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {statCards.map((card) => (
             <StatCard
@@ -631,10 +631,10 @@ export default function DashboardPage() {
 
       {/* Team Statistics Cards - Shared by Me - Compact Version */}
       {isTeamMember && hasMySharedData && (
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-blue-200">
+        <div className="bg-slate-900 rounded-xl shadow-lg p-4 border border-blue-800">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Users size={18} className="text-blue-600" />
+            <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+              <Users size={18} className="text-blue-400" />
               Shared by Me
             </h2>
             <button
@@ -644,7 +644,7 @@ export default function DashboardPage() {
                 }
                 setShowMySharedDetails(!showMySharedDetails)
               }}
-              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium min-h-[36px]"
             >
               {showMySharedDetails ? 'Hide' : 'Show'} Details
             </button>

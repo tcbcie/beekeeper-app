@@ -171,30 +171,30 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-amber-100">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+      <div className="max-w-md w-full space-y-8 p-8 bg-slate-900 rounded-xl shadow-2xl border border-slate-800">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">🐝 HiveCraic</h2>
-          <p className="mt-2 text-sm text-gray-600">Crafted with honeyed hearts by tcbc.ie,</p>
-          <p className="text-sm text-gray-600">alongside the buzzing minds of</p>
-          <p className="text-sm text-gray-600">Tribes Beekeepers Association and Tribes QRBG!</p>
+          <h2 className="text-3xl font-bold text-emerald-400">🐝 HiveCraic</h2>
+          <p className="mt-2 text-sm text-slate-400">Crafted with honeyed hearts by tcbc.ie,</p>
+          <p className="text-sm text-slate-400">alongside the buzzing minds of</p>
+          <p className="text-sm text-slate-400">Tribes Beekeepers Association and Tribes QRBG!</p>
         </div>
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-slate-300">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="mt-1 block w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 min-h-[48px]"
               required
             />
           </div>
           <div>
             <div className="flex justify-between items-center">
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <label className="block text-sm font-medium text-slate-300">Password</label>
               {!isSignUp && (
-                <Link href="/forgot-password" className="text-xs text-amber-600 hover:text-amber-700">
+                <Link href="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300">
                   Forgot Password?
                 </Link>
               )}
@@ -203,15 +203,15 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="mt-1 block w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 min-h-[48px]"
               required
               minLength={6}
               autoComplete={isSignUp ? "new-password" : "current-password"}
             />
           </div>
           {message && (
-            <div className={`text-sm text-center p-3 rounded ${
-              message.includes('created') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            <div className={`text-sm text-center p-3 rounded-lg ${
+              message.includes('created') ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700' : 'bg-red-900/50 text-red-300 border border-red-700'
             }`}>
               {message}
             </div>
@@ -221,7 +221,7 @@ function LoginForm() {
               type="submit"
               onClick={() => setIsSignUp(false)}
               disabled={loading}
-              className="flex-1 py-2 px-4 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 font-medium transition-colors min-h-[48px]"
             >
               {loading && !isSignUp ? 'Loading...' : 'Login'}
             </button>
@@ -229,7 +229,7 @@ function LoginForm() {
               type="submit"
               onClick={() => setIsSignUp(true)}
               disabled={loading}
-              className="flex-1 py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-slate-700 text-slate-100 rounded-lg hover:bg-slate-600 disabled:opacity-50 font-medium transition-colors min-h-[48px]"
             >
               {loading && isSignUp ? 'Loading...' : 'Sign Up'}
             </button>
@@ -238,9 +238,9 @@ function LoginForm() {
 
         {/* Account Reactivation Link */}
         <div className="text-center text-sm">
-          <p className="text-gray-600">
+          <p className="text-slate-400">
             Deleted account?{' '}
-            <Link href="/reactivate" className="text-amber-600 hover:text-amber-700 font-medium">
+            <Link href="/reactivate" className="text-emerald-400 hover:text-emerald-300 font-medium">
               Request reactivation
             </Link>
           </p>
@@ -248,10 +248,10 @@ function LoginForm() {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
+            <div className="w-full border-t border-slate-700"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            <span className="px-2 bg-slate-900 text-slate-400">Or continue with</span>
           </div>
         </div>
         <div className="space-y-3">
@@ -259,7 +259,7 @@ function LoginForm() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 py-2 px-4 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 disabled:opacity-50 transition-colors min-h-[48px]"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -267,11 +267,11 @@ function LoginForm() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span className="text-gray-700 font-medium">Continue with Google</span>
+            <span className="text-slate-200 font-medium">Continue with Google</span>
           </button>
         </div>
-        <div className="flex items-center justify-center gap-3 text-xs text-gray-500">
-          <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">v1.1.0</span>
+        <div className="flex items-center justify-center gap-3 text-xs text-slate-500">
+          <span className="px-2 py-1 bg-emerald-900/30 text-emerald-400 rounded font-medium">v1.1.0</span>
           <span>•</span>
           <span>November 19, 2025</span>
         </div>
@@ -283,10 +283,10 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-amber-100">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <div className="text-center">
-          <div className="text-3xl font-bold text-gray-900">🐝 HiveCraic</div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="text-3xl font-bold text-emerald-400">🐝 HiveCraic</div>
+          <p className="mt-4 text-slate-400">Loading...</p>
         </div>
       </div>
     }>
