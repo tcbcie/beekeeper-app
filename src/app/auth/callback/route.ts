@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -6,35 +6,21 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
 
-  console.log('OAuth callback received:', {
-    code: code ? 'present' : 'missing',
-    origin: requestUrl.origin,
-    url: requestUrl.toString()
-  })
-
   if (code) {
     const cookieStore = await cookies()
-    const allCookies = cookieStore.getAll()
 
-    console.log('Available cookies:', allCookies.map(c => c.name))
-
-    const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
-
-    const supabase = createServerClient(
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        cookies: {
-          getAll() {
-            return allCookies
-          },
-          setAll(cookiesToSet) {
-            console.log('Setting cookies:', cookiesToSet.map(c => c.name))
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options)
-            })
-          },
+        auth: {
+          flowType: 'pkce'
         },
+        global: {
+          headers: {
+            cookie: cookieStore.toString()
+          }
+        }
       }
     )
 
@@ -42,11 +28,9 @@ export async function GET(request: Request) {
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.error('Error exchanging code for session:', error.message, error)
-      return NextResponse.redirect(new URL(`/login?error=auth_error&message=${encodeURIComponent(error.message)}`, requestUrl.origin))
+      console.error('Error exchanging code for session:', error)
+      return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
     }
-
-    console.log('Session exchange successful:', { userId: sessionData?.user?.id })
 
     // Check if this user account has been deleted
     if (sessionData?.user) {
@@ -75,8 +59,6 @@ export async function GET(request: Request) {
 
     // Note: Registration code validation for OAuth is handled client-side
     // in the dashboard layout since we can't access localStorage here (server-side)
-
-    return response
   }
 
   // URL to redirect to after sign in process completes
