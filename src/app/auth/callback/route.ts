@@ -6,10 +6,18 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
 
-  console.log('OAuth callback received:', { code: code ? 'present' : 'missing' })
+  console.log('OAuth callback received:', {
+    code: code ? 'present' : 'missing',
+    origin: requestUrl.origin,
+    url: requestUrl.toString()
+  })
 
   if (code) {
     const cookieStore = await cookies()
+    const allCookies = cookieStore.getAll()
+
+    console.log('Available cookies:', allCookies.map(c => c.name))
+
     const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
 
     const supabase = createServerClient(
@@ -18,10 +26,10 @@ export async function GET(request: Request) {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll()
+            return allCookies
           },
           setAll(cookiesToSet) {
-            console.log('Setting cookies:', cookiesToSet.length)
+            console.log('Setting cookies:', cookiesToSet.map(c => c.name))
             cookiesToSet.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, options)
             })
@@ -34,8 +42,8 @@ export async function GET(request: Request) {
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.error('Error exchanging code for session:', error)
-      return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
+      console.error('Error exchanging code for session:', error.message, error)
+      return NextResponse.redirect(new URL(`/login?error=auth_error&message=${encodeURIComponent(error.message)}`, requestUrl.origin))
     }
 
     console.log('Session exchange successful:', { userId: sessionData?.user?.id })
