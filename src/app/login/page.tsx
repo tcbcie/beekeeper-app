@@ -271,9 +271,9 @@ function LoginForm() {
           </button>
         </div>
         <div className="flex items-center justify-center gap-3 text-xs text-gray-500">
-          <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">v1.0.27</span>
+          <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">v1.1.0</span>
           <span>•</span>
-          <span>November 14, 2025</span>
+          <span>November 19, 2025</span>
         </div>
       </div>
     </div>
