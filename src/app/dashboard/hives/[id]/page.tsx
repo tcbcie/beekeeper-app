@@ -372,7 +372,7 @@ export default function HiveDetailPage() {
   if (!hive) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        <div className="bg-red-900/50 border border-red-800 rounded-lg p-4 text-red-300">
           Hive not found
         </div>
       </div>
@@ -385,65 +385,65 @@ export default function HiveDetailPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center gap-2 text-slate-400 hover:text-slate-100 mb-4"
         >
           <ArrowLeft size={20} />
           Back to Hives
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">Hive {hive.hive_number}</h1>
+        <h1 className="text-3xl font-bold text-slate-100">Hive {hive.hive_number}</h1>
         {hive.apiaries && (
-          <p className="text-gray-600 mt-1">📍 {hive.apiaries.name}</p>
+          <p className="text-slate-400 mt-1">📍 {hive.apiaries.name}</p>
         )}
       </div>
 
       {/* Hive Details Card */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Hive Information</h2>
+      <div className="bg-slate-900 rounded-lg shadow-lg p-6 mb-6 border border-slate-800">
+        <h2 className="text-xl font-semibold mb-4 text-slate-100">Hive Information</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Basic Details */}
           <div>
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Hive Details</h3>
+            <h3 className="font-semibold text-slate-400 mb-3 text-sm uppercase tracking-wide">Hive Details</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Status:</span>
+                <span className="text-slate-400">Status:</span>
                 <span className={`font-medium px-2 py-1 rounded text-xs ${
-                  hive.status === 'active' ? 'bg-green-100 text-green-800' :
-                  hive.status === 'queenless' ? 'bg-red-100 text-red-800' :
-                  hive.status === 'archived' ? 'bg-gray-100 text-gray-700' :
-                  'bg-gray-100 text-gray-800'
+                  hive.status === 'active' ? 'bg-green-900/50 text-green-300 border border-green-800' :
+                  hive.status === 'queenless' ? 'bg-red-900/50 text-red-300 border border-red-800' :
+                  hive.status === 'archived' ? 'bg-slate-700 text-slate-300' :
+                  'bg-slate-700 text-slate-300'
                 }`}>
                   {hive.status}
                 </span>
               </div>
               {hive.hive_type && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Type:</span>
-                  <span className="font-medium">{hive.hive_type}</span>
+                  <span className="text-slate-400">Type:</span>
+                  <span className="font-medium text-slate-200">{hive.hive_type}</span>
                 </div>
               )}
               {hive.colony_established_date && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Colony Established:</span>
-                  <span className="font-medium text-xs">{new Date(hive.colony_established_date).toLocaleDateString()}</span>
+                  <span className="text-slate-400">Colony Established:</span>
+                  <span className="font-medium text-xs text-slate-200">{new Date(hive.colony_established_date).toLocaleDateString()}</span>
                 </div>
               )}
               {hive.archived_at && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Archived:</span>
-                  <span className="font-medium text-xs">{new Date(hive.archived_at).toLocaleDateString()}</span>
+                  <span className="text-slate-400">Archived:</span>
+                  <span className="font-medium text-xs text-slate-200">{new Date(hive.archived_at).toLocaleDateString()}</span>
                 </div>
               )}
               {hive.archived_at && hive.archive_reason_value?.value && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Archive Reason:</span>
-                  <span className="font-medium text-xs">{hive.archive_reason_value.value}</span>
+                  <span className="text-slate-400">Archive Reason:</span>
+                  <span className="font-medium text-xs text-slate-200">{hive.archive_reason_value.value}</span>
                 </div>
               )}
               {hive.archived_at && hive.archive_notes && (
                 <div className="pt-2">
-                  <span className="text-gray-600 block mb-1 text-xs">Archive Notes:</span>
-                  <span className="text-gray-700 text-xs italic">{hive.archive_notes}</span>
+                  <span className="text-slate-400 block mb-1 text-xs">Archive Notes:</span>
+                  <span className="text-slate-300 text-xs italic">{hive.archive_notes}</span>
                 </div>
               )}
             </div>
@@ -451,30 +451,30 @@ export default function HiveDetailPage() {
 
           {/* Queen Information */}
           <div>
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Queen</h3>
+            <h3 className="font-semibold text-slate-400 mb-3 text-sm uppercase tracking-wide">Queen</h3>
             <div className="space-y-2 text-sm">
               {hive.queens ? (
                 <>
                   {/* Queen is assigned - use queens table data */}
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Number:</span>
+                    <span className="text-slate-400">Number:</span>
                     <Link
                       href={`/dashboard/queens?id=${hive.queens.id}`}
-                      className="text-blue-600 hover:underline font-medium"
+                      className="text-emerald-400 hover:underline font-medium"
                     >
                       {hive.queens.queen_number}
                     </Link>
                   </div>
                   {hive.queens.marking_color && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Marked Colour:</span>
+                      <span className="text-slate-400">Marked Colour:</span>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        hive.queens.marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
+                        hive.queens.marking_color === 'White' ? 'bg-slate-200 text-slate-800' :
                         hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
                         hive.queens.marking_color === 'Red' ? 'bg-red-200 text-red-900' :
                         hive.queens.marking_color === 'Green' ? 'bg-green-200 text-green-900' :
                         hive.queens.marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
-                        'bg-gray-200 text-gray-800'
+                        'bg-slate-200 text-slate-800'
                       }`}>
                         {hive.queens.marking_color}
                       </span>
@@ -482,19 +482,19 @@ export default function HiveDetailPage() {
                   )}
                   {hive.queens.birth_date && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Birth Date:</span>
-                      <span className="font-medium text-xs">{new Date(hive.queens.birth_date).toLocaleDateString()}</span>
+                      <span className="text-slate-400">Birth Date:</span>
+                      <span className="font-medium text-xs text-slate-200">{new Date(hive.queens.birth_date).toLocaleDateString()}</span>
                     </div>
                   )}
                   {hive.queen_installed_date && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Installed:</span>
-                      <span className="font-medium text-xs">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
+                      <span className="text-slate-400">Installed:</span>
+                      <span className="font-medium text-xs text-slate-200">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Clipped:</span>
-                    <span className="font-medium">{hive.queens.queen_clipped ? 'Yes' : 'No'}</span>
+                    <span className="text-slate-400">Clipped:</span>
+                    <span className="font-medium text-slate-200">{hive.queens.queen_clipped ? 'Yes' : 'No'}</span>
                   </div>
                 </>
               ) : (
@@ -502,14 +502,14 @@ export default function HiveDetailPage() {
                   {/* No queen record assigned - use hive object data */}
                   {hive.queen_marking_color && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Marked Colour:</span>
+                      <span className="text-slate-400">Marked Colour:</span>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        hive.queen_marking_color === 'White' ? 'bg-gray-200 text-gray-800' :
+                        hive.queen_marking_color === 'White' ? 'bg-slate-200 text-slate-800' :
                         hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
                         hive.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
                         hive.queen_marking_color === 'Green' ? 'bg-green-200 text-green-900' :
                         hive.queen_marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
-                        'bg-gray-200 text-gray-800'
+                        'bg-slate-200 text-slate-800'
                       }`}>
                         {hive.queen_marking_color}
                       </span>
@@ -517,21 +517,21 @@ export default function HiveDetailPage() {
                   )}
                   {hive.queen_installed_date && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Installed:</span>
-                      <span className="font-medium text-xs">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
+                      <span className="text-slate-400">Installed:</span>
+                      <span className="font-medium text-xs text-slate-200">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Marked:</span>
-                    <span className="font-medium">{hive.queen_marked ? 'Yes' : 'No'}</span>
+                    <span className="text-slate-400">Marked:</span>
+                    <span className="font-medium text-slate-200">{hive.queen_marked ? 'Yes' : 'No'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Mated:</span>
-                    <span className="font-medium">{hive.queen_mated ? 'Yes' : 'No'}</span>
+                    <span className="text-slate-400">Mated:</span>
+                    <span className="font-medium text-slate-200">{hive.queen_mated ? 'Yes' : 'No'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Clipped:</span>
-                    <span className="font-medium">{hive.queen_clipped ? 'Yes' : 'No'}</span>
+                    <span className="text-slate-400">Clipped:</span>
+                    <span className="font-medium text-slate-200">{hive.queen_clipped ? 'Yes' : 'No'}</span>
                   </div>
                 </>
               )}
@@ -540,23 +540,23 @@ export default function HiveDetailPage() {
 
           {/* Recent Observations */}
           <div>
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Recent Observations</h3>
+            <h3 className="font-semibold text-slate-400 mb-3 text-sm uppercase tracking-wide">Recent Observations</h3>
             <div className="space-y-2 text-sm">
               {hive.queen_last_seen ? (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Queen Last Seen:</span>
-                  <span className="font-medium text-xs">{new Date(hive.queen_last_seen).toLocaleDateString()}</span>
+                  <span className="text-slate-400">Queen Last Seen:</span>
+                  <span className="font-medium text-xs text-slate-200">{new Date(hive.queen_last_seen).toLocaleDateString()}</span>
                 </div>
               ) : (
-                <div className="text-gray-400 italic text-xs">Queen not seen yet</div>
+                <div className="text-slate-500 italic text-xs">Queen not seen yet</div>
               )}
               {hive.eggs_last_present ? (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Eggs Last Present:</span>
-                  <span className="font-medium text-xs">{new Date(hive.eggs_last_present).toLocaleDateString()}</span>
+                  <span className="text-slate-400">Eggs Last Present:</span>
+                  <span className="font-medium text-xs text-slate-200">{new Date(hive.eggs_last_present).toLocaleDateString()}</span>
                 </div>
               ) : (
-                <div className="text-gray-400 italic text-xs">No eggs recorded yet</div>
+                <div className="text-slate-500 italic text-xs">No eggs recorded yet</div>
               )}
             </div>
           </div>
@@ -564,15 +564,15 @@ export default function HiveDetailPage() {
 
         {/* Open Tasks */}
         {tasks.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-slate-700">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide flex items-center gap-2">
+              <h3 className="font-semibold text-slate-400 text-sm uppercase tracking-wide flex items-center gap-2">
                 <ListTodo size={16} />
                 Open Tasks ({tasks.length})
               </h3>
               <Link
                 href={`/dashboard/tasks?hive=${hiveId}`}
-                className="text-xs text-blue-600 hover:text-blue-700"
+                className="text-xs text-emerald-400 hover:text-emerald-300"
               >
                 View All
               </Link>
@@ -580,24 +580,24 @@ export default function HiveDetailPage() {
             <div className="space-y-2">
               {tasks.slice(0, 3).map(task => {
                 const priorityColor =
-                  task.priority === 'urgent' ? 'border-red-500 bg-red-50' :
-                  task.priority === 'high' ? 'border-orange-500 bg-orange-50' :
-                  task.priority === 'normal' ? 'border-blue-500 bg-blue-50' :
-                  'border-gray-500 bg-gray-50'
+                  task.priority === 'urgent' ? 'border-red-500 bg-red-900/30' :
+                  task.priority === 'high' ? 'border-orange-500 bg-orange-900/30' :
+                  task.priority === 'normal' ? 'border-blue-500 bg-blue-900/30' :
+                  'border-slate-500 bg-slate-800'
 
                 return (
                   <div key={task.id} className={`border-l-4 ${priorityColor} p-3 rounded-r`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-gray-900 truncate">{task.title}</div>
+                        <div className="font-medium text-sm text-slate-100 truncate">{task.title}</div>
                         {task.description && (
-                          <div className="text-xs text-gray-600 mt-1 line-clamp-1">{task.description}</div>
+                          <div className="text-xs text-slate-400 mt-1 line-clamp-1">{task.description}</div>
                         )}
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                           <Calendar size={12} />
                           <span>{new Date(task.start_date).toLocaleDateString()}</span>
                           {task.category && (
-                            <span className="px-1.5 py-0.5 bg-white rounded border border-gray-200">
+                            <span className="px-1.5 py-0.5 bg-slate-700 rounded border border-slate-600 text-slate-300">
                               {task.category.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                             </span>
                           )}
@@ -605,16 +605,16 @@ export default function HiveDetailPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                          task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                          task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                          task.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
+                          task.priority === 'urgent' ? 'bg-red-900/50 text-red-300 border border-red-800' :
+                          task.priority === 'high' ? 'bg-orange-900/50 text-orange-300 border border-orange-800' :
+                          task.priority === 'normal' ? 'bg-blue-900/50 text-blue-300 border border-blue-800' :
+                          'bg-slate-700 text-slate-300'
                         }`}>
                           {task.priority}
                         </span>
                         <button
                           onClick={() => handleCompleteTask(task.id)}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
+                          className="p-1.5 text-green-400 hover:bg-green-900/50 rounded transition-colors"
                           title="Mark as complete"
                         >
                           <CheckCircle2 size={16} />
@@ -629,46 +629,46 @@ export default function HiveDetailPage() {
         )}
 
         {hive.notes && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase tracking-wide">Notes</h3>
-            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{hive.notes}</p>
+          <div className="mt-6 pt-6 border-t border-slate-700">
+            <h3 className="font-semibold text-slate-400 mb-2 text-sm uppercase tracking-wide">Notes</h3>
+            <p className="text-sm text-slate-300 bg-slate-800 p-3 rounded">{hive.notes}</p>
           </div>
         )}
       </div>
 
       {/* Inspection Averages - Separate Card */}
       {averages && averages.inspection_count > 0 && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Inspection Averages ({averages.inspection_count} inspection{averages.inspection_count !== 1 ? 's' : ''})</h2>
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 mb-6 border border-slate-800">
+          <h2 className="text-xl font-semibold mb-4 text-slate-100">Inspection Averages ({averages.inspection_count} inspection{averages.inspection_count !== 1 ? 's' : ''})</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {averages.brood_frames !== null && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-xs text-blue-600 mb-1 font-medium">Frames with Brood</div>
-                <div className="text-2xl font-bold text-blue-900">{averages.brood_frames.toFixed(1)}</div>
+              <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-800">
+                <div className="text-xs text-blue-400 mb-1 font-medium">Frames with Brood</div>
+                <div className="text-2xl font-bold text-blue-300">{averages.brood_frames.toFixed(1)}</div>
               </div>
             )}
             {averages.right_sized_frames !== null && hive.configuration?.right_sized_broodbox && (
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="text-xs text-green-600 mb-1 font-medium">Right-Sized Frames</div>
-                <div className="text-2xl font-bold text-green-900">{averages.right_sized_frames.toFixed(1)}</div>
+              <div className="bg-green-900/30 p-4 rounded-lg border border-green-800">
+                <div className="text-xs text-green-400 mb-1 font-medium">Right-Sized Frames</div>
+                <div className="text-2xl font-bold text-green-300">{averages.right_sized_frames.toFixed(1)}</div>
               </div>
             )}
             {averages.brood_pattern !== null && (
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="text-xs text-purple-600 mb-1 font-medium">Brood Pattern</div>
-                <div className="text-2xl font-bold text-purple-900">{'⭐'.repeat(Math.round(averages.brood_pattern))}</div>
+              <div className="bg-purple-900/30 p-4 rounded-lg border border-purple-800">
+                <div className="text-xs text-purple-400 mb-1 font-medium">Brood Pattern</div>
+                <div className="text-2xl font-bold text-purple-300">{'⭐'.repeat(Math.round(averages.brood_pattern))}</div>
               </div>
             )}
             {averages.temperament !== null && (
-              <div className="bg-amber-50 p-4 rounded-lg">
-                <div className="text-xs text-amber-600 mb-1 font-medium">Temperament</div>
-                <div className="text-2xl font-bold text-amber-900">{'⭐'.repeat(Math.round(averages.temperament))}</div>
+              <div className="bg-amber-900/30 p-4 rounded-lg border border-amber-800">
+                <div className="text-xs text-amber-400 mb-1 font-medium">Temperament</div>
+                <div className="text-2xl font-bold text-amber-300">{'⭐'.repeat(Math.round(averages.temperament))}</div>
               </div>
             )}
             {averages.population !== null && (
-              <div className="bg-orange-50 p-4 rounded-lg">
-                <div className="text-xs text-orange-600 mb-1 font-medium">Population</div>
-                <div className="text-2xl font-bold text-orange-900">{'⭐'.repeat(Math.round(averages.population))}</div>
+              <div className="bg-orange-900/30 p-4 rounded-lg border border-orange-800">
+                <div className="text-xs text-orange-400 mb-1 font-medium">Population</div>
+                <div className="text-2xl font-bold text-orange-300">{'⭐'.repeat(Math.round(averages.population))}</div>
               </div>
             )}
           </div>
@@ -745,191 +745,191 @@ export default function HiveDetailPage() {
       {/* Records Sections */}
       <div className="space-y-6">
         {/* Inspections */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Calendar size={24} className="text-blue-600" />
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-100">
+            <Calendar size={24} className="text-blue-400" />
             Inspections ({inspections.length})
           </h2>
           {inspections.length > 0 ? (
             <div className="space-y-3">
               {inspections.map((inspection) => (
-                <div key={inspection.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div key={inspection.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-slate-100">
                       {new Date(inspection.inspection_date).toLocaleDateString()}
                     </span>
                     <div className="flex gap-2">
                       {inspection.queen_seen && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">👑 Queen Seen</span>
+                        <span className="px-2 py-1 bg-green-900/50 text-green-300 text-xs rounded border border-green-800">👑 Queen Seen</span>
                       )}
                       {inspection.eggs_present && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">🥚 Eggs</span>
+                        <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs rounded border border-blue-800">🥚 Eggs</span>
                       )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
                     {inspection.brood_frames !== null && (
-                      <div className="text-gray-600">Brood Frames: <span className="font-medium">{inspection.brood_frames}</span></div>
+                      <div className="text-slate-400">Brood Frames: <span className="font-medium text-slate-200">{inspection.brood_frames}</span></div>
                     )}
                     {inspection.brood_pattern_rating !== null && (
-                      <div className="text-gray-600">Pattern: <span className="font-medium">{'⭐'.repeat(inspection.brood_pattern_rating)}</span></div>
+                      <div className="text-slate-400">Pattern: <span className="font-medium text-slate-200">{'⭐'.repeat(inspection.brood_pattern_rating)}</span></div>
                     )}
                     {inspection.temperament_rating !== null && (
-                      <div className="text-gray-600">Temper: <span className="font-medium">{'⭐'.repeat(inspection.temperament_rating)}</span></div>
+                      <div className="text-slate-400">Temper: <span className="font-medium text-slate-200">{'⭐'.repeat(inspection.temperament_rating)}</span></div>
                     )}
                     {inspection.population_strength !== null && (
-                      <div className="text-gray-600">Population: <span className="font-medium">{'⭐'.repeat(inspection.population_strength)}</span></div>
+                      <div className="text-slate-400">Population: <span className="font-medium text-slate-200">{'⭐'.repeat(inspection.population_strength)}</span></div>
                     )}
                     {inspection.weight !== null && (
-                      <div className="text-gray-600">Weight: <span className="font-medium">{inspection.weight} kg</span></div>
+                      <div className="text-slate-400">Weight: <span className="font-medium text-slate-200">{inspection.weight} kg</span></div>
                     )}
                   </div>
                   {inspection.notes && (
-                    <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{inspection.notes}</p>
+                    <p className="text-sm text-slate-300 mt-2 bg-slate-800 p-2 rounded">{inspection.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No inspections recorded yet</p>
+            <p className="text-slate-500 text-center py-4">No inspections recorded yet</p>
           )}
         </div>
 
         {/* Varroa Checks */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Bug size={24} className="text-purple-600" />
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-100">
+            <Bug size={24} className="text-purple-400" />
             Varroa Checks ({varroaChecks.length})
           </h2>
           {varroaChecks.length > 0 ? (
             <div className="space-y-3">
               {varroaChecks.map((check) => (
-                <div key={check.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div key={check.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-slate-100">
                         {new Date(check.check_date).toLocaleDateString()}
                       </span>
                       {check.check_method && (
-                        <span className="ml-3 text-sm text-gray-600">Method: {check.check_method}</span>
+                        <span className="ml-3 text-sm text-slate-400">Method: {check.check_method}</span>
                       )}
                     </div>
                     {check.mite_count !== null && (
                       <span className={`px-3 py-1 rounded font-medium ${
-                        check.mite_count > 10 ? 'bg-red-100 text-red-800' :
-                        check.mite_count > 5 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
+                        check.mite_count > 10 ? 'bg-red-900/50 text-red-300 border border-red-800' :
+                        check.mite_count > 5 ? 'bg-yellow-900/50 text-yellow-300 border border-yellow-800' :
+                        'bg-green-900/50 text-green-300 border border-green-800'
                       }`}>
                         {check.mite_count} mites
                       </span>
                     )}
                   </div>
                   {check.notes && (
-                    <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{check.notes}</p>
+                    <p className="text-sm text-slate-300 mt-2 bg-slate-800 p-2 rounded">{check.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No varroa checks recorded yet</p>
+            <p className="text-slate-500 text-center py-4">No varroa checks recorded yet</p>
           )}
         </div>
 
         {/* Varroa Treatments */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Syringe size={24} className="text-red-600" />
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-100">
+            <Syringe size={24} className="text-red-400" />
             Varroa Treatments ({varroaTreatments.length})
           </h2>
           {varroaTreatments.length > 0 ? (
             <div className="space-y-3">
               {varroaTreatments.map((treatment) => (
-                <div key={treatment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div key={treatment.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-slate-100">
                         {new Date(treatment.treatment_date).toLocaleDateString()}
                       </span>
-                      <span className="ml-3 text-sm font-medium text-red-700">{treatment.treatment_type}</span>
+                      <span className="ml-3 text-sm font-medium text-red-400">{treatment.treatment_type}</span>
                     </div>
                     {treatment.dosage && (
-                      <span className="text-sm text-gray-600">Dosage: {treatment.dosage}</span>
+                      <span className="text-sm text-slate-400">Dosage: {treatment.dosage}</span>
                     )}
                   </div>
                   {treatment.notes && (
-                    <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{treatment.notes}</p>
+                    <p className="text-sm text-slate-300 mt-2 bg-slate-800 p-2 rounded">{treatment.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No treatments recorded yet</p>
+            <p className="text-slate-500 text-center py-4">No treatments recorded yet</p>
           )}
         </div>
 
         {/* Feedings */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Wheat size={24} className="text-orange-600" />
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-100">
+            <Wheat size={24} className="text-orange-400" />
             Feedings ({feedings.length})
           </h2>
           {feedings.length > 0 ? (
             <div className="space-y-3">
               {feedings.map((feeding) => (
-                <div key={feeding.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div key={feeding.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-slate-100">
                         {new Date(feeding.feeding_date).toLocaleDateString()}
                       </span>
-                      <span className="ml-3 text-sm font-medium text-orange-700">{feeding.feed_type}</span>
+                      <span className="ml-3 text-sm font-medium text-orange-400">{feeding.feed_type}</span>
                     </div>
                     {feeding.amount !== null && (
-                      <span className="text-sm text-gray-600">{feeding.amount} kg</span>
+                      <span className="text-sm text-slate-400">{feeding.amount} kg</span>
                     )}
                   </div>
                   {feeding.notes && (
-                    <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{feeding.notes}</p>
+                    <p className="text-sm text-slate-300 mt-2 bg-slate-800 p-2 rounded">{feeding.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No feedings recorded yet</p>
+            <p className="text-slate-500 text-center py-4">No feedings recorded yet</p>
           )}
         </div>
 
         {/* Harvests */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Droplet size={24} className="text-yellow-600" />
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-slate-100">
+            <Droplet size={24} className="text-yellow-400" />
             Harvests ({harvests.length})
           </h2>
           {harvests.length > 0 ? (
             <div className="space-y-3">
               {harvests.map((harvest) => (
-                <div key={harvest.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                <div key={harvest.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-slate-100">
                       {new Date(harvest.harvest_date).toLocaleDateString()}
                     </span>
                     <div className="text-right">
                       {harvest.frames_harvested !== null && (
-                        <div className="text-sm text-gray-600">{harvest.frames_harvested} frames</div>
+                        <div className="text-sm text-slate-400">{harvest.frames_harvested} frames</div>
                       )}
                       {harvest.honey_weight !== null && (
-                        <div className="text-sm font-medium text-yellow-700">{harvest.honey_weight} kg</div>
+                        <div className="text-sm font-medium text-yellow-400">{harvest.honey_weight} kg</div>
                       )}
                     </div>
                   </div>
                   {harvest.notes && (
-                    <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{harvest.notes}</p>
+                    <p className="text-sm text-slate-300 mt-2 bg-slate-800 p-2 rounded">{harvest.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No harvests recorded yet</p>
+            <p className="text-slate-500 text-center py-4">No harvests recorded yet</p>
           )}
         </div>
       </div>
