@@ -1,0 +1,24 @@
+{
+  "name": "hive-craic",
+  "version": "1.0.12",
+  "description": "Beekeeping Management Application",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    
+    "version:bump": "node scripts/bump-version.mjs",
+    "version:bump:minor": "node scripts/bump-version.mjs minor",
+    "version:bump:major": "node scripts/bump-version.mjs major",
+    "version:update": "node scripts/update-version.mjs",
+    "version:verify": "node scripts/update-version.mjs --verify-only",
+    
+    "release:patch": "npm run version:bump && npm run build",
+    "release:minor": "npm run version:bump:minor && npm run build",
+    "release:major": "npm run version:bump:major && npm run build",
+    
+    "precommit": "npm run lint && npm run build"
+  },
+  "type": "module"
+}
