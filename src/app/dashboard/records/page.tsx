@@ -1969,7 +1969,7 @@ export default function InspectionsPage() {
               </button>
               <button
                 onClick={() => router.push('/dashboard/hives')}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border transition-colors"
                 title="Go to hives page"
               >
                 <Home size={18} />
@@ -2162,7 +2162,7 @@ export default function InspectionsPage() {
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-red-50 flex items-center gap-2 rounded-b-lg transition-colors text-red-700 border-t border-gray-200"
+                  className="w-full px-4 py-3 text-left hover:bg-red-50 flex items-center gap-2 rounded-b-lg transition-colors text-red-700 border-t border-border"
                 >
                   <Archive size={16} />
                   Archive Hive
@@ -2317,7 +2317,7 @@ export default function InspectionsPage() {
                     archive_notes: ''
                   })
                 }}
-                className="flex-1 px-4 py-2 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600"
+                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border"
               >
                 Cancel
               </button>
@@ -2407,7 +2407,7 @@ export default function InspectionsPage() {
                   setCustomStartDate('')
                   setCustomEndDate('')
                 }}
-                className="px-3 py-2 text-sm bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600"
+                className="px-3 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border"
               >
                 Clear Dates
               </button>
@@ -2434,7 +2434,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-slate-800 dark:active:bg-slate-700 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-slate-800 dark:active:bg-slate-700 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -2662,7 +2662,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, queen_cups_number: Math.max(0, formData.queen_cups_number - 1)})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 −
                               </button>
@@ -2676,7 +2676,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, queen_cups_number: formData.queen_cups_number + 1})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 +
                               </button>
@@ -2750,7 +2750,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, swarm_cells_number: Math.max(0, formData.swarm_cells_number - 1)})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 −
                               </button>
@@ -2764,7 +2764,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, swarm_cells_number: formData.swarm_cells_number + 1})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 +
                               </button>
@@ -2838,7 +2838,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, supercedure_cells_number: Math.max(0, formData.supercedure_cells_number - 1)})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 −
                               </button>
@@ -2852,7 +2852,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, supercedure_cells_number: formData.supercedure_cells_number + 1})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 +
                               </button>
@@ -2926,7 +2926,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, emergency_cells_number: Math.max(0, formData.emergency_cells_number - 1)})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 −
                               </button>
@@ -2940,7 +2940,7 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, emergency_cells_number: formData.emergency_cells_number + 1})}
-                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                               >
                                 +
                               </button>
@@ -2985,7 +2985,7 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, removed_cells: Math.max(0, formData.removed_cells - 1)})}
-                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                           >
                             −
                           </button>
@@ -2999,7 +2999,7 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, removed_cells: formData.removed_cells + 1})}
-                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                           >
                             +
                           </button>
@@ -3011,7 +3011,7 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, remaining_cells: Math.max(0, formData.remaining_cells - 1)})}
-                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                           >
                             −
                           </button>
@@ -3025,7 +3025,7 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, remaining_cells: formData.remaining_cells + 1})}
-                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
                           >
                             +
                           </button>
@@ -3044,7 +3044,7 @@ export default function InspectionsPage() {
                         placeholder="Additional notes about queen cells..."
                         className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-sm"
                       />
-                      <div className="text-right text-xs text-slate-500 mt-1">
+                      <div className="text-right text-xs text-text-tertiary mt-1">
                         {formData.queen_cells_notes.length} / 2500
                       </div>
                     </div>
@@ -3064,7 +3064,7 @@ export default function InspectionsPage() {
                     Population: {formData.population_strength === 0 ? 'Not Recorded' : renderStars(formData.population_strength)}
                   </label>
                   <div className="relative group">
-                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Population Rating Guide:</div>
                       <div className="space-y-1">
@@ -3074,7 +3074,7 @@ export default function InspectionsPage() {
                         <div><strong>⭐⭐⭐⭐ (4):</strong> Strong - Good population, healthy colony</div>
                         <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very Strong - Bursting with bees, may need space</div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                         Population strength indicates colony health and productivity potential.
                       </div>
                     </div>
@@ -3116,7 +3116,7 @@ export default function InspectionsPage() {
                     Temperament: {formData.temperament_rating === 0 ? 'Not Recorded' : renderStars(formData.temperament_rating)}
                   </label>
                   <div className="relative group">
-                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Temperament Rating Guide:</div>
                       <div className="space-y-1">
@@ -3126,7 +3126,7 @@ export default function InspectionsPage() {
                         <div><strong>⭐⭐⭐⭐ (4):</strong> Calm - Easy to work with, minimal smoke needed</div>
                         <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Gentle - Very calm, pleasant to inspect</div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                         Temperament affects how easy the colony is to manage and inspect safely.
                       </div>
                     </div>
@@ -3168,7 +3168,7 @@ export default function InspectionsPage() {
                     Brood Pattern: {formData.brood_pattern_rating === 0 ? 'Not Recorded' : renderStars(formData.brood_pattern_rating)}
                   </label>
                   <div className="relative group">
-                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Brood Pattern Rating Guide:</div>
                       <div className="space-y-1">
@@ -3178,7 +3178,7 @@ export default function InspectionsPage() {
                         <div><strong>⭐⭐⭐⭐ (4):</strong> Very Good - Solid pattern, minimal gaps</div>
                         <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Solid, compact brood pattern</div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                         A good brood pattern indicates a healthy, productive queen laying eggs consistently.
                       </div>
                     </div>
@@ -3220,7 +3220,7 @@ export default function InspectionsPage() {
                     Swarming Tendency: {formData.swarming_tendency === 0 ? 'Not Recorded' : renderStars(formData.swarming_tendency)}
                   </label>
                   <div className="relative group">
-                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Swarming Tendency Rating Guide:</div>
                       <div className="space-y-1">
@@ -3230,7 +3230,7 @@ export default function InspectionsPage() {
                         <div><strong>⭐⭐⭐⭐ (4):</strong> High - Frequent queen cells, needs attention</div>
                         <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very High - Strong swarm preparations evident</div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                         Monitor swarming tendency to prevent losing half your colony.
                       </div>
                     </div>
@@ -3272,7 +3272,7 @@ export default function InspectionsPage() {
                     Calmness: {formData.calmness === 0 ? 'Not Recorded' : renderStars(formData.calmness)}
                   </label>
                   <div className="relative group">
-                    <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Calmness Rating Guide:</div>
                       <div className="space-y-1">
@@ -3282,7 +3282,7 @@ export default function InspectionsPage() {
                         <div><strong>⭐⭐⭐⭐ (4):</strong> Calm - Stay on comb, minimal disturbance</div>
                         <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very Calm - Hardly notice inspection, very gentle</div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                         Calm bees make inspections easier and safer for both bees and beekeeper.
                       </div>
                     </div>
@@ -3552,7 +3552,7 @@ export default function InspectionsPage() {
                         max="3"
                         value={formData.drones_present}
                         onChange={(e) => setFormData({...formData, drones_present: parseInt(e.target.value)})}
-                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                        className="w-full h-2 bg-surface dark:bg-surface-elevated rounded-lg appearance-none cursor-pointer accent-amber-600"
                       />
                       <div className="flex justify-between text-xs text-text-tertiary mt-2">
                         <span>Not recorded</span>
@@ -3631,7 +3631,7 @@ export default function InspectionsPage() {
                         Recapping: {formData.recapping === 0 ? 'Not Recorded' : renderStars(formData.recapping)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Recapping Rating Guide:</div>
                           <div className="space-y-1">
@@ -3641,7 +3641,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good at detecting and removing diseased brood</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Rapidly detect and remove diseased brood</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             Bees that recap cells may be identifying and removing diseased or parasitized brood.
                           </div>
                         </div>
@@ -3683,7 +3683,7 @@ export default function InspectionsPage() {
                         VSH (Varroa Sensitive Hygiene): {formData.vsh === 0 ? 'Not Recorded' : renderStars(formData.vsh)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">VSH Rating Guide:</div>
                           <div className="space-y-1">
@@ -3693,7 +3693,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good at identifying and removing infested brood</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Highly sensitive to varroa presence in brood</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             VSH bees can detect and remove brood infested with reproducing varroa mites.
                           </div>
                         </div>
@@ -3735,7 +3735,7 @@ export default function InspectionsPage() {
                         SMR (Suppressed Mite Reproduction): {formData.smr === 0 ? 'Not Recorded' : renderStars(formData.smr)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">SMR Rating Guide:</div>
                           <div className="space-y-1">
@@ -3745,7 +3745,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good suppression of mite reproduction</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Strong suppression, fewer viable offspring</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             SMR trait limits varroa mite reproduction in capped brood cells.
                           </div>
                         </div>
@@ -3803,7 +3803,7 @@ export default function InspectionsPage() {
                         American Foulbrood (AFB): {formData.afb_disease === 0 ? 'Not Recorded' : renderStars(formData.afb_disease)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">AFB Severity Rating:</div>
                           <div className="space-y-1">
@@ -3813,7 +3813,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Significant infection, urgent action needed</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive infection, colony at risk</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             AFB is a highly contagious bacterial disease that requires immediate reporting and treatment.
                           </div>
                         </div>
@@ -3855,7 +3855,7 @@ export default function InspectionsPage() {
                         European Foulbrood (EFB): {formData.efb_disease === 0 ? 'Not Recorded' : renderStars(formData.efb_disease)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">EFB Severity Rating:</div>
                           <div className="space-y-1">
@@ -3865,7 +3865,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many dead larvae, serious concern</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive infection, colony struggling</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             EFB affects young larvae and can weaken the colony significantly.
                           </div>
                         </div>
@@ -3907,7 +3907,7 @@ export default function InspectionsPage() {
                         Chalkbrood: {formData.chalkbrood_disease === 0 ? 'Not Recorded' : renderStars(formData.chalkbrood_disease)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Chalkbrood Severity Rating:</div>
                           <div className="space-y-1">
@@ -3917,7 +3917,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many mummies, colony weakened</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive mummies, serious concern</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             Chalkbrood is a fungal disease that creates hard, chalk-like mummies.
                           </div>
                         </div>
@@ -3959,7 +3959,7 @@ export default function InspectionsPage() {
                         Nosemosis: {formData.nosemosis_disease === 0 ? 'Not Recorded' : renderStars(formData.nosemosis_disease)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Nosemosis Severity Rating:</div>
                           <div className="space-y-1">
@@ -3969,7 +3969,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Heavy spotting, colony weakened</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive spotting, serious health issue</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             Nosemosis is caused by microsporidian parasites affecting bee digestion.
                           </div>
                         </div>
@@ -4011,7 +4011,7 @@ export default function InspectionsPage() {
                         Deformed Wing Virus (DWV): {formData.dwv_disease === 0 ? 'Not Recorded' : renderStars(formData.dwv_disease)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">DWV Severity Rating:</div>
                           <div className="space-y-1">
@@ -4021,7 +4021,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many deformed bees, varroa issues</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive deformities, urgent intervention</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             DWV often indicates varroa mite issues. Bees have shrunken, deformed wings.
                           </div>
                         </div>
@@ -4063,7 +4063,7 @@ export default function InspectionsPage() {
                         IAPV & CBPV: {formData.iapv_cbpv_disease === 0 ? 'Not Recorded' : renderStars(formData.iapv_cbpv_disease)}
                       </label>
                       <div className="relative group">
-                        <HelpCircle size={16} className="text-gray-400 cursor-help" />
+                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
                         <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">IAPV & CBPV Severity Rating:</div>
                           <div className="space-y-1">
@@ -4073,7 +4073,7 @@ export default function InspectionsPage() {
                             <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many affected bees, colony weakened</div>
                             <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive symptoms, serious concern</div>
                           </div>
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
                             IAPV causes paralysis; CBPV causes trembling and hairless appearance.
                           </div>
                         </div>
@@ -4158,11 +4158,11 @@ export default function InspectionsPage() {
                 ) : null}
                 <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all p-4">
                   <div className="flex flex-col items-center justify-center">
-                    <Camera size={24} className="text-gray-400 mb-1" />
-                    <p className="text-xs text-slate-500 text-center">
+                    <Camera size={24} className="text-text-tertiary mb-1" />
+                    <p className="text-xs text-text-tertiary text-center">
                       <span className="font-semibold">Click to upload</span> or drag and drop
                     </p>
-                    <p className="text-xs text-gray-400">PNG, JPG, WEBP up to 10MB</p>
+                    <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
                   </div>
                   <input
                     type="file"
@@ -4185,7 +4185,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4224,7 +4224,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingTreatment(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4363,7 +4363,7 @@ export default function InspectionsPage() {
                       if (!selectedProduct) return null
                       return (
                         <>
-                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                             <h4 className="font-semibold text-foreground">{selectedProduct.product_name}</h4>
                           </div>
@@ -4405,7 +4405,7 @@ export default function InspectionsPage() {
                               </div>
                             )}
                             {selectedProduct.notes && (
-                              <div className="pt-2 border-t border-gray-200">
+                              <div className="pt-2 border-t border-border">
                                 <span className="font-medium text-text-secondary block mb-1">Notes:</span>
                                 <span className="text-text-tertiary text-xs">{selectedProduct.notes}</span>
                               </div>
@@ -4486,7 +4486,7 @@ export default function InspectionsPage() {
                 disabled={fetchingWeather}
               />
               {editingTreatment?.hive_id && !fetchingWeather && (
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-text-tertiary mt-1">
                   Weather data auto-populated based on hive location. You can edit if needed.
                 </p>
               )}
@@ -4526,7 +4526,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingCheck(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4778,9 +4778,9 @@ export default function InspectionsPage() {
                 <span className="text-sm font-medium text-text-secondary">
                   Action Threshold Reached
                   {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? (
-                    <span className="ml-2 text-xs text-slate-500 font-normal">(Auto-checked if ≥ 5 mites/day)</span>
+                    <span className="ml-2 text-xs text-text-tertiary font-normal">(Auto-checked if ≥ 5 mites/day)</span>
                   ) : (
-                    <span className="ml-2 text-xs text-slate-500 font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
+                    <span className="ml-2 text-xs text-text-tertiary font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
                   )}
                 </span>
               </label>
@@ -4822,7 +4822,7 @@ export default function InspectionsPage() {
                   setIsOtherFeedType(false)
                   setOtherFeedType('')
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4966,7 +4966,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingHarvest(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -5116,12 +5116,12 @@ export default function InspectionsPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-text-tertiary">
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
                   {inspection.profiles && (
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-text-tertiary mt-1">
                       Recorded by: <span className="font-medium text-text-secondary">
                         {(inspection.profiles.first_name && inspection.profiles.last_name)
                           ? `${inspection.profiles.first_name} ${inspection.profiles.last_name}`
@@ -5159,22 +5159,22 @@ export default function InspectionsPage() {
               <h4 className="text-sm font-semibold text-foreground mb-3">Queen & Brood</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Queen Seen</div>
+                  <div className="text-xs text-text-tertiary mb-1">Queen Seen</div>
                   <div className="text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
                 </div>
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Eggs</div>
+                  <div className="text-xs text-text-tertiary mb-1">Eggs</div>
                   <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
                 </div>
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Brood Frames</div>
+                  <div className="text-xs text-text-tertiary mb-1">Brood Frames</div>
                   <div className="text-2xl font-bold text-purple-600">
                     {inspection.brood_frames ?? '-'}
                   </div>
                 </div>
                 {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
                   <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                    <div className="text-xs text-slate-500 mb-1">Right-Sized Frames</div>
+                    <div className="text-xs text-text-tertiary mb-1">Right-Sized Frames</div>
                     <div className="text-2xl font-bold text-amber-600">
                       {inspection.right_sized_frames ?? '-'}
                     </div>
@@ -5190,7 +5190,7 @@ export default function InspectionsPage() {
               <div className="grid grid-cols-2 gap-3">
                 {inspection.drones_present !== -1 && (
                   <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                    <div className="text-xs text-slate-500 mb-1">Drones present</div>
+                    <div className="text-xs text-text-tertiary mb-1">Drones present</div>
                     <div className="text-lg font-bold text-amber-600">
                       {inspection.drones_present === 0 && 'Low'}
                       {inspection.drones_present === 1 && 'Medium'}
@@ -5201,7 +5201,7 @@ export default function InspectionsPage() {
                 )}
                 {inspection.drone_brood_present !== null && (
                   <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                    <div className="text-xs text-slate-500 mb-1">Drone brood present</div>
+                    <div className="text-xs text-text-tertiary mb-1">Drone brood present</div>
                     <div className="text-2xl">{inspection.drone_brood_present ? '✅' : '❌'}</div>
                   </div>
                 )}
@@ -5214,23 +5214,23 @@ export default function InspectionsPage() {
               <h4 className="text-sm font-semibold text-foreground mb-3">Behaviour</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Population</div>
+                  <div className="text-xs text-text-tertiary mb-1">Population</div>
                   <div className="text-sm">{renderStars(inspection.population_strength)}</div>
                 </div>
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Temperament</div>
+                  <div className="text-xs text-text-tertiary mb-1">Temperament</div>
                   <div className="text-sm">{renderStars(inspection.temperament_rating)}</div>
                 </div>
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Brood Pattern</div>
+                  <div className="text-xs text-text-tertiary mb-1">Brood Pattern</div>
                   <div className="text-sm">{renderStars(inspection.brood_pattern_rating)}</div>
                 </div>
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Swarming Tendency</div>
+                  <div className="text-xs text-text-tertiary mb-1">Swarming Tendency</div>
                   <div className="text-sm">{renderStars(inspection.swarming_tendency)}</div>
                 </div>
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                  <div className="text-xs text-slate-500 mb-1">Calmness</div>
+                  <div className="text-xs text-text-tertiary mb-1">Calmness</div>
                   <div className="text-sm">{renderStars(inspection.calmness)}</div>
                 </div>
               </div>
@@ -5244,37 +5244,37 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.frames_foundation > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Frames-Foundation</div>
+                      <div className="text-xs text-text-tertiary mb-1">Frames-Foundation</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_foundation}</div>
                     </div>
                   )}
                   {inspection.frames_brood > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Brood-Frames</div>
+                      <div className="text-xs text-text-tertiary mb-1">Brood-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_brood}</div>
                     </div>
                   )}
                   {inspection.frames_drawn > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Drawn-Frames</div>
+                      <div className="text-xs text-text-tertiary mb-1">Drawn-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_drawn}</div>
                     </div>
                   )}
                   {inspection.honey_supers > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Honey Supers</div>
+                      <div className="text-xs text-text-tertiary mb-1">Honey Supers</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.honey_supers}</div>
                     </div>
                   )}
                   {inspection.drone_frames > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Drone-Frames</div>
+                      <div className="text-xs text-text-tertiary mb-1">Drone-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.drone_frames}</div>
                     </div>
                   )}
                   {inspection.store_frames > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Store-Frames</div>
+                      <div className="text-xs text-text-tertiary mb-1">Store-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.store_frames}</div>
                     </div>
                   )}
@@ -5291,19 +5291,19 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {inspection.recapping !== 3 && inspection.recapping !== 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Recapping</div>
+                      <div className="text-xs text-text-tertiary mb-1">Recapping</div>
                       <div className="text-sm">{renderStars(inspection.recapping)}</div>
                     </div>
                   )}
                   {inspection.vsh !== 3 && inspection.vsh !== 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">VSH</div>
+                      <div className="text-xs text-text-tertiary mb-1">VSH</div>
                       <div className="text-sm">{renderStars(inspection.vsh)}</div>
                     </div>
                   )}
                   {inspection.smr !== 3 && inspection.smr !== 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">SMR</div>
+                      <div className="text-xs text-text-tertiary mb-1">SMR</div>
                       <div className="text-sm">{renderStars(inspection.smr)}</div>
                     </div>
                   )}
@@ -5350,37 +5350,37 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.afb_disease > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">AFB</div>
+                      <div className="text-xs text-text-tertiary mb-1">AFB</div>
                       <div className="text-sm">{renderStars(inspection.afb_disease)}</div>
                     </div>
                   )}
                   {inspection.efb_disease > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">EFB</div>
+                      <div className="text-xs text-text-tertiary mb-1">EFB</div>
                       <div className="text-sm">{renderStars(inspection.efb_disease)}</div>
                     </div>
                   )}
                   {inspection.chalkbrood_disease > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Chalkbrood</div>
+                      <div className="text-xs text-text-tertiary mb-1">Chalkbrood</div>
                       <div className="text-sm">{renderStars(inspection.chalkbrood_disease)}</div>
                     </div>
                   )}
                   {inspection.nosemosis_disease > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">Nosemosis</div>
+                      <div className="text-xs text-text-tertiary mb-1">Nosemosis</div>
                       <div className="text-sm">{renderStars(inspection.nosemosis_disease)}</div>
                     </div>
                   )}
                   {inspection.dwv_disease > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">DWV</div>
+                      <div className="text-xs text-text-tertiary mb-1">DWV</div>
                       <div className="text-sm">{renderStars(inspection.dwv_disease)}</div>
                     </div>
                   )}
                   {inspection.iapv_cbpv_disease > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
-                      <div className="text-xs text-slate-500 mb-1">IAPV & CBPV</div>
+                      <div className="text-xs text-text-tertiary mb-1">IAPV & CBPV</div>
                       <div className="text-sm">{renderStars(inspection.iapv_cbpv_disease)}</div>
                     </div>
                   )}
@@ -5426,7 +5426,7 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {treatment.profiles && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(treatment.profiles.first_name && treatment.profiles.last_name)
                             ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
@@ -5479,30 +5479,30 @@ export default function InspectionsPage() {
                 {/* Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-red-50 rounded-lg">
                   <div className="flex flex-col">
-                    <span className="text-xs text-slate-500 mb-1">Treatment Product</span>
+                    <span className="text-xs text-text-tertiary mb-1">Treatment Product</span>
                     <span className="text-sm font-medium text-foreground">{treatment.treatment_type}</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs text-slate-500 mb-1">Dosage</span>
+                    <span className="text-xs text-text-tertiary mb-1">Dosage</span>
                     <span className="text-sm font-medium text-foreground">{treatment.dosage}</span>
                   </div>
                   {treatment.temperature && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">Temperature</span>
+                      <span className="text-xs text-text-tertiary mb-1">Temperature</span>
                       <span className="text-sm font-medium text-foreground">{treatment.temperature}°C</span>
                     </div>
                   )}
                   {treatment.weather_conditions && (
                     <div className="flex flex-col md:col-span-2">
-                      <span className="text-xs text-slate-500 mb-1">Weather Conditions</span>
+                      <span className="text-xs text-text-tertiary mb-1">Weather Conditions</span>
                       <span className="text-sm font-medium text-foreground">{treatment.weather_conditions}</span>
                     </div>
                   )}
                 </div>
 
                 {treatment.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                    <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{treatment.notes}</span>
                   </div>
                 )}
@@ -5538,7 +5538,7 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {check.profiles && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(check.profiles.first_name && check.profiles.last_name)
                             ? `${check.profiles.first_name} ${check.profiles.last_name}`
@@ -5583,12 +5583,12 @@ export default function InspectionsPage() {
                 {/* Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-orange-50 rounded-lg">
                   <div className="flex flex-col">
-                    <span className="text-xs text-slate-500 mb-1">Method</span>
+                    <span className="text-xs text-text-tertiary mb-1">Method</span>
                     <span className="text-sm font-medium text-foreground">{check.method}</span>
                   </div>
                   {check.mites_count !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">
+                      <span className="text-xs text-text-tertiary mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
                       </span>
                       <span className="text-sm font-medium text-foreground">{check.mites_count}</span>
@@ -5596,7 +5596,7 @@ export default function InspectionsPage() {
                   )}
                   {check.sample_size !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">
+                      <span className="text-xs text-text-tertiary mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Days' : 'Sample Size'}
                       </span>
                       <span className="text-sm font-medium text-foreground">{check.sample_size}</span>
@@ -5604,7 +5604,7 @@ export default function InspectionsPage() {
                   )}
                   {check.infestation_rate !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">
+                      <span className="text-xs text-text-tertiary mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Daily Mite Drop' : 'Infestation Rate'}
                       </span>
                       <span className={`text-sm font-bold ${check.infestation_rate > 3 ? 'text-red-600' : 'text-green-600'}`}>
@@ -5615,7 +5615,7 @@ export default function InspectionsPage() {
                     </div>
                   )}
                   <div className="flex flex-col md:col-span-2">
-                    <span className="text-xs text-slate-500 mb-1">Action Threshold</span>
+                    <span className="text-xs text-text-tertiary mb-1">Action Threshold</span>
                     <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-600' : 'text-green-600'}`}>
                       {check.action_threshold_reached ? '⚠️ Reached - Treatment Needed' : '✓ Not Reached'}
                     </span>
@@ -5623,8 +5623,8 @@ export default function InspectionsPage() {
                 </div>
 
                 {check.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                    <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{check.notes}</span>
                   </div>
                 )}
@@ -5660,7 +5660,7 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {feeding.profiles && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(feeding.profiles.first_name && feeding.profiles.last_name)
                             ? `${feeding.profiles.first_name} ${feeding.profiles.last_name}`
@@ -5716,20 +5716,20 @@ export default function InspectionsPage() {
                 {/* Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-yellow-50 rounded-lg">
                   <div className="flex flex-col">
-                    <span className="text-xs text-slate-500 mb-1">Feed Type</span>
+                    <span className="text-xs text-text-tertiary mb-1">Feed Type</span>
                     <span className="text-sm font-medium text-foreground">{feeding.feed_type}</span>
                   </div>
                   {feeding.quantity !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">Quantity</span>
+                      <span className="text-xs text-text-tertiary mb-1">Quantity</span>
                       <span className="text-sm font-medium text-foreground">{feeding.quantity} {feeding.unit}</span>
                     </div>
                   )}
                 </div>
 
                 {feeding.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                    <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{feeding.notes}</span>
                   </div>
                 )}
@@ -5765,7 +5765,7 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {harvest.profiles && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(harvest.profiles.first_name && harvest.profiles.last_name)
                             ? `${harvest.profiles.first_name} ${harvest.profiles.last_name}`
@@ -5811,27 +5811,27 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-amber-50 rounded-lg">
                   {harvest.honey_weight !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">Honey Weight</span>
+                      <span className="text-xs text-text-tertiary mb-1">Honey Weight</span>
                       <span className="text-sm font-medium text-foreground">{harvest.honey_weight} {harvest.unit}</span>
                     </div>
                   )}
                   {harvest.wax_weight !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">Wax Weight</span>
+                      <span className="text-xs text-text-tertiary mb-1">Wax Weight</span>
                       <span className="text-sm font-medium text-foreground">{harvest.wax_weight} {harvest.unit}</span>
                     </div>
                   )}
                   {harvest.frames_harvested !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-slate-500 mb-1">Frames Harvested</span>
+                      <span className="text-xs text-text-tertiary mb-1">Frames Harvested</span>
                       <span className="text-sm font-medium text-foreground">{harvest.frames_harvested}</span>
                     </div>
                   )}
                 </div>
 
                 {harvest.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                    <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{harvest.notes}</span>
                   </div>
                 )}
@@ -5849,7 +5849,7 @@ export default function InspectionsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold">Hive Archived: {archiveRecord.hive_number}</h3>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-text-tertiary">
                         {new Date(archiveRecord.archived_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -5863,15 +5863,15 @@ export default function InspectionsPage() {
                 </div>
 
                 {archiveRecord.archive_reason_value && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200 mb-3">
-                    <span className="text-xs text-slate-500 mb-1 block">Reason</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border mb-3">
+                    <span className="text-xs text-text-tertiary mb-1 block">Reason</span>
                     <span className="text-sm font-medium text-foreground">{archiveRecord.archive_reason_value}</span>
                   </div>
                 )}
 
                 {archiveRecord.archive_notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-slate-500 mb-1 block">Additional Notes</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                    <span className="text-xs text-text-tertiary mb-1 block">Additional Notes</span>
                     <span className="text-sm text-text-secondary">{archiveRecord.archive_notes}</span>
                   </div>
                 )}
@@ -5883,7 +5883,7 @@ export default function InspectionsPage() {
       </div>
 
       {filteredRecords.length === 0 && (
-        <div className="bg-slate-900 rounded-lg shadow border border-border p-12 text-center text-slate-500">
+        <div className="bg-slate-900 rounded-lg shadow border border-border p-12 text-center text-text-tertiary">
           {filterHiveId
             ? `No records found for this hive. Select "All Hives" or record a new activity.`
             : recordTypeFilter !== 'all'
@@ -5930,13 +5930,13 @@ export default function InspectionsPage() {
       {showIpmTips && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-slate-800 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+            <div className="sticky top-0 bg-slate-800 border-b border-border px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-foreground">
                 Integrated Pest Management (IPM) Tips for Varroa Control
               </h3>
               <button
                 onClick={() => setShowIpmTips(false)}
-                className="text-gray-400 hover:text-text-tertiary transition-colors"
+                className="text-text-tertiary hover:text-text-tertiary transition-colors"
                 title="Close"
               >
                 <X size={24} />
@@ -5988,7 +5988,7 @@ export default function InspectionsPage() {
                 </li>
               </ul>
             </div>
-            <div className="sticky bottom-0 bg-slate-800/50 px-6 py-4 border-t border-gray-200">
+            <div className="sticky bottom-0 bg-slate-800/50 px-6 py-4 border-t border-border">
               <button
                 onClick={() => setShowIpmTips(false)}
                 className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
