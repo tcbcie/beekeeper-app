@@ -435,17 +435,17 @@ export default function QueensPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Queens 👑</h1>
+        <h1 className="text-3xl font-bold text-slate-100">Queens 👑</h1>
         <div className="flex gap-2">
           <button
             onClick={exportCSV}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium flex items-center gap-2"
+            className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg hover:bg-slate-600 font-medium flex items-center gap-2 min-h-[48px]"
           >
             <Download size={16} /> Export CSV
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium flex items-center gap-2"
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium flex items-center gap-2 min-h-[48px]"
           >
             {showForm ? <X size={16} /> : <Plus size={16} />}
             {showForm ? 'Cancel' : 'Add Queen'}
@@ -454,38 +454,38 @@ export default function QueensPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800">
+          <h3 className="text-xl font-semibold mb-4 text-slate-100">
             {editingQueen ? 'Edit Queen' : 'Add New Queen'}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Queen Number
               </label>
               <input
                 type="text"
                 value={formData.queen_number}
                 onChange={(e) => setFormData({ ...formData, queen_number: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Birth Date</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Birth Date</label>
               <input
                 type="date"
                 value={formData.birth_date}
                 onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Marking Color
                 {formData.birth_date && (
-                  <span className="ml-2 text-xs text-blue-600 font-normal">
+                  <span className="ml-2 text-xs text-emerald-400 font-normal">
                     (Auto-set based on birth year)
                   </span>
                 )}
@@ -493,7 +493,7 @@ export default function QueensPage() {
               <select
                 value={formData.marking_color}
                 onChange={(e) => setFormData({ ...formData, marking_color: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="">Select color</option>
                 {colorOptions.map((color) => (
@@ -502,17 +502,17 @@ export default function QueensPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 International standard: White (1,6) | Yellow (2,7) | Red (3,8) | Green (4,9) | Blue (5,0)
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Source</label>
               <select
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="">Select source</option>
                 {sourceOptions.map((source) => (
@@ -524,11 +524,11 @@ export default function QueensPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subspecies</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Subspecies</label>
               <select
                 value={formData.subspecies}
                 onChange={(e) => setFormData({ ...formData, subspecies: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="">Select subspecies</option>
                 {subspeciesOptions.map((subspecies) => (
@@ -540,18 +540,18 @@ export default function QueensPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lineage</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Lineage</label>
               <input
                 type="text"
                 value={formData.lineage}
                 onChange={(e) => setFormData({ ...formData, lineage: e.target.value })}
                 placeholder="e.g., Queen's mother/breeder line"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Mated at (Eircode)
               </label>
               <input
@@ -560,19 +560,19 @@ export default function QueensPage() {
                 onChange={(e) => setFormData({ ...formData, mated_at_eircode: e.target.value.toUpperCase() })}
                 placeholder="e.g., H91 E6K2"
                 maxLength={8}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md uppercase"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 uppercase focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Irish postcode where the queen was mated
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="active">Active</option>
                 <option value="retired">Retired</option>
@@ -586,15 +586,15 @@ export default function QueensPage() {
                 id="queen_clipped"
                 checked={formData.queen_clipped}
                 onChange={(e) => setFormData({ ...formData, queen_clipped: e.target.checked })}
-                className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                className="w-4 h-4 text-emerald-600 border-slate-600 rounded focus:ring-emerald-500 bg-slate-800"
               />
-              <label htmlFor="queen_clipped" className="ml-2 text-sm font-medium text-gray-700">
+              <label htmlFor="queen_clipped" className="ml-2 text-sm font-medium text-slate-300">
                 Queen Clipped
               </label>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Performance Notes
               </label>
               <textarea
@@ -603,21 +603,21 @@ export default function QueensPage() {
                   setFormData({ ...formData, performance_notes: e.target.value })
                 }
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
             <div className="md:col-span-2 flex gap-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 min-h-[48px]"
               >
                 {editingQueen ? 'Update' : 'Add'} Queen
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                className="px-6 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 min-h-[48px]"
               >
                 Cancel
               </button>
@@ -626,11 +626,11 @@ export default function QueensPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-slate-900 rounded-lg shadow p-6 border border-slate-800">
         <div className="mb-4 flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"
               size={20}
             />
             <input
@@ -638,14 +638,14 @@ export default function QueensPage() {
               placeholder="Search by queen number or subspecies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg"
+              className="w-full pl-10 px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
           </div>
           {isTeamMember && (
             <select
               value={ownershipFilter}
               onChange={(e) => setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')}
-              className="px-4 py-2 min-h-[48px] border border-gray-300 rounded-lg bg-white hover:border-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 transition-all"
+              className="px-4 py-2 min-h-[48px] border border-slate-600 rounded-lg bg-slate-800 text-slate-100 hover:border-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 transition-all"
             >
               <option value="my">My Queens</option>
               <option value="team">Team Queens</option>
@@ -655,33 +655,33 @@ export default function QueensPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-700">
+            <thead className="bg-slate-800/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">
                   Actions
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">
                   Queen Number
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">
                   Age
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">
                   Color
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">
                   Hive
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">
                   Apiary
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-800">
               {filteredQueens.map((queen) => (
                 <tr
                   key={queen.id}
@@ -690,52 +690,52 @@ export default function QueensPage() {
                   }}
                   className={`transition-all duration-500 ${
                     highlightedQueenId === queen.id
-                      ? 'bg-blue-100 hover:bg-blue-150 border-l-4 border-blue-600'
-                      : 'hover:bg-gray-50'
+                      ? 'bg-emerald-900/30 hover:bg-emerald-900/40 border-l-4 border-emerald-500'
+                      : 'hover:bg-slate-800/50'
                   }`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm flex gap-2">
                     <button
                       onClick={() => handleEdit(queen)}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-blue-400 hover:text-blue-300"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(queen.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-400 hover:text-red-300"
                     >
                       <Trash2 size={16} />
                     </button>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-100">
                     {queen.queen_number}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600 font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-300 font-medium">
                     {calculateQueenAge(queen.birth_date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         queen.marking_color === 'Yellow'
-                          ? 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-800'
                           : queen.marking_color === 'Red'
-                          ? 'bg-red-100 text-red-800'
+                          ? 'bg-red-900/30 text-red-300 border border-red-800'
                           : queen.marking_color === 'Green'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-green-900/30 text-green-300 border border-green-800'
                           : queen.marking_color === 'Blue'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-blue-900/30 text-blue-300 border border-blue-800'
+                          : 'bg-slate-800/50 text-slate-300 border border-slate-700'
                       }`}
                     >
                       {queen.marking_color || 'None'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-400">
                     {queen.hives?.id ? (
                       <Link
                         href={`/dashboard/hives`}
-                        className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
+                        className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 font-medium"
                       >
                         {queen.hives.hive_number}
                         <ExternalLink size={12} />
@@ -744,15 +744,15 @@ export default function QueensPage() {
                       'N/A'
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-400">
                     {queen.hives?.apiaries?.name || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         queen.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-green-900/30 text-green-300 border border-green-800'
+                          : 'bg-slate-800/50 text-slate-300 border border-slate-700'
                       }`}
                     >
                       {queen.status}
@@ -763,7 +763,7 @@ export default function QueensPage() {
             </tbody>
           </table>
           {filteredQueens.length === 0 && (
-            <div className="text-center py-8 text-gray-500">No queens found</div>
+            <div className="text-center py-8 text-slate-400">No queens found</div>
           )}
         </div>
       </div>
