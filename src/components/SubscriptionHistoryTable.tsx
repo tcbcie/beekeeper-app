@@ -46,11 +46,11 @@ export default function SubscriptionHistoryTable() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription History</h3>
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Subscription History</h3>
         <div className="animate-pulse space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            <div key={i} className="h-12 bg-sage-200 dark:bg-slate-700 rounded"></div>
           ))}
         </div>
       </div>
@@ -59,12 +59,12 @@ export default function SubscriptionHistoryTable() {
 
   if (history.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription History</h3>
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Subscription History</h3>
         <div className="text-center py-8">
-          <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No subscription history yet</p>
-          <p className="text-sm text-gray-400 mt-1">
+          <Calendar className="w-12 h-12 text-text-tertiary mx-auto mb-3" />
+          <p className="text-text-secondary">No subscription history yet</p>
+          <p className="text-sm text-text-tertiary mt-1">
             Your renewals and activations will appear here
           </p>
         </div>
@@ -73,14 +73,14 @@ export default function SubscriptionHistoryTable() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border">
+      <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Subscription History</h3>
+            <Clock className="w-5 h-5 text-text-secondary" />
+            <h3 className="text-lg font-semibold text-foreground">Subscription History</h3>
           </div>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-text-tertiary">
             {history.length} {history.length === 1 ? 'activation' : 'activations'}
           </span>
         </div>
@@ -88,58 +88,58 @@ export default function SubscriptionHistoryTable() {
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-sage-50 dark:bg-slate-800/50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Code
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Activated
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Expires
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Status
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-surface dark:bg-surface divide-y divide-border">
             {history.map((item) => {
               const isExpired = new Date(item.expires_at) < new Date()
               const isCurrent = item.is_current
 
               return (
-                <tr key={item.id} className={isCurrent ? 'bg-amber-50' : ''}>
+                <tr key={item.id} className={isCurrent ? 'bg-forest-50 dark:bg-forest-950/20' : ''}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-semibold text-gray-900">
+                      <span className="font-mono text-sm font-semibold text-foreground">
                         {item.code}
                       </span>
                       {isCurrent && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-800 dark:text-forest-300">
                           Current
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                     {formatDateTime(item.activated_at)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                     {formatDate(item.expires_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {isExpired ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sage-100 dark:bg-slate-700 text-text-secondary">
                         Expired
                       </span>
                     ) : isCurrent ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300">
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sage-100 dark:bg-slate-700 text-text-secondary">
                         Past
                       </span>
                     )}
@@ -151,8 +151,8 @@ export default function SubscriptionHistoryTable() {
         </table>
       </div>
 
-      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-        <p className="text-xs text-gray-500">
+      <div className="px-6 py-4 bg-sage-50 dark:bg-slate-800/50 border-t border-border">
+        <p className="text-xs text-text-tertiary">
           Showing all subscription activations and renewals for your account
         </p>
       </div>
