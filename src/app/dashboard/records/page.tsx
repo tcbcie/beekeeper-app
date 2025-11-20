@@ -2175,7 +2175,7 @@ export default function InspectionsPage() {
 
       {/* Archive Hive Form */}
       {showForm && formType === 'archive' && (
-        <div ref={formRef} className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
+        <div ref={formRef} className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-red-700">Archive Hive</h3>
             <button
@@ -2187,7 +2187,7 @@ export default function InspectionsPage() {
                   archive_notes: ''
                 })
               }}
-              className="text-slate-500 hover:text-slate-300"
+              className="text-slate-500 hover:text-text-secondary"
             >
               <X size={24} />
             </button>
@@ -2245,13 +2245,13 @@ export default function InspectionsPage() {
             }
           }} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Select Hive to Archive *
               </label>
               <select
                 value={archiveData.hive_id}
                 onChange={(e) => setArchiveData({ ...archiveData, hive_id: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">-- Select Hive --</option>
@@ -2269,13 +2269,13 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Reason for Archiving *
               </label>
               <select
                 value={archiveData.archive_reason_id}
                 onChange={(e) => setArchiveData({ ...archiveData, archive_reason_id: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">-- Select Reason --</option>
@@ -2288,7 +2288,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Additional Notes (Optional)
               </label>
               <textarea
@@ -2317,7 +2317,7 @@ export default function InspectionsPage() {
                     archive_notes: ''
                   })
                 }}
-                className="flex-1 px-4 py-2 bg-slate-700 rounded-lg hover:bg-slate-600"
+                className="flex-1 px-4 py-2 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600"
               >
                 Cancel
               </button>
@@ -2417,9 +2417,9 @@ export default function InspectionsPage() {
       </div>
 
       {showForm && formType === 'inspection' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h3 className="text-xl font-semibold">
+            <h3 className="text-xl font-semibold text-foreground">
               {editingInspection ? 'Edit Inspection' : 'Record New Inspection'}
             </h3>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -2427,14 +2427,14 @@ export default function InspectionsPage() {
                 type="submit"
                 form="inspection-form"
                 disabled={uploadingImage || fetchingWeather}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
               >
                 {uploadingImage ? 'Uploading Image...' : fetchingWeather ? 'Fetching Weather...' : editingInspection ? 'Update' : 'Save'} Inspection
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-slate-800 dark:active:bg-slate-700 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -2442,18 +2442,18 @@ export default function InspectionsPage() {
           </div>
           <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Inspection Details Section - Grouped */}
-            <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-              <h4 className="text-sm font-semibold text-slate-100 mb-4">Inspection Details</h4>
+            <div className="md:col-span-2 bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+              <h4 className="text-sm font-semibold text-foreground mb-4">Inspection Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
                   <select
                     value={formApiaryId}
                     onChange={(e) => {
                       setFormApiaryId(e.target.value)
                       setFormData({...formData, hive_id: ''}) // Reset hive selection when apiary changes
                     }}
-                    className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                    className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   >
                     <option value="">All Apiaries</option>
                     {apiaries.map((apiary) => (
@@ -2465,11 +2465,11 @@ export default function InspectionsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
                   <select
                     value={formData.hive_id}
                     onChange={(e) => handleHiveChange(e.target.value)}
-                    className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                    className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                     required
                   >
                     <option value="">Select hive</option>
@@ -2483,35 +2483,35 @@ export default function InspectionsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Date *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Date *</label>
                   <input
                     type="date"
                     value={formData.inspection_date}
                     onChange={(e) => setFormData({...formData, inspection_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Time *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Time *</label>
                   <input
                     type="time"
                     value={formData.inspection_time}
                     onChange={(e) => setFormData({...formData, inspection_time: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Weight (kg)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Weight (kg)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={formData.weight ?? ''}
                     onChange={(e) => setFormData({...formData, weight: e.target.value ? parseFloat(e.target.value) : null})}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                     placeholder="Optional"
                   />
                 </div>
@@ -2519,33 +2519,33 @@ export default function InspectionsPage() {
             </div>
 
             {/* Queen & Brood Section - Grouped */}
-            <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
-              <h4 className="text-sm font-semibold text-slate-100 mb-4">Queen & Brood</h4>
+            <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/30 p-4 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+              <h4 className="text-sm font-semibold text-foreground mb-4">Queen & Brood</h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <label className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg cursor-pointer touch-manipulation hover:bg-slate-800/50 active:bg-gray-100 border border-purple-100">
+                <label className="flex items-center gap-3 p-3 bg-surface dark:bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border border-purple-200 dark:border-purple-800">
                   <input
                     type="checkbox"
                     checked={formData.queen_seen}
                     onChange={(e) => setFormData({...formData, queen_seen: e.target.checked})}
                     className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-slate-600 text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
-                  <span className="text-sm font-medium text-slate-300">Queen Seen</span>
+                  <span className="text-sm font-medium text-text-secondary">Queen Seen</span>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg cursor-pointer touch-manipulation hover:bg-slate-800/50 active:bg-gray-100 border border-purple-100">
+                <label className="flex items-center gap-3 p-3 bg-surface dark:bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border border-purple-200 dark:border-purple-800">
                   <input
                     type="checkbox"
                     checked={formData.eggs_present}
                     onChange={(e) => setFormData({...formData, eggs_present: e.target.checked})}
                     className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-slate-600 text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
-                  <span className="text-sm font-medium text-slate-300">Eggs Present</span>
+                  <span className="text-sm font-medium text-text-secondary">Eggs Present</span>
                 </label>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-300 mb-3">
+                <label className="block text-sm font-medium text-text-secondary mb-3">
                   Frames with Brood {formData.brood_frames !== null ? `(${formData.brood_frames})` : ''}
                 </label>
                 <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
@@ -2557,7 +2557,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.brood_frames === num
                           ? 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-300'
-                          : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
+                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
                       {num}
@@ -2569,7 +2569,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                       formData.brood_frames === null
                         ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
+                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
                     Clear
@@ -2579,7 +2579,7 @@ export default function InspectionsPage() {
 
               {hives.find(h => h.id === formData.hive_id)?.configuration?.right_sized_broodbox && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
+                  <label className="block text-sm font-medium text-text-secondary mb-3">
                     Right-Sized to How Many Frames {formData.right_sized_frames !== null ? `(${formData.right_sized_frames})` : ''}
                   </label>
                   <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
@@ -2590,8 +2590,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, right_sized_frames: num})}
                         className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                           formData.right_sized_frames === num
-                            ? 'bg-amber-600 text-white shadow-lg ring-2 ring-amber-300'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
+                            ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-lg ring-2 ring-forest-300 dark:ring-forest-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         {num}
@@ -2603,7 +2603,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                         formData.right_sized_frames === null
                           ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                          : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
+                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
                       Clear
@@ -2619,7 +2619,7 @@ export default function InspectionsPage() {
                   onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
                   className="w-full p-3 flex items-center justify-between hover:bg-purple-200 transition-colors rounded-t-lg"
                 >
-                  <h5 className="text-sm font-semibold text-slate-100">Queen Cells</h5>
+                  <h5 className="text-sm font-semibold text-foreground">Queen Cells</h5>
                   {queenCellsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </button>
 
@@ -2628,7 +2628,7 @@ export default function InspectionsPage() {
                     {/* Queen Cups */}
                     <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-slate-300">Queen cups</label>
+                        <label className="text-sm font-medium text-text-secondary">Queen cups</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2636,7 +2636,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.queen_cups === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2647,7 +2647,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.queen_cups === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2691,7 +2691,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.queen_cups_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 YES
@@ -2702,7 +2702,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.queen_cups_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 NO
@@ -2716,7 +2716,7 @@ export default function InspectionsPage() {
                     {/* Swarm Cells */}
                     <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-slate-300">Swarm cell</label>
+                        <label className="text-sm font-medium text-text-secondary">Swarm cell</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2724,7 +2724,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.swarm_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2735,7 +2735,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.swarm_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2779,7 +2779,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.swarm_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 YES
@@ -2790,7 +2790,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.swarm_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 NO
@@ -2804,7 +2804,7 @@ export default function InspectionsPage() {
                     {/* Supercedure Cells */}
                     <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-slate-300">Supercedure cell</label>
+                        <label className="text-sm font-medium text-text-secondary">Supercedure cell</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2812,7 +2812,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.supercedure_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2823,7 +2823,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.supercedure_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2867,7 +2867,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.supercedure_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 YES
@@ -2878,7 +2878,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.supercedure_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 NO
@@ -2892,7 +2892,7 @@ export default function InspectionsPage() {
                     {/* Emergency Cells */}
                     <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-slate-300">Emergency cell</label>
+                        <label className="text-sm font-medium text-text-secondary">Emergency cell</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2900,7 +2900,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.emergency_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2911,7 +2911,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.emergency_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2955,7 +2955,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.emergency_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 YES
@@ -2966,7 +2966,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.emergency_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
+                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
                                 }`}
                               >
                                 NO
@@ -3055,17 +3055,17 @@ export default function InspectionsPage() {
 
             {/* Behaviour Section - Grouped */}
             <div className="md:col-span-2 bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
-              <h4 className="text-sm font-semibold text-slate-100 mb-4">Behaviour</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-4">Behaviour</h4>
 
               {/* Population */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-slate-300">
+                  <label className="block text-sm font-medium text-text-secondary">
                     Population: {formData.population_strength === 0 ? 'Not Recorded' : renderStars(formData.population_strength)}
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Population Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Very Weak - Few bees, struggling colony</div>
@@ -3089,7 +3089,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.population_strength === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
                       {rating}
@@ -3101,7 +3101,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.population_strength === 0
                         ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
                     Not Recorded
@@ -3112,12 +3112,12 @@ export default function InspectionsPage() {
               {/* Temperament */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-slate-300">
+                  <label className="block text-sm font-medium text-text-secondary">
                     Temperament: {formData.temperament_rating === 0 ? 'Not Recorded' : renderStars(formData.temperament_rating)}
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Temperament Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Aggressive - Very defensive, difficult to work with</div>
@@ -3141,7 +3141,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.temperament_rating === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
                       {rating}
@@ -3153,7 +3153,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.temperament_rating === 0
                         ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
                     Not Recorded
@@ -3164,12 +3164,12 @@ export default function InspectionsPage() {
               {/* Brood Pattern */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-slate-300">
+                  <label className="block text-sm font-medium text-text-secondary">
                     Brood Pattern: {formData.brood_pattern_rating === 0 ? 'Not Recorded' : renderStars(formData.brood_pattern_rating)}
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Brood Pattern Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Poor - Many empty cells, spotty pattern</div>
@@ -3193,7 +3193,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.brood_pattern_rating === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
                       {rating}
@@ -3205,7 +3205,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.brood_pattern_rating === 0
                         ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
                     Not Recorded
@@ -3216,12 +3216,12 @@ export default function InspectionsPage() {
               {/* Swarming Tendency */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-slate-300">
+                  <label className="block text-sm font-medium text-text-secondary">
                     Swarming Tendency: {formData.swarming_tendency === 0 ? 'Not Recorded' : renderStars(formData.swarming_tendency)}
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Swarming Tendency Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Very Low - Rarely swarms, stable colony</div>
@@ -3245,7 +3245,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.swarming_tendency === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
                       {rating}
@@ -3257,7 +3257,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.swarming_tendency === 0
                         ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
                     Not Recorded
@@ -3268,12 +3268,12 @@ export default function InspectionsPage() {
               {/* Calmness */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-slate-300">
+                  <label className="block text-sm font-medium text-text-secondary">
                     Calmness: {formData.calmness === 0 ? 'Not Recorded' : renderStars(formData.calmness)}
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Calmness Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Very Nervous - Runs on comb, easily agitated</div>
@@ -3297,7 +3297,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.calmness === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
                       {rating}
@@ -3309,7 +3309,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.calmness === 0
                         ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
                     Not Recorded
@@ -3325,7 +3325,7 @@ export default function InspectionsPage() {
                 onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-orange-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-slate-100">Given/Taken</h4>
+                <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
                 {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3333,7 +3333,7 @@ export default function InspectionsPage() {
                 <div className="p-2 sm:p-4 pt-0 space-y-3 sm:space-y-4">
                   {/* Frames-Foundation */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Frames-Foundation</span>
                       <span className="sm:hidden">Foundation</span>
                     </label>
@@ -3365,7 +3365,7 @@ export default function InspectionsPage() {
 
                   {/* Brood-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Brood-Frames</span>
                       <span className="sm:hidden">Brood</span>
                     </label>
@@ -3397,7 +3397,7 @@ export default function InspectionsPage() {
 
                   {/* Drawn-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Drawn-Frames</span>
                       <span className="sm:hidden">Drawn</span>
                     </label>
@@ -3429,7 +3429,7 @@ export default function InspectionsPage() {
 
                   {/* Honey Supers */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Honey Supers</span>
                       <span className="sm:hidden">Supers</span>
                     </label>
@@ -3461,7 +3461,7 @@ export default function InspectionsPage() {
 
                   {/* Drone-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Drone-Frames</span>
                       <span className="sm:hidden">Drone</span>
                     </label>
@@ -3493,7 +3493,7 @@ export default function InspectionsPage() {
 
                   {/* Store-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Store-Frames</span>
                       <span className="sm:hidden">Store</span>
                     </label>
@@ -3528,13 +3528,13 @@ export default function InspectionsPage() {
             </div>
 
             {/* Drones Section - Collapsible */}
-            <div className="md:col-span-2 bg-amber-50 rounded-lg border-2 border-amber-200">
+            <div className="md:col-span-2 bg-forest-50 dark:bg-forest-950/30 rounded-lg border-2 border-forest-200 dark:border-forest-800">
               <button
                 type="button"
                 onClick={() => setDronesExpanded(!dronesExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-amber-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-slate-100">Drones</h4>
+                <h4 className="text-sm font-semibold text-foreground">Drones</h4>
                 {dronesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3542,7 +3542,7 @@ export default function InspectionsPage() {
                 <div className="p-4 pt-0 space-y-6">
                   {/* Drones present slider with Not recorded option */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-3">
+                    <label className="block text-sm font-medium text-text-secondary mb-3">
                       Drones present
                     </label>
                     <div className="px-2 mb-4">
@@ -3566,7 +3566,7 @@ export default function InspectionsPage() {
 
                   {/* Drone brood present YES/NO buttons with null state */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-3">
+                    <label className="block text-sm font-medium text-text-secondary mb-3">
                       Drone brood present
                     </label>
                     <div className="grid grid-cols-3 gap-3">
@@ -3576,7 +3576,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           formData.drone_brood_present === true
                             ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         <span className="text-xl">✓</span>
@@ -3588,7 +3588,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           formData.drone_brood_present === false
                             ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         <span className="text-xl">✕</span>
@@ -3600,7 +3600,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-medium text-xs transition-all touch-manipulation ${
                           formData.drone_brood_present === null
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -3618,7 +3618,7 @@ export default function InspectionsPage() {
                 onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-slate-100">Hygienic Behaviour</h4>
+                <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
                 {hygienicBehaviourExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3627,12 +3627,12 @@ export default function InspectionsPage() {
                   {/* Recapping */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         Recapping: {formData.recapping === 0 ? 'Not Recorded' : renderStars(formData.recapping)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Recapping Rating Guide:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Very Low - Rarely uncap and remove diseased brood</div>
@@ -3656,7 +3656,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.recapping === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -3668,7 +3668,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.recapping === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -3679,12 +3679,12 @@ export default function InspectionsPage() {
                   {/* VSH (Varroa Sensitive Hygiene) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         VSH (Varroa Sensitive Hygiene): {formData.vsh === 0 ? 'Not Recorded' : renderStars(formData.vsh)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">VSH Rating Guide:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Very Low - No VSH behavior observed</div>
@@ -3708,7 +3708,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.vsh === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -3720,7 +3720,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.vsh === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -3731,12 +3731,12 @@ export default function InspectionsPage() {
                   {/* SMR (Suppressed Mite Reproduction) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         SMR (Suppressed Mite Reproduction): {formData.smr === 0 ? 'Not Recorded' : renderStars(formData.smr)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">SMR Rating Guide:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Very Low - Varroa reproduce freely</div>
@@ -3760,7 +3760,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.smr === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -3772,7 +3772,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.smr === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -3790,7 +3790,7 @@ export default function InspectionsPage() {
                 onClick={() => setDiseaseExpanded(!diseaseExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-slate-100">Disease</h4>
+                <h4 className="text-sm font-semibold text-foreground">Disease</h4>
                 {diseaseExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3799,12 +3799,12 @@ export default function InspectionsPage() {
                   {/* American Foulbrood (AFB) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         American Foulbrood (AFB): {formData.afb_disease === 0 ? 'Not Recorded' : renderStars(formData.afb_disease)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">AFB Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Very few signs, easily treated</div>
@@ -3828,7 +3828,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.afb_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -3840,7 +3840,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.afb_disease === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -3851,12 +3851,12 @@ export default function InspectionsPage() {
                   {/* European Foulbrood (EFB) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         European Foulbrood (EFB): {formData.efb_disease === 0 ? 'Not Recorded' : renderStars(formData.efb_disease)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">EFB Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Few affected larvae, colony strong</div>
@@ -3880,7 +3880,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.efb_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -3892,7 +3892,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.efb_disease === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -3903,12 +3903,12 @@ export default function InspectionsPage() {
                   {/* Chalkbrood */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         Chalkbrood: {formData.chalkbrood_disease === 0 ? 'Not Recorded' : renderStars(formData.chalkbrood_disease)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Chalkbrood Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Occasional mummified larvae</div>
@@ -3932,7 +3932,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.chalkbrood_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -3944,7 +3944,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.chalkbrood_disease === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -3955,12 +3955,12 @@ export default function InspectionsPage() {
                   {/* Nosemosis */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         Nosemosis: {formData.nosemosis_disease === 0 ? 'Not Recorded' : renderStars(formData.nosemosis_disease)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Nosemosis Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Light spotting, minor dysentery</div>
@@ -3984,7 +3984,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.nosemosis_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -3996,7 +3996,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.nosemosis_disease === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -4007,12 +4007,12 @@ export default function InspectionsPage() {
                   {/* Deformed Wing Virus (DWV) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         Deformed Wing Virus (DWV): {formData.dwv_disease === 0 ? 'Not Recorded' : renderStars(formData.dwv_disease)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">DWV Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Rare deformed bees observed</div>
@@ -4036,7 +4036,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.dwv_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -4048,7 +4048,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.dwv_disease === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -4059,12 +4059,12 @@ export default function InspectionsPage() {
                   {/* IAPV & CBPV */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className="block text-sm font-medium text-text-secondary">
                         IAPV & CBPV: {formData.iapv_cbpv_disease === 0 ? 'Not Recorded' : renderStars(formData.iapv_cbpv_disease)}
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-gray-400 cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">IAPV & CBPV Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Few trembling/hairless bees</div>
@@ -4088,7 +4088,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.iapv_cbpv_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                           }`}
                         >
                           {rating}
@@ -4100,7 +4100,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.iapv_cbpv_disease === 0
                             ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
+                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
                         Not Recorded
@@ -4112,7 +4112,7 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
@@ -4123,7 +4123,7 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-2">Inspection Photo (optional)</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Inspection Photo (optional)</label>
               <div className="flex items-start gap-3">
                 {imagePreview ? (
                   <div className="relative w-20 h-20 flex-shrink-0 group">
@@ -4185,7 +4185,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4195,7 +4195,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_treatment' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-semibold">
@@ -4224,7 +4224,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingTreatment(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4233,11 +4233,11 @@ export default function InspectionsPage() {
 
           <form id="treatment-form" onSubmit={handleTreatmentSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4249,7 +4249,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
               <select
                 value={editingTreatment?.hive_id || ''}
                 onChange={async (e) => {
@@ -4287,7 +4287,7 @@ export default function InspectionsPage() {
                     }
                   }
                 }}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">Select hive</option>
@@ -4301,18 +4301,18 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Treatment Date *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Treatment Date *</label>
               <input
                 type="date"
                 value={editingTreatment?.treatment_date || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, treatment_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Treatment Product *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Treatment Product *</label>
               <div className="relative group">
                 <select
                   value={
@@ -4343,7 +4343,7 @@ export default function InspectionsPage() {
                       setOtherTreatmentType('')
                     }
                   }}
-                  className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                  className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   required
                 >
                   <option value="">Select treatment product</option>
@@ -4365,48 +4365,48 @@ export default function InspectionsPage() {
                         <>
                           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <h4 className="font-semibold text-slate-100">{selectedProduct.product_name}</h4>
+                            <h4 className="font-semibold text-foreground">{selectedProduct.product_name}</h4>
                           </div>
                           <div className="space-y-2 text-sm">
                             {selectedProduct.active_ingredients && (
                               <div>
-                                <span className="font-medium text-slate-300">Active Ingredients:</span>
+                                <span className="font-medium text-text-secondary">Active Ingredients:</span>
                                 <span className="text-slate-400 ml-2">{selectedProduct.active_ingredients}</span>
                               </div>
                             )}
                             {selectedProduct.application_method && (
                               <div>
-                                <span className="font-medium text-slate-300">Application Method:</span>
+                                <span className="font-medium text-text-secondary">Application Method:</span>
                                 <span className="text-slate-400 ml-2">{selectedProduct.application_method}</span>
                               </div>
                             )}
                             {selectedProduct.treatment_duration && (
                               <div>
-                                <span className="font-medium text-slate-300">Duration:</span>
+                                <span className="font-medium text-text-secondary">Duration:</span>
                                 <span className="text-slate-400 ml-2">{selectedProduct.treatment_duration}</span>
                               </div>
                             )}
                             {selectedProduct.temperature_range && (
                               <div>
-                                <span className="font-medium text-slate-300">Temperature:</span>
+                                <span className="font-medium text-text-secondary">Temperature:</span>
                                 <span className="text-slate-400 ml-2">{selectedProduct.temperature_range}</span>
                               </div>
                             )}
                             {selectedProduct.honey_flow_restrictions && (
                               <div>
-                                <span className="font-medium text-slate-300">Honey Flow:</span>
+                                <span className="font-medium text-text-secondary">Honey Flow:</span>
                                 <span className="text-slate-400 ml-2">{selectedProduct.honey_flow_restrictions}</span>
                               </div>
                             )}
                             {selectedProduct.withdrawal_period_days !== null && (
                               <div>
-                                <span className="font-medium text-slate-300">Withdrawal:</span>
+                                <span className="font-medium text-text-secondary">Withdrawal:</span>
                                 <span className="text-slate-400 ml-2">{selectedProduct.withdrawal_period_days} days</span>
                               </div>
                             )}
                             {selectedProduct.notes && (
                               <div className="pt-2 border-t border-gray-200">
-                                <span className="font-medium text-slate-300 block mb-1">Notes:</span>
+                                <span className="font-medium text-text-secondary block mb-1">Notes:</span>
                                 <span className="text-slate-400 text-xs">{selectedProduct.notes}</span>
                               </div>
                             )}
@@ -4422,7 +4422,7 @@ export default function InspectionsPage() {
             {/* Show manual input if "Other" is selected */}
             {isOtherTreatment && (
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Specify Treatment Product *
                 </label>
                 <input
@@ -4437,7 +4437,7 @@ export default function InspectionsPage() {
                       })
                     }
                   }}
-                  className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                  className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   placeholder="Enter custom treatment product name"
                   required
                 />
@@ -4445,19 +4445,19 @@ export default function InspectionsPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Dosage *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Dosage *</label>
               <input
                 type="text"
                 value={editingTreatment?.dosage || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, dosage: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="e.g., 5ml per hive"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Temperature (°C)
                 {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
               </label>
@@ -4466,14 +4466,14 @@ export default function InspectionsPage() {
                 step="0.1"
                 value={editingTreatment?.temperature ?? ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, temperature: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
                 disabled={fetchingWeather}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Weather Conditions
                 {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
               </label>
@@ -4481,7 +4481,7 @@ export default function InspectionsPage() {
                 type="text"
                 value={editingTreatment?.weather_conditions || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, weather_conditions: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
                 disabled={fetchingWeather}
               />
@@ -4493,11 +4493,11 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
               <textarea
                 value={editingTreatment?.notes || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 rows={4}
                 placeholder="Optional notes about the treatment"
               />
@@ -4507,7 +4507,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_check' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingCheck ? 'Edit Varroa Check' : 'Record New Varroa Check'}
@@ -4526,7 +4526,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingCheck(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4534,11 +4534,11 @@ export default function InspectionsPage() {
           </div>
           <form id="check-form" onSubmit={handleCheckSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4550,11 +4550,11 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
               <select
                 value={editingCheck?.hive_id || ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">Select hive</option>
@@ -4568,18 +4568,18 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Check Date *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Check Date *</label>
               <input
                 type="date"
                 value={editingCheck?.check_date || ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, check_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Method *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Method *</label>
               <select
                 value={editingCheck?.method && checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : 'Other'}
                 onChange={(e) => {
@@ -4590,7 +4590,7 @@ export default function InspectionsPage() {
                     setOtherCheckMethod('')
                   }
                 }}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">Select method</option>
@@ -4607,7 +4607,7 @@ export default function InspectionsPage() {
                     setOtherCheckMethod(e.target.value)
                     setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)
                   }}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 mt-2"
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
                   placeholder="Specify other method"
                   required
                 />
@@ -4615,7 +4615,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
               </label>
               <input
@@ -4663,13 +4663,13 @@ export default function InspectionsPage() {
                     action_threshold_reached: actionThreshold
                   } : null)
                 }}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Days' : 'Sample Size'}
               </label>
               <input
@@ -4717,13 +4717,13 @@ export default function InspectionsPage() {
                     action_threshold_reached: actionThreshold
                   } : null)
                 }}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
                 {editingCheck?.mites_count !== null && editingCheck?.mites_count !== undefined &&
                  editingCheck?.sample_size !== null && editingCheck?.sample_size !== undefined &&
@@ -4736,7 +4736,7 @@ export default function InspectionsPage() {
                 step="0.01"
                 value={editingCheck?.infestation_rate ?? ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, infestation_rate: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Optional (or auto-calculated)"
               />
               {/* Season-based interpretation guidance */}
@@ -4775,7 +4775,7 @@ export default function InspectionsPage() {
                   onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, action_threshold_reached: e.target.checked} : null)}
                   className="h-5 w-5 rounded border-slate-600 text-orange-600"
                 />
-                <span className="text-sm font-medium text-slate-300">
+                <span className="text-sm font-medium text-text-secondary">
                   Action Threshold Reached
                   {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? (
                     <span className="ml-2 text-xs text-slate-500 font-normal">(Auto-checked if ≥ 5 mites/day)</span>
@@ -4787,11 +4787,11 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
               <textarea
                 value={editingCheck?.notes || ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 rows={4}
                 placeholder="Optional notes about the check"
               />
@@ -4801,7 +4801,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'feeding' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingFeeding ? 'Edit Feeding' : 'Record New Feeding'}
@@ -4822,7 +4822,7 @@ export default function InspectionsPage() {
                   setIsOtherFeedType(false)
                   setOtherFeedType('')
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4830,11 +4830,11 @@ export default function InspectionsPage() {
           </div>
           <form id="feeding-form" onSubmit={handleFeedingSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4846,11 +4846,11 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
               <select
                 value={editingFeeding?.hive_id || ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">Select hive</option>
@@ -4864,18 +4864,18 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Feed Date *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Feed Date *</label>
               <input
                 type="date"
                 value={editingFeeding?.feed_date || ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, feed_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Feed Type *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Feed Type *</label>
               <select
                 value={editingFeeding?.feed_type || ''}
                 onChange={(e) => {
@@ -4886,7 +4886,7 @@ export default function InspectionsPage() {
                     setOtherFeedType('')
                   }
                 }}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">Select feed type</option>
@@ -4899,7 +4899,7 @@ export default function InspectionsPage() {
                   type="text"
                   value={otherFeedType}
                   onChange={(e) => setOtherFeedType(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 mt-2"
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
                   placeholder="Enter custom feed type"
                   required
                 />
@@ -4907,23 +4907,23 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Quantity</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Quantity</label>
               <input
                 type="number"
                 step="0.1"
                 value={editingFeeding?.quantity ?? ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, quantity: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Unit *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Unit *</label>
               <select
                 value={editingFeeding?.unit || 'L'}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, unit: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="L">Liters (L)</option>
@@ -4933,11 +4933,11 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
               <textarea
                 value={editingFeeding?.notes || ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 rows={4}
                 placeholder="Optional notes about the feeding"
               />
@@ -4947,7 +4947,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'harvest' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingHarvest ? 'Edit Harvest' : 'Record New Harvest'}
@@ -4966,7 +4966,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingHarvest(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4974,11 +4974,11 @@ export default function InspectionsPage() {
           </div>
           <form id="harvest-form" onSubmit={handleHarvestSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4990,11 +4990,11 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
               <select
                 value={editingHarvest?.hive_id || ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="">Select hive</option>
@@ -5008,46 +5008,46 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Harvest Date *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Harvest Date *</label>
               <input
                 type="date"
                 value={editingHarvest?.harvest_date || ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, harvest_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Honey Weight</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Honey Weight</label>
               <input
                 type="number"
                 step="0.1"
                 value={editingHarvest?.honey_weight ?? ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, honey_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Wax Weight</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Wax Weight</label>
               <input
                 type="number"
                 step="0.1"
                 value={editingHarvest?.wax_weight ?? ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, wax_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Unit *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Unit *</label>
               <select
                 value={editingHarvest?.unit || 'kg'}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, unit: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               >
                 <option value="kg">Kilograms (kg)</option>
@@ -5056,22 +5056,22 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Frames Harvested</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Frames Harvested</label>
               <input
                 type="number"
                 value={editingHarvest?.frames_harvested ?? ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, frames_harvested: e.target.value ? parseInt(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Optional"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
               <textarea
                 value={editingHarvest?.notes || ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 rows={4}
                 placeholder="Optional notes about the harvest"
               />
@@ -5086,7 +5086,7 @@ export default function InspectionsPage() {
           if (record.record_type === 'inspection') {
             const inspection = record
             return (
-          <div key={`inspection-${inspection.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-blue-500">
+          <div key={`inspection-${inspection.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-blue-500">
             <div className="flex justify-between items-start mb-4 gap-4">
               <div className="flex items-start gap-3 flex-1">
                 {/* Icon Badge */}
@@ -5122,7 +5122,7 @@ export default function InspectionsPage() {
                   </p>
                   {inspection.profiles && (
                     <p className="text-xs text-slate-500 mt-1">
-                      Recorded by: <span className="font-medium text-slate-300">
+                      Recorded by: <span className="font-medium text-text-secondary">
                         {(inspection.profiles.first_name && inspection.profiles.last_name)
                           ? `${inspection.profiles.first_name} ${inspection.profiles.last_name}`
                           : inspection.profiles.email}
@@ -5156,7 +5156,7 @@ export default function InspectionsPage() {
 
             {/* Queen & Brood Section - Grouped Display */}
             <div className="mb-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
-              <h4 className="text-sm font-semibold text-slate-100 mb-3">Queen & Brood</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Queen & Brood</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
                   <div className="text-xs text-slate-500 mb-1">Queen Seen</div>
@@ -5185,8 +5185,8 @@ export default function InspectionsPage() {
 
             {/* Drones Section Display - Only show if any value is recorded */}
             {(inspection.drones_present !== -1 || inspection.drone_brood_present !== null) && (
-            <div className="mb-4 p-4 bg-amber-50 rounded-lg border-2 border-amber-200">
-              <h4 className="text-sm font-semibold text-slate-100 mb-3">Drones</h4>
+            <div className="mb-4 p-4 bg-forest-50 dark:bg-forest-950/30 rounded-lg border-2 border-forest-200 dark:border-forest-800">
+              <h4 className="text-sm font-semibold text-foreground mb-3">Drones</h4>
               <div className="grid grid-cols-2 gap-3">
                 {inspection.drones_present !== -1 && (
                   <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
@@ -5211,7 +5211,7 @@ export default function InspectionsPage() {
 
             {/* Behaviour Section - Grouped Display */}
             <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
-              <h4 className="text-sm font-semibold text-slate-100 mb-3">Behaviour</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Behaviour</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
                   <div className="text-xs text-slate-500 mb-1">Population</div>
@@ -5240,7 +5240,7 @@ export default function InspectionsPage() {
             {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
               inspection.honey_supers > 0 || inspection.drone_frames > 0 || inspection.store_frames > 0) && (
               <div className="mb-4 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-                <h4 className="text-sm font-semibold text-slate-100 mb-3">Given/Taken</h4>
+                <h4 className="text-sm font-semibold text-foreground mb-3">Given/Taken</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.frames_foundation > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
@@ -5287,7 +5287,7 @@ export default function InspectionsPage() {
               (inspection.vsh !== 3 && inspection.vsh !== 0) ||
               (inspection.smr !== 3 && inspection.smr !== 0)) && (
               <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
-                <h4 className="text-sm font-semibold text-slate-100 mb-3">Hygienic Behaviour</h4>
+                <h4 className="text-sm font-semibold text-foreground mb-3">Hygienic Behaviour</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {inspection.recapping !== 3 && inspection.recapping !== 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
@@ -5320,22 +5320,22 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm ml-7">
                   {inspection.weather_temp !== null && (
                     <div>
-                      <span className="font-medium text-slate-300">Temperature:</span> {inspection.weather_temp}°C
+                      <span className="font-medium text-text-secondary">Temperature:</span> {inspection.weather_temp}°C
                     </div>
                   )}
                   {inspection.weather_condition && (
                     <div>
-                      <span className="font-medium text-slate-300">Condition:</span> {inspection.weather_condition}
+                      <span className="font-medium text-text-secondary">Condition:</span> {inspection.weather_condition}
                     </div>
                   )}
                   {inspection.weather_humidity !== null && (
                     <div>
-                      <span className="font-medium text-slate-300">Humidity:</span> {inspection.weather_humidity}%
+                      <span className="font-medium text-text-secondary">Humidity:</span> {inspection.weather_humidity}%
                     </div>
                   )}
                   {inspection.weather_wind_speed !== null && (
                     <div>
-                      <span className="font-medium text-slate-300">Wind:</span> {inspection.weather_wind_speed} km/h
+                      <span className="font-medium text-text-secondary">Wind:</span> {inspection.weather_wind_speed} km/h
                     </div>
                   )}
                 </div>
@@ -5346,7 +5346,7 @@ export default function InspectionsPage() {
             {(inspection.afb_disease > 0 || inspection.efb_disease > 0 || inspection.chalkbrood_disease > 0 ||
               inspection.nosemosis_disease > 0 || inspection.dwv_disease > 0 || inspection.iapv_cbpv_disease > 0) && (
               <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
-                <h4 className="text-sm font-semibold text-slate-100 mb-3">Disease</h4>
+                <h4 className="text-sm font-semibold text-foreground mb-3">Disease</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.afb_disease > 0 && (
                     <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
@@ -5390,7 +5390,7 @@ export default function InspectionsPage() {
 
             {inspection.notes && (
               <div className="p-3 bg-blue-50 rounded">
-                <span className="text-sm font-medium text-slate-300">Notes: </span>
+                <span className="text-sm font-medium text-text-secondary">Notes: </span>
                 <span className="text-sm text-slate-400">{inspection.notes}</span>
               </div>
             )}
@@ -5399,7 +5399,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_treatment') {
             const treatment = record
             return (
-              <div key={`treatment-${treatment.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-red-500">
+              <div key={`treatment-${treatment.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-red-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5427,7 +5427,7 @@ export default function InspectionsPage() {
                     </p>
                     {treatment.profiles && (
                       <p className="text-xs text-slate-500 mt-1">
-                        Recorded by: <span className="font-medium text-slate-300">
+                        Recorded by: <span className="font-medium text-text-secondary">
                           {(treatment.profiles.first_name && treatment.profiles.last_name)
                             ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
                             : treatment.profiles.email}
@@ -5480,22 +5480,22 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-red-50 rounded-lg">
                   <div className="flex flex-col">
                     <span className="text-xs text-slate-500 mb-1">Treatment Product</span>
-                    <span className="text-sm font-medium text-slate-100">{treatment.treatment_type}</span>
+                    <span className="text-sm font-medium text-foreground">{treatment.treatment_type}</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs text-slate-500 mb-1">Dosage</span>
-                    <span className="text-sm font-medium text-slate-100">{treatment.dosage}</span>
+                    <span className="text-sm font-medium text-foreground">{treatment.dosage}</span>
                   </div>
                   {treatment.temperature && (
                     <div className="flex flex-col">
                       <span className="text-xs text-slate-500 mb-1">Temperature</span>
-                      <span className="text-sm font-medium text-slate-100">{treatment.temperature}°C</span>
+                      <span className="text-sm font-medium text-foreground">{treatment.temperature}°C</span>
                     </div>
                   )}
                   {treatment.weather_conditions && (
                     <div className="flex flex-col md:col-span-2">
                       <span className="text-xs text-slate-500 mb-1">Weather Conditions</span>
-                      <span className="text-sm font-medium text-slate-100">{treatment.weather_conditions}</span>
+                      <span className="text-sm font-medium text-foreground">{treatment.weather_conditions}</span>
                     </div>
                   )}
                 </div>
@@ -5503,7 +5503,7 @@ export default function InspectionsPage() {
                 {treatment.notes && (
                   <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
                     <span className="text-xs text-slate-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-slate-300">{treatment.notes}</span>
+                    <span className="text-sm text-text-secondary">{treatment.notes}</span>
                   </div>
                 )}
               </div>
@@ -5511,7 +5511,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_check') {
             const check = record
             return (
-              <div key={`check-${check.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-orange-500">
+              <div key={`check-${check.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-orange-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5539,7 +5539,7 @@ export default function InspectionsPage() {
                     </p>
                     {check.profiles && (
                       <p className="text-xs text-slate-500 mt-1">
-                        Recorded by: <span className="font-medium text-slate-300">
+                        Recorded by: <span className="font-medium text-text-secondary">
                           {(check.profiles.first_name && check.profiles.last_name)
                             ? `${check.profiles.first_name} ${check.profiles.last_name}`
                             : check.profiles.email}
@@ -5584,14 +5584,14 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-orange-50 rounded-lg">
                   <div className="flex flex-col">
                     <span className="text-xs text-slate-500 mb-1">Method</span>
-                    <span className="text-sm font-medium text-slate-100">{check.method}</span>
+                    <span className="text-sm font-medium text-foreground">{check.method}</span>
                   </div>
                   {check.mites_count !== null && (
                     <div className="flex flex-col">
                       <span className="text-xs text-slate-500 mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
                       </span>
-                      <span className="text-sm font-medium text-slate-100">{check.mites_count}</span>
+                      <span className="text-sm font-medium text-foreground">{check.mites_count}</span>
                     </div>
                   )}
                   {check.sample_size !== null && (
@@ -5599,7 +5599,7 @@ export default function InspectionsPage() {
                       <span className="text-xs text-slate-500 mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Days' : 'Sample Size'}
                       </span>
-                      <span className="text-sm font-medium text-slate-100">{check.sample_size}</span>
+                      <span className="text-sm font-medium text-foreground">{check.sample_size}</span>
                     </div>
                   )}
                   {check.infestation_rate !== null && (
@@ -5625,7 +5625,7 @@ export default function InspectionsPage() {
                 {check.notes && (
                   <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
                     <span className="text-xs text-slate-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-slate-300">{check.notes}</span>
+                    <span className="text-sm text-text-secondary">{check.notes}</span>
                   </div>
                 )}
               </div>
@@ -5633,7 +5633,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'feeding') {
             const feeding = record
             return (
-              <div key={`feeding-${feeding.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-yellow-500">
+              <div key={`feeding-${feeding.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-yellow-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5661,7 +5661,7 @@ export default function InspectionsPage() {
                     </p>
                     {feeding.profiles && (
                       <p className="text-xs text-slate-500 mt-1">
-                        Recorded by: <span className="font-medium text-slate-300">
+                        Recorded by: <span className="font-medium text-text-secondary">
                           {(feeding.profiles.first_name && feeding.profiles.last_name)
                             ? `${feeding.profiles.first_name} ${feeding.profiles.last_name}`
                             : feeding.profiles.email}
@@ -5717,12 +5717,12 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-yellow-50 rounded-lg">
                   <div className="flex flex-col">
                     <span className="text-xs text-slate-500 mb-1">Feed Type</span>
-                    <span className="text-sm font-medium text-slate-100">{feeding.feed_type}</span>
+                    <span className="text-sm font-medium text-foreground">{feeding.feed_type}</span>
                   </div>
                   {feeding.quantity !== null && (
                     <div className="flex flex-col">
                       <span className="text-xs text-slate-500 mb-1">Quantity</span>
-                      <span className="text-sm font-medium text-slate-100">{feeding.quantity} {feeding.unit}</span>
+                      <span className="text-sm font-medium text-foreground">{feeding.quantity} {feeding.unit}</span>
                     </div>
                   )}
                 </div>
@@ -5730,7 +5730,7 @@ export default function InspectionsPage() {
                 {feeding.notes && (
                   <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
                     <span className="text-xs text-slate-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-slate-300">{feeding.notes}</span>
+                    <span className="text-sm text-text-secondary">{feeding.notes}</span>
                   </div>
                 )}
               </div>
@@ -5738,7 +5738,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'harvest') {
             const harvest = record
             return (
-              <div key={`harvest-${harvest.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-amber-500">
+              <div key={`harvest-${harvest.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-amber-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5766,7 +5766,7 @@ export default function InspectionsPage() {
                     </p>
                     {harvest.profiles && (
                       <p className="text-xs text-slate-500 mt-1">
-                        Recorded by: <span className="font-medium text-slate-300">
+                        Recorded by: <span className="font-medium text-text-secondary">
                           {(harvest.profiles.first_name && harvest.profiles.last_name)
                             ? `${harvest.profiles.first_name} ${harvest.profiles.last_name}`
                             : harvest.profiles.email}
@@ -5812,19 +5812,19 @@ export default function InspectionsPage() {
                   {harvest.honey_weight !== null && (
                     <div className="flex flex-col">
                       <span className="text-xs text-slate-500 mb-1">Honey Weight</span>
-                      <span className="text-sm font-medium text-slate-100">{harvest.honey_weight} {harvest.unit}</span>
+                      <span className="text-sm font-medium text-foreground">{harvest.honey_weight} {harvest.unit}</span>
                     </div>
                   )}
                   {harvest.wax_weight !== null && (
                     <div className="flex flex-col">
                       <span className="text-xs text-slate-500 mb-1">Wax Weight</span>
-                      <span className="text-sm font-medium text-slate-100">{harvest.wax_weight} {harvest.unit}</span>
+                      <span className="text-sm font-medium text-foreground">{harvest.wax_weight} {harvest.unit}</span>
                     </div>
                   )}
                   {harvest.frames_harvested !== null && (
                     <div className="flex flex-col">
                       <span className="text-xs text-slate-500 mb-1">Frames Harvested</span>
-                      <span className="text-sm font-medium text-slate-100">{harvest.frames_harvested}</span>
+                      <span className="text-sm font-medium text-foreground">{harvest.frames_harvested}</span>
                     </div>
                   )}
                 </div>
@@ -5832,7 +5832,7 @@ export default function InspectionsPage() {
                 {harvest.notes && (
                   <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
                     <span className="text-xs text-slate-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-slate-300">{harvest.notes}</span>
+                    <span className="text-sm text-text-secondary">{harvest.notes}</span>
                   </div>
                 )}
               </div>
@@ -5840,7 +5840,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'archive') {
             const archiveRecord = record
             return (
-              <div key={`archive-${archiveRecord.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-gray-500">
+              <div key={`archive-${archiveRecord.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-gray-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5865,14 +5865,14 @@ export default function InspectionsPage() {
                 {archiveRecord.archive_reason_value && (
                   <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200 mb-3">
                     <span className="text-xs text-slate-500 mb-1 block">Reason</span>
-                    <span className="text-sm font-medium text-slate-100">{archiveRecord.archive_reason_value}</span>
+                    <span className="text-sm font-medium text-foreground">{archiveRecord.archive_reason_value}</span>
                   </div>
                 )}
 
                 {archiveRecord.archive_notes && (
                   <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
                     <span className="text-xs text-slate-500 mb-1 block">Additional Notes</span>
-                    <span className="text-sm text-slate-300">{archiveRecord.archive_notes}</span>
+                    <span className="text-sm text-text-secondary">{archiveRecord.archive_notes}</span>
                   </div>
                 )}
               </div>
@@ -5883,7 +5883,7 @@ export default function InspectionsPage() {
       </div>
 
       {filteredRecords.length === 0 && (
-        <div className="bg-slate-900 rounded-lg shadow border border-slate-800 p-12 text-center text-slate-500">
+        <div className="bg-slate-900 rounded-lg shadow border border-border p-12 text-center text-slate-500">
           {filterHiveId
             ? `No records found for this hive. Select "All Hives" or record a new activity.`
             : recordTypeFilter !== 'all'
@@ -5910,7 +5910,7 @@ export default function InspectionsPage() {
               className="absolute top-4 right-4 z-10 bg-slate-800 rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
               aria-label="Close modal"
             >
-              <X size={24} className="text-slate-300" />
+              <X size={24} className="text-text-secondary" />
             </button>
             <div className="relative w-full h-full">
               <Image
@@ -5929,9 +5929,9 @@ export default function InspectionsPage() {
       {/* IPM Tips Modal */}
       {showIpmTips && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-lg shadow border border-slate-800-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-slate-800 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-slate-100">
+              <h3 className="text-lg font-semibold text-foreground">
                 Integrated Pest Management (IPM) Tips for Varroa Control
               </h3>
               <button
@@ -5946,43 +5946,43 @@ export default function InspectionsPage() {
               <ul className="space-y-3">
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     <strong>Rotate treatments annually</strong> to prevent resistance development.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     <strong>Monitor mite levels regularly</strong> using sugar shake or alcohol wash.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     <strong>Apply treatments according to label instructions</strong> and seasonal timing.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     <strong>Ensure adequate colony ventilation</strong> during treatment.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     <strong>Avoid treating during honey flow</strong> unless product is approved for use.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     <strong>Combine chemical treatments with biotechnical methods</strong> (e.g., drone brood removal).
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-slate-300">
+                  <span className="text-text-secondary">
                     <strong>Maintain strong, healthy colonies</strong> through good nutrition and disease management.
                   </span>
                 </li>
