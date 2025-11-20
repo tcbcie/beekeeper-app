@@ -157,10 +157,10 @@ export default function SupportPage() {
 
   const getStatusBadge = (status: string) => {
     const badges = {
-      open: 'bg-blue-100 text-blue-800',
-      in_progress: 'bg-yellow-100 text-yellow-800',
-      resolved: 'bg-green-100 text-green-800',
-      closed: 'bg-gray-100 text-gray-800',
+      open: 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300',
+      in_progress: 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-300',
+      resolved: 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300',
+      closed: 'bg-sage-100 dark:bg-slate-700 text-text-secondary',
     }
     return badges[status as keyof typeof badges] || badges.open
   }
@@ -182,10 +182,10 @@ export default function SupportPage() {
 
   const getPriorityBadge = (priority: string) => {
     const badges = {
-      low: 'bg-gray-100 text-gray-600',
-      normal: 'bg-blue-100 text-blue-600',
-      high: 'bg-orange-100 text-orange-600',
-      urgent: 'bg-red-100 text-red-600',
+      low: 'bg-sage-100 dark:bg-slate-700 text-text-secondary',
+      normal: 'bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300',
+      high: 'bg-orange-100 dark:bg-orange-950/30 text-orange-600 dark:text-orange-300',
+      urgent: 'bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-300',
     }
     return badges[priority as keyof typeof badges] || badges.normal
   }
@@ -196,31 +196,31 @@ export default function SupportPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <MessageCircle size={32} className="text-gray-700" />
-          <h1 className="text-3xl font-bold text-gray-900">Support</h1>
+          <MessageCircle size={32} className="text-text-secondary" />
+          <h1 className="text-3xl font-bold text-foreground">Support</h1>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
+          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium flex items-center gap-2"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
           {showForm ? 'Cancel' : 'New Ticket'}
         </button>
       </div>
 
-      <p className="text-gray-600">
+      <p className="text-text-secondary">
         Have a problem or suggestion? Submit a support ticket and our team will get back to you.
       </p>
 
       {/* New/Edit Ticket Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6">
           <h3 className="text-xl font-semibold mb-4">
             {editingTicket ? 'Edit Ticket' : 'Create New Ticket'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Ticket Type *
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -230,14 +230,14 @@ export default function SupportPage() {
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'problem'
                       ? 'border-red-500 bg-red-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border border-border'
                   }`}
                   disabled={!!editingTicket}
                 >
                   <AlertCircle size={24} className="text-red-600" />
                   <div className="text-center">
                     <div className="font-semibold">Problem</div>
-                    <div className="text-xs text-gray-500">Report an issue</div>
+                    <div className="text-xs text-text-tertiary">Report an issue</div>
                   </div>
                 </button>
                 <button
@@ -246,14 +246,14 @@ export default function SupportPage() {
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'suggestion'
                       ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border border-border'
                   }`}
                   disabled={!!editingTicket}
                 >
                   <Lightbulb size={24} className="text-blue-600" />
                   <div className="text-center">
                     <div className="font-semibold">Suggestion</div>
-                    <div className="text-xs text-gray-500">Share an idea</div>
+                    <div className="text-xs text-text-tertiary">Share an idea</div>
                   </div>
                 </button>
                 <button
@@ -262,42 +262,42 @@ export default function SupportPage() {
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'subscription'
                       ? 'border-amber-500 bg-amber-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border border-border'
                   }`}
                   disabled={!!editingTicket}
                 >
                   <CreditCard size={24} className="text-amber-600" />
                   <div className="text-center">
                     <div className="font-semibold">Subscription</div>
-                    <div className="text-xs text-gray-500">Billing/subscription</div>
+                    <div className="text-xs text-text-tertiary">Billing/subscription</div>
                   </div>
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Subject *
               </label>
               <input
                 type="text"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border border-border rounded-md"
                 placeholder="Brief summary of your issue or suggestion"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Description *
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border border-border rounded-md"
                 placeholder="Please provide as much detail as possible..."
                 required
               />
@@ -306,14 +306,14 @@ export default function SupportPage() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
               >
                 {editingTicket ? 'Update Ticket' : 'Submit Ticket'}
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                className="px-6 py-2 bg-sage-100 dark:bg-slate-700 rounded-lg hover:bg-sage-200 dark:hover:bg-slate-600"
               >
                 Cancel
               </button>
@@ -323,16 +323,16 @@ export default function SupportPage() {
       )}
 
       {/* Tickets List */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow">
         {tickets.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <MessageCircle size={48} className="mx-auto mb-4 text-gray-300" />
+          <div className="text-center py-12 text-text-tertiary">
+            <MessageCircle size={48} className="mx-auto mb-4 text-text-tertiary" />
             <p>No support tickets yet. Create your first ticket above!</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-border">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={ticket.id} className="p-6 hover:bg-sage-50 dark:hover:bg-slate-800 transition-colors">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
                     {ticket.ticket_type === 'problem' ? (
@@ -342,13 +342,13 @@ export default function SupportPage() {
                     ) : (
                       <Lightbulb size={20} className="text-blue-600" />
                     )}
-                    <h3 className="text-lg font-semibold text-gray-900">{ticket.subject}</h3>
+                    <h3 className="text-lg font-semibold text-foreground">{ticket.subject}</h3>
                   </div>
                   <div className="flex items-center gap-3">
                     {(ticket.status === 'open' || ticket.status === 'in_progress') && (
                       <button
                         onClick={() => handleEdit(ticket)}
-                        className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                        className="text-blue-600 hover:text-blue-700 dark:hover:text-blue-200 flex items-center gap-1"
                       >
                         <Edit2 size={16} />
                         <span className="text-sm">Edit</span>
@@ -357,7 +357,7 @@ export default function SupportPage() {
                     {ticket.status !== 'closed' && (
                       <button
                         onClick={() => handleCloseTicket(ticket.id)}
-                        className="text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                        className="text-text-secondary hover:text-foreground flex items-center gap-1"
                       >
                         <XCircle size={16} />
                         <span className="text-sm">Close</span>
@@ -387,7 +387,7 @@ export default function SupportPage() {
                   </span>
                 </div>
 
-                <p className="text-gray-700 mb-3 whitespace-pre-wrap">{ticket.description}</p>
+                <p className="text-text-secondary mb-3 whitespace-pre-wrap">{ticket.description}</p>
 
                 {ticket.admin_notes && (
                   <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3">
@@ -396,7 +396,7 @@ export default function SupportPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between items-center text-xs text-gray-500">
+                <div className="flex justify-between items-center text-xs text-text-tertiary">
                   <span>Created: {new Date(ticket.created_at).toLocaleString()}</span>
                   <span>Updated: {new Date(ticket.updated_at).toLocaleString()}</span>
                 </div>
