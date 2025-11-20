@@ -2175,7 +2175,7 @@ export default function InspectionsPage() {
 
       {/* Archive Hive Form */}
       {showForm && formType === 'archive' && (
-        <div ref={formRef} className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
+        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-red-700">Archive Hive</h3>
             <button
@@ -2187,7 +2187,7 @@ export default function InspectionsPage() {
                   archive_notes: ''
                 })
               }}
-              className="text-slate-500 hover:text-text-secondary"
+              className="text-text-tertiary hover:text-text-secondary"
             >
               <X size={24} />
             </button>
@@ -2295,7 +2295,7 @@ export default function InspectionsPage() {
                 value={archiveData.archive_notes}
                 onChange={(e) => setArchiveData({ ...archiveData, archive_notes: e.target.value })}
                 rows={4}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 placeholder="Add any additional details about why this hive is being archived..."
               />
             </div>
@@ -2528,7 +2528,7 @@ export default function InspectionsPage() {
                     type="checkbox"
                     checked={formData.queen_seen}
                     onChange={(e) => setFormData({...formData, queen_seen: e.target.checked})}
-                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-slate-600 text-purple-600 focus:ring-2 focus:ring-purple-500"
+                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
                   <span className="text-sm font-medium text-text-secondary">Queen Seen</span>
                 </label>
@@ -2538,7 +2538,7 @@ export default function InspectionsPage() {
                     type="checkbox"
                     checked={formData.eggs_present}
                     onChange={(e) => setFormData({...formData, eggs_present: e.target.checked})}
-                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-slate-600 text-purple-600 focus:ring-2 focus:ring-purple-500"
+                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
                   <span className="text-sm font-medium text-text-secondary">Eggs Present</span>
                 </label>
@@ -2568,7 +2568,7 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, brood_frames: null})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                       formData.brood_frames === null
-                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                         : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
@@ -2602,7 +2602,7 @@ export default function InspectionsPage() {
                       onClick={() => setFormData({...formData, right_sized_frames: null})}
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                         formData.right_sized_frames === null
-                          ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                          ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                           : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                       }`}
                     >
@@ -2626,7 +2626,7 @@ export default function InspectionsPage() {
                 {queenCellsExpanded && (
                   <div className="p-4 pt-0 space-y-4">
                     {/* Queen Cups */}
-                    <div className="bg-slate-800 p-3 rounded-lg">
+                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <label className="text-sm font-medium text-text-secondary">Queen cups</label>
                         <div className="flex gap-2 ml-auto">
@@ -2657,12 +2657,12 @@ export default function InspectionsPage() {
                       {formData.queen_cups && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, queen_cups_number: Math.max(0, formData.queen_cups_number - 1)})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2676,14 +2676,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, queen_cups_number: formData.queen_cups_number + 1})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2714,7 +2714,7 @@ export default function InspectionsPage() {
                     </div>
 
                     {/* Swarm Cells */}
-                    <div className="bg-slate-800 p-3 rounded-lg">
+                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <label className="text-sm font-medium text-text-secondary">Swarm cell</label>
                         <div className="flex gap-2 ml-auto">
@@ -2745,12 +2745,12 @@ export default function InspectionsPage() {
                       {formData.swarm_cells && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, swarm_cells_number: Math.max(0, formData.swarm_cells_number - 1)})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2764,14 +2764,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, swarm_cells_number: formData.swarm_cells_number + 1})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2802,7 +2802,7 @@ export default function InspectionsPage() {
                     </div>
 
                     {/* Supercedure Cells */}
-                    <div className="bg-slate-800 p-3 rounded-lg">
+                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <label className="text-sm font-medium text-text-secondary">Supercedure cell</label>
                         <div className="flex gap-2 ml-auto">
@@ -2833,12 +2833,12 @@ export default function InspectionsPage() {
                       {formData.supercedure_cells && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, supercedure_cells_number: Math.max(0, formData.supercedure_cells_number - 1)})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2852,14 +2852,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, supercedure_cells_number: formData.supercedure_cells_number + 1})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2890,7 +2890,7 @@ export default function InspectionsPage() {
                     </div>
 
                     {/* Emergency Cells */}
-                    <div className="bg-slate-800 p-3 rounded-lg">
+                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <label className="text-sm font-medium text-text-secondary">Emergency cell</label>
                         <div className="flex gap-2 ml-auto">
@@ -2921,12 +2921,12 @@ export default function InspectionsPage() {
                       {formData.emergency_cells && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, emergency_cells_number: Math.max(0, formData.emergency_cells_number - 1)})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2940,14 +2940,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, emergency_cells_number: formData.emergency_cells_number + 1})}
-                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                                className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2980,12 +2980,12 @@ export default function InspectionsPage() {
                     {/* Removed cells and Remaining cells */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-medium text-slate-400 mb-2">Removed cells</label>
+                        <label className="block text-xs font-medium text-text-tertiary mb-2">Removed cells</label>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, removed_cells: Math.max(0, formData.removed_cells - 1)})}
-                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                           >
                             −
                           </button>
@@ -2999,19 +2999,19 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, removed_cells: formData.removed_cells + 1})}
-                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                           >
                             +
                           </button>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-slate-400 mb-2">Remaining cells</label>
+                        <label className="block text-xs font-medium text-text-tertiary mb-2">Remaining cells</label>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, remaining_cells: Math.max(0, formData.remaining_cells - 1)})}
-                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                           >
                             −
                           </button>
@@ -3025,7 +3025,7 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, remaining_cells: formData.remaining_cells + 1})}
-                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
+                            className="px-3 py-2 bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 rounded font-bold"
                           >
                             +
                           </button>
@@ -3035,14 +3035,14 @@ export default function InspectionsPage() {
 
                     {/* Note field */}
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-2">Note</label>
+                      <label className="block text-xs font-medium text-text-tertiary mb-2">Note</label>
                       <textarea
                         value={formData.queen_cells_notes}
                         onChange={(e) => setFormData({...formData, queen_cells_notes: e.target.value})}
                         rows={2}
                         maxLength={2500}
                         placeholder="Additional notes about queen cells..."
-                        className="w-full px-3 py-2 border border-slate-600 rounded-md text-sm"
+                        className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-sm"
                       />
                       <div className="text-right text-xs text-slate-500 mt-1">
                         {formData.queen_cells_notes.length} / 2500
@@ -3100,7 +3100,7 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, population_strength: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.population_strength === 0
-                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                         : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
@@ -3152,7 +3152,7 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, temperament_rating: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.temperament_rating === 0
-                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                         : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
@@ -3204,7 +3204,7 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, brood_pattern_rating: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.brood_pattern_rating === 0
-                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                         : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
@@ -3256,7 +3256,7 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, swarming_tendency: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.swarming_tendency === 0
-                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                         : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
@@ -3308,7 +3308,7 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, calmness: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.calmness === 0
-                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                         : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                     }`}
                   >
@@ -3350,7 +3350,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.frames_foundation}
                         onChange={(e) => setFormData({...formData, frames_foundation: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3382,7 +3382,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.frames_brood}
                         onChange={(e) => setFormData({...formData, frames_brood: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3414,7 +3414,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.frames_drawn}
                         onChange={(e) => setFormData({...formData, frames_drawn: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3446,7 +3446,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.honey_supers}
                         onChange={(e) => setFormData({...formData, honey_supers: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3478,7 +3478,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.drone_frames}
                         onChange={(e) => setFormData({...formData, drone_frames: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3510,7 +3510,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.store_frames}
                         onChange={(e) => setFormData({...formData, store_frames: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
@@ -3554,7 +3554,7 @@ export default function InspectionsPage() {
                         onChange={(e) => setFormData({...formData, drones_present: parseInt(e.target.value)})}
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-600"
                       />
-                      <div className="flex justify-between text-xs text-slate-400 mt-2">
+                      <div className="flex justify-between text-xs text-text-tertiary mt-2">
                         <span>Not recorded</span>
                         <span>Low</span>
                         <span>Medium</span>
@@ -3599,7 +3599,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, drone_brood_present: null})}
                         className={`min-h-[48px] rounded-lg font-medium text-xs transition-all touch-manipulation ${
                           formData.drone_brood_present === null
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -3667,7 +3667,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, recapping: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.recapping === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -3719,7 +3719,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, vsh: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.vsh === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -3771,7 +3771,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, smr: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.smr === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -3839,7 +3839,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, afb_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.afb_disease === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -3891,7 +3891,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, efb_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.efb_disease === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -3943,7 +3943,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, chalkbrood_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.chalkbrood_disease === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -3995,7 +3995,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, nosemosis_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.nosemosis_disease === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -4047,7 +4047,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, dwv_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.dwv_disease === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -4099,7 +4099,7 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, iapv_cbpv_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.iapv_cbpv_disease === 0
-                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
                             : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                         }`}
                       >
@@ -4118,7 +4118,7 @@ export default function InspectionsPage() {
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={4}
                 placeholder="General observations, actions taken, tasks for next inspection..."
-                className="w-full px-3 py-2 border border-slate-600 rounded-md"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
               />
             </div>
 
@@ -4139,7 +4139,7 @@ export default function InspectionsPage() {
                         src={imagePreview}
                         alt="Preview"
                         fill
-                        className="object-cover rounded-lg border-2 border-slate-600 shadow-sm"
+                        className="object-cover rounded-lg border-2 border-border shadow-sm"
                         sizes="80px"
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
@@ -4156,7 +4156,7 @@ export default function InspectionsPage() {
                     </button>
                   </div>
                 ) : null}
-                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-slate-600 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all p-4">
+                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all p-4">
                   <div className="flex flex-col items-center justify-center">
                     <Camera size={24} className="text-gray-400 mb-1" />
                     <p className="text-xs text-slate-500 text-center">
@@ -4195,7 +4195,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_treatment' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-semibold">
@@ -4371,43 +4371,43 @@ export default function InspectionsPage() {
                             {selectedProduct.active_ingredients && (
                               <div>
                                 <span className="font-medium text-text-secondary">Active Ingredients:</span>
-                                <span className="text-slate-400 ml-2">{selectedProduct.active_ingredients}</span>
+                                <span className="text-text-tertiary ml-2">{selectedProduct.active_ingredients}</span>
                               </div>
                             )}
                             {selectedProduct.application_method && (
                               <div>
                                 <span className="font-medium text-text-secondary">Application Method:</span>
-                                <span className="text-slate-400 ml-2">{selectedProduct.application_method}</span>
+                                <span className="text-text-tertiary ml-2">{selectedProduct.application_method}</span>
                               </div>
                             )}
                             {selectedProduct.treatment_duration && (
                               <div>
                                 <span className="font-medium text-text-secondary">Duration:</span>
-                                <span className="text-slate-400 ml-2">{selectedProduct.treatment_duration}</span>
+                                <span className="text-text-tertiary ml-2">{selectedProduct.treatment_duration}</span>
                               </div>
                             )}
                             {selectedProduct.temperature_range && (
                               <div>
                                 <span className="font-medium text-text-secondary">Temperature:</span>
-                                <span className="text-slate-400 ml-2">{selectedProduct.temperature_range}</span>
+                                <span className="text-text-tertiary ml-2">{selectedProduct.temperature_range}</span>
                               </div>
                             )}
                             {selectedProduct.honey_flow_restrictions && (
                               <div>
                                 <span className="font-medium text-text-secondary">Honey Flow:</span>
-                                <span className="text-slate-400 ml-2">{selectedProduct.honey_flow_restrictions}</span>
+                                <span className="text-text-tertiary ml-2">{selectedProduct.honey_flow_restrictions}</span>
                               </div>
                             )}
                             {selectedProduct.withdrawal_period_days !== null && (
                               <div>
                                 <span className="font-medium text-text-secondary">Withdrawal:</span>
-                                <span className="text-slate-400 ml-2">{selectedProduct.withdrawal_period_days} days</span>
+                                <span className="text-text-tertiary ml-2">{selectedProduct.withdrawal_period_days} days</span>
                               </div>
                             )}
                             {selectedProduct.notes && (
                               <div className="pt-2 border-t border-gray-200">
                                 <span className="font-medium text-text-secondary block mb-1">Notes:</span>
-                                <span className="text-slate-400 text-xs">{selectedProduct.notes}</span>
+                                <span className="text-text-tertiary text-xs">{selectedProduct.notes}</span>
                               </div>
                             )}
                           </div>
@@ -4507,7 +4507,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_check' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingCheck ? 'Edit Varroa Check' : 'Record New Varroa Check'}
@@ -4773,7 +4773,7 @@ export default function InspectionsPage() {
                   type="checkbox"
                   checked={editingCheck?.action_threshold_reached || false}
                   onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, action_threshold_reached: e.target.checked} : null)}
-                  className="h-5 w-5 rounded border-slate-600 text-orange-600"
+                  className="h-5 w-5 rounded border-border text-orange-600"
                 />
                 <span className="text-sm font-medium text-text-secondary">
                   Action Threshold Reached
@@ -4801,7 +4801,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'feeding' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingFeeding ? 'Edit Feeding' : 'Record New Feeding'}
@@ -4947,7 +4947,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'harvest' && (
-        <div className="bg-slate-900 rounded-lg shadow border border-border-lg p-6">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingHarvest ? 'Edit Harvest' : 'Record New Harvest'}
@@ -5106,7 +5106,7 @@ export default function InspectionsPage() {
                       src={inspection.image_url}
                       alt="Inspection"
                       fill
-                      className="object-cover rounded-lg border-2 border-slate-600 shadow-sm"
+                      className="object-cover rounded-lg border-2 border-border shadow-sm"
                       sizes="64px"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
@@ -5130,7 +5130,7 @@ export default function InspectionsPage() {
                     </p>
                   )}
                   {inspection.weight && (
-                    <p className="text-sm text-slate-400 font-medium mt-1">
+                    <p className="text-sm text-text-tertiary font-medium mt-1">
                       Weight: {inspection.weight} kg
                     </p>
                   )}
@@ -5391,7 +5391,7 @@ export default function InspectionsPage() {
             {inspection.notes && (
               <div className="p-3 bg-blue-50 rounded">
                 <span className="text-sm font-medium text-text-secondary">Notes: </span>
-                <span className="text-sm text-slate-400">{inspection.notes}</span>
+                <span className="text-sm text-text-tertiary">{inspection.notes}</span>
               </div>
             )}
           </div>
@@ -5411,7 +5411,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">Varroa Treatment</span>
                         <h3 className="text-lg font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-text-tertiary">
                       {new Date(treatment.treatment_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5523,7 +5523,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Varroa Check</span>
                         <h3 className="text-lg font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-text-tertiary">
                       {new Date(check.check_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5645,7 +5645,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Feeding</span>
                         <h3 className="text-lg font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-text-tertiary">
                       {new Date(feeding.feed_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5750,7 +5750,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">Harvest</span>
                         <h3 className="text-lg font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-text-tertiary">
                       {new Date(harvest.harvest_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5845,7 +5845,7 @@ export default function InspectionsPage() {
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
                     <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Archive size={24} className="text-slate-400" />
+                      <Archive size={24} className="text-text-tertiary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold">Hive Archived: {archiveRecord.hive_number}</h3>
@@ -5936,7 +5936,7 @@ export default function InspectionsPage() {
               </h3>
               <button
                 onClick={() => setShowIpmTips(false)}
-                className="text-gray-400 hover:text-slate-400 transition-colors"
+                className="text-gray-400 hover:text-text-tertiary transition-colors"
                 title="Close"
               >
                 <X size={24} />
