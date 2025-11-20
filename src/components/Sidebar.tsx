@@ -40,7 +40,7 @@ export default function Sidebar() {
     : baseNavItems
 
   return (
-    <aside className="hidden md:block w-64 bg-slate-900 rounded-xl shadow-lg p-4 h-fit border border-slate-800">
+    <aside className="hidden md:block w-64 bg-surface dark:bg-surface rounded-xl shadow-lg p-4 h-fit border border-border">
       <nav className="space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href
@@ -50,8 +50,8 @@ export default function Sidebar() {
               href={item.href}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-emerald-600/20 text-emerald-400 font-medium border-l-2 border-emerald-500'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                  ? 'bg-forest-100 dark:bg-forest-900/30 text-forest-700 dark:text-forest-300 font-medium border-l-2 border-forest-600 dark:border-forest-400'
+                  : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 hover:text-foreground'
               }`}
             >
               <item.icon size={20} />
