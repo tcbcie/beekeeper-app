@@ -3,10 +3,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Mail, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2 } from 'lucide-react'
+import { User, Mail, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2, Palette } from 'lucide-react'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
+import { ThemeSwitcher } from '@/components/theme-switcher'
 
 interface UserProfile {
   id: string
@@ -1401,6 +1402,18 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Theme Preferences */}
+      <div className="bg-surface dark:bg-surface border border-border rounded-lg shadow p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Palette size={24} className="text-forest-600 dark:text-forest-400" />
+          <h2 className="text-xl font-semibold text-foreground">Theme Preferences</h2>
+        </div>
+        <p className="text-sm text-text-secondary mb-4">
+          Choose your preferred theme. Light mode is optimized for outdoor field work, while dark mode is ideal for evening planning.
+        </p>
+        <ThemeSwitcher />
       </div>
 
       {/* Subscription Management */}

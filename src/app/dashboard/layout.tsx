@@ -66,8 +66,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (authLoading || checkingAccount) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="text-xl text-slate-300">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-xl text-text-secondary">Loading...</div>
       </div>
     )
   }
@@ -77,7 +77,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-background">
       <Navbar
         currentUser={user}
         onMenuClick={() => {
@@ -107,8 +107,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-950">
-          <div className="text-xl text-slate-300">Loading...</div>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-xl text-text-secondary">Loading...</div>
         </div>
       }
     >

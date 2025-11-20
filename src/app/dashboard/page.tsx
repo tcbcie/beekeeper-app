@@ -607,7 +607,7 @@ export default function DashboardPage() {
             fetchDashboardData()
             fetchTeamStats()
           }}
-          className="px-4 py-2 text-sm bg-slate-800 text-slate-200 rounded-lg hover:bg-slate-700 border border-slate-700 min-h-[44px]"
+          className="px-4 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border min-h-[44px]"
         >
           Refresh
         </button>
@@ -615,7 +615,7 @@ export default function DashboardPage() {
 
       {/* My Statistics Cards */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-100 mb-3">My Beekeeping</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">My Beekeeping</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {statCards.map((card) => (
             <StatCard
@@ -631,10 +631,10 @@ export default function DashboardPage() {
 
       {/* Team Statistics Cards - Shared by Me - Compact Version */}
       {isTeamMember && hasMySharedData && (
-        <div className="bg-slate-900 rounded-xl shadow-lg p-4 border border-blue-800">
+        <div className="bg-surface dark:bg-surface rounded-xl shadow-lg p-4 border border-blue-600 dark:border-blue-800">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-              <Users size={18} className="text-blue-400" />
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <Users size={18} className="text-blue-600 dark:text-blue-400" />
               Shared by Me
             </h2>
             <button
@@ -644,7 +644,7 @@ export default function DashboardPage() {
                 }
                 setShowMySharedDetails(!showMySharedDetails)
               }}
-              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium min-h-[36px]"
+              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium min-h-[36px]"
             >
               {showMySharedDetails ? 'Hide' : 'Show'} Details
             </button>
@@ -654,17 +654,17 @@ export default function DashboardPage() {
               <div key={card.label} className="flex flex-col">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-lg">{card.icon}</span>
-                  <span className="text-xs text-gray-600">{card.label}</span>
+                  <span className="text-xs text-text-tertiary">{card.label}</span>
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{card.value}</span>
+                <span className="text-2xl font-bold text-foreground">{card.value}</span>
               </div>
             ))}
           </div>
 
           {/* Team Members Detail View - Compact */}
           {showMySharedDetails && (
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Team Members with Access</h3>
+            <div className="mt-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Team Members with Access</h3>
               {loadingTeamMembers ? (
                 <div className="flex justify-center py-4">
                   <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-600 border-t-transparent"></div>
@@ -672,19 +672,19 @@ export default function DashboardPage() {
               ) : mySharedTeamMembers.length > 0 ? (
                 <div className="space-y-2">
                   {mySharedTeamMembers.map((member) => (
-                    <div key={`${member.team_id}-${member.user_id}`} className="bg-white border border-blue-200 rounded-lg p-2.5 flex items-center justify-between">
+                    <div key={`${member.team_id}-${member.user_id}`} className="bg-surface dark:bg-surface-elevated border border-blue-200 dark:border-blue-800 rounded-lg p-2.5 flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-gray-900 text-sm truncate">
+                        <h4 className="font-medium text-foreground text-sm truncate">
                           {member.profiles?.full_name || 'Unknown User'}
                         </h4>
-                        <p className="text-xs text-gray-600 truncate">{member.profiles?.email}</p>
+                        <p className="text-xs text-text-secondary truncate">{member.profiles?.email}</p>
                       </div>
                       <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                        <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-medium">
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">
                           {member.teams?.name || 'Unknown'}
                         </span>
                         <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                          member.role === 'owner' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
+                          member.role === 'owner' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' : 'bg-sage-100 dark:bg-slate-700 text-text-primary'
                         }`}>
                           {member.role}
                         </span>
@@ -693,7 +693,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-600 text-center py-4 text-sm">No team members found</p>
+                <p className="text-text-secondary text-center py-4 text-sm">No team members found</p>
               )}
             </div>
           )}
@@ -702,10 +702,10 @@ export default function DashboardPage() {
 
       {/* Team Statistics Cards - Shared with Me - Compact Version */}
       {isTeamMember && hasSharedWithMeData && (
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-green-200">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border-2 border-green-600 dark:border-green-700">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Users size={18} className="text-green-600" />
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <Users size={18} className="text-green-600 dark:text-green-400" />
               Shared with Me
             </h2>
           </div>
@@ -714,9 +714,9 @@ export default function DashboardPage() {
               <div key={card.label} className="flex flex-col">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-lg">{card.icon}</span>
-                  <span className="text-xs text-gray-600">{card.label}</span>
+                  <span className="text-xs text-text-tertiary">{card.label}</span>
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{card.value}</span>
+                <span className="text-2xl font-bold text-foreground">{card.value}</span>
               </div>
             ))}
           </div>
@@ -727,22 +727,22 @@ export default function DashboardPage() {
       {userId && <UpcomingEvents userId={userId} />}
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
         <div className="space-y-3">
           {recentActivity.map((inspection) => (
-            <div key={inspection.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+            <div key={inspection.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-slate-800/50 rounded border border-border">
               <div>
-                <span className="font-medium">
+                <span className="font-medium text-foreground">
                   Inspection of {inspection.hives?.hive_number || 'Unknown Hive'}
                 </span>
-                <span className="text-sm text-gray-500 ml-2">{inspection.inspection_date}</span>
+                <span className="text-sm text-text-secondary ml-2">{inspection.inspection_date}</span>
               </div>
               <span
                 className={`px-2 py-1 text-xs rounded ${
                   inspection.queen_seen
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                 }`}
               >
                 {inspection.queen_seen ? 'Queen Seen' : 'No Queen'}
@@ -750,22 +750,22 @@ export default function DashboardPage() {
             </div>
           ))}
           {recentActivity.length === 0 && (
-            <p className="text-gray-500 text-center py-4">No recent activity</p>
+            <p className="text-text-secondary text-center py-4">No recent activity</p>
           )}
         </div>
       </div>
 
       {/* Teams Section - Only show if user has teams */}
       {(loadingTeams || ownedTeams.length > 0 || memberTeams.length > 0) && (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Users size={24} className="text-blue-600" />
-            <h2 className="text-xl font-semibold">My Teams</h2>
+            <Users size={24} className="text-blue-600 dark:text-blue-400" />
+            <h2 className="text-xl font-semibold text-foreground">My Teams</h2>
           </div>
           <a
             href="/dashboard/profile#teams"
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium"
           >
             Manage Teams
           </a>
@@ -781,19 +781,19 @@ export default function DashboardPage() {
             {ownedTeams.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Crown size={16} className="text-amber-600" />
-                  <h3 className="font-semibold text-gray-900 text-sm">Teams I Own ({ownedTeams.length})</h3>
+                  <Crown size={16} className="text-amber-600 dark:text-amber-400" />
+                  <h3 className="font-semibold text-foreground text-sm">Teams I Own ({ownedTeams.length})</h3>
                 </div>
                 <div className="space-y-2">
                   {ownedTeams.map((team) => (
-                    <div key={team.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-2.5 hover:border-amber-300 hover:bg-amber-50 transition-all">
+                    <div key={team.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900 text-sm">{team.name}</h4>
-                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-medium">
+                        <h4 className="font-medium text-foreground text-sm">{team.name}</h4>
+                        <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs rounded font-medium">
                           Owner
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-text-secondary">
                         <span className="flex items-center gap-1">
                           <Users size={12} />
                           {team.member_count || 0}
@@ -809,19 +809,19 @@ export default function DashboardPage() {
             {memberTeams.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <UserCheck size={16} className="text-green-600" />
-                  <h3 className="font-semibold text-gray-900 text-sm">Teams I&apos;m In ({memberTeams.length})</h3>
+                  <UserCheck size={16} className="text-green-600 dark:text-green-400" />
+                  <h3 className="font-semibold text-foreground text-sm">Teams I&apos;m In ({memberTeams.length})</h3>
                 </div>
                 <div className="space-y-2">
                   {memberTeams.map((team) => (
-                    <div key={team.id} className="flex items-center justify-between border border-gray-200 rounded-lg p-2.5 hover:border-green-300 hover:bg-green-50 transition-all">
+                    <div key={team.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-green-300 dark:hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900 text-sm">{team.name}</h4>
-                        <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium capitalize">
+                        <h4 className="font-medium text-foreground text-sm">{team.name}</h4>
+                        <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs rounded font-medium capitalize">
                           {team.user_role}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-text-secondary">
                         <span className="flex items-center gap-1">
                           <Users size={12} />
                           {team.member_count || 0}
@@ -835,10 +835,10 @@ export default function DashboardPage() {
 
             {/* No Shared Data Message */}
             {isTeamMember && !hasMySharedData && !hasSharedWithMeData && (
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center mt-4">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center mt-4">
                 <Users size={48} className="mx-auto text-blue-400 mb-3" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Shared Apiaries Yet</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="text-lg font-semibold text-foreground mb-2">No Shared Apiaries Yet</h3>
+                <p className="text-sm text-text-secondary">
                   You&apos;re part of a team, but no apiaries have been shared yet. Team owners need to share apiaries for team data to appear here.
                 </p>
               </div>
@@ -850,54 +850,54 @@ export default function DashboardPage() {
 
       {/* Data Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3">Queen Status Distribution</h3>
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-3">Queen Status Distribution</h3>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Active</span>
-              <span className="font-medium text-green-600">{stats.activeQueens}</span>
+              <span className="text-sm text-text-secondary">Active</span>
+              <span className="font-medium text-green-600 dark:text-green-400">{stats.activeQueens}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Inactive</span>
-              <span className="font-medium text-gray-600">{stats.queens - stats.activeQueens}</span>
+              <span className="text-sm text-text-secondary">Inactive</span>
+              <span className="font-medium text-text-secondary">{stats.queens - stats.activeQueens}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-3">System Health</h3>
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-3">System Health</h3>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-sm text-gray-600">Database Connected</span>
+              <span className="text-sm text-text-secondary">Database Connected</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-sm text-gray-600">All Systems Operational</span>
+              <span className="text-sm text-text-secondary">All Systems Operational</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Application Version */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow p-6 border border-blue-100">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg shadow p-6 border border-blue-200 dark:border-blue-800">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">HiveCraic</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">HiveCraic</h3>
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
-                <span className="font-medium text-gray-600">Version:</span>
-                <span className="font-bold text-indigo-700">v1.1.0</span>
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-surface-elevated rounded-full shadow-sm border border-border">
+                <span className="font-medium text-text-secondary">Version:</span>
+                <span className="font-bold text-indigo-700 dark:text-indigo-400">v1.2.0</span>
               </span>
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm">
-                <span className="font-medium text-gray-600">Last Updated:</span>
-                <span className="font-semibold text-blue-700">November 19, 2025</span>
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-surface-elevated rounded-full shadow-sm border border-border">
+                <span className="font-medium text-text-secondary">Last Updated:</span>
+                <span className="font-semibold text-blue-700 dark:text-blue-400">November 20, 2025</span>
               </span>
             </div>
           </div>
           <a
             href="/dashboard/about?section=changes"
-            className="px-4 py-2 text-sm bg-white text-blue-600 rounded-lg hover:bg-blue-50 border border-blue-200 font-medium transition-colors"
+            className="px-4 py-2 text-sm bg-surface dark:bg-surface-elevated text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-700 font-medium transition-colors"
           >
             View Changes
           </a>
