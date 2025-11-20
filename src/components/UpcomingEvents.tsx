@@ -101,19 +101,19 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
   const getPriorityColor = (priority: string | undefined) => {
     if (!priority) return ''
     switch (priority) {
-      case 'urgent': return 'text-red-600'
-      case 'high': return 'text-orange-600'
-      case 'normal': return 'text-blue-600'
-      case 'low': return 'text-gray-600'
+      case 'urgent': return 'text-red-600 dark:text-red-400'
+      case 'high': return 'text-orange-600 dark:text-orange-400'
+      case 'normal': return 'text-blue-600 dark:text-blue-400'
+      case 'low': return 'text-text-secondary'
       default: return ''
     }
   }
 
   const getBadgeColor = (daysUntil: number) => {
-    if (daysUntil === 0) return 'bg-red-100 text-red-800 border-red-200'
-    if (daysUntil === 1) return 'bg-orange-100 text-orange-800 border-orange-200'
-    if (daysUntil <= 3) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    return 'bg-blue-100 text-blue-800 border-blue-200'
+    if (daysUntil === 0) return 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800'
+    if (daysUntil === 1) return 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800'
+    if (daysUntil <= 3) return 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
+    return 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800'
   }
 
   const formatDate = (dateString: string) => {
@@ -123,34 +123,34 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="flex items-center gap-2 mb-4">
-          <Calendar size={20} className="text-blue-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
+          <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
+          <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
         </div>
-        <p className="text-gray-500 text-sm">Loading...</p>
+        <p className="text-text-secondary text-sm">Loading...</p>
       </div>
     )
   }
 
   if (events.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="flex items-center gap-2 mb-4">
-          <Calendar size={20} className="text-blue-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
+          <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
+          <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
         </div>
-        <p className="text-gray-500 text-sm">No events in the next 7 days</p>
+        <p className="text-text-secondary text-sm">No events in the next 7 days</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
       <div className="flex items-center gap-2 mb-4">
-        <Calendar size={20} className="text-blue-600" />
-        <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
-        <span className="ml-auto text-xs text-gray-500">Next 7 days</span>
+        <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
+        <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
+        <span className="ml-auto text-xs text-text-tertiary">Next 7 days</span>
       </div>
 
       <div className="space-y-3">
@@ -158,23 +158,23 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
           <Link
             key={`${event.id}-${index}`}
             href="/dashboard/tasks"
-            className="block p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+            className="block p-3 rounded-lg border border-border hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Bell size={14} className="text-gray-400 flex-shrink-0" />
-                  <p className={`font-medium text-sm truncate ${event.priority ? getPriorityColor(event.priority) : 'text-gray-900'}`}>
+                  <Bell size={14} className="text-text-tertiary flex-shrink-0" />
+                  <p className={`font-medium text-sm truncate ${event.priority ? getPriorityColor(event.priority) : 'text-foreground'}`}>
                     {event.title}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs text-gray-600">{getEventLabel(event.event_type)}</p>
+                  <p className="text-xs text-text-secondary">{getEventLabel(event.event_type)}</p>
                   {event.category && (
-                    <span className="text-xs text-gray-500">• {getCategoryLabel(event.category)}</span>
+                    <span className="text-xs text-text-tertiary">• {getCategoryLabel(event.category)}</span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">{formatDate(event.date)}</p>
+                <p className="text-xs text-text-tertiary mt-0.5">{formatDate(event.date)}</p>
               </div>
               <span className={`px-2 py-1 rounded text-xs font-medium border ${getBadgeColor(event.days_until)} whitespace-nowrap`}>
                 {event.days_until === 0 ? 'Today' : event.days_until === 1 ? 'Tomorrow' : `${event.days_until} days`}
