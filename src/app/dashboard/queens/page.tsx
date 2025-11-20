@@ -560,7 +560,7 @@ export default function QueensPage() {
                 onChange={(e) => setFormData({ ...formData, mated_at_eircode: e.target.value.toUpperCase() })}
                 placeholder="e.g., H91 E6K2"
                 maxLength={8}
-                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 uppercase focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
               />
               <p className="text-xs text-text-tertiary mt-1">
                 Irish postcode where the queen was mated
@@ -586,9 +586,9 @@ export default function QueensPage() {
                 id="queen_clipped"
                 checked={formData.queen_clipped}
                 onChange={(e) => setFormData({ ...formData, queen_clipped: e.target.checked })}
-                className="w-4 h-4 text-emerald-600 border-slate-600 rounded focus:ring-emerald-500 bg-slate-800"
+                className="w-4 h-4 text-forest-600 dark:text-emerald-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500 bg-surface dark:bg-surface-elevated"
               />
-              <label htmlFor="queen_clipped" className="ml-2 text-sm font-medium text-slate-300">
+              <label htmlFor="queen_clipped" className="ml-2 text-sm font-medium text-text-secondary">
                 Queen Clipped
               </label>
             </div>
@@ -626,7 +626,7 @@ export default function QueensPage() {
         </div>
       )}
 
-      <div className="bg-slate-900 rounded-lg shadow p-6 border border-slate-800">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="mb-4 flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search
@@ -718,14 +718,14 @@ export default function QueensPage() {
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         queen.marking_color === 'Yellow'
-                          ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-800'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-800'
                           : queen.marking_color === 'Red'
-                          ? 'bg-red-900/30 text-red-300 border border-red-800'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800'
                           : queen.marking_color === 'Green'
-                          ? 'bg-green-900/30 text-green-300 border border-green-800'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800'
                           : queen.marking_color === 'Blue'
-                          ? 'bg-blue-900/30 text-blue-300 border border-blue-800'
-                          : 'bg-slate-800/50 text-slate-300 border border-slate-700'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
+                          : 'bg-sage-100 dark:bg-slate-800/50 text-text-secondary border border-border'
                       }`}
                     >
                       {queen.marking_color || 'None'}
@@ -751,8 +751,8 @@ export default function QueensPage() {
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         queen.status === 'active'
-                          ? 'bg-green-900/30 text-green-300 border border-green-800'
-                          : 'bg-slate-800/50 text-slate-300 border border-slate-700'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800'
+                          : 'bg-sage-100 dark:bg-slate-800/50 text-text-secondary border border-border'
                       }`}
                     >
                       {queen.status}
