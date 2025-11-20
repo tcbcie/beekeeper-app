@@ -38,9 +38,31 @@
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
       "Bash(if exist .next rmdir /s /q .next)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git restore:*)",
+      "Bash(env)",
+      "Bash(if [ -z \"$SUPABASE_ACCESS_TOKEN\" ])",
+      "Bash(then echo \"SUPABASE_ACCESS_TOKEN is not set\")",
+      "Bash(else echo \"SUPABASE_ACCESS_TOKEN is set\")",
+      "Bash(fi)",
+      "Bash(if [ -f .env ])",
+      "Bash(then echo \".env file exists\")",
+      "Bash(else echo \".env file not found\")",
+      "Bash(curl:*)",
+      "mcp__supabase__get_project_url",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__list_extensions",
+      "mcp__supabase__get_advisors",
+      "mcp__supabase__get_anon_key",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
