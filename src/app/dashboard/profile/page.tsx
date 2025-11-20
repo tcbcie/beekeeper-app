@@ -1198,7 +1198,7 @@ export default function ProfilePage() {
                     setProfileFormData({ ...profileFormData, first_name: e.target.value })
                   }
                   placeholder="Enter your first name"
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
@@ -1213,7 +1213,7 @@ export default function ProfilePage() {
                     setProfileFormData({ ...profileFormData, last_name: e.target.value })
                   }
                   placeholder="Enter your last name"
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
@@ -1228,7 +1228,7 @@ export default function ProfilePage() {
                     setProfileFormData({ ...profileFormData, mobile_number: e.target.value })
                   }
                   placeholder="Enter your mobile number"
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
@@ -1249,7 +1249,7 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setProfileFormData({ ...profileFormData, association_id: e.target.value || null })
                       }
-                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-surface dark:bg-surface-elevated"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent bg-surface dark:bg-surface-elevated"
                       disabled={loadingAssociations}
                     >
                       <option value="">Not a member of any local association</option>
@@ -1273,7 +1273,7 @@ export default function ProfilePage() {
                           onChange={(e) =>
                             setProfileFormData({ ...profileFormData, member_fibka: e.target.checked })
                           }
-                          className="w-4 h-4 text-indigo-600 border-border rounded focus:ring-emerald-500"
+                          className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
                         />
                         <span className="text-sm text-text-secondary">
                           FIBKA (Federation of Irish Beekeepers Associations)
@@ -1287,7 +1287,7 @@ export default function ProfilePage() {
                           onChange={(e) =>
                             setProfileFormData({ ...profileFormData, member_iba: e.target.checked })
                           }
-                          className="w-4 h-4 text-indigo-600 border-border rounded focus:ring-emerald-500"
+                          className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
                         />
                         <span className="text-sm text-text-secondary">
                           IBA (Irish Beekeepers Association)
@@ -1301,7 +1301,7 @@ export default function ProfilePage() {
                           onChange={(e) =>
                             setProfileFormData({ ...profileFormData, member_nihbs: e.target.checked })
                           }
-                          className="w-4 h-4 text-indigo-600 border-border rounded focus:ring-emerald-500"
+                          className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
                         />
                         <span className="text-sm text-text-secondary">
                           NIHBS (Native Irish Honey Bee Society)
@@ -1317,7 +1317,7 @@ export default function ProfilePage() {
               <button
                 onClick={updateUserProfile}
                 disabled={savingProfile}
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
               >
                 {savingProfile ? (
                   <>
@@ -1334,7 +1334,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleCancelProfileEdit}
                 disabled={savingProfile}
-                className="px-6 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600 font-medium disabled:opacity-50 transition-all"
+                className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-medium disabled:opacity-50 transition-all"
               >
                 Cancel
               </button>
@@ -1482,7 +1482,7 @@ export default function ProfilePage() {
                                 fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-gray-100 text-text-secondary rounded hover:bg-slate-700 flex items-center gap-1"
+                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
@@ -1567,7 +1567,7 @@ export default function ProfilePage() {
                                         ? 'bg-blue-100 text-blue-800'
                                         : member.role === 'admin'
                                         ? 'bg-purple-100 text-purple-800'
-                                        : 'bg-gray-100 text-gray-800'
+                                        : 'bg-sage-100 dark:bg-slate-800 text-text-primary'
                                     }`}>
                                       {member.role}
                                     </span>
@@ -1777,7 +1777,7 @@ export default function ProfilePage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{team.name}</h4>
-                          <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded font-medium capitalize">
+                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-800 text-text-primary text-xs rounded font-medium capitalize">
                             {team.user_role}
                           </span>
                         </div>
@@ -1792,7 +1792,7 @@ export default function ProfilePage() {
                                 fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-gray-100 text-text-secondary rounded hover:bg-slate-700 flex items-center gap-1"
+                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
@@ -1800,7 +1800,7 @@ export default function ProfilePage() {
                           </button>
                           <button
                             onClick={() => handleLeaveTeam(team.id, team.name)}
-                            className="px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded hover:bg-sage-300 dark:hover:bg-slate-600"
                           >
                             Leave Team
                           </button>
@@ -1842,7 +1842,7 @@ export default function ProfilePage() {
                                         ? 'bg-blue-100 text-blue-800'
                                         : member.role === 'admin'
                                         ? 'bg-purple-100 text-purple-800'
-                                        : 'bg-gray-100 text-gray-800'
+                                        : 'bg-sage-100 dark:bg-slate-800 text-text-primary'
                                     }`}>
                                       {member.role}
                                     </span>
@@ -1894,7 +1894,7 @@ export default function ProfilePage() {
           <button
             onClick={exportMyDataAsJSON}
             disabled={exportingMyData}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
           >
             {exportingMyData ? (
               <>
@@ -1911,7 +1911,7 @@ export default function ProfilePage() {
           <button
             onClick={exportMyDataAsCSV}
             disabled={exportingMyData}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
           >
             {exportingMyData ? (
               <>
@@ -1939,7 +1939,7 @@ export default function ProfilePage() {
                   setShowCreateTeamModal(false)
                   setNewTeamName('')
                 }}
-                className="text-text-tertiary hover:text-text-tertiary"
+                className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
               </button>
@@ -1956,7 +1956,7 @@ export default function ProfilePage() {
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
                 placeholder="e.g., West County Beekeepers"
-                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-blue-500"
                 maxLength={100}
               />
             </div>
@@ -1974,7 +1974,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleCreateTeam}
                 disabled={creatingTeam || !newTeamName.trim()}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {creatingTeam ? (
                   <>
@@ -2004,7 +2004,7 @@ export default function ProfilePage() {
                   setTeamMembers([])
                   setTeamInvitations([])
                 }}
-                className="text-text-tertiary hover:text-text-tertiary"
+                className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
               </button>
@@ -2030,7 +2030,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleSendInvite}
                   disabled={sendingInvite || !inviteEmail.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {sendingInvite ? (
                     <>
@@ -2068,7 +2068,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-slate-700 text-gray-800 text-xs rounded font-medium capitalize">
+                        <span className="px-3 py-1 bg-sage-100 dark:bg-slate-700 text-text-primary text-xs rounded font-medium capitalize">
                           {member.role}
                         </span>
                         {member.role !== 'owner' && (
@@ -2104,7 +2104,7 @@ export default function ProfilePage() {
                       </div>
                       <button
                         onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
-                        className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                        className="px-3 py-1 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded hover:bg-sage-300 dark:hover:bg-slate-600"
                       >
                         Cancel
                       </button>
@@ -2123,7 +2123,7 @@ export default function ProfilePage() {
                   setTeamMembers([])
                   setTeamInvitations([])
                 }}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
               >
                 Close
               </button>
@@ -2144,7 +2144,7 @@ export default function ProfilePage() {
                   setSelectedTeam(null)
                   setSelectedApiaryId('')
                 }}
-                className="text-text-tertiary hover:text-text-tertiary"
+                className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
               </button>
@@ -2184,14 +2184,14 @@ export default function ProfilePage() {
                   setSelectedTeam(null)
                   setSelectedApiaryId('')
                 }}
-                className="px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600"
+                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleShareApiary}
                 disabled={sharingApiary || !selectedApiaryId}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {sharingApiary ? (
                   <>
@@ -2222,7 +2222,7 @@ export default function ProfilePage() {
                   setSelectedTeam(null)
                   setRenameTeamName('')
                 }}
-                className="text-text-tertiary hover:text-text-tertiary"
+                className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
               </button>
@@ -2240,7 +2240,7 @@ export default function ProfilePage() {
                 value={renameTeamName}
                 onChange={(e) => setRenameTeamName(e.target.value)}
                 placeholder="Enter new team name"
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500"
                 maxLength={100}
               />
             </div>
@@ -2252,14 +2252,14 @@ export default function ProfilePage() {
                   setSelectedTeam(null)
                   setRenameTeamName('')
                 }}
-                className="flex-1 px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600"
+                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRenameTeam}
                 disabled={renamingTeam || !renameTeamName.trim()}
-                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {renamingTeam ? (
                   <>
@@ -2300,7 +2300,7 @@ export default function ProfilePage() {
               <div className="font-medium text-foreground">Email Notifications</div>
               <div className="text-sm text-text-tertiary">Manage your notification preferences</div>
             </div>
-            <button className="px-4 py-2 text-sm bg-gray-100 text-text-secondary rounded-lg hover:bg-slate-700">
+            <button className="px-4 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-700">
               Coming Soon
             </button>
           </div>
@@ -2310,7 +2310,7 @@ export default function ProfilePage() {
               <div className="font-medium text-foreground">Data Privacy</div>
               <div className="text-sm text-text-tertiary">View and manage your data</div>
             </div>
-            <button className="px-4 py-2 text-sm bg-gray-100 text-text-secondary rounded-lg hover:bg-slate-700">
+            <button className="px-4 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-700">
               Coming Soon
             </button>
           </div>
@@ -2350,7 +2350,7 @@ export default function ProfilePage() {
                   setPasswordError('')
                 }}
                 disabled={changingPassword}
-                className="text-text-tertiary hover:text-text-tertiary disabled:opacity-50"
+                className="text-text-tertiary hover:text-text-secondary disabled:opacity-50"
               >
                 <X size={20} />
               </button>
@@ -2372,7 +2372,7 @@ export default function ProfilePage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 disabled:bg-sage-100 dark:disabled:bg-slate-800"
                   placeholder="Enter current password"
                 />
               </div>
@@ -2386,7 +2386,7 @@ export default function ProfilePage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 disabled:bg-sage-100 dark:disabled:bg-slate-800"
                   placeholder="Enter new password (min 8 characters)"
                 />
               </div>
@@ -2400,7 +2400,7 @@ export default function ProfilePage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 disabled:bg-sage-100 dark:disabled:bg-slate-800"
                   placeholder="Confirm new password"
                 />
               </div>
@@ -2425,14 +2425,14 @@ export default function ProfilePage() {
                   setPasswordError('')
                 }}
                 disabled={changingPassword}
-                className="flex-1 px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 onClick={handleChangePassword}
                 disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
               >
                 {changingPassword ? 'Changing...' : 'Change Password'}
               </button>
@@ -2457,7 +2457,7 @@ export default function ProfilePage() {
                   setDeleteConfirmText('')
                 }}
                 disabled={deletingAccount}
-                className="text-text-tertiary hover:text-text-tertiary disabled:opacity-50"
+                className="text-text-tertiary hover:text-text-secondary disabled:opacity-50"
               >
                 <X size={20} />
               </button>
@@ -2502,7 +2502,7 @@ export default function ProfilePage() {
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Type DELETE here"
                   disabled={deletingAccount}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-sage-100 dark:disabled:bg-slate-800 disabled:cursor-not-allowed"
                   autoComplete="off"
                 />
               </div>
@@ -2516,14 +2516,14 @@ export default function ProfilePage() {
                   setDeleteConfirmText('')
                 }}
                 disabled={deletingAccount}
-                className="flex-1 px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deletingAccount || deleteConfirmText !== 'DELETE'}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {deletingAccount ? (
                   <>
