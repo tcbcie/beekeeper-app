@@ -1456,7 +1456,7 @@ export default function HivesPage() {
               <div className="flex flex-col gap-1">
                 <h3 className="text-xl font-bold text-foreground">{hive.hive_number}</h3>
                 {hive.is_shared && hive.team_name && (
-                  <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-blue-800">
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
                     <span>👥</span>
                     <span>Shared via {hive.team_name}</span>
                   </span>
@@ -1477,8 +1477,8 @@ export default function HivesPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  hive.status === 'active' ? 'bg-green-900/50 text-green-300 border border-green-800' :
-                  hive.status === 'queenless' ? 'bg-red-900/50 text-red-300 border border-red-800' :
+                  hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
+                  hive.status === 'queenless' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800' :
                   hive.status === 'archived' ? 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border' :
                   'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border'
                 }`}>
@@ -1497,7 +1497,7 @@ export default function HivesPage() {
                       <MoreVertical size={16} className="text-text-secondary" />
                     </button>
                     {openMenuId === hive.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-surface dark:bg-slate-800 border border-border rounded-lg shadow-lg z-10 min-w-[160px]">
+                      <div className="absolute right-0 top-full mt-1 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg z-10 min-w-[160px]">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -1531,12 +1531,12 @@ export default function HivesPage() {
                   <span className="flex items-center gap-1">
                     {hive.queens.marking_color && (
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        hive.queens.marking_color === 'White' ? 'bg-slate-200 text-slate-800' :
+                        hive.queens.marking_color === 'White' ? 'bg-slate-100 dark:bg-slate-700 text-text-primary' :
                         hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
                         hive.queens.marking_color === 'Red' ? 'bg-red-200 text-red-900' :
                         hive.queens.marking_color === 'Green' ? 'bg-green-200 text-green-900' :
                         hive.queens.marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
-                        'bg-slate-200 text-slate-800'
+                        'bg-slate-100 dark:bg-slate-700 text-text-primary'
                       }`}>
                         {hive.queens.marking_color}
                       </span>
@@ -1554,12 +1554,12 @@ export default function HivesPage() {
                   <span className="flex items-center gap-1">
                     {hive.queen_marking_color && (
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        hive.queen_marking_color === 'White' ? 'bg-slate-200 text-slate-800' :
+                        hive.queen_marking_color === 'White' ? 'bg-slate-100 dark:bg-slate-700 text-text-primary' :
                         hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
                         hive.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
                         hive.queen_marking_color === 'Green' ? 'bg-green-200 text-green-900' :
                         hive.queen_marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
-                        'bg-slate-200 text-slate-800'
+                        'bg-slate-100 dark:bg-slate-700 text-text-primary'
                       }`}>
                         {hive.queen_marking_color}
                       </span>
@@ -1580,7 +1580,7 @@ export default function HivesPage() {
                 </div>
               )}
               {hive.notes && (
-                <div className="mt-3 p-2 bg-sage-50 dark:bg-slate-800 rounded text-text-primary text-xs border border-border">
+                <div className="mt-3 p-2 bg-sage-50 dark:bg-slate-800/50 rounded text-text-primary text-xs border border-border">
                   {hive.notes}
                 </div>
               )}
@@ -1593,7 +1593,7 @@ export default function HivesPage() {
                   {hive.configuration.hive_size && (
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                       hive.configuration.hive_size === 'nuc'
-                        ? 'bg-blue-900/50 text-blue-300 border border-blue-800'
+                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
                         : 'bg-emerald-900/50 text-emerald-300 border border-emerald-800'
                     }`}>
                       {hive.configuration.hive_size === 'nuc' ? 'Nuc' : 'Full Size'}
@@ -1636,7 +1636,7 @@ export default function HivesPage() {
 
                   {/* Queen Excluder - always directly above brood boxes if present */}
                   {hive.configuration.queen_excluder && (
-                    <div className="w-full h-3 bg-gray-400 border-2 border-gray-600 rounded flex items-center justify-center text-xs font-bold">
+                    <div className="w-full h-3 bg-slate-300 dark:bg-gray-400 border-2 border-slate-500 dark:border-gray-600 rounded flex items-center justify-center text-xs font-bold">
                       ═══
                     </div>
                   )}
@@ -1677,7 +1677,7 @@ export default function HivesPage() {
 
                   {/* Varroa Mesh Floor - always at the very bottom with feet */}
                   <div className="w-full relative">
-                    <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-gray-200' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
+                    <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-slate-200 dark:bg-gray-200' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
                       {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
                     </div>
                     {/* Hive stand feet */}
