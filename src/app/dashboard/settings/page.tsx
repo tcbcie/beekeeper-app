@@ -2,9 +2,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check } from 'lucide-react'
+import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Palette } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
+import { ThemeSwitcher } from '@/components/theme-switcher'
 
 interface DropdownCategory {
   id: string
@@ -155,7 +156,7 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration'>('profile')
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
@@ -1615,6 +1616,7 @@ export default function SettingsPage() {
 
   const sections = [
     { id: 'profile' as const, label: 'Profile & Export', icon: User, adminOnly: false },
+    { id: 'theme' as const, label: 'Theme', icon: Palette, adminOnly: false },
     { id: 'users' as const, label: 'User Management', icon: Users, adminOnly: true },
     { id: 'registration' as const, label: 'Subscription Codes', icon: Shield, adminOnly: true },
     { id: 'tickets' as const, label: 'Support Tickets', icon: MessageCircle, adminOnly: true },
@@ -2612,6 +2614,83 @@ export default function SettingsPage() {
         )}
       </div>
       )}
+
+      {/* Theme Section */}
+      {activeSection === 'theme' && (
+        <div className="bg-white dark:bg-surface rounded-lg shadow p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-forest-100 dark:bg-forest-900/30 rounded-lg">
+              <Palette size={24} className="text-forest-600 dark:text-forest-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Theme Settings</h2>
+              <p className="text-sm text-text-secondary">Choose your preferred theme for field work or indoor planning</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Theme Explanation */}
+            <div className="bg-sage-50 dark:bg-slate-800/50 border border-sage-200 dark:border-slate-700 rounded-xl p-4">
+              <h3 className="font-semibold text-text-primary mb-2">🌞 Light Mode (Field Work)</h3>
+              <p className="text-sm text-text-secondary mb-3">
+                Optimized for outdoor use in bright sunlight. Features high-contrast colors and warm backgrounds that reduce glare when working with hives in the field.
+              </p>
+              <h3 className="font-semibold text-text-primary mb-2">🌙 Dark Mode (Evening Planning)</h3>
+              <p className="text-sm text-text-secondary mb-3">
+                Perfect for evening reviews and indoor data analysis. Reduces eye strain during nighttime planning sessions.
+              </p>
+              <h3 className="font-semibold text-text-primary mb-2">🕐 Auto Mode</h3>
+              <p className="text-sm text-text-secondary">
+                Automatically switches between Light (6am-8pm) and Dark (8pm-6am) modes based on the time of day.
+              </p>
+            </div>
+
+            {/* Theme Switcher Component */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-3">
+                Select Theme
+              </label>
+              <ThemeSwitcher />
+            </div>
+
+            {/* Design Philosophy */}
+            <div className="border-t border-border pt-4">
+              <h3 className="font-semibold text-text-primary mb-3">Design Philosophy</h3>
+              <div className="grid md:grid-cols-2 gap-4 text-sm text-text-secondary">
+                <div className="space-y-2">
+                  <p className="flex items-start gap-2">
+                    <span className="text-forest-600 dark:text-forest-400">✓</span>
+                    <span><strong>Mobile-first:</strong> Designed for beekeepers working in the field with phones</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-forest-600 dark:text-forest-400">✓</span>
+                    <span><strong>Touch-friendly:</strong> Large buttons and controls that work with gloves</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-forest-600 dark:text-forest-400">✓</span>
+                    <span><strong>High contrast:</strong> Easy to read in all lighting conditions</span>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="flex items-start gap-2">
+                    <span className="text-amber-600 dark:text-amber-400">✓</span>
+                    <span><strong>Forest green accents:</strong> Professional, nature-inspired design</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-amber-600 dark:text-amber-400">✓</span>
+                    <span><strong>Adaptive colors:</strong> Seamless transition between themes</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-amber-600 dark:text-amber-400">✓</span>
+                    <span><strong>Field-optimized:</strong> Warm backgrounds reduce glare outdoors</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Management Section */}
       {activeSection === 'users' && (
       <div className="bg-white rounded-lg shadow">

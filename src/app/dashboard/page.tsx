@@ -564,19 +564,19 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-100">Dashboard Overview</h1>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
             {userRole === 'Admin' && (
-              <span className="px-3 py-1 bg-purple-900/50 text-purple-300 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-700">
+              <span className="px-3 py-1 bg-purple-900/50 dark:bg-purple-900/30 text-purple-300 dark:text-purple-200 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-700 dark:border-purple-600">
                 <Shield size={14} />
                 Admin
               </span>
             )}
           </div>
           {userRole === 'Admin' && userStats.totalUsers > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-slate-400">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-text-secondary">
               <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <strong className="text-emerald-400">{userStats.onlineUsers}</strong> of <strong className="text-slate-300">{userStats.totalUsers}</strong> users online
+                <span className="w-2 h-2 bg-forest-600 dark:bg-forest-400 rounded-full animate-pulse"></span>
+                <strong className="text-forest-600 dark:text-forest-400">{userStats.onlineUsers}</strong> of <strong className="text-text-primary">{userStats.totalUsers}</strong> users online
               </span>
               <span className="hidden sm:inline text-slate-600">•</span>
               <span className="inline-flex items-center gap-1">
