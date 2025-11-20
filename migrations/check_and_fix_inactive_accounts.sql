@@ -22,50 +22,47 @@ SELECT
   p.first_name,
   p.last_name,
   p.is_active,
-  p.disabled_at,
   u.created_at
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 WHERE p.is_active = false
-ORDER BY p.disabled_at DESC NULLS LAST;
+ORDER BY u.created_at DESC;
 
--- Step 2: Check if any accounts have is_active = false but no disabled_at timestamp
--- (These might be incorrectly marked as inactive)
+-- Step 2: Count inactive accounts
 DO $$
 DECLARE
-  incorrect_count INTEGER;
+  inactive_count INTEGER;
 BEGIN
   SELECT COUNT(*)
-  INTO incorrect_count
+  INTO inactive_count
   FROM public.profiles
-  WHERE is_active = false AND disabled_at IS NULL;
+  WHERE is_active = false;
 
-  IF incorrect_count > 0 THEN
+  IF inactive_count > 0 THEN
     RAISE NOTICE '';
-    RAISE NOTICE '⚠️  WARNING: Found % account(s) with is_active=false but no disabled_at timestamp', incorrect_count;
-    RAISE NOTICE 'These accounts may have been incorrectly marked as inactive.';
+    RAISE NOTICE '⚠️  WARNING: Found % inactive account(s)', inactive_count;
+    RAISE NOTICE 'These accounts cannot log in to the application.';
   ELSE
     RAISE NOTICE '';
-    RAISE NOTICE '✓ All inactive accounts have proper disabled_at timestamps';
+    RAISE NOTICE '✓ No inactive accounts found - all accounts are active';
   END IF;
 END $$;
 
--- Step 3: (OPTIONAL) Reactivate ALL accounts that were incorrectly marked inactive
--- UNCOMMENT THE LINES BELOW TO REACTIVATE ACCOUNTS:
+-- Step 3: (OPTIONAL) Reactivate ALL inactive accounts
+-- UNCOMMENT THE LINES BELOW TO REACTIVATE ALL ACCOUNTS:
 
 /*
 UPDATE public.profiles
-SET
-  is_active = true,
-  disabled_at = NULL
-WHERE is_active = false
-  AND disabled_at IS NULL;
+SET is_active = true
+WHERE is_active = false;
 
 DO $$
+DECLARE
+  updated_count INTEGER;
 BEGIN
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
   RAISE NOTICE '';
-  RAISE NOTICE '✅ Reactivated accounts that had no disabled_at timestamp';
-  RAISE NOTICE 'Affected rows: %', (SELECT COUNT(*) FROM public.profiles WHERE is_active = true);
+  RAISE NOTICE '✅ Reactivated % account(s)', updated_count;
 END $$;
 */
 
@@ -74,9 +71,7 @@ END $$;
 
 /*
 UPDATE public.profiles p
-SET
-  is_active = true,
-  disabled_at = NULL
+SET is_active = true
 FROM auth.users u
 WHERE p.id = u.id
   AND u.email = 'user@example.com';  -- CHANGE THIS EMAIL

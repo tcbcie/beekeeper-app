@@ -7,9 +7,7 @@
 
 -- Update all profiles to be active
 UPDATE public.profiles
-SET
-  is_active = true,
-  disabled_at = NULL
+SET is_active = true
 WHERE is_active = false;
 
 -- Show results
@@ -34,9 +32,8 @@ SELECT
   p.first_name,
   p.last_name,
   p.is_active,
-  p.disabled_at,
-  p.created_at
+  u.created_at
 FROM auth.users u
 JOIN public.profiles p ON u.id = p.id
-ORDER BY p.created_at DESC
+ORDER BY u.created_at DESC
 LIMIT 10;
