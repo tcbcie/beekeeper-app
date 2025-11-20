@@ -58,11 +58,11 @@ export default function ToolsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Wrench size={32} className="text-gray-700" />
-        <h1 className="text-3xl font-bold text-gray-900">Tools</h1>
+        <Wrench size={32} className="text-text-secondary" />
+        <h1 className="text-3xl font-bold text-foreground">Tools</h1>
       </div>
 
-      <p className="text-gray-600">
+      <p className="text-text-secondary">
         Helpful tools and utilities for managing your beekeeping operations.
       </p>
 
@@ -70,20 +70,20 @@ export default function ToolsPage() {
         {tools.map((tool, index) => (
           <div
             key={index}
-            className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow"
+            className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow"
           >
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-amber-100 rounded-lg">
-                <tool.icon size={24} className="text-amber-700" />
+              <div className="p-3 bg-forest-100 dark:bg-forest-900/50 rounded-lg">
+                <tool.icon size={24} className="text-forest-700 dark:text-forest-300" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                <h3 className="text-lg font-semibold text-foreground mb-1">
                   {tool.title}
                 </h3>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-text-secondary mb-3">
                   {tool.description}
                 </p>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-text-secondary">
                   {tool.status}
                 </span>
               </div>
@@ -92,11 +92,11 @@ export default function ToolsPage() {
         ))}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">
+      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
           More Tools Coming Soon
         </h3>
-        <p className="text-blue-700">
+        <p className="text-blue-700 dark:text-blue-300">
           We&apos;re actively developing new tools to help you manage your beekeeping operations more efficiently.
           Check back soon for updates!
         </p>
