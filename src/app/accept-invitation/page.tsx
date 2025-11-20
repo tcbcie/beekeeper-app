@@ -198,13 +198,13 @@ function AcceptInvitationContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow-xl p-8 max-w-md w-full">
         <div className="text-center">
           {status === 'success' && (
             <>
               <CheckCircle size={64} className="mx-auto text-green-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Success!</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Success!</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
             </>
           )}
@@ -212,8 +212,8 @@ function AcceptInvitationContent() {
           {status === 'already-accepted' && (
             <>
               <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Already a Member</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Already a Member</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -226,8 +226,8 @@ function AcceptInvitationContent() {
           {status === 'needs-signup' && (
             <>
               <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign Up Required</h1>
-              <p className="text-gray-600 mb-4">
+              <h1 className="text-2xl font-bold text-foreground mb-2">Sign Up Required</h1>
+              <p className="text-text-secondary mb-4">
                 You&apos;ve been invited to join <strong>{teamName}</strong>!
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left mb-4">
@@ -250,7 +250,7 @@ function AcceptInvitationContent() {
                 </button>
                 <button
                   onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
-                  className="w-full px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+                  className="w-full px-6 py-2 bg-gray-100 text-text-secondary rounded-lg hover:bg-gray-200 font-medium"
                 >
                   Already have an account? Sign In
                 </button>
@@ -261,8 +261,8 @@ function AcceptInvitationContent() {
           {status === 'expired' && (
             <>
               <XCircle size={64} className="mx-auto text-orange-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Invitation Expired</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Invitation Expired</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <p className="text-sm text-gray-500 mb-4">
                 Please contact the team owner to send you a new invitation.
               </p>
@@ -278,8 +278,8 @@ function AcceptInvitationContent() {
           {status === 'error' && (
             <>
               <XCircle size={64} className="mx-auto text-red-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Error</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Error</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"

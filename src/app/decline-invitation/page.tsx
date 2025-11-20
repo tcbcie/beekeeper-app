@@ -108,13 +108,13 @@ function DeclineInvitationContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow-xl p-8 max-w-md w-full">
         <div className="text-center">
           {status === 'success' && (
             <>
               <CheckCircle size={64} className="mx-auto text-blue-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Invitation Declined</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Invitation Declined</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <p className="text-sm text-gray-500 mb-4">
                 If you change your mind, you can ask the team owner to send you another invitation.
               </p>
@@ -125,8 +125,8 @@ function DeclineInvitationContent() {
           {status === 'already-declined' && (
             <>
               <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Already Declined</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Already Declined</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -139,8 +139,8 @@ function DeclineInvitationContent() {
           {status === 'expired' && (
             <>
               <XCircle size={64} className="mx-auto text-orange-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Invitation Expired</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Invitation Expired</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <p className="text-sm text-gray-500 mb-4">
                 This invitation is no longer valid.
               </p>
@@ -156,8 +156,8 @@ function DeclineInvitationContent() {
           {status === 'error' && (
             <>
               <XCircle size={64} className="mx-auto text-red-500 mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Error</h1>
-              <p className="text-gray-600 mb-4">{message}</p>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Error</h1>
+              <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
