@@ -82,17 +82,17 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
       {/* Drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-slate-900 shadow-xl z-[70] transform transition-transform duration-300 ease-in-out md:hidden border-r border-slate-800 ${
+        className={`fixed top-0 left-0 h-full w-72 bg-surface dark:bg-surface shadow-xl z-[70] transform transition-transform duration-300 ease-in-out md:hidden border-r border-border ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-800">
-            <h2 className="text-lg font-semibold text-slate-100">Menu</h2>
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
+              className="p-2 rounded-lg hover:bg-sage-100 dark:hover:bg-slate-800 text-text-secondary hover:text-foreground touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
               aria-label="Close menu"
             >
               <X size={24} />
@@ -110,8 +110,8 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                     href={item.href}
                     className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-200 touch-manipulation min-h-[48px] ${
                       isActive
-                        ? 'bg-emerald-600/20 text-emerald-400 font-medium border-l-2 border-emerald-500'
-                        : 'text-slate-300 hover:bg-slate-800 active:bg-slate-700 hover:text-slate-100'
+                        ? 'bg-forest-100 dark:bg-forest-900/30 text-forest-700 dark:text-forest-300 font-medium border-l-2 border-forest-600 dark:border-forest-400'
+                        : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 active:bg-sage-200 dark:active:bg-slate-700 hover:text-foreground'
                     }`}
                   >
                     <item.icon size={24} />

@@ -46,7 +46,7 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
   }
 
   return (
-    <nav className="bg-slate-900 shadow-lg border-b border-slate-800 sticky top-0 z-30">
+    <nav className="bg-surface dark:bg-surface shadow-lg border-b border-border sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
@@ -58,23 +58,23 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
                 console.log('Hamburger menu clicked')
                 onMenuClick?.()
               }}
-              className="md:hidden p-2 rounded-lg hover:bg-slate-800 active:bg-slate-700 text-slate-300 hover:text-slate-100 touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
+              className="md:hidden p-2 rounded-lg hover:bg-sage-100 dark:hover:bg-slate-800 active:bg-sage-200 dark:active:bg-slate-700 text-text-secondary hover:text-foreground touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
               aria-label="Open menu"
               type="button"
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-xl sm:text-2xl font-bold text-emerald-400 whitespace-nowrap">
+            <h1 className="text-xl sm:text-2xl font-bold text-forest-600 dark:text-forest-400 whitespace-nowrap">
               🐝 HiveCraic
             </h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden sm:inline text-sm text-slate-400 truncate max-w-[150px] lg:max-w-none">
+            <span className="hidden sm:inline text-sm text-text-secondary truncate max-w-[150px] lg:max-w-none">
               {currentUser?.email}
             </span>
             <button
               onClick={handleLogout}
-              className="px-3 py-2 sm:px-4 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 flex items-center gap-2 touch-manipulation min-h-[48px]"
+              className="px-3 py-2 sm:px-4 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 active:bg-red-800 flex items-center gap-2 touch-manipulation min-h-[48px]"
               aria-label="Logout"
             >
               <LogOut size={16} />
