@@ -17,13 +17,13 @@ END $$;
 
 -- Show all inactive accounts
 SELECT
-  id,
-  email,
-  first_name,
-  last_name,
-  is_active,
-  disabled_at,
-  created_at
+  u.id,
+  u.email,
+  p.first_name,
+  p.last_name,
+  p.is_active,
+  p.disabled_at,
+  u.created_at
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id
 WHERE p.is_active = false
