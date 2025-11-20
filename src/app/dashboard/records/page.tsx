@@ -1956,12 +1956,12 @@ export default function InspectionsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-responsive-3xl font-bold text-slate-100">Records 📋</h1>
+          <h1 className="text-responsive-3xl font-bold text-foreground">Records 📋</h1>
           {sourceHiveId && (
             <div className="flex gap-2">
               <button
                 onClick={() => router.push(`/dashboard/hives/${sourceHiveId}`)}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
                 title="View hive detail"
               >
                 <ExternalLink size={18} />
@@ -1969,7 +1969,7 @@ export default function InspectionsPage() {
               </button>
               <button
                 onClick={() => router.push('/dashboard/hives')}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
                 title="Go to hives page"
               >
                 <Home size={18} />
@@ -1986,7 +1986,7 @@ export default function InspectionsPage() {
                 setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
                 fetchInspections()
               }}
-              className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
             >
               <option value="my">My Records</option>
               <option value="team">Team Records</option>
@@ -1998,7 +1998,7 @@ export default function InspectionsPage() {
             onChange={(e) => {
               setRecordTypeFilter(e.target.value as typeof recordTypeFilter)
             }}
-            className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
           >
             <option value="all">All Types</option>
             <option value="inspection">Hive Inspection</option>
@@ -2014,7 +2014,7 @@ export default function InspectionsPage() {
               setFilterApiaryId(e.target.value)
               setFilterHiveId('') // Clear hive filter when apiary changes
             }}
-            className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
           >
             <option value="">All Apiaries</option>
             {apiaries.map((apiary) => (
@@ -2026,7 +2026,7 @@ export default function InspectionsPage() {
           <select
             value={filterHiveId}
             onChange={(e) => setFilterHiveId(e.target.value)}
-            className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
           >
             <option value="">All Hives</option>
             {hives
@@ -2040,21 +2040,21 @@ export default function InspectionsPage() {
           <div className="relative dropdown-container">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="px-4 py-2 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 font-medium flex items-center gap-2 justify-center touch-manipulation w-full sm:w-auto"
+              className="px-4 py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 font-medium flex items-center gap-2 justify-center touch-manipulation w-full sm:w-auto"
             >
               <Plus size={18} />
               New Record
               <ChevronDown size={18} />
             </button>
             {showDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-lg shadow border border-slate-800-lg border border-gray-200 z-10">
+              <div className="absolute right-0 mt-2 w-56 bg-surface dark:bg-surface rounded-lg shadow-lg border border-border z-10">
                 <button
                   onClick={() => {
                     setFormType('inspection')
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 rounded-t-lg transition-colors"
+                  className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 rounded-t-lg transition-colors"
                 >
                   <Plus size={16} />
                   Hive Inspection
@@ -2078,7 +2078,7 @@ export default function InspectionsPage() {
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                  className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
                   Varroa Treatment
@@ -2101,7 +2101,7 @@ export default function InspectionsPage() {
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                  className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
                   Varroa Check
@@ -2327,17 +2327,17 @@ export default function InspectionsPage() {
       )}
 
       {/* Time Period Filter */}
-      <div className="bg-slate-900 rounded-lg shadow border border-slate-800 p-4">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm font-medium text-slate-300">Time Period:</label>
+            <label className="text-sm font-medium text-text-secondary">Time Period:</label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setTimePeriod('all')}
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === 'all'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                 }`}
               >
                 All Time
@@ -2346,8 +2346,8 @@ export default function InspectionsPage() {
                 onClick={() => setTimePeriod('3months')}
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '3months'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                 }`}
               >
                 Last 3 Months
@@ -2356,8 +2356,8 @@ export default function InspectionsPage() {
                 onClick={() => setTimePeriod('6months')}
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '6months'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                 }`}
               >
                 Last 6 Months
@@ -2366,8 +2366,8 @@ export default function InspectionsPage() {
                 onClick={() => setTimePeriod('1year')}
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '1year'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                 }`}
               >
                 Last Year
@@ -2376,8 +2376,8 @@ export default function InspectionsPage() {
                 onClick={() => setTimePeriod('custom')}
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === 'custom'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
+                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                 }`}
               >
                 Custom Range
@@ -2388,26 +2388,26 @@ export default function InspectionsPage() {
           {/* Custom Date Range Inputs */}
           {timePeriod === 'custom' && (
             <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-28">
-              <label className="text-sm font-medium text-slate-300">From:</label>
+              <label className="text-sm font-medium text-text-secondary">From:</label>
               <input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="px-3 py-2 border border-slate-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
               />
-              <label className="text-sm font-medium text-slate-300">To:</label>
+              <label className="text-sm font-medium text-text-secondary">To:</label>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="px-3 py-2 border border-slate-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
               />
               <button
                 onClick={() => {
                   setCustomStartDate('')
                   setCustomEndDate('')
                 }}
-                className="px-3 py-2 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                className="px-3 py-2 text-sm bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600"
               >
                 Clear Dates
               </button>
