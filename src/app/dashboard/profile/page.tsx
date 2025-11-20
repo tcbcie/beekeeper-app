@@ -1152,7 +1152,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-slate-100">Loading...</div>
+        <div className="text-xl text-foreground">Loading...</div>
       </div>
     )
   }
@@ -1160,14 +1160,14 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <User size={32} className="text-slate-400" />
-        <h1 className="text-3xl font-bold text-slate-100">Profile</h1>
+        <User size={32} className="text-text-tertiary" />
+        <h1 className="text-3xl font-bold text-foreground">Profile</h1>
       </div>
 
       {/* Profile Information */}
-      <div className="bg-slate-900 rounded-lg shadow p-6 border border-slate-800">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-slate-100">Profile Information</h2>
+          <h2 className="text-xl font-semibold text-foreground">Profile Information</h2>
           {!editingProfile && (
             <button
               onClick={() => setEditingProfile(true)}
@@ -1182,13 +1182,13 @@ export default function ProfilePage() {
         {editingProfile ? (
           /* Edit Mode */
           <div className="space-y-4">
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-text-tertiary mb-4">
               Update your personal information. All fields are optional.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   First Name
                 </label>
                 <input
@@ -1198,12 +1198,12 @@ export default function ProfilePage() {
                     setProfileFormData({ ...profileFormData, first_name: e.target.value })
                   }
                   placeholder="Enter your first name"
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Last Name
                 </label>
                 <input
@@ -1213,12 +1213,12 @@ export default function ProfilePage() {
                     setProfileFormData({ ...profileFormData, last_name: e.target.value })
                   }
                   placeholder="Enter your last name"
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Mobile Number
                 </label>
                 <input
@@ -1228,19 +1228,19 @@ export default function ProfilePage() {
                     setProfileFormData({ ...profileFormData, mobile_number: e.target.value })
                   }
                   placeholder="Enter your mobile number"
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
               {/* Association Membership */}
               <div className="md:col-span-2 pt-4 border-t">
-                <h3 className="text-md font-medium text-slate-100 mb-3">Association Membership</h3>
+                <h3 className="text-md font-medium text-foreground mb-3">Association Membership</h3>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Local Beekeeping Association
-                      <span className="ml-2 text-xs text-slate-500 font-normal">
+                      <span className="ml-2 text-xs text-text-tertiary font-normal">
                         (If you are a member of a local association, select from list below)
                       </span>
                     </label>
@@ -1249,7 +1249,7 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setProfileFormData({ ...profileFormData, association_id: e.target.value || null })
                       }
-                      className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-800"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-surface dark:bg-surface-elevated"
                       disabled={loadingAssociations}
                     >
                       <option value="">Not a member of any local association</option>
@@ -1262,7 +1262,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
                       National Organization Memberships
                     </label>
                     <div className="space-y-2">
@@ -1273,9 +1273,9 @@ export default function ProfilePage() {
                           onChange={(e) =>
                             setProfileFormData({ ...profileFormData, member_fibka: e.target.checked })
                           }
-                          className="w-4 h-4 text-indigo-600 border-slate-600 rounded focus:ring-emerald-500"
+                          className="w-4 h-4 text-indigo-600 border-border rounded focus:ring-emerald-500"
                         />
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-text-secondary">
                           FIBKA (Federation of Irish Beekeepers Associations)
                         </span>
                       </label>
@@ -1287,9 +1287,9 @@ export default function ProfilePage() {
                           onChange={(e) =>
                             setProfileFormData({ ...profileFormData, member_iba: e.target.checked })
                           }
-                          className="w-4 h-4 text-indigo-600 border-slate-600 rounded focus:ring-emerald-500"
+                          className="w-4 h-4 text-indigo-600 border-border rounded focus:ring-emerald-500"
                         />
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-text-secondary">
                           IBA (Irish Beekeepers Association)
                         </span>
                       </label>
@@ -1301,9 +1301,9 @@ export default function ProfilePage() {
                           onChange={(e) =>
                             setProfileFormData({ ...profileFormData, member_nihbs: e.target.checked })
                           }
-                          className="w-4 h-4 text-indigo-600 border-slate-600 rounded focus:ring-emerald-500"
+                          className="w-4 h-4 text-indigo-600 border-border rounded focus:ring-emerald-500"
                         />
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-text-secondary">
                           NIHBS (Native Irish Honey Bee Society)
                         </span>
                       </label>
@@ -1334,7 +1334,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleCancelProfileEdit}
                 disabled={savingProfile}
-                className="px-6 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 font-medium disabled:opacity-50 transition-all"
+                className="px-6 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600 font-medium disabled:opacity-50 transition-all"
               >
                 Cancel
               </button>
@@ -1344,32 +1344,32 @@ export default function ProfilePage() {
           /* Display Mode */
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg">
-                <User size={20} className="text-slate-400 mt-1" />
+              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                <User size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-slate-500 mb-1">First Name</div>
-                  <div className="text-slate-100">
-                    {userProfile?.first_name || <span className="text-gray-400 italic">Not set</span>}
+                  <div className="text-sm font-medium text-text-tertiary mb-1">First Name</div>
+                  <div className="text-foreground">
+                    {userProfile?.first_name || <span className="text-text-tertiary italic">Not set</span>}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg">
-                <User size={20} className="text-slate-400 mt-1" />
+              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                <User size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-slate-500 mb-1">Last Name</div>
-                  <div className="text-slate-100">
-                    {userProfile?.last_name || <span className="text-gray-400 italic">Not set</span>}
+                  <div className="text-sm font-medium text-text-tertiary mb-1">Last Name</div>
+                  <div className="text-foreground">
+                    {userProfile?.last_name || <span className="text-text-tertiary italic">Not set</span>}
                   </div>
                 </div>
               </div>
 
-              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-slate-800/50 rounded-lg">
-                <Phone size={20} className="text-slate-400 mt-1" />
+              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                <Phone size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-slate-500 mb-1">Mobile Number</div>
-                  <div className="text-slate-100">
-                    {userProfile?.mobile_number || <span className="text-gray-400 italic">Not set</span>}
+                  <div className="text-sm font-medium text-text-tertiary mb-1">Mobile Number</div>
+                  <div className="text-foreground">
+                    {userProfile?.mobile_number || <span className="text-text-tertiary italic">Not set</span>}
                   </div>
                 </div>
               </div>
@@ -1380,13 +1380,13 @@ export default function ProfilePage() {
                   <div className="text-sm font-semibold text-green-900 mb-2">Association Memberships</div>
                   <div className="space-y-2">
                     {userProfile?.association_id && (
-                      <div className="text-sm text-slate-100">
+                      <div className="text-sm text-foreground">
                         <span className="font-medium">Local Association:</span>{' '}
                         {associations.find(a => a.id === userProfile.association_id)?.name || 'Unknown'}
                       </div>
                     )}
                     {(userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
-                      <div className="text-sm text-slate-100">
+                      <div className="text-sm text-foreground">
                         <span className="font-medium">National Organizations:</span>{' '}
                         {[
                           userProfile?.member_fibka && 'FIBKA',
@@ -1420,7 +1420,7 @@ export default function ProfilePage() {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Calendar size={28} className="text-amber-600" />
-          <h2 className="text-2xl font-semibold text-slate-100">Subscription</h2>
+          <h2 className="text-2xl font-semibold text-foreground">Subscription</h2>
         </div>
 
         <SubscriptionStatusCard
@@ -1432,11 +1432,11 @@ export default function ProfilePage() {
       </div>
 
       {/* Team Management */}
-      <div className="bg-slate-900 rounded-lg shadow p-6 border border-slate-800">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Users size={24} className="text-blue-600" />
-            <h2 className="text-xl font-semibold text-slate-100">Team Management</h2>
+            <h2 className="text-xl font-semibold text-foreground">Team Management</h2>
           </div>
           <button
             onClick={() => setShowCreateTeamModal(true)}
@@ -1447,7 +1447,7 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        <p className="text-sm text-slate-400 mb-6">
+        <p className="text-sm text-text-tertiary mb-6">
           Create teams to collaborate with other beekeepers. Share apiaries and manage hives together.
         </p>
 
@@ -1460,13 +1460,13 @@ export default function ProfilePage() {
             {/* Owned Teams */}
             {ownedTeams.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-slate-100 mb-3">My Teams</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">My Teams</h3>
                 <div className="space-y-3">
                   {ownedTeams.map((team) => (
-                    <div key={team.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={team.id} className="border border-border rounded-lg p-4">
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
-                          <h4 className="font-semibold text-slate-100">{team.name}</h4>
+                          <h4 className="font-semibold text-foreground">{team.name}</h4>
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-medium">
                             Owner
                           </span>
@@ -1482,7 +1482,7 @@ export default function ProfilePage() {
                                 fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-gray-100 text-slate-300 rounded hover:bg-slate-700 flex items-center gap-1"
+                            className="px-3 py-1.5 text-sm bg-gray-100 text-text-secondary rounded hover:bg-slate-700 flex items-center gap-1"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
@@ -1531,17 +1531,17 @@ export default function ProfilePage() {
                           </button>
                         </div>
                       </div>
-                      <div className="text-sm text-slate-400">
+                      <div className="text-sm text-text-tertiary">
                         <span className="font-medium">{team.member_count || 0}</span> member{(team.member_count || 0) !== 1 ? 's' : ''}
                       </div>
-                      <div className="text-xs text-slate-500 mt-1">
+                      <div className="text-xs text-text-tertiary mt-1">
                         Created {new Date(team.created_at).toLocaleDateString()}
                       </div>
 
                       {/* Expanded Member List */}
                       {expandedTeamId === team.id && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <h5 className="text-sm font-semibold text-slate-100 mb-3">Team Members</h5>
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <h5 className="text-sm font-semibold text-foreground mb-3">Team Members</h5>
                           {loadingMembers ? (
                             <div className="flex justify-center py-4">
                               <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
@@ -1549,17 +1549,17 @@ export default function ProfilePage() {
                           ) : teamMembers.length > 0 ? (
                             <div className="space-y-2">
                               {teamMembers.map((member) => (
-                                <div key={member.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                <div key={member.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
                                   <div className="flex items-center gap-3 flex-1">
-                                    <User size={16} className="text-gray-400" />
+                                    <User size={16} className="text-text-tertiary" />
                                     <div className="flex-1">
-                                      <div className="text-sm font-medium text-slate-100">
+                                      <div className="text-sm font-medium text-foreground">
                                         {member.first_name && member.last_name
                                           ? `${member.first_name} ${member.last_name}`
                                           : member.user_email}
                                       </div>
                                       {member.first_name && member.last_name && (
-                                        <div className="text-xs text-slate-500">{member.user_email}</div>
+                                        <div className="text-xs text-text-tertiary">{member.user_email}</div>
                                       )}
                                     </div>
                                     <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
@@ -1586,13 +1586,13 @@ export default function ProfilePage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-slate-500 text-center py-4">No members yet. Invite someone to get started!</p>
+                            <p className="text-sm text-text-tertiary text-center py-4">No members yet. Invite someone to get started!</p>
                           )}
 
                           {/* Pending Invitations */}
                           {teamInvitations.length > 0 && (
-                            <div className="mt-6 pt-4 border-t border-gray-200">
-                              <h5 className="text-sm font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                            <div className="mt-6 pt-4 border-t border-border">
+                              <h5 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                                 <Send size={14} className="text-orange-600" />
                                 Pending Invitations
                               </h5>
@@ -1609,8 +1609,8 @@ export default function ProfilePage() {
                                       <div className="flex items-center gap-3 flex-1">
                                         <Mail size={16} className="text-orange-400" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-slate-100">{invitation.email}</div>
-                                          <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
+                                          <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {isExpired ? (
                                               <span className="text-red-600 font-medium">Expired</span>
@@ -1642,8 +1642,8 @@ export default function ProfilePage() {
 
                           {/* Accepted Invitations */}
                           {acceptedInvitations.length > 0 && (
-                            <div className="mt-6 pt-4 border-t border-gray-200">
-                              <h5 className="text-sm font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                            <div className="mt-6 pt-4 border-t border-border">
+                              <h5 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                                 <User size={14} className="text-green-600" />
                                 Accepted Invitations
                               </h5>
@@ -1656,8 +1656,8 @@ export default function ProfilePage() {
                                       <div className="flex items-center gap-3 flex-1">
                                         <User size={16} className="text-green-600" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-slate-100">{invitation.email}</div>
-                                          <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
+                                          <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {acceptedDate ? (
                                               <span>Accepted on {acceptedDate.toLocaleDateString()} at {acceptedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -1679,8 +1679,8 @@ export default function ProfilePage() {
 
                           {/* Declined Invitations */}
                           {declinedInvitations.length > 0 && (
-                            <div className="mt-6 pt-4 border-t border-gray-200">
-                              <h5 className="text-sm font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                            <div className="mt-6 pt-4 border-t border-border">
+                              <h5 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                                 <X size={14} className="text-red-600" />
                                 Declined Invitations
                               </h5>
@@ -1693,8 +1693,8 @@ export default function ProfilePage() {
                                       <div className="flex items-center gap-3 flex-1">
                                         <X size={16} className="text-red-600" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-slate-100">{invitation.email}</div>
-                                          <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
+                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
+                                          <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {declinedDate ? (
                                               <span>Declined on {declinedDate.toLocaleDateString()} at {declinedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -1715,8 +1715,8 @@ export default function ProfilePage() {
                           )}
 
                           {/* Shared Apiaries */}
-                          <div className="mt-6 pt-4 border-t border-gray-200">
-                            <h5 className="text-sm font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                          <div className="mt-6 pt-4 border-t border-border">
+                            <h5 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                               <MapPin size={14} className="text-purple-600" />
                               Shared Apiaries
                             </h5>
@@ -1727,12 +1727,12 @@ export default function ProfilePage() {
                                     <div className="flex items-center gap-3 flex-1">
                                       <MapPin size={16} className="text-purple-600" />
                                       <div className="flex-1">
-                                        <div className="text-sm font-medium text-slate-100">
+                                        <div className="text-sm font-medium text-foreground">
                                           {ta.apiary?.name
                                             ? `${ta.apiary.name} - ${ta.apiary.eircode}`
                                             : (ta.apiary?.eircode || 'Unknown Location')}
                                         </div>
-                                        <div className="text-xs text-slate-500 mt-1">
+                                        <div className="text-xs text-text-tertiary mt-1">
                                           Shared {new Date(ta.added_at).toLocaleDateString()}
                                         </div>
                                       </div>
@@ -1754,7 +1754,7 @@ export default function ProfilePage() {
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-sm text-slate-500 text-center py-4 bg-slate-800/50 rounded-lg">
+                              <p className="text-sm text-text-tertiary text-center py-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
                                 No apiaries shared yet. Click &quot;Share Apiary&quot; to share an apiary with this team.
                               </p>
                             )}
@@ -1770,13 +1770,13 @@ export default function ProfilePage() {
             {/* Member Teams */}
             {memberTeams.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-slate-100 mb-3">Teams I&apos;m In</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Teams I&apos;m In</h3>
                 <div className="space-y-3">
                   {memberTeams.map((team) => (
-                    <div key={team.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={team.id} className="border border-border rounded-lg p-4">
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
-                          <h4 className="font-semibold text-slate-100">{team.name}</h4>
+                          <h4 className="font-semibold text-foreground">{team.name}</h4>
                           <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded font-medium capitalize">
                             {team.user_role}
                           </span>
@@ -1792,7 +1792,7 @@ export default function ProfilePage() {
                                 fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-gray-100 text-slate-300 rounded hover:bg-slate-700 flex items-center gap-1"
+                            className="px-3 py-1.5 text-sm bg-gray-100 text-text-secondary rounded hover:bg-slate-700 flex items-center gap-1"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
@@ -1806,17 +1806,17 @@ export default function ProfilePage() {
                           </button>
                         </div>
                       </div>
-                      <div className="text-sm text-slate-400">
+                      <div className="text-sm text-text-tertiary">
                         <span className="font-medium">{team.member_count || 0}</span> member{(team.member_count || 0) !== 1 ? 's' : ''}
                       </div>
-                      <div className="text-xs text-slate-500 mt-1">
+                      <div className="text-xs text-text-tertiary mt-1">
                         Joined {new Date(team.created_at).toLocaleDateString()}
                       </div>
 
                       {/* Expanded Member List */}
                       {expandedTeamId === team.id && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <h5 className="text-sm font-semibold text-slate-100 mb-3">Team Members</h5>
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <h5 className="text-sm font-semibold text-foreground mb-3">Team Members</h5>
                           {loadingMembers ? (
                             <div className="flex justify-center py-4">
                               <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
@@ -1824,17 +1824,17 @@ export default function ProfilePage() {
                           ) : teamMembers.length > 0 ? (
                             <div className="space-y-2">
                               {teamMembers.map((member) => (
-                                <div key={member.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                <div key={member.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
                                   <div className="flex items-center gap-3 flex-1">
-                                    <User size={16} className="text-gray-400" />
+                                    <User size={16} className="text-text-tertiary" />
                                     <div className="flex-1">
-                                      <div className="text-sm font-medium text-slate-100">
+                                      <div className="text-sm font-medium text-foreground">
                                         {member.first_name && member.last_name
                                           ? `${member.first_name} ${member.last_name}`
                                           : member.user_email}
                                       </div>
                                       {member.first_name && member.last_name && (
-                                        <div className="text-xs text-slate-500">{member.user_email}</div>
+                                        <div className="text-xs text-text-tertiary">{member.user_email}</div>
                                       )}
                                     </div>
                                     <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
@@ -1851,7 +1851,7 @@ export default function ProfilePage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-slate-500 text-center py-4">No members found.</p>
+                            <p className="text-sm text-text-tertiary text-center py-4">No members found.</p>
                           )}
                         </div>
                       )}
@@ -1863,9 +1863,9 @@ export default function ProfilePage() {
 
             {/* Empty State */}
             {ownedTeams.length === 0 && memberTeams.length === 0 && (
-              <div className="text-center py-12 bg-slate-800/50 rounded-lg">
-                <Users size={48} className="mx-auto text-gray-400 mb-3" />
-                <p className="text-slate-400 mb-4">You haven&apos;t created or joined any teams yet.</p>
+              <div className="text-center py-12 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                <Users size={48} className="mx-auto text-text-tertiary mb-3" />
+                <p className="text-text-tertiary mb-4">You haven&apos;t created or joined any teams yet.</p>
                 <button
                   onClick={() => setShowCreateTeamModal(true)}
                   className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
@@ -1879,12 +1879,12 @@ export default function ProfilePage() {
       </div>
 
       {/* Data Export */}
-      <div className="bg-slate-900 rounded-lg shadow p-6 border border-slate-800">
-        <h2 className="text-xl font-semibold text-slate-100 mb-4">My Data Export</h2>
-        <p className="text-sm text-slate-400 mb-4">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+        <h2 className="text-xl font-semibold text-foreground mb-4">My Data Export</h2>
+        <p className="text-sm text-text-tertiary mb-4">
           Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
         </p>
-        <ul className="text-sm text-slate-400 space-y-1 mb-4">
+        <ul className="text-sm text-text-tertiary space-y-1 mb-4">
           <li>• Includes all your personal beekeeping records</li>
           <li>• Choose between JSON or CSV format</li>
           <li>• Use for backup, analysis, or migration purposes</li>
@@ -1933,22 +1933,22 @@ export default function ProfilePage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-slate-100">Create New Team</h3>
+              <h3 className="text-xl font-semibold text-foreground">Create New Team</h3>
               <button
                 onClick={() => {
                   setShowCreateTeamModal(false)
                   setNewTeamName('')
                 }}
-                className="text-gray-400 hover:text-slate-400"
+                className="text-text-tertiary hover:text-text-tertiary"
               >
                 <X size={24} />
               </button>
             </div>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-text-tertiary mb-4">
               Give your team a name. You&apos;ll be able to invite members after creating the team.
             </p>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Team Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -1956,7 +1956,7 @@ export default function ProfilePage() {
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
                 placeholder="e.g., West County Beekeepers"
-                className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-blue-500"
                 maxLength={100}
               />
             </div>
@@ -1966,7 +1966,7 @@ export default function ProfilePage() {
                   setShowCreateTeamModal(false)
                   setNewTeamName('')
                 }}
-                className="px-4 py-2 text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-800/50"
+                className="px-4 py-2 text-text-secondary border border-border rounded-lg hover:bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50"
                 disabled={creatingTeam}
               >
                 Cancel
@@ -1995,7 +1995,7 @@ export default function ProfilePage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-slate-100">Manage Team: {selectedTeam.name}</h3>
+              <h3 className="text-xl font-semibold text-foreground">Manage Team: {selectedTeam.name}</h3>
               <button
                 onClick={() => {
                   setShowInviteMemberModal(false)
@@ -2004,7 +2004,7 @@ export default function ProfilePage() {
                   setTeamMembers([])
                   setTeamInvitations([])
                 }}
-                className="text-gray-400 hover:text-slate-400"
+                className="text-text-tertiary hover:text-text-tertiary"
               >
                 <X size={24} />
               </button>
@@ -2012,11 +2012,11 @@ export default function ProfilePage() {
 
             {/* Invite New Member Section */}
             <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-slate-100 mb-3 flex items-center gap-2">
+              <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                 <UserPlus size={18} className="text-green-600" />
                 Invite New Member
               </h4>
-              <p className="text-sm text-slate-400 mb-3">
+              <p className="text-sm text-text-tertiary mb-3">
                 Enter the email address of the person you&apos;d like to invite. They&apos;ll receive an email with instructions.
               </p>
               <div className="flex gap-2">
@@ -2025,7 +2025,7 @@ export default function ProfilePage() {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="flex-1 px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="flex-1 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 <button
                   onClick={handleSendInvite}
@@ -2049,22 +2049,22 @@ export default function ProfilePage() {
 
             {/* Current Members */}
             <div className="mb-6">
-              <h4 className="font-semibold text-slate-100 mb-3">Current Members ({teamMembers.length})</h4>
+              <h4 className="font-semibold text-foreground mb-3">Current Members ({teamMembers.length})</h4>
               {teamMembers.length > 0 ? (
                 <div className="space-y-2">
                   {teamMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                    <div key={member.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
                           {member.first_name ? member.first_name[0].toUpperCase() : (member.user_email || 'U')[0].toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium text-slate-100">
+                          <div className="font-medium text-foreground">
                             {member.first_name && member.last_name
                               ? `${member.first_name} ${member.last_name}`
                               : member.user_email}
                           </div>
-                          <div className="text-sm text-slate-400">{member.user_email}</div>
+                          <div className="text-sm text-text-tertiary">{member.user_email}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2084,20 +2084,20 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500 italic">No members yet.</p>
+                <p className="text-sm text-text-tertiary italic">No members yet.</p>
               )}
             </div>
 
             {/* Pending Invitations */}
             {teamInvitations.length > 0 && (
               <div>
-                <h4 className="font-semibold text-slate-100 mb-3">Pending Invitations ({teamInvitations.length})</h4>
+                <h4 className="font-semibold text-foreground mb-3">Pending Invitations ({teamInvitations.length})</h4>
                 <div className="space-y-2">
                   {teamInvitations.map((invitation) => (
                     <div key={invitation.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
                       <div>
-                        <div className="font-medium text-slate-100">{invitation.email}</div>
-                        <div className="text-xs text-slate-400">
+                        <div className="font-medium text-foreground">{invitation.email}</div>
+                        <div className="text-xs text-text-tertiary">
                           Invited {new Date(invitation.invited_at).toLocaleDateString()}
                           {' • Expires '}{new Date(invitation.expires_at).toLocaleDateString()}
                         </div>
@@ -2137,31 +2137,31 @@ export default function ProfilePage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-slate-100">Share Apiary with {selectedTeam.name}</h3>
+              <h3 className="text-xl font-semibold text-foreground">Share Apiary with {selectedTeam.name}</h3>
               <button
                 onClick={() => {
                   setShowShareApiaryModal(false)
                   setSelectedTeam(null)
                   setSelectedApiaryId('')
                 }}
-                className="text-gray-400 hover:text-slate-400"
+                className="text-text-tertiary hover:text-text-tertiary"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-text-tertiary mb-4">
               Select an apiary to share with this team. All hives in the apiary will be visible to team members (read-only access).
             </p>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Select Apiary <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedApiaryId}
                 onChange={(e) => setSelectedApiaryId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
                 <option value="">-- Select an apiary --</option>
                 {userApiaries.map((apiary) => (
@@ -2171,7 +2171,7 @@ export default function ProfilePage() {
                 ))}
               </select>
               {userApiaries.length === 0 && (
-                <p className="text-sm text-slate-500 mt-2">
+                <p className="text-sm text-text-tertiary mt-2">
                   You don&apos;t have any apiaries yet. Create an apiary first to share it with teams.
                 </p>
               )}
@@ -2184,7 +2184,7 @@ export default function ProfilePage() {
                   setSelectedTeam(null)
                   setSelectedApiaryId('')
                 }}
-                className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                className="px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600"
               >
                 Cancel
               </button>
@@ -2215,24 +2215,24 @@ export default function ProfilePage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-slate-100">Rename Team</h3>
+              <h3 className="text-xl font-semibold text-foreground">Rename Team</h3>
               <button
                 onClick={() => {
                   setShowRenameTeamModal(false)
                   setSelectedTeam(null)
                   setRenameTeamName('')
                 }}
-                className="text-gray-400 hover:text-slate-400"
+                className="text-text-tertiary hover:text-text-tertiary"
               >
                 <X size={24} />
               </button>
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Current Name: <span className="font-semibold text-slate-100">{selectedTeam.name}</span>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Current Name: <span className="font-semibold text-foreground">{selectedTeam.name}</span>
               </label>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 New Team Name
               </label>
               <input
@@ -2240,7 +2240,7 @@ export default function ProfilePage() {
                 value={renameTeamName}
                 onChange={(e) => setRenameTeamName(e.target.value)}
                 placeholder="Enter new team name"
-                className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 maxLength={100}
               />
             </div>
@@ -2252,7 +2252,7 @@ export default function ProfilePage() {
                   setSelectedTeam(null)
                   setRenameTeamName('')
                 }}
-                className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
+                className="flex-1 px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600"
               >
                 Cancel
               </button>
@@ -2279,13 +2279,13 @@ export default function ProfilePage() {
       )}
 
       {/* Additional Settings */}
-      <div className="bg-slate-900 rounded-lg shadow p-6 border border-slate-800">
-        <h2 className="text-xl font-semibold text-slate-100 mb-4">Additional Settings</h2>
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Additional Settings</h2>
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
             <div>
-              <div className="font-medium text-slate-100">Change Password</div>
-              <div className="text-sm text-slate-400">Update your account password</div>
+              <div className="font-medium text-foreground">Change Password</div>
+              <div className="text-sm text-text-tertiary">Update your account password</div>
             </div>
             <button
               onClick={() => setShowChangePasswordModal(true)}
@@ -2295,22 +2295,22 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
             <div>
-              <div className="font-medium text-slate-100">Email Notifications</div>
-              <div className="text-sm text-slate-400">Manage your notification preferences</div>
+              <div className="font-medium text-foreground">Email Notifications</div>
+              <div className="text-sm text-text-tertiary">Manage your notification preferences</div>
             </div>
-            <button className="px-4 py-2 text-sm bg-gray-100 text-slate-300 rounded-lg hover:bg-slate-700">
+            <button className="px-4 py-2 text-sm bg-gray-100 text-text-secondary rounded-lg hover:bg-slate-700">
               Coming Soon
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
             <div>
-              <div className="font-medium text-slate-100">Data Privacy</div>
-              <div className="text-sm text-slate-400">View and manage your data</div>
+              <div className="font-medium text-foreground">Data Privacy</div>
+              <div className="text-sm text-text-tertiary">View and manage your data</div>
             </div>
-            <button className="px-4 py-2 text-sm bg-gray-100 text-slate-300 rounded-lg hover:bg-slate-700">
+            <button className="px-4 py-2 text-sm bg-gray-100 text-text-secondary rounded-lg hover:bg-slate-700">
               Coming Soon
             </button>
           </div>
@@ -2339,8 +2339,8 @@ export default function ProfilePage() {
       {showChangePasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-slate-100">Change Password</h3>
+            <div className="border-b border-border px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-foreground">Change Password</h3>
               <button
                 onClick={() => {
                   setShowChangePasswordModal(false)
@@ -2350,7 +2350,7 @@ export default function ProfilePage() {
                   setPasswordError('')
                 }}
                 disabled={changingPassword}
-                className="text-gray-400 hover:text-slate-400 disabled:opacity-50"
+                className="text-text-tertiary hover:text-text-tertiary disabled:opacity-50"
               >
                 <X size={20} />
               </button>
@@ -2364,7 +2364,7 @@ export default function ProfilePage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Current Password <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -2372,13 +2372,13 @@ export default function ProfilePage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
                   placeholder="Enter current password"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   New Password <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -2386,13 +2386,13 @@ export default function ProfilePage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
                   placeholder="Enter new password (min 8 characters)"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Confirm New Password <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -2400,7 +2400,7 @@ export default function ProfilePage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
                   placeholder="Confirm new password"
                 />
               </div>
@@ -2415,7 +2415,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="border-t border-gray-200 px-6 py-4 flex gap-3">
+            <div className="border-t border-border px-6 py-4 flex gap-3">
               <button
                 onClick={() => {
                   setShowChangePasswordModal(false)
@@ -2425,7 +2425,7 @@ export default function ProfilePage() {
                   setPasswordError('')
                 }}
                 disabled={changingPassword}
-                className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -2446,7 +2446,7 @@ export default function ProfilePage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[85vh] flex flex-col">
             {/* Header - Sticky */}
-            <div className="flex-shrink-0 border-b border-gray-200 p-4 flex items-center justify-between">
+            <div className="flex-shrink-0 border-b border-border p-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-red-900 flex items-center gap-2">
                 <Trash2 size={20} className="text-red-600" />
                 Delete Account
@@ -2457,7 +2457,7 @@ export default function ProfilePage() {
                   setDeleteConfirmText('')
                 }}
                 disabled={deletingAccount}
-                className="text-gray-400 hover:text-slate-400 disabled:opacity-50"
+                className="text-text-tertiary hover:text-text-tertiary disabled:opacity-50"
               >
                 <X size={20} />
               </button>
@@ -2493,7 +2493,7 @@ export default function ProfilePage() {
 
               {/* Confirmation Input */}
               <div className="pt-2">
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                <label className="block text-xs font-medium text-text-secondary mb-1.5">
                   Type <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-red-600 text-xs">DELETE</span> to confirm:
                 </label>
                 <input
@@ -2502,21 +2502,21 @@ export default function ProfilePage() {
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   placeholder="Type DELETE here"
                   disabled={deletingAccount}
-                  className="w-full px-3 py-2 text-sm border border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   autoComplete="off"
                 />
               </div>
             </div>
 
             {/* Footer - Sticky */}
-            <div className="flex-shrink-0 border-t border-gray-200 p-4 flex gap-3">
+            <div className="flex-shrink-0 border-t border-border p-4 flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteAccountModal(false)
                   setDeleteConfirmText('')
                 }}
                 disabled={deletingAccount}
-                className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-slate-700 text-text-secondary rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
