@@ -675,8 +675,8 @@ export default function BatchesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Queen Rearing 🥚</h1>
-          <p className="text-sm text-gray-600 mt-1">3-5-8 - The Queen is made!</p>
+          <h1 className="text-3xl font-bold text-foreground">Queen Rearing 🥚</h1>
+          <p className="text-sm text-text-secondary mt-1">3-5-8 - The Queen is made!</p>
         </div>
         {activeTab === 'planning' && (
           <button
@@ -698,7 +698,7 @@ export default function BatchesPage() {
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'planning'
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-gray-300'
               }`}
             >
               Planning
@@ -708,7 +708,7 @@ export default function BatchesPage() {
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'selection'
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-gray-300'
               }`}
             >
               Selection
@@ -727,23 +727,23 @@ export default function BatchesPage() {
               </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Batch Name *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Batch Name *</label>
               <input
                 type="text"
                 value={formData.batch_name}
                 onChange={(e) => setFormData({...formData, batch_name: e.target.value})}
                 placeholder="e.g., Spring 2024 - Batch 1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Breeder Queen</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Breeder Queen</label>
               <select
                 value={formData.mother_queen_id}
                 onChange={(e) => setFormData({...formData, mother_queen_id: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
               >
                 <option value="">Select breeder queen (optional)</option>
                 {queens.map((q: Queen) => {
@@ -762,60 +762,60 @@ export default function BatchesPage() {
 
             {/* Timeline Dates - Grouped */}
             <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border border-purple-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Timeline</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Timeline</h4>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Graft Date *
                   </label>
                   <input
                     type="date"
                     value={formData.graft_date}
                     onChange={(e) => setFormData({...formData, graft_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Acceptance Check</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Acceptance Check</label>
                   <input
                     type="date"
                     value={formData.acceptance_check_date}
                     onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Graft + 1 day</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 1 day</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">1st Option to Cage</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">1st Option to Cage</label>
                   <input
                     type="date"
                     value={formData.first_option_to_cage_date}
                     onChange={(e) => setFormData({...formData, first_option_to_cage_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Graft + 5 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 5 days</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">2nd Option to Cage</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">2nd Option to Cage</label>
                   <input
                     type="date"
                     value={formData.second_option_to_cage_date}
                     onChange={(e) => setFormData({...formData, second_option_to_cage_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Graft + 10 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 10 days</p>
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  <label className="flex items-center gap-2 text-sm font-medium text-text-secondary mb-1">
                     Expected Day to Hatch
                     <div className="group relative">
-                      <MessageCircle size={14} className="text-gray-400 cursor-help" />
-                      <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                      <MessageCircle size={14} className="text-text-tertiary cursor-help" />
+                      <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-slate-900 dark:bg-slate-800 text-white text-xs rounded shadow-lg z-10">
                         Assuming the larvae are approximately four days after the egg was laid, they should all be of the same age and ideally no more than 12 hours old at the time of grafting.
                       </div>
                     </div>
@@ -824,25 +824,25 @@ export default function BatchesPage() {
                     type="date"
                     value={formData.emergence_date}
                     onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Graft + 12 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 12 days</p>
                 </div>
               </div>
             </div>
 
             {/* Starter Colony Selection - Grouped */}
             <div className="md:col-span-2 bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Starter Colony</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Starter Colony</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
                   <select
                     value={formData.starter_apiary_id}
                     onChange={(e) => {
                       setFormData({...formData, starter_apiary_id: e.target.value, starter_colony_hive_id: ''})
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   >
                     <option value="">Select apiary (optional)</option>
                     {apiaries.map((apiary) => (
@@ -852,11 +852,11 @@ export default function BatchesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hive</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
                   <select
                     value={formData.starter_colony_hive_id}
                     onChange={(e) => setFormData({...formData, starter_colony_hive_id: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground disabled:bg-sage-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
                     disabled={!formData.starter_apiary_id}
                   >
                     <option value="">Select hive (optional)</option>
@@ -865,7 +865,7 @@ export default function BatchesPage() {
                     ))}
                   </select>
                   {!formData.starter_apiary_id && (
-                    <p className="text-xs text-gray-500 mt-1">Select an apiary first</p>
+                    <p className="text-xs text-text-tertiary mt-1">Select an apiary first</p>
                   )}
                 </div>
               </div>
@@ -873,11 +873,11 @@ export default function BatchesPage() {
 
             {/* Batch Quantities - Grouped Vertically */}
             <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Batch Quantities</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Batch Quantities</h4>
               <div className="space-y-3">
                 {/* Number of Grafts */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Number of Grafts</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Number of Grafts</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -885,7 +885,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.cell_count || '0')
                         if (val > 0) setFormData({...formData, cell_count: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Minus size={16} />
                     </button>
@@ -893,7 +893,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.cell_count}
                       onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -903,7 +903,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.cell_count || '0')
                         setFormData({...formData, cell_count: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Plus size={16} />
                     </button>
@@ -912,7 +912,7 @@ export default function BatchesPage() {
 
                 {/* Grafts Accepted */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Grafts Accepted</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Grafts Accepted</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -920,7 +920,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.grafts_accepted || '0')
                         if (val > 0) setFormData({...formData, grafts_accepted: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Minus size={16} />
                     </button>
@@ -928,7 +928,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.grafts_accepted}
                       onChange={(e) => setFormData({...formData, grafts_accepted: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -938,7 +938,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.grafts_accepted || '0')
                         setFormData({...formData, grafts_accepted: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Plus size={16} />
                     </button>
@@ -947,7 +947,7 @@ export default function BatchesPage() {
 
                 {/* Queens Hatched */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Queens Hatched</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Hatched</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -955,7 +955,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_hatched || '0')
                         if (val > 0) setFormData({...formData, queens_hatched: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Minus size={16} />
                     </button>
@@ -963,7 +963,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.queens_hatched}
                       onChange={(e) => setFormData({...formData, queens_hatched: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -973,7 +973,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_hatched || '0')
                         setFormData({...formData, queens_hatched: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Plus size={16} />
                     </button>
@@ -982,7 +982,7 @@ export default function BatchesPage() {
 
                 {/* Queens Mated */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Queens Mated</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Mated</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -990,7 +990,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_mated || '0')
                         if (val > 0) setFormData({...formData, queens_mated: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Minus size={16} />
                     </button>
@@ -998,7 +998,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.queens_mated}
                       onChange={(e) => setFormData({...formData, queens_mated: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -1008,7 +1008,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_mated || '0')
                         setFormData({...formData, queens_mated: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
                     >
                       <Plus size={16} />
                     </button>
@@ -1018,19 +1018,19 @@ export default function BatchesPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={3}
                 placeholder="Weather conditions, acceptance rate, observations..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
               />
             </div>
 
             {/* Notification Preferences - Grouped */}
             <div className="md:col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Notification Preferences</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Notification Preferences</h4>
               <div className="space-y-3">
                 <div className="flex items-center">
                   <input
@@ -1040,9 +1040,9 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, enable_browser_notifications: e.target.checked})}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="browser-notifications" className="ml-2 text-sm text-gray-700">
+                  <label htmlFor="browser-notifications" className="ml-2 text-sm text-text-secondary">
                     Enable Browser Notifications
-                    <span className="block text-xs text-gray-500 mt-0.5">
+                    <span className="block text-xs text-text-tertiary mt-0.5">
                       Get notified on the day of important dates (acceptance check, cage dates, hatch date)
                     </span>
                   </label>
@@ -1056,9 +1056,9 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, enable_email_digest: e.target.checked})}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="email-digest" className="ml-2 text-sm text-gray-700">
+                  <label htmlFor="email-digest" className="ml-2 text-sm text-text-secondary">
                     Include in Weekly Email Digest
-                    <span className="block text-xs text-gray-500 mt-0.5">
+                    <span className="block text-xs text-text-tertiary mt-0.5">
                       Receive a weekly summary of upcoming dates for this batch
                     </span>
                   </label>
@@ -1082,15 +1082,15 @@ export default function BatchesPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Breeder Queen</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Graft Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grafts</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Accepted</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hatched</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mated</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acceptance Check</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Batch Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Breeder Queen</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Graft Date</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Grafts</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Accepted</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hatched</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Mated</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Acceptance Check</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -1117,7 +1117,7 @@ export default function BatchesPage() {
           </tbody>
         </table>
         {batches.length === 0 && (
-          <div className="text-center py-8 text-gray-500">No rearing batch found. Create your first!</div>
+          <div className="text-center py-8 text-text-tertiary">No rearing batch found. Create your first!</div>
         )}
           </div>
         </>
@@ -1128,11 +1128,11 @@ export default function BatchesPage() {
         <div className="space-y-6">
           {/* Filters Row */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Breeder Queen Selection Filters</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Breeder Queen Selection Filters</h3>
 
             {/* Apiary Filter */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Apiary</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Apiary</label>
               <select
                 value={selectedApiary}
                 onChange={(e) => setSelectedApiary(e.target.value)}
@@ -1149,14 +1149,14 @@ export default function BatchesPage() {
 
             {/* Time Period Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Time Period</label>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setTimePeriod('currentyear')}
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === 'currentyear'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Current Year ({new Date().getFullYear()})
@@ -1166,7 +1166,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === '6months'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Last 6 Months
@@ -1176,7 +1176,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === '1year'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Last Year
@@ -1186,7 +1186,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === 'all'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   All Time
@@ -1196,7 +1196,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === 'custom'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
                   Custom Range
@@ -1207,14 +1207,14 @@ export default function BatchesPage() {
             {/* Custom Date Range Inputs */}
             {timePeriod === 'custom' && (
               <div className="flex flex-wrap items-center gap-3 mt-4 pl-0 md:pl-0">
-                <label className="text-sm font-medium text-gray-700">From:</label>
+                <label className="text-sm font-medium text-text-secondary">From:</label>
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
-                <label className="text-sm font-medium text-gray-700">To:</label>
+                <label className="text-sm font-medium text-text-secondary">To:</label>
                 <input
                   type="date"
                   value={customEndDate}
@@ -1226,7 +1226,7 @@ export default function BatchesPage() {
                     setCustomStartDate('')
                     setCustomEndDate('')
                   }}
-                  className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 underline"
+                  className="px-3 py-2 text-sm text-text-secondary hover:text-foreground underline"
                 >
                   Clear
                 </button>
@@ -1236,12 +1236,12 @@ export default function BatchesPage() {
 
           {/* Weights Row */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Weight Criterias (1-5)</h3>
-            <p className="text-sm text-gray-600 mb-4">Assign importance to each trait. Higher weights = more influence on ranking.</p>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Weight Criterias (1-5)</h3>
+            <p className="text-sm text-text-secondary mb-4">Assign importance to each trait. Higher weights = more influence on ranking.</p>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               {/* Brood Pattern Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Brood Pattern</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Brood Pattern</label>
                 <div className="flex gap-1 justify-center">
                   {[1, 2, 3, 4, 5].map((weight) => (
                     <button
@@ -1250,7 +1250,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.brood_pattern === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                       }`}
                     >
                       {weight}
@@ -1261,7 +1261,7 @@ export default function BatchesPage() {
 
               {/* Population Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Population</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Population</label>
                 <div className="flex gap-1 justify-center">
                   {[1, 2, 3, 4, 5].map((weight) => (
                     <button
@@ -1270,7 +1270,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.population === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                       }`}
                     >
                       {weight}
@@ -1281,7 +1281,7 @@ export default function BatchesPage() {
 
               {/* Temperament Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Temperament</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Temperament</label>
                 <div className="flex gap-1 justify-center">
                   {[1, 2, 3, 4, 5].map((weight) => (
                     <button
@@ -1290,7 +1290,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.temperament === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                       }`}
                     >
                       {weight}
@@ -1301,7 +1301,7 @@ export default function BatchesPage() {
 
               {/* Swarming Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Swarming (Low=Good)</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Swarming (Low=Good)</label>
                 <div className="flex gap-1 justify-center">
                   {[1, 2, 3, 4, 5].map((weight) => (
                     <button
@@ -1310,7 +1310,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.swarming === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                       }`}
                     >
                       {weight}
@@ -1321,7 +1321,7 @@ export default function BatchesPage() {
 
               {/* Honey Yield Weight */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Honey Yield</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Honey Yield</label>
                 <div className="flex gap-1 justify-center">
                   {[1, 2, 3, 4, 5].map((weight) => (
                     <button
@@ -1330,7 +1330,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.honey_yield === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                       }`}
                     >
                       {weight}
@@ -1342,7 +1342,7 @@ export default function BatchesPage() {
               {/* Optional Criteria Weights - Only show if selected */}
               {optionalColumns.calmness && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Calmness</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Calmness</label>
                   <div className="flex gap-1 justify-center">
                     {[1, 2, 3, 4, 5].map((weight) => (
                       <button
@@ -1351,7 +1351,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.calmness === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                         }`}
                       >
                         {weight}
@@ -1363,7 +1363,7 @@ export default function BatchesPage() {
 
               {optionalColumns.recapping && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Recapping</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Recapping</label>
                   <div className="flex gap-1 justify-center">
                     {[1, 2, 3, 4, 5].map((weight) => (
                       <button
@@ -1372,7 +1372,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.recapping === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                         }`}
                       >
                         {weight}
@@ -1384,7 +1384,7 @@ export default function BatchesPage() {
 
               {optionalColumns.vsh && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">VSH</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2 text-center">VSH</label>
                   <div className="flex gap-1 justify-center">
                     {[1, 2, 3, 4, 5].map((weight) => (
                       <button
@@ -1393,7 +1393,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.vsh === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                         }`}
                       >
                         {weight}
@@ -1405,7 +1405,7 @@ export default function BatchesPage() {
 
               {optionalColumns.smr && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">SMR</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2 text-center">SMR</label>
                   <div className="flex gap-1 justify-center">
                     {[1, 2, 3, 4, 5].map((weight) => (
                       <button
@@ -1414,7 +1414,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.smr === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                         }`}
                       >
                         {weight}
@@ -1426,7 +1426,7 @@ export default function BatchesPage() {
 
               {optionalColumns.chalkbrood && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Chalkbrood (Low=Good)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-2 text-center">Chalkbrood (Low=Good)</label>
                   <div className="flex gap-1 justify-center">
                     {[1, 2, 3, 4, 5].map((weight) => (
                       <button
@@ -1435,7 +1435,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.chalkbrood === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
                         }`}
                       >
                         {weight}
@@ -1449,7 +1449,7 @@ export default function BatchesPage() {
 
           {/* Optional Criteria */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Optional Criteria</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Optional Criteria</h3>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1458,7 +1458,7 @@ export default function BatchesPage() {
                   onChange={(e) => setOptionalColumns({ ...optionalColumns, calmness: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm text-gray-700">Calmness</span>
+                <span className="text-sm text-text-secondary">Calmness</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1467,7 +1467,7 @@ export default function BatchesPage() {
                   onChange={(e) => setOptionalColumns({ ...optionalColumns, recapping: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm text-gray-700">Recapping</span>
+                <span className="text-sm text-text-secondary">Recapping</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1476,7 +1476,7 @@ export default function BatchesPage() {
                   onChange={(e) => setOptionalColumns({ ...optionalColumns, vsh: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm text-gray-700">VSH</span>
+                <span className="text-sm text-text-secondary">VSH</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1485,7 +1485,7 @@ export default function BatchesPage() {
                   onChange={(e) => setOptionalColumns({ ...optionalColumns, smr: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm text-gray-700">SMR</span>
+                <span className="text-sm text-text-secondary">SMR</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1494,7 +1494,7 @@ export default function BatchesPage() {
                   onChange={(e) => setOptionalColumns({ ...optionalColumns, chalkbrood: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm text-gray-700">Chalkbrood</span>
+                <span className="text-sm text-text-secondary">Chalkbrood</span>
               </label>
             </div>
           </div>
@@ -1502,8 +1502,8 @@ export default function BatchesPage() {
           {/* Results Table */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Ranked Hives</h3>
-              <p className="text-sm text-gray-600 mt-1">Based on inspection averages and weighted scores</p>
+              <h3 className="text-lg font-semibold text-foreground">Ranked Hives</h3>
+              <p className="text-sm text-text-secondary mt-1">Based on inspection averages and weighted scores</p>
             </div>
 
             {loadingScores ? (
@@ -1511,7 +1511,7 @@ export default function BatchesPage() {
                 <LoadingSpinner text="Calculating scores..." />
               </div>
             ) : hiveScores.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-text-tertiary">
                 <p className="text-lg mb-2">Not enough data to calculate scores</p>
                 <p className="text-sm">Each hive requires at least 3 inspection records in the selected period</p>
               </div>
@@ -1520,91 +1520,91 @@ export default function BatchesPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hive</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Apiary</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inspections</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brood Pattern</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Population</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Temperament</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Swarming %</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Honey Yield</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Rank</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hive</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Apiary</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Inspections</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Score</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Brood Pattern</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Population</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Temperament</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Swarming %</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Honey Yield</th>
                       {optionalColumns.calmness && (
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Calmness</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Calmness</th>
                       )}
                       {optionalColumns.recapping && (
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recapping</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Recapping</th>
                       )}
                       {optionalColumns.vsh && (
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">VSH</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">VSH</th>
                       )}
                       {optionalColumns.smr && (
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SMR</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">SMR</th>
                       )}
                       {optionalColumns.chalkbrood && (
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chalkbrood</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Chalkbrood</th>
                       )}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {hiveScores.map((hive, index) => (
                       <tr key={hive.hive_id} className={index < 3 ? 'bg-green-50' : ''}>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                           {index === 0 && <span className="text-yellow-500">🥇</span>}
-                          {index === 1 && <span className="text-gray-400">🥈</span>}
+                          {index === 1 && <span className="text-text-tertiary">🥈</span>}
                           {index === 2 && <span className="text-orange-400">🥉</span>}
-                          {index > 2 && <span className="text-gray-500">{index + 1}</span>}
+                          {index > 2 && <span className="text-text-tertiary">{index + 1}</span>}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                           {hive.hive_number}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {hive.apiary_name}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {hive.inspection_count}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
                           {hive.score.toFixed(2)}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {hive.averages.brood_pattern.toFixed(1)}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {hive.averages.population.toFixed(1)}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {hive.averages.temperament.toFixed(1)}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {(hive.averages.swarming * 100).toFixed(0)}%
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {hive.averages.honey_yield.toFixed(1)}
                         </td>
                         {optionalColumns.calmness && (
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                             {hive.averages.calmness.toFixed(1)}
                           </td>
                         )}
                         {optionalColumns.recapping && (
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                             {hive.averages.recapping.toFixed(1)}
                           </td>
                         )}
                         {optionalColumns.vsh && (
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                             {hive.averages.vsh.toFixed(1)}
                           </td>
                         )}
                         {optionalColumns.smr && (
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                             {hive.averages.smr.toFixed(1)}
                           </td>
                         )}
                         {optionalColumns.chalkbrood && (
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                             {hive.averages.chalkbrood.toFixed(1)}
                           </td>
                         )}
