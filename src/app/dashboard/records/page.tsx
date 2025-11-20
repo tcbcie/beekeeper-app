@@ -1956,12 +1956,12 @@ export default function InspectionsPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-responsive-3xl font-bold text-gray-900">Records 📋</h1>
+          <h1 className="text-responsive-3xl font-bold text-slate-100">Records 📋</h1>
           {sourceHiveId && (
             <div className="flex gap-2">
               <button
                 onClick={() => router.push(`/dashboard/hives/${sourceHiveId}`)}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 title="View hive detail"
               >
                 <ExternalLink size={18} />
@@ -1986,7 +1986,7 @@ export default function InspectionsPage() {
                 setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
                 fetchInspections()
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
             >
               <option value="my">My Records</option>
               <option value="team">Team Records</option>
@@ -1998,7 +1998,7 @@ export default function InspectionsPage() {
             onChange={(e) => {
               setRecordTypeFilter(e.target.value as typeof recordTypeFilter)
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+            className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
           >
             <option value="all">All Types</option>
             <option value="inspection">Hive Inspection</option>
@@ -2014,7 +2014,7 @@ export default function InspectionsPage() {
               setFilterApiaryId(e.target.value)
               setFilterHiveId('') // Clear hive filter when apiary changes
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
           >
             <option value="">All Apiaries</option>
             {apiaries.map((apiary) => (
@@ -2026,7 +2026,7 @@ export default function InspectionsPage() {
           <select
             value={filterHiveId}
             onChange={(e) => setFilterHiveId(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+            className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-800 hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
           >
             <option value="">All Hives</option>
             {hives
@@ -2047,7 +2047,7 @@ export default function InspectionsPage() {
               <ChevronDown size={18} />
             </button>
             {showDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+              <div className="absolute right-0 mt-2 w-56 bg-slate-900 rounded-lg shadow border border-slate-800-lg border border-gray-200 z-10">
                 <button
                   onClick={() => {
                     setFormType('inspection')
@@ -2175,7 +2175,7 @@ export default function InspectionsPage() {
 
       {/* Archive Hive Form */}
       {showForm && formType === 'archive' && (
-        <div ref={formRef} className="bg-white rounded-lg shadow-lg p-6">
+        <div ref={formRef} className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-red-700">Archive Hive</h3>
             <button
@@ -2187,7 +2187,7 @@ export default function InspectionsPage() {
                   archive_notes: ''
                 })
               }}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-slate-500 hover:text-slate-300"
             >
               <X size={24} />
             </button>
@@ -2245,13 +2245,13 @@ export default function InspectionsPage() {
             }
           }} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Select Hive to Archive *
               </label>
               <select
                 value={archiveData.hive_id}
                 onChange={(e) => setArchiveData({ ...archiveData, hive_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">-- Select Hive --</option>
@@ -2269,13 +2269,13 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Reason for Archiving *
               </label>
               <select
                 value={archiveData.archive_reason_id}
                 onChange={(e) => setArchiveData({ ...archiveData, archive_reason_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">-- Select Reason --</option>
@@ -2288,14 +2288,14 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Additional Notes (Optional)
               </label>
               <textarea
                 value={archiveData.archive_notes}
                 onChange={(e) => setArchiveData({ ...archiveData, archive_notes: e.target.value })}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md"
                 placeholder="Add any additional details about why this hive is being archived..."
               />
             </div>
@@ -2317,7 +2317,7 @@ export default function InspectionsPage() {
                     archive_notes: ''
                   })
                 }}
-                className="flex-1 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                className="flex-1 px-4 py-2 bg-slate-700 rounded-lg hover:bg-slate-600"
               >
                 Cancel
               </button>
@@ -2327,17 +2327,17 @@ export default function InspectionsPage() {
       )}
 
       {/* Time Period Filter */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-slate-900 rounded-lg shadow border border-slate-800 p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm font-medium text-gray-700">Time Period:</label>
+            <label className="text-sm font-medium text-slate-300">Time Period:</label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setTimePeriod('all')}
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === 'all'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
                 }`}
               >
                 All Time
@@ -2347,7 +2347,7 @@ export default function InspectionsPage() {
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '3months'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
                 }`}
               >
                 Last 3 Months
@@ -2357,7 +2357,7 @@ export default function InspectionsPage() {
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '6months'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
                 }`}
               >
                 Last 6 Months
@@ -2367,7 +2367,7 @@ export default function InspectionsPage() {
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === '1year'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
                 }`}
               >
                 Last Year
@@ -2377,7 +2377,7 @@ export default function InspectionsPage() {
                 className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   timePeriod === 'custom'
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700 active:bg-gray-300'
                 }`}
               >
                 Custom Range
@@ -2388,26 +2388,26 @@ export default function InspectionsPage() {
           {/* Custom Date Range Inputs */}
           {timePeriod === 'custom' && (
             <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-28">
-              <label className="text-sm font-medium text-gray-700">From:</label>
+              <label className="text-sm font-medium text-slate-300">From:</label>
               <input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="px-3 py-2 border border-slate-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
               />
-              <label className="text-sm font-medium text-gray-700">To:</label>
+              <label className="text-sm font-medium text-slate-300">To:</label>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                className="px-3 py-2 border border-slate-600 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
               />
               <button
                 onClick={() => {
                   setCustomStartDate('')
                   setCustomEndDate('')
                 }}
-                className="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="px-3 py-2 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600"
               >
                 Clear Dates
               </button>
@@ -2417,7 +2417,7 @@ export default function InspectionsPage() {
       </div>
 
       {showForm && formType === 'inspection' && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingInspection ? 'Edit Inspection' : 'Record New Inspection'}
@@ -2434,7 +2434,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -2443,17 +2443,17 @@ export default function InspectionsPage() {
           <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Inspection Details Section - Grouped */}
             <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-4">Inspection Details</h4>
+              <h4 className="text-sm font-semibold text-slate-100 mb-4">Inspection Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
                   <select
                     value={formApiaryId}
                     onChange={(e) => {
                       setFormApiaryId(e.target.value)
                       setFormData({...formData, hive_id: ''}) // Reset hive selection when apiary changes
                     }}
-                    className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                    className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                   >
                     <option value="">All Apiaries</option>
                     {apiaries.map((apiary) => (
@@ -2465,11 +2465,11 @@ export default function InspectionsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
                   <select
                     value={formData.hive_id}
                     onChange={(e) => handleHiveChange(e.target.value)}
-                    className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                    className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                     required
                   >
                     <option value="">Select hive</option>
@@ -2483,35 +2483,35 @@ export default function InspectionsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Date *</label>
                   <input
                     type="date"
                     value={formData.inspection_date}
                     onChange={(e) => setFormData({...formData, inspection_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Time *</label>
                   <input
                     type="time"
                     value={formData.inspection_time}
                     onChange={(e) => setFormData({...formData, inspection_time: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Weight (kg)</label>
                   <input
                     type="number"
                     step="0.1"
                     value={formData.weight ?? ''}
                     onChange={(e) => setFormData({...formData, weight: e.target.value ? parseFloat(e.target.value) : null})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                     placeholder="Optional"
                   />
                 </div>
@@ -2520,32 +2520,32 @@ export default function InspectionsPage() {
 
             {/* Queen & Brood Section - Grouped */}
             <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-4">Queen & Brood</h4>
+              <h4 className="text-sm font-semibold text-slate-100 mb-4">Queen & Brood</h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
+                <label className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg cursor-pointer touch-manipulation hover:bg-slate-800/50 active:bg-gray-100 border border-purple-100">
                   <input
                     type="checkbox"
                     checked={formData.queen_seen}
                     onChange={(e) => setFormData({...formData, queen_seen: e.target.checked})}
-                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
+                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-slate-600 text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Queen Seen</span>
+                  <span className="text-sm font-medium text-slate-300">Queen Seen</span>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer touch-manipulation hover:bg-gray-50 active:bg-gray-100 border border-purple-100">
+                <label className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg cursor-pointer touch-manipulation hover:bg-slate-800/50 active:bg-gray-100 border border-purple-100">
                   <input
                     type="checkbox"
                     checked={formData.eggs_present}
                     onChange={(e) => setFormData({...formData, eggs_present: e.target.checked})}
-                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-gray-300 text-purple-600 focus:ring-2 focus:ring-purple-500"
+                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-slate-600 text-purple-600 focus:ring-2 focus:ring-purple-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Eggs Present</span>
+                  <span className="text-sm font-medium text-slate-300">Eggs Present</span>
                 </label>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-slate-300 mb-3">
                   Frames with Brood {formData.brood_frames !== null ? `(${formData.brood_frames})` : ''}
                 </label>
                 <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
@@ -2557,7 +2557,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.brood_frames === num
                           ? 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-300'
-                          : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                          : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
                       }`}
                     >
                       {num}
@@ -2568,8 +2568,8 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, brood_frames: null})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                       formData.brood_frames === null
-                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
                     }`}
                   >
                     Clear
@@ -2579,7 +2579,7 @@ export default function InspectionsPage() {
 
               {hives.find(h => h.id === formData.hive_id)?.configuration?.right_sized_broodbox && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-slate-300 mb-3">
                     Right-Sized to How Many Frames {formData.right_sized_frames !== null ? `(${formData.right_sized_frames})` : ''}
                   </label>
                   <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
@@ -2591,7 +2591,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                           formData.right_sized_frames === num
                             ? 'bg-amber-600 text-white shadow-lg ring-2 ring-amber-300'
-                            : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
                         }`}
                       >
                         {num}
@@ -2602,8 +2602,8 @@ export default function InspectionsPage() {
                       onClick={() => setFormData({...formData, right_sized_frames: null})}
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                         formData.right_sized_frames === null
-                          ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                          : 'bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                          ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                          : 'bg-slate-800 text-slate-300 hover:bg-slate-800/50 active:bg-gray-100'
                       }`}
                     >
                       Clear
@@ -2619,16 +2619,16 @@ export default function InspectionsPage() {
                   onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
                   className="w-full p-3 flex items-center justify-between hover:bg-purple-200 transition-colors rounded-t-lg"
                 >
-                  <h5 className="text-sm font-semibold text-gray-900">Queen Cells</h5>
+                  <h5 className="text-sm font-semibold text-slate-100">Queen Cells</h5>
                   {queenCellsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </button>
 
                 {queenCellsExpanded && (
                   <div className="p-4 pt-0 space-y-4">
                     {/* Queen Cups */}
-                    <div className="bg-white p-3 rounded-lg">
+                    <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-gray-700">Queen cups</label>
+                        <label className="text-sm font-medium text-slate-300">Queen cups</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2636,7 +2636,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.queen_cups === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2647,7 +2647,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.queen_cups === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2657,12 +2657,12 @@ export default function InspectionsPage() {
                       {formData.queen_cups && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, queen_cups_number: Math.max(0, formData.queen_cups_number - 1)})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2676,14 +2676,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, queen_cups_number: formData.queen_cups_number + 1})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2691,7 +2691,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.queen_cups_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 YES
@@ -2702,7 +2702,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.queen_cups_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 NO
@@ -2714,9 +2714,9 @@ export default function InspectionsPage() {
                     </div>
 
                     {/* Swarm Cells */}
-                    <div className="bg-white p-3 rounded-lg">
+                    <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-gray-700">Swarm cell</label>
+                        <label className="text-sm font-medium text-slate-300">Swarm cell</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2724,7 +2724,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.swarm_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2735,7 +2735,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.swarm_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2745,12 +2745,12 @@ export default function InspectionsPage() {
                       {formData.swarm_cells && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, swarm_cells_number: Math.max(0, formData.swarm_cells_number - 1)})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2764,14 +2764,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, swarm_cells_number: formData.swarm_cells_number + 1})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2779,7 +2779,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.swarm_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 YES
@@ -2790,7 +2790,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.swarm_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 NO
@@ -2802,9 +2802,9 @@ export default function InspectionsPage() {
                     </div>
 
                     {/* Supercedure Cells */}
-                    <div className="bg-white p-3 rounded-lg">
+                    <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-gray-700">Supercedure cell</label>
+                        <label className="text-sm font-medium text-slate-300">Supercedure cell</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2812,7 +2812,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.supercedure_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2823,7 +2823,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.supercedure_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2833,12 +2833,12 @@ export default function InspectionsPage() {
                       {formData.supercedure_cells && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, supercedure_cells_number: Math.max(0, formData.supercedure_cells_number - 1)})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2852,14 +2852,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, supercedure_cells_number: formData.supercedure_cells_number + 1})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2867,7 +2867,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.supercedure_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 YES
@@ -2878,7 +2878,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.supercedure_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 NO
@@ -2890,9 +2890,9 @@ export default function InspectionsPage() {
                     </div>
 
                     {/* Emergency Cells */}
-                    <div className="bg-white p-3 rounded-lg">
+                    <div className="bg-slate-800 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-gray-700">Emergency cell</label>
+                        <label className="text-sm font-medium text-slate-300">Emergency cell</label>
                         <div className="flex gap-2 ml-auto">
                           <button
                             type="button"
@@ -2900,7 +2900,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.emergency_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2911,7 +2911,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.emergency_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2921,12 +2921,12 @@ export default function InspectionsPage() {
                       {formData.emergency_cells && (
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Number</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Number</label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, emergency_cells_number: Math.max(0, formData.emergency_cells_number - 1)})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 −
                               </button>
@@ -2940,14 +2940,14 @@ export default function InspectionsPage() {
                               <button
                                 type="button"
                                 onClick={() => setFormData({...formData, emergency_cells_number: formData.emergency_cells_number + 1})}
-                                className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                               >
                                 +
                               </button>
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-2">Removed all</label>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">Removed all</label>
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -2955,7 +2955,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.emergency_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 YES
@@ -2966,7 +2966,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.emergency_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    : 'bg-gray-100 text-slate-300 hover:bg-slate-700'
                                 }`}
                               >
                                 NO
@@ -2980,12 +2980,12 @@ export default function InspectionsPage() {
                     {/* Removed cells and Remaining cells */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-2">Removed cells</label>
+                        <label className="block text-xs font-medium text-slate-400 mb-2">Removed cells</label>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, removed_cells: Math.max(0, formData.removed_cells - 1)})}
-                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                           >
                             −
                           </button>
@@ -2999,19 +2999,19 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, removed_cells: formData.removed_cells + 1})}
-                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                           >
                             +
                           </button>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-2">Remaining cells</label>
+                        <label className="block text-xs font-medium text-slate-400 mb-2">Remaining cells</label>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, remaining_cells: Math.max(0, formData.remaining_cells - 1)})}
-                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                           >
                             −
                           </button>
@@ -3025,7 +3025,7 @@ export default function InspectionsPage() {
                           <button
                             type="button"
                             onClick={() => setFormData({...formData, remaining_cells: formData.remaining_cells + 1})}
-                            className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded font-bold"
+                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded font-bold"
                           >
                             +
                           </button>
@@ -3035,16 +3035,16 @@ export default function InspectionsPage() {
 
                     {/* Note field */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-2">Note</label>
+                      <label className="block text-xs font-medium text-slate-400 mb-2">Note</label>
                       <textarea
                         value={formData.queen_cells_notes}
                         onChange={(e) => setFormData({...formData, queen_cells_notes: e.target.value})}
                         rows={2}
                         maxLength={2500}
                         placeholder="Additional notes about queen cells..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        className="w-full px-3 py-2 border border-slate-600 rounded-md text-sm"
                       />
-                      <div className="text-right text-xs text-gray-500 mt-1">
+                      <div className="text-right text-xs text-slate-500 mt-1">
                         {formData.queen_cells_notes.length} / 2500
                       </div>
                     </div>
@@ -3055,12 +3055,12 @@ export default function InspectionsPage() {
 
             {/* Behaviour Section - Grouped */}
             <div className="md:col-span-2 bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-4">Behaviour</h4>
+              <h4 className="text-sm font-semibold text-slate-100 mb-4">Behaviour</h4>
 
               {/* Population */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-300">
                     Population: {formData.population_strength === 0 ? 'Not Recorded' : renderStars(formData.population_strength)}
                   </label>
                   <div className="relative group">
@@ -3089,7 +3089,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.population_strength === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                       }`}
                     >
                       {rating}
@@ -3100,8 +3100,8 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, population_strength: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.population_strength === 0
-                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                     }`}
                   >
                     Not Recorded
@@ -3112,7 +3112,7 @@ export default function InspectionsPage() {
               {/* Temperament */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-300">
                     Temperament: {formData.temperament_rating === 0 ? 'Not Recorded' : renderStars(formData.temperament_rating)}
                   </label>
                   <div className="relative group">
@@ -3141,7 +3141,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.temperament_rating === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                       }`}
                     >
                       {rating}
@@ -3152,8 +3152,8 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, temperament_rating: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.temperament_rating === 0
-                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                     }`}
                   >
                     Not Recorded
@@ -3164,7 +3164,7 @@ export default function InspectionsPage() {
               {/* Brood Pattern */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-300">
                     Brood Pattern: {formData.brood_pattern_rating === 0 ? 'Not Recorded' : renderStars(formData.brood_pattern_rating)}
                   </label>
                   <div className="relative group">
@@ -3193,7 +3193,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.brood_pattern_rating === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                       }`}
                     >
                       {rating}
@@ -3204,8 +3204,8 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, brood_pattern_rating: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.brood_pattern_rating === 0
-                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                     }`}
                   >
                     Not Recorded
@@ -3216,7 +3216,7 @@ export default function InspectionsPage() {
               {/* Swarming Tendency */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-300">
                     Swarming Tendency: {formData.swarming_tendency === 0 ? 'Not Recorded' : renderStars(formData.swarming_tendency)}
                   </label>
                   <div className="relative group">
@@ -3245,7 +3245,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.swarming_tendency === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                       }`}
                     >
                       {rating}
@@ -3256,8 +3256,8 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, swarming_tendency: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.swarming_tendency === 0
-                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                     }`}
                   >
                     Not Recorded
@@ -3268,7 +3268,7 @@ export default function InspectionsPage() {
               {/* Calmness */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-slate-300">
                     Calmness: {formData.calmness === 0 ? 'Not Recorded' : renderStars(formData.calmness)}
                   </label>
                   <div className="relative group">
@@ -3297,7 +3297,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.calmness === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                          : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                       }`}
                     >
                       {rating}
@@ -3308,8 +3308,8 @@ export default function InspectionsPage() {
                     onClick={() => setFormData({...formData, calmness: 0})}
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.calmness === 0
-                        ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                        : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                     }`}
                   >
                     Not Recorded
@@ -3325,7 +3325,7 @@ export default function InspectionsPage() {
                 onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-orange-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-gray-900">Given/Taken</h4>
+                <h4 className="text-sm font-semibold text-slate-100">Given/Taken</h4>
                 {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3333,7 +3333,7 @@ export default function InspectionsPage() {
                 <div className="p-2 sm:p-4 pt-0 space-y-3 sm:space-y-4">
                   {/* Frames-Foundation */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Frames-Foundation</span>
                       <span className="sm:hidden">Foundation</span>
                     </label>
@@ -3350,7 +3350,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.frames_foundation}
                         onChange={(e) => setFormData({...formData, frames_foundation: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3365,7 +3365,7 @@ export default function InspectionsPage() {
 
                   {/* Brood-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Brood-Frames</span>
                       <span className="sm:hidden">Brood</span>
                     </label>
@@ -3382,7 +3382,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.frames_brood}
                         onChange={(e) => setFormData({...formData, frames_brood: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3397,7 +3397,7 @@ export default function InspectionsPage() {
 
                   {/* Drawn-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Drawn-Frames</span>
                       <span className="sm:hidden">Drawn</span>
                     </label>
@@ -3414,7 +3414,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.frames_drawn}
                         onChange={(e) => setFormData({...formData, frames_drawn: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3429,7 +3429,7 @@ export default function InspectionsPage() {
 
                   {/* Honey Supers */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Honey Supers</span>
                       <span className="sm:hidden">Supers</span>
                     </label>
@@ -3446,7 +3446,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.honey_supers}
                         onChange={(e) => setFormData({...formData, honey_supers: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3461,7 +3461,7 @@ export default function InspectionsPage() {
 
                   {/* Drone-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Drone-Frames</span>
                       <span className="sm:hidden">Drone</span>
                     </label>
@@ -3478,7 +3478,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.drone_frames}
                         onChange={(e) => setFormData({...formData, drone_frames: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
                       />
                       <button
                         type="button"
@@ -3493,7 +3493,7 @@ export default function InspectionsPage() {
 
                   {/* Store-Frames */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1 sm:mb-2">
                       <span className="hidden sm:inline">Store-Frames</span>
                       <span className="sm:hidden">Store</span>
                     </label>
@@ -3510,7 +3510,7 @@ export default function InspectionsPage() {
                         type="number"
                         value={formData.store_frames}
                         onChange={(e) => setFormData({...formData, store_frames: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-gray-300 rounded-lg font-semibold text-sm sm:text-lg w-0"
+                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-slate-600 rounded-lg font-semibold text-sm sm:text-lg w-0"
                         min="0"
                       />
                       <button
@@ -3534,7 +3534,7 @@ export default function InspectionsPage() {
                 onClick={() => setDronesExpanded(!dronesExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-amber-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-gray-900">Drones</h4>
+                <h4 className="text-sm font-semibold text-slate-100">Drones</h4>
                 {dronesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3542,7 +3542,7 @@ export default function InspectionsPage() {
                 <div className="p-4 pt-0 space-y-6">
                   {/* Drones present slider with Not recorded option */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-slate-300 mb-3">
                       Drones present
                     </label>
                     <div className="px-2 mb-4">
@@ -3552,9 +3552,9 @@ export default function InspectionsPage() {
                         max="3"
                         value={formData.drones_present}
                         onChange={(e) => setFormData({...formData, drones_present: parseInt(e.target.value)})}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-600"
                       />
-                      <div className="flex justify-between text-xs text-gray-600 mt-2">
+                      <div className="flex justify-between text-xs text-slate-400 mt-2">
                         <span>Not recorded</span>
                         <span>Low</span>
                         <span>Medium</span>
@@ -3566,7 +3566,7 @@ export default function InspectionsPage() {
 
                   {/* Drone brood present YES/NO buttons with null state */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-slate-300 mb-3">
                       Drone brood present
                     </label>
                     <div className="grid grid-cols-3 gap-3">
@@ -3576,7 +3576,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           formData.drone_brood_present === true
                             ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         <span className="text-xl">✓</span>
@@ -3588,7 +3588,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           formData.drone_brood_present === false
                             ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         <span className="text-xl">✕</span>
@@ -3599,8 +3599,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, drone_brood_present: null})}
                         className={`min-h-[48px] rounded-lg font-medium text-xs transition-all touch-manipulation ${
                           formData.drone_brood_present === null
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -3618,7 +3618,7 @@ export default function InspectionsPage() {
                 onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-gray-900">Hygienic Behaviour</h4>
+                <h4 className="text-sm font-semibold text-slate-100">Hygienic Behaviour</h4>
                 {hygienicBehaviourExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3627,7 +3627,7 @@ export default function InspectionsPage() {
                   {/* Recapping */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         Recapping: {formData.recapping === 0 ? 'Not Recorded' : renderStars(formData.recapping)}
                       </label>
                       <div className="relative group">
@@ -3656,7 +3656,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.recapping === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -3667,8 +3667,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, recapping: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.recapping === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -3679,7 +3679,7 @@ export default function InspectionsPage() {
                   {/* VSH (Varroa Sensitive Hygiene) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         VSH (Varroa Sensitive Hygiene): {formData.vsh === 0 ? 'Not Recorded' : renderStars(formData.vsh)}
                       </label>
                       <div className="relative group">
@@ -3708,7 +3708,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.vsh === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -3719,8 +3719,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, vsh: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.vsh === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -3731,7 +3731,7 @@ export default function InspectionsPage() {
                   {/* SMR (Suppressed Mite Reproduction) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         SMR (Suppressed Mite Reproduction): {formData.smr === 0 ? 'Not Recorded' : renderStars(formData.smr)}
                       </label>
                       <div className="relative group">
@@ -3760,7 +3760,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.smr === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -3771,8 +3771,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, smr: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.smr === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -3790,7 +3790,7 @@ export default function InspectionsPage() {
                 onClick={() => setDiseaseExpanded(!diseaseExpanded)}
                 className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
               >
-                <h4 className="text-sm font-semibold text-gray-900">Disease</h4>
+                <h4 className="text-sm font-semibold text-slate-100">Disease</h4>
                 {diseaseExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </button>
 
@@ -3799,7 +3799,7 @@ export default function InspectionsPage() {
                   {/* American Foulbrood (AFB) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         American Foulbrood (AFB): {formData.afb_disease === 0 ? 'Not Recorded' : renderStars(formData.afb_disease)}
                       </label>
                       <div className="relative group">
@@ -3828,7 +3828,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.afb_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -3839,8 +3839,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, afb_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.afb_disease === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -3851,7 +3851,7 @@ export default function InspectionsPage() {
                   {/* European Foulbrood (EFB) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         European Foulbrood (EFB): {formData.efb_disease === 0 ? 'Not Recorded' : renderStars(formData.efb_disease)}
                       </label>
                       <div className="relative group">
@@ -3880,7 +3880,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.efb_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -3891,8 +3891,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, efb_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.efb_disease === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -3903,7 +3903,7 @@ export default function InspectionsPage() {
                   {/* Chalkbrood */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         Chalkbrood: {formData.chalkbrood_disease === 0 ? 'Not Recorded' : renderStars(formData.chalkbrood_disease)}
                       </label>
                       <div className="relative group">
@@ -3932,7 +3932,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.chalkbrood_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -3943,8 +3943,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, chalkbrood_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.chalkbrood_disease === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -3955,7 +3955,7 @@ export default function InspectionsPage() {
                   {/* Nosemosis */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         Nosemosis: {formData.nosemosis_disease === 0 ? 'Not Recorded' : renderStars(formData.nosemosis_disease)}
                       </label>
                       <div className="relative group">
@@ -3984,7 +3984,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.nosemosis_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -3995,8 +3995,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, nosemosis_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.nosemosis_disease === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -4007,7 +4007,7 @@ export default function InspectionsPage() {
                   {/* Deformed Wing Virus (DWV) */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         Deformed Wing Virus (DWV): {formData.dwv_disease === 0 ? 'Not Recorded' : renderStars(formData.dwv_disease)}
                       </label>
                       <div className="relative group">
@@ -4036,7 +4036,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.dwv_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -4047,8 +4047,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, dwv_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.dwv_disease === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -4059,7 +4059,7 @@ export default function InspectionsPage() {
                   {/* IAPV & CBPV */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-slate-300">
                         IAPV & CBPV: {formData.iapv_cbpv_disease === 0 ? 'Not Recorded' : renderStars(formData.iapv_cbpv_disease)}
                       </label>
                       <div className="relative group">
@@ -4088,7 +4088,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.iapv_cbpv_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                              : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                           }`}
                         >
                           {rating}
@@ -4099,8 +4099,8 @@ export default function InspectionsPage() {
                         onClick={() => setFormData({...formData, iapv_cbpv_disease: 0})}
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.iapv_cbpv_disease === 0
-                            ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                            ? 'bg-slate-800/500 text-white shadow-lg ring-2 ring-gray-400'
+                            : 'bg-slate-800 text-slate-300 hover:bg-gray-100 active:bg-slate-700'
                         }`}
                       >
                         Not Recorded
@@ -4112,18 +4112,18 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={4}
                 placeholder="General observations, actions taken, tasks for next inspection..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Inspection Photo (optional)</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Inspection Photo (optional)</label>
               <div className="flex items-start gap-3">
                 {imagePreview ? (
                   <div className="relative w-20 h-20 flex-shrink-0 group">
@@ -4139,7 +4139,7 @@ export default function InspectionsPage() {
                         src={imagePreview}
                         alt="Preview"
                         fill
-                        className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                        className="object-cover rounded-lg border-2 border-slate-600 shadow-sm"
                         sizes="80px"
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
@@ -4156,10 +4156,10 @@ export default function InspectionsPage() {
                     </button>
                   </div>
                 ) : null}
-                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all p-4">
+                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-slate-600 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all p-4">
                   <div className="flex flex-col items-center justify-center">
                     <Camera size={24} className="text-gray-400 mb-1" />
-                    <p className="text-xs text-gray-500 text-center">
+                    <p className="text-xs text-slate-500 text-center">
                       <span className="font-semibold">Click to upload</span> or drag and drop
                     </p>
                     <p className="text-xs text-gray-400">PNG, JPG, WEBP up to 10MB</p>
@@ -4185,7 +4185,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4195,7 +4195,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_treatment' && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-semibold">
@@ -4224,7 +4224,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingTreatment(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4233,11 +4233,11 @@ export default function InspectionsPage() {
 
           <form id="treatment-form" onSubmit={handleTreatmentSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4249,7 +4249,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
               <select
                 value={editingTreatment?.hive_id || ''}
                 onChange={async (e) => {
@@ -4287,7 +4287,7 @@ export default function InspectionsPage() {
                     }
                   }
                 }}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">Select hive</option>
@@ -4301,18 +4301,18 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Date *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Treatment Date *</label>
               <input
                 type="date"
                 value={editingTreatment?.treatment_date || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, treatment_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Treatment Product *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Treatment Product *</label>
               <div className="relative group">
                 <select
                   value={
@@ -4343,7 +4343,7 @@ export default function InspectionsPage() {
                       setOtherTreatmentType('')
                     }
                   }}
-                  className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                  className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                   required
                 >
                   <option value="">Select treatment product</option>
@@ -4357,7 +4357,7 @@ export default function InspectionsPage() {
 
                 {/* Product details tooltip - shown on hover when a product is selected */}
                 {editingTreatment?.treatment_type && !isOtherTreatment && treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type) && (
-                  <div className="absolute z-10 invisible group-hover:visible w-full sm:w-96 bg-white border-2 border-blue-500 rounded-lg shadow-xl p-4 mt-1 left-0 sm:left-auto sm:right-0">
+                  <div className="absolute z-10 invisible group-hover:visible w-full sm:w-96 bg-slate-800 border-2 border-blue-500 rounded-lg shadow-xl p-4 mt-1 left-0 sm:left-auto sm:right-0">
                     {(() => {
                       const selectedProduct = treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type)
                       if (!selectedProduct) return null
@@ -4365,49 +4365,49 @@ export default function InspectionsPage() {
                         <>
                           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <h4 className="font-semibold text-gray-900">{selectedProduct.product_name}</h4>
+                            <h4 className="font-semibold text-slate-100">{selectedProduct.product_name}</h4>
                           </div>
                           <div className="space-y-2 text-sm">
                             {selectedProduct.active_ingredients && (
                               <div>
-                                <span className="font-medium text-gray-700">Active Ingredients:</span>
-                                <span className="text-gray-600 ml-2">{selectedProduct.active_ingredients}</span>
+                                <span className="font-medium text-slate-300">Active Ingredients:</span>
+                                <span className="text-slate-400 ml-2">{selectedProduct.active_ingredients}</span>
                               </div>
                             )}
                             {selectedProduct.application_method && (
                               <div>
-                                <span className="font-medium text-gray-700">Application Method:</span>
-                                <span className="text-gray-600 ml-2">{selectedProduct.application_method}</span>
+                                <span className="font-medium text-slate-300">Application Method:</span>
+                                <span className="text-slate-400 ml-2">{selectedProduct.application_method}</span>
                               </div>
                             )}
                             {selectedProduct.treatment_duration && (
                               <div>
-                                <span className="font-medium text-gray-700">Duration:</span>
-                                <span className="text-gray-600 ml-2">{selectedProduct.treatment_duration}</span>
+                                <span className="font-medium text-slate-300">Duration:</span>
+                                <span className="text-slate-400 ml-2">{selectedProduct.treatment_duration}</span>
                               </div>
                             )}
                             {selectedProduct.temperature_range && (
                               <div>
-                                <span className="font-medium text-gray-700">Temperature:</span>
-                                <span className="text-gray-600 ml-2">{selectedProduct.temperature_range}</span>
+                                <span className="font-medium text-slate-300">Temperature:</span>
+                                <span className="text-slate-400 ml-2">{selectedProduct.temperature_range}</span>
                               </div>
                             )}
                             {selectedProduct.honey_flow_restrictions && (
                               <div>
-                                <span className="font-medium text-gray-700">Honey Flow:</span>
-                                <span className="text-gray-600 ml-2">{selectedProduct.honey_flow_restrictions}</span>
+                                <span className="font-medium text-slate-300">Honey Flow:</span>
+                                <span className="text-slate-400 ml-2">{selectedProduct.honey_flow_restrictions}</span>
                               </div>
                             )}
                             {selectedProduct.withdrawal_period_days !== null && (
                               <div>
-                                <span className="font-medium text-gray-700">Withdrawal:</span>
-                                <span className="text-gray-600 ml-2">{selectedProduct.withdrawal_period_days} days</span>
+                                <span className="font-medium text-slate-300">Withdrawal:</span>
+                                <span className="text-slate-400 ml-2">{selectedProduct.withdrawal_period_days} days</span>
                               </div>
                             )}
                             {selectedProduct.notes && (
                               <div className="pt-2 border-t border-gray-200">
-                                <span className="font-medium text-gray-700 block mb-1">Notes:</span>
-                                <span className="text-gray-600 text-xs">{selectedProduct.notes}</span>
+                                <span className="font-medium text-slate-300 block mb-1">Notes:</span>
+                                <span className="text-slate-400 text-xs">{selectedProduct.notes}</span>
                               </div>
                             )}
                           </div>
@@ -4422,7 +4422,7 @@ export default function InspectionsPage() {
             {/* Show manual input if "Other" is selected */}
             {isOtherTreatment && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-300 mb-1">
                   Specify Treatment Product *
                 </label>
                 <input
@@ -4437,7 +4437,7 @@ export default function InspectionsPage() {
                       })
                     }
                   }}
-                  className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                  className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                   placeholder="Enter custom treatment product name"
                   required
                 />
@@ -4445,19 +4445,19 @@ export default function InspectionsPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dosage *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Dosage *</label>
               <input
                 type="text"
                 value={editingTreatment?.dosage || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, dosage: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="e.g., 5ml per hive"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Temperature (°C)
                 {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
               </label>
@@ -4466,14 +4466,14 @@ export default function InspectionsPage() {
                 step="0.1"
                 value={editingTreatment?.temperature ?? ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, temperature: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
                 disabled={fetchingWeather}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 Weather Conditions
                 {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
               </label>
@@ -4481,23 +4481,23 @@ export default function InspectionsPage() {
                 type="text"
                 value={editingTreatment?.weather_conditions || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, weather_conditions: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
                 disabled={fetchingWeather}
               />
               {editingTreatment?.hive_id && !fetchingWeather && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Weather data auto-populated based on hive location. You can edit if needed.
                 </p>
               )}
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
               <textarea
                 value={editingTreatment?.notes || ''}
                 onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 rows={4}
                 placeholder="Optional notes about the treatment"
               />
@@ -4507,7 +4507,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_check' && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingCheck ? 'Edit Varroa Check' : 'Record New Varroa Check'}
@@ -4526,7 +4526,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingCheck(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4534,11 +4534,11 @@ export default function InspectionsPage() {
           </div>
           <form id="check-form" onSubmit={handleCheckSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4550,11 +4550,11 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
               <select
                 value={editingCheck?.hive_id || ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">Select hive</option>
@@ -4568,18 +4568,18 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Check Date *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Check Date *</label>
               <input
                 type="date"
                 value={editingCheck?.check_date || ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, check_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Method *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Method *</label>
               <select
                 value={editingCheck?.method && checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : 'Other'}
                 onChange={(e) => {
@@ -4590,7 +4590,7 @@ export default function InspectionsPage() {
                     setOtherCheckMethod('')
                   }
                 }}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">Select method</option>
@@ -4607,7 +4607,7 @@ export default function InspectionsPage() {
                     setOtherCheckMethod(e.target.value)
                     setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white mt-2"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 mt-2"
                   placeholder="Specify other method"
                   required
                 />
@@ -4615,7 +4615,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
               </label>
               <input
@@ -4663,13 +4663,13 @@ export default function InspectionsPage() {
                     action_threshold_reached: actionThreshold
                   } : null)
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Days' : 'Sample Size'}
               </label>
               <input
@@ -4717,13 +4717,13 @@ export default function InspectionsPage() {
                     action_threshold_reached: actionThreshold
                   } : null)
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
                 {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
                 {editingCheck?.mites_count !== null && editingCheck?.mites_count !== undefined &&
                  editingCheck?.sample_size !== null && editingCheck?.sample_size !== undefined &&
@@ -4736,7 +4736,7 @@ export default function InspectionsPage() {
                 step="0.01"
                 value={editingCheck?.infestation_rate ?? ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, infestation_rate: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="Optional (or auto-calculated)"
               />
               {/* Season-based interpretation guidance */}
@@ -4773,25 +4773,25 @@ export default function InspectionsPage() {
                   type="checkbox"
                   checked={editingCheck?.action_threshold_reached || false}
                   onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, action_threshold_reached: e.target.checked} : null)}
-                  className="h-5 w-5 rounded border-gray-300 text-orange-600"
+                  className="h-5 w-5 rounded border-slate-600 text-orange-600"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-slate-300">
                   Action Threshold Reached
                   {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? (
-                    <span className="ml-2 text-xs text-gray-500 font-normal">(Auto-checked if ≥ 5 mites/day)</span>
+                    <span className="ml-2 text-xs text-slate-500 font-normal">(Auto-checked if ≥ 5 mites/day)</span>
                   ) : (
-                    <span className="ml-2 text-xs text-gray-500 font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
+                    <span className="ml-2 text-xs text-slate-500 font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
                   )}
                 </span>
               </label>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
               <textarea
                 value={editingCheck?.notes || ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 rows={4}
                 placeholder="Optional notes about the check"
               />
@@ -4801,7 +4801,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'feeding' && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingFeeding ? 'Edit Feeding' : 'Record New Feeding'}
@@ -4822,7 +4822,7 @@ export default function InspectionsPage() {
                   setIsOtherFeedType(false)
                   setOtherFeedType('')
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4830,11 +4830,11 @@ export default function InspectionsPage() {
           </div>
           <form id="feeding-form" onSubmit={handleFeedingSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4846,11 +4846,11 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
               <select
                 value={editingFeeding?.hive_id || ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">Select hive</option>
@@ -4864,18 +4864,18 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Feed Date *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Feed Date *</label>
               <input
                 type="date"
                 value={editingFeeding?.feed_date || ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, feed_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Feed Type *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Feed Type *</label>
               <select
                 value={editingFeeding?.feed_type || ''}
                 onChange={(e) => {
@@ -4886,7 +4886,7 @@ export default function InspectionsPage() {
                     setOtherFeedType('')
                   }
                 }}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">Select feed type</option>
@@ -4899,7 +4899,7 @@ export default function InspectionsPage() {
                   type="text"
                   value={otherFeedType}
                   onChange={(e) => setOtherFeedType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white mt-2"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 mt-2"
                   placeholder="Enter custom feed type"
                   required
                 />
@@ -4907,23 +4907,23 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Quantity</label>
               <input
                 type="number"
                 step="0.1"
                 value={editingFeeding?.quantity ?? ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, quantity: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Unit *</label>
               <select
                 value={editingFeeding?.unit || 'L'}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, unit: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="L">Liters (L)</option>
@@ -4933,11 +4933,11 @@ export default function InspectionsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
               <textarea
                 value={editingFeeding?.notes || ''}
                 onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 rows={4}
                 placeholder="Optional notes about the feeding"
               />
@@ -4947,7 +4947,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'harvest' && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-slate-900 rounded-lg shadow border border-slate-800-lg p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingHarvest ? 'Edit Harvest' : 'Record New Harvest'}
@@ -4966,7 +4966,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingHarvest(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-gray-200 rounded-lg hover:bg-gray-300 active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-slate-700 rounded-lg hover:bg-slate-600 active:bg-gray-400 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4974,11 +4974,11 @@ export default function InspectionsPage() {
           </div>
           <form id="harvest-form" onSubmit={handleHarvestSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
               <select
                 value={formApiaryId}
                 onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -4990,11 +4990,11 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hive *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Hive *</label>
               <select
                 value={editingHarvest?.hive_id || ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="">Select hive</option>
@@ -5008,46 +5008,46 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Harvest Date *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Harvest Date *</label>
               <input
                 type="date"
                 value={editingHarvest?.harvest_date || ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, harvest_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Honey Weight</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Honey Weight</label>
               <input
                 type="number"
                 step="0.1"
                 value={editingHarvest?.honey_weight ?? ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, honey_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Wax Weight</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Wax Weight</label>
               <input
                 type="number"
                 step="0.1"
                 value={editingHarvest?.wax_weight ?? ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, wax_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="Optional"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Unit *</label>
               <select
                 value={editingHarvest?.unit || 'kg'}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, unit: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 min-h-[48px] border border-slate-600 rounded-md bg-slate-800"
                 required
               >
                 <option value="kg">Kilograms (kg)</option>
@@ -5056,22 +5056,22 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Frames Harvested</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Frames Harvested</label>
               <input
                 type="number"
                 value={editingHarvest?.frames_harvested ?? ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, frames_harvested: e.target.value ? parseInt(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 placeholder="Optional"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
               <textarea
                 value={editingHarvest?.notes || ''}
                 onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800"
                 rows={4}
                 placeholder="Optional notes about the harvest"
               />
@@ -5086,7 +5086,7 @@ export default function InspectionsPage() {
           if (record.record_type === 'inspection') {
             const inspection = record
             return (
-          <div key={`inspection-${inspection.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+          <div key={`inspection-${inspection.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-blue-500">
             <div className="flex justify-between items-start mb-4 gap-4">
               <div className="flex items-start gap-3 flex-1">
                 {/* Icon Badge */}
@@ -5106,7 +5106,7 @@ export default function InspectionsPage() {
                       src={inspection.image_url}
                       alt="Inspection"
                       fill
-                      className="object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                      className="object-cover rounded-lg border-2 border-slate-600 shadow-sm"
                       sizes="64px"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
@@ -5116,13 +5116,13 @@ export default function InspectionsPage() {
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-500">
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
                   {inspection.profiles && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Recorded by: <span className="font-medium text-gray-700">
+                    <p className="text-xs text-slate-500 mt-1">
+                      Recorded by: <span className="font-medium text-slate-300">
                         {(inspection.profiles.first_name && inspection.profiles.last_name)
                           ? `${inspection.profiles.first_name} ${inspection.profiles.last_name}`
                           : inspection.profiles.email}
@@ -5130,7 +5130,7 @@ export default function InspectionsPage() {
                     </p>
                   )}
                   {inspection.weight && (
-                    <p className="text-sm text-gray-600 font-medium mt-1">
+                    <p className="text-sm text-slate-400 font-medium mt-1">
                       Weight: {inspection.weight} kg
                     </p>
                   )}
@@ -5156,25 +5156,25 @@ export default function InspectionsPage() {
 
             {/* Queen & Brood Section - Grouped Display */}
             <div className="mb-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Queen & Brood</h4>
+              <h4 className="text-sm font-semibold text-slate-100 mb-3">Queen & Brood</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Queen Seen</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Queen Seen</div>
                   <div className="text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
                 </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Eggs</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Eggs</div>
                   <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
                 </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Brood Frames</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Brood Frames</div>
                   <div className="text-2xl font-bold text-purple-600">
                     {inspection.brood_frames ?? '-'}
                   </div>
                 </div>
                 {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
-                  <div className="text-center p-3 bg-white rounded shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">Right-Sized Frames</div>
+                  <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-xs text-slate-500 mb-1">Right-Sized Frames</div>
                     <div className="text-2xl font-bold text-amber-600">
                       {inspection.right_sized_frames ?? '-'}
                     </div>
@@ -5186,11 +5186,11 @@ export default function InspectionsPage() {
             {/* Drones Section Display - Only show if any value is recorded */}
             {(inspection.drones_present !== -1 || inspection.drone_brood_present !== null) && (
             <div className="mb-4 p-4 bg-amber-50 rounded-lg border-2 border-amber-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Drones</h4>
+              <h4 className="text-sm font-semibold text-slate-100 mb-3">Drones</h4>
               <div className="grid grid-cols-2 gap-3">
                 {inspection.drones_present !== -1 && (
-                  <div className="text-center p-3 bg-white rounded shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">Drones present</div>
+                  <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-xs text-slate-500 mb-1">Drones present</div>
                     <div className="text-lg font-bold text-amber-600">
                       {inspection.drones_present === 0 && 'Low'}
                       {inspection.drones_present === 1 && 'Medium'}
@@ -5200,8 +5200,8 @@ export default function InspectionsPage() {
                   </div>
                 )}
                 {inspection.drone_brood_present !== null && (
-                  <div className="text-center p-3 bg-white rounded shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">Drone brood present</div>
+                  <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-xs text-slate-500 mb-1">Drone brood present</div>
                     <div className="text-2xl">{inspection.drone_brood_present ? '✅' : '❌'}</div>
                   </div>
                 )}
@@ -5211,26 +5211,26 @@ export default function InspectionsPage() {
 
             {/* Behaviour Section - Grouped Display */}
             <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Behaviour</h4>
+              <h4 className="text-sm font-semibold text-slate-100 mb-3">Behaviour</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Population</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Population</div>
                   <div className="text-sm">{renderStars(inspection.population_strength)}</div>
                 </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Temperament</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Temperament</div>
                   <div className="text-sm">{renderStars(inspection.temperament_rating)}</div>
                 </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Brood Pattern</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Brood Pattern</div>
                   <div className="text-sm">{renderStars(inspection.brood_pattern_rating)}</div>
                 </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Swarming Tendency</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Swarming Tendency</div>
                   <div className="text-sm">{renderStars(inspection.swarming_tendency)}</div>
                 </div>
-                <div className="text-center p-3 bg-white rounded shadow-sm">
-                  <div className="text-xs text-gray-500 mb-1">Calmness</div>
+                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-xs text-slate-500 mb-1">Calmness</div>
                   <div className="text-sm">{renderStars(inspection.calmness)}</div>
                 </div>
               </div>
@@ -5240,41 +5240,41 @@ export default function InspectionsPage() {
             {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
               inspection.honey_supers > 0 || inspection.drone_frames > 0 || inspection.store_frames > 0) && (
               <div className="mb-4 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Given/Taken</h4>
+                <h4 className="text-sm font-semibold text-slate-100 mb-3">Given/Taken</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.frames_foundation > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Frames-Foundation</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Frames-Foundation</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_foundation}</div>
                     </div>
                   )}
                   {inspection.frames_brood > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Brood-Frames</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Brood-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_brood}</div>
                     </div>
                   )}
                   {inspection.frames_drawn > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Drawn-Frames</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Drawn-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_drawn}</div>
                     </div>
                   )}
                   {inspection.honey_supers > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Honey Supers</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Honey Supers</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.honey_supers}</div>
                     </div>
                   )}
                   {inspection.drone_frames > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Drone-Frames</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Drone-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.drone_frames}</div>
                     </div>
                   )}
                   {inspection.store_frames > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Store-Frames</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Store-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.store_frames}</div>
                     </div>
                   )}
@@ -5287,23 +5287,23 @@ export default function InspectionsPage() {
               (inspection.vsh !== 3 && inspection.vsh !== 0) ||
               (inspection.smr !== 3 && inspection.smr !== 0)) && (
               <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Hygienic Behaviour</h4>
+                <h4 className="text-sm font-semibold text-slate-100 mb-3">Hygienic Behaviour</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {inspection.recapping !== 3 && inspection.recapping !== 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Recapping</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Recapping</div>
                       <div className="text-sm">{renderStars(inspection.recapping)}</div>
                     </div>
                   )}
                   {inspection.vsh !== 3 && inspection.vsh !== 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">VSH</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">VSH</div>
                       <div className="text-sm">{renderStars(inspection.vsh)}</div>
                     </div>
                   )}
                   {inspection.smr !== 3 && inspection.smr !== 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">SMR</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">SMR</div>
                       <div className="text-sm">{renderStars(inspection.smr)}</div>
                     </div>
                   )}
@@ -5320,22 +5320,22 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm ml-7">
                   {inspection.weather_temp !== null && (
                     <div>
-                      <span className="font-medium text-gray-700">Temperature:</span> {inspection.weather_temp}°C
+                      <span className="font-medium text-slate-300">Temperature:</span> {inspection.weather_temp}°C
                     </div>
                   )}
                   {inspection.weather_condition && (
                     <div>
-                      <span className="font-medium text-gray-700">Condition:</span> {inspection.weather_condition}
+                      <span className="font-medium text-slate-300">Condition:</span> {inspection.weather_condition}
                     </div>
                   )}
                   {inspection.weather_humidity !== null && (
                     <div>
-                      <span className="font-medium text-gray-700">Humidity:</span> {inspection.weather_humidity}%
+                      <span className="font-medium text-slate-300">Humidity:</span> {inspection.weather_humidity}%
                     </div>
                   )}
                   {inspection.weather_wind_speed !== null && (
                     <div>
-                      <span className="font-medium text-gray-700">Wind:</span> {inspection.weather_wind_speed} km/h
+                      <span className="font-medium text-slate-300">Wind:</span> {inspection.weather_wind_speed} km/h
                     </div>
                   )}
                 </div>
@@ -5346,41 +5346,41 @@ export default function InspectionsPage() {
             {(inspection.afb_disease > 0 || inspection.efb_disease > 0 || inspection.chalkbrood_disease > 0 ||
               inspection.nosemosis_disease > 0 || inspection.dwv_disease > 0 || inspection.iapv_cbpv_disease > 0) && (
               <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Disease</h4>
+                <h4 className="text-sm font-semibold text-slate-100 mb-3">Disease</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.afb_disease > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">AFB</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">AFB</div>
                       <div className="text-sm">{renderStars(inspection.afb_disease)}</div>
                     </div>
                   )}
                   {inspection.efb_disease > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">EFB</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">EFB</div>
                       <div className="text-sm">{renderStars(inspection.efb_disease)}</div>
                     </div>
                   )}
                   {inspection.chalkbrood_disease > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Chalkbrood</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Chalkbrood</div>
                       <div className="text-sm">{renderStars(inspection.chalkbrood_disease)}</div>
                     </div>
                   )}
                   {inspection.nosemosis_disease > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">Nosemosis</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">Nosemosis</div>
                       <div className="text-sm">{renderStars(inspection.nosemosis_disease)}</div>
                     </div>
                   )}
                   {inspection.dwv_disease > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">DWV</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">DWV</div>
                       <div className="text-sm">{renderStars(inspection.dwv_disease)}</div>
                     </div>
                   )}
                   {inspection.iapv_cbpv_disease > 0 && (
-                    <div className="text-center p-3 bg-white rounded shadow-sm">
-                      <div className="text-xs text-gray-500 mb-1">IAPV & CBPV</div>
+                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                      <div className="text-xs text-slate-500 mb-1">IAPV & CBPV</div>
                       <div className="text-sm">{renderStars(inspection.iapv_cbpv_disease)}</div>
                     </div>
                   )}
@@ -5390,8 +5390,8 @@ export default function InspectionsPage() {
 
             {inspection.notes && (
               <div className="p-3 bg-blue-50 rounded">
-                <span className="text-sm font-medium text-gray-700">Notes: </span>
-                <span className="text-sm text-gray-600">{inspection.notes}</span>
+                <span className="text-sm font-medium text-slate-300">Notes: </span>
+                <span className="text-sm text-slate-400">{inspection.notes}</span>
               </div>
             )}
           </div>
@@ -5399,7 +5399,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_treatment') {
             const treatment = record
             return (
-              <div key={`treatment-${treatment.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+              <div key={`treatment-${treatment.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-red-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5411,7 +5411,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">Varroa Treatment</span>
                         <h3 className="text-lg font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-400">
                       {new Date(treatment.treatment_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5426,8 +5426,8 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {treatment.profiles && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Recorded by: <span className="font-medium text-gray-700">
+                      <p className="text-xs text-slate-500 mt-1">
+                        Recorded by: <span className="font-medium text-slate-300">
                           {(treatment.profiles.first_name && treatment.profiles.last_name)
                             ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
                             : treatment.profiles.email}
@@ -5479,31 +5479,31 @@ export default function InspectionsPage() {
                 {/* Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-red-50 rounded-lg">
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 mb-1">Treatment Product</span>
-                    <span className="text-sm font-medium text-gray-900">{treatment.treatment_type}</span>
+                    <span className="text-xs text-slate-500 mb-1">Treatment Product</span>
+                    <span className="text-sm font-medium text-slate-100">{treatment.treatment_type}</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 mb-1">Dosage</span>
-                    <span className="text-sm font-medium text-gray-900">{treatment.dosage}</span>
+                    <span className="text-xs text-slate-500 mb-1">Dosage</span>
+                    <span className="text-sm font-medium text-slate-100">{treatment.dosage}</span>
                   </div>
                   {treatment.temperature && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Temperature</span>
-                      <span className="text-sm font-medium text-gray-900">{treatment.temperature}°C</span>
+                      <span className="text-xs text-slate-500 mb-1">Temperature</span>
+                      <span className="text-sm font-medium text-slate-100">{treatment.temperature}°C</span>
                     </div>
                   )}
                   {treatment.weather_conditions && (
                     <div className="flex flex-col md:col-span-2">
-                      <span className="text-xs text-gray-500 mb-1">Weather Conditions</span>
-                      <span className="text-sm font-medium text-gray-900">{treatment.weather_conditions}</span>
+                      <span className="text-xs text-slate-500 mb-1">Weather Conditions</span>
+                      <span className="text-sm font-medium text-slate-100">{treatment.weather_conditions}</span>
                     </div>
                   )}
                 </div>
 
                 {treatment.notes && (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-gray-700">{treatment.notes}</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-slate-300">{treatment.notes}</span>
                   </div>
                 )}
               </div>
@@ -5511,7 +5511,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_check') {
             const check = record
             return (
-              <div key={`check-${check.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+              <div key={`check-${check.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-orange-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5523,7 +5523,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">Varroa Check</span>
                         <h3 className="text-lg font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-400">
                       {new Date(check.check_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5538,8 +5538,8 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {check.profiles && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Recorded by: <span className="font-medium text-gray-700">
+                      <p className="text-xs text-slate-500 mt-1">
+                        Recorded by: <span className="font-medium text-slate-300">
                           {(check.profiles.first_name && check.profiles.last_name)
                             ? `${check.profiles.first_name} ${check.profiles.last_name}`
                             : check.profiles.email}
@@ -5583,28 +5583,28 @@ export default function InspectionsPage() {
                 {/* Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-orange-50 rounded-lg">
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 mb-1">Method</span>
-                    <span className="text-sm font-medium text-gray-900">{check.method}</span>
+                    <span className="text-xs text-slate-500 mb-1">Method</span>
+                    <span className="text-sm font-medium text-slate-100">{check.method}</span>
                   </div>
                   {check.mites_count !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">
+                      <span className="text-xs text-slate-500 mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
                       </span>
-                      <span className="text-sm font-medium text-gray-900">{check.mites_count}</span>
+                      <span className="text-sm font-medium text-slate-100">{check.mites_count}</span>
                     </div>
                   )}
                   {check.sample_size !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">
+                      <span className="text-xs text-slate-500 mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Days' : 'Sample Size'}
                       </span>
-                      <span className="text-sm font-medium text-gray-900">{check.sample_size}</span>
+                      <span className="text-sm font-medium text-slate-100">{check.sample_size}</span>
                     </div>
                   )}
                   {check.infestation_rate !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">
+                      <span className="text-xs text-slate-500 mb-1">
                         {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Daily Mite Drop' : 'Infestation Rate'}
                       </span>
                       <span className={`text-sm font-bold ${check.infestation_rate > 3 ? 'text-red-600' : 'text-green-600'}`}>
@@ -5615,7 +5615,7 @@ export default function InspectionsPage() {
                     </div>
                   )}
                   <div className="flex flex-col md:col-span-2">
-                    <span className="text-xs text-gray-500 mb-1">Action Threshold</span>
+                    <span className="text-xs text-slate-500 mb-1">Action Threshold</span>
                     <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-600' : 'text-green-600'}`}>
                       {check.action_threshold_reached ? '⚠️ Reached - Treatment Needed' : '✓ Not Reached'}
                     </span>
@@ -5623,9 +5623,9 @@ export default function InspectionsPage() {
                 </div>
 
                 {check.notes && (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-gray-700">{check.notes}</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-slate-300">{check.notes}</span>
                   </div>
                 )}
               </div>
@@ -5633,7 +5633,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'feeding') {
             const feeding = record
             return (
-              <div key={`feeding-${feeding.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+              <div key={`feeding-${feeding.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-yellow-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5645,7 +5645,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Feeding</span>
                         <h3 className="text-lg font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-400">
                       {new Date(feeding.feed_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5660,8 +5660,8 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {feeding.profiles && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Recorded by: <span className="font-medium text-gray-700">
+                      <p className="text-xs text-slate-500 mt-1">
+                        Recorded by: <span className="font-medium text-slate-300">
                           {(feeding.profiles.first_name && feeding.profiles.last_name)
                             ? `${feeding.profiles.first_name} ${feeding.profiles.last_name}`
                             : feeding.profiles.email}
@@ -5716,21 +5716,21 @@ export default function InspectionsPage() {
                 {/* Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-yellow-50 rounded-lg">
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 mb-1">Feed Type</span>
-                    <span className="text-sm font-medium text-gray-900">{feeding.feed_type}</span>
+                    <span className="text-xs text-slate-500 mb-1">Feed Type</span>
+                    <span className="text-sm font-medium text-slate-100">{feeding.feed_type}</span>
                   </div>
                   {feeding.quantity !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Quantity</span>
-                      <span className="text-sm font-medium text-gray-900">{feeding.quantity} {feeding.unit}</span>
+                      <span className="text-xs text-slate-500 mb-1">Quantity</span>
+                      <span className="text-sm font-medium text-slate-100">{feeding.quantity} {feeding.unit}</span>
                     </div>
                   )}
                 </div>
 
                 {feeding.notes && (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-gray-700">{feeding.notes}</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-slate-300">{feeding.notes}</span>
                   </div>
                 )}
               </div>
@@ -5738,7 +5738,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'harvest') {
             const harvest = record
             return (
-              <div key={`harvest-${harvest.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-500">
+              <div key={`harvest-${harvest.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-amber-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5750,7 +5750,7 @@ export default function InspectionsPage() {
                         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">Harvest</span>
                         <h3 className="text-lg font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
                       </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-400">
                       {new Date(harvest.harvest_date).toLocaleDateString('en-US', {
                         weekday: 'short',
                         year: 'numeric',
@@ -5765,8 +5765,8 @@ export default function InspectionsPage() {
                       })}
                     </p>
                     {harvest.profiles && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Recorded by: <span className="font-medium text-gray-700">
+                      <p className="text-xs text-slate-500 mt-1">
+                        Recorded by: <span className="font-medium text-slate-300">
                           {(harvest.profiles.first_name && harvest.profiles.last_name)
                             ? `${harvest.profiles.first_name} ${harvest.profiles.last_name}`
                             : harvest.profiles.email}
@@ -5811,28 +5811,28 @@ export default function InspectionsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-amber-50 rounded-lg">
                   {harvest.honey_weight !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Honey Weight</span>
-                      <span className="text-sm font-medium text-gray-900">{harvest.honey_weight} {harvest.unit}</span>
+                      <span className="text-xs text-slate-500 mb-1">Honey Weight</span>
+                      <span className="text-sm font-medium text-slate-100">{harvest.honey_weight} {harvest.unit}</span>
                     </div>
                   )}
                   {harvest.wax_weight !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Wax Weight</span>
-                      <span className="text-sm font-medium text-gray-900">{harvest.wax_weight} {harvest.unit}</span>
+                      <span className="text-xs text-slate-500 mb-1">Wax Weight</span>
+                      <span className="text-sm font-medium text-slate-100">{harvest.wax_weight} {harvest.unit}</span>
                     </div>
                   )}
                   {harvest.frames_harvested !== null && (
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 mb-1">Frames Harvested</span>
-                      <span className="text-sm font-medium text-gray-900">{harvest.frames_harvested}</span>
+                      <span className="text-xs text-slate-500 mb-1">Frames Harvested</span>
+                      <span className="text-sm font-medium text-slate-100">{harvest.frames_harvested}</span>
                     </div>
                   )}
                 </div>
 
                 {harvest.notes && (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-gray-500 mb-1 block">Notes</span>
-                    <span className="text-sm text-gray-700">{harvest.notes}</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-slate-500 mb-1 block">Notes</span>
+                    <span className="text-sm text-slate-300">{harvest.notes}</span>
                   </div>
                 )}
               </div>
@@ -5840,16 +5840,16 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'archive') {
             const archiveRecord = record
             return (
-              <div key={`archive-${archiveRecord.id}`} className="bg-white rounded-lg shadow p-6 border-l-4 border-gray-500">
+              <div key={`archive-${archiveRecord.id}`} className="bg-slate-900 rounded-lg shadow border border-slate-800 p-6 border-l-4 border-gray-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
                     <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Archive size={24} className="text-gray-600" />
+                      <Archive size={24} className="text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold">Hive Archived: {archiveRecord.hive_number}</h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-slate-500">
                         {new Date(archiveRecord.archived_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -5863,16 +5863,16 @@ export default function InspectionsPage() {
                 </div>
 
                 {archiveRecord.archive_reason_value && (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-3">
-                    <span className="text-xs text-gray-500 mb-1 block">Reason</span>
-                    <span className="text-sm font-medium text-gray-900">{archiveRecord.archive_reason_value}</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200 mb-3">
+                    <span className="text-xs text-slate-500 mb-1 block">Reason</span>
+                    <span className="text-sm font-medium text-slate-100">{archiveRecord.archive_reason_value}</span>
                   </div>
                 )}
 
                 {archiveRecord.archive_notes && (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <span className="text-xs text-gray-500 mb-1 block">Additional Notes</span>
-                    <span className="text-sm text-gray-700">{archiveRecord.archive_notes}</span>
+                  <div className="p-4 bg-slate-800/50 rounded-lg border border-gray-200">
+                    <span className="text-xs text-slate-500 mb-1 block">Additional Notes</span>
+                    <span className="text-sm text-slate-300">{archiveRecord.archive_notes}</span>
                   </div>
                 )}
               </div>
@@ -5883,7 +5883,7 @@ export default function InspectionsPage() {
       </div>
 
       {filteredRecords.length === 0 && (
-        <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+        <div className="bg-slate-900 rounded-lg shadow border border-slate-800 p-12 text-center text-slate-500">
           {filterHiveId
             ? `No records found for this hive. Select "All Hives" or record a new activity.`
             : recordTypeFilter !== 'all'
@@ -5907,10 +5907,10 @@ export default function InspectionsPage() {
                 setImageModalOpen(false)
                 setModalImageUrl(null)
               }}
-              className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
+              className="absolute top-4 right-4 z-10 bg-slate-800 rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
               aria-label="Close modal"
             >
-              <X size={24} className="text-gray-700" />
+              <X size={24} className="text-slate-300" />
             </button>
             <div className="relative w-full h-full">
               <Image
@@ -5929,14 +5929,14 @@ export default function InspectionsPage() {
       {/* IPM Tips Modal */}
       {showIpmTips && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">
+          <div className="bg-slate-900 rounded-lg shadow border border-slate-800-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-800 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-slate-100">
                 Integrated Pest Management (IPM) Tips for Varroa Control
               </h3>
               <button
                 onClick={() => setShowIpmTips(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-slate-400 transition-colors"
                 title="Close"
               >
                 <X size={24} />
@@ -5946,49 +5946,49 @@ export default function InspectionsPage() {
               <ul className="space-y-3">
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-300">
                     <strong>Rotate treatments annually</strong> to prevent resistance development.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-300">
                     <strong>Monitor mite levels regularly</strong> using sugar shake or alcohol wash.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-300">
                     <strong>Apply treatments according to label instructions</strong> and seasonal timing.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-300">
                     <strong>Ensure adequate colony ventilation</strong> during treatment.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-300">
                     <strong>Avoid treating during honey flow</strong> unless product is approved for use.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-300">
                     <strong>Combine chemical treatments with biotechnical methods</strong> (e.g., drone brood removal).
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-gray-700">
+                  <span className="text-slate-300">
                     <strong>Maintain strong, healthy colonies</strong> through good nutrition and disease management.
                   </span>
                 </li>
               </ul>
             </div>
-            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div className="sticky bottom-0 bg-slate-800/50 px-6 py-4 border-t border-gray-200">
               <button
                 onClick={() => setShowIpmTips(false)}
                 className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
