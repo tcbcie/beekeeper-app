@@ -376,11 +376,11 @@ export default function TasksEventsPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200'
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200'
-      case 'normal': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      case 'urgent': return 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800'
+      case 'high': return 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800'
+      case 'normal': return 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+      case 'low': return 'bg-sage-100 dark:bg-slate-700 text-text-secondary border-border'
+      default: return 'bg-sage-100 dark:bg-slate-700 text-text-secondary border-border'
     }
   }
 
@@ -401,8 +401,8 @@ export default function TasksEventsPage() {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
-        <h1 className="text-responsive-3xl font-bold text-slate-100 mb-6">Tasks & Events 📅</h1>
-        <p className="text-slate-500">Loading...</p>
+        <h1 className="text-responsive-3xl font-bold text-foreground mb-6">Tasks & Events 📅</h1>
+        <p className="text-text-tertiary">Loading...</p>
       </div>
     )
   }
@@ -411,10 +411,10 @@ export default function TasksEventsPage() {
     <div className="max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-responsive-3xl font-bold text-slate-100">Tasks & Events 📅</h1>
+        <h1 className="text-responsive-3xl font-bold text-foreground">Tasks & Events 📅</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
         >
           <Plus size={20} />
           <span className="hidden sm:inline">Add Task/Event</span>
@@ -423,18 +423,18 @@ export default function TasksEventsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-900 rounded-lg shadow border border-slate-800 p-4 mb-6">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-4 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Filter size={18} className="text-slate-400" />
-          <h2 className="font-semibold text-slate-100">Filters</h2>
+          <Filter size={18} className="text-text-tertiary" />
+          <h2 className="font-semibold text-foreground">Filters</h2>
         </div>
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isTeamMember ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-4`}>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Type</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Types</option>
               <option value="task">Tasks</option>
@@ -444,11 +444,11 @@ export default function TasksEventsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Categories</option>
               <option value="inspection">Inspection</option>
@@ -463,11 +463,11 @@ export default function TasksEventsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -477,11 +477,11 @@ export default function TasksEventsPage() {
 
           {isTeamMember && (
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Ownership</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Ownership</label>
               <select
                 value={filterOwnership}
                 onChange={(e) => setFilterOwnership(e.target.value as 'all' | 'my' | 'team')}
-                className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
               >
                 <option value="all">All Tasks</option>
                 <option value="my">My Tasks</option>
@@ -491,11 +491,11 @@ export default function TasksEventsPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Hive</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
             <select
               value={filterHive}
               onChange={(e) => setFilterHive(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Hives</option>
               {hives.map(hive => (
@@ -505,11 +505,11 @@ export default function TasksEventsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
             <select
               value={filterApiary}
               onChange={(e) => setFilterApiary(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Apiaries</option>
               {apiaries.map(apiary => (
@@ -522,17 +522,17 @@ export default function TasksEventsPage() {
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
-        <div className="bg-slate-900 rounded-lg shadow border border-slate-800 p-8 text-center">
-          <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
-          <p className="text-slate-400 mb-2">No tasks or events found</p>
-          <p className="text-sm text-slate-500">Create your first task or event to get started</p>
+        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-8 text-center">
+          <Calendar size={48} className="mx-auto text-text-tertiary mb-4" />
+          <p className="text-text-tertiary mb-2">No tasks or events found</p>
+          <p className="text-sm text-text-tertiary">Create your first task or event to get started</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredTasks.map(task => (
             <div
               key={task.id}
-              className={`bg-slate-900 rounded-lg shadow border border-slate-800 p-4 border-l-4 ${
+              className={`bg-surface dark:bg-surface rounded-lg shadow border border-border p-4 border-l-4 ${
                 task.completed ? 'border-green-500 opacity-60' :
                 task.is_team_task ? 'border-purple-500' :
                 'border-blue-500'
@@ -548,44 +548,44 @@ export default function TasksEventsPage() {
                     {task.completed ? (
                       <CheckCircle2 size={20} className="text-green-600" />
                     ) : (
-                      <Circle size={20} className="text-gray-400 hover:text-slate-400" />
+                      <Circle size={20} className="text-text-tertiary hover:text-text-tertiary" />
                     )}
                   </button>
 
                   {/* Task content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 mb-2 flex-wrap">
-                      <h3 className={`font-semibold text-slate-100 ${task.completed ? 'line-through' : ''}`}>
+                      <h3 className={`font-semibold text-foreground ${task.completed ? 'line-through' : ''}`}>
                         {task.title}
                       </h3>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getPriorityColor(task.priority)}`}>
                         {task.priority}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-sage-100 dark:bg-slate-700 text-foreground border border-border">
                         {getTypeLabel(task.event_type)}
                       </span>
                       {task.category && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-800 dark:text-forest-300 border border-forest-200 dark:border-forest-800">
                           {getCategoryLabel(task.category)}
                         </span>
                       )}
                       {task.is_team_task && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                           Team Task
                         </span>
                       )}
                       {task.user_id !== userId && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                           Created by team member
                         </span>
                       )}
                     </div>
 
                     {task.description && (
-                      <p className="text-sm text-slate-400 mb-2">{task.description}</p>
+                      <p className="text-sm text-text-tertiary mb-2">{task.description}</p>
                     )}
 
-                    <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap">
+                    <div className="flex items-center gap-4 text-sm text-text-tertiary flex-wrap">
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
                         <span>{formatDate(task.start_date)}</span>
@@ -607,19 +607,19 @@ export default function TasksEventsPage() {
 
                     {/* Associations */}
                     {(task.hive_id || task.apiary_id || task.batch_id) && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 flex-wrap">
+                      <div className="flex items-center gap-2 mt-2 text-xs text-text-tertiary flex-wrap">
                         {task.hive_id && (
-                          <span className="px-2 py-1 bg-slate-800/50 rounded border border-gray-200">
+                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-700 rounded border border-border">
                             Hive: {hives.find(h => h.id === task.hive_id)?.hive_number || 'Unknown'}
                           </span>
                         )}
                         {task.apiary_id && (
-                          <span className="px-2 py-1 bg-slate-800/50 rounded border border-gray-200">
+                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-700 rounded border border-border">
                             Apiary: {apiaries.find(a => a.id === task.apiary_id)?.name || 'Unknown'}
                           </span>
                         )}
                         {task.batch_id && (
-                          <span className="px-2 py-1 bg-slate-800/50 rounded border border-gray-200">
+                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-700 rounded border border-border">
                             Batch: {batches.find(b => b.id === task.batch_id)?.batch_name || 'Unknown'}
                           </span>
                         )}
@@ -632,14 +632,14 @@ export default function TasksEventsPage() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleEdit(task)}
-                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    className="p-2 text-text-tertiary hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                     title="Edit"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(task.id)}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="p-2 text-text-tertiary hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={16} />
@@ -654,12 +654,12 @@ export default function TasksEventsPage() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 rounded-lg shadow border border-slate-800-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-slate-800 border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-100">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-sage-50 dark:bg-slate-800 border-b border-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">
                 {editingTask ? 'Edit Task/Event' : 'Create Task/Event'}
               </h2>
-              <button onClick={resetForm} className="text-gray-400 hover:text-slate-400">
+              <button onClick={resetForm} className="text-text-tertiary hover:text-text-tertiary">
                 <X size={24} />
               </button>
             </div>
@@ -667,25 +667,25 @@ export default function TasksEventsPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   required
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   rows={3}
                 />
               </div>
@@ -693,13 +693,13 @@ export default function TasksEventsPage() {
               {/* Type, Category, Priority */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.event_type}
                     onChange={(e) => setFormData({ ...formData, event_type: e.target.value as 'task' | 'event' | 'reminder' })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     required
                   >
                     <option value="task">Task</option>
@@ -709,11 +709,11 @@ export default function TasksEventsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="">None</option>
                     <option value="inspection">Inspection</option>
@@ -728,11 +728,11 @@ export default function TasksEventsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Priority</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Priority</label>
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent' })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="low">Low</option>
                     <option value="normal">Normal</option>
@@ -745,25 +745,25 @@ export default function TasksEventsPage() {
               {/* Start Date and Time */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Start Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Start Time</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Start Time</label>
                   <input
                     type="time"
                     value={formData.start_time}
                     onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     disabled={formData.all_day}
                   />
                 </div>
@@ -772,22 +772,22 @@ export default function TasksEventsPage() {
               {/* End Date and Time */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">End Date</label>
                   <input
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">End Time</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">End Time</label>
                   <input
                     type="time"
                     value={formData.end_time}
                     onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     disabled={formData.all_day}
                   />
                 </div>
@@ -800,9 +800,9 @@ export default function TasksEventsPage() {
                   id="all_day"
                   checked={formData.all_day}
                   onChange={(e) => setFormData({ ...formData, all_day: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-slate-600 rounded focus:ring-emerald-500"
+                  className="w-4 h-4 text-blue-600 border-slate-600 rounded focus:ring-forest-500 dark:focus:ring-forest-400"
                 />
-                <label htmlFor="all_day" className="text-sm font-medium text-slate-300">
+                <label htmlFor="all_day" className="text-sm font-medium text-text-secondary">
                   All day event
                 </label>
               </div>
@@ -810,7 +810,7 @@ export default function TasksEventsPage() {
               {/* Associations */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Hive</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
                   <select
                     value={formData.hive_id}
                     onChange={(e) => {
@@ -822,7 +822,7 @@ export default function TasksEventsPage() {
                         apiary_id: selectedHive?.apiary_id || ''
                       })
                     }}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="">None</option>
                     {hives.filter(h => !h.is_shared).length > 0 && (
@@ -843,11 +843,11 @@ export default function TasksEventsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Apiary</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
                   <select
                     value={formData.apiary_id}
                     onChange={(e) => setFormData({ ...formData, apiary_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="">None</option>
                     {apiaries.filter(a => !a.is_shared).length > 0 && (
@@ -876,22 +876,22 @@ export default function TasksEventsPage() {
                     id="reminder_enabled"
                     checked={formData.reminder_enabled}
                     onChange={(e) => setFormData({ ...formData, reminder_enabled: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-slate-600 rounded focus:ring-emerald-500"
+                    className="w-4 h-4 text-blue-600 border-slate-600 rounded focus:ring-forest-500 dark:focus:ring-forest-400"
                   />
-                  <label htmlFor="reminder_enabled" className="text-sm font-medium text-slate-300">
+                  <label htmlFor="reminder_enabled" className="text-sm font-medium text-text-secondary">
                     Enable reminder
                   </label>
                 </div>
                 {formData.reminder_enabled && (
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Remind me (minutes before)
                     </label>
                     <input
                       type="number"
                       value={formData.reminder_minutes_before}
                       onChange={(e) => setFormData({ ...formData, reminder_minutes_before: parseInt(e.target.value) || 60 })}
-                      className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                       min="0"
                     />
                   </div>
@@ -900,11 +900,11 @@ export default function TasksEventsPage() {
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   rows={3}
                 />
               </div>
@@ -913,14 +913,14 @@ export default function TasksEventsPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
                 >
                   {editingTask ? 'Update' : 'Create'}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                  className="px-4 py-2 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
                 >
                   Cancel
                 </button>
