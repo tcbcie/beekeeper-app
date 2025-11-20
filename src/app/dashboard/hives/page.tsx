@@ -88,6 +88,7 @@ interface Hive {
     date: string
     type: string
   } | null
+  active_tasks_count?: number
 }
 
 interface FormData {
@@ -326,7 +327,8 @@ export default function HivesPage() {
         { data: lastTreatments },
         { data: lastChecks },
         { data: lastFeedings },
-        { data: lastHarvests }
+        { data: lastHarvests },
+        { data: activeTasks }
       ] = await Promise.all([
         supabase
           .from('inspections')
@@ -362,7 +364,13 @@ export default function HivesPage() {
           .in('hive_id', hiveIds)
           .eq('user_id', currentUserId)
           .order('harvest_date', { ascending: false })
-          .limit(hiveIds.length)
+          .limit(hiveIds.length),
+        supabase
+          .from('tasks_events')
+          .select('hive_id')
+          .in('hive_id', hiveIds)
+          .eq('completed', false)
+          .lte('start_date', new Date().toISOString().split('T')[0])
       ])
 
       // Build map of most recent record for each hive
@@ -393,6 +401,15 @@ export default function HivesPage() {
         }
       })
 
+      // Build map of active task counts per hive
+      const activeTasksByHive = new Map<string, number>()
+      activeTasks?.forEach(task => {
+        if (task.hive_id) {
+          const count = activeTasksByHive.get(task.hive_id) || 0
+          activeTasksByHive.set(task.hive_id, count + 1)
+        }
+      })
+
       // Enrich hives with last seen info for each hive
       const enrichedHives = data.map((hive) => {
         const inspections = inspectionsByHive.get(hive.id) || []
@@ -419,6 +436,7 @@ export default function HivesPage() {
           team_name: teamData?.name || null,
           is_shared: isShared,
           last_record: lastRecord,
+          active_tasks_count: activeTasksByHive.get(hive.id) || 0,
         }
       })
 
@@ -1447,6 +1465,12 @@ export default function HivesPage() {
                   <span className="px-2 py-0.5 bg-sage-200 dark:bg-slate-700 text-text-primary text-xs font-medium rounded flex items-center gap-1 w-fit border border-border">
                     <span>📦</span>
                     <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
+                  </span>
+                )}
+                {hive.active_tasks_count && hive.active_tasks_count > 0 && (
+                  <span className="px-2 py-0.5 bg-amber-900/50 text-amber-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-amber-800">
+                    <span>📋</span>
+                    <span>{hive.active_tasks_count} Active Task{hive.active_tasks_count > 1 ? 's' : ''}</span>
                   </span>
                 )}
               </div>
