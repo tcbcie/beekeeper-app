@@ -56,17 +56,17 @@ function ReactivateForm() {
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-amber-900 mb-2">HiveCraic</h1>
-          <p className="text-gray-600">Account Reactivation</p>
+          <p className="text-text-secondary">Account Reactivation</p>
         </div>
 
         {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-surface dark:bg-surface rounded-2xl shadow-xl p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-              <Mail className="text-amber-600" size={24} />
+              <Mail className="text-forest-600 dark:text-amber-600" size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Request Account Reactivation</h2>
+              <h2 className="text-xl font-semibold text-foreground">Request Account Reactivation</h2>
               <p className="text-sm text-gray-500">Restore your deleted account</p>
             </div>
           </div>
@@ -83,7 +83,7 @@ function ReactivateForm() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-2">
                 Email Address
               </label>
               <input
@@ -92,7 +92,7 @@ function ReactivateForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 required
                 disabled={status === 'loading'}
               />
@@ -141,7 +141,7 @@ function ReactivateForm() {
           <div className="mt-4 text-center">
             <a
               href="/login"
-              className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+              className="text-sm text-forest-600 dark:text-amber-600 hover:text-amber-700 font-medium"
             >
               ← Back to Login
             </a>
@@ -152,7 +152,7 @@ function ReactivateForm() {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-500">
             Need help? Contact{' '}
-            <a href="mailto:support@tcbc.ie" className="text-amber-600 hover:text-amber-700">
+            <a href="mailto:support@tcbc.ie" className="text-forest-600 dark:text-amber-600 hover:text-amber-700">
               support@tcbc.ie
             </a>
           </p>
