@@ -137,10 +137,10 @@ export default function ApiariesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Apiaries 📍</h1>
+        <h1 className="text-3xl font-bold text-slate-100">Apiaries 📍</h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium flex items-center gap-2 min-h-[48px]"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
           {showForm ? 'Cancel' : 'Add Apiary'}
@@ -148,76 +148,76 @@ export default function ApiariesPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-semibold mb-4">
+        <div className="bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800">
+          <h3 className="text-xl font-semibold mb-4 text-slate-100">
             {editingApiary ? 'Edit Apiary' : 'Add New Apiary'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apiary Name *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Apiary Name *</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="e.g., Home Garden, North Field"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 required
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
                   placeholder="e.g., North Field, Back Garden"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">City</label>
                 <input
                   type="text"
                   value={formData.city}
                   onChange={(e) => setFormData({...formData, city: e.target.value})}
                   placeholder="e.g., Dublin, Cork"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Eircode *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Eircode *</label>
               <input
                 type="text"
                 value={formData.eircode}
                 onChange={(e) => setFormData({...formData, eircode: e.target.value.toUpperCase()})}
                 placeholder="e.g., D02 XY45"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md uppercase"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 uppercase focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">Required for automatic weather data on inspections</p>
+              <p className="text-xs text-slate-500 mt-1">Required for automatic weather data on inspections</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={3}
                 placeholder="Access instructions, nearby forage, etc..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
             <div className="flex gap-3">
-              <button type="submit" className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <button type="submit" className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 min-h-[48px]">
                 {editingApiary ? 'Update' : 'Add'} Apiary
               </button>
-              <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+              <button type="button" onClick={resetForm} className="px-6 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 min-h-[48px]">
                 Cancel
               </button>
             </div>
@@ -228,16 +228,16 @@ export default function ApiariesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {apiaries.map((apiary: Apiary) => {
           return (
-            <div key={apiary.id} className="bg-white rounded-lg shadow-lg p-6">
+            <div key={apiary.id} className="bg-slate-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-slate-800">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900">{apiary.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h3 className="text-2xl font-bold text-slate-100">{apiary.name}</h3>
+                  <p className="text-sm text-slate-400 mt-1">
                     {apiary.city && apiary.location ? `${apiary.city} - ${apiary.location}` :
                      apiary.city || apiary.location || 'No location specified'}
                   </p>
                   {apiary.eircode && (
-                    <p className="text-sm text-indigo-600 font-medium mt-1">
+                    <p className="text-sm text-emerald-400 font-medium mt-1">
                       Eircode: {apiary.eircode}
                     </p>
                   )}
@@ -245,7 +245,7 @@ export default function ApiariesPage() {
               </div>
 
               {apiary.notes && (
-                <div className="mb-4 p-3 bg-gray-50 rounded text-sm text-gray-700">
+                <div className="mb-4 p-3 bg-slate-800/50 rounded text-sm text-slate-300 border border-slate-700">
                   {apiary.notes}
                 </div>
               )}
@@ -253,14 +253,14 @@ export default function ApiariesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(apiary)}
-                  className="flex-1 px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm bg-blue-900/30 text-blue-300 rounded hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 border border-blue-800 min-h-[48px]"
                 >
                   <Edit2 size={16} />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(apiary.id)}
-                  className="flex-1 px-4 py-2 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm bg-red-900/30 text-red-300 rounded hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 border border-red-800 min-h-[48px]"
                 >
                   <Trash2 size={16} />
                   Delete
@@ -272,7 +272,7 @@ export default function ApiariesPage() {
       </div>
 
       {apiaries.length === 0 && (
-        <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+        <div className="bg-slate-900 rounded-lg shadow p-12 text-center text-slate-400 border border-slate-800">
           No apiaries found. Add your first location!
         </div>
       )}
