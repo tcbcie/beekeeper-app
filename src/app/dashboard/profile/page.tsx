@@ -2494,7 +2494,7 @@ export default function ProfilePage() {
               {/* Confirmation Input */}
               <div className="pt-2">
                 <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                  Type <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-red-600 text-xs">DELETE</span> to confirm:
+                  Type <span className="font-mono bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded text-red-600 dark:text-red-400 text-xs">DELETE</span> to confirm:
                 </label>
                 <input
                   type="text"
