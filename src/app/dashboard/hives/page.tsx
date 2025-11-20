@@ -1011,7 +1011,7 @@ export default function HivesPage() {
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 Row in Apiary
-                <span className="block text-xs font-normal text-slate-500 mt-0.5 invisible">Placeholder for alignment</span>
+                <span className="block text-xs font-normal text-text-tertiary mt-0.5 invisible">Placeholder for alignment</span>
               </label>
               <div className="flex gap-2 mb-2 invisible">
                 <label className="flex items-center gap-2">
@@ -1172,7 +1172,7 @@ export default function HivesPage() {
             {!formData.queen_id && (
               <>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-300 mb-3">Queen Status (if no specific queen assigned)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-3">Queen Status (if no specific queen assigned)</label>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
@@ -1224,7 +1224,7 @@ export default function HivesPage() {
                     <select
                       value={formData.queen_marking_color}
                       onChange={(e) => setFormData({...formData, queen_marking_color: e.target.value})}
-                      className="w-full md:w-1/2 px-3 py-2 border border-slate-600 rounded-md bg-slate-800 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="w-full md:w-1/2 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
                       <option value="">Select color</option>
                       <option value="White">White</option>
@@ -1520,7 +1520,7 @@ export default function HivesPage() {
                 <span className="text-text-tertiary">📍</span>
                 <span className="font-medium text-text-primary">{hive.apiaries?.name || 'No apiary'}</span>
                 {(hive.order_in_apiary || hive.row_in_apiary) && (
-                  <span className="text-xs text-slate-400 ml-1">
+                  <span className="text-xs text-text-tertiary ml-1">
                     ({hive.row_in_apiary ? `Row ${hive.row_in_apiary}` : ''}{hive.row_in_apiary && hive.order_in_apiary ? ', ' : ''}{hive.order_in_apiary ? `Hive ${hive.order_in_apiary}` : ''})
                   </span>
                 )}
@@ -1574,7 +1574,7 @@ export default function HivesPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-text-tertiary">📋</span>
                   <span className="text-xs">
-                    <span className="font-medium text-slate-300">{hive.last_record.type}</span>
+                    <span className="font-medium text-text-secondary">{hive.last_record.type}</span>
                     <span className="text-text-tertiary"> • {new Date(hive.last_record.date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                   </span>
                 </div>
