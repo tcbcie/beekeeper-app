@@ -40,39 +40,39 @@ export default function SubscriptionWarningBanner() {
   const getBannerColor = () => {
     switch (subscriptionStatus.status) {
       case 'expiring_soon':
-        return 'bg-yellow-50 border-yellow-300'
+        return 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-800'
       case 'expiring_very_soon':
-        return 'bg-orange-50 border-orange-300'
+        return 'bg-orange-50 dark:bg-orange-950/30 border-orange-300 dark:border-orange-800'
       case 'expired':
-        return 'bg-red-50 border-red-300'
+        return 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800'
       default:
-        return 'bg-gray-50 border-gray-300'
+        return 'bg-sage-50 dark:bg-slate-800/50 border-border'
     }
   }
 
   const getIconColor = () => {
     switch (subscriptionStatus.status) {
       case 'expiring_soon':
-        return 'text-yellow-600'
+        return 'text-yellow-600 dark:text-yellow-400'
       case 'expiring_very_soon':
-        return 'text-orange-600'
+        return 'text-orange-600 dark:text-orange-400'
       case 'expired':
-        return 'text-red-600'
+        return 'text-red-600 dark:text-red-400'
       default:
-        return 'text-gray-600'
+        return 'text-text-secondary'
     }
   }
 
   const getTextColor = () => {
     switch (subscriptionStatus.status) {
       case 'expiring_soon':
-        return 'text-yellow-900'
+        return 'text-yellow-900 dark:text-yellow-200'
       case 'expiring_very_soon':
-        return 'text-orange-900'
+        return 'text-orange-900 dark:text-orange-200'
       case 'expired':
-        return 'text-red-900'
+        return 'text-red-900 dark:text-red-200'
       default:
-        return 'text-gray-900'
+        return 'text-foreground'
     }
   }
 
@@ -104,7 +104,7 @@ export default function SubscriptionWarningBanner() {
           {subscriptionStatus.status !== 'no_subscription' && (
             <button
               onClick={() => router.push('/dashboard/profile')}
-              className="px-4 py-1.5 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors font-medium flex items-center gap-1.5 whitespace-nowrap"
+              className="px-4 py-1.5 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors font-medium flex items-center gap-1.5 whitespace-nowrap"
             >
               <Calendar className="w-4 h-4" />
               Renew Now
@@ -112,7 +112,7 @@ export default function SubscriptionWarningBanner() {
           )}
           <button
             onClick={() => setDismissed(true)}
-            className={`p-1 rounded hover:bg-black/5 transition-colors ${getTextColor()}`}
+            className={`p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${getTextColor()}`}
             aria-label="Dismiss banner"
           >
             <X className="w-5 h-5" />
