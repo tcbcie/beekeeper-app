@@ -772,7 +772,7 @@ export default function BatchesPage() {
                     type="date"
                     value={formData.graft_date}
                     onChange={(e) => setFormData({...formData, graft_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
                     required
                   />
                 </div>
@@ -783,7 +783,7 @@ export default function BatchesPage() {
                     type="date"
                     value={formData.acceptance_check_date}
                     onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
                   />
                   <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 1 day</p>
                 </div>
@@ -794,7 +794,7 @@ export default function BatchesPage() {
                     type="date"
                     value={formData.first_option_to_cage_date}
                     onChange={(e) => setFormData({...formData, first_option_to_cage_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
                   />
                   <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 5 days</p>
                 </div>
@@ -805,7 +805,7 @@ export default function BatchesPage() {
                     type="date"
                     value={formData.second_option_to_cage_date}
                     onChange={(e) => setFormData({...formData, second_option_to_cage_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
                   />
                   <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 10 days</p>
                 </div>
@@ -824,7 +824,7 @@ export default function BatchesPage() {
                     type="date"
                     value={formData.emergence_date}
                     onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
                   />
                   <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 12 days</p>
                 </div>
@@ -842,7 +842,7 @@ export default function BatchesPage() {
                     onChange={(e) => {
                       setFormData({...formData, starter_apiary_id: e.target.value, starter_colony_hive_id: ''})
                     }}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    className="w-full px-3 py-2 border border-green-300 dark:border-green-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
                   >
                     <option value="">Select apiary (optional)</option>
                     {apiaries.map((apiary) => (
@@ -856,7 +856,7 @@ export default function BatchesPage() {
                   <select
                     value={formData.starter_colony_hive_id}
                     onChange={(e) => setFormData({...formData, starter_colony_hive_id: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground disabled:bg-sage-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-green-300 dark:border-green-700 rounded-md bg-white dark:bg-slate-900 text-foreground disabled:bg-sage-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
                     disabled={!formData.starter_apiary_id}
                   >
                     <option value="">Select hive (optional)</option>
@@ -893,7 +893,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.cell_count}
                       onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -928,7 +928,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.grafts_accepted}
                       onChange={(e) => setFormData({...formData, grafts_accepted: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -963,7 +963,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.queens_hatched}
                       onChange={(e) => setFormData({...formData, queens_hatched: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -998,7 +998,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.queens_mated}
                       onChange={(e) => setFormData({...formData, queens_mated: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
