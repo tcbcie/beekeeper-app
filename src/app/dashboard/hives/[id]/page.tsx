@@ -563,7 +563,7 @@ export default function HiveDetailPage() {
 
         {/* Open Tasks */}
         {tasks.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-slate-700">
+          <div className="mt-6 pt-6 border-t border-border">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-text-tertiary text-sm uppercase tracking-wide flex items-center gap-2">
                 <ListTodo size={16} />
@@ -579,10 +579,10 @@ export default function HiveDetailPage() {
             <div className="space-y-2">
               {tasks.slice(0, 3).map(task => {
                 const priorityColor =
-                  task.priority === 'urgent' ? 'border-red-500 bg-red-900/30' :
-                  task.priority === 'high' ? 'border-orange-500 bg-orange-900/30' :
-                  task.priority === 'normal' ? 'border-blue-500 bg-blue-900/30' :
-                  'border-slate-500 bg-slate-800'
+                  task.priority === 'urgent' ? 'border-red-500 bg-red-100 dark:bg-red-900/30' :
+                  task.priority === 'high' ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30' :
+                  task.priority === 'normal' ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/30' :
+                  'border-slate-500 bg-sage-100 dark:bg-slate-800'
 
                 return (
                   <div key={task.id} className={`border-l-4 ${priorityColor} p-3 rounded-r`}>
@@ -592,11 +592,11 @@ export default function HiveDetailPage() {
                         {task.description && (
                           <div className="text-xs text-text-tertiary mt-1 line-clamp-1">{task.description}</div>
                         )}
-                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                        <div className="flex items-center gap-2 mt-1 text-xs text-text-tertiary">
                           <Calendar size={12} />
                           <span>{new Date(task.start_date).toLocaleDateString()}</span>
                           {task.category && (
-                            <span className="px-1.5 py-0.5 bg-slate-700 rounded border border-slate-600 text-text-secondary">
+                            <span className="px-1.5 py-0.5 bg-sage-100 dark:bg-slate-700 rounded border border-border text-text-secondary">
                               {task.category.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                             </span>
                           )}
@@ -604,16 +604,16 @@ export default function HiveDetailPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                          task.priority === 'urgent' ? 'bg-red-900/50 text-red-300 border border-red-800' :
-                          task.priority === 'high' ? 'bg-orange-900/50 text-orange-300 border border-orange-800' :
-                          task.priority === 'normal' ? 'bg-blue-900/50 text-blue-300 border border-blue-800' :
-                          'bg-sage-100 dark:bg-slate-700 text-text-primary'
+                          task.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800' :
+                          task.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-800' :
+                          task.priority === 'normal' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800' :
+                          'bg-sage-100 dark:bg-slate-700 text-text-primary border border-border'
                         }`}>
                           {task.priority}
                         </span>
                         <button
                           onClick={() => handleCompleteTask(task.id)}
-                          className="p-1.5 text-green-400 hover:bg-green-900/50 rounded transition-colors"
+                          className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 rounded transition-colors"
                           title="Mark as complete"
                         >
                           <CheckCircle2 size={16} />
@@ -628,7 +628,7 @@ export default function HiveDetailPage() {
         )}
 
         {hive.notes && (
-          <div className="mt-6 pt-6 border-t border-slate-700">
+          <div className="mt-6 pt-6 border-t border-border">
             <h3 className="font-semibold text-text-tertiary mb-2 text-sm uppercase tracking-wide">Notes</h3>
             <p className="text-sm text-text-secondary bg-slate-800 p-3 rounded">{hive.notes}</p>
           </div>
