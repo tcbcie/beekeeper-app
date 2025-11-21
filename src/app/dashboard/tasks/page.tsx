@@ -655,7 +655,7 @@ export default function TasksEventsPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-sage-50 dark:bg-slate-800 border-b border-border px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-sage-50 dark:bg-slate-800/50 border-b border-border px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-foreground">
                 {editingTask ? 'Edit Task/Event' : 'Create Task/Event'}
               </h2>
@@ -800,7 +800,7 @@ export default function TasksEventsPage() {
                   id="all_day"
                   checked={formData.all_day}
                   onChange={(e) => setFormData({ ...formData, all_day: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-slate-600 rounded focus:ring-forest-500 dark:focus:ring-forest-400"
+                  className="w-4 h-4 text-forest-600 dark:text-blue-600 border-border rounded focus:ring-forest-500 dark:focus:ring-forest-400"
                 />
                 <label htmlFor="all_day" className="text-sm font-medium text-text-secondary">
                   All day event
@@ -876,7 +876,7 @@ export default function TasksEventsPage() {
                     id="reminder_enabled"
                     checked={formData.reminder_enabled}
                     onChange={(e) => setFormData({ ...formData, reminder_enabled: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-slate-600 rounded focus:ring-forest-500 dark:focus:ring-forest-400"
+                    className="w-4 h-4 text-forest-600 dark:text-blue-600 border-border rounded focus:ring-forest-500 dark:focus:ring-forest-400"
                   />
                   <label htmlFor="reminder_enabled" className="text-sm font-medium text-text-secondary">
                     Enable reminder
@@ -920,7 +920,7 @@ export default function TasksEventsPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-4 py-2 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors"
+                  className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border transition-colors"
                 >
                   Cancel
                 </button>
