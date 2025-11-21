@@ -131,19 +131,19 @@ export default function SubscriptionHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-surface dark:bg-background py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
             onClick={() => router.push('/dashboard/settings?section=users')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+            className="flex items-center gap-2 text-text-secondary hover:text-foreground mb-4"
           >
             <ArrowLeft size={20} />
             Back to User Management
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Subscription History</h1>
-          <p className="text-gray-600 mt-2">View all subscription activations and payments</p>
+          <h1 className="text-3xl font-bold text-foreground">Subscription History</h1>
+          <p className="text-text-secondary mt-2">View all subscription activations and payments</p>
         </div>
 
         {/* Filters */}
@@ -151,13 +151,13 @@ export default function SubscriptionHistoryPage() {
           <div className="space-y-4">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary" size={20} />
               <input
                 type="text"
                 placeholder="Search by email, code, or transaction ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent"
               />
             </div>
 
@@ -165,11 +165,11 @@ export default function SubscriptionHistoryPage() {
             <div className="flex flex-wrap items-center gap-4">
               {/* Payment Method Filter */}
               <div className="flex items-center gap-2">
-                <CreditCard size={18} className="text-gray-500" />
+                <CreditCard size={18} className="text-text-tertiary" />
                 <select
                   value={paymentMethodFilter}
                   onChange={(e) => setPaymentMethodFilter(e.target.value as 'all' | 'credit_card' | 'registration_code')}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent"
                 >
                   <option value="all">All Payment Methods</option>
                   <option value="credit_card">Credit Card</option>
@@ -179,11 +179,11 @@ export default function SubscriptionHistoryPage() {
 
               {/* Date Range Filter */}
               <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-gray-500" />
+                <Calendar size={18} className="text-text-tertiary" />
                 <select
                   value={dateRangeFilter}
                   onChange={(e) => setDateRangeFilter(e.target.value as 'all' | '30days' | '90days' | '1year')}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent"
                 >
                   <option value="all">All Time</option>
                   <option value="30days">Last 30 Days</option>
@@ -193,7 +193,7 @@ export default function SubscriptionHistoryPage() {
               </div>
 
               {/* Results Count */}
-              <div className="ml-auto text-sm text-gray-600">
+              <div className="ml-auto text-sm text-text-secondary">
                 Showing {filteredRecords.length} of {subscriptionHistory.length} records
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function SubscriptionHistoryPage() {
           </div>
         ) : filteredRecords.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <p className="text-gray-500">
+            <p className="text-text-tertiary">
               {subscriptionHistory.length === 0
                 ? 'No subscription history records found.'
                 : 'No records match your filters.'}
@@ -217,38 +217,38 @@ export default function SubscriptionHistoryPage() {
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-surface dark:bg-background border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Code
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Payment Method
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Activated
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Expires
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Transaction ID
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <tr key={record.id} className="hover:bg-surface dark:bg-background">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                         {record.user_email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-tertiary">
                         {record.code || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -267,16 +267,16 @@ export default function SubscriptionHistoryPage() {
                           )}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                         <div className="flex items-center gap-1">
-                          <DollarSign size={14} className="text-gray-400" />
+                          <DollarSign size={14} className="text-text-tertiary" />
                           {formatCurrency(record.price_paid)}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-tertiary">
                         {formatDate(record.activated_at)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-tertiary">
                         {formatDate(record.expires_at)}
                       </td>
                       <td className="px-6 py-4 text-sm">
@@ -295,7 +295,7 @@ export default function SubscriptionHistoryPage() {
                             </a>
                           </div>
                         ) : (
-                          <span className="text-gray-400 text-xs">-</span>
+                          <span className="text-text-tertiary text-xs">-</span>
                         )}
                       </td>
                     </tr>
