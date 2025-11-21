@@ -1593,18 +1593,18 @@ export default function SettingsPage() {
   // Access denied screen for non-admin users
   if (accessDenied) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface dark:bg-background">
         <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
           <div className="flex justify-center mb-4">
             <Shield size={64} className="text-red-500" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
+          <p className="text-text-tertiary mb-6">
             You need administrator privileges to access the Settings page.
           </p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+            className="px-6 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 font-medium"
           >
             Return to Dashboard
           </button>
@@ -1626,7 +1626,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
         {userIsAdmin && (
           <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
             <Shield size={14} />
@@ -1637,7 +1637,7 @@ export default function SettingsPage() {
 
       {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-border">
           <nav className="flex flex-wrap -mb-px">
             {sections.map((section) => {
               const Icon = section.icon
@@ -1647,8 +1647,8 @@ export default function SettingsPage() {
                   onClick={() => setActiveSection(section.id)}
                   className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                     activeSection === section.id
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-forest-600 dark:border-emerald-500 text-forest-600 dark:text-emerald-500'
+                      : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border'
                   }`}
                 >
                   <Icon size={16} />
@@ -1663,17 +1663,17 @@ export default function SettingsPage() {
       {/* Profile & Export Section */}
       {activeSection === 'profile' && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile & Data Export</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-6">Profile & Data Export</h2>
 
           {/* Export Database Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700">Export Your Data</h3>
+            <h3 className="text-lg font-semibold text-text-secondary">Export Your Data</h3>
             {userIsAdmin ? (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-tertiary">
                 <strong>Admin Export:</strong> Download complete database backup with ALL users&apos; data from ALL tables including apiaries, hives, queens, inspections, tasks, events, and more.
               </p>
             ) : userHasActiveSubscription ? (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-tertiary">
                 Download your personal beekeeping data including apiaries, hives, queens, inspections, tasks, events, and more in SQL format.
               </p>
             ) : (
@@ -1690,7 +1690,7 @@ export default function SettingsPage() {
               <button
                 onClick={exportDatabase}
                 disabled={exporting}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium flex items-center gap-2"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 font-medium flex items-center gap-2"
               >
                 <Download size={16} />
                 {exporting ? 'Exporting...' : userIsAdmin ? 'Export Complete Database (All Users)' : 'Export My Data'}
@@ -1706,17 +1706,17 @@ export default function SettingsPage() {
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Varroa Treatments</h2>
-              <p className="text-gray-600 mt-2">Manage approved varroa treatment products for Ireland</p>
+              <h2 className="text-2xl font-bold text-foreground">Varroa Treatments</h2>
+              <p className="text-text-tertiary mt-2">Manage approved varroa treatment products for Ireland</p>
             </div>
           </div>
         </div>
 
         {showVarroaTreatments && (
-          <div className="px-6 pb-6 border-t border-gray-200 pt-6 space-y-4">
+          <div className="px-6 pb-6 border-t border-border pt-6 space-y-4">
             {/* Add Treatment Button */}
             <div className="flex justify-between items-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-tertiary">
                 Reference data for approved varroa mite treatment products in Ireland.
               </p>
               <button
@@ -1730,112 +1730,112 @@ export default function SettingsPage() {
 
             {/* Add/Edit Form */}
             {showAddVarroaTreatment && (
-              <form onSubmit={handleVarroaTreatmentSubmit} className="bg-gray-50 p-6 rounded-lg space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+              <form onSubmit={handleVarroaTreatmentSubmit} className="bg-surface dark:bg-background p-6 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">
                   {editingVarroaTreatment ? 'Edit Treatment' : 'Add New Treatment'}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Product Name *
                     </label>
                     <input
                       type="text"
                       value={varroaTreatmentFormData.product_name}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, product_name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Active Ingredients *
                     </label>
                     <input
                       type="text"
                       value={varroaTreatmentFormData.active_ingredients}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, active_ingredients: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Application Method *
                     </label>
                     <input
                       type="text"
                       value={varroaTreatmentFormData.application_method}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, application_method: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Treatment Duration *
                     </label>
                     <input
                       type="text"
                       value={varroaTreatmentFormData.treatment_duration}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, treatment_duration: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Temperature Range *
                     </label>
                     <input
                       type="text"
                       value={varroaTreatmentFormData.temperature_range}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, temperature_range: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Honey Flow Restrictions *
                     </label>
                     <input
                       type="text"
                       value={varroaTreatmentFormData.honey_flow_restrictions}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, honey_flow_restrictions: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Withdrawal Period (days) *
                     </label>
                     <input
                       type="number"
                       value={varroaTreatmentFormData.withdrawal_period_days}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, withdrawal_period_days: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       min="0"
                       required
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Notes
                     </label>
                     <textarea
                       value={varroaTreatmentFormData.notes}
                       onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, notes: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       rows={3}
                     />
                   </div>
@@ -1866,46 +1866,46 @@ export default function SettingsPage() {
                 <LoadingSpinner text="Loading varroa treatments..." />
               </div>
             ) : varroaTreatments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-text-tertiary">
                 No varroa treatments found. Add your first treatment above.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="bg-gray-100 border-b-2 border-gray-300">
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <tr className="bg-gray-100 border-b-2 border-border">
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Actions
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Product Name
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Active Ingredients
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Application Method
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Duration
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Temperature
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Honey Flow
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Withdrawal (days)
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Notes
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {varroaTreatments.map((treatment) => (
-                      <tr key={treatment.id} className="hover:bg-gray-50">
+                      <tr key={treatment.id} className="hover:bg-surface dark:bg-background">
                         {editingVarroaTreatment?.id === treatment.id ? (
                           /* Inline Edit Mode */
                           <>
@@ -1923,7 +1923,7 @@ export default function SettingsPage() {
                                 </button>
                                 <button
                                   onClick={() => resetVarroaTreatmentForm()}
-                                  className="text-gray-600 hover:text-gray-900"
+                                  className="text-text-tertiary hover:text-foreground"
                                   title="Cancel"
                                 >
                                   <X size={18} />
@@ -1935,7 +1935,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={varroaTreatmentFormData.product_name}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, product_name: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                                 placeholder="Product name"
                               />
                             </td>
@@ -1944,7 +1944,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={varroaTreatmentFormData.active_ingredients}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, active_ingredients: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -1952,7 +1952,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={varroaTreatmentFormData.application_method}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, application_method: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -1960,7 +1960,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={varroaTreatmentFormData.treatment_duration}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, treatment_duration: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -1968,7 +1968,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={varroaTreatmentFormData.temperature_range}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, temperature_range: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -1976,7 +1976,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={varroaTreatmentFormData.honey_flow_restrictions}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, honey_flow_restrictions: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -1984,7 +1984,7 @@ export default function SettingsPage() {
                                 type="number"
                                 value={varroaTreatmentFormData.withdrawal_period_days}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, withdrawal_period_days: parseInt(e.target.value) })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                                 min="0"
                               />
                             </td>
@@ -1992,7 +1992,7 @@ export default function SettingsPage() {
                               <textarea
                                 value={varroaTreatmentFormData.notes}
                                 onChange={(e) => setVarroaTreatmentFormData({ ...varroaTreatmentFormData, notes: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                                 rows={2}
                               />
                             </td>
@@ -2018,28 +2018,28 @@ export default function SettingsPage() {
                                 </button>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            <td className="px-4 py-3 text-sm font-medium text-foreground">
                               {treatment.product_name}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-text-tertiary">
                               {treatment.active_ingredients}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-text-tertiary">
                               {treatment.application_method}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-text-tertiary">
                               {treatment.treatment_duration}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-text-tertiary">
                               {treatment.temperature_range}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-text-tertiary">
                               {treatment.honey_flow_restrictions}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 text-center">
+                            <td className="px-4 py-3 text-sm text-text-tertiary text-center">
                               {treatment.withdrawal_period_days === 0 ? 'None' : treatment.withdrawal_period_days}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-text-tertiary">
                               <div className="max-w-xs truncate" title={treatment.notes || ''}>
                                 {treatment.notes || '-'}
                               </div>
@@ -2063,17 +2063,17 @@ export default function SettingsPage() {
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Beekeeping Associations</h2>
-              <p className="text-gray-600 mt-2">Manage beekeeping associations across Ireland</p>
+              <h2 className="text-2xl font-bold text-foreground">Beekeeping Associations</h2>
+              <p className="text-text-tertiary mt-2">Manage beekeeping associations across Ireland</p>
             </div>
           </div>
         </div>
 
         {showAssociations && (
-          <div className="px-6 pb-6 border-t border-gray-200 pt-6 space-y-4">
+          <div className="px-6 pb-6 border-t border-border pt-6 space-y-4">
             {/* Add Association Button */}
             <div className="flex justify-between items-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-tertiary">
                 Beekeeping associations from Northern Ireland and the Republic of Ireland.
               </p>
               <button
@@ -2086,13 +2086,13 @@ export default function SettingsPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-4 items-center bg-gray-50 p-4 rounded-lg">
+            <div className="flex gap-4 items-center bg-surface dark:bg-background p-4 rounded-lg">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Jurisdiction:</label>
+                <label className="text-sm font-medium text-text-secondary">Jurisdiction:</label>
                 <select
                   value={jurisdictionFilter}
                   onChange={(e) => setJurisdictionFilter(e.target.value as 'all' | 'NI' | 'ROI')}
-                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="px-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="all">All Jurisdictions</option>
                   <option value="NI">Northern Ireland</option>
@@ -2101,11 +2101,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">County/Area:</label>
+                <label className="text-sm font-medium text-text-secondary">County/Area:</label>
                 <select
                   value={countyFilter}
                   onChange={(e) => setCountyFilter(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="px-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="all">All Counties/Areas</option>
                   {Array.from(new Set(associations.map(a => a.county_area))).sort().map(county => (
@@ -2120,7 +2120,7 @@ export default function SettingsPage() {
                     setJurisdictionFilter('all')
                     setCountyFilter('all')
                   }}
-                  className="ml-auto px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-100"
+                  className="ml-auto px-3 py-1.5 text-sm text-text-tertiary hover:text-foreground border border-border rounded-md hover:bg-gray-100"
                 >
                   Clear Filters
                 </button>
@@ -2129,48 +2129,48 @@ export default function SettingsPage() {
 
             {/* Add/Edit Form */}
             {showAddAssociation && (
-              <form onSubmit={handleAssociationSubmit} className="bg-gray-50 p-6 rounded-lg space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+              <form onSubmit={handleAssociationSubmit} className="bg-surface dark:bg-background p-6 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">
                   {editingAssociation ? 'Edit Association' : 'Add New Association'}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Association Name *
                     </label>
                     <input
                       type="text"
                       value={associationFormData.name}
                       onChange={(e) => setAssociationFormData({ ...associationFormData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Jurisdiction *
                     </label>
                     <input
                       type="text"
                       value={associationFormData.jurisdiction}
                       onChange={(e) => setAssociationFormData({ ...associationFormData, jurisdiction: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       placeholder="e.g., Northern Ireland, Republic of Ireland"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       County/Area *
                     </label>
                     <input
                       type="text"
                       value={associationFormData.county_area}
                       onChange={(e) => setAssociationFormData({ ...associationFormData, county_area: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-border rounded-md"
                       placeholder="e.g., County Antrim, Dublin"
                       required
                     />
@@ -2202,7 +2202,7 @@ export default function SettingsPage() {
                 <LoadingSpinner text="Loading associations..." />
               </div>
             ) : associations.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-text-tertiary">
                 No associations found. Add your first association above.
               </div>
             ) : (() => {
@@ -2218,31 +2218,31 @@ export default function SettingsPage() {
               })
 
               return filteredAssociations.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-text-tertiary">
                   No associations match the selected filters.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-gray-100 border-b-2 border-gray-300">
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <tr className="bg-gray-100 border-b-2 border-border">
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
                           Actions
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                           Association Name
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                           Jurisdiction
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                           County/Area
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredAssociations.map((association) => (
-                      <tr key={association.id} className="hover:bg-gray-50">
+                      <tr key={association.id} className="hover:bg-surface dark:bg-background">
                         {editingAssociation?.id === association.id ? (
                           /* Inline Edit Mode */
                           <>
@@ -2260,7 +2260,7 @@ export default function SettingsPage() {
                                 </button>
                                 <button
                                   onClick={() => resetAssociationForm()}
-                                  className="text-gray-600 hover:text-gray-900"
+                                  className="text-text-tertiary hover:text-foreground"
                                   title="Cancel"
                                 >
                                   <X size={18} />
@@ -2272,7 +2272,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={associationFormData.name}
                                 onChange={(e) => setAssociationFormData({ ...associationFormData, name: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                                 placeholder="Association name"
                               />
                             </td>
@@ -2281,7 +2281,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={associationFormData.jurisdiction}
                                 onChange={(e) => setAssociationFormData({ ...associationFormData, jurisdiction: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                                 placeholder="Jurisdiction"
                               />
                             </td>
@@ -2290,7 +2290,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={associationFormData.county_area}
                                 onChange={(e) => setAssociationFormData({ ...associationFormData, county_area: e.target.value })}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
                                 placeholder="County/Area"
                               />
                             </td>
@@ -2316,13 +2316,13 @@ export default function SettingsPage() {
                                 </button>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-4 py-3 text-sm text-foreground">
                               {association.name}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-4 py-3 text-sm text-foreground">
                               {association.jurisdiction}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-4 py-3 text-sm text-foreground">
                               {association.county_area}
                             </td>
                           </>
@@ -2343,8 +2343,8 @@ export default function SettingsPage() {
       {activeSection === 'tickets' && (
       <div className="bg-white rounded-lg shadow">
         <div className="p-6">
-          <h2 className="text-2xl font-bold text-gray-900">Support Ticket Management</h2>
-          <p className="text-gray-600 mt-2">Manage and respond to user support tickets</p>
+          <h2 className="text-2xl font-bold text-foreground">Support Ticket Management</h2>
+          <p className="text-text-tertiary mt-2">Manage and respond to user support tickets</p>
         </div>
 
         {showTicketManagement && (
@@ -2358,7 +2358,7 @@ export default function SettingsPage() {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     ticketFilter === filter
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
                   }`}
                 >
                   {filter.replace('_', ' ').toUpperCase()}
@@ -2372,22 +2372,22 @@ export default function SettingsPage() {
                 <LoadingSpinner text="Loading tickets..." />
               </div>
             ) : tickets.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-text-tertiary">
                 No tickets found for this filter.
               </div>
             ) : (
               <div className="space-y-4">
                 {tickets.map((ticket) => (
-                  <div key={ticket.id} className="border rounded-lg p-4 bg-gray-50">
+                  <div key={ticket.id} className="border rounded-lg p-4 bg-surface dark:bg-background">
                     {editingTicket?.id === ticket.id ? (
                       /* Edit Form */
                       <div className="space-y-3">
                         {/* Ticket Header - Read Only */}
                         <div className="bg-gray-100 p-4 rounded-lg">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground mb-2">
                             {ticket.subject}
                           </h3>
-                          <p className="text-sm text-gray-500 mb-2">
+                          <p className="text-sm text-text-tertiary mb-2">
                             From: {ticket.user_profiles?.email || 'Unknown'} |{' '}
                             {new Date(ticket.created_at).toLocaleString()}
                           </p>
@@ -2396,16 +2396,16 @@ export default function SettingsPage() {
                               {ticket.ticket_type.toUpperCase()}
                             </span>
                           </div>
-                          <p className="text-gray-700 whitespace-pre-wrap">
+                          <p className="text-text-secondary whitespace-pre-wrap">
                             {ticket.description}
                           </p>
                         </div>
 
                         {/* Edit Fields */}
-                        <h4 className="font-semibold text-gray-900 mt-2">Update Ticket</h4>
+                        <h4 className="font-semibold text-foreground mt-2">Update Ticket</h4>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-text-secondary mb-1">
                               Status
                             </label>
                             <select
@@ -2413,7 +2413,7 @@ export default function SettingsPage() {
                               onChange={(e) =>
                                 setEditingTicket({ ...editingTicket, status: e.target.value as 'open' | 'in_progress' | 'resolved' | 'closed' })
                               }
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                              className="w-full px-3 py-2 border border-border rounded-md"
                             >
                               <option value="open">Open</option>
                               <option value="in_progress">In Progress</option>
@@ -2422,7 +2422,7 @@ export default function SettingsPage() {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-text-secondary mb-1">
                               Priority
                             </label>
                             <select
@@ -2430,7 +2430,7 @@ export default function SettingsPage() {
                               onChange={(e) =>
                                 setEditingTicket({ ...editingTicket, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent' })
                               }
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                              className="w-full px-3 py-2 border border-border rounded-md"
                             >
                               <option value="low">Low</option>
                               <option value="normal">Normal</option>
@@ -2441,7 +2441,7 @@ export default function SettingsPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-text-secondary mb-1">
                             Admin Notes (visible to user)
                           </label>
                           <textarea
@@ -2450,7 +2450,7 @@ export default function SettingsPage() {
                               setEditingTicket({ ...editingTicket, admin_notes: e.target.value })
                             }
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            className="w-full px-3 py-2 border border-border rounded-md"
                             placeholder="Response to the user..."
                           />
                         </div>
@@ -2481,10 +2481,10 @@ export default function SettingsPage() {
                       <div>
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-lg font-semibold text-foreground">
                               {ticket.subject}
                             </h3>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-text-tertiary">
                               From: {ticket.user_profiles?.email || 'Unknown'} |{' '}
                               {new Date(ticket.created_at).toLocaleString()}
                             </p>
@@ -2530,7 +2530,7 @@ export default function SettingsPage() {
                                 ? 'bg-orange-100 text-orange-600'
                                 : ticket.priority === 'normal'
                                 ? 'bg-blue-100 text-blue-600'
-                                : 'bg-gray-100 text-gray-600'
+                                : 'bg-gray-100 text-text-tertiary'
                             }`}
                           >
                             {ticket.priority.toUpperCase()}
@@ -2546,7 +2546,7 @@ export default function SettingsPage() {
                           </span>
                         </div>
 
-                        <p className="text-gray-700 mb-3 whitespace-pre-wrap">
+                        <p className="text-text-secondary mb-3 whitespace-pre-wrap">
                           {ticket.description}
                         </p>
 
@@ -2562,7 +2562,7 @@ export default function SettingsPage() {
                         )}
 
                         {ticket.resolved_by && ticket.resolved_at && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-text-tertiary">
                             Resolved by: {ticket.resolver?.email || 'Unknown'} on{' '}
                             {new Date(ticket.resolved_at!).toLocaleString()}
                           </p>
@@ -2575,11 +2575,11 @@ export default function SettingsPage() {
             )}
 
             {/* Statistics */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Ticket Statistics</h4>
+            <div className="bg-surface dark:bg-background border border-border rounded-lg p-4 mt-4">
+              <h4 className="font-semibold text-foreground mb-2">Ticket Statistics</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600">Total:</span>
+                  <span className="text-text-tertiary">Total:</span>
                   <span className="ml-2 font-bold">{tickets.length}</span>
                 </div>
                 <div>
@@ -2601,7 +2601,7 @@ export default function SettingsPage() {
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Closed:</span>
+                  <span className="text-text-tertiary">Closed:</span>
                   <span className="ml-2 font-bold">
                     {tickets.filter((t) => t.status === 'closed').length}
                   </span>
@@ -2624,26 +2624,26 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-gray-900">User Management</h2>
+                  <h2 className="text-xl font-bold text-foreground">User Management</h2>
                   <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full flex items-center gap-1">
                     <Shield size={12} />
                     Admin Only
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">Manage user accounts and roles</p>
+                <p className="text-sm text-text-tertiary">Manage user accounts and roles</p>
               </div>
             </div>
           </div>
         </div>
 
         {showUserManagement && (
-          <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+          <div className="px-6 pb-6 border-t border-border pt-6">
             {/* Legend and Role Descriptions */}
             <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {/* Role Descriptions */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="font-semibold text-gray-900 mb-2">Role Descriptions</p>
-                <ul className="space-y-1 text-gray-700">
+              <div className="bg-surface dark:bg-background rounded-lg p-4">
+                <p className="font-semibold text-foreground mb-2">Role Descriptions</p>
+                <ul className="space-y-1 text-text-secondary">
                   <li className="flex items-start gap-2">
                     <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium mt-0.5">User</span>
                     <span>Standard access to their own beekeeping data</span>
@@ -2662,11 +2662,11 @@ export default function SettingsPage() {
               </div>
 
               {/* Status Legend */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="font-semibold text-gray-900 mb-2">Status Symbols</p>
-                <div className="space-y-2 text-gray-700">
+              <div className="bg-surface dark:bg-background rounded-lg p-4">
+                <p className="font-semibold text-foreground mb-2">Status Symbols</p>
+                <div className="space-y-2 text-text-secondary">
                   <div>
-                    <p className="font-medium text-xs text-gray-600 mb-1">Account Status:</p>
+                    <p className="font-medium text-xs text-text-tertiary mb-1">Account Status:</p>
                     <div className="flex items-center gap-3 ml-2">
                       <span className="flex items-center gap-1">
                         <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">●</span>
@@ -2679,7 +2679,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="font-medium text-xs text-gray-600 mb-1">Subscription Status:</p>
+                    <p className="font-medium text-xs text-text-tertiary mb-1">Subscription Status:</p>
                     <div className="grid grid-cols-2 gap-1 ml-2 text-xs">
                       <span className="flex items-center gap-1">
                         <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded font-medium">✓</span>
@@ -2707,12 +2707,12 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-text-tertiary mb-4">
               View and manage all user accounts. Change user roles between User, Power User, and Admin.
             </p>
 
             {/* Tabs for Active/Deleted Users/Reactivation Requests/Subscription History */}
-            <div className="mb-4 flex gap-2 border-b border-gray-200">
+            <div className="mb-4 flex gap-2 border-b border-border">
               <button
                 onClick={() => {
                   setShowDeletedUsers(false)
@@ -2723,7 +2723,7 @@ export default function SettingsPage() {
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
                   !showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory
                     ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-text-tertiary hover:text-text-secondary'
                 }`}
               >
                 Active Users ({users.length})
@@ -2738,7 +2738,7 @@ export default function SettingsPage() {
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
                   showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory
                     ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-text-tertiary hover:text-text-secondary'
                 }`}
               >
                 Deleted Users ({deletedUsers.length})
@@ -2753,7 +2753,7 @@ export default function SettingsPage() {
                 className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
                   showReactivationRequests && !showSubscriptionHistory
                     ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-text-tertiary hover:text-text-secondary'
                 }`}
               >
                 Reactivation Requests{reactivationRequestsFetched ? ` (${reactivationRequests.filter(r => r.status === 'pending').length})` : ''}
@@ -2765,7 +2765,7 @@ export default function SettingsPage() {
                   }
                   router.push('/dashboard/settings/subscription-history')
                 }}
-                className="px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors"
+                className="px-4 py-2 font-medium text-sm border-b-2 border-transparent text-text-tertiary hover:text-text-secondary transition-colors"
               >
                 Subscription History{subscriptionHistoryFetched ? ` (${subscriptionHistory.length})` : ''}
               </button>
@@ -2783,7 +2783,7 @@ export default function SettingsPage() {
                   placeholder="Search users by email or ID..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
 
@@ -2793,7 +2793,7 @@ export default function SettingsPage() {
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value as 'all' | 'User' | 'Power User' | 'Admin')}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="all">All Roles</option>
                   <option value="User">Users</option>
@@ -2805,7 +2805,7 @@ export default function SettingsPage() {
                 <select
                   value={accountStatusFilter}
                   onChange={(e) => setAccountStatusFilter(e.target.value as 'all' | 'active' | 'disabled')}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="all">All Accounts</option>
                   <option value="active">Active</option>
@@ -2816,7 +2816,7 @@ export default function SettingsPage() {
                 <select
                   value={subscriptionFilter}
                   onChange={(e) => setSubscriptionFilter(e.target.value as 'all' | 'active' | 'expiring' | 'expired' | 'none')}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="all">All Subscriptions</option>
                   <option value="active">Active</option>
@@ -2829,7 +2829,7 @@ export default function SettingsPage() {
                 <button
                   onClick={() => showDeletedUsers ? fetchDeletedUsers() : fetchUsers()}
                   disabled={loadingUsers}
-                  className="ml-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+                  className="ml-auto px-4 py-2 bg-gray-100 text-text-secondary rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
                 >
                   {loadingUsers ? 'Loading...' : 'Refresh'}
                 </button>
@@ -2842,11 +2842,11 @@ export default function SettingsPage() {
                 <LoadingSpinner text={showDeletedUsers ? "Loading deleted users..." : "Loading users..."} />
               </div>
             ) : (!showDeletedUsers && users.length === 0) ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-text-tertiary">
                 No users found. Click &quot;Refresh&quot; to load.
               </div>
             ) : (showDeletedUsers && deletedUsers.length === 0) ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-text-tertiary">
                 No deleted users found.
               </div>
             ) : (() => {
@@ -2892,7 +2892,7 @@ export default function SettingsPage() {
               return (
                 <>
                   {/* Results Count */}
-                  <div className="mb-3 text-sm text-gray-600">
+                  <div className="mb-3 text-sm text-text-tertiary">
                     Showing {filteredUsers.length} of {sourceUsers.length} {showDeletedUsers ? 'deleted ' : ''}users
                   </div>
 
@@ -2901,14 +2901,14 @@ export default function SettingsPage() {
                       const isExpanded = expandedUserId === user.id
 
                       return (
-                      <div key={user.id} className="bg-white border border-gray-200 rounded hover:border-gray-300 transition-all">
+                      <div key={user.id} className="bg-white border border-border rounded hover:border-border transition-all">
                         {/* Compact Single Line */}
                         <div className="px-3 py-2">
                           <div className="flex items-center gap-3">
                             {/* Expand Button */}
                             <button
                               onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
-                              className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+                              className="flex-shrink-0 p-1 text-gray-400 hover:text-text-tertiary rounded hover:bg-gray-100"
                               title={isExpanded ? 'Hide details' : 'Show details'}
                             >
                               <ChevronDown
@@ -2919,7 +2919,7 @@ export default function SettingsPage() {
 
                             {/* Email */}
                             <div className="flex-1 min-w-0 flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900 truncate">{user.email || 'No email'}</span>
+                              <span className="text-sm font-medium text-foreground truncate">{user.email || 'No email'}</span>
                               {user.id === userId && (
                                 <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded flex-shrink-0">
                                   You
@@ -2981,7 +2981,7 @@ export default function SettingsPage() {
                                   <select
                                     value={user.role}
                                     onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Power User' | 'Admin')}
-                                    className="px-2 py-0.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="px-2 py-0.5 border border-border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                   >
                                     <option value="User">User</option>
                                     <option value="Power User">Power User</option>
@@ -3048,19 +3048,19 @@ export default function SettingsPage() {
 
                           {/* Expanded Details */}
                           {isExpanded && (
-                            <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                               {/* User ID */}
                               <div>
-                                <span className="text-gray-500 block mb-1">User ID</span>
-                                <p className="font-mono text-gray-700 truncate" title={user.id}>
+                                <span className="text-text-tertiary block mb-1">User ID</span>
+                                <p className="font-mono text-text-secondary truncate" title={user.id}>
                                   {user.id.substring(0, 12)}...
                                 </p>
                               </div>
 
                               {/* Joined Date */}
                               <div>
-                                <span className="text-gray-500 block mb-1">Joined</span>
-                                <p className="text-gray-900">
+                                <span className="text-text-tertiary block mb-1">Joined</span>
+                                <p className="text-foreground">
                                   {new Date(user.created_at).toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
@@ -3071,12 +3071,12 @@ export default function SettingsPage() {
 
                               {/* Subscription Code */}
                               <div>
-                                <span className="text-gray-500 block mb-1">Sub Code</span>
+                                <span className="text-text-tertiary block mb-1">Sub Code</span>
                                 {user.registration_code ? (
                                   <div>
                                     <p className="font-mono font-semibold text-indigo-600">{user.registration_code}</p>
                                     {user.code_description && (
-                                      <p className="text-gray-500 italic truncate" title={user.code_description}>
+                                      <p className="text-text-tertiary italic truncate" title={user.code_description}>
                                         {user.code_description}
                                       </p>
                                     )}
@@ -3089,7 +3089,7 @@ export default function SettingsPage() {
                               {/* Transaction ID (for credit card payments) */}
                               {user.subscription_type === 'credit_card' && (
                                 <div>
-                                  <span className="text-gray-500 block mb-1">Transaction ID</span>
+                                  <span className="text-text-tertiary block mb-1">Transaction ID</span>
                                   {user.latest_transaction_id ? (
                                     <div>
                                       <p className="font-mono text-xs text-blue-600 break-all" title={user.latest_transaction_id}>
@@ -3112,13 +3112,13 @@ export default function SettingsPage() {
 
                               {/* Subscription Expires */}
                               <div>
-                                <span className="text-gray-500 block mb-1">Expires</span>
+                                <span className="text-text-tertiary block mb-1">Expires</span>
                                 <div className="flex flex-col gap-1">
                                   <input
                                     type="date"
                                     value={user.subscription_expires_at ? new Date(user.subscription_expires_at).toISOString().split('T')[0] : ''}
                                     onChange={(e) => handleExpiryDateChange(user.id, e.target.value)}
-                                    className="px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="px-2 py-1 border border-border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                   />
                                   {user.days_remaining !== undefined && user.subscription_expires_at && (
                                     <p className={`text-xs font-medium ${
@@ -3140,33 +3140,33 @@ export default function SettingsPage() {
 
                               {/* Apiaries Count */}
                               <div>
-                                <span className="text-gray-500 block mb-1">Apiaries</span>
-                                <p className="text-gray-900 font-semibold text-lg">
+                                <span className="text-text-tertiary block mb-1">Apiaries</span>
+                                <p className="text-foreground font-semibold text-lg">
                                   {user.apiaries_count !== undefined ? user.apiaries_count : '−'}
                                 </p>
                               </div>
 
                               {/* Hives Count */}
                               <div>
-                                <span className="text-gray-500 block mb-1">Hives</span>
-                                <p className="text-gray-900 font-semibold text-lg">
+                                <span className="text-text-tertiary block mb-1">Hives</span>
+                                <p className="text-foreground font-semibold text-lg">
                                   {user.hives_count !== undefined ? user.hives_count : '−'}
                                 </p>
                               </div>
 
                               {/* Last Login */}
                               <div>
-                                <span className="text-gray-500 block mb-1">Last Login</span>
+                                <span className="text-text-tertiary block mb-1">Last Login</span>
                                 {user.last_sign_in_at ? (
                                   <div>
-                                    <p className="text-gray-900">
+                                    <p className="text-foreground">
                                       {new Date(user.last_sign_in_at).toLocaleDateString('en-US', {
                                         month: 'short',
                                         day: 'numeric',
                                         year: 'numeric'
                                       })}
                                     </p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-text-tertiary">
                                       {new Date(user.last_sign_in_at).toLocaleTimeString('en-US', {
                                         hour: '2-digit',
                                         minute: '2-digit'
@@ -3181,7 +3181,7 @@ export default function SettingsPage() {
                               {/* Deleted At (only show for deleted users) */}
                               {showDeletedUsers && user.deleted_at && (
                                 <div className="col-span-2">
-                                  <span className="text-gray-500 block mb-1">Deleted On</span>
+                                  <span className="text-text-tertiary block mb-1">Deleted On</span>
                                   <div className="flex items-center gap-2">
                                     <p className="text-red-600 font-medium">
                                       {new Date(user.deleted_at).toLocaleDateString('en-US', {
@@ -3192,7 +3192,7 @@ export default function SettingsPage() {
                                         minute: '2-digit'
                                       })}
                                     </p>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-text-tertiary">
                                       ({Math.floor((Date.now() - new Date(user.deleted_at).getTime()) / (1000 * 60 * 60 * 24))} days ago)
                                     </span>
                                   </div>
@@ -3222,7 +3222,7 @@ export default function SettingsPage() {
                     <LoadingSpinner text="Loading reactivation requests..." />
                   </div>
                 ) : reactivationRequests.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-text-tertiary">
                     <p className="mb-2">No reactivation requests found.</p>
                     <p className="text-sm">Deleted users can request reactivation at /reactivate</p>
                   </div>
@@ -3232,7 +3232,7 @@ export default function SettingsPage() {
                     <div className="flex gap-2 text-sm">
                       <button
                         onClick={() => {/* Could add status filtering here */}}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded"
+                        className="px-3 py-1 bg-gray-100 text-text-secondary rounded"
                       >
                         All ({reactivationRequests.length})
                       </button>
@@ -3269,7 +3269,7 @@ export default function SettingsPage() {
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold text-gray-900 text-lg">{request.original_email}</h4>
+                              <h4 className="font-semibold text-foreground text-lg">{request.original_email}</h4>
                               <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
                                 request.status === 'pending' ? 'bg-yellow-200 text-yellow-900' :
                                 request.status === 'approved' ? 'bg-green-200 text-green-900' :
@@ -3278,7 +3278,7 @@ export default function SettingsPage() {
                                 {request.status}
                               </span>
                             </div>
-                            <div className="text-sm text-gray-700 space-y-1">
+                            <div className="text-sm text-text-secondary space-y-1">
                               <p>
                                 <span className="font-medium">Requested:</span>{' '}
                                 {new Date(request.requested_at).toLocaleString('en-US', {
@@ -3296,7 +3296,7 @@ export default function SettingsPage() {
                                 </p>
                               )}
                               {request.admin_notes && (
-                                <p className="mt-2 p-2 bg-white rounded border border-gray-200">
+                                <p className="mt-2 p-2 bg-white rounded border border-border">
                                   <span className="font-medium">Admin Notes:</span> {request.admin_notes}
                                 </p>
                               )}
@@ -3345,18 +3345,18 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-gray-900">Subscription Codes</h2>
+                  <h2 className="text-xl font-bold text-foreground">Subscription Codes</h2>
                   <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full flex items-center gap-1">
                     <Shield size={12} />
                     Admin Only
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">Manage codes for new user registration and subscription renewals</p>
+                <p className="text-sm text-text-tertiary">Manage codes for new user registration and subscription renewals</p>
               </div>
             </div>
             <button
               onClick={() => setShowAddCodeModal(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+              className="px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 flex items-center gap-2"
             >
               <Plus size={16} />
               Add Code
@@ -3364,7 +3364,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="px-6 pb-6 border-t border-gray-200 pt-6">
+        <div className="px-6 pb-6 border-t border-border pt-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <p className="text-sm text-blue-900 font-medium mb-2">
               How Subscription Codes Work:
@@ -3382,36 +3382,36 @@ export default function SettingsPage() {
               <LoadingSpinner text="Loading subscription codes..." />
             </div>
           ) : registrationCodes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-text-tertiary">
               No subscription codes found. Create codes for new user registration and renewals.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-surface dark:bg-background">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Code
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Description
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Type / Association
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Subscription Duration
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Subscription Expires
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Usage
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -3420,14 +3420,14 @@ export default function SettingsPage() {
                   {registrationCodes.map((code) => {
                     const isMaxedOut = code.max_uses !== null && code.current_uses >= code.max_uses
                     return (
-                      <tr key={code.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 text-sm font-mono font-bold text-gray-900">
+                      <tr key={code.id} className="hover:bg-surface dark:bg-background">
+                        <td className="px-4 py-4 text-sm font-mono font-bold text-foreground">
                           {code.code}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-text-tertiary">
                           {code.description || <span className="italic text-gray-400">No description</span>}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-text-tertiary">
                           {code.code_type === 'individual' ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                               Individual
@@ -3438,14 +3438,14 @@ export default function SettingsPage() {
                                 Association
                               </span>
                               {code.association && (
-                                <span className="text-xs text-gray-600">
+                                <span className="text-xs text-text-tertiary">
                                   {code.association.name}
                                 </span>
                               )}
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-text-tertiary">
                           {(() => {
                             const expiryDate = new Date(code.subscription_expires_at)
                             const isLifetime = expiryDate.getFullYear() > new Date().getFullYear() + 50
@@ -3457,7 +3457,7 @@ export default function SettingsPage() {
                                   <span className="font-semibold text-indigo-600">
                                     Lifetime
                                   </span>
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-xs text-text-tertiary">
                                     (Never expires)
                                   </span>
                                 </div>
@@ -3465,10 +3465,10 @@ export default function SettingsPage() {
                             } else {
                               return (
                                 <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-gray-900">
+                                  <span className="font-semibold text-foreground">
                                     {expiryDate.toLocaleDateString()}
                                   </span>
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-xs text-text-tertiary">
                                     ({daysUntil > 0 ? `in ${daysUntil} days` : 'expired'})
                                   </span>
                                 </div>
@@ -3476,13 +3476,13 @@ export default function SettingsPage() {
                             }
                           })()}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-text-tertiary">
                           {editingCodeId === code.id ? (
                             <input
                               type="date"
                               value={editingCodeData.subscription_expires_at}
                               onChange={(e) => setEditingCodeData({...editingCodeData, subscription_expires_at: e.target.value})}
-                              className="px-2 py-1 border border-gray-300 rounded text-sm"
+                              className="px-2 py-1 border border-border rounded text-sm"
                               min={new Date().toISOString().split('T')[0]}
                             />
                           ) : (
@@ -3496,7 +3496,7 @@ export default function SettingsPage() {
                                     <span className="font-semibold text-indigo-600">
                                       Never
                                     </span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-text-tertiary">
                                       Lifetime access
                                     </span>
                                   </div>
@@ -3504,10 +3504,10 @@ export default function SettingsPage() {
                               } else {
                                 return (
                                   <div className="flex flex-col">
-                                    <span className="font-semibold text-gray-900">
+                                    <span className="font-semibold text-foreground">
                                       {expiryDate.toLocaleDateString()}
                                     </span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-text-tertiary">
                                       Fixed expiration
                                     </span>
                                   </div>
@@ -3516,15 +3516,15 @@ export default function SettingsPage() {
                             })()
                           )}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-text-tertiary">
                           {editingCodeId === code.id ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-600">{code.current_uses} /</span>
+                              <span className="text-text-tertiary">{code.current_uses} /</span>
                               <input
                                 type="number"
                                 value={editingCodeData.max_uses}
                                 onChange={(e) => setEditingCodeData({...editingCodeData, max_uses: e.target.value})}
-                                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                                className="w-20 px-2 py-1 border border-border rounded text-sm"
                                 min="0"
                                 placeholder="∞"
                               />
@@ -3606,7 +3606,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <div className="mt-4 text-sm text-gray-500">
+          <div className="mt-4 text-sm text-text-tertiary">
             <p className="mb-2"><strong>Code Status:</strong></p>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>Active:</strong> Code is valid and can be used for registration</li>
@@ -3624,7 +3624,7 @@ export default function SettingsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Create Subscription Code</h3>
+              <h3 className="text-xl font-semibold text-foreground">Create Subscription Code</h3>
               <button
                 onClick={() => {
                   setShowAddCodeModal(false)
@@ -3637,7 +3637,7 @@ export default function SettingsPage() {
                     association_id: '',
                   })
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-text-tertiary"
               >
                 <X size={24} />
               </button>
@@ -3645,7 +3645,7 @@ export default function SettingsPage() {
 
             <form onSubmit={handleCreateCode} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Code <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3653,17 +3653,17 @@ export default function SettingsPage() {
                   value={newCodeData.code}
                   onChange={(e) => setNewCodeData({ ...newCodeData, code: e.target.value.toUpperCase() })}
                   placeholder="e.g., BEEKEEPER2025"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
                   required
                   autoComplete="off"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-text-tertiary">
                   Will be automatically converted to uppercase
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Code Type <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-4">
@@ -3676,7 +3676,7 @@ export default function SettingsPage() {
                       onChange={(e) => setNewCodeData({ ...newCodeData, code_type: e.target.value as 'individual' | 'association', association_id: '' })}
                       className="mr-2"
                     />
-                    <span className="text-sm text-gray-700">Individual</span>
+                    <span className="text-sm text-text-secondary">Individual</span>
                   </label>
                   <label className="flex items-center cursor-pointer">
                     <input
@@ -3690,23 +3690,23 @@ export default function SettingsPage() {
                       }}
                       className="mr-2"
                     />
-                    <span className="text-sm text-gray-700">Association Member</span>
+                    <span className="text-sm text-text-secondary">Association Member</span>
                   </label>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-text-tertiary">
                   {newCodeData.code_type === 'individual' ? 'For direct user subscriptions' : 'For beekeeping association members'}
                 </p>
               </div>
 
               {newCodeData.code_type === 'association' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Association <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={newCodeData.association_id}
                     onChange={(e) => setNewCodeData({ ...newCodeData, association_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     required={newCodeData.code_type === 'association'}
                   >
                     <option value="">Select an association...</option>
@@ -3717,13 +3717,13 @@ export default function SettingsPage() {
                     ))}
                   </select>
                   {loadingAssociations && (
-                    <p className="mt-1 text-xs text-gray-500">Loading associations...</p>
+                    <p className="mt-1 text-xs text-text-tertiary">Loading associations...</p>
                   )}
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Description
                 </label>
                 <textarea
@@ -3731,12 +3731,12 @@ export default function SettingsPage() {
                   onChange={(e) => setNewCodeData({ ...newCodeData, description: e.target.value })}
                   placeholder="Optional description for internal reference"
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Max Uses
                 </label>
                 <input
@@ -3745,15 +3745,15 @@ export default function SettingsPage() {
                   onChange={(e) => setNewCodeData({ ...newCodeData, max_uses: e.target.value })}
                   placeholder="Leave empty for unlimited"
                   min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-text-tertiary">
                   Leave empty for unlimited uses
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Subscription Expiration Date <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3761,10 +3761,10 @@ export default function SettingsPage() {
                   value={newCodeData.subscription_expires_at}
                   onChange={(e) => setNewCodeData({ ...newCodeData, subscription_expires_at: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-text-tertiary">
                   Fixed date when subscriptions activated with this code will expire
                 </p>
                 <div className="mt-2 flex gap-2">
@@ -3775,7 +3775,7 @@ export default function SettingsPage() {
                       date.setMonth(date.getMonth() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    className="text-xs px-2 py-1 bg-gray-100 text-text-secondary rounded hover:bg-gray-200"
                   >
                     +1 month
                   </button>
@@ -3786,7 +3786,7 @@ export default function SettingsPage() {
                       date.setMonth(date.getMonth() + 6)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    className="text-xs px-2 py-1 bg-gray-100 text-text-secondary rounded hover:bg-gray-200"
                   >
                     +6 months
                   </button>
@@ -3797,7 +3797,7 @@ export default function SettingsPage() {
                       date.setFullYear(date.getFullYear() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    className="text-xs px-2 py-1 bg-gray-100 text-text-secondary rounded hover:bg-gray-200"
                   >
                     +1 year
                   </button>
@@ -3829,13 +3829,13 @@ export default function SettingsPage() {
                       association_id: ''
                     })
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  className="flex-1 px-4 py-2 bg-gray-200 text-text-secondary rounded-lg hover:bg-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  className="flex-1 px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700"
                 >
                   Create Code
                 </button>
@@ -3850,7 +3850,7 @@ export default function SettingsPage() {
         <div className="bg-white rounded-lg shadow">
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Dropdown Values Management</h2>
+              <h2 className="text-2xl font-bold text-foreground">Dropdown Values Management</h2>
               <div className="flex gap-3">
                 <button
                   onClick={() => {
@@ -3864,7 +3864,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => setShowCategoryForm(!showCategoryForm)}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
+                  className="px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 font-medium flex items-center gap-2"
                 >
                   {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
                   {showCategoryForm ? 'Cancel' : 'Add Category'}
@@ -3879,43 +3879,43 @@ export default function SettingsPage() {
               </h3>
               <form onSubmit={handleCategorySubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Category Name *
                   </label>
                   <input
                     type="text"
                     value={categoryFormData.category_name}
                     onChange={(e) => setCategoryFormData({ ...categoryFormData, category_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md"
                     placeholder="e.g., Queen Marking Colors"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Category Key * (used in code)
                   </label>
                   <input
                     type="text"
                     value={categoryFormData.category_key}
                     onChange={(e) => setCategoryFormData({ ...categoryFormData, category_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+                    className="w-full px-3 py-2 border border-border rounded-md font-mono text-sm"
                     placeholder="e.g., queen_marking_colors"
                     required
                     disabled={!!editingCategory}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Lowercase with underscores, cannot be changed after creation</p>
+                  <p className="text-xs text-text-tertiary mt-1">Lowercase with underscores, cannot be changed after creation</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Description
                   </label>
                   <textarea
                     value={categoryFormData.description}
                     onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-border rounded-md"
                     placeholder="Brief description of this dropdown category"
                     rows={2}
                   />
@@ -3924,7 +3924,7 @@ export default function SettingsPage() {
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    className="px-6 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700"
                   >
                     {editingCategory ? 'Update' : 'Add'} Category
                   </button>
@@ -3942,18 +3942,18 @@ export default function SettingsPage() {
 
             {/* Category Filter */}
             <div className="mb-4 flex items-center gap-4">
-              <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
+              <label className="text-sm font-medium text-text-secondary">Filter by Category:</label>
               <select
                 value={selectedCategoryFilter}
                 onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="px-3 py-2 border border-border rounded-md text-sm"
               >
                 <option value="all">All Categories</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.category_name}</option>
                 ))}
               </select>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-text-tertiary">
                 {(() => {
                   const filtered = categories.flatMap(c =>
                     selectedCategoryFilter === 'all' || c.id === selectedCategoryFilter
@@ -3967,19 +3967,19 @@ export default function SettingsPage() {
 
             {/* Add/Edit Value Form */}
             {editingValue.categoryId !== '' && (
-              <form onSubmit={handleValueSubmit} className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
-                <h3 className="font-semibold text-gray-900">
+              <form onSubmit={handleValueSubmit} className="bg-surface dark:bg-background p-4 rounded-lg mb-4 space-y-3">
+                <h3 className="font-semibold text-foreground">
                   {editingValue.value ? 'Edit Value' : 'Add New Value'}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Category *
                     </label>
                     <select
                       value={editingValue.categoryId}
                       onChange={(e) => setEditingValue({ ...editingValue, categoryId: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 border border-border rounded-md text-sm"
                       required
                       disabled={!!editingValue.value}
                     >
@@ -3990,27 +3990,27 @@ export default function SettingsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Value *
                     </label>
                     <input
                       type="text"
                       value={valueFormData.value}
                       onChange={(e) => setValueFormData({ ...valueFormData, value: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 border border-border rounded-md text-sm"
                       placeholder="Enter value"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
                       Display Order
                     </label>
                     <input
                       type="number"
                       value={valueFormData.display_order}
                       onChange={(e) => setValueFormData({ ...valueFormData, display_order: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 border border-border rounded-md text-sm"
                       placeholder="0"
                     />
                   </div>
@@ -4018,7 +4018,7 @@ export default function SettingsPage() {
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                    className="px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 text-sm"
                   >
                     <Save size={14} className="inline mr-1" />
                     {editingValue.value ? 'Update' : 'Add'} Value
@@ -4039,27 +4039,27 @@ export default function SettingsPage() {
 
             {/* Values Table */}
             {categories.length === 0 ? (
-              <div className="bg-gray-50 rounded-lg p-12 text-center text-gray-500">
+              <div className="bg-surface dark:bg-background rounded-lg p-12 text-center text-text-tertiary">
                 No dropdown categories configured yet. Click &ldquo;Add Category&rdquo; to get started.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-surface dark:bg-background">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Category
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Value
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Order
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -4073,18 +4073,18 @@ export default function SettingsPage() {
                           .map(value => ({ category, value }))
                       )
                       .map(({ category, value }) => (
-                        <tr key={value.id} className="hover:bg-gray-50">
+                        <tr key={value.id} className="hover:bg-surface dark:bg-background">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-                              <div className="text-sm font-medium text-gray-900">{category.category_name}</div>
-                              <div className="text-xs text-gray-500 font-mono">{category.category_key}</div>
+                              <div className="text-sm font-medium text-foreground">{category.category_name}</div>
+                              <div className="text-xs text-text-tertiary font-mono">{category.category_key}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">{value.value}</div>
+                            <div className="text-sm text-foreground">{value.value}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-500">#{value.display_order}</span>
+                            <span className="text-sm text-text-tertiary">#{value.display_order}</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {value.is_active ? (
@@ -4129,7 +4129,7 @@ export default function SettingsPage() {
                 {categories
                   .filter(cat => selectedCategoryFilter === 'all' || cat.id === selectedCategoryFilter)
                   .every(cat => !cat.dropdown_values || cat.dropdown_values.length === 0) && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-text-tertiary">
                     No values found. Click &ldquo;Add Value&rdquo; to create the first one.
                   </div>
                 )}
@@ -4137,15 +4137,15 @@ export default function SettingsPage() {
             )}
 
             {/* Categories Management */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Manage Categories</h3>
+            <div className="mt-8 pt-6 border-t border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Manage Categories</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {categories.map((category) => (
-                  <div key={category.id} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+                  <div key={category.id} className="border border-border rounded-lg p-4 hover:border-indigo-300 transition-colors">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{category.category_name}</h4>
-                        <p className="text-xs text-gray-500 font-mono">{category.category_key}</p>
+                        <h4 className="font-medium text-foreground">{category.category_name}</h4>
+                        <p className="text-xs text-text-tertiary font-mono">{category.category_key}</p>
                       </div>
                       <div className="flex gap-1">
                         <button
@@ -4165,9 +4165,9 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     {category.description && (
-                      <p className="text-xs text-gray-600 mt-1">{category.description}</p>
+                      <p className="text-xs text-text-tertiary mt-1">{category.description}</p>
                     )}
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-text-tertiary mt-2">
                       {category.dropdown_values?.length || 0} value{(category.dropdown_values?.length || 0) !== 1 ? 's' : ''}
                     </p>
                   </div>
