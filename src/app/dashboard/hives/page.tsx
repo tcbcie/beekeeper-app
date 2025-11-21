@@ -370,7 +370,6 @@ export default function HivesPage() {
           .select('hive_id')
           .in('hive_id', hiveIds)
           .eq('completed', false)
-          .lte('start_date', new Date().toISOString().split('T')[0])
       ])
 
       // Build map of most recent record for each hive
