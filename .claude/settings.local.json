@@ -1,10 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(and code verifier should be non-empty\" during token exchange.\n\nSolution: Use createBrowserClient which automatically stores PKCE code \nverifiers in cookies instead of localStorage, making them accessible to \nboth client and server components in Next.js 15.\n\nAlso includes: Enhanced active tasks badge visibility on hive cards with\nbold count numbers for better readability.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "*",
+      "Bash(git add:*)"
     ],
-    "deny": [],
-    "ask": []
+    "deny": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
