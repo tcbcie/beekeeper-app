@@ -880,16 +880,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Application Version */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg shadow p-6 border border-blue-200 dark:border-blue-800">
+      <div className="bg-sage-50 dark:bg-slate-800 rounded-lg shadow p-6 border border-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-2">HiveCraic</h3>
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-surface-elevated rounded-full shadow-sm border border-border">
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-slate-700 rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Version:</span>
                 <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.2.1</span>
               </span>
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-surface-elevated rounded-full shadow-sm border border-border">
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-slate-700 rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Last Updated:</span>
                 <span className="font-semibold text-blue-700 dark:text-blue-400">November 20, 2025</span>
               </span>
@@ -897,7 +897,7 @@ export default function DashboardPage() {
           </div>
           <a
             href="/dashboard/about?section=changes"
-            className="px-4 py-2 text-sm bg-surface dark:bg-surface-elevated text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-700 font-medium transition-colors"
+            className="px-4 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 border border-blue-300 dark:border-blue-700 font-medium transition-colors"
           >
             View Changes
           </a>
