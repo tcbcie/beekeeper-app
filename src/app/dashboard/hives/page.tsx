@@ -1466,7 +1466,7 @@ export default function HivesPage() {
                     <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
                   </span>
                 )}
-                {hive.active_tasks_count && hive.active_tasks_count > 0 && (
+                {hive.active_tasks_count !== undefined && hive.active_tasks_count > 0 && (
                   <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded flex items-center gap-1 w-fit border border-amber-400 dark:border-amber-700">
                     <span>📋</span>
                     <span className="font-bold">{hive.active_tasks_count}</span>
