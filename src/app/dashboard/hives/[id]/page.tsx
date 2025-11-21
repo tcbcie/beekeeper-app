@@ -225,7 +225,6 @@ export default function HiveDetailPage() {
           .from('tasks_events')
           .select('*')
           .eq('hive_id', hiveId)
-          .eq('user_id', currentUserId)
           .eq('completed', false)
           .order('start_date', { ascending: true })
       ])
