@@ -427,6 +427,12 @@ export default function HiveDetailPage() {
                   <span className="font-medium text-xs text-text-primary">{new Date(hive.colony_established_date).toLocaleDateString()}</span>
                 </div>
               )}
+              {hive.configuration?.right_sized_broodbox && (
+                <div className="flex justify-between">
+                  <span className="text-text-tertiary">Right-Sized Broodbox:</span>
+                  <span className="font-medium text-text-primary">Yes</span>
+                </div>
+              )}
               {hive.archived_at && (
                 <div className="flex justify-between">
                   <span className="text-text-tertiary">Archived:</span>
