@@ -731,7 +731,7 @@ export default function DashboardPage() {
         <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
         <div className="space-y-3">
           {recentActivity.map((inspection) => (
-            <div key={inspection.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-slate-800/50 rounded border border-border">
+            <div key={inspection.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-slate-800 rounded border border-border">
               <div>
                 <span className="font-medium text-foreground">
                   Inspection of {inspection.hives?.hive_number || 'Unknown Hive'}
