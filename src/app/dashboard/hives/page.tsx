@@ -369,7 +369,6 @@ export default function HivesPage() {
           .from('tasks_events')
           .select('hive_id')
           .in('hive_id', hiveIds)
-          .eq('user_id', currentUserId)
           .eq('completed', false)
           .lte('start_date', new Date().toISOString().split('T')[0])
       ])
