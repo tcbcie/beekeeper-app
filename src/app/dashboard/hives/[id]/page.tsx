@@ -430,7 +430,14 @@ export default function HiveDetailPage() {
               {hive.configuration?.right_sized_broodbox && (
                 <div className="flex justify-between">
                   <span className="text-text-tertiary">Right-Sized Broodbox:</span>
-                  <span className="font-medium text-text-primary">Yes</span>
+                  <span className="font-medium text-text-primary">
+                    {(() => {
+                      const lastInspectionWithFrames = inspections.find(i => i.right_sized_frames !== null && i.right_sized_frames > 0)
+                      return lastInspectionWithFrames
+                        ? `${lastInspectionWithFrames.right_sized_frames} frames`
+                        : 'Yes'
+                    })()}
+                  </span>
                 </div>
               )}
               {hive.archived_at && (
