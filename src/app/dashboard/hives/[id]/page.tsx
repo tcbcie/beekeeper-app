@@ -592,7 +592,7 @@ export default function HiveDetailPage() {
                         {task.description && (
                           <div className="text-xs text-text-tertiary mt-1 line-clamp-1">{task.description}</div>
                         )}
-                        <div className="flex items-center gap-2 mt-1 text-xs text-text-tertiary">
+                        <div className="flex items-center gap-2 mt-1 text-xs text-text-secondary">
                           <Calendar size={12} />
                           <span>{new Date(task.start_date).toLocaleDateString()}</span>
                           {task.category && (
