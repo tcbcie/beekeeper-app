@@ -5086,7 +5086,7 @@ export default function InspectionsPage() {
           if (record.record_type === 'inspection') {
             const inspection = record
             return (
-          <div key={`inspection-${inspection.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-blue-500">
+          <div key={`inspection-${inspection.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-blue-500">
             <div className="flex justify-between items-start mb-4 gap-4">
               <div className="flex items-start gap-3 flex-1">
                 {/* Icon Badge */}
@@ -5158,22 +5158,22 @@ export default function InspectionsPage() {
             <div className="mb-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
               <h4 className="text-sm font-semibold text-foreground mb-3">Queen & Brood</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Queen Seen</div>
                   <div className="text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
                 </div>
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Eggs</div>
                   <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
                 </div>
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Brood Frames</div>
                   <div className="text-2xl font-bold text-purple-600">
                     {inspection.brood_frames ?? '-'}
                   </div>
                 </div>
                 {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
-                  <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                     <div className="text-xs text-text-tertiary mb-1">Right-Sized Frames</div>
                     <div className="text-2xl font-bold text-amber-600">
                       {inspection.right_sized_frames ?? '-'}
@@ -5189,7 +5189,7 @@ export default function InspectionsPage() {
               <h4 className="text-sm font-semibold text-foreground mb-3">Drones</h4>
               <div className="grid grid-cols-2 gap-3">
                 {inspection.drones_present !== -1 && (
-                  <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                     <div className="text-xs text-text-tertiary mb-1">Drones present</div>
                     <div className="text-lg font-bold text-amber-600">
                       {inspection.drones_present === 0 && 'Low'}
@@ -5200,7 +5200,7 @@ export default function InspectionsPage() {
                   </div>
                 )}
                 {inspection.drone_brood_present !== null && (
-                  <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                  <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                     <div className="text-xs text-text-tertiary mb-1">Drone brood present</div>
                     <div className="text-2xl">{inspection.drone_brood_present ? '✅' : '❌'}</div>
                   </div>
@@ -5213,23 +5213,23 @@ export default function InspectionsPage() {
             <div className="mb-4 p-4 bg-teal-50 rounded-lg border-2 border-teal-200">
               <h4 className="text-sm font-semibold text-foreground mb-3">Behaviour</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Population</div>
                   <div className="text-sm">{renderStars(inspection.population_strength)}</div>
                 </div>
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Temperament</div>
                   <div className="text-sm">{renderStars(inspection.temperament_rating)}</div>
                 </div>
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Brood Pattern</div>
                   <div className="text-sm">{renderStars(inspection.brood_pattern_rating)}</div>
                 </div>
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Swarming Tendency</div>
                   <div className="text-sm">{renderStars(inspection.swarming_tendency)}</div>
                 </div>
-                <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                   <div className="text-xs text-text-tertiary mb-1">Calmness</div>
                   <div className="text-sm">{renderStars(inspection.calmness)}</div>
                 </div>
@@ -5243,37 +5243,37 @@ export default function InspectionsPage() {
                 <h4 className="text-sm font-semibold text-foreground mb-3">Given/Taken</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.frames_foundation > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Frames-Foundation</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_foundation}</div>
                     </div>
                   )}
                   {inspection.frames_brood > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Brood-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_brood}</div>
                     </div>
                   )}
                   {inspection.frames_drawn > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Drawn-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.frames_drawn}</div>
                     </div>
                   )}
                   {inspection.honey_supers > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Honey Supers</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.honey_supers}</div>
                     </div>
                   )}
                   {inspection.drone_frames > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Drone-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.drone_frames}</div>
                     </div>
                   )}
                   {inspection.store_frames > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Store-Frames</div>
                       <div className="text-2xl font-bold text-orange-600">{inspection.store_frames}</div>
                     </div>
@@ -5290,19 +5290,19 @@ export default function InspectionsPage() {
                 <h4 className="text-sm font-semibold text-foreground mb-3">Hygienic Behaviour</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {inspection.recapping !== 3 && inspection.recapping !== 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Recapping</div>
                       <div className="text-sm">{renderStars(inspection.recapping)}</div>
                     </div>
                   )}
                   {inspection.vsh !== 3 && inspection.vsh !== 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">VSH</div>
                       <div className="text-sm">{renderStars(inspection.vsh)}</div>
                     </div>
                   )}
                   {inspection.smr !== 3 && inspection.smr !== 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">SMR</div>
                       <div className="text-sm">{renderStars(inspection.smr)}</div>
                     </div>
@@ -5349,37 +5349,37 @@ export default function InspectionsPage() {
                 <h4 className="text-sm font-semibold text-foreground mb-3">Disease</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {inspection.afb_disease > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">AFB</div>
                       <div className="text-sm">{renderStars(inspection.afb_disease)}</div>
                     </div>
                   )}
                   {inspection.efb_disease > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">EFB</div>
                       <div className="text-sm">{renderStars(inspection.efb_disease)}</div>
                     </div>
                   )}
                   {inspection.chalkbrood_disease > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Chalkbrood</div>
                       <div className="text-sm">{renderStars(inspection.chalkbrood_disease)}</div>
                     </div>
                   )}
                   {inspection.nosemosis_disease > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">Nosemosis</div>
                       <div className="text-sm">{renderStars(inspection.nosemosis_disease)}</div>
                     </div>
                   )}
                   {inspection.dwv_disease > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">DWV</div>
                       <div className="text-sm">{renderStars(inspection.dwv_disease)}</div>
                     </div>
                   )}
                   {inspection.iapv_cbpv_disease > 0 && (
-                    <div className="text-center p-3 bg-slate-800 rounded shadow-sm">
+                    <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
                       <div className="text-xs text-text-tertiary mb-1">IAPV & CBPV</div>
                       <div className="text-sm">{renderStars(inspection.iapv_cbpv_disease)}</div>
                     </div>
@@ -5399,7 +5399,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_treatment') {
             const treatment = record
             return (
-              <div key={`treatment-${treatment.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-red-500">
+              <div key={`treatment-${treatment.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-red-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5501,7 +5501,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {treatment.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border">
                     <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{treatment.notes}</span>
                   </div>
@@ -5511,7 +5511,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'varroa_check') {
             const check = record
             return (
-              <div key={`check-${check.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-orange-500">
+              <div key={`check-${check.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-orange-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5623,7 +5623,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {check.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border">
                     <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{check.notes}</span>
                   </div>
@@ -5633,7 +5633,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'feeding') {
             const feeding = record
             return (
-              <div key={`feeding-${feeding.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-yellow-500">
+              <div key={`feeding-${feeding.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-yellow-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5728,7 +5728,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {feeding.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border">
                     <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{feeding.notes}</span>
                   </div>
@@ -5738,7 +5738,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'harvest') {
             const harvest = record
             return (
-              <div key={`harvest-${harvest.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-amber-500">
+              <div key={`harvest-${harvest.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-amber-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5830,7 +5830,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {harvest.notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border">
                     <span className="text-xs text-text-tertiary mb-1 block">Notes</span>
                     <span className="text-sm text-text-secondary">{harvest.notes}</span>
                   </div>
@@ -5840,7 +5840,7 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'archive') {
             const archiveRecord = record
             return (
-              <div key={`archive-${archiveRecord.id}`} className="bg-slate-900 rounded-lg shadow border border-border p-6 border-l-4 border-gray-500">
+              <div key={`archive-${archiveRecord.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-gray-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
@@ -5863,14 +5863,14 @@ export default function InspectionsPage() {
                 </div>
 
                 {archiveRecord.archive_reason_value && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border mb-3">
+                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border mb-3">
                     <span className="text-xs text-text-tertiary mb-1 block">Reason</span>
                     <span className="text-sm font-medium text-foreground">{archiveRecord.archive_reason_value}</span>
                   </div>
                 )}
 
                 {archiveRecord.archive_notes && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg border border-border">
+                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border">
                     <span className="text-xs text-text-tertiary mb-1 block">Additional Notes</span>
                     <span className="text-sm text-text-secondary">{archiveRecord.archive_notes}</span>
                   </div>
@@ -5883,7 +5883,7 @@ export default function InspectionsPage() {
       </div>
 
       {filteredRecords.length === 0 && (
-        <div className="bg-slate-900 rounded-lg shadow border border-border p-12 text-center text-text-tertiary">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-12 text-center text-text-tertiary">
           {filterHiveId
             ? `No records found for this hive. Select "All Hives" or record a new activity.`
             : recordTypeFilter !== 'all'
@@ -5907,7 +5907,7 @@ export default function InspectionsPage() {
                 setImageModalOpen(false)
                 setModalImageUrl(null)
               }}
-              className="absolute top-4 right-4 z-10 bg-slate-800 rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
+              className="absolute top-4 right-4 z-10 bg-surface dark:bg-surface-elevated rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
               aria-label="Close modal"
             >
               <X size={24} className="text-text-secondary" />
@@ -5929,8 +5929,8 @@ export default function InspectionsPage() {
       {/* IPM Tips Modal */}
       {showIpmTips && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-slate-800 border-b border-border px-6 py-4 flex justify-between items-center">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-surface dark:bg-surface-elevated border-b border-border px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-foreground">
                 Integrated Pest Management (IPM) Tips for Varroa Control
               </h3>
