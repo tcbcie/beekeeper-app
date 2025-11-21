@@ -1344,30 +1344,30 @@ export default function ProfilePage() {
           /* Display Mode */
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface-elevated rounded-lg border border-border">
                 <User size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-text-tertiary mb-1">First Name</div>
+                  <div className="text-sm font-medium text-text-secondary mb-1">First Name</div>
                   <div className="text-foreground">
                     {userProfile?.first_name || <span className="text-text-tertiary italic">Not set</span>}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface-elevated rounded-lg border border-border">
                 <User size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-text-tertiary mb-1">Last Name</div>
+                  <div className="text-sm font-medium text-text-secondary mb-1">Last Name</div>
                   <div className="text-foreground">
                     {userProfile?.last_name || <span className="text-text-tertiary italic">Not set</span>}
                   </div>
                 </div>
               </div>
 
-              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface-elevated rounded-lg border border-border">
                 <Phone size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-text-tertiary mb-1">Mobile Number</div>
+                  <div className="text-sm font-medium text-text-secondary mb-1">Mobile Number</div>
                   <div className="text-foreground">
                     {userProfile?.mobile_number || <span className="text-text-tertiary italic">Not set</span>}
                   </div>
@@ -1376,8 +1376,8 @@ export default function ProfilePage() {
 
               {/* Association Membership Display */}
               {(userProfile?.association_id || userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
-                <div className="md:col-span-2 p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="text-sm font-semibold text-green-900 mb-2">Association Memberships</div>
+                <div className="md:col-span-2 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">Association Memberships</div>
                   <div className="space-y-2">
                     {userProfile?.association_id && (
                       <div className="text-sm text-foreground">
