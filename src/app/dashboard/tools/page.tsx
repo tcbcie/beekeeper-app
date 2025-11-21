@@ -83,7 +83,7 @@ export default function ToolsPage() {
                 <p className="text-sm text-text-secondary mb-3">
                   {tool.description}
                 </p>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-text-secondary">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sage-100 dark:bg-slate-700 text-text-secondary">
                   {tool.status}
                 </span>
               </div>

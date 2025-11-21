@@ -1070,7 +1070,7 @@ export default function BatchesPage() {
               <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 {editingBatch ? 'Update' : 'Create'} Batch
               </button>
-              <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+              <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600">
                 Cancel
               </button>
             </div>
@@ -1078,9 +1078,9 @@ export default function BatchesPage() {
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-sage-50 dark:bg-slate-800">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Batch Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Breeder Queen</th>
@@ -1093,9 +1093,9 @@ export default function BatchesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-surface dark:bg-surface divide-y divide-border">
             {batches.map((batch: Batch) => (
-              <tr key={batch.id} className="hover:bg-gray-50">
+              <tr key={batch.id} className="hover:bg-sage-50 dark:hover:bg-slate-800">
                 <td className="px-6 py-4 whitespace-nowrap font-medium">{batch.batch_name}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
@@ -1517,8 +1517,8 @@ export default function BatchesPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-border">
+                  <thead className="bg-sage-50 dark:bg-slate-800">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Rank</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hive</th>

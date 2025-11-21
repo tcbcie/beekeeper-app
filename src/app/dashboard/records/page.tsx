@@ -2613,11 +2613,11 @@ export default function InspectionsPage() {
               )}
 
               {/* Queen Cells Subsection - Collapsible */}
-              <div className="mt-4 bg-purple-100 rounded-lg border-2 border-purple-300">
+              <div className="mt-4 bg-purple-100 dark:bg-purple-950/30 rounded-lg border-2 border-purple-300 dark:border-purple-800">
                 <button
                   type="button"
                   onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
-                  className="w-full p-3 flex items-center justify-between hover:bg-purple-200 transition-colors rounded-t-lg"
+                  className="w-full p-3 flex items-center justify-between hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors rounded-t-lg"
                 >
                   <h5 className="text-sm font-semibold text-foreground">Queen Cells</h5>
                   {queenCellsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -5155,7 +5155,7 @@ export default function InspectionsPage() {
             </div>
 
             {/* Queen & Brood Section - Grouped Display */}
-            <div className="mb-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+            <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
               <h4 className="text-sm font-semibold text-foreground mb-3">Queen & Brood</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
