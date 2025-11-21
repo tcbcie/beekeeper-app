@@ -112,13 +112,13 @@ const files = [
     path: join(ROOT_DIR, 'src/app/login/page.tsx'),
     updates: [
       {
-        search: /(<span className="px-2 py-1 bg-amber-50 text-amber-700 rounded font-medium">)v[\d.]+(-[a-zA-Z0-9.]+)?(<\/span>)/,
+        search: /(<span className="px-2 py-1 bg-emerald-900\/30 text-forest-600 dark:text-emerald-400 rounded font-medium">)v[\d.]+(-[a-zA-Z0-9.]+)?(<\/span>)/,
         replace: `$1v${newVersion}$3`,
         description: 'Version badge'
       },
       {
-        search: /(<span>)[^<]*(\d{4})<\/span>/,
-        replace: `$1${newDate}</span>`,
+        search: /(<span>)[A-Za-z]+ \d{1,2}, \d{4}(<\/span>)/,
+        replace: `$1${newDate}$2`,
         description: 'Release date'
       }
     ]
@@ -128,12 +128,12 @@ const files = [
     path: join(ROOT_DIR, 'src/app/dashboard/page.tsx'),
     updates: [
       {
-        search: /(<span className="font-bold text-indigo-700">)v[\d.]+(-[a-zA-Z0-9.]+)?(<\/span>)/,
+        search: /(<span className="font-bold text-indigo-700 dark:text-indigo-300">)v[\d.]+(-[a-zA-Z0-9.]+)?(<\/span>)/,
         replace: `$1v${newVersion}$3`,
         description: 'Version display'
       },
       {
-        search: /(<span className="font-semibold text-blue-700">)[^<]*(<\/span>)/,
+        search: /(<span className="font-semibold text-blue-700 dark:text-blue-400">)[A-Za-z]+ \d{1,2}, \d{4}(<\/span>)/,
         replace: `$1${newDate}$2`,
         description: 'Date display'
       }
@@ -144,14 +144,13 @@ const files = [
     path: join(ROOT_DIR, 'src/app/dashboard/about/page.tsx'),
     updates: [
       {
-        search: /(<span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">)v[\d.]+(-[a-zA-Z0-9.]+)?(<\/span>)/,
-        replace: `$1v${newVersion}$3`,
-        description: 'Latest version badge'
-      },
-      {
-        search: /(bg-emerald-100 text-emerald-800[^>]*>v[\d.]+(-[a-zA-Z0-9.]+)?<\/span>\s+)[^<\n]*(\d{4})/,
-        replace: `$1${newDate}`,
-        description: 'Latest version date'
+        search: /(<strong>Current Version:<\/strong> )[\d.]+(-[a-zA-Z0-9.]+)?( \()([A-Za-z]+)( \d{4}\))/,
+        replace: (_match, p1, _p2, p3, _p4, p5) => {
+          const month = newDate.split(' ')[0];
+          const year = newDate.split(' ').pop();
+          return `${p1}${newVersion}${p3}${month}${p5.replace(/\d{4}/, year)}`;
+        },
+        description: 'Current version and date'
       }
     ]
   }
