@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Calendar, Calculator, FileText, Database, Droplet } from 'lucide-react'
+import { Wrench, Droplet } from 'lucide-react'
 
 export default function ToolsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -73,34 +73,6 @@ export default function ToolsPage() {
       description: 'Calculate sugar-to-water ratios and feeding quantities',
       status: 'Available',
       onClick: () => setActiveTool(activeTool === 'feeding' ? null : 'feeding')
-    },
-    {
-      icon: Calendar,
-      title: 'Queen Age Calculator',
-      description: 'Calculate queen age and productivity metrics',
-      status: 'Coming Soon',
-      onClick: null
-    },
-    {
-      icon: Calculator,
-      title: 'Varroa Treatment Planner',
-      description: 'Plan and schedule varroa treatments',
-      status: 'Coming Soon',
-      onClick: null
-    },
-    {
-      icon: FileText,
-      title: 'Reports Generator',
-      description: 'Generate comprehensive reports for your apiary',
-      status: 'Coming Soon',
-      onClick: null
-    },
-    {
-      icon: Database,
-      title: 'Data Export',
-      description: 'Export your beekeeping data in various formats',
-      status: 'Coming Soon',
-      onClick: null
     }
   ]
 
@@ -119,22 +91,14 @@ export default function ToolsPage() {
         {tools.map((tool, index) => (
           <div key={index}>
             <div
-              onClick={tool.onClick || undefined}
-              className={`bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow ${
-                tool.onClick ? 'cursor-pointer hover:border-forest-300 dark:hover:border-forest-700' : ''
-              } ${activeTool === 'feeding' && tool.title === 'Feeding Calculator' ? 'border-forest-500 dark:border-forest-500' : ''}`}
+              onClick={tool.onClick}
+              className={`bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow cursor-pointer hover:border-forest-300 dark:hover:border-forest-700 ${
+                activeTool === 'feeding' && tool.title === 'Feeding Calculator' ? 'border-forest-500 dark:border-forest-500' : ''
+              }`}
             >
               <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg ${
-                  tool.status === 'Available'
-                    ? 'bg-forest-100 dark:bg-forest-900/50'
-                    : 'bg-sage-100 dark:bg-slate-800'
-                }`}>
-                  <tool.icon size={24} className={
-                    tool.status === 'Available'
-                      ? 'text-forest-700 dark:text-forest-300'
-                      : 'text-text-tertiary'
-                  } />
+                <div className="p-3 rounded-lg bg-forest-100 dark:bg-forest-900/50">
+                  <tool.icon size={24} className="text-forest-700 dark:text-forest-300" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-foreground mb-1">
@@ -143,11 +107,7 @@ export default function ToolsPage() {
                   <p className="text-sm text-text-secondary mb-3">
                     {tool.description}
                   </p>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    tool.status === 'Available'
-                      ? 'bg-forest-100 dark:bg-forest-900/50 text-forest-700 dark:text-forest-300 border border-forest-300 dark:border-forest-700'
-                      : 'bg-sage-100 dark:bg-slate-700 text-text-secondary'
-                  }`}>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-700 dark:text-forest-300 border border-forest-300 dark:border-forest-700">
                     {tool.status}
                   </span>
                 </div>
@@ -264,16 +224,6 @@ export default function ToolsPage() {
             )}
           </div>
         ))}
-      </div>
-
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-          More Tools Coming Soon
-        </h3>
-        <p className="text-blue-700 dark:text-blue-300">
-          We&apos;re actively developing new tools to help you manage your beekeeping operations more efficiently.
-          Check back soon for updates!
-        </p>
       </div>
     </div>
   )
