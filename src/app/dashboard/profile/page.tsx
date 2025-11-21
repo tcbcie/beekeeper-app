@@ -8,6 +8,7 @@ import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import type { SubscriptionStatusResponse } from '@/types/subscription'
 
 interface UserProfile {
   id: string
@@ -149,6 +150,7 @@ export default function ProfilePage() {
 
   // Subscription state
   const [showRenewSubscriptionModal, setShowRenewSubscriptionModal] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatusResponse | null>(null)
 
   // Change password state
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false)
@@ -158,6 +160,16 @@ export default function ProfilePage() {
   const [changingPassword, setChangingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [subscriptionRefreshKey, setSubscriptionRefreshKey] = useState(0)
+
+  const fetchSubscriptionStatus = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_subscription_status')
+      if (error) throw error
+      setSubscriptionStatus(data as SubscriptionStatusResponse)
+    } catch (error) {
+      console.error('Error fetching subscription status:', error)
+    }
+  }, [])
 
   const fetchAssociations = useCallback(async () => {
     setLoadingAssociations(true)
@@ -1145,6 +1157,7 @@ export default function ProfilePage() {
       fetchTeams()
       fetchUserApiaries()
       fetchAssociations()
+      fetchSubscriptionStatus()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
@@ -1878,55 +1891,57 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Data Export */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-        <h2 className="text-xl font-semibold text-foreground mb-4">My Data Export</h2>
-        <p className="text-sm text-text-tertiary mb-4">
-          Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
-        </p>
-        <ul className="text-sm text-text-tertiary space-y-1 mb-4">
-          <li>• Includes all your personal beekeeping records</li>
-          <li>• Choose between JSON or CSV format</li>
-          <li>• Use for backup, analysis, or migration purposes</li>
-          <li>• Only includes data you own and have created</li>
-        </ul>
-        <div className="flex gap-3">
-          <button
-            onClick={exportMyDataAsJSON}
-            disabled={exportingMyData}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
-          >
-            {exportingMyData ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download size={16} />
-                Export as JSON
-              </>
-            )}
-          </button>
-          <button
-            onClick={exportMyDataAsCSV}
-            disabled={exportingMyData}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
-          >
-            {exportingMyData ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download size={16} />
-                Export as CSV
-              </>
-            )}
-          </button>
+      {/* Data Export - Only visible for users with active subscription */}
+      {subscriptionStatus?.is_active && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+          <h2 className="text-xl font-semibold text-foreground mb-4">My Data Export</h2>
+          <p className="text-sm text-text-tertiary mb-4">
+            Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
+          </p>
+          <ul className="text-sm text-text-tertiary space-y-1 mb-4">
+            <li>• Includes all your personal beekeeping records</li>
+            <li>• Choose between JSON or CSV format</li>
+            <li>• Use for backup, analysis, or migration purposes</li>
+            <li>• Only includes data you own and have created</li>
+          </ul>
+          <div className="flex gap-3">
+            <button
+              onClick={exportMyDataAsJSON}
+              disabled={exportingMyData}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
+            >
+              {exportingMyData ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download size={16} />
+                  Export as JSON
+                </>
+              )}
+            </button>
+            <button
+              onClick={exportMyDataAsCSV}
+              disabled={exportingMyData}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
+            >
+              {exportingMyData ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download size={16} />
+                  Export as CSV
+                </>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Create Team Modal */}
       {showCreateTeamModal && (
