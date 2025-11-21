@@ -46,7 +46,7 @@ export default function SubscriptionWarningBanner() {
       case 'expired':
         return 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800'
       default:
-        return 'bg-sage-50 dark:bg-slate-800/50 border-border'
+        return 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800'
     }
   }
 
@@ -59,7 +59,7 @@ export default function SubscriptionWarningBanner() {
       case 'expired':
         return 'text-red-600 dark:text-red-400'
       default:
-        return 'text-text-secondary'
+        return 'text-blue-600 dark:text-blue-400'
     }
   }
 
@@ -72,7 +72,7 @@ export default function SubscriptionWarningBanner() {
       case 'expired':
         return 'text-red-900 dark:text-red-200'
       default:
-        return 'text-foreground'
+        return 'text-blue-900 dark:text-blue-200'
     }
   }
 
