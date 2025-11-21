@@ -2124,7 +2124,7 @@ export default function InspectionsPage() {
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
                   Feeding
@@ -2146,7 +2146,7 @@ export default function InspectionsPage() {
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 flex items-center gap-2 transition-colors"
+                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
                   Harvest
@@ -2434,7 +2434,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-slate-800 dark:active:bg-slate-700 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -3065,7 +3065,7 @@ export default function InspectionsPage() {
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Population Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Very Weak - Few bees, struggling colony</div>
@@ -3117,7 +3117,7 @@ export default function InspectionsPage() {
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Temperament Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Aggressive - Very defensive, difficult to work with</div>
@@ -3169,7 +3169,7 @@ export default function InspectionsPage() {
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Brood Pattern Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Poor - Many empty cells, spotty pattern</div>
@@ -3221,7 +3221,7 @@ export default function InspectionsPage() {
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Swarming Tendency Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Very Low - Rarely swarms, stable colony</div>
@@ -3273,7 +3273,7 @@ export default function InspectionsPage() {
                   </label>
                   <div className="relative group">
                     <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                       <div className="font-semibold mb-2">Calmness Rating Guide:</div>
                       <div className="space-y-1">
                         <div><strong>⭐ (1):</strong> Very Nervous - Runs on comb, easily agitated</div>
@@ -3632,7 +3632,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Recapping Rating Guide:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Very Low - Rarely uncap and remove diseased brood</div>
@@ -3684,7 +3684,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">VSH Rating Guide:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Very Low - No VSH behavior observed</div>
@@ -3736,7 +3736,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">SMR Rating Guide:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Very Low - Varroa reproduce freely</div>
@@ -3804,7 +3804,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">AFB Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Very few signs, easily treated</div>
@@ -3856,7 +3856,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">EFB Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Few affected larvae, colony strong</div>
@@ -3908,7 +3908,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Chalkbrood Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Occasional mummified larvae</div>
@@ -3960,7 +3960,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">Nosemosis Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Light spotting, minor dysentery</div>
@@ -4012,7 +4012,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">DWV Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Rare deformed bees observed</div>
@@ -4064,7 +4064,7 @@ export default function InspectionsPage() {
                       </label>
                       <div className="relative group">
                         <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface dark:bg-slate-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
                           <div className="font-semibold mb-2">IAPV & CBPV Severity Rating:</div>
                           <div className="space-y-1">
                             <div><strong>⭐ (1):</strong> Minimal - Few trembling/hairless bees</div>
@@ -4156,7 +4156,7 @@ export default function InspectionsPage() {
                     </button>
                   </div>
                 ) : null}
-                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all p-4">
+                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all p-4">
                   <div className="flex flex-col items-center justify-center">
                     <Camera size={24} className="text-text-tertiary mb-1" />
                     <p className="text-xs text-text-tertiary text-center">
@@ -4178,14 +4178,14 @@ export default function InspectionsPage() {
               <button
                 type="submit"
                 disabled={uploadingImage || fetchingWeather}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 active:bg-forest-800 dark:active:bg-emerald-800 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
               >
                 {uploadingImage ? 'Uploading Image...' : fetchingWeather ? 'Fetching Weather...' : editingInspection ? 'Update' : 'Save'} Inspection
               </button>
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4224,7 +4224,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingTreatment(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4357,7 +4357,7 @@ export default function InspectionsPage() {
 
                 {/* Product details tooltip - shown on hover when a product is selected */}
                 {editingTreatment?.treatment_type && !isOtherTreatment && treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type) && (
-                  <div className="absolute z-10 invisible group-hover:visible w-full sm:w-96 bg-slate-800 border-2 border-blue-500 rounded-lg shadow-xl p-4 mt-1 left-0 sm:left-auto sm:right-0">
+                  <div className="absolute z-10 invisible group-hover:visible w-full sm:w-96 bg-surface dark:bg-surface-elevated border-2 border-blue-500 dark:border-blue-400 rounded-lg shadow-xl p-4 mt-1 left-0 sm:left-auto sm:right-0">
                     {(() => {
                       const selectedProduct = treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type)
                       if (!selectedProduct) return null
@@ -4526,7 +4526,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingCheck(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4822,7 +4822,7 @@ export default function InspectionsPage() {
                   setIsOtherFeedType(false)
                   setOtherFeedType('')
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -4966,7 +4966,7 @@ export default function InspectionsPage() {
                   setShowForm(false)
                   setEditingHarvest(null)
                 }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-gray-400 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
