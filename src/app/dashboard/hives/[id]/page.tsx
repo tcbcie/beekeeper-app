@@ -641,33 +641,33 @@ export default function HiveDetailPage() {
           <h2 className="text-xl font-semibold mb-4 text-foreground">Inspection Averages ({averages.inspection_count} inspection{averages.inspection_count !== 1 ? 's' : ''})</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {averages.brood_frames !== null && (
-              <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-800">
-                <div className="text-xs text-blue-400 mb-1 font-medium">Frames with Brood</div>
-                <div className="text-2xl font-bold text-blue-300">{averages.brood_frames.toFixed(1)}</div>
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-300 dark:border-blue-800">
+                <div className="text-xs text-blue-700 dark:text-blue-400 mb-1 font-medium">Frames with Brood</div>
+                <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{averages.brood_frames.toFixed(1)}</div>
               </div>
             )}
             {averages.right_sized_frames !== null && hive.configuration?.right_sized_broodbox && (
-              <div className="bg-green-900/30 p-4 rounded-lg border border-green-800">
-                <div className="text-xs text-green-400 mb-1 font-medium">Right-Sized Frames</div>
-                <div className="text-2xl font-bold text-green-300">{averages.right_sized_frames.toFixed(1)}</div>
+              <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg border border-green-300 dark:border-green-800">
+                <div className="text-xs text-green-700 dark:text-green-400 mb-1 font-medium">Right-Sized Frames</div>
+                <div className="text-2xl font-bold text-green-800 dark:text-green-300">{averages.right_sized_frames.toFixed(1)}</div>
               </div>
             )}
             {averages.brood_pattern !== null && (
-              <div className="bg-purple-900/30 p-4 rounded-lg border border-purple-800">
-                <div className="text-xs text-purple-400 mb-1 font-medium">Brood Pattern</div>
-                <div className="text-2xl font-bold text-purple-300">{'⭐'.repeat(Math.round(averages.brood_pattern))}</div>
+              <div className="bg-purple-100 dark:bg-purple-900/30 p-4 rounded-lg border border-purple-300 dark:border-purple-800">
+                <div className="text-xs text-purple-700 dark:text-purple-400 mb-1 font-medium">Brood Pattern</div>
+                <div className="text-2xl font-bold text-purple-800 dark:text-purple-300">{'⭐'.repeat(Math.round(averages.brood_pattern))}</div>
               </div>
             )}
             {averages.temperament !== null && (
-              <div className="bg-amber-900/30 p-4 rounded-lg border border-amber-800">
-                <div className="text-xs text-amber-400 mb-1 font-medium">Temperament</div>
-                <div className="text-2xl font-bold text-amber-300">{'⭐'.repeat(Math.round(averages.temperament))}</div>
+              <div className="bg-amber-100 dark:bg-amber-900/30 p-4 rounded-lg border border-amber-300 dark:border-amber-800">
+                <div className="text-xs text-amber-700 dark:text-amber-400 mb-1 font-medium">Temperament</div>
+                <div className="text-2xl font-bold text-amber-800 dark:text-amber-300">{'⭐'.repeat(Math.round(averages.temperament))}</div>
               </div>
             )}
             {averages.population !== null && (
-              <div className="bg-orange-900/30 p-4 rounded-lg border border-orange-800">
-                <div className="text-xs text-orange-400 mb-1 font-medium">Population</div>
-                <div className="text-2xl font-bold text-orange-300">{'⭐'.repeat(Math.round(averages.population))}</div>
+              <div className="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-lg border border-orange-300 dark:border-orange-800">
+                <div className="text-xs text-orange-700 dark:text-orange-400 mb-1 font-medium">Population</div>
+                <div className="text-2xl font-bold text-orange-800 dark:text-orange-300">{'⭐'.repeat(Math.round(averages.population))}</div>
               </div>
             )}
           </div>
