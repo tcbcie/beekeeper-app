@@ -547,7 +547,7 @@ export default function HiveDetailPage() {
                   <span className="font-medium text-xs text-text-primary">{new Date(hive.queen_last_seen).toLocaleDateString()}</span>
                 </div>
               ) : (
-                <div className="text-slate-500 italic text-xs">Queen not seen yet</div>
+                <div className="text-text-tertiary italic text-xs">Queen not seen yet</div>
               )}
               {hive.eggs_last_present ? (
                 <div className="flex justify-between">
@@ -555,7 +555,7 @@ export default function HiveDetailPage() {
                   <span className="font-medium text-xs text-text-primary">{new Date(hive.eggs_last_present).toLocaleDateString()}</span>
                 </div>
               ) : (
-                <div className="text-slate-500 italic text-xs">No eggs recorded yet</div>
+                <div className="text-text-tertiary italic text-xs">No eggs recorded yet</div>
               )}
             </div>
           </div>
@@ -630,7 +630,7 @@ export default function HiveDetailPage() {
         {hive.notes && (
           <div className="mt-6 pt-6 border-t border-border">
             <h3 className="font-semibold text-text-tertiary mb-2 text-sm uppercase tracking-wide">Notes</h3>
-            <p className="text-sm text-text-secondary bg-slate-800 p-3 rounded">{hive.notes}</p>
+            <p className="text-sm text-text-secondary bg-sage-50 dark:bg-slate-800 p-3 rounded">{hive.notes}</p>
           </div>
         )}
       </div>
@@ -731,7 +731,7 @@ export default function HiveDetailPage() {
             ) : (
               <Link
                 href={`/dashboard/records?hive=${hiveId}&type=archive`}
-                className="bg-gray-600 text-white p-4 rounded-lg hover:bg-gray-700 text-center border-2 border-gray-400"
+                className="bg-sage-200 dark:bg-gray-600 text-foreground dark:text-white p-4 rounded-lg hover:bg-sage-300 dark:hover:bg-gray-700 text-center border-2 border-border"
               >
                 <Archive className="mx-auto mb-2" size={24} />
                 <div className="font-medium text-sm">Archive Hive</div>
@@ -752,7 +752,7 @@ export default function HiveDetailPage() {
           {inspections.length > 0 ? (
             <div className="space-y-3">
               {inspections.map((inspection) => (
-                <div key={inspection.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
+                <div key={inspection.id} className="border border-border rounded-lg p-4 hover:bg-sage-50 dark:hover:bg-slate-800/50">
                   <div className="flex justify-between items-start mb-2">
                     <span className="font-medium text-foreground">
                       {new Date(inspection.inspection_date).toLocaleDateString()}
@@ -784,13 +784,13 @@ export default function HiveDetailPage() {
                     )}
                   </div>
                   {inspection.notes && (
-                    <p className="text-sm text-text-secondary mt-2 bg-slate-800 p-2 rounded">{inspection.notes}</p>
+                    <p className="text-sm text-text-secondary mt-2 bg-sage-50 dark:bg-slate-800 p-2 rounded">{inspection.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-slate-500 text-center py-4">No inspections recorded yet</p>
+            <p className="text-text-tertiary text-center py-4">No inspections recorded yet</p>
           )}
         </div>
 
@@ -803,7 +803,7 @@ export default function HiveDetailPage() {
           {varroaChecks.length > 0 ? (
             <div className="space-y-3">
               {varroaChecks.map((check) => (
-                <div key={check.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
+                <div key={check.id} className="border border-border rounded-lg p-4 hover:bg-sage-50 dark:hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="font-medium text-foreground">
@@ -824,13 +824,13 @@ export default function HiveDetailPage() {
                     )}
                   </div>
                   {check.notes && (
-                    <p className="text-sm text-text-secondary mt-2 bg-slate-800 p-2 rounded">{check.notes}</p>
+                    <p className="text-sm text-text-secondary mt-2 bg-sage-50 dark:bg-slate-800 p-2 rounded">{check.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-slate-500 text-center py-4">No varroa checks recorded yet</p>
+            <p className="text-text-tertiary text-center py-4">No varroa checks recorded yet</p>
           )}
         </div>
 
@@ -843,7 +843,7 @@ export default function HiveDetailPage() {
           {varroaTreatments.length > 0 ? (
             <div className="space-y-3">
               {varroaTreatments.map((treatment) => (
-                <div key={treatment.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
+                <div key={treatment.id} className="border border-border rounded-lg p-4 hover:bg-sage-50 dark:hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="font-medium text-foreground">
@@ -856,13 +856,13 @@ export default function HiveDetailPage() {
                     )}
                   </div>
                   {treatment.notes && (
-                    <p className="text-sm text-text-secondary mt-2 bg-slate-800 p-2 rounded">{treatment.notes}</p>
+                    <p className="text-sm text-text-secondary mt-2 bg-sage-50 dark:bg-slate-800 p-2 rounded">{treatment.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-slate-500 text-center py-4">No treatments recorded yet</p>
+            <p className="text-text-tertiary text-center py-4">No treatments recorded yet</p>
           )}
         </div>
 
@@ -875,7 +875,7 @@ export default function HiveDetailPage() {
           {feedings.length > 0 ? (
             <div className="space-y-3">
               {feedings.map((feeding) => (
-                <div key={feeding.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
+                <div key={feeding.id} className="border border-border rounded-lg p-4 hover:bg-sage-50 dark:hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="font-medium text-foreground">
@@ -888,13 +888,13 @@ export default function HiveDetailPage() {
                     )}
                   </div>
                   {feeding.notes && (
-                    <p className="text-sm text-text-secondary mt-2 bg-slate-800 p-2 rounded">{feeding.notes}</p>
+                    <p className="text-sm text-text-secondary mt-2 bg-sage-50 dark:bg-slate-800 p-2 rounded">{feeding.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-slate-500 text-center py-4">No feedings recorded yet</p>
+            <p className="text-text-tertiary text-center py-4">No feedings recorded yet</p>
           )}
         </div>
 
@@ -907,7 +907,7 @@ export default function HiveDetailPage() {
           {harvests.length > 0 ? (
             <div className="space-y-3">
               {harvests.map((harvest) => (
-                <div key={harvest.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-800/50">
+                <div key={harvest.id} className="border border-border rounded-lg p-4 hover:bg-sage-50 dark:hover:bg-slate-800/50">
                   <div className="flex justify-between items-start">
                     <span className="font-medium text-foreground">
                       {new Date(harvest.harvest_date).toLocaleDateString()}
@@ -922,13 +922,13 @@ export default function HiveDetailPage() {
                     </div>
                   </div>
                   {harvest.notes && (
-                    <p className="text-sm text-text-secondary mt-2 bg-slate-800 p-2 rounded">{harvest.notes}</p>
+                    <p className="text-sm text-text-secondary mt-2 bg-sage-50 dark:bg-slate-800 p-2 rounded">{harvest.notes}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-slate-500 text-center py-4">No harvests recorded yet</p>
+            <p className="text-text-tertiary text-center py-4">No harvests recorded yet</p>
           )}
         </div>
       </div>
