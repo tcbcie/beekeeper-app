@@ -1605,7 +1605,7 @@ export default function ProfilePage() {
                                   const isExpired = daysLeft < 0
 
                                   return (
-                                    <div key={`pending-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                    <div key={`pending-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
                                       <div className="flex items-center gap-3 flex-1">
                                         <Mail size={16} className="text-orange-400" />
                                         <div className="flex-1">
@@ -1652,7 +1652,7 @@ export default function ProfilePage() {
                                   const acceptedDate = invitation.accepted_at ? new Date(invitation.accepted_at) : null
 
                                   return (
-                                    <div key={`accepted-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                                    <div key={`accepted-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
                                       <div className="flex items-center gap-3 flex-1">
                                         <User size={16} className="text-green-600" />
                                         <div className="flex-1">
@@ -1689,7 +1689,7 @@ export default function ProfilePage() {
                                   const declinedDate = invitation.declined_at ? new Date(invitation.declined_at) : null
 
                                   return (
-                                    <div key={`declined-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                                    <div key={`declined-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
                                       <div className="flex items-center gap-3 flex-1">
                                         <X size={16} className="text-red-600" />
                                         <div className="flex-1">
@@ -1723,7 +1723,7 @@ export default function ProfilePage() {
                             {teamApiaries.length > 0 ? (
                               <div className="space-y-2">
                                 {teamApiaries.map((ta) => (
-                                  <div key={ta.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                  <div key={ta.id} className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
                                     <div className="flex items-center gap-3 flex-1">
                                       <MapPin size={16} className="text-purple-600" />
                                       <div className="flex-1">
@@ -1931,7 +1931,7 @@ export default function ProfilePage() {
       {/* Create Team Modal */}
       {showCreateTeamModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Create New Team</h3>
               <button
@@ -1993,7 +1993,7 @@ export default function ProfilePage() {
       {/* Invite Member Modal */}
       {showInviteMemberModal && selectedTeam && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Manage Team: {selectedTeam.name}</h3>
               <button
@@ -2011,7 +2011,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Invite New Member Section */}
-            <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
               <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                 <UserPlus size={18} className="text-green-600" />
                 Invite New Member
@@ -2094,7 +2094,7 @@ export default function ProfilePage() {
                 <h4 className="font-semibold text-foreground mb-3">Pending Invitations ({teamInvitations.length})</h4>
                 <div className="space-y-2">
                   {teamInvitations.map((invitation) => (
-                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
                       <div>
                         <div className="font-medium text-foreground">{invitation.email}</div>
                         <div className="text-xs text-text-tertiary">
@@ -2135,7 +2135,7 @@ export default function ProfilePage() {
       {/* Share Apiary Modal */}
       {showShareApiaryModal && selectedTeam && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Share Apiary with {selectedTeam.name}</h3>
               <button
@@ -2213,7 +2213,7 @@ export default function ProfilePage() {
       {/* Rename Team Modal */}
       {showRenameTeamModal && selectedTeam && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Rename Team</h3>
               <button
@@ -2318,12 +2318,12 @@ export default function ProfilePage() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-white rounded-lg shadow p-6 border border-red-200">
-        <h2 className="text-xl font-semibold text-red-900 mb-4">Danger Zone</h2>
-        <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-red-300 dark:border-red-800">
+        <h2 className="text-xl font-semibold text-red-900 dark:text-red-100 mb-4">Danger Zone</h2>
+        <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-950/20 rounded-lg">
           <div>
-            <div className="font-medium text-red-900">Delete Account</div>
-            <div className="text-sm text-red-700">Delete your account - data retained for 12 months</div>
+            <div className="font-medium text-red-900 dark:text-red-100">Delete Account</div>
+            <div className="text-sm text-red-700 dark:text-red-300">Delete your account - data retained for 12 months</div>
           </div>
           <button
             onClick={() => setShowDeleteAccountModal(true)}
@@ -2338,7 +2338,7 @@ export default function ProfilePage() {
       {/* Change Password Modal */}
       {showChangePasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full">
             <div className="border-b border-border px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-foreground">Change Password</h3>
               <button
@@ -2358,8 +2358,8 @@ export default function ProfilePage() {
 
             <div className="p-6 space-y-4">
               {passwordError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-red-800 text-sm">{passwordError}</p>
+                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <p className="text-red-800 dark:text-red-200 text-sm">{passwordError}</p>
                 </div>
               )}
 
@@ -2405,9 +2405,9 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-blue-900 font-semibold text-sm mb-1">Password Requirements:</p>
-                <ul className="text-blue-800 text-xs space-y-1">
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1">Password Requirements:</p>
+                <ul className="text-blue-800 dark:text-blue-200 text-xs space-y-1">
                   <li>• At least 8 characters long</li>
                   <li>• Different from your current password</li>
                   <li>• Both new password fields must match</li>
@@ -2444,7 +2444,7 @@ export default function ProfilePage() {
       {/* Delete Account Confirmation Modal */}
       {showDeleteAccountModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[85vh] flex flex-col">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full max-h-[85vh] flex flex-col">
             {/* Header - Sticky */}
             <div className="flex-shrink-0 border-b border-border p-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-red-900 flex items-center gap-2">
@@ -2466,9 +2466,9 @@ export default function ProfilePage() {
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {/* What Happens */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-blue-900 font-semibold text-sm mb-1.5">What Happens:</p>
-                <ul className="text-blue-800 text-xs space-y-1">
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1.5">What Happens:</p>
+                <ul className="text-blue-800 dark:text-blue-200 text-xs space-y-1">
                   <li>• Account deactivated immediately</li>
                   <li>• Data retained for 12 months</li>
                   <li>• Reactivation available anytime</li>
@@ -2476,17 +2476,17 @@ export default function ProfilePage() {
               </div>
 
               {/* After 12 Months */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-900 font-semibold text-sm mb-1.5">⚠️ After 12 Months:</p>
-                <p className="text-red-800 text-xs">
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                <p className="text-red-900 dark:text-red-100 font-semibold text-sm mb-1.5">⚠️ After 12 Months:</p>
+                <p className="text-red-800 dark:text-red-200 text-xs">
                   All data permanently deleted. Cannot be recovered.
                 </p>
               </div>
 
               {/* Export Recommendation */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p className="text-amber-900 font-semibold text-sm mb-1.5">💡 Recommended:</p>
-                <p className="text-amber-800 text-xs">
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-amber-900 dark:text-amber-100 font-semibold text-sm mb-1.5">💡 Recommended:</p>
+                <p className="text-amber-800 dark:text-amber-200 text-xs">
                   Export your data first (JSON/CSV options above)
                 </p>
               </div>
