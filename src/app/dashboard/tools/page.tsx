@@ -104,12 +104,9 @@ export default function ToolsPage() {
                   <h3 className="text-lg font-semibold text-foreground mb-1">
                     {tool.title}
                   </h3>
-                  <p className="text-sm text-text-secondary mb-3">
+                  <p className="text-sm text-text-secondary">
                     {tool.description}
                   </p>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-700 dark:text-forest-300 border border-forest-300 dark:border-forest-700">
-                    {tool.status}
-                  </span>
                 </div>
               </div>
             </div>
