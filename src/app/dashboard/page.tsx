@@ -539,7 +539,7 @@ export default function DashboardPage() {
     { label: 'My Active Queens', value: stats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700' },
     { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700' },
     { label: 'Active Queen Rearing Batches', value: stats.activeBatches, icon: '🥚', color: 'bg-blue-50 text-blue-700' },
-    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700' },
+    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' },
   ]
 
   const hasMySharedData = mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0
@@ -549,14 +549,14 @@ export default function DashboardPage() {
     { label: 'Queens I Shared', value: mySharedStats.queens, icon: '👑', color: 'bg-purple-100 text-purple-800 border-2 border-purple-300' },
     { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: '✨', color: 'bg-green-100 text-green-800 border-2 border-green-300' },
     { label: 'Hives I Shared', value: mySharedStats.hives, icon: '🐝', color: 'bg-amber-100 text-amber-800 border-2 border-amber-300' },
-    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 text-indigo-800 border-2 border-indigo-300' },
+    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
   ] : []
 
   const sharedWithMeCards = hasSharedWithMeData ? [
     { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700 border-2 border-purple-200' },
     { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700 border-2 border-green-200' },
     { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700 border-2 border-amber-200' },
-    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 text-indigo-700 border-2 border-indigo-200' },
+    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
   ] : []
 
   return (
@@ -578,21 +578,21 @@ export default function DashboardPage() {
                 <span className="w-2 h-2 bg-forest-600 dark:bg-forest-400 rounded-full animate-pulse"></span>
                 <strong className="text-forest-600 dark:text-forest-400">{userStats.onlineUsers}</strong> of <strong className="text-text-primary">{userStats.totalUsers}</strong> users online
               </span>
-              <span className="hidden sm:inline text-slate-600">•</span>
+              <span className="hidden sm:inline text-text-tertiary">•</span>
               <span className="inline-flex items-center gap-1">
                 🐝 <strong className="text-orange-400">{userStats.totalHives}</strong> hives managed
               </span>
-              <span className="hidden sm:inline text-slate-600">•</span>
+              <span className="hidden sm:inline text-text-tertiary">•</span>
               <span className="inline-flex items-center gap-1">
                 📍 <strong className="text-blue-400">{userStats.totalApiaries}</strong> apiaries
               </span>
               {ticketStats.totalTickets > 0 && (
                 <>
-                  <span className="hidden sm:inline text-slate-600">•</span>
+                  <span className="hidden sm:inline text-text-tertiary">•</span>
                   <span className="inline-flex items-center gap-1">
                     🎫 <strong className={ticketStats.openTickets > 0 ? "text-red-400" : "text-blue-400"}>{ticketStats.openTickets}</strong> open tickets
                     {ticketStats.inProgressTickets > 0 && (
-                      <span className="text-slate-400">
+                      <span className="text-text-tertiary">
                         (<strong className="text-yellow-400">{ticketStats.inProgressTickets}</strong> in progress)
                       </span>
                     )}
@@ -887,7 +887,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Version:</span>
-                <span className="font-bold text-indigo-700 dark:text-indigo-400">v1.2.0</span>
+                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.2.0</span>
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Last Updated:</span>
