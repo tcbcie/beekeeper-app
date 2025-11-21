@@ -585,7 +585,7 @@ export default function TasksEventsPage() {
                       <p className="text-sm text-text-tertiary mb-2">{task.description}</p>
                     )}
 
-                    <div className="flex items-center gap-4 text-sm text-text-tertiary flex-wrap">
+                    <div className="flex items-center gap-4 text-sm text-text-secondary flex-wrap">
                       <div className="flex items-center gap-1">
                         <Calendar size={14} />
                         <span>{formatDate(task.start_date)}</span>
@@ -607,7 +607,7 @@ export default function TasksEventsPage() {
 
                     {/* Associations */}
                     {(task.hive_id || task.apiary_id || task.batch_id) && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-text-tertiary flex-wrap">
+                      <div className="flex items-center gap-2 mt-2 text-xs text-text-secondary flex-wrap">
                         {task.hive_id && (
                           <span className="px-2 py-1 bg-sage-100 dark:bg-slate-700 rounded border border-border">
                             Hive: {hives.find(h => h.id === task.hive_id)?.hive_number || 'Unknown'}
