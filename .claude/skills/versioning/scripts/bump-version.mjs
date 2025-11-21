@@ -20,15 +20,14 @@
  *   --yes, -y    Skip confirmation prompts (use with caution)
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
-import * as readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const ROOT_DIR = join(__dirname, '..');
+const ROOT_DIR = join(__dirname, '..', '..', '..', '..');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -190,21 +189,73 @@ async function main() {
     });
 
     console.log('\n✨ Version bumped successfully!\n');
+
+    // Extract changelog from git commits
     console.log('╔════════════════════════════════════════╗');
+    console.log('║   Extracting Changelog from Git       ║');
+    console.log('╚════════════════════════════════════════╝\n');
+
+    try {
+      // Run git changelog extraction
+      const extractOutput = execSync(`node "${join(__dirname, 'extract-git-changelog.mjs')}" "${newVersion}"`, {
+        cwd: ROOT_DIR,
+        encoding: 'utf8'
+      });
+
+      console.log(extractOutput);
+
+      // Parse JSON output from extract script
+      const jsonMatch = extractOutput.match(/📋 Changelog JSON:\s*\n([\s\S]+)/);
+      if (jsonMatch) {
+        const changelogData = JSON.parse(jsonMatch[1]);
+
+        if (changelogData.entries && changelogData.entries.length > 0) {
+          console.log('\n💾 Saving changelog entries to database...\n');
+
+          // Add each entry to database
+          for (const entry of changelogData.entries) {
+            try {
+              const result = execSync(
+                `node "${join(__dirname, 'add-changelog.mjs')}" "${newVersion}" "${entry.entry_type}" "${entry.title}" "${entry.description}"`,
+                {
+                  cwd: ROOT_DIR,
+                  encoding: 'utf8',
+                  input: 'y\n' // Auto-confirm
+                }
+              );
+              console.log(`✅ Added: ${entry.title}`);
+            } catch (error) {
+              console.log(`⚠️  Could not add entry: ${entry.title}`);
+            }
+          }
+
+          console.log(`\n✨ Added ${changelogData.entries.length} changelog entries from git commits!`);
+        }
+      }
+    } catch (error) {
+      console.log('\n⚠️  Could not extract changelog from git commits');
+      console.log('   You can add entries manually with:');
+      console.log(`   node .claude/skills/versioning/scripts/add-changelog.mjs\n`);
+    }
+
+    console.log('\n╔════════════════════════════════════════╗');
     console.log('║          Next Steps                    ║');
     console.log('╚════════════════════════════════════════╝\n');
-    console.log('1️⃣  Update changelog in src/app/dashboard/about/page.tsx');
-    console.log('   Add release notes for this version\n');
-    console.log('2️⃣  Review the changes:');
+    console.log('1️⃣  Review the changes:');
     console.log('   git diff\n');
-    console.log('3️⃣  Test the build:');
+    console.log('2️⃣  Test the build:');
     console.log('   npm run build\n');
-    console.log('4️⃣  Commit the changes:');
+    console.log('3️⃣  Commit the changes:');
     console.log(`   git add . && git commit -m "chore: update to v${newVersion}"\n`);
-    console.log('5️⃣  Tag the release:');
+    console.log('4️⃣  Tag the release:');
     console.log(`   git tag -a v${newVersion} -m "Release v${newVersion}"\n`);
-    console.log('6️⃣  Push to remote:');
+    console.log('5️⃣  Push to remote:');
     console.log('   git push && git push --tags\n');
+
+    if (skipConfirm) {
+      console.log('💡 Add changelog entries manually with:');
+      console.log(`   node .claude/skills/versioning/scripts/add-changelog.mjs\n`);
+    }
 
   } catch (error) {
     console.error('\n❌ Error bumping version:', error.message);

@@ -2,7 +2,10 @@
 
 ## Overview
 
-This skill provides automated version management for the Hive Craic application, ensuring consistent version numbering across all application files following semantic versioning principles.
+This skill provides comprehensive automated version management for the HiveCraic application, including:
+- Consistent version numbering across all application files following semantic versioning
+- Database-backed changelog management with automatic entry prompts
+- Dynamic changelog display showing the last 5 versions in the About page
 
 ## When to Use This Skill
 
@@ -36,8 +39,36 @@ The version management system updates the following files:
    - Date information
 
 4. **About Page** (`src/app/dashboard/about/page.tsx`)
-   - Latest version badge
-   - Changelog section (manual update required)
+   - Dynamic changelog display powered by database
+   - Shows last 5 versions automatically
+   - No manual updates needed
+
+### Database Changelog System
+
+**NEW**: Changelog entries are now stored in a Supabase database table (`changelog`) and displayed dynamically in the About page.
+
+**Table Structure**:
+- `id`: UUID primary key
+- `version`: Version number (e.g., "1.0.12")
+- `date`: Release date
+- `entry_type`: Type of change (feature, bugfix, improvement, documentation)
+- `title`: Brief summary
+- `description`: Detailed description
+- `created_at`, `created_by`: Audit fields
+- `is_published`: Controls visibility
+
+**Benefits**:
+- No more manual HTML editing in About page
+- Consistent formatting across all changelog entries
+- Easy to query and filter by version or type
+- Automatic sorting and grouping by version
+- Only shows last 5 versions (configurable)
+
+**Entry Types**:
+- 🌟 `feature` - New functionality (emerald)
+- ✓ `bugfix` - Bug fixes (green)
+- ⚡ `improvement` - Enhancements (blue)
+- 🔧 `documentation` - Documentation updates (purple)
 
 ### Available Scripts
 
@@ -67,19 +98,45 @@ npm run version:bump major
 #### 2. update-version.mjs
 **Purpose**: Update version across all files (usually called by bump-version.mjs)
 
-**Location**: `scripts/update-version.mjs`
+**Location**: `.claude/skills/versioning/scripts/update-version.mjs`
 
 **Usage**:
 ```bash
 # Update to specific version with current date
-node scripts/update-version.mjs 1.0.12
+node .claude/skills/versioning/scripts/update-version.mjs 1.0.12
 
 # Update with custom date
-node scripts/update-version.mjs 1.0.12 "December 1, 2025"
+node .claude/skills/versioning/scripts/update-version.mjs 1.0.12 "December 1, 2025"
 
 # Via npm
 npm run version:update 1.0.12 "December 1, 2025"
 ```
+
+#### 3. add-changelog.mjs ⭐ NEW
+**Purpose**: Add changelog entries to the database (called automatically by bump-version or standalone)
+
+**Location**: `.claude/skills/versioning/scripts/add-changelog.mjs`
+
+**Usage**:
+```bash
+# Interactive mode (prompts for all fields)
+node .claude/skills/versioning/scripts/add-changelog.mjs
+
+# Non-interactive mode (all arguments provided)
+node .claude/skills/versioning/scripts/add-changelog.mjs <version> <type> <title> <description>
+
+# Examples
+node .claude/skills/versioning/scripts/add-changelog.mjs "1.1.0" "feature" "Team Tasks" "Team members can now close tasks for shared hives"
+node .claude/skills/versioning/scripts/add-changelog.mjs "1.0.12" "bugfix" "Login Fix" "Fixed login error for OAuth users"
+node .claude/skills/versioning/scripts/add-changelog.mjs "1.0.13" "improvement" "UI Polish" "Improved dark mode contrast on forms"
+```
+
+**Features**:
+- Automatically reads current version from version.json in interactive mode
+- Validates entry types
+- Inserts entries directly into Supabase changelog table
+- Supports multiple entries per version
+- Entries appear immediately in About page changelog
 
 ## Semantic Versioning Guide
 
@@ -134,28 +191,60 @@ npm run version:bump major  # For breaking changes
 - ✅ Updates login page version badge and date
 - ✅ Updates dashboard version and date
 - ✅ Updates about page version badge and date
-- ⚠️ **You must manually update the changelog**
+- ✅ **Prompts you to add changelog entries to the database**
 
-### Step 3: Update Changelog
-Edit `src/app/dashboard/about/page.tsx`:
+### Step 3: Add Changelog Entries (Interactive)
 
-```tsx
-{/* Add new version at the top */}
-<div className="border-l-4 border-emerald-500 pl-4 mb-6">
-  <div className="flex items-center gap-2 mb-2">
-    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">
-      v1.0.12
-    </span>
-    <span className="text-sm text-gray-600">November 18, 2025</span>
-  </div>
-  <h3 className="font-semibold text-gray-900 mb-2">Latest Release</h3>
-  <ul className="list-disc list-inside text-gray-700 space-y-1 text-sm">
-    <li>Fixed validation bug in queen registration form</li>
-    <li>Improved hive inspection date picker</li>
-    <li>Updated dashboard statistics display</li>
-  </ul>
-</div>
+**NEW**: The bump-version script now prompts you to add changelog entries immediately:
+
+```bash
+# After version bump, you'll see:
+╔════════════════════════════════════════╗
+║      Add Changelog Entries             ║
+╚════════════════════════════════════════╝
+
+📝 Add changelog entries now? (Y/n): y
+
+📝 Entry Types:
+   1. feature       - New functionality
+   2. bugfix        - Bug fixes
+   3. improvement   - Enhancements
+   4. documentation - Documentation updates
+
+🔢 Select type (1-4) or press Enter to skip: 1
+📌 Title (brief summary): Team Task Collaboration
+📄 Description (detailed): Team members can now close tasks for shared hives
+
+✅ Changelog entry added successfully!
+
+➕ Add another changelog entry? (y/N): y
 ```
+
+**Multiple Entries**: You can add multiple changelog entries for the same version. Each commit/change can have its own entry, making the changelog more granular and informative.
+
+**Skip Adding Entries**: If you press Enter at the first prompt or select to skip, you can add entries later using the standalone script (see below).
+
+### Alternative: Add Changelog Entries Manually
+
+If you skipped adding entries during version bump, or want to add more entries later:
+
+```bash
+# Interactive mode - script reads version from version.json
+node .claude/skills/versioning/scripts/add-changelog.mjs
+
+# Non-interactive mode - provide all arguments
+node .claude/skills/versioning/scripts/add-changelog.mjs "1.0.12" "bugfix" "Fixed login error" "Resolved issue where users couldn't log in"
+
+# Examples
+node .claude/skills/versioning/scripts/add-changelog.mjs "1.1.0" "feature" "Database Changelog" "Moved changelog to database for better version tracking"
+node .claude/skills/versioning/scripts/add-changelog.mjs "1.1.0" "improvement" "UI Polish" "Improved dark mode styling across all pages"
+```
+
+**Entry Types**:
+- `feature` - New functionality (shows with ★ in emerald)
+- `bugfix` - Bug fixes (shows with ✓ in green)
+- `improvement` - Enhancements to existing features (shows with ⚡ in blue)
+- `documentation` - Documentation updates (shows with 🔧 in purple)
 
 ### Step 4: Review Changes
 ```bash
@@ -185,7 +274,9 @@ npm run dev
 **Verify:**
 - ✅ Login page shows correct version
 - ✅ Dashboard shows correct version and date
-- ✅ About page shows new version in changelog
+- ✅ About page → Changes section shows your changelog entries from the database
+- ✅ Changelog entries are properly formatted with icons and colors
+- ✅ Only the last 5 versions are displayed
 - ✅ No console errors
 - ✅ Application builds without errors
 
