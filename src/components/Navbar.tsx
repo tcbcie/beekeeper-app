@@ -2,6 +2,7 @@
 import { LogOut, Menu } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 
 interface NavbarProps {
   currentUser: User | null
@@ -13,8 +14,10 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      // Clear local storage manually to avoid 403 errors from Supabase
-      // This is a workaround for Supabase signOut 403 issues
+      // Sign out from Supabase - this will trigger auth state change
+      await supabase.auth.signOut()
+
+      // Clear any remaining auth data from storage
       if (typeof window !== 'undefined') {
         // Remove all Supabase auth keys from localStorage
         const keysToRemove: string[] = []
