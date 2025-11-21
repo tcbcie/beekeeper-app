@@ -690,15 +690,15 @@ export default function BatchesPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border">
+        <div className="border-b border-border">
           <nav className="flex -mb-px">
             <button
               onClick={() => setActiveTab('planning')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'planning'
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-gray-300'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border'
               }`}
             >
               Planning
@@ -708,7 +708,7 @@ export default function BatchesPage() {
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'selection'
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-gray-300'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border'
               }`}
             >
               Selection
@@ -721,8 +721,8 @@ export default function BatchesPage() {
       {activeTab === 'planning' && (
         <>
           {showForm && (
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">
+            <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-border">
+              <h3 className="text-xl font-semibold mb-4 text-foreground">
                 {editingBatch ? 'Edit Batch' : 'Create New Batch'}
               </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -761,7 +761,7 @@ export default function BatchesPage() {
             </div>
 
             {/* Timeline Dates - Grouped */}
-            <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
               <h4 className="text-sm font-semibold text-foreground mb-3">Timeline</h4>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
@@ -832,7 +832,7 @@ export default function BatchesPage() {
             </div>
 
             {/* Starter Colony Selection - Grouped */}
-            <div className="md:col-span-2 bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="md:col-span-2 bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
               <h4 className="text-sm font-semibold text-foreground mb-3">Starter Colony</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -872,7 +872,7 @@ export default function BatchesPage() {
             </div>
 
             {/* Batch Quantities - Grouped Vertically */}
-            <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="md:col-span-2 bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
               <h4 className="text-sm font-semibold text-foreground mb-3">Batch Quantities</h4>
               <div className="space-y-3">
                 {/* Number of Grafts */}
@@ -885,7 +885,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.cell_count || '0')
                         if (val > 0) setFormData({...formData, cell_count: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Minus size={16} />
                     </button>
@@ -903,7 +903,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.cell_count || '0')
                         setFormData({...formData, cell_count: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Plus size={16} />
                     </button>
@@ -920,7 +920,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.grafts_accepted || '0')
                         if (val > 0) setFormData({...formData, grafts_accepted: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Minus size={16} />
                     </button>
@@ -938,7 +938,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.grafts_accepted || '0')
                         setFormData({...formData, grafts_accepted: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Plus size={16} />
                     </button>
@@ -955,7 +955,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_hatched || '0')
                         if (val > 0) setFormData({...formData, queens_hatched: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Minus size={16} />
                     </button>
@@ -973,7 +973,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_hatched || '0')
                         setFormData({...formData, queens_hatched: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Plus size={16} />
                     </button>
@@ -990,7 +990,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_mated || '0')
                         if (val > 0) setFormData({...formData, queens_mated: (val - 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Minus size={16} />
                     </button>
@@ -1008,7 +1008,7 @@ export default function BatchesPage() {
                         const val = parseInt(formData.queens_mated || '0')
                         setFormData({...formData, queens_mated: (val + 1).toString()})
                       }}
-                      className="px-3 py-2 bg-white border border-border rounded-md bg-surface dark:bg-surface text-foreground hover:bg-gray-50"
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >
                       <Plus size={16} />
                     </button>
@@ -1029,7 +1029,7 @@ export default function BatchesPage() {
             </div>
 
             {/* Notification Preferences - Grouped */}
-            <div className="md:col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <div className="md:col-span-2 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
               <h4 className="text-sm font-semibold text-foreground mb-3">Notification Preferences</h4>
               <div className="space-y-3">
                 <div className="flex items-center">
@@ -1127,7 +1127,7 @@ export default function BatchesPage() {
       {activeTab === 'selection' && (
         <div className="space-y-6">
           {/* Filters Row */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">Breeder Queen Selection Filters</h3>
 
             {/* Apiary Filter */}
@@ -1136,7 +1136,7 @@ export default function BatchesPage() {
               <select
                 value={selectedApiary}
                 onChange={(e) => setSelectedApiary(e.target.value)}
-                className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                className="w-full md:w-64 px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
                 <option value="all">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -1156,7 +1156,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === 'currentyear'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                   }`}
                 >
                   Current Year ({new Date().getFullYear()})
@@ -1166,7 +1166,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === '6months'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                   }`}
                 >
                   Last 6 Months
@@ -1176,7 +1176,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === '1year'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                   }`}
                 >
                   Last Year
@@ -1186,7 +1186,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === 'all'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                   }`}
                 >
                   All Time
@@ -1196,7 +1196,7 @@ export default function BatchesPage() {
                   className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
                     timePeriod === 'custom'
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200 active:bg-gray-300'
+                      : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
                   }`}
                 >
                   Custom Range
@@ -1212,14 +1212,14 @@ export default function BatchesPage() {
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
                 <label className="text-sm font-medium text-text-secondary">To:</label>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  className="px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
                 <button
                   onClick={() => {
@@ -1235,7 +1235,7 @@ export default function BatchesPage() {
           </div>
 
           {/* Weights Row */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">Weight Criterias (1-5)</h3>
             <p className="text-sm text-text-secondary mb-4">Assign importance to each trait. Higher weights = more influence on ranking.</p>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
@@ -1250,7 +1250,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.brood_pattern === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                          : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                       }`}
                     >
                       {weight}
@@ -1270,7 +1270,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.population === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                          : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                       }`}
                     >
                       {weight}
@@ -1290,7 +1290,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.temperament === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                          : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                       }`}
                     >
                       {weight}
@@ -1310,7 +1310,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.swarming === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                          : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                       }`}
                     >
                       {weight}
@@ -1330,7 +1330,7 @@ export default function BatchesPage() {
                       className={`w-10 h-10 rounded-md font-semibold transition-all ${
                         weights.honey_yield === weight
                           ? 'bg-blue-600 text-white shadow-md scale-110'
-                          : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                          : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                       }`}
                     >
                       {weight}
@@ -1351,7 +1351,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.calmness === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                            : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                         }`}
                       >
                         {weight}
@@ -1372,7 +1372,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.recapping === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                            : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                         }`}
                       >
                         {weight}
@@ -1393,7 +1393,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.vsh === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                            : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                         }`}
                       >
                         {weight}
@@ -1414,7 +1414,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.smr === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                            : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                         }`}
                       >
                         {weight}
@@ -1435,7 +1435,7 @@ export default function BatchesPage() {
                         className={`w-10 h-10 rounded-md font-semibold transition-all ${
                           weights.chalkbrood === weight
                             ? 'bg-blue-600 text-white shadow-md scale-110'
-                            : 'bg-gray-200 text-text-secondary hover:bg-gray-300'
+                            : 'bg-sage-200 dark:bg-slate-700 text-text-secondary hover:bg-sage-300 dark:hover:bg-slate-600'
                         }`}
                       >
                         {weight}
@@ -1448,7 +1448,7 @@ export default function BatchesPage() {
           </div>
 
           {/* Optional Criteria */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">Optional Criteria</h3>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1500,8 +1500,8 @@ export default function BatchesPage() {
           </div>
 
           {/* Results Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow overflow-hidden border border-border">
+            <div className="p-6 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">Ranked Hives</h3>
               <p className="text-sm text-text-secondary mt-1">Based on inspection averages and weighted scores</p>
             </div>
@@ -1547,9 +1547,9 @@ export default function BatchesPage() {
                       )}
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-surface dark:bg-surface divide-y divide-border">
                     {hiveScores.map((hive, index) => (
-                      <tr key={hive.hive_id} className={index < 3 ? 'bg-green-50' : ''}>
+                      <tr key={hive.hive_id} className={index < 3 ? 'bg-green-50 dark:bg-green-950/20' : ''}>
                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                           {index === 0 && <span className="text-yellow-500">🥇</span>}
                           {index === 1 && <span className="text-text-tertiary">🥈</span>}
