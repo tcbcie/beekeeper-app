@@ -91,6 +91,11 @@ const commitLines = commits.split('\n').filter(line => line.trim());
 for (const line of commitLines) {
   const [hash, subject, body] = line.split('|');
 
+  // Skip if subject is missing
+  if (!subject || !subject.trim()) {
+    continue;
+  }
+
   // Skip version bump commits
   if (subject.match(/^(chore|release):\s*(update to|bump|version)/i)) {
     continue;
