@@ -694,18 +694,23 @@ export default function SettingsPage() {
       return
     }
 
+    console.log('🔄 Attempting role change:', { targetUserId, newRole })
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', targetUserId)
+        .select()
+
+      console.log('📤 Update response:', { data, error })
 
       if (error) throw error
 
       alert(`User role updated to ${newRole} successfully!`)
       fetchUsers() // Refresh the list
     } catch (error) {
-      console.error('Error updating user role:', error)
+      console.error('❌ Error updating user role:', error)
       alert('Failed to update user role.')
     }
   }
