@@ -651,7 +651,6 @@ export default function HiveDetailPage() {
 
       {/* Configuration History - Separate Card */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
-        <h2 className="text-xl font-semibold mb-4 text-foreground">Configuration History</h2>
         <HiveConfigurationHistory hiveId={hiveId} />
       </div>
 

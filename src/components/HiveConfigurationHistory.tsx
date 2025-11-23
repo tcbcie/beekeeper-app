@@ -37,7 +37,8 @@ interface HiveConfigurationHistoryProps {
 export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHistoryProps) {
   const [history, setHistory] = useState<ConfigurationHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isSectionExpanded, setIsSectionExpanded] = useState(false)
+  const [isShowingMore, setIsShowingMore] = useState(false)
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -130,27 +131,39 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     return changes
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-forest-500 border-t-transparent"></div>
-      </div>
-    )
-  }
-
-  if (history.length === 0) {
-    return (
-      <div className="text-center py-8 text-text-tertiary text-sm">
-        No configuration changes recorded yet
-      </div>
-    )
-  }
-
-  const displayedHistory = isExpanded ? history : history.slice(0, 3)
+  const displayedHistory = isShowingMore ? history : history.slice(0, 3)
 
   return (
     <div className="space-y-3">
-      {displayedHistory.map((entry, index) => {
+      {/* Collapsible Header */}
+      <button
+        onClick={() => setIsSectionExpanded(!isSectionExpanded)}
+        className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left font-medium text-forest-700 dark:text-forest-300 hover:bg-sage-50 dark:hover:bg-slate-800 rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-all"
+      >
+        <div className="flex items-center gap-2">
+          <History size={18} className="flex-shrink-0" />
+          <span>Configuration History</span>
+          {history.length > 0 && (
+            <span className="text-xs text-text-tertiary">({history.length} {history.length === 1 ? 'entry' : 'entries'})</span>
+          )}
+        </div>
+        {isSectionExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+
+      {/* Expanded Content */}
+      {isSectionExpanded && (
+        <>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-forest-500 border-t-transparent"></div>
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8 text-text-tertiary text-sm">
+              No configuration changes recorded yet
+            </div>
+          ) : (
+            <>
+              {displayedHistory.map((entry, index) => {
         const changes = formatConfigurationChanges(entry.configuration)
         const changerName = entry.changer?.full_name || entry.changer?.email || 'Unknown'
         const isInitial = index === history.length - 1
@@ -202,23 +215,27 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
         )
       })}
 
-      {history.length > 3 && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-forest-600 dark:text-forest-400 hover:bg-sage-50 dark:hover:bg-slate-800 rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-all"
-        >
-          {isExpanded ? (
-            <>
-              <ChevronUp size={16} />
-              Show Less
-            </>
-          ) : (
-            <>
-              <ChevronDown size={16} />
-              Show More ({history.length - 3} older)
+              {history.length > 3 && (
+                <button
+                  onClick={() => setIsShowingMore(!isShowingMore)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-forest-600 dark:text-forest-400 hover:bg-sage-50 dark:hover:bg-slate-800 rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-all"
+                >
+                  {isShowingMore ? (
+                    <>
+                      <ChevronUp size={16} />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={16} />
+                      Show More ({history.length - 3} older)
+                    </>
+                  )}
+                </button>
+              )}
             </>
           )}
-        </button>
+        </>
       )}
     </div>
   )
