@@ -30,6 +30,7 @@ const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..', '..', '..', '..');
 
 // Read Supabase credentials from environment or .env.local
+// Using SERVICE_ROLE_KEY to bypass RLS for system-generated changelog entries
 let supabaseUrl, supabaseKey;
 
 try {
@@ -37,7 +38,7 @@ try {
   const envContent = readFileSync(envPath, 'utf8');
 
   const urlMatch = envContent.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/);
-  const keyMatch = envContent.match(/NEXT_PUBLIC_SUPABASE_ANON_KEY=(.+)/);
+  const keyMatch = envContent.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
 
   if (urlMatch && keyMatch) {
     supabaseUrl = urlMatch[1].trim();
@@ -45,7 +46,7 @@ try {
   }
 } catch (error) {
   console.error('❌ Error reading .env.local file');
-  console.log('   Make sure .env.local exists with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  console.log('   Make sure .env.local exists with NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 
@@ -53,7 +54,7 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Error: Supabase credentials not found');
   console.log('   Add these to .env.local:');
   console.log('   NEXT_PUBLIC_SUPABASE_URL=your-url');
-  console.log('   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key');
+  console.log('   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key');
   process.exit(1);
 }
 
