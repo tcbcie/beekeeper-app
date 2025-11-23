@@ -713,13 +713,50 @@ export default function HivesPage() {
           .eq('id', editingHive.id)
 
         if (error) throw error
+
+        // Record configuration change in history if configuration changed
+        const configChanged = JSON.stringify(editingHive.configuration) !== JSON.stringify(formData.configuration)
+        if (configChanged) {
+          const { error: historyError } = await supabase
+            .from('hive_configuration_history')
+            .insert([{
+              hive_id: editingHive.id,
+              changed_at: new Date().toISOString(),
+              changed_by: userId,
+              configuration: formData.configuration
+            }])
+
+          if (historyError) {
+            console.error('Failed to record configuration history:', historyError)
+            // Don't throw - configuration was updated successfully, history is supplementary
+          }
+        }
       } else {
         // Insert without user_id - database trigger will set it automatically
-        const { error } = await supabase
+        const { data: newHive, error } = await supabase
           .from('hives')
           .insert([dataToSubmit])
+          .select('id')
+          .single()
 
         if (error) throw error
+
+        // Record initial configuration in history for new hive
+        if (newHive) {
+          const { error: historyError } = await supabase
+            .from('hive_configuration_history')
+            .insert([{
+              hive_id: newHive.id,
+              changed_at: new Date().toISOString(),
+              changed_by: userId,
+              configuration: formData.configuration
+            }])
+
+          if (historyError) {
+            console.error('Failed to record initial configuration history:', historyError)
+            // Don't throw - hive was created successfully, history is supplementary
+          }
+        }
       }
 
       if (userId) fetchHives(userId)

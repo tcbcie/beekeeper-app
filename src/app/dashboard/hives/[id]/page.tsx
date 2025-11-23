@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
 
 interface HiveConfiguration {
   brood_boxes?: number
@@ -646,6 +647,12 @@ export default function HiveDetailPage() {
             <p className="text-sm text-text-secondary bg-sage-50 dark:bg-slate-800 p-3 rounded">{hive.notes}</p>
           </div>
         )}
+      </div>
+
+      {/* Configuration History - Separate Card */}
+      <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
+        <h2 className="text-xl font-semibold mb-4 text-foreground">Configuration History</h2>
+        <HiveConfigurationHistory hiveId={hiveId} />
       </div>
 
       {/* Inspection Averages - Separate Card */}
