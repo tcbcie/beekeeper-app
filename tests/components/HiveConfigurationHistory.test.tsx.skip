@@ -1,0 +1,273 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
+import { supabase } from '@/lib/supabase'
+
+describe('HiveConfigurationHistory', () => {
+  const mockHiveId = 'test-hive-123'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should render collapsible header with history icon', () => {
+    render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+    expect(screen.getByText('Configuration History')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /configuration history/i })).toBeInTheDocument()
+  })
+
+  it('should start in collapsed state', () => {
+    render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+    // Content should not be visible when collapsed
+    expect(screen.queryByText(/no configuration changes/i)).not.toBeInTheDocument()
+  })
+
+  it('should expand when header is clicked', async () => {
+    const user = userEvent.setup()
+
+    // Mock empty history response
+    const mockFrom = vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => Promise.resolve({
+            data: [],
+            error: null
+          }))
+        }))
+      }))
+    }))
+    vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+
+    render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+    const button = screen.getByRole('button', { name: /configuration history/i })
+
+    // Click to expand
+    await user.click(button)
+
+    // Wait for content to appear
+    await waitFor(() => {
+      expect(screen.getByText(/no configuration changes recorded yet/i)).toBeInTheDocument()
+    })
+  })
+
+  it('should display history entry count in header', async () => {
+    const mockHistory = [
+      {
+        id: '1',
+        hive_id: mockHiveId,
+        changed_at: '2025-11-23T10:00:00Z',
+        changed_by: 'user-123',
+        configuration: { brood_boxes_full: 2 }
+      },
+      {
+        id: '2',
+        hive_id: mockHiveId,
+        changed_at: '2025-11-22T10:00:00Z',
+        changed_by: 'user-123',
+        configuration: { brood_boxes_full: 1 }
+      }
+    ]
+
+    const mockFrom = vi.fn((table: string) => {
+      if (table === 'hive_configuration_history') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              order: vi.fn(() => Promise.resolve({
+                data: mockHistory,
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      if (table === 'profiles') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => Promise.resolve({
+                data: { full_name: 'Test User', email: 'test@example.com' },
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      return {} as any
+    })
+    vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+
+    render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/2 entries/i)).toBeInTheDocument()
+    })
+  })
+
+  it('should display configuration changes when expanded', async () => {
+    const user = userEvent.setup()
+    const mockHistory = [
+      {
+        id: '1',
+        hive_id: mockHiveId,
+        changed_at: '2025-11-23T10:00:00Z',
+        changed_by: 'user-123',
+        configuration: {
+          brood_boxes_full: 2,
+          honey_supers: 1,
+          queen_excluder: true,
+          hive_size: 'full'
+        }
+      }
+    ]
+
+    const mockFrom = vi.fn((table: string) => {
+      if (table === 'hive_configuration_history') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              order: vi.fn(() => Promise.resolve({
+                data: mockHistory,
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      if (table === 'profiles') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => Promise.resolve({
+                data: { full_name: 'Test User', email: 'test@example.com' },
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      return {} as any
+    })
+    vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+
+    render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+    // Expand the section
+    const button = screen.getByRole('button', { name: /configuration history/i })
+    await user.click(button)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Size: Full Size/i)).toBeInTheDocument()
+      expect(screen.getByText(/Brood boxes: 2 full/i)).toBeInTheDocument()
+      expect(screen.getByText(/Honey supers: 1/i)).toBeInTheDocument()
+      expect(screen.getByText(/Queen excluder: Yes/i)).toBeInTheDocument()
+    })
+  })
+
+  it('should show "Show More" button when more than 3 entries exist', async () => {
+    const user = userEvent.setup()
+    const mockHistory = Array.from({ length: 5 }, (_, i) => ({
+      id: `entry-${i}`,
+      hive_id: mockHiveId,
+      changed_at: `2025-11-${23 - i}T10:00:00Z`,
+      changed_by: 'user-123',
+      configuration: { brood_boxes_full: i + 1 }
+    }))
+
+    const mockFrom = vi.fn((table: string) => {
+      if (table === 'hive_configuration_history') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              order: vi.fn(() => Promise.resolve({
+                data: mockHistory,
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      if (table === 'profiles') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => Promise.resolve({
+                data: { full_name: 'Test User', email: 'test@example.com' },
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      return {} as any
+    })
+    vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+
+    render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+    // Expand section
+    const expandButton = screen.getByRole('button', { name: /configuration history/i })
+    await user.click(expandButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/show more \(2 older\)/i)).toBeInTheDocument()
+    })
+  })
+
+  it('should display user attribution correctly', async () => {
+    const user = userEvent.setup()
+    const mockHistory = [
+      {
+        id: '1',
+        hive_id: mockHiveId,
+        changed_at: '2025-11-23T10:00:00Z',
+        changed_by: 'user-123',
+        configuration: { brood_boxes_full: 2 }
+      }
+    ]
+
+    const mockFrom = vi.fn((table: string) => {
+      if (table === 'hive_configuration_history') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              order: vi.fn(() => Promise.resolve({
+                data: mockHistory,
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      if (table === 'profiles') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => Promise.resolve({
+                data: { full_name: 'Rico Zmarzly', email: 'rico@example.com' },
+                error: null
+              }))
+            }))
+          }))
+        }
+      }
+      return {} as any
+    })
+    vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+
+    render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+    // Expand section
+    const expandButton = screen.getByRole('button', { name: /configuration history/i })
+    await user.click(expandButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Changed by:/i)).toBeInTheDocument()
+      expect(screen.getByText(/Rico Zmarzly/i)).toBeInTheDocument()
+    })
+  })
+})

@@ -20,6 +20,51 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Testing
+
+This project includes a comprehensive testing infrastructure using Vitest and Testing Library.
+
+### Running Tests
+
+```bash
+npm test              # Run tests in watch mode
+npm run test:ui       # Open visual test UI
+npm run test:run      # Run tests once (for CI)
+npm run test:coverage # Generate coverage report
+```
+
+### Test Coverage
+
+Current test coverage: **1.92%** statements (37.91% in lib/, 38.3% in components/ui/)
+
+**High-Coverage Modules:**
+- `lib/auth.ts`: **97.69%** coverage (29 tests)
+- `lib/date-utils.ts`: **98.27%** coverage (26 tests)
+- `lib/changelog.ts`: **66.24%** coverage (15 tests)
+- `components/ui/StatCard.tsx`: **100%** coverage (6 tests)
+- `components/ui/RatingButtons.tsx`: **100%** coverage (12 tests)
+- `components/ui/LoadingSpinner.tsx`: **100%** coverage (3 tests)
+
+**Summary:**
+- ✅ 131 tests passing across 10 test files
+- ⏱️ Test execution time: ~18 seconds
+
+### Documentation
+
+- [TESTING.md](TESTING.md) - Comprehensive testing guide
+- [tests/README.md](tests/README.md) - Test examples and patterns
+- [TEST-SETUP-SUMMARY.md](TEST-SETUP-SUMMARY.md) - Complete setup summary
+
+### CI/CD Integration
+
+Automated testing runs on:
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop`
+
+GitHub Actions workflows:
+- [test.yml](.github/workflows/test.yml) - Runs tests and generates coverage
+- [coverage-badge.yml](.github/workflows/coverage-badge.yml) - Updates coverage badge
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
