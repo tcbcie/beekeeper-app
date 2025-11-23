@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { History, User } from 'lucide-react'
 
@@ -27,7 +27,7 @@ interface ConfigurationHistoryEntry {
   changer?: {
     full_name: string | null
     email: string
-  }
+  } | null
 }
 
 interface HiveConfigurationHistoryProps {
@@ -38,11 +38,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
   const [history, setHistory] = useState<ConfigurationHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchHistory()
-  }, [hiveId])
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('hive_configuration_history')
@@ -59,13 +55,25 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
 
       if (error) throw error
 
-      setHistory((data as ConfigurationHistoryEntry[]) || [])
+      // Transform the data to handle the changer array from Supabase
+      const transformedData = (data || []).map(entry => ({
+        ...entry,
+        changer: Array.isArray(entry.changer) && entry.changer.length > 0
+          ? entry.changer[0]
+          : null
+      })) as ConfigurationHistoryEntry[]
+
+      setHistory(transformedData)
     } catch (error) {
       console.error('Error fetching configuration history:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [hiveId])
+
+  useEffect(() => {
+    fetchHistory()
+  }, [fetchHistory])
 
   const formatConfigurationChanges = (config: HiveConfiguration): string[] => {
     const changes: string[] = []
