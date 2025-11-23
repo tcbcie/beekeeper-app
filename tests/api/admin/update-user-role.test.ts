@@ -1,24 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-// Mock the Supabase client before importing the route
-const mockAuth = {
-  getUser: vi.fn()
-}
+// Hoist the mock objects so they're available during module initialization
+const { mockAuth, mockFrom, mockSupabaseClient } = vi.hoisted(() => {
+  const mockAuth = {
+    getUser: vi.fn()
+  }
 
-const mockFrom = vi.fn()
+  const mockFrom = vi.fn()
 
-const mockSupabaseClient = {
-  auth: mockAuth,
-  from: mockFrom
-}
+  const mockSupabaseClient = {
+    auth: mockAuth,
+    from: mockFrom
+  }
+
+  return { mockAuth, mockFrom, mockSupabaseClient }
+})
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => mockSupabaseClient)
 }))
 
-// Now import the route after mocking
-const { POST } = await import('@/app/api/admin/update-user-role/route')
+// Import the route after setting up mocks
+import { POST } from '@/app/api/admin/update-user-role/route'
 
 describe('Admin Update User Role API', () => {
   beforeEach(() => {
