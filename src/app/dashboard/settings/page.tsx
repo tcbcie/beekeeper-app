@@ -694,46 +694,43 @@ export default function SettingsPage() {
       return
     }
 
-    console.log('🔄 Attempting role change:', { targetUserId, newRole })
-
-    // Check current user's auth state and role
-    const { data: { session } } = await supabase.auth.getSession()
-    console.log('🔐 Current session:', {
-      userId: session?.user?.id,
-      email: session?.user?.email
-    })
-
-    // Check if current user is admin
-    const { data: currentUserProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session?.user?.id)
-      .single()
-
-    console.log('👤 Current user profile:', currentUserProfile)
+    console.log('🔄 Attempting role change via API:', { targetUserId, newRole })
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', targetUserId)
-        .select()
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession()
 
-      console.log('📤 Update response:', { data, error })
-
-      if (error) throw error
-
-      if (data && data.length === 0) {
-        console.error('⚠️ Update returned 0 rows - likely RLS policy blocking')
-        alert('Failed to update role. You may not have permission.')
+      if (!session?.access_token) {
+        alert('You must be logged in to perform this action.')
         return
+      }
+
+      // Call the API route with service role access
+      const response = await fetch('/api/admin/update-user-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          targetUserId,
+          newRole
+        })
+      })
+
+      const result = await response.json()
+
+      console.log('📤 API response:', { status: response.status, result })
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update role')
       }
 
       alert(`User role updated to ${newRole} successfully!`)
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('❌ Error updating user role:', error)
-      alert('Failed to update user role.')
+      alert(`Failed to update user role: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
