@@ -34,12 +34,12 @@ jobs:
       - name: Run tests
         run: npm run test:run
 
+      - name: Generate coverage report
+        run: npm run test:coverage
+
       - name: Restore PostCSS config
         if: always()
         run: mv postcss.config.mjs.backup postcss.config.mjs
-
-      - name: Generate coverage report
-        run: npm run test:coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
