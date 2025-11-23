@@ -696,6 +696,22 @@ export default function SettingsPage() {
 
     console.log('🔄 Attempting role change:', { targetUserId, newRole })
 
+    // Check current user's auth state and role
+    const { data: { session } } = await supabase.auth.getSession()
+    console.log('🔐 Current session:', {
+      userId: session?.user?.id,
+      email: session?.user?.email
+    })
+
+    // Check if current user is admin
+    const { data: currentUserProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session?.user?.id)
+      .single()
+
+    console.log('👤 Current user profile:', currentUserProfile)
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -706,6 +722,12 @@ export default function SettingsPage() {
       console.log('📤 Update response:', { data, error })
 
       if (error) throw error
+
+      if (data && data.length === 0) {
+        console.error('⚠️ Update returned 0 rows - likely RLS policy blocking')
+        alert('Failed to update role. You may not have permission.')
+        return
+      }
 
       alert(`User role updated to ${newRole} successfully!`)
       fetchUsers() // Refresh the list
