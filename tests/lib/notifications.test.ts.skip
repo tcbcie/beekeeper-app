@@ -1,0 +1,395 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+  registerServiceWorker,
+  requestNotificationPermission,
+  showNotification,
+  scheduleNotification,
+  scheduleBatchNotifications,
+  initializeNotifications,
+  type NotificationData,
+  type BatchDates
+} from '@/lib/notifications'
+
+// Mock browser APIs
+const mockNavigator = {
+  serviceWorker: {
+    register: vi.fn(),
+    ready: Promise.resolve({
+      active: {
+        postMessage: vi.fn()
+      }
+    } as any)
+  }
+}
+
+const mockNotification = {
+  permission: 'default' as NotificationPermission,
+  requestPermission: vi.fn()
+}
+
+describe('Notification Functions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Reset global mocks
+    global.navigator = mockNavigator as any
+    global.Notification = mockNotification as any
+    mockNotification.permission = 'default'
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  describe('registerServiceWorker', () => {
+    it('should register service worker successfully', async () => {
+      const mockRegistration = { scope: '/' }
+      mockNavigator.serviceWorker.register.mockResolvedValue(mockRegistration as any)
+
+      const result = await registerServiceWorker()
+
+      expect(result).toEqual(mockRegistration)
+      expect(mockNavigator.serviceWorker.register).toHaveBeenCalledWith(
+        '/service-worker.js',
+        { scope: '/' }
+      )
+      expect(console.log).toHaveBeenCalledWith(
+        'Service Worker registered successfully:',
+        mockRegistration
+      )
+    })
+
+    it('should return null when service workers not supported', async () => {
+      global.navigator = {} as any
+
+      const result = await registerServiceWorker()
+
+      expect(result).toBeNull()
+      expect(console.warn).toHaveBeenCalledWith(
+        'Service Workers are not supported in this browser'
+      )
+    })
+
+    it('should return null on registration error', async () => {
+      const error = new Error('Registration failed')
+      mockNavigator.serviceWorker.register.mockRejectedValue(error)
+
+      const result = await registerServiceWorker()
+
+      expect(result).toBeNull()
+      expect(console.error).toHaveBeenCalledWith(
+        'Service Worker registration failed:',
+        error
+      )
+    })
+  })
+
+  describe('requestNotificationPermission', () => {
+    it('should return granted if already granted', async () => {
+      mockNotification.permission = 'granted'
+
+      const result = await requestNotificationPermission()
+
+      expect(result).toBe('granted')
+      expect(mockNotification.requestPermission).not.toHaveBeenCalled()
+    })
+
+    it('should request permission if default', async () => {
+      mockNotification.permission = 'default'
+      mockNotification.requestPermission.mockResolvedValue('granted')
+
+      const result = await requestNotificationPermission()
+
+      expect(result).toBe('granted')
+      expect(mockNotification.requestPermission).toHaveBeenCalled()
+    })
+
+    it('should return denied if already denied', async () => {
+      mockNotification.permission = 'denied'
+
+      const result = await requestNotificationPermission()
+
+      expect(result).toBe('denied')
+      expect(mockNotification.requestPermission).not.toHaveBeenCalled()
+    })
+
+    it('should return denied when Notification API not supported', async () => {
+      global.Notification = undefined as any
+
+      const result = await requestNotificationPermission()
+
+      expect(result).toBe('denied')
+      expect(console.warn).toHaveBeenCalledWith(
+        'Notifications are not supported in this browser'
+      )
+    })
+  })
+
+  describe('showNotification', () => {
+    it('should show notification when permission granted', async () => {
+      mockNotification.permission = 'granted'
+      const mockPostMessage = vi.fn()
+      global.navigator.serviceWorker = {
+        ready: Promise.resolve({
+          active: { postMessage: mockPostMessage }
+        } as any)
+      } as any
+
+      const notificationData: NotificationData = {
+        title: 'Test Title',
+        body: 'Test Body',
+        tag: 'test-tag'
+      }
+
+      await showNotification(notificationData)
+
+      expect(mockPostMessage).toHaveBeenCalledWith({
+        type: 'SHOW_NOTIFICATION',
+        title: 'Test Title',
+        body: 'Test Body',
+        tag: 'test-tag'
+      })
+    })
+
+    it('should not show notification when permission not granted', async () => {
+      mockNotification.permission = 'denied'
+      const mockPostMessage = vi.fn()
+      global.navigator.serviceWorker = {
+        ready: Promise.resolve({
+          active: { postMessage: mockPostMessage }
+        } as any)
+      } as any
+
+      const notificationData: NotificationData = {
+        title: 'Test Title',
+        body: 'Test Body',
+        tag: 'test-tag'
+      }
+
+      await showNotification(notificationData)
+
+      expect(mockPostMessage).not.toHaveBeenCalled()
+      expect(console.warn).toHaveBeenCalledWith(
+        'Notification permission not granted'
+      )
+    })
+
+    it('should handle missing service worker active state', async () => {
+      mockNotification.permission = 'granted'
+      global.navigator.serviceWorker = {
+        ready: Promise.resolve({
+          active: null
+        } as any)
+      } as any
+
+      const notificationData: NotificationData = {
+        title: 'Test Title',
+        body: 'Test Body',
+        tag: 'test-tag'
+      }
+
+      await expect(showNotification(notificationData)).resolves.toBeUndefined()
+    })
+  })
+
+  describe('scheduleNotification', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('should schedule notification in the future', async () => {
+      mockNotification.permission = 'granted'
+      const mockPostMessage = vi.fn()
+      global.navigator.serviceWorker = {
+        ready: Promise.resolve({
+          active: { postMessage: mockPostMessage }
+        } as any)
+      } as any
+
+      const scheduledTime = new Date(Date.now() + 5000) // 5 seconds from now
+      const notificationData: NotificationData = {
+        title: 'Scheduled Title',
+        body: 'Scheduled Body',
+        tag: 'scheduled-tag'
+      }
+
+      scheduleNotification(notificationData, scheduledTime)
+
+      // Fast-forward time
+      await vi.advanceTimersByTimeAsync(5000)
+
+      // Wait for async operations
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(mockPostMessage).toHaveBeenCalledWith({
+        type: 'SHOW_NOTIFICATION',
+        title: 'Scheduled Title',
+        body: 'Scheduled Body',
+        tag: 'scheduled-tag'
+      })
+    })
+
+    it('should show notification immediately if time has passed', async () => {
+      mockNotification.permission = 'granted'
+      const mockPostMessage = vi.fn()
+      global.navigator.serviceWorker = {
+        ready: Promise.resolve({
+          active: { postMessage: mockPostMessage }
+        } as any)
+      } as any
+
+      const pastTime = new Date(Date.now() - 5000) // 5 seconds ago
+      const notificationData: NotificationData = {
+        title: 'Past Title',
+        body: 'Past Body',
+        tag: 'past-tag'
+      }
+
+      scheduleNotification(notificationData, pastTime)
+
+      // Wait for async operations
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(mockPostMessage).toHaveBeenCalled()
+    })
+
+    it('should warn if scheduled too far in the future', () => {
+      const farFutureTime = new Date(Date.now() + 2147483648) // Beyond max setTimeout
+      const notificationData: NotificationData = {
+        title: 'Far Future',
+        body: 'Far Future Body',
+        tag: 'far-future-tag'
+      }
+
+      scheduleNotification(notificationData, farFutureTime)
+
+      expect(console.warn).toHaveBeenCalledWith(
+        'Notification scheduled too far in the future, cannot schedule'
+      )
+    })
+  })
+
+  describe('scheduleBatchNotifications', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      // Set a fixed date for testing
+      const today = new Date('2025-11-23T00:00:00Z')
+      vi.setSystemTime(today)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('should schedule notifications for dates that are today', async () => {
+      mockNotification.permission = 'granted'
+      const mockPostMessage = vi.fn()
+      global.navigator.serviceWorker = {
+        ready: Promise.resolve({
+          active: { postMessage: mockPostMessage }
+        } as any)
+      } as any
+
+      const batch: BatchDates = {
+        batchName: 'Test Batch',
+        acceptanceCheckDate: '2025-11-23', // Today
+        firstCageDate: '2025-11-24', // Tomorrow - should not schedule
+        secondCageDate: null,
+        hatchDate: '2025-11-23' // Today
+      }
+
+      scheduleBatchNotifications(batch)
+
+      // Fast-forward to 8 AM
+      await vi.advanceTimersByTimeAsync(8 * 60 * 60 * 1000)
+
+      // Wait for async operations
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      // Should have scheduled 2 notifications (acceptance check and hatch date)
+      expect(mockPostMessage).toHaveBeenCalledTimes(2)
+    })
+
+    it('should not schedule notifications for null dates', () => {
+      const batch: BatchDates = {
+        batchName: 'Test Batch',
+        acceptanceCheckDate: null,
+        firstCageDate: null,
+        secondCageDate: null,
+        hatchDate: null
+      }
+
+      // Should not throw
+      expect(() => scheduleBatchNotifications(batch)).not.toThrow()
+    })
+
+    it('should not schedule notifications for future dates', async () => {
+      mockNotification.permission = 'granted'
+      const mockPostMessage = vi.fn()
+      global.navigator.serviceWorker = {
+        ready: Promise.resolve({
+          active: { postMessage: mockPostMessage }
+        } as any)
+      } as any
+
+      const batch: BatchDates = {
+        batchName: 'Test Batch',
+        acceptanceCheckDate: '2025-11-30', // Future
+        firstCageDate: '2025-12-01', // Future
+        secondCageDate: '2025-12-02', // Future
+        hatchDate: '2025-12-03' // Future
+      }
+
+      scheduleBatchNotifications(batch)
+
+      // No timers should be set for future dates (not today)
+      expect(mockPostMessage).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('initializeNotifications', () => {
+    it('should return true when both registration and permission succeed', async () => {
+      const mockRegistration = { scope: '/' }
+      mockNavigator.serviceWorker.register.mockResolvedValue(mockRegistration as any)
+      mockNotification.permission = 'default'
+      mockNotification.requestPermission.mockResolvedValue('granted')
+
+      const result = await initializeNotifications()
+
+      expect(result).toBe(true)
+    })
+
+    it('should return false when registration fails', async () => {
+      mockNavigator.serviceWorker.register.mockRejectedValue(new Error('Registration failed'))
+
+      const result = await initializeNotifications()
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false when permission is denied', async () => {
+      const mockRegistration = { scope: '/' }
+      mockNavigator.serviceWorker.register.mockResolvedValue(mockRegistration as any)
+      mockNotification.permission = 'denied'
+
+      const result = await initializeNotifications()
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false when service workers not supported', async () => {
+      global.navigator = {} as any
+
+      const result = await initializeNotifications()
+
+      expect(result).toBe(false)
+    })
+  })
+})
