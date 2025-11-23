@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { History, User } from 'lucide-react'
+import { History, User, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface HiveConfiguration {
   brood_boxes?: number
@@ -37,6 +37,7 @@ interface HiveConfigurationHistoryProps {
 export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHistoryProps) {
   const [history, setHistory] = useState<ConfigurationHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -47,23 +48,30 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
           hive_id,
           changed_at,
           changed_by,
-          configuration,
-          changer:profiles!changed_by(full_name, email)
+          configuration
         `)
         .eq('hive_id', hiveId)
         .order('changed_at', { ascending: false })
 
       if (error) throw error
 
-      // Transform the data to handle the changer array from Supabase
-      const transformedData = (data || []).map(entry => ({
-        ...entry,
-        changer: Array.isArray(entry.changer) && entry.changer.length > 0
-          ? entry.changer[0]
-          : null
-      })) as ConfigurationHistoryEntry[]
+      // Fetch user profiles separately for each entry
+      const historyWithUsers = await Promise.all(
+        (data || []).map(async (entry) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', entry.changed_by)
+            .single()
 
-      setHistory(transformedData)
+          return {
+            ...entry,
+            changer: profile || null
+          }
+        })
+      )
+
+      setHistory(historyWithUsers as ConfigurationHistoryEntry[])
     } catch (error) {
       console.error('Error fetching configuration history:', error)
     } finally {
@@ -138,9 +146,11 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     )
   }
 
+  const displayedHistory = isExpanded ? history : history.slice(0, 3)
+
   return (
     <div className="space-y-3">
-      {history.map((entry, index) => {
+      {displayedHistory.map((entry, index) => {
         const changes = formatConfigurationChanges(entry.configuration)
         const changerName = entry.changer?.full_name || entry.changer?.email || 'Unknown'
         const isInitial = index === history.length - 1
@@ -191,6 +201,25 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
           </div>
         )
       })}
+
+      {history.length > 3 && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-forest-600 dark:text-forest-400 hover:bg-sage-50 dark:hover:bg-slate-800 rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-all"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp size={16} />
+              Show Less
+            </>
+          ) : (
+            <>
+              <ChevronDown size={16} />
+              Show More ({history.length - 3} older)
+            </>
+          )}
+        </button>
+      )}
     </div>
   )
 }
