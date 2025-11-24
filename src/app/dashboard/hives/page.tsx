@@ -754,6 +754,37 @@ export default function HivesPage() {
         console.log('Inserting hive with data:', insertData)
         console.log('Apiary ID:', insertData.apiary_id, 'Type:', typeof insertData.apiary_id)
 
+        // DEBUG: Check authentication state before insert
+        console.log('About to insert. User ID from getCurrentUserId():', userId)
+
+        // Verify the session is valid
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        console.log('Current session exists:', !!session)
+        console.log('Session user ID:', session?.user?.id)
+        console.log('Session access token present:', !!session?.access_token)
+
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+        }
+
+        if (!session) {
+          throw new Error('No active session found. Please refresh the page and try again.')
+        }
+
+        // Test if we can call the ownership function directly
+        if (insertData.apiary_id) {
+          const { data: ownershipTest, error: ownershipError } = await supabase
+            .rpc('check_user_owns_apiary', {
+              apiary_uuid: insertData.apiary_id,
+              user_uuid: userId
+            })
+
+          console.log('Direct ownership check result:', ownershipTest)
+          if (ownershipError) {
+            console.error('Direct ownership check error:', ownershipError)
+          }
+        }
+
         const { data: newHive, error } = await supabase
           .from('hives')
           .insert([insertData])
