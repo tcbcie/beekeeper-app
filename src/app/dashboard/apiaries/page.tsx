@@ -22,6 +22,7 @@ interface FormData {
   city: string
   eircode: string
   notes: string
+  is_uk_ni: boolean
 }
 
 export default function ApiariesPage() {
@@ -37,6 +38,7 @@ export default function ApiariesPage() {
     city: '',
     eircode: '',
     notes: '',
+    is_uk_ni: false,
   })
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
@@ -103,6 +105,7 @@ export default function ApiariesPage() {
       city: apiary.city || '',
       eircode: apiary.eircode || '',
       notes: apiary.notes || '',
+      is_uk_ni: false,
     })
     setShowForm(true)
   }
@@ -129,6 +132,7 @@ export default function ApiariesPage() {
       city: '',
       eircode: '',
       notes: '',
+      is_uk_ni: false,
     })
   }
 
@@ -190,16 +194,27 @@ export default function ApiariesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Eircode *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Eircode (Postcode)</label>
               <input
                 type="text"
                 value={formData.eircode}
                 onChange={(e) => setFormData({...formData, eircode: e.target.value.toUpperCase()})}
-                placeholder="e.g., D02 XY45"
+                placeholder={formData.is_uk_ni ? "e.g., BT1 5GS" : "e.g., D02 XY45"}
                 className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
-                required
               />
-              <p className="text-xs text-text-tertiary mt-1">Required for automatic weather data on inspections</p>
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="is_uk_ni"
+                  checked={formData.is_uk_ni}
+                  onChange={(e) => setFormData({...formData, is_uk_ni: e.target.checked})}
+                  className="w-4 h-4 text-forest-600 bg-surface border-border rounded focus:ring-forest-500 focus:ring-2"
+                />
+                <label htmlFor="is_uk_ni" className="text-sm text-text-secondary cursor-pointer">
+                  UK/NI Postcode
+                </label>
+              </div>
+              <p className="text-xs text-text-tertiary mt-1">Optional - Used for automatic weather data on inspections</p>
             </div>
 
             <div>

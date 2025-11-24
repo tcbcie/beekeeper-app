@@ -91,7 +91,9 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
 
           return {
             ...entry,
-            changer: profile || null
+            changer: profile || null,
+            apiary: Array.isArray(entry.apiary) ? entry.apiary[0] : entry.apiary,
+            queen: Array.isArray(entry.queen) ? entry.queen[0] : entry.queen
           }
         })
       )
