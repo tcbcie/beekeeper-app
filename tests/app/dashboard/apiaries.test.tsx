@@ -63,6 +63,9 @@ describe('ApiariesPage', () => {
     })
 
     it('should not require Eircode field to submit form', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+      confirmSpy.mockReturnValue(true) // User confirms to proceed without Eircode
+
       mockFrom.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -103,6 +106,8 @@ describe('ApiariesPage', () => {
       await waitFor(() => {
         expect(screen.queryByText('Add New Apiary')).not.toBeInTheDocument()
       })
+
+      confirmSpy.mockRestore()
     })
 
     it('should show helper text indicating Eircode is optional', async () => {
@@ -360,6 +365,9 @@ describe('ApiariesPage', () => {
 
   describe('Form Submission', () => {
     it('should successfully create apiary without Eircode', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+      confirmSpy.mockReturnValue(true) // User confirms to proceed without Eircode
+
       const mockInsert = vi.fn().mockResolvedValue({
         data: null,
         error: null
@@ -415,6 +423,8 @@ describe('ApiariesPage', () => {
           })
         ])
       })
+
+      confirmSpy.mockRestore()
     })
 
     it('should successfully create apiary with Eircode', async () => {
@@ -476,6 +486,312 @@ describe('ApiariesPage', () => {
           })
         ])
       })
+    })
+  })
+
+  describe('Eircode Missing Confirmation', () => {
+    it('should show confirmation popup when submitting without Eircode', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+      confirmSpy.mockReturnValue(true)
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Test Apiary')
+
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      // Should show confirmation dialog
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.stringContaining('You haven\'t entered an Eircode or Postcode')
+      )
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.stringContaining('weather information will not be automatically recorded')
+      )
+
+      confirmSpy.mockRestore()
+    })
+
+    it('should proceed with submission when user confirms popup', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+      confirmSpy.mockReturnValue(true) // User clicks OK
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Test Apiary')
+
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      // Should proceed with insert
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
+
+      confirmSpy.mockRestore()
+    })
+
+    it('should cancel submission when user rejects popup', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+      confirmSpy.mockReturnValue(false) // User clicks Cancel
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Test Apiary')
+
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      // Should NOT proceed with insert
+      await waitFor(() => {
+        expect(mockInsert).not.toHaveBeenCalled()
+      })
+
+      // Form should still be open
+      expect(screen.getByText('Add New Apiary')).toBeInTheDocument()
+
+      confirmSpy.mockRestore()
+    })
+
+    it('should not show confirmation popup when Eircode is provided', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Test Apiary')
+
+      const eircodeInput = screen.getByPlaceholderText(/e\.g\., d02 xy45/i)
+      await userEvent.type(eircodeInput, 'D02XY45')
+
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      // Should NOT show confirmation dialog
+      expect(confirmSpy).not.toHaveBeenCalled()
+
+      // Should proceed with insert
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+      })
+
+      confirmSpy.mockRestore()
+    })
+
+    it('should show confirmation popup when Eircode is only whitespace', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+      confirmSpy.mockReturnValue(true)
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Test Apiary')
+
+      const eircodeInput = screen.getByPlaceholderText(/e\.g\., d02 xy45/i)
+      await userEvent.type(eircodeInput, '   ') // Only whitespace
+
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      // Should show confirmation dialog even with whitespace
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.stringContaining('You haven\'t entered an Eircode or Postcode')
+      )
+
+      confirmSpy.mockRestore()
     })
   })
 })
