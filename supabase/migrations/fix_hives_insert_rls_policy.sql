@@ -38,5 +38,8 @@ WITH CHECK (
   )
 );
 
+-- Grant execute permission to anon and authenticated roles
+GRANT EXECUTE ON FUNCTION check_user_owns_apiary(UUID, UUID) TO anon, authenticated, public;
+
 -- Add helpful comment
 COMMENT ON FUNCTION check_user_owns_apiary IS 'Security definer function to check apiary ownership without triggering RLS policies';
