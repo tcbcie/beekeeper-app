@@ -1425,4 +1425,431 @@ describe('HiveConfigurationHistory', () => {
       })
     })
   })
+
+  describe('Queen Change Tracking', () => {
+    it('should show initial queen assignment in first configuration', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: 'queen-1',
+                      queen: { queen_number: 'Q123' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Initial Configuration')).toBeInTheDocument()
+        expect(screen.getByText(/Queen:/)).toBeInTheDocument()
+        expect(screen.getByText(/Q123/)).toBeInTheDocument()
+      })
+    })
+
+    it('should detect and display queen change', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: 'queen-2',
+                      queen: { queen_number: 'Q456' }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: 'queen-1',
+                      queen: { queen_number: 'Q123' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Configuration Updated')).toBeInTheDocument()
+        const queenFields = screen.getAllByText(/Queen:/)
+        expect(queenFields.length).toBeGreaterThan(0)
+        const updateEntry = queenFields[0].parentElement
+        expect(updateEntry?.textContent).toContain('Q123 →')
+        expect(updateEntry?.textContent).toContain('Q456')
+      })
+    })
+
+    it('should show manual queen status in initial configuration', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: null,
+                      queen_marked: true,
+                      queen_marking_color: 'White',
+                      queen_mated: true,
+                      queen_clipped: false
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Queen marked:/)).toBeInTheDocument()
+        expect(screen.getByText(/White/)).toBeInTheDocument()
+        expect(screen.getByText(/Queen mated:/)).toBeInTheDocument()
+      })
+    })
+
+    it('should detect queen marking color change', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: null,
+                      queen_marked: true,
+                      queen_marking_color: 'Yellow',
+                      queen_mated: true,
+                      queen_clipped: false
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: null,
+                      queen_marked: true,
+                      queen_marking_color: 'White',
+                      queen_mated: true,
+                      queen_clipped: false
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        const queenMarkedFields = screen.getAllByText(/Queen marked:/)
+        const updateEntry = queenMarkedFields[0].parentElement
+        expect(updateEntry?.textContent).toContain('White →')
+        expect(updateEntry?.textContent).toContain('Yellow')
+      })
+    })
+
+    it('should detect queen mated status change', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: null,
+                      queen_marked: false,
+                      queen_mated: true,
+                      queen_clipped: false
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: null,
+                      queen_marked: false,
+                      queen_mated: false,
+                      queen_clipped: false
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        const queenMatedFields = screen.getAllByText(/Queen mated:/)
+        const updateEntry = queenMatedFields[0].parentElement
+        expect(updateEntry?.textContent).toContain('No →')
+        expect(updateEntry?.textContent).toContain('Yes')
+      })
+    })
+
+    it('should show combined queen, location, and configuration changes', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 3 },
+                      apiary_id: 'apiary-2',
+                      row_in_apiary: 1,
+                      order_in_apiary: 1,
+                      apiary: { name: 'Back Apiary' },
+                      queen_id: 'queen-2',
+                      queen: { queen_number: 'Q456' }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' },
+                      queen_id: 'queen-1',
+                      queen: { queen_number: 'Q123' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        // Should show location change
+        const locationFields = screen.getAllByText(/Location:/)
+        expect(locationFields.length).toBeGreaterThan(0)
+
+        // Should show queen change
+        const queenFields = screen.getAllByText(/Queen:/)
+        expect(queenFields.length).toBeGreaterThan(0)
+
+        // Should show configuration change
+        const broodBoxesFields = screen.getAllByText(/Brood boxes:/)
+        expect(broodBoxesFields.length).toBeGreaterThan(0)
+      })
+    })
+
+    it('should not show queen changes when queen remains the same', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 3 },
+                      queen_id: 'queen-1',
+                      queen: { queen_number: 'Q123' },
+                      queen_marked: false,
+                      queen_mated: false,
+                      queen_clipped: false
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      queen_id: 'queen-1',
+                      queen: { queen_number: 'Q123' },
+                      queen_marked: false,
+                      queen_mated: false,
+                      queen_clipped: false
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        // Should show configuration change
+        const broodBoxesFields = screen.getAllByText(/Brood boxes:/)
+        expect(broodBoxesFields.length).toBeGreaterThan(0)
+
+        // Queen field should only appear once (in initial config), not twice
+        const queenLabels = screen.getAllByText(/Queen:/)
+        expect(queenLabels).toHaveLength(1)
+      })
+    })
+  })
 })
