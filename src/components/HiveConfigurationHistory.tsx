@@ -24,9 +24,15 @@ interface ConfigurationHistoryEntry {
   changed_at: string
   changed_by: string
   configuration: HiveConfiguration
+  apiary_id?: string | null
+  row_in_apiary?: number | null
+  order_in_apiary?: number | null
   changer?: {
     full_name: string | null
     email: string
+  } | null
+  apiary?: {
+    name: string
   } | null
 }
 
@@ -42,14 +48,18 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
 
   const fetchHistory = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('hive_configuration_history')
         .select(`
           id,
           hive_id,
           changed_at,
           changed_by,
-          configuration
+          configuration,
+          apiary_id,
+          row_in_apiary,
+          order_in_apiary,
+          apiary:apiaries(name)
         `)
         .eq('hive_id', hiveId)
         .order('changed_at', { ascending: false })
@@ -120,6 +130,45 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
       frame_orientation: 'Frame orientation'
     }
     return labels[key] || key
+  }
+
+  const compareLocations = (current: ConfigurationHistoryEntry, previous?: ConfigurationHistoryEntry): Array<{field: string, before: string, after: string}> => {
+    const changes: Array<{field: string, before: string, after: string}> = []
+
+    if (!previous) {
+      // Initial entry - show location if set
+      if (current.apiary) {
+        changes.push({
+          field: 'Location',
+          before: '-',
+          after: `${current.apiary.name}${current.row_in_apiary ? `, Row ${current.row_in_apiary}` : ''}${current.order_in_apiary ? `, Position ${current.order_in_apiary}` : ''}`
+        })
+      }
+      return changes
+    }
+
+    // Check if location changed
+    const apiaryChanged = current.apiary_id !== previous.apiary_id
+    const rowChanged = current.row_in_apiary !== previous.row_in_apiary
+    const positionChanged = current.order_in_apiary !== previous.order_in_apiary
+
+    if (apiaryChanged || rowChanged || positionChanged) {
+      const previousLocation = previous.apiary
+        ? `${previous.apiary.name}${previous.row_in_apiary ? `, Row ${previous.row_in_apiary}` : ''}${previous.order_in_apiary ? `, Position ${previous.order_in_apiary}` : ''}`
+        : 'Unknown'
+
+      const currentLocation = current.apiary
+        ? `${current.apiary.name}${current.row_in_apiary ? `, Row ${current.row_in_apiary}` : ''}${current.order_in_apiary ? `, Position ${current.order_in_apiary}` : ''}`
+        : 'Unknown'
+
+      changes.push({
+        field: 'Location',
+        before: previousLocation,
+        after: currentLocation
+      })
+    }
+
+    return changes
   }
 
   const compareConfigurations = (current: HiveConfiguration, previous?: HiveConfiguration): Array<{field: string, before: string, after: string}> => {
@@ -194,8 +243,11 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
               {displayedHistory.map((entry, index) => {
         const displayIndex = isShowingMore ? index : index
         const fullIndex = displayIndex
-        const previousConfig = fullIndex < history.length - 1 ? history[fullIndex + 1].configuration : undefined
-        const changes = compareConfigurations(entry.configuration, previousConfig)
+        const previousEntry = fullIndex < history.length - 1 ? history[fullIndex + 1] : undefined
+        const previousConfig = previousEntry?.configuration
+        const configChanges = compareConfigurations(entry.configuration, previousConfig)
+        const locationChanges = compareLocations(entry, previousEntry)
+        const allChanges = [...locationChanges, ...configChanges]
         const changerName = entry.changer?.full_name || entry.changer?.email || 'Unknown'
         const isInitial = fullIndex === history.length - 1
 
@@ -230,9 +282,9 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
               <span>Changed by: <span className="font-medium text-text-primary">{changerName}</span></span>
             </div>
 
-            {changes.length > 0 ? (
+            {allChanges.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {changes.map((change, idx) => (
+                {allChanges.map((change, idx) => (
                   <div
                     key={idx}
                     className="text-xs bg-sage-50 dark:bg-slate-800/50 px-3 py-2 rounded border border-border"
