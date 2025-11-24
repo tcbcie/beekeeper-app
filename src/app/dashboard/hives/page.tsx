@@ -732,14 +732,41 @@ export default function HivesPage() {
           }
         }
       } else {
+        // Verify apiary ownership before inserting
+        if (dataToSubmit.apiary_id) {
+          const { data: apiaryCheck, error: apiaryError } = await supabase
+            .from('apiaries')
+            .select('id, user_id, name')
+            .eq('id', dataToSubmit.apiary_id)
+            .single()
+
+          if (apiaryError) {
+            throw new Error('Failed to verify apiary ownership')
+          }
+
+          if (!apiaryCheck || apiaryCheck.user_id !== userId) {
+            throw new Error(`Cannot create hive: The selected apiary "${apiaryCheck?.name || 'Unknown'}" does not belong to you. Hives can only be added to your own apiaries.`)
+          }
+        }
+
         // Insert with user_id for RLS policy compliance
+        const insertData = { ...dataToSubmit, user_id: userId }
+        console.log('Inserting hive with data:', insertData)
+        console.log('Apiary ID:', insertData.apiary_id, 'Type:', typeof insertData.apiary_id)
+
         const { data: newHive, error } = await supabase
           .from('hives')
-          .insert([{ ...dataToSubmit, user_id: userId }])
+          .insert([insertData])
           .select('id')
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Hive insert error:', error)
+          console.error('Error code:', error.code)
+          console.error('Error details:', error.details)
+          console.error('Error hint:', error.hint)
+          throw error
+        }
 
         // Record initial configuration in history for new hive
         if (newHive) {
