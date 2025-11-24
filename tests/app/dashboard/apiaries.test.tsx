@@ -794,4 +794,204 @@ describe('ApiariesPage', () => {
       confirmSpy.mockRestore()
     })
   })
+
+  describe('Database - is_uk_ni Column', () => {
+    it('should save is_uk_ni as false when UK/NI checkbox is unchecked', async () => {
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Test Apiary')
+
+      const eircodeInput = screen.getByPlaceholderText(/e\.g\., d02 xy45/i)
+      await userEvent.type(eircodeInput, 'D02XY45')
+
+      // UK/NI checkbox is unchecked by default
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith([
+          expect.objectContaining({
+            name: 'Test Apiary',
+            eircode: 'D02XY45',
+            is_uk_ni: false,
+            user_id: mockUserId
+          })
+        ])
+      })
+    })
+
+    it('should save is_uk_ni as true when UK/NI checkbox is checked', async () => {
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Belfast Apiary')
+
+      const eircodeInput = screen.getByPlaceholderText(/e\.g\., d02 xy45/i)
+
+      // Check UK/NI checkbox
+      const checkbox = screen.getByLabelText(/uk\/ni postcode/i)
+      await userEvent.click(checkbox)
+
+      // Type UK postcode
+      await userEvent.clear(eircodeInput)
+      const ukInput = screen.getByPlaceholderText(/e\.g\., bt1 5gs/i)
+      await userEvent.type(ukInput, 'BT1 5GS')
+
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith([
+          expect.objectContaining({
+            name: 'Belfast Apiary',
+            eircode: 'BT1 5GS',
+            is_uk_ni: true,
+            user_id: mockUserId
+          })
+        ])
+      })
+    })
+
+    it('should save is_uk_ni as false even when no Eircode is provided', async () => {
+      const confirmSpy = vi.spyOn(window, 'confirm')
+      confirmSpy.mockReturnValue(true)
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<ApiariesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading apiaries...')).not.toBeInTheDocument()
+      })
+
+      const addButton = screen.getByRole('button', { name: /add apiary/i })
+      await userEvent.click(addButton)
+
+      const nameInput = screen.getByPlaceholderText(/home garden/i)
+      await userEvent.type(nameInput, 'Test Apiary')
+
+      // Submit without Eircode
+      const submitButton = screen.getByRole('button', { name: /^add apiary$/i })
+      await userEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith([
+          expect.objectContaining({
+            name: 'Test Apiary',
+            eircode: '',
+            is_uk_ni: false,
+            user_id: mockUserId
+          })
+        ])
+      })
+
+      confirmSpy.mockRestore()
+    })
+  })
 })
