@@ -848,22 +848,6 @@ export default function DashboardPage() {
       </div>
       )}
 
-      {/* Data Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-          <h3 className="text-lg font-semibold text-foreground mb-3">System Health</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-sm text-text-secondary">Database Connected</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-sm text-text-secondary">All Systems Operational</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Application Version */}
       <div className="bg-sage-50 dark:bg-slate-800 rounded-lg shadow p-6 border border-border">
