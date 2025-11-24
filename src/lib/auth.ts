@@ -131,6 +131,14 @@ const accountActiveCache = new Map<string, { value: boolean; timestamp: number }
 const CACHE_TTL = 5000 // 5 seconds
 
 /**
+ * Clear the account active cache (useful for testing)
+ * @internal
+ */
+export function clearAccountActiveCache(): void {
+  accountActiveCache.clear()
+}
+
+/**
  * Check if the current user's account is active
  * Uses a short-lived cache to avoid repeated database calls
  * @returns true if account is active, false if disabled
@@ -150,18 +158,27 @@ export async function isAccountActive(): Promise<boolean> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('is_active')
+    .select('is_active, deleted_at')
     .eq('id', userId)
     .single()
 
-  if (error || !data) {
+  if (error) {
     console.error('Error fetching account status:', error)
+    // Fail open: assume account is active if we encounter an error
+    // This prevents false positives where network/DB issues lock out active users
+    return true
+  }
+
+  if (!data) {
+    console.error('No profile data found for user:', userId)
+    // If profile doesn't exist, account is not active
     return false
   }
 
-  // Default to true if is_active is null/undefined
-  // Only return false if explicitly set to false
-  const isActive = data.is_active !== false
+  // Account is active if:
+  // 1. is_active is not explicitly false AND
+  // 2. deleted_at is null or undefined (not soft-deleted)
+  const isActive = data.is_active !== false && !data.deleted_at
 
   // Update cache
   accountActiveCache.set(userId, { value: isActive, timestamp: Date.now() })

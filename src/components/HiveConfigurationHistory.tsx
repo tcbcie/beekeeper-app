@@ -84,49 +84,77 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     fetchHistory()
   }, [fetchHistory])
 
-  const formatConfigurationChanges = (config: HiveConfiguration): string[] => {
-    const changes: string[] = []
+  const formatFieldValue = (key: string, value: any): string => {
+    if (value === null || value === undefined) return 'None'
 
-    if (config.hive_size) {
-      changes.push(`Size: ${config.hive_size === 'nuc' ? 'Nuc' : 'Full Size'}`)
+    switch (key) {
+      case 'hive_size':
+        return value === 'nuc' ? 'Nuc' : 'Full Size'
+      case 'frame_orientation':
+        return value === 'warm' ? 'Warm way' : 'Cold way'
+      case 'varroa_mesh_floor':
+        return value === 'open' ? 'Open' : value === 'closed' ? 'Closed' : String(value)
+      case 'queen_excluder':
+      case 'feeder':
+      case 'entrance_reducer':
+      case 'right_sized_broodbox':
+        return value ? 'Yes' : 'No'
+      default:
+        return String(value)
+    }
+  }
+
+  const getFieldLabel = (key: string): string => {
+    const labels: Record<string, string> = {
+      hive_size: 'Size',
+      brood_boxes: 'Brood boxes',
+      brood_boxes_full: 'Brood boxes (full)',
+      brood_boxes_half: 'Brood boxes (half)',
+      honey_supers: 'Honey supers',
+      queen_excluder: 'Queen excluder',
+      feeder: 'Feeder',
+      feeder_type: 'Feeder type',
+      entrance_reducer: 'Entrance reducer',
+      varroa_mesh_floor: 'Varroa floor',
+      right_sized_broodbox: 'Right-sized broodbox',
+      frame_orientation: 'Frame orientation'
+    }
+    return labels[key] || key
+  }
+
+  const compareConfigurations = (current: HiveConfiguration, previous?: HiveConfiguration): Array<{field: string, before: string, after: string}> => {
+    if (!previous) {
+      // Initial configuration - show all non-empty fields
+      const changes: Array<{field: string, before: string, after: string}> = []
+      Object.entries(current).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== false && value !== 0 && value !== '') {
+          changes.push({
+            field: getFieldLabel(key),
+            before: '-',
+            after: formatFieldValue(key, value)
+          })
+        }
+      })
+      return changes
     }
 
-    const broodFull = config.brood_boxes_full ?? config.brood_boxes ?? 0
-    const broodHalf = config.brood_boxes_half ?? 0
-    if (broodFull > 0 || broodHalf > 0) {
-      const parts = []
-      if (broodFull > 0) parts.push(`${broodFull} full`)
-      if (broodHalf > 0) parts.push(`${broodHalf} half`)
-      changes.push(`Brood boxes: ${parts.join(', ')}`)
-    }
+    // Compare with previous configuration
+    const changes: Array<{field: string, before: string, after: string}> = []
+    const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)])
 
-    if (config.honey_supers && config.honey_supers > 0) {
-      changes.push(`Honey supers: ${config.honey_supers}`)
-    }
+    allKeys.forEach(key => {
+      const currentValue = (current as any)[key]
+      const previousValue = (previous as any)[key]
 
-    if (config.queen_excluder) {
-      changes.push('Queen excluder: Yes')
-    }
-
-    if (config.feeder_type) {
-      changes.push(`Feeder: ${config.feeder_type}`)
-    }
-
-    if (config.entrance_reducer) {
-      changes.push('Entrance reducer: Yes')
-    }
-
-    if (config.varroa_mesh_floor) {
-      changes.push(`Varroa floor: ${config.varroa_mesh_floor}`)
-    }
-
-    if (config.right_sized_broodbox) {
-      changes.push('Right-sized broodbox: Yes')
-    }
-
-    if (config.frame_orientation) {
-      changes.push(`Frame orientation: ${config.frame_orientation === 'warm' ? 'Warm way' : 'Cold way'}`)
-    }
+      // Only show if values are different
+      if (JSON.stringify(currentValue) !== JSON.stringify(previousValue)) {
+        changes.push({
+          field: getFieldLabel(key),
+          before: formatFieldValue(key, previousValue),
+          after: formatFieldValue(key, currentValue)
+        })
+      }
+    })
 
     return changes
   }
@@ -164,9 +192,12 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
           ) : (
             <>
               {displayedHistory.map((entry, index) => {
-        const changes = formatConfigurationChanges(entry.configuration)
+        const displayIndex = isShowingMore ? index : index
+        const fullIndex = displayIndex
+        const previousConfig = fullIndex < history.length - 1 ? history[fullIndex + 1].configuration : undefined
+        const changes = compareConfigurations(entry.configuration, previousConfig)
         const changerName = entry.changer?.full_name || entry.changer?.email || 'Unknown'
-        const isInitial = index === history.length - 1
+        const isInitial = fullIndex === history.length - 1
 
         return (
           <div
@@ -204,9 +235,13 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
                 {changes.map((change, idx) => (
                   <div
                     key={idx}
-                    className="text-xs text-text-primary bg-sage-50 dark:bg-slate-800/50 px-3 py-2 rounded border border-border"
+                    className="text-xs bg-sage-50 dark:bg-slate-800/50 px-3 py-2 rounded border border-border"
                   >
-                    {change}
+                    <span className="font-medium text-text-primary">{change.field}:</span>
+                    {change.before !== '-' && (
+                      <span className="text-text-tertiary"> {change.before} →</span>
+                    )}
+                    <span className="text-forest-600 dark:text-forest-400 font-medium"> {change.after}</span>
                   </div>
                 ))}
               </div>
