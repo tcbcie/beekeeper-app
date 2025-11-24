@@ -1242,7 +1242,16 @@ export default function InspectionsPage() {
     })
 
     // Sort by date descending (most recent first)
-    merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    merged.sort((a, b) => {
+      const dateA = new Date(a.date).getTime()
+      const dateB = new Date(b.date).getTime()
+      // Handle invalid dates
+      if (isNaN(dateA) && isNaN(dateB)) return 0
+      if (isNaN(dateA)) return 1  // Put invalid dates at the end
+      if (isNaN(dateB)) return -1
+      // Most recent first (descending)
+      return dateB - dateA
+    })
 
     return merged
   }, [inspections, varroaTreatments, varroaChecks, feedings, harvests, archiveRecords])
