@@ -84,7 +84,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     fetchHistory()
   }, [fetchHistory])
 
-  const formatFieldValue = (key: string, value: any): string => {
+  const formatFieldValue = (key: string, value: unknown): string => {
     if (value === null || value === undefined) return 'None'
 
     switch (key) {
@@ -143,8 +143,8 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)])
 
     allKeys.forEach(key => {
-      const currentValue = (current as any)[key]
-      const previousValue = (previous as any)[key]
+      const currentValue = (current as Record<string, unknown>)[key]
+      const previousValue = (previous as Record<string, unknown>)[key]
 
       // Only show if values are different
       if (JSON.stringify(currentValue) !== JSON.stringify(previousValue)) {
