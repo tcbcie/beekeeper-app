@@ -1,6 +1,5 @@
-// Minimal PostCSS config for tests to avoid Tailwindcss issues
 const config = {
-  plugins: [],
+  plugins: ["@tailwindcss/postcss"],
 };
 
 export default config;
