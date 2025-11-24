@@ -27,7 +27,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const ROOT_DIR = join(__dirname, '..', '..', '..', '..');
+const ROOT_DIR = join(__dirname, '..');
 
 // Read Supabase credentials from environment or .env.local
 // Using SERVICE_ROLE_KEY to bypass RLS for system-generated changelog entries

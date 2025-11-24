@@ -27,7 +27,7 @@ import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const ROOT_DIR = join(__dirname, '..', '..', '..', '..');
+const ROOT_DIR = join(__dirname, '..');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
