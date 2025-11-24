@@ -72,6 +72,18 @@ export default function ApiariesPage() {
     e.preventDefault()
     if (!userId) return
 
+    // Check if Eircode/Postcode is empty and show confirmation
+    if (!formData.eircode || formData.eircode.trim() === '') {
+      const confirmed = confirm(
+        'You haven\'t entered an Eircode or Postcode.\n\n' +
+        'Without a postcode (or an adjacent one), weather information will not be automatically recorded for inspections at this apiary.\n\n' +
+        'Do you want to continue without a postcode?'
+      )
+      if (!confirmed) {
+        return // User chose to go back and add postcode
+      }
+    }
+
     try {
       if (editingApiary) {
         const { error } = await supabase
