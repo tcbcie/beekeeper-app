@@ -5231,6 +5231,51 @@ export default function InspectionsPage() {
               </div>
             </div>
 
+            {/* Queen Cells Section - Only show if any cells were found */}
+            {(inspection.queen_cups || inspection.swarm_cells || inspection.supercedure_cells || inspection.emergency_cells) && (
+              <div className="mb-3 overflow-hidden rounded border border-purple-200 dark:border-purple-800">
+                <div className="bg-purple-100 dark:bg-purple-950/40 px-3 py-1.5 border-b border-purple-200 dark:border-purple-800">
+                  <h4 className="text-sm font-semibold text-foreground">Queen Cells</h4>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-950/20 px-3 py-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    {inspection.queen_cups && (
+                      <span>
+                        <span className="text-text-secondary">Queen Cups:</span> <span className="font-medium text-foreground">{inspection.queen_cups_number || 0}</span>
+                        {inspection.queen_cups_removed_all !== null && (
+                          <span className="text-text-tertiary"> ({inspection.queen_cups_removed_all ? 'All removed' : 'Some remain'})</span>
+                        )}
+                      </span>
+                    )}
+                    {inspection.swarm_cells && (
+                      <span>
+                        <span className="text-text-secondary">Swarm Cells:</span> <span className="font-medium text-foreground">{inspection.swarm_cells_number || 0}</span>
+                        {inspection.swarm_cells_removed_all !== null && (
+                          <span className="text-text-tertiary"> ({inspection.swarm_cells_removed_all ? 'All removed' : 'Some remain'})</span>
+                        )}
+                      </span>
+                    )}
+                    {inspection.supercedure_cells && (
+                      <span>
+                        <span className="text-text-secondary">Supercedure Cells:</span> <span className="font-medium text-foreground">{inspection.supercedure_cells_number || 0}</span>
+                        {inspection.supercedure_cells_removed_all !== null && (
+                          <span className="text-text-tertiary"> ({inspection.supercedure_cells_removed_all ? 'All removed' : 'Some remain'})</span>
+                        )}
+                      </span>
+                    )}
+                    {inspection.emergency_cells && (
+                      <span>
+                        <span className="text-text-secondary">Emergency Cells:</span> <span className="font-medium text-foreground">{inspection.emergency_cells_number || 0}</span>
+                        {inspection.emergency_cells_removed_all !== null && (
+                          <span className="text-text-tertiary"> ({inspection.emergency_cells_removed_all ? 'All removed' : 'Some remain'})</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Drones Section Display - Only show if any value is recorded */}
             {((inspection.drones_present !== -1 && inspection.drones_present !== null) || inspection.drone_brood_present !== null) && (
             <div className="mb-3 overflow-hidden rounded border border-forest-200 dark:border-forest-800">
