@@ -720,4 +720,246 @@ describe('HivesPage - Create Hive RLS Policy', () => {
       alertSpy.mockRestore()
     })
   })
+
+  describe('RLS Policy - Permissive policies with application-layer security', () => {
+    it('should successfully insert hive with user_id when RLS policies are permissive', async () => {
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { id: 'new-hive-rls-test' },
+            error: null
+          })
+        })
+      })
+
+      const mockFrom = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hives') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  is: vi.fn().mockResolvedValue({
+                    data: [],
+                    error: null,
+                    count: 0
+                  })
+                })
+              })
+            }),
+            insert: mockInsert
+          }
+        }
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [{ id: mockApiaryId, name: 'Test Apiary' }],
+                error: null
+              })
+            })
+          }
+        }
+        if (table === 'queens') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      mockSupabaseClient.from = mockFrom
+      mockSupabaseClient.auth = {
+        getSession: vi.fn().mockResolvedValue({
+          data: {
+            session: {
+              user: { id: mockUserId },
+              access_token: 'valid-token'
+            }
+          },
+          error: null
+        }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: vi.fn() } }
+        })
+      }
+      mockSupabaseClient.rpc = vi.fn().mockResolvedValue({
+        data: true,
+        error: null
+      })
+
+      render(<HivesPage />)
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading hives...')).not.toBeInTheDocument()
+      }, { timeout: 3000 })
+
+      const addButton = screen.getByRole('button', { name: /add hive/i })
+      await userEvent.click(addButton)
+
+      const hiveNumberInput = screen.getByLabelText(/hive number/i)
+      await userEvent.type(hiveNumberInput, 'RLS-TEST-H1')
+
+      const apiarySelect = screen.getByLabelText(/apiary/i)
+      await userEvent.selectOptions(apiarySelect, mockApiaryId)
+
+      const submitButton = screen.getByRole('button', { name: /add hive/i })
+      await userEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalled()
+        const insertCall = mockInsert.mock.calls[0][0]
+        expect(insertCall[0]).toMatchObject({
+          hive_number: 'RLS-TEST-H1',
+          apiary_id: mockApiaryId,
+          user_id: mockUserId
+        })
+      })
+    })
+
+    it('should allow SELECT operations with permissive RLS policy', async () => {
+      const mockSelect = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            is: vi.fn().mockResolvedValue({
+              data: [
+                { id: 'hive-1', hive_number: 'H1', user_id: mockUserId },
+                { id: 'hive-2', hive_number: 'H2', user_id: mockUserId }
+              ],
+              error: null,
+              count: 2
+            })
+          })
+        })
+      })
+
+      const mockFrom = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hives') {
+          return { select: mockSelect }
+        }
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          }
+        }
+        if (table === 'queens') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      mockSupabaseClient.from = mockFrom
+      mockSupabaseClient.auth = {
+        getSession: vi.fn().mockResolvedValue({
+          data: {
+            session: {
+              user: { id: mockUserId },
+              access_token: 'valid-token'
+            }
+          },
+          error: null
+        }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: vi.fn() } }
+        })
+      }
+
+      render(<HivesPage />)
+
+      await waitFor(() => {
+        expect(mockSelect).toHaveBeenCalled()
+        expect(screen.getByText('H1')).toBeInTheDocument()
+        expect(screen.getByText('H2')).toBeInTheDocument()
+      })
+    })
+
+    it('should enforce application-layer security by filtering queries with user_id', async () => {
+      const mockEq = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          is: vi.fn().mockResolvedValue({
+            data: [],
+            error: null,
+            count: 0
+          })
+        })
+      })
+
+      const mockSelect = vi.fn().mockReturnValue({
+        eq: mockEq
+      })
+
+      const mockFrom = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hives') {
+          return { select: mockSelect }
+        }
+        if (table === 'apiaries') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [],
+                error: null
+              })
+            })
+          }
+        }
+        if (table === 'queens') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return { select: vi.fn() }
+      })
+
+      mockSupabaseClient.from = mockFrom
+      mockSupabaseClient.auth = {
+        getSession: vi.fn().mockResolvedValue({
+          data: {
+            session: {
+              user: { id: mockUserId },
+              access_token: 'valid-token'
+            }
+          },
+          error: null
+        }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: vi.fn() } }
+        })
+      }
+
+      render(<HivesPage />)
+
+      await waitFor(() => {
+        expect(mockSelect).toHaveBeenCalled()
+        // Verify that the application code filters by user_id
+        expect(mockEq).toHaveBeenCalledWith('user_id', mockUserId)
+      })
+    })
+  })
 })

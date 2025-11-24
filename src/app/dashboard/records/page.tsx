@@ -5086,8 +5086,8 @@ export default function InspectionsPage() {
           if (record.record_type === 'inspection') {
             const inspection = record
             return (
-          <div key={`inspection-${inspection.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-blue-500">
-            <div className="flex justify-between items-start mb-4 gap-4">
+          <div key={`inspection-${inspection.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 md:p-6 border-l-4 border-blue-500">
+            <div className="flex justify-between items-start mb-3 md:mb-4 gap-2 md:gap-4">
               <div className="flex items-start gap-3 flex-1">
                 {/* Icon Badge */}
                 <div className="w-12 h-12 flex-shrink-0 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -5115,8 +5115,8 @@ export default function InspectionsPage() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
-                  <p className="text-sm text-text-tertiary">
+                  <h3 className="text-base md:text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
+                  <p className="text-xs md:text-sm text-text-tertiary">
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
@@ -5155,20 +5155,20 @@ export default function InspectionsPage() {
             </div>
 
             {/* Queen & Brood Section - Grouped Display */}
-            <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
-              <h4 className="text-sm font-semibold text-foreground mb-3">Queen & Brood</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Queen Seen</div>
-                  <div className="text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
+            <div className="mb-3 md:mb-4 p-2 md:p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+              <h4 className="text-xs md:text-sm font-semibold text-foreground mb-2 md:mb-3">Queen & Brood</h4>
+              <div className="grid grid-cols-3 gap-2 md:gap-3">
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Queen Seen</div>
+                  <div className="text-xl md:text-2xl">{inspection.queen_seen ? '✅' : '❌'}</div>
                 </div>
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Eggs</div>
-                  <div className="text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Eggs</div>
+                  <div className="text-xl md:text-2xl">{inspection.eggs_present ? '✅' : '❌'}</div>
                 </div>
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Brood Frames</div>
-                  <div className="text-2xl font-bold text-purple-600">
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Brood Frames</div>
+                  <div className="text-xl md:text-2xl font-bold text-purple-600">
                     {inspection.brood_frames ?? '-'}
                   </div>
                 </div>
@@ -5210,28 +5210,28 @@ export default function InspectionsPage() {
             )}
 
             {/* Behaviour Section - Grouped Display */}
-            <div className="mb-4 p-4 bg-teal-50 dark:bg-teal-950/20 rounded-lg border-2 border-teal-200 dark:border-teal-800">
-              <h4 className="text-sm font-semibold text-foreground mb-3">Behaviour</h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Population</div>
-                  <div className="text-sm">{renderStars(inspection.population_strength)}</div>
+            <div className="mb-3 md:mb-4 p-2 md:p-4 bg-teal-50 dark:bg-teal-950/20 rounded-lg border-2 border-teal-200 dark:border-teal-800">
+              <h4 className="text-xs md:text-sm font-semibold text-foreground mb-2 md:mb-3">Behaviour</h4>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Population</div>
+                  <div className="text-xs md:text-sm">{renderStars(inspection.population_strength)}</div>
                 </div>
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Temperament</div>
-                  <div className="text-sm">{renderStars(inspection.temperament_rating)}</div>
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Temperament</div>
+                  <div className="text-xs md:text-sm">{renderStars(inspection.temperament_rating)}</div>
                 </div>
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Brood Pattern</div>
-                  <div className="text-sm">{renderStars(inspection.brood_pattern_rating)}</div>
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Brood Pattern</div>
+                  <div className="text-xs md:text-sm">{renderStars(inspection.brood_pattern_rating)}</div>
                 </div>
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Swarming Tendency</div>
-                  <div className="text-sm">{renderStars(inspection.swarming_tendency)}</div>
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Swarming Tendency</div>
+                  <div className="text-xs md:text-sm">{renderStars(inspection.swarming_tendency)}</div>
                 </div>
-                <div className="text-center p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
-                  <div className="text-xs text-text-secondary mb-1">Calmness</div>
-                  <div className="text-sm">{renderStars(inspection.calmness)}</div>
+                <div className="text-center p-2 md:p-3 bg-surface dark:bg-surface-elevated rounded shadow-sm">
+                  <div className="text-[10px] md:text-xs text-text-secondary mb-1">Calmness</div>
+                  <div className="text-xs md:text-sm">{renderStars(inspection.calmness)}</div>
                 </div>
               </div>
             </div>
@@ -5312,7 +5312,7 @@ export default function InspectionsPage() {
             )}
 
             {(inspection.weather_temp !== null || inspection.weather_condition) && (
-              <div className="mb-4 p-3 bg-sky-50 rounded border-2 border-sky-200">
+              <div className="mb-4 p-3 bg-sky-50 rounded border-2 border-sky-200 hidden md:block">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🌤️</span>
                   <span className="text-sm font-medium text-sky-700">Weather Conditions</span>
