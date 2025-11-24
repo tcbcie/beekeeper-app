@@ -230,7 +230,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
               <span>Changed by: <span className="font-medium text-text-primary">{changerName}</span></span>
             </div>
 
-            {changes.length > 0 && (
+            {changes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {changes.map((change, idx) => (
                   <div
@@ -244,6 +244,10 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
                     <span className="text-forest-600 dark:text-forest-400 font-medium"> {change.after}</span>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="text-xs text-text-tertiary italic bg-slate-50 dark:bg-slate-800/30 px-3 py-2 rounded border border-border">
+                No changes detected (configuration may have been saved without modifications)
               </div>
             )}
           </div>
