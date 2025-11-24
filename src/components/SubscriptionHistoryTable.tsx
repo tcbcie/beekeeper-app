@@ -58,18 +58,7 @@ export default function SubscriptionHistoryTable() {
   }
 
   if (history.length === 0) {
-    return (
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Subscription History</h3>
-        <div className="text-center py-8">
-          <Calendar className="w-12 h-12 text-text-tertiary mx-auto mb-3" />
-          <p className="text-text-secondary">No subscription history yet</p>
-          <p className="text-sm text-text-tertiary mt-1">
-            Your renewals and activations will appear here
-          </p>
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
