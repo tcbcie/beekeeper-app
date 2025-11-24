@@ -1815,6 +1815,11 @@ export default function InspectionsPage() {
     setImageFile(null)
 
     setShowForm(true)
+
+    // Scroll to the top where the form is
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
   }
 
   const handleDelete = async (id: string) => {
@@ -5497,6 +5502,10 @@ export default function InspectionsPage() {
                           setIsOtherTreatment(false)
                         }
                         setShowForm(true)
+                        // Scroll to the top where the form is
+                        setTimeout(() => {
+                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }, 100)
                       }}
                       className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit treatment"
@@ -5601,6 +5610,10 @@ export default function InspectionsPage() {
                         setEditingCheck(check)
                         setFormType('varroa_check')
                         setShowForm(true)
+                        // Scroll to the top where the form is
+                        setTimeout(() => {
+                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }, 100)
                       }}
                       className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit check"
@@ -5734,6 +5747,10 @@ export default function InspectionsPage() {
                         }
                         setFormType('feeding')
                         setShowForm(true)
+                        // Scroll to the top where the form is
+                        setTimeout(() => {
+                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }, 100)
                       }}
                       className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit feeding"
@@ -5828,6 +5845,10 @@ export default function InspectionsPage() {
                         setEditingHarvest(harvest)
                         setFormType('harvest')
                         setShowForm(true)
+                        // Scroll to the top where the form is
+                        setTimeout(() => {
+                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }, 100)
                       }}
                       className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit harvest"
