@@ -851,20 +851,6 @@ export default function DashboardPage() {
       {/* Data Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-          <h3 className="text-lg font-semibold text-foreground mb-3">Queen Status Distribution</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-text-secondary">Active</span>
-              <span className="font-medium text-green-600 dark:text-green-400">{stats.activeQueens}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-text-secondary">Inactive</span>
-              <span className="font-medium text-text-secondary">{stats.queens - stats.activeQueens}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
           <h3 className="text-lg font-semibold text-foreground mb-3">System Health</h3>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
