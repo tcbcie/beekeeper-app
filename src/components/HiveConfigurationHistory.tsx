@@ -27,12 +27,20 @@ interface ConfigurationHistoryEntry {
   apiary_id?: string | null
   row_in_apiary?: number | null
   order_in_apiary?: number | null
+  queen_id?: string | null
+  queen_marked?: boolean | null
+  queen_marking_color?: string | null
+  queen_mated?: boolean | null
+  queen_clipped?: boolean | null
   changer?: {
     full_name: string | null
     email: string
   } | null
   apiary?: {
     name: string
+  } | null
+  queen?: {
+    queen_number: string
   } | null
 }
 
@@ -59,7 +67,13 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
           apiary_id,
           row_in_apiary,
           order_in_apiary,
-          apiary:apiaries(name)
+          queen_id,
+          queen_marked,
+          queen_marking_color,
+          queen_mated,
+          queen_clipped,
+          apiary:apiaries(name),
+          queen:queens(queen_number)
         `)
         .eq('hive_id', hiveId)
         .order('changed_at', { ascending: false })
@@ -171,6 +185,91 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     return changes
   }
 
+  const compareQueenInfo = (current: ConfigurationHistoryEntry, previous?: ConfigurationHistoryEntry): Array<{field: string, before: string, after: string}> => {
+    const changes: Array<{field: string, before: string, after: string}> = []
+
+    if (!previous) {
+      // Initial entry - show queen info if set
+      if (current.queen_id && current.queen) {
+        changes.push({
+          field: 'Queen',
+          before: '-',
+          after: current.queen.queen_number
+        })
+      }
+
+      // Show manual queen status flags if set (when no specific queen assigned)
+      if (!current.queen_id) {
+        if (current.queen_marked) {
+          changes.push({
+            field: 'Queen marked',
+            before: '-',
+            after: current.queen_marking_color || 'Yes'
+          })
+        }
+        if (current.queen_mated) {
+          changes.push({
+            field: 'Queen mated',
+            before: '-',
+            after: 'Yes'
+          })
+        }
+        if (current.queen_clipped) {
+          changes.push({
+            field: 'Queen clipped',
+            before: '-',
+            after: 'Yes'
+          })
+        }
+      }
+      return changes
+    }
+
+    // Check if queen changed
+    if (current.queen_id !== previous.queen_id) {
+      const previousQueen = previous.queen_id && previous.queen ? previous.queen.queen_number : 'None'
+      const currentQueen = current.queen_id && current.queen ? current.queen.queen_number : 'None'
+
+      changes.push({
+        field: 'Queen',
+        before: previousQueen,
+        after: currentQueen
+      })
+    }
+
+    // Check manual queen status flags (only when no specific queen assigned)
+    if (!current.queen_id && !previous.queen_id) {
+      if (current.queen_marked !== previous.queen_marked || current.queen_marking_color !== previous.queen_marking_color) {
+        const previousStatus = previous.queen_marked ? (previous.queen_marking_color || 'Marked') : 'Not marked'
+        const currentStatus = current.queen_marked ? (current.queen_marking_color || 'Marked') : 'Not marked'
+
+        changes.push({
+          field: 'Queen marked',
+          before: previousStatus,
+          after: currentStatus
+        })
+      }
+
+      if (current.queen_mated !== previous.queen_mated) {
+        changes.push({
+          field: 'Queen mated',
+          before: previous.queen_mated ? 'Yes' : 'No',
+          after: current.queen_mated ? 'Yes' : 'No'
+        })
+      }
+
+      if (current.queen_clipped !== previous.queen_clipped) {
+        changes.push({
+          field: 'Queen clipped',
+          before: previous.queen_clipped ? 'Yes' : 'No',
+          after: current.queen_clipped ? 'Yes' : 'No'
+        })
+      }
+    }
+
+    return changes
+  }
+
   const compareConfigurations = (current: HiveConfiguration, previous?: HiveConfiguration): Array<{field: string, before: string, after: string}> => {
     if (!previous) {
       // Initial configuration - show all non-empty fields
@@ -247,7 +346,8 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
         const previousConfig = previousEntry?.configuration
         const configChanges = compareConfigurations(entry.configuration, previousConfig)
         const locationChanges = compareLocations(entry, previousEntry)
-        const allChanges = [...locationChanges, ...configChanges]
+        const queenChanges = compareQueenInfo(entry, previousEntry)
+        const allChanges = [...locationChanges, ...queenChanges, ...configChanges]
         const changerName = entry.changer?.full_name || entry.changer?.email || 'Unknown'
         const isInitial = fullIndex === history.length - 1
 
