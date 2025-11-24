@@ -575,6 +575,59 @@ describe('HiveConfigurationHistory', () => {
         expect(updateEntry?.textContent).toContain('Cold way')
       })
     })
+
+    it('should display message when no changes are detected', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2, honey_supers: 1 }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2, honey_supers: 1 } // Same as current
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        // Should show "no changes detected" message for the latest entry
+        expect(screen.getByText(/No changes detected/i)).toBeInTheDocument()
+        expect(screen.getByText(/configuration may have been saved without modifications/i)).toBeInTheDocument()
+      })
+    })
   })
 
   describe('User Information', () => {
