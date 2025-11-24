@@ -5206,14 +5206,14 @@ export default function InspectionsPage() {
             </div>
 
             {/* Drones Section Display - Only show if any value is recorded */}
-            {(inspection.drones_present !== -1 || inspection.drone_brood_present !== null) && (
+            {((inspection.drones_present !== -1 && inspection.drones_present !== null) || inspection.drone_brood_present !== null) && (
             <div className="mb-3 overflow-hidden rounded border border-forest-200 dark:border-forest-800">
               <div className="bg-forest-100 dark:bg-forest-950/40 px-3 py-1.5 border-b border-forest-200 dark:border-forest-800">
                 <h4 className="text-sm font-semibold text-foreground">Drones</h4>
               </div>
               <div className="bg-forest-50 dark:bg-forest-950/30 p-2">
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  {inspection.drones_present !== -1 && (
+                  {inspection.drones_present !== -1 && inspection.drones_present !== null && (
                     <div className="flex items-center gap-2">
                       <span className="text-text-secondary">Level:</span>
                       <span className="font-semibold text-amber-600">
