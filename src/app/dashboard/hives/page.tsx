@@ -732,10 +732,10 @@ export default function HivesPage() {
           }
         }
       } else {
-        // Insert without user_id - database trigger will set it automatically
+        // Insert with user_id for RLS policy compliance
         const { data: newHive, error } = await supabase
           .from('hives')
-          .insert([dataToSubmit])
+          .insert([{ ...dataToSubmit, user_id: userId }])
           .select('id')
           .single()
 
