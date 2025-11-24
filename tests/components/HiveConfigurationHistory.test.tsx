@@ -990,4 +990,439 @@ describe('HiveConfigurationHistory', () => {
       consoleErrorSpy.mockRestore()
     })
   })
+
+  describe('Location Change Tracking', () => {
+    it('should show initial location in first configuration', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Initial Configuration')).toBeInTheDocument()
+        expect(screen.getByText(/Location:/)).toBeInTheDocument()
+        expect(screen.getByText(/Main Apiary, Row 2, Position 3/)).toBeInTheDocument()
+      })
+    })
+
+    it('should detect and display apiary change', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-2',
+                      row_in_apiary: 1,
+                      order_in_apiary: 5,
+                      apiary: { name: 'Back Apiary' }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Configuration Updated')).toBeInTheDocument()
+        const locationFields = screen.getAllByText(/Location:/)
+        expect(locationFields.length).toBeGreaterThan(0)
+        const updateEntry = locationFields[0].parentElement
+        expect(updateEntry?.textContent).toContain('Main Apiary, Row 2, Position 3 →')
+        expect(updateEntry?.textContent).toContain('Back Apiary, Row 1, Position 5')
+      })
+    })
+
+    it('should detect row change within same apiary', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 3,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        const locationFields = screen.getAllByText(/Location:/)
+        const updateEntry = locationFields[0].parentElement
+        expect(updateEntry?.textContent).toContain('Main Apiary, Row 2, Position 3 →')
+        expect(updateEntry?.textContent).toContain('Main Apiary, Row 3, Position 3')
+      })
+    })
+
+    it('should detect position change within same row', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 5,
+                      apiary: { name: 'Main Apiary' }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        const locationFields = screen.getAllByText(/Location:/)
+        const updateEntry = locationFields[0].parentElement
+        expect(updateEntry?.textContent).toContain('Main Apiary, Row 2, Position 3 →')
+        expect(updateEntry?.textContent).toContain('Main Apiary, Row 2, Position 5')
+      })
+    })
+
+    it('should show both location and configuration changes together', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 3, honey_supers: 2 },
+                      apiary_id: 'apiary-2',
+                      row_in_apiary: 1,
+                      order_in_apiary: 1,
+                      apiary: { name: 'Back Apiary' }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2, honey_supers: 1 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        // Should show location change
+        const locationFields = screen.getAllByText(/Location:/)
+        expect(locationFields.length).toBeGreaterThan(0)
+
+        // Check that both location texts are present in the document
+        const mainApiaryElements = screen.getAllByText(/Main Apiary, Row 2, Position 3/)
+        const backApiaryElements = screen.getAllByText(/Back Apiary, Row 1, Position 1/)
+        expect(mainApiaryElements.length).toBeGreaterThan(0)
+        expect(backApiaryElements.length).toBeGreaterThan(0)
+
+        // Should also show configuration changes
+        const broodBoxesFields = screen.getAllByText(/Brood boxes:/)
+        expect(broodBoxesFields.length).toBeGreaterThan(0)
+        const honeySuperFields = screen.getAllByText(/Honey supers:/)
+        expect(honeySuperFields.length).toBeGreaterThan(0)
+      })
+    })
+
+    it('should handle location without row or position', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: null,
+                      order_in_apiary: null,
+                      apiary: { name: 'Main Apiary' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        // Should show just apiary name without row/position
+        const locationFields = screen.getAllByText(/Location:/)
+        expect(locationFields.length).toBeGreaterThan(0)
+        const locationEntry = locationFields[0].parentElement
+        expect(locationEntry?.textContent).toContain('Main Apiary')
+        expect(locationEntry?.textContent).not.toContain('Row')
+        expect(locationEntry?.textContent).not.toContain('Position')
+      })
+    })
+
+    it('should not show location change when location is identical', async () => {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'hive_configuration_history') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '2',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T11:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 3 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    },
+                    {
+                      id: '1',
+                      hive_id: mockHiveId,
+                      changed_at: '2025-01-15T10:00:00Z',
+                      changed_by: 'user-1',
+                      configuration: { brood_boxes: 2 },
+                      apiary_id: 'apiary-1',
+                      row_in_apiary: 2,
+                      order_in_apiary: 3,
+                      apiary: { name: 'Main Apiary' }
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { full_name: 'John Doe', email: 'john@example.com' },
+                error: null
+              })
+            })
+          })
+        }
+      })
+
+      render(<HiveConfigurationHistory hiveId={mockHiveId} />)
+
+      const expandButton = screen.getByRole('button', { name: /configuration history/i })
+      await userEvent.click(expandButton)
+
+      await waitFor(() => {
+        // Should show configuration change but NOT location change
+        const broodBoxesFields = screen.getAllByText(/Brood boxes:/)
+        expect(broodBoxesFields.length).toBeGreaterThan(0)
+
+        // Should show "Configuration Updated" for latest entry
+        expect(screen.getByText('Configuration Updated')).toBeInTheDocument()
+
+        // Location field appears once (in initial config only), not twice (which would mean both entries have it)
+        const locationLabels = screen.getAllByText(/Location:/)
+        expect(locationLabels).toHaveLength(1)
+      })
+    })
+  })
 })
