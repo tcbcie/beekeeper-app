@@ -5176,159 +5176,175 @@ export default function InspectionsPage() {
               </div>
             </div>
 
-            {/* Queen & Brood Section - Grouped Display */}
-            <div className="mb-2 p-2 bg-purple-50 dark:bg-purple-950/20 rounded border border-purple-200 dark:border-purple-800">
-              <h4 className="text-xs font-semibold text-foreground mb-1.5">Queen & Brood</h4>
-              <div className="grid grid-cols-3 gap-1.5">
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Queen Seen</div>
-                  <div className="text-lg">{inspection.queen_seen ? '✅' : '❌'}</div>
-                </div>
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Eggs</div>
-                  <div className="text-lg">{inspection.eggs_present ? '✅' : '❌'}</div>
-                </div>
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Brood Frames</div>
-                  <div className="text-lg font-bold text-purple-600">
-                    {inspection.brood_frames ?? '-'}
+            {/* Queen & Brood Section - Table Format */}
+            <div className="mb-3 overflow-hidden rounded border border-purple-200 dark:border-purple-800">
+              <div className="bg-purple-100 dark:bg-purple-950/40 px-3 py-1.5 border-b border-purple-200 dark:border-purple-800">
+                <h4 className="text-sm font-semibold text-foreground">Queen & Brood</h4>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-950/20 p-2">
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary">Queen:</span>
+                    <span className="text-base">{inspection.queen_seen ? '✅' : '❌'}</span>
                   </div>
-                </div>
-                {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
-                  <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                    <div className="text-[9px] text-text-secondary">Right-Sized Frames</div>
-                    <div className="text-lg font-bold text-amber-600">
-                      {inspection.right_sized_frames ?? '-'}
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary">Eggs:</span>
+                    <span className="text-base">{inspection.eggs_present ? '✅' : '❌'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary">Brood:</span>
+                    <span className="font-bold text-purple-600">{inspection.brood_frames ?? '-'}</span>
+                  </div>
+                  {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-secondary">Right-Sized:</span>
+                      <span className="font-bold text-amber-600">{inspection.right_sized_frames ?? '-'}</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Drones Section Display - Only show if any value is recorded */}
             {(inspection.drones_present !== -1 || inspection.drone_brood_present !== null) && (
-            <div className="mb-2 p-2 bg-forest-50 dark:bg-forest-950/30 rounded border border-forest-200 dark:border-forest-800">
-              <h4 className="text-xs font-semibold text-foreground mb-1.5">Drones</h4>
-              <div className="grid grid-cols-2 gap-1.5">
-                {inspection.drones_present !== -1 && (
-                  <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                    <div className="text-[9px] text-text-secondary">Drones present</div>
-                    <div className="text-sm font-bold text-amber-600">
-                      {inspection.drones_present === 0 && 'Low'}
-                      {inspection.drones_present === 1 && 'Medium'}
-                      {inspection.drones_present === 2 && 'High'}
-                      {inspection.drones_present === 3 && 'Extreme'}
+            <div className="mb-3 overflow-hidden rounded border border-forest-200 dark:border-forest-800">
+              <div className="bg-forest-100 dark:bg-forest-950/40 px-3 py-1.5 border-b border-forest-200 dark:border-forest-800">
+                <h4 className="text-sm font-semibold text-foreground">Drones</h4>
+              </div>
+              <div className="bg-forest-50 dark:bg-forest-950/30 p-2">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {inspection.drones_present !== -1 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-secondary">Level:</span>
+                      <span className="font-semibold text-amber-600">
+                        {inspection.drones_present === 0 && 'Low'}
+                        {inspection.drones_present === 1 && 'Medium'}
+                        {inspection.drones_present === 2 && 'High'}
+                        {inspection.drones_present === 3 && 'Extreme'}
+                      </span>
                     </div>
-                  </div>
-                )}
-                {inspection.drone_brood_present !== null && (
-                  <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                    <div className="text-[9px] text-text-secondary">Drone brood present</div>
-                    <div className="text-lg">{inspection.drone_brood_present ? '✅' : '❌'}</div>
-                  </div>
-                )}
+                  )}
+                  {inspection.drone_brood_present !== null && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-secondary">Brood:</span>
+                      <span className="text-base">{inspection.drone_brood_present ? '✅' : '❌'}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             )}
 
-            {/* Behaviour Section - Grouped Display */}
-            <div className="mb-2 p-2 bg-teal-50 dark:bg-teal-950/20 rounded border border-teal-200 dark:border-teal-800">
-              <h4 className="text-xs font-semibold text-foreground mb-1.5">Behaviour</h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-1.5">
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Population</div>
-                  <div className="text-xs">{renderStars(inspection.population_strength)}</div>
-                </div>
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Temperament</div>
-                  <div className="text-xs">{renderStars(inspection.temperament_rating)}</div>
-                </div>
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Brood Pattern</div>
-                  <div className="text-xs">{renderStars(inspection.brood_pattern_rating)}</div>
-                </div>
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Swarming Tendency</div>
-                  <div className="text-xs">{renderStars(inspection.swarming_tendency)}</div>
-                </div>
-                <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                  <div className="text-[9px] text-text-secondary">Calmness</div>
-                  <div className="text-xs">{renderStars(inspection.calmness)}</div>
+            {/* Behaviour Section - Table Format */}
+            <div className="mb-3 overflow-hidden rounded border border-teal-200 dark:border-teal-800">
+              <div className="bg-teal-100 dark:bg-teal-950/40 px-3 py-1.5 border-b border-teal-200 dark:border-teal-800">
+                <h4 className="text-sm font-semibold text-foreground">Behaviour</h4>
+              </div>
+              <div className="bg-teal-50 dark:bg-teal-950/20 p-2">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-3 gap-y-1.5 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary whitespace-nowrap">Population:</span>
+                    <span>{renderStars(inspection.population_strength)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary whitespace-nowrap">Temperament:</span>
+                    <span>{renderStars(inspection.temperament_rating)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary whitespace-nowrap">Brood Pattern:</span>
+                    <span>{renderStars(inspection.brood_pattern_rating)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary whitespace-nowrap">Swarming:</span>
+                    <span>{renderStars(inspection.swarming_tendency)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary whitespace-nowrap">Calmness:</span>
+                    <span>{renderStars(inspection.calmness)}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Given/Taken Section - Display (only show if any values are non-zero) */}
+            {/* Given/Taken Section - Table Format */}
             {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
               inspection.honey_supers > 0 || inspection.drone_frames > 0 || inspection.store_frames > 0) && (
-              <div className="mb-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200 dark:border-orange-800">
-                <h4 className="text-xs font-semibold text-foreground mb-1.5">Given/Taken</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
-                  {inspection.frames_foundation > 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">Frames-Foundation</div>
-                      <div className="text-lg font-bold text-orange-600">{inspection.frames_foundation}</div>
-                    </div>
-                  )}
-                  {inspection.frames_brood > 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">Brood-Frames</div>
-                      <div className="text-lg font-bold text-orange-600">{inspection.frames_brood}</div>
-                    </div>
-                  )}
-                  {inspection.frames_drawn > 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">Drawn-Frames</div>
-                      <div className="text-lg font-bold text-orange-600">{inspection.frames_drawn}</div>
-                    </div>
-                  )}
-                  {inspection.honey_supers > 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">Honey Supers</div>
-                      <div className="text-lg font-bold text-orange-600">{inspection.honey_supers}</div>
-                    </div>
-                  )}
-                  {inspection.drone_frames > 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">Drone-Frames</div>
-                      <div className="text-lg font-bold text-orange-600">{inspection.drone_frames}</div>
-                    </div>
-                  )}
-                  {inspection.store_frames > 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">Store-Frames</div>
-                      <div className="text-lg font-bold text-orange-600">{inspection.store_frames}</div>
-                    </div>
-                  )}
+              <div className="mb-3 overflow-hidden rounded border border-orange-200 dark:border-orange-800">
+                <div className="bg-orange-100 dark:bg-orange-950/40 px-3 py-1.5 border-b border-orange-200 dark:border-orange-800">
+                  <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-950/20 p-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-1.5 text-sm">
+                    {inspection.frames_foundation > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Foundation:</span>
+                        <span className="font-bold text-orange-600">{inspection.frames_foundation}</span>
+                      </div>
+                    )}
+                    {inspection.frames_brood > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Brood:</span>
+                        <span className="font-bold text-orange-600">{inspection.frames_brood}</span>
+                      </div>
+                    )}
+                    {inspection.frames_drawn > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Drawn:</span>
+                        <span className="font-bold text-orange-600">{inspection.frames_drawn}</span>
+                      </div>
+                    )}
+                    {inspection.honey_supers > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Supers:</span>
+                        <span className="font-bold text-orange-600">{inspection.honey_supers}</span>
+                      </div>
+                    )}
+                    {inspection.drone_frames > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Drone:</span>
+                        <span className="font-bold text-orange-600">{inspection.drone_frames}</span>
+                      </div>
+                    )}
+                    {inspection.store_frames > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Store:</span>
+                        <span className="font-bold text-orange-600">{inspection.store_frames}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Hygienic Behaviour Section - Display (only show if any values are non-zero and not default 3) */}
+            {/* Hygienic Behaviour Section - Table Format */}
             {((inspection.recapping !== 3 && inspection.recapping !== 0) ||
               (inspection.vsh !== 3 && inspection.vsh !== 0) ||
               (inspection.smr !== 3 && inspection.smr !== 0)) && (
-              <div className="mb-2 p-2 bg-teal-50 dark:bg-teal-950/20 rounded border border-teal-200 dark:border-teal-800">
-                <h4 className="text-xs font-semibold text-foreground mb-1.5">Hygienic Behaviour</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
-                  {inspection.recapping !== 3 && inspection.recapping !== 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">Recapping</div>
-                      <div className="text-xs">{renderStars(inspection.recapping)}</div>
-                    </div>
-                  )}
-                  {inspection.vsh !== 3 && inspection.vsh !== 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">VSH</div>
-                      <div className="text-xs">{renderStars(inspection.vsh)}</div>
-                    </div>
-                  )}
-                  {inspection.smr !== 3 && inspection.smr !== 0 && (
-                    <div className="text-center p-1.5 bg-surface dark:bg-surface-elevated rounded">
-                      <div className="text-[9px] text-text-secondary">SMR</div>
-                      <div className="text-xs">{renderStars(inspection.smr)}</div>
-                    </div>
-                  )}
+              <div className="mb-3 overflow-hidden rounded border border-teal-200 dark:border-teal-800">
+                <div className="bg-teal-100 dark:bg-teal-950/40 px-3 py-1.5 border-b border-teal-200 dark:border-teal-800">
+                  <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
+                </div>
+                <div className="bg-teal-50 dark:bg-teal-950/20 p-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 gap-y-1.5 text-sm">
+                    {inspection.recapping !== 3 && inspection.recapping !== 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Recapping:</span>
+                        <span>{renderStars(inspection.recapping)}</span>
+                      </div>
+                    )}
+                    {inspection.vsh !== 3 && inspection.vsh !== 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">VSH:</span>
+                        <span>{renderStars(inspection.vsh)}</span>
+                      </div>
+                    )}
+                    {inspection.smr !== 3 && inspection.smr !== 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">SMR:</span>
+                        <span>{renderStars(inspection.smr)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
