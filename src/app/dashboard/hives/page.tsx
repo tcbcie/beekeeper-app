@@ -1695,8 +1695,8 @@ export default function HivesPage() {
                   )}
                 </div>
 
-                {/* Configuration Change Tracking */}
-                {hive.configuration_changed_at && (
+                {/* Configuration Change Tracking - Only show for shared hives where user is not the owner */}
+                {hive.is_shared && hive.user_id !== userId && hive.configuration_changed_at && (
                   <div className="mb-3 pb-2 border-b border-border">
                     <div className="text-xs text-text-tertiary">
                       <span className="font-medium">Last changed:</span>{' '}
