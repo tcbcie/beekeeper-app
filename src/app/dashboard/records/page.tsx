@@ -299,6 +299,7 @@ export default function InspectionsPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
+  const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
   const [filterHiveId, setFilterHiveId] = useState<string>('')
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [timePeriod, setTimePeriod] = useState<string>('all')
@@ -411,6 +412,8 @@ export default function InspectionsPage() {
 
     // Extract team hive IDs (hives NOT owned by current user)
     const teamHiveIds: string[] = []
+    // Also collect ALL hives in team apiaries for "Recorded by" visibility logic
+    const allTeamHiveIds: string[] = []
     if (sharedHiveData) {
       type TeamData = {
         teams?: {
@@ -426,14 +429,21 @@ export default function InspectionsPage() {
           tm.teams.team_apiaries.forEach(ta => {
             if (ta.apiaries?.hives) {
               ta.apiaries.hives.forEach(h => {
-                // Only include hives NOT owned by current user
-                if (h.id && h.user_id !== currentUserId) teamHiveIds.push(h.id)
+                if (h.id) {
+                  // Collect all team hive IDs
+                  allTeamHiveIds.push(h.id)
+                  // Only include hives NOT owned by current user for filtering
+                  if (h.user_id !== currentUserId) teamHiveIds.push(h.id)
+                }
               })
             }
           })
         }
       })
     }
+
+    // Store all team hive IDs in state for "Recorded by" visibility
+    setSharedHiveIds(allTeamHiveIds)
 
     // Build query based on ownership filter
     let query = supabase
@@ -541,7 +551,7 @@ export default function InspectionsPage() {
       .eq('user_id', currentUserId)
 
     // Extract shared hive IDs from the nested structure
-    const sharedHiveIds: string[] = []
+    const localSharedHiveIds: string[] = []
     if (sharedHiveData) {
       type TeamData = {
         teams?: {
@@ -557,7 +567,7 @@ export default function InspectionsPage() {
           tm.teams.team_apiaries.forEach(ta => {
             if (ta.apiaries?.hives) {
               ta.apiaries.hives.forEach(h => {
-                if (h.id) sharedHiveIds.push(h.id)
+                if (h.id) localSharedHiveIds.push(h.id)
               })
             }
           })
@@ -565,8 +575,11 @@ export default function InspectionsPage() {
       })
     }
 
+    // Store all team hive IDs in state for "Recorded by" visibility
+    setSharedHiveIds(localSharedHiveIds)
+
     // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
 
     // Build query to show treatments for all accessible hives
     let query = supabase
@@ -617,7 +630,7 @@ export default function InspectionsPage() {
       .eq('user_id', currentUserId)
 
     // Extract shared hive IDs from the nested structure
-    const sharedHiveIds: string[] = []
+    const localSharedHiveIds: string[] = []
     if (sharedHiveData) {
       type TeamData = {
         teams?: {
@@ -633,7 +646,7 @@ export default function InspectionsPage() {
           tm.teams.team_apiaries.forEach(ta => {
             if (ta.apiaries?.hives) {
               ta.apiaries.hives.forEach(h => {
-                if (h.id) sharedHiveIds.push(h.id)
+                if (h.id) localSharedHiveIds.push(h.id)
               })
             }
           })
@@ -641,8 +654,11 @@ export default function InspectionsPage() {
       })
     }
 
+    // Store all team hive IDs in state for "Recorded by" visibility
+    setSharedHiveIds(localSharedHiveIds)
+
     // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
 
     // Build query to show checks for all accessible hives
     let query = supabase
@@ -693,7 +709,7 @@ export default function InspectionsPage() {
       .eq('user_id', currentUserId)
 
     // Extract shared hive IDs from the nested structure
-    const sharedHiveIds: string[] = []
+    const localSharedHiveIds: string[] = []
     if (sharedHiveData) {
       type TeamData = {
         teams?: {
@@ -709,7 +725,7 @@ export default function InspectionsPage() {
           tm.teams.team_apiaries.forEach(ta => {
             if (ta.apiaries?.hives) {
               ta.apiaries.hives.forEach(h => {
-                if (h.id) sharedHiveIds.push(h.id)
+                if (h.id) localSharedHiveIds.push(h.id)
               })
             }
           })
@@ -717,8 +733,11 @@ export default function InspectionsPage() {
       })
     }
 
+    // Store all team hive IDs in state for "Recorded by" visibility
+    setSharedHiveIds(localSharedHiveIds)
+
     // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
 
     // Build query to show feedings for all accessible hives
     let query = supabase
@@ -769,7 +788,7 @@ export default function InspectionsPage() {
       .eq('user_id', currentUserId)
 
     // Extract shared hive IDs from the nested structure
-    const sharedHiveIds: string[] = []
+    const localSharedHiveIds: string[] = []
     if (sharedHiveData) {
       type TeamData = {
         teams?: {
@@ -785,7 +804,7 @@ export default function InspectionsPage() {
           tm.teams.team_apiaries.forEach(ta => {
             if (ta.apiaries?.hives) {
               ta.apiaries.hives.forEach(h => {
-                if (h.id) sharedHiveIds.push(h.id)
+                if (h.id) localSharedHiveIds.push(h.id)
               })
             }
           })
@@ -793,8 +812,11 @@ export default function InspectionsPage() {
       })
     }
 
+    // Store all team hive IDs in state for "Recorded by" visibility
+    setSharedHiveIds(localSharedHiveIds)
+
     // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...sharedHiveIds]
+    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
 
     // Build query to show harvests for all accessible hives
     let query = supabase
@@ -5120,7 +5142,7 @@ export default function InspectionsPage() {
                     {inspection.inspection_date}
                     {inspection.inspection_time && ` at ${inspection.inspection_time}`}
                   </p>
-                  {inspection.profiles && (
+                  {inspection.profiles && inspection.user_id !== userId && sharedHiveIds.includes(inspection.hive_id) && (
                     <p className="text-xs text-text-tertiary mt-1">
                       Recorded by: <span className="font-medium text-text-secondary">
                         {(inspection.profiles.first_name && inspection.profiles.last_name)
@@ -5425,7 +5447,7 @@ export default function InspectionsPage() {
                         hour12: true
                       })}
                     </p>
-                    {treatment.profiles && (
+                    {treatment.profiles && treatment.user_id !== userId && sharedHiveIds.includes(treatment.hive_id) && (
                       <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(treatment.profiles.first_name && treatment.profiles.last_name)
@@ -5537,7 +5559,7 @@ export default function InspectionsPage() {
                         hour12: true
                       })}
                     </p>
-                    {check.profiles && (
+                    {check.profiles && check.user_id !== userId && sharedHiveIds.includes(check.hive_id) && (
                       <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(check.profiles.first_name && check.profiles.last_name)
@@ -5659,7 +5681,7 @@ export default function InspectionsPage() {
                         hour12: true
                       })}
                     </p>
-                    {feeding.profiles && (
+                    {feeding.profiles && feeding.user_id !== userId && sharedHiveIds.includes(feeding.hive_id) && (
                       <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(feeding.profiles.first_name && feeding.profiles.last_name)
@@ -5764,7 +5786,7 @@ export default function InspectionsPage() {
                         hour12: true
                       })}
                     </p>
-                    {harvest.profiles && (
+                    {harvest.profiles && harvest.user_id !== userId && sharedHiveIds.includes(harvest.hive_id) && (
                       <p className="text-xs text-text-tertiary mt-1">
                         Recorded by: <span className="font-medium text-text-secondary">
                           {(harvest.profiles.first_name && harvest.profiles.last_name)

@@ -962,4 +962,211 @@ describe('HivesPage - Create Hive RLS Policy', () => {
       })
     })
   })
+
+  describe('Configuration Change Tracking Visibility', () => {
+    const mockUserId = 'user-123'
+    const otherUserId = 'user-456'
+
+    it('should hide "Last changed" for non-shared hives', async () => {
+      const mockFrom = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hives') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  is: vi.fn().mockResolvedValue({
+                    data: [{
+                      id: 'hive-1',
+                      hive_number: 'H1',
+                      user_id: mockUserId,
+                      is_shared: false,
+                      configuration_changed_at: '2025-01-15T10:30:00Z',
+                      configuration: { brood_boxes_full: 1 }
+                    }],
+                    error: null,
+                    count: 1
+                  })
+                })
+              })
+            })
+          }
+        }
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }
+      })
+
+      mockSupabaseClient.from = mockFrom
+      mockSupabaseClient.auth = {
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: mockUserId }, access_token: 'token' } },
+          error: null
+        }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: vi.fn() } }
+        })
+      }
+
+      render(<HivesPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('H1')).toBeInTheDocument()
+      })
+
+      // Should NOT show "Last changed" for non-shared hives
+      expect(screen.queryByText(/Last changed:/)).not.toBeInTheDocument()
+    })
+
+    it('should hide "Last changed" for shared hives owned by current user', async () => {
+      const mockFrom = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hives') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  is: vi.fn().mockResolvedValue({
+                    data: [{
+                      id: 'hive-1',
+                      hive_number: 'H1',
+                      user_id: mockUserId,
+                      is_shared: true,
+                      team_name: 'Test Team',
+                      configuration_changed_at: '2025-01-15T10:30:00Z',
+                      configuration: { brood_boxes_full: 1 }
+                    }],
+                    error: null,
+                    count: 1
+                  })
+                })
+              })
+            })
+          }
+        }
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }
+      })
+
+      mockSupabaseClient.from = mockFrom
+      mockSupabaseClient.auth = {
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: mockUserId }, access_token: 'token' } },
+          error: null
+        }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: vi.fn() } }
+        })
+      }
+
+      render(<HivesPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('H1')).toBeInTheDocument()
+      })
+
+      // Should NOT show "Last changed" even though it's shared, because user owns it
+      expect(screen.queryByText(/Last changed:/)).not.toBeInTheDocument()
+    })
+
+    it('should show "Last changed" for shared hives NOT owned by current user', async () => {
+      const mockFrom = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hives') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  is: vi.fn().mockResolvedValue({
+                    data: [{
+                      id: 'hive-1',
+                      hive_number: 'Team Hive 1',
+                      user_id: otherUserId,
+                      is_shared: true,
+                      team_name: 'Test Team',
+                      configuration_changed_at: '2025-01-15T10:30:00Z',
+                      configuration_changer: {
+                        full_name: 'John Doe',
+                        email: 'john@example.com'
+                      },
+                      configuration: { brood_boxes_full: 1 }
+                    }],
+                    error: null,
+                    count: 1
+                  })
+                })
+              })
+            })
+          }
+        }
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }
+      })
+
+      mockSupabaseClient.from = mockFrom
+      mockSupabaseClient.auth = {
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: mockUserId }, access_token: 'token' } },
+          error: null
+        }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: vi.fn() } }
+        })
+      }
+
+      render(<HivesPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Team Hive 1')).toBeInTheDocument()
+      })
+
+      // SHOULD show "Last changed" because it's shared and owned by someone else
+      await waitFor(() => {
+        expect(screen.getByText(/Last changed:/)).toBeInTheDocument()
+        expect(screen.getByText(/John Doe/)).toBeInTheDocument()
+      })
+    })
+
+    it('should hide "Last changed" when configuration_changed_at is null', async () => {
+      const mockFrom = vi.fn().mockImplementation((table: string) => {
+        if (table === 'hives') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  is: vi.fn().mockResolvedValue({
+                    data: [{
+                      id: 'hive-1',
+                      hive_number: 'Team Hive 1',
+                      user_id: otherUserId,
+                      is_shared: true,
+                      team_name: 'Test Team',
+                      configuration_changed_at: null,
+                      configuration: { brood_boxes_full: 1 }
+                    }],
+                    error: null,
+                    count: 1
+                  })
+                })
+              })
+            })
+          }
+        }
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }
+      })
+
+      mockSupabaseClient.from = mockFrom
+      mockSupabaseClient.auth = {
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: mockUserId }, access_token: 'token' } },
+          error: null
+        }),
+        onAuthStateChange: vi.fn().mockReturnValue({
+          data: { subscription: { unsubscribe: vi.fn() } }
+        })
+      }
+
+      render(<HivesPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Team Hive 1')).toBeInTheDocument()
+      })
+
+      // Should NOT show "Last changed" when timestamp is null
+      expect(screen.queryByText(/Last changed:/)).not.toBeInTheDocument()
+    })
+  })
 })
