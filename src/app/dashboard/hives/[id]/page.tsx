@@ -581,29 +581,29 @@ export default function HiveDetailPage() {
             <h3 className="font-semibold text-text-tertiary mb-3 text-sm uppercase tracking-wide">
               Inspection Averages ({averages.inspection_count} inspection{averages.inspection_count !== 1 ? 's' : ''})
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="space-y-2 text-sm">
               {averages.brood_frames !== null && (
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg border border-blue-300 dark:border-blue-800">
-                  <div className="text-xs text-blue-700 dark:text-blue-400 mb-1 font-medium">Frames with Brood</div>
-                  <div className="text-xl font-bold text-blue-800 dark:text-blue-300">{averages.brood_frames.toFixed(1)}</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-text-tertiary">Frames with Brood:</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">{averages.brood_frames.toFixed(1)}</span>
                 </div>
               )}
               {averages.brood_pattern !== null && (
-                <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-lg border border-purple-300 dark:border-purple-800">
-                  <div className="text-xs text-purple-700 dark:text-purple-400 mb-1 font-medium">Brood Pattern</div>
-                  <div className="text-xl font-bold text-purple-800 dark:text-purple-300">{'⭐'.repeat(Math.round(averages.brood_pattern))}</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-text-tertiary">Brood Pattern:</span>
+                  <span className="font-medium text-purple-600 dark:text-purple-400">{'⭐'.repeat(Math.round(averages.brood_pattern))}</span>
                 </div>
               )}
               {averages.temperament !== null && (
-                <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-lg border border-amber-300 dark:border-amber-800">
-                  <div className="text-xs text-amber-700 dark:text-amber-400 mb-1 font-medium">Temperament</div>
-                  <div className="text-xl font-bold text-amber-800 dark:text-amber-300">{'⭐'.repeat(Math.round(averages.temperament))}</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-text-tertiary">Temperament:</span>
+                  <span className="font-medium text-amber-600 dark:text-amber-400">{'⭐'.repeat(Math.round(averages.temperament))}</span>
                 </div>
               )}
               {averages.population !== null && (
-                <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-lg border border-orange-300 dark:border-orange-800">
-                  <div className="text-xs text-orange-700 dark:text-orange-400 mb-1 font-medium">Population</div>
-                  <div className="text-xl font-bold text-orange-800 dark:text-orange-300">{'⭐'.repeat(Math.round(averages.population))}</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-text-tertiary">Population:</span>
+                  <span className="font-medium text-orange-600 dark:text-orange-400">{'⭐'.repeat(Math.round(averages.population))}</span>
                 </div>
               )}
             </div>
