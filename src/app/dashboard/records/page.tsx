@@ -1978,6 +1978,11 @@ export default function InspectionsPage() {
         return false
       }
 
+      // Filter archived hives - hide archive records unless showArchivedHives is true
+      if (!showArchivedHives && record.record_type === 'archive') {
+        return false
+      }
+
       // Filter by apiary (checks if the record's hive belongs to the selected apiary)
       // Using Map lookup for O(1) instead of O(n)
       if (filterApiaryId) {
@@ -2014,7 +2019,7 @@ export default function InspectionsPage() {
 
       return true
     })
-  }, [allRecords, recordTypeFilter, ownershipFilter, filterApiaryId, filterHiveId, timePeriod, customStartDate, customEndDate, hiveMap, dateRangeStart])
+  }, [allRecords, recordTypeFilter, ownershipFilter, showArchivedHives, filterApiaryId, filterHiveId, timePeriod, customStartDate, customEndDate, hiveMap, dateRangeStart])
 
   if (loading) return <LoadingSpinner text="Loading records..." />
 
