@@ -351,58 +351,108 @@ describe('Archived Hives Filter on Records Page', () => {
   })
 
   describe('Archive Records Filtering', () => {
-    // Sample records data
+    // Sample records data with hive references
+    // hive-2 and hive-4 are archived hives
     const mockRecords = [
       { id: 'record-1', hive_id: 'hive-1', record_type: 'inspection', date: '2025-11-20' },
       { id: 'record-2', hive_id: 'hive-2', record_type: 'archive', date: '2025-11-20' },
       { id: 'record-3', hive_id: 'hive-3', record_type: 'inspection', date: '2025-11-19' },
       { id: 'record-4', hive_id: 'hive-4', record_type: 'archive', date: '2025-11-15' },
       { id: 'record-5', hive_id: 'hive-1', record_type: 'feeding', date: '2025-11-18' },
+      { id: 'record-6', hive_id: 'hive-2', record_type: 'inspection', date: '2025-11-10' }, // Old inspection for archived hive
+      { id: 'record-7', hive_id: 'hive-4', record_type: 'feeding', date: '2025-11-05' }, // Old feeding for archived hive
     ]
 
-    it('should hide archive records by default when showArchivedHives is false', () => {
+    // Map of hives to check archived status
+    const hiveMap = new Map([
+      ['hive-1', { id: 'hive-1', hive_number: 'H1', archived_at: null }],
+      ['hive-2', { id: 'hive-2', hive_number: 'H2', archived_at: '2025-11-20T10:00:00Z' }], // Archived
+      ['hive-3', { id: 'hive-3', hive_number: 'H3', archived_at: null }],
+      ['hive-4', { id: 'hive-4', hive_number: 'H4', archived_at: '2025-11-15T10:00:00Z' }], // Archived
+    ])
+
+    it('should hide ALL records for archived hives by default when showArchivedHives is false', () => {
       const showArchivedHives = false
 
       const filteredRecords = mockRecords.filter(record => {
-        // Hide archive records unless showArchivedHives is true
-        if (!showArchivedHives && record.record_type === 'archive') {
-          return false
+        if (!showArchivedHives) {
+          // Hide archive record type
+          if (record.record_type === 'archive') {
+            return false
+          }
+          // Hide all records belonging to archived hives
+          const hive = hiveMap.get(record.hive_id)
+          if (hive && hive.archived_at) {
+            return false
+          }
         }
         return true
       })
 
+      // Should only show records from hive-1 and hive-3 (non-archived hives)
       expect(filteredRecords).toHaveLength(3)
-      expect(filteredRecords.every(r => r.record_type !== 'archive')).toBe(true)
       expect(filteredRecords.map(r => r.id)).toEqual(['record-1', 'record-3', 'record-5'])
+
+      // Verify no archived hive records are included
+      const archivedHiveRecords = filteredRecords.filter(r => {
+        const hive = hiveMap.get(r.hive_id)
+        return hive && hive.archived_at
+      })
+      expect(archivedHiveRecords).toHaveLength(0)
     })
 
-    it('should show archive records when showArchivedHives is true', () => {
+    it('should show ALL records including archived hives when showArchivedHives is true', () => {
       const showArchivedHives = true
 
       const filteredRecords = mockRecords.filter(record => {
-        // Hide archive records unless showArchivedHives is true
-        if (!showArchivedHives && record.record_type === 'archive') {
-          return false
+        if (!showArchivedHives) {
+          if (record.record_type === 'archive') {
+            return false
+          }
+          const hive = hiveMap.get(record.hive_id)
+          if (hive && hive.archived_at) {
+            return false
+          }
         }
         return true
       })
 
-      expect(filteredRecords).toHaveLength(5)
-      const archiveRecords = filteredRecords.filter(r => r.record_type === 'archive')
-      expect(archiveRecords).toHaveLength(2)
-      expect(archiveRecords.map(r => r.id)).toEqual(['record-2', 'record-4'])
+      // Should show all 7 records (including old records for archived hives)
+      expect(filteredRecords).toHaveLength(7)
+
+      // Verify archived hive records are included
+      const archivedHiveRecords = filteredRecords.filter(r => {
+        const hive = hiveMap.get(r.hive_id)
+        return hive && hive.archived_at
+      })
+      expect(archivedHiveRecords.length).toBeGreaterThan(0)
+      expect(archivedHiveRecords.map(r => r.id)).toContain('record-2') // Archive record
+      expect(archivedHiveRecords.map(r => r.id)).toContain('record-6') // Old inspection
+      expect(archivedHiveRecords.map(r => r.id)).toContain('record-7') // Old feeding
     })
 
-    it('should filter archive records only, not other record types', () => {
+    it('should hide old inspections and feedings from archived hives', () => {
       const showArchivedHives = false
 
       const filteredRecords = mockRecords.filter(record => {
-        if (!showArchivedHives && record.record_type === 'archive') {
-          return false
+        if (!showArchivedHives) {
+          if (record.record_type === 'archive') {
+            return false
+          }
+          const hive = hiveMap.get(record.hive_id)
+          if (hive && hive.archived_at) {
+            return false
+          }
         }
         return true
       })
 
+      // Verify record-6 (inspection for archived hive-2) is hidden
+      expect(filteredRecords.map(r => r.id)).not.toContain('record-6')
+      // Verify record-7 (feeding for archived hive-4) is hidden
+      expect(filteredRecords.map(r => r.id)).not.toContain('record-7')
+
+      // Only records from active hives should be shown
       const recordTypes = [...new Set(filteredRecords.map(r => r.record_type))]
       expect(recordTypes).toContain('inspection')
       expect(recordTypes).toContain('feeding')
@@ -418,15 +468,24 @@ describe('Archived Hives Filter on Records Page', () => {
         if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) {
           return false
         }
-        // Hide archive records unless showArchivedHives is true
-        if (!showArchivedHives && record.record_type === 'archive') {
-          return false
+        if (!showArchivedHives) {
+          if (record.record_type === 'archive') {
+            return false
+          }
+          const hive = hiveMap.get(record.hive_id)
+          if (hive && hive.archived_at) {
+            return false
+          }
         }
         return true
       })
 
-      expect(filteredRecords).toHaveLength(2)
+      // Should include inspections from both active and archived hives
+      expect(filteredRecords).toHaveLength(3)
       expect(filteredRecords.every(r => r.record_type === 'inspection')).toBe(true)
+      expect(filteredRecords.map(r => r.id)).toContain('record-1') // Active hive
+      expect(filteredRecords.map(r => r.id)).toContain('record-3') // Active hive
+      expect(filteredRecords.map(r => r.id)).toContain('record-6') // Archived hive
     })
 
     it('should work with ownership filter (team records should exclude archives)', () => {
@@ -439,15 +498,23 @@ describe('Archived Hives Filter on Records Page', () => {
         if (ownershipFilter === 'team' && record.record_type === 'archive') {
           return false
         }
-        // Hide archive records unless showArchivedHives is true
-        if (!showArchivedHives && record.record_type === 'archive') {
-          return false
+        if (!showArchivedHives) {
+          if (record.record_type === 'archive') {
+            return false
+          }
+          const hive = hiveMap.get(record.hive_id)
+          if (hive && hive.archived_at) {
+            return false
+          }
         }
         return true
       })
 
-      // Even with showArchivedHives true, team filter should exclude archives
+      // Even with showArchivedHives true, team filter should exclude archive record types
+      // But should still include other records from archived hives
       expect(filteredRecords.every(r => r.record_type !== 'archive')).toBe(true)
+      expect(filteredRecords.map(r => r.id)).toContain('record-6') // Inspection from archived hive
+      expect(filteredRecords.map(r => r.id)).toContain('record-7') // Feeding from archived hive
     })
 
     it('should handle empty records array', () => {
