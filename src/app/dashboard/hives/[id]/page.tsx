@@ -383,13 +383,22 @@ export default function HiveDetailPage() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-text-tertiary hover:text-foreground mb-4"
-        >
-          <ArrowLeft size={20} />
-          Back to Hives
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-text-tertiary hover:text-foreground"
+          >
+            <ArrowLeft size={20} />
+            Back to Hives
+          </button>
+          <Link
+            href={`/dashboard/records?hive=${hiveId}`}
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium flex items-center gap-2"
+          >
+            <Calendar size={18} />
+            View Records
+          </Link>
+        </div>
         <h1 className="text-3xl font-bold text-foreground">Hive {hive.hive_number}</h1>
         {hive.apiaries && (
           <p className="text-text-tertiary mt-1">📍 {hive.apiaries.name}</p>
