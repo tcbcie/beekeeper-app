@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest'
  * 2. Showing archived hives when checkbox is enabled
  * 3. Filtering logic combining apiary and archived status
  * 4. Visual indicators for archived hives
+ * 5. Archive records filtering in the records list
  */
 
 describe('Archived Hives Filter on Records Page', () => {
@@ -346,6 +347,158 @@ describe('Archived Hives Filter on Records Page', () => {
       expect(activeCount).toBe(2)
       expect(archivedCount).toBe(1)
       expect(filteredHives).toHaveLength(3)
+    })
+  })
+
+  describe('Archive Records Filtering', () => {
+    // Sample records data
+    const mockRecords = [
+      { id: 'record-1', hive_id: 'hive-1', record_type: 'inspection', date: '2025-11-20' },
+      { id: 'record-2', hive_id: 'hive-2', record_type: 'archive', date: '2025-11-20' },
+      { id: 'record-3', hive_id: 'hive-3', record_type: 'inspection', date: '2025-11-19' },
+      { id: 'record-4', hive_id: 'hive-4', record_type: 'archive', date: '2025-11-15' },
+      { id: 'record-5', hive_id: 'hive-1', record_type: 'feeding', date: '2025-11-18' },
+    ]
+
+    it('should hide archive records by default when showArchivedHives is false', () => {
+      const showArchivedHives = false
+
+      const filteredRecords = mockRecords.filter(record => {
+        // Hide archive records unless showArchivedHives is true
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      expect(filteredRecords).toHaveLength(3)
+      expect(filteredRecords.every(r => r.record_type !== 'archive')).toBe(true)
+      expect(filteredRecords.map(r => r.id)).toEqual(['record-1', 'record-3', 'record-5'])
+    })
+
+    it('should show archive records when showArchivedHives is true', () => {
+      const showArchivedHives = true
+
+      const filteredRecords = mockRecords.filter(record => {
+        // Hide archive records unless showArchivedHives is true
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      expect(filteredRecords).toHaveLength(5)
+      const archiveRecords = filteredRecords.filter(r => r.record_type === 'archive')
+      expect(archiveRecords).toHaveLength(2)
+      expect(archiveRecords.map(r => r.id)).toEqual(['record-2', 'record-4'])
+    })
+
+    it('should filter archive records only, not other record types', () => {
+      const showArchivedHives = false
+
+      const filteredRecords = mockRecords.filter(record => {
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      const recordTypes = [...new Set(filteredRecords.map(r => r.record_type))]
+      expect(recordTypes).toContain('inspection')
+      expect(recordTypes).toContain('feeding')
+      expect(recordTypes).not.toContain('archive')
+    })
+
+    it('should work with other filters (record type filter)', () => {
+      const showArchivedHives = true
+      const recordTypeFilter = 'inspection'
+
+      const filteredRecords = mockRecords.filter(record => {
+        // Filter by record type
+        if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) {
+          return false
+        }
+        // Hide archive records unless showArchivedHives is true
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      expect(filteredRecords).toHaveLength(2)
+      expect(filteredRecords.every(r => r.record_type === 'inspection')).toBe(true)
+    })
+
+    it('should work with ownership filter (team records should exclude archives)', () => {
+      const showArchivedHives = true
+      const ownershipFilter = 'team'
+
+      const filteredRecords = mockRecords.filter(record => {
+        // Filter by ownership - archive records are always user's own records
+        // So exclude them when filtering for 'team' records
+        if (ownershipFilter === 'team' && record.record_type === 'archive') {
+          return false
+        }
+        // Hide archive records unless showArchivedHives is true
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      // Even with showArchivedHives true, team filter should exclude archives
+      expect(filteredRecords.every(r => r.record_type !== 'archive')).toBe(true)
+    })
+
+    it('should handle empty records array', () => {
+      const emptyRecords: typeof mockRecords = []
+      const showArchivedHives = false
+
+      const filteredRecords = emptyRecords.filter(record => {
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      expect(filteredRecords).toHaveLength(0)
+    })
+
+    it('should handle all records being archives', () => {
+      const allArchiveRecords = [
+        { id: 'record-1', hive_id: 'hive-1', record_type: 'archive', date: '2025-11-20' },
+        { id: 'record-2', hive_id: 'hive-2', record_type: 'archive', date: '2025-11-19' },
+        { id: 'record-3', hive_id: 'hive-3', record_type: 'archive', date: '2025-11-18' },
+      ]
+      const showArchivedHives = false
+
+      const filteredRecords = allArchiveRecords.filter(record => {
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      expect(filteredRecords).toHaveLength(0)
+    })
+
+    it('should show all archive records when checkbox is enabled and all are archives', () => {
+      const allArchiveRecords = [
+        { id: 'record-1', hive_id: 'hive-1', record_type: 'archive', date: '2025-11-20' },
+        { id: 'record-2', hive_id: 'hive-2', record_type: 'archive', date: '2025-11-19' },
+        { id: 'record-3', hive_id: 'hive-3', record_type: 'archive', date: '2025-11-18' },
+      ]
+      const showArchivedHives = true
+
+      const filteredRecords = allArchiveRecords.filter(record => {
+        if (!showArchivedHives && record.record_type === 'archive') {
+          return false
+        }
+        return true
+      })
+
+      expect(filteredRecords).toHaveLength(3)
+      expect(filteredRecords.every(r => r.record_type === 'archive')).toBe(true)
     })
   })
 })
