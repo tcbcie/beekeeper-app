@@ -1978,9 +1978,17 @@ export default function InspectionsPage() {
         return false
       }
 
-      // Filter archived hives - hide archive records unless showArchivedHives is true
-      if (!showArchivedHives && record.record_type === 'archive') {
-        return false
+      // Filter archived hives - hide ALL records for archived hives unless showArchivedHives is true
+      if (!showArchivedHives) {
+        // Hide archive record type
+        if (record.record_type === 'archive') {
+          return false
+        }
+        // Hide all records belonging to archived hives
+        const hive = hiveMap.get(record.hive_id)
+        if (hive && hive.archived_at) {
+          return false
+        }
       }
 
       // Filter by apiary (checks if the record's hive belongs to the selected apiary)
