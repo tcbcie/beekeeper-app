@@ -191,7 +191,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     const changes: Array<{field: string, before: string, after: string}> = []
 
     if (!previous) {
-      // Initial entry - show queen info if set
+      // Initial entry - show queen info ONLY if set to meaningful values
       if (current.queen_id && current.queen) {
         changes.push({
           field: 'Queen',
@@ -200,7 +200,8 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
         })
       }
 
-      // Show manual queen status flags if set (when no specific queen assigned)
+      // Show manual queen status flags ONLY if they are true (when no specific queen assigned)
+      // Don't show "No" values for initial entry as they're just defaults
       if (!current.queen_id) {
         if (current.queen_marked) {
           changes.push({
@@ -240,16 +241,20 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
     }
 
     // Check manual queen status flags (only when no specific queen assigned)
+    // Only show changes if values actually differ
     if (!current.queen_id && !previous.queen_id) {
       if (current.queen_marked !== previous.queen_marked || current.queen_marking_color !== previous.queen_marking_color) {
         const previousStatus = previous.queen_marked ? (previous.queen_marking_color || 'Marked') : 'Not marked'
         const currentStatus = current.queen_marked ? (current.queen_marking_color || 'Marked') : 'Not marked'
 
-        changes.push({
-          field: 'Queen marked',
-          before: previousStatus,
-          after: currentStatus
-        })
+        // Only add if there's an actual change
+        if (previousStatus !== currentStatus) {
+          changes.push({
+            field: 'Queen marked',
+            before: previousStatus,
+            after: currentStatus
+          })
+        }
       }
 
       if (current.queen_mated !== previous.queen_mated) {

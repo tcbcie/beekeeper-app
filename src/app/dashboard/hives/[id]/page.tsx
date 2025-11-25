@@ -215,7 +215,7 @@ export default function HiveDetailPage() {
           .select('*')
           .eq('hive_id', hiveId)
           .eq('user_id', currentUserId)
-          .order('feeding_date', { ascending: false }),
+          .order('feed_date', { ascending: false }),
         supabase
           .from('harvests')
           .select('*')
@@ -264,7 +264,7 @@ export default function HiveDetailPage() {
               (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
               (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
               (inspection.population_strength !== null && inspection.population_strength > 0)) {
-            inspectionsWithData.add(inspection.inspection_date)
+            inspectionsWithData.add(inspection.id)
           }
         })
 

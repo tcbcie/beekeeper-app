@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore } from 'lucide-react'
@@ -120,6 +120,7 @@ export default function HivesPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
   const router = useRouter()
+  const formRef = useRef<HTMLDivElement>(null)
 
   // Initialize filters from sessionStorage
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
@@ -860,6 +861,11 @@ export default function HivesPage() {
       },
     })
     setShowForm(true)
+
+    // Scroll to the top where the form is
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
   }
 
   const handleDelete = async (id: string) => {
@@ -1040,7 +1046,7 @@ export default function HivesPage() {
       </div>
 
       {showForm && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-border">
+        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-border">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold text-foreground">
               {editingHive ? 'Edit Hive' : 'Add New Hive'}

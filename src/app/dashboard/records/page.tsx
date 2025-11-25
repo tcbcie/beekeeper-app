@@ -302,6 +302,7 @@ export default function InspectionsPage() {
   const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
   const [filterHiveId, setFilterHiveId] = useState<string>('')
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
+  const [showArchivedHives, setShowArchivedHives] = useState<boolean>(false)
   const [timePeriod, setTimePeriod] = useState<string>('all')
   const [customStartDate, setCustomStartDate] = useState<string>('')
   const [customEndDate, setCustomEndDate] = useState<string>('')
@@ -1323,34 +1324,44 @@ export default function InspectionsPage() {
         .from('inspection-images')
         .upload(filePath, file)
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Image upload error:', uploadError)
+        throw uploadError
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('inspection-images')
         .getPublicUrl(filePath)
 
       return publicUrl
-    } catch {
-      alert('Failed to upload image')
+    } catch (error) {
+      console.error('Failed to upload image:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Failed to upload image: ${errorMessage}`)
       return null
     } finally {
       setUploadingImage(false)
     }
   }
 
-  const fetchWeatherData = async (eircode: string) => {
+  const fetchWeatherData = async (eircode: string, isUkNi: boolean = false) => {
     try {
-      // Remove spaces and encode the Eircode for the URL
-      const cleanedEircode = eircode.trim().replace(/\s+/g, '').toUpperCase()
+      // Remove spaces and encode the Eircode/Postcode for the URL
+      const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
 
       // Nominatim requires a User-Agent header
       const headers = {
         'User-Agent': 'HiveCraic/1.0'
       }
 
-      // First, try searching with just the Eircode and Ireland
+      // Use appropriate country based on is_uk_ni flag
+      const country = isUkNi ? 'United Kingdom' : 'Ireland'
+      const fallbackLat = isUkNi ? '54.5973' : '53.3498'  // Belfast vs Dublin
+      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
+
+      // First, try searching with the postcode and country
       const geocodeResponse = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode)},Ireland&format=json&limit=1`,
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode)},${country}&format=json&limit=1`,
         { headers }
       )
       const geocodeData = await geocodeResponse.json()
@@ -1358,14 +1369,14 @@ export default function InspectionsPage() {
       if (!geocodeData || geocodeData.length === 0) {
         // Try with different format - just search term
         const altResponse = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedEircode + ' Ireland')}&format=json&limit=1`,
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode + ' ' + country)}&format=json&limit=1`,
           { headers }
         )
         const altData = await altResponse.json()
 
         if (!altData || altData.length === 0) {
-          // Fallback to Dublin city center coordinates if Eircode lookup fails
-          return await getWeatherFromCoordinates('53.3498', '-6.2603')
+          // Fallback to capital city coordinates if postcode lookup fails
+          return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
         }
 
         const { lat, lon } = altData[0]
@@ -1375,8 +1386,10 @@ export default function InspectionsPage() {
       const { lat, lon } = geocodeData[0]
       return await getWeatherFromCoordinates(lat, lon)
     } catch {
-      // Fallback to Dublin coordinates on error
-      return await getWeatherFromCoordinates('53.3498', '-6.2603')
+      // Fallback to capital city coordinates on error
+      const fallbackLat = isUkNi ? '54.5973' : '53.3498'  // Belfast vs Dublin
+      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
+      return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
     }
   }
 
@@ -1663,12 +1676,12 @@ export default function InspectionsPage() {
       if (selectedHive?.apiary_id) {
         const { data: apiaryData } = await supabase
           .from('apiaries')
-          .select('eircode')
+          .select('eircode, is_uk_ni')
           .eq('id', selectedHive.apiary_id)
           .single()
 
         if (apiaryData?.eircode) {
-          weatherData = await fetchWeatherData(apiaryData.eircode)
+          weatherData = await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
         }
       }
       setFetchingWeather(false)
@@ -1767,6 +1780,11 @@ export default function InspectionsPage() {
     } else {
       setFormApiaryId('')
     }
+
+    // Scroll to the top where the form is
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
 
     setFormData({
       hive_id: inspection.hive_id,
@@ -2079,12 +2097,22 @@ export default function InspectionsPage() {
             <option value="">All Hives</option>
             {hives
               .filter(hive => !filterApiaryId || hive.apiary_id === filterApiaryId)
+              .filter(hive => showArchivedHives || !hive.archived_at)
               .map((hive) => (
                 <option key={hive.id} value={hive.id}>
                   {hive.hive_number}{hive.archived_at ? ' (Archived)' : ''}
                 </option>
               ))}
           </select>
+          <label className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showArchivedHives}
+              onChange={(e) => setShowArchivedHives(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-surface border-border rounded focus:ring-blue-500 focus:ring-2"
+            />
+            <span className="text-sm">Show Archived Hives</span>
+          </label>
           <div className="relative dropdown-container">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
@@ -4314,12 +4342,12 @@ export default function InspectionsPage() {
                       if (selectedHive?.apiary_id) {
                         const { data: apiaryData } = await supabase
                           .from('apiaries')
-                          .select('eircode')
+                          .select('eircode, is_uk_ni')
                           .eq('id', selectedHive.apiary_id)
                           .single()
 
                         if (apiaryData?.eircode) {
-                          const weatherData = await fetchWeatherData(apiaryData.eircode)
+                          const weatherData = await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
                           if (weatherData) {
                             setEditingTreatment(prev => prev ? {
                               ...prev,
