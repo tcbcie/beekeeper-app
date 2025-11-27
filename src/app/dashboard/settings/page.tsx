@@ -1620,7 +1620,7 @@ export default function SettingsPage() {
       <div className="flex items-center gap-3">
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
         {userIsAdmin && (
-          <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full flex items-center gap-1">
+          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-300 dark:border-purple-700">
             <Shield size={14} />
             Admin
           </span>
@@ -2617,7 +2617,7 @@ export default function SettingsPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold text-foreground">User Management</h2>
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full flex items-center gap-1">
+                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full flex items-center gap-1 border border-purple-300 dark:border-purple-700">
                     <Shield size={12} />
                     Admin Only
                   </span>
@@ -2633,7 +2633,7 @@ export default function SettingsPage() {
             {/* Legend and Role Descriptions */}
             <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {/* Role Descriptions */}
-              <div className="bg-surface dark:bg-background rounded-lg p-4">
+              <div className="bg-surface-elevated dark:bg-surface rounded-lg p-4 border border-border">
                 <p className="font-semibold text-foreground mb-2">Role Descriptions</p>
                 <ul className="space-y-1 text-text-secondary">
                   <li className="flex items-start gap-2">
@@ -2641,11 +2641,11 @@ export default function SettingsPage() {
                     <span>Standard access to their own beekeeping data</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium mt-0.5">Power</span>
+                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs font-medium mt-0.5 border border-blue-300 dark:border-blue-700">Power</span>
                     <span>Enhanced access with additional features and data management</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium mt-0.5 flex items-center gap-0.5">
+                    <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded text-xs font-medium mt-0.5 flex items-center gap-0.5 border border-purple-300 dark:border-purple-700">
                       <Shield size={10} />Admin
                     </span>
                     <span>Full access including user management and settings</span>
@@ -2654,18 +2654,18 @@ export default function SettingsPage() {
               </div>
 
               {/* Status Legend */}
-              <div className="bg-surface dark:bg-background rounded-lg p-4">
+              <div className="bg-surface-elevated dark:bg-surface rounded-lg p-4 border border-border">
                 <p className="font-semibold text-foreground mb-2">Status Symbols</p>
                 <div className="space-y-2 text-text-secondary">
                   <div>
                     <p className="font-medium text-xs text-text-tertiary mb-1">Account Status:</p>
                     <div className="flex items-center gap-3 ml-2">
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">●</span>
+                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded text-xs font-medium border border-green-300 dark:border-green-700">●</span>
                         Active
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-medium">○</span>
+                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded text-xs font-medium border border-red-300 dark:border-red-700">○</span>
                         Disabled
                       </span>
                     </div>
@@ -2674,23 +2674,23 @@ export default function SettingsPage() {
                     <p className="font-medium text-xs text-text-tertiary mb-1">Subscription Status:</p>
                     <div className="grid grid-cols-2 gap-1 ml-2 text-xs">
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded font-medium">✓</span>
+                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded font-medium border border-green-300 dark:border-green-700">✓</span>
                         Active
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded font-medium">7d</span>
+                        <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded font-medium border border-yellow-300 dark:border-yellow-700">7d</span>
                         Expiring soon
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded font-medium">3d!</span>
+                        <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded font-medium border border-orange-300 dark:border-orange-700">3d!</span>
                         Expiring very soon
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded font-medium">✗</span>
+                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded font-medium border border-red-300 dark:border-red-700">✗</span>
                         Expired
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded font-medium">−</span>
+                        <span className="px-2 py-0.5 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded font-medium border border-border">−</span>
                         No subscription
                       </span>
                     </div>
