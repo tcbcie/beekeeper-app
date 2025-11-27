@@ -2173,11 +2173,11 @@ export default function ProfilePage() {
               <select
                 value={selectedApiaryId}
                 onChange={(e) => setSelectedApiaryId(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
-                <option value="">-- Select an apiary --</option>
+                <option value="" className="bg-surface dark:bg-surface-elevated text-foreground">-- Select an apiary --</option>
                 {userApiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>
+                  <option key={apiary.id} value={apiary.id} className="bg-surface dark:bg-surface-elevated text-foreground">
                     {apiary.name ? `${apiary.name} - ${apiary.eircode}` : apiary.eircode}
                   </option>
                 ))}
