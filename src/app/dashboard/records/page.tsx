@@ -3421,11 +3421,11 @@ export default function InspectionsPage() {
             </div>
 
             {/* Given/Taken Section - Collapsible */}
-            <div className="md:col-span-2 bg-orange-50 dark:bg-orange-950/20 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+            <div className="md:col-span-2 rounded-lg border border-border">
               <button
                 type="button"
                 onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-orange-100 transition-colors rounded-t-lg"
+                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
               >
                 <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
                 {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -5334,11 +5334,11 @@ export default function InspectionsPage() {
 
             {/* Drones Section Display - Only show if any value is recorded */}
             {((inspection.drones_present !== -1 && inspection.drones_present !== null) || inspection.drone_brood_present !== null) && (
-            <div className="mb-3 overflow-hidden rounded border border-forest-200 dark:border-forest-800">
-              <div className="bg-forest-100 dark:bg-forest-950/40 px-3 py-1.5 border-b border-forest-200 dark:border-forest-800">
+            <div className="mb-3 overflow-hidden rounded border border-border">
+              <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                 <h4 className="text-sm font-semibold text-foreground">Drones</h4>
               </div>
-              <div className="bg-forest-50 dark:bg-forest-950/30 p-2">
+              <div className="p-2">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   {inspection.drones_present !== -1 && inspection.drones_present !== null && (
                     <div className="flex items-center gap-2">
@@ -5396,11 +5396,11 @@ export default function InspectionsPage() {
             {/* Given/Taken Section - Compact inline */}
             {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
               inspection.honey_supers > 0 || inspection.drone_frames > 0 || inspection.store_frames > 0) && (
-              <div className="mb-3 overflow-hidden rounded border border-orange-200 dark:border-orange-800">
-                <div className="bg-orange-100 dark:bg-orange-950/40 px-3 py-1.5 border-b border-orange-200 dark:border-orange-800">
+              <div className="mb-3 overflow-hidden rounded border border-border">
+                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                   <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
                 </div>
-                <div className="bg-orange-50 dark:bg-orange-950/20 px-3 py-1.5">
+                <div className="px-3 py-1.5">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {inspection.frames_foundation > 0 && (
                       <span><span className="text-text-secondary">Foundation:</span> <span className="font-bold text-orange-600">{inspection.frames_foundation}</span></span>
