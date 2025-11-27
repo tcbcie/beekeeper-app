@@ -2023,7 +2023,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Invite New Member Section */}
-            <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="mb-6 p-4 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border">
               <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                 <UserPlus size={18} className="text-green-600 dark:text-green-400" />
                 Invite New Member
@@ -2042,7 +2042,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleSendInvite}
                   disabled={sendingInvite || !inviteEmail.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-surface-elevated dark:disabled:bg-surface-elevated disabled:text-text-tertiary disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {sendingInvite ? (
                     <>
@@ -2135,7 +2135,7 @@ export default function ProfilePage() {
                   setTeamMembers([])
                   setTeamInvitations([])
                 }}
-                className="px-4 py-2 bg-surface-elevated dark:bg-surface-elevated text-text-primary border border-border rounded-lg hover:bg-surface dark:hover:bg-surface"
+                className="px-6 py-2.5 bg-surface-elevated dark:bg-surface-elevated text-foreground border border-border rounded-lg hover:bg-surface dark:hover:bg-surface font-medium"
               >
                 Close
               </button>
