@@ -2544,7 +2544,7 @@ export default function InspectionsPage() {
           </div>
           <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Inspection Details Section - Grouped */}
-            <div className="md:col-span-2 bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+            <div className="md:col-span-2 p-4 rounded-lg border border-border">
               <h4 className="text-sm font-semibold text-foreground mb-4">Inspection Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -2621,7 +2621,7 @@ export default function InspectionsPage() {
             </div>
 
             {/* Queen & Brood Section - Grouped */}
-            <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/30 p-4 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+            <div className="md:col-span-2 p-4 rounded-lg border border-border">
               <h4 className="text-sm font-semibold text-foreground mb-4">Queen & Brood</h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -2715,11 +2715,11 @@ export default function InspectionsPage() {
               )}
 
               {/* Queen Cells Subsection - Collapsible */}
-              <div className="mt-4 bg-purple-100 dark:bg-purple-950/30 rounded-lg border-2 border-purple-300 dark:border-purple-800">
+              <div className="mt-4 rounded-lg border border-border">
                 <button
                   type="button"
                   onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
-                  className="w-full p-3 flex items-center justify-between hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors rounded-t-lg"
+                  className="w-full p-3 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
                 >
                   <h5 className="text-sm font-semibold text-foreground">Queen Cells</h5>
                   {queenCellsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -3156,7 +3156,7 @@ export default function InspectionsPage() {
             </div>
 
             {/* Behaviour Section - Grouped */}
-            <div className="md:col-span-2 bg-teal-50 dark:bg-teal-950/20 p-4 rounded-lg border-2 border-teal-200 dark:border-teal-800">
+            <div className="md:col-span-2 p-4 rounded-lg border border-border">
               <h4 className="text-sm font-semibold text-foreground mb-4">Behaviour</h4>
 
               {/* Population */}
@@ -3630,11 +3630,11 @@ export default function InspectionsPage() {
             </div>
 
             {/* Drones Section - Collapsible */}
-            <div className="md:col-span-2 bg-forest-50 dark:bg-forest-950/30 rounded-lg border-2 border-forest-200 dark:border-forest-800">
+            <div className="md:col-span-2 rounded-lg border border-border">
               <button
                 type="button"
                 onClick={() => setDronesExpanded(!dronesExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-amber-100 transition-colors rounded-t-lg"
+                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
               >
                 <h4 className="text-sm font-semibold text-foreground">Drones</h4>
                 {dronesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -3714,11 +3714,11 @@ export default function InspectionsPage() {
             </div>
 
             {/* Hygienic Behaviour Section - Collapsible */}
-            <div className="md:col-span-2 bg-teal-50 dark:bg-teal-950/20 rounded-lg border-2 border-teal-200 dark:border-teal-800">
+            <div className="md:col-span-2 rounded-lg border border-border">
               <button
                 type="button"
                 onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors rounded-t-lg"
+                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
               >
                 <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
                 {hygienicBehaviourExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -3886,11 +3886,11 @@ export default function InspectionsPage() {
             </div>
 
             {/* Disease Section - Collapsible */}
-            <div className="md:col-span-2 bg-teal-50 dark:bg-teal-950/20 rounded-lg border-2 border-teal-200 dark:border-teal-800">
+            <div className="md:col-span-2 rounded-lg border border-border">
               <button
                 type="button"
                 onClick={() => setDiseaseExpanded(!diseaseExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors rounded-t-lg"
+                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
               >
                 <h4 className="text-sm font-semibold text-foreground">Disease</h4>
                 {diseaseExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -5259,11 +5259,11 @@ export default function InspectionsPage() {
             </div>
 
             {/* Queen & Brood Section - Table Format */}
-            <div className="mb-3 overflow-hidden rounded border border-purple-200 dark:border-purple-800">
-              <div className="bg-purple-100 dark:bg-purple-950/40 px-3 py-1.5 border-b border-purple-200 dark:border-purple-800">
+            <div className="mb-3 overflow-hidden rounded border border-border">
+              <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                 <h4 className="text-sm font-semibold text-foreground">Queen & Brood</h4>
               </div>
-              <div className="bg-purple-50 dark:bg-purple-950/20 p-2">
+              <div className="p-2">
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-text-secondary">Queen:</span>
@@ -5289,11 +5289,11 @@ export default function InspectionsPage() {
 
             {/* Queen Cells Section - Only show if any cells were found */}
             {(inspection.queen_cups || inspection.swarm_cells || inspection.supercedure_cells || inspection.emergency_cells) && (
-              <div className="mb-3 overflow-hidden rounded border border-purple-200 dark:border-purple-800">
-                <div className="bg-purple-100 dark:bg-purple-950/40 px-3 py-1.5 border-b border-purple-200 dark:border-purple-800">
+              <div className="mb-3 overflow-hidden rounded border border-border">
+                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                   <h4 className="text-sm font-semibold text-foreground">Queen Cells</h4>
                 </div>
-                <div className="bg-purple-50 dark:bg-purple-950/20 px-3 py-2">
+                <div className="px-3 py-2">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {inspection.queen_cups && (
                       <span>
@@ -5363,11 +5363,11 @@ export default function InspectionsPage() {
             )}
 
             {/* Behaviour Section - Table Format */}
-            <div className="mb-3 overflow-hidden rounded border border-teal-200 dark:border-teal-800">
-              <div className="bg-teal-100 dark:bg-teal-950/40 px-3 py-1.5 border-b border-teal-200 dark:border-teal-800">
+            <div className="mb-3 overflow-hidden rounded border border-border">
+              <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                 <h4 className="text-sm font-semibold text-foreground">Behaviour</h4>
               </div>
-              <div className="bg-teal-50 dark:bg-teal-950/20 p-2">
+              <div className="p-2">
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-x-3 gap-y-1.5 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-text-secondary whitespace-nowrap">Population:</span>
@@ -5429,11 +5429,11 @@ export default function InspectionsPage() {
             {((inspection.recapping !== 3 && inspection.recapping !== 0) ||
               (inspection.vsh !== 3 && inspection.vsh !== 0) ||
               (inspection.smr !== 3 && inspection.smr !== 0)) && (
-              <div className="mb-3 overflow-hidden rounded border border-teal-200 dark:border-teal-800">
-                <div className="bg-teal-100 dark:bg-teal-950/40 px-3 py-1.5 border-b border-teal-200 dark:border-teal-800">
+              <div className="mb-3 overflow-hidden rounded border border-border">
+                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                   <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
                 </div>
-                <div className="bg-teal-50 dark:bg-teal-950/20 p-2">
+                <div className="p-2">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 gap-y-1.5 text-sm">
                     {inspection.recapping !== 3 && inspection.recapping !== 0 && (
                       <div className="flex items-center gap-2">
@@ -5459,10 +5459,10 @@ export default function InspectionsPage() {
             )}
 
             {(inspection.weather_temp !== null || inspection.weather_condition) && (
-              <div className="mb-4 p-3 bg-sky-50 dark:bg-sky-950/20 rounded border-2 border-sky-200 dark:border-sky-800 hidden md:block">
+              <div className="mb-4 p-3 rounded border border-border hidden md:block">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🌤️</span>
-                  <span className="text-sm font-medium text-sky-700 dark:text-sky-300">Weather Conditions</span>
+                  <span className="text-sm font-medium text-foreground">Weather Conditions</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm ml-7">
                   {inspection.weather_temp !== null && (
