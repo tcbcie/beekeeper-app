@@ -643,9 +643,9 @@ export default function DashboardPage() {
   const isTeamMember = (ownedTeams.length > 0 || memberTeams.length > 0)
 
   const statCards = [
-    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' },
-    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
-    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' },
+    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300', href: '/dashboard/apiaries' },
+    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300', href: '/dashboard/hives' },
+    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300', href: '/dashboard/records' },
   ]
 
   const hasMySharedData = mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0
@@ -730,6 +730,7 @@ export default function DashboardPage() {
               value={card.value}
               icon={card.icon}
               color={card.color}
+              href={card.href}
             />
           ))}
         </div>
