@@ -1586,7 +1586,7 @@ export default function SettingsPage() {
   if (accessDenied) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface dark:bg-background">
-        <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+        <div className="max-w-md w-full bg-surface dark:bg-surface shadow-lg rounded-lg p-8 text-center border border-border">
           <div className="flex justify-center mb-4">
             <Shield size={64} className="text-red-500" />
           </div>
@@ -1628,7 +1628,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow">
         <div className="border-b border-border">
           <nav className="flex flex-wrap -mb-px">
             {sections.map((section) => {
@@ -1654,7 +1654,7 @@ export default function SettingsPage() {
 
       {/* Profile & Export Section */}
       {activeSection === 'profile' && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold text-foreground mb-6">Profile & Data Export</h2>
 
           {/* Export Database Section */}
@@ -1694,7 +1694,7 @@ export default function SettingsPage() {
 
       {/* Varroa Treatments Section */}
       {activeSection === 'treatments' && (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -1844,7 +1844,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={resetVarroaTreatmentForm}
-                    className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                    className="px-6 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
                   >
                     Cancel
                   </button>
@@ -1865,7 +1865,7 @@ export default function SettingsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="bg-gray-100 border-b-2 border-border">
+                    <tr className="bg-surface-elevated dark:bg-surface-elevated border-b-2 border-border">
                       <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
                         Actions
                       </th>
@@ -1895,7 +1895,7 @@ export default function SettingsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
                     {varroaTreatments.map((treatment) => (
                       <tr key={treatment.id} className="hover:bg-surface dark:bg-background">
                         {editingVarroaTreatment?.id === treatment.id ? (
@@ -2051,7 +2051,7 @@ export default function SettingsPage() {
 
       {/* Beekeeping Associations Section */}
       {activeSection === 'associations' && (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -2112,7 +2112,7 @@ export default function SettingsPage() {
                     setJurisdictionFilter('all')
                     setCountyFilter('all')
                   }}
-                  className="ml-auto px-3 py-1.5 text-sm text-text-tertiary hover:text-foreground border border-border rounded-md hover:bg-gray-100"
+                  className="ml-auto px-3 py-1.5 text-sm text-text-tertiary hover:text-foreground border border-border rounded-md hover:bg-surface-elevated dark:hover:bg-surface-elevated"
                 >
                   Clear Filters
                 </button>
@@ -2180,7 +2180,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={resetAssociationForm}
-                    className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                    className="px-6 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
                   >
                     Cancel
                   </button>
@@ -2217,7 +2217,7 @@ export default function SettingsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-gray-100 border-b-2 border-border">
+                      <tr className="bg-surface-elevated dark:bg-surface-elevated border-b-2 border-border">
                         <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
                           Actions
                         </th>
@@ -2232,7 +2232,7 @@ export default function SettingsPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
                       {filteredAssociations.map((association) => (
                       <tr key={association.id} className="hover:bg-surface dark:bg-background">
                         {editingAssociation?.id === association.id ? (
@@ -2333,7 +2333,7 @@ export default function SettingsPage() {
 
       {/* Support Ticket Management Section */}
       {activeSection === 'tickets' && (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow">
         <div className="p-6">
           <h2 className="text-2xl font-bold text-foreground">Support Ticket Management</h2>
           <p className="text-text-tertiary mt-2">Manage and respond to user support tickets</p>
@@ -2350,7 +2350,7 @@ export default function SettingsPage() {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     ticketFilter === filter
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+                      : 'bg-surface-elevated dark:bg-surface-elevated text-text-secondary hover:bg-surface dark:hover:bg-surface'
                   }`}
                 >
                   {filter.replace('_', ' ').toUpperCase()}
@@ -2375,7 +2375,7 @@ export default function SettingsPage() {
                       /* Edit Form */
                       <div className="space-y-3">
                         {/* Ticket Header - Read Only */}
-                        <div className="bg-gray-100 p-4 rounded-lg">
+                        <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg">
                           <h3 className="text-lg font-semibold text-foreground mb-2">
                             {ticket.subject}
                           </h3>
@@ -2462,7 +2462,7 @@ export default function SettingsPage() {
                           </button>
                           <button
                             onClick={() => setEditingTicket(null)}
-                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                            className="px-4 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
                           >
                             Cancel
                           </button>
@@ -2509,7 +2509,7 @@ export default function SettingsPage() {
                                 ? 'bg-yellow-100 text-yellow-800'
                                 : ticket.status === 'resolved'
                                 ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
+                                : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
                             }`}
                           >
                             {ticket.status.replace('_', ' ').toUpperCase()}
@@ -2522,7 +2522,7 @@ export default function SettingsPage() {
                                 ? 'bg-orange-100 text-orange-600'
                                 : ticket.priority === 'normal'
                                 ? 'bg-blue-100 text-blue-600'
-                                : 'bg-gray-100 text-text-tertiary'
+                                : 'bg-surface-elevated dark:bg-surface-elevated text-text-tertiary'
                             }`}
                           >
                             {ticket.priority.toUpperCase()}
@@ -2607,7 +2607,7 @@ export default function SettingsPage() {
 
       {/* User Management Section */}
       {activeSection === 'users' && (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -2637,7 +2637,7 @@ export default function SettingsPage() {
                 <p className="font-semibold text-foreground mb-2">Role Descriptions</p>
                 <ul className="space-y-1 text-text-secondary">
                   <li className="flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium mt-0.5">User</span>
+                    <span className="px-2 py-0.5 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded text-xs font-medium mt-0.5">User</span>
                     <span>Standard access to their own beekeeping data</span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -2690,7 +2690,7 @@ export default function SettingsPage() {
                         Expired
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded font-medium">−</span>
+                        <span className="px-2 py-0.5 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded font-medium">−</span>
                         No subscription
                       </span>
                     </div>
@@ -2821,7 +2821,7 @@ export default function SettingsPage() {
                 <button
                   onClick={() => showDeletedUsers ? fetchDeletedUsers() : fetchUsers()}
                   disabled={loadingUsers}
-                  className="ml-auto px-4 py-2 bg-gray-100 text-text-secondary rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+                  className="ml-auto px-4 py-2 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded-lg hover:bg-surface dark:hover:bg-surface disabled:opacity-50 flex items-center gap-2"
                 >
                   {loadingUsers ? 'Loading...' : 'Refresh'}
                 </button>
@@ -2893,14 +2893,14 @@ export default function SettingsPage() {
                       const isExpanded = expandedUserId === user.id
 
                       return (
-                      <div key={user.id} className="bg-white border border-border rounded hover:border-border transition-all">
+                      <div key={user.id} className="bg-surface dark:bg-surface border border-border rounded hover:border-border transition-all">
                         {/* Compact Single Line */}
                         <div className="px-3 py-2">
                           <div className="flex items-center gap-3">
                             {/* Expand Button */}
                             <button
                               onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
-                              className="flex-shrink-0 p-1 text-gray-400 hover:text-text-tertiary rounded hover:bg-gray-100"
+                              className="flex-shrink-0 p-1 text-gray-400 hover:text-text-tertiary rounded hover:bg-surface-elevated dark:hover:bg-surface-elevated"
                               title={isExpanded ? 'Hide details' : 'Show details'}
                             >
                               <ChevronDown
@@ -2927,7 +2927,7 @@ export default function SettingsPage() {
                                   ? 'bg-purple-100 text-purple-800'
                                   : user.role === 'Power User'
                                   ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-gray-100 text-gray-800'
+                                  : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
                               }`}>
                                 {user.role === 'Admin' && <Shield size={10} className="inline mr-0.5" />}
                                 {user.role === 'Power User' ? 'Power' : user.role}
@@ -2953,7 +2953,7 @@ export default function SettingsPage() {
                                     ? 'bg-orange-100 text-orange-800'
                                     : user.subscription_status === 'expired'
                                     ? 'bg-red-100 text-red-800'
-                                    : 'bg-gray-100 text-gray-800'
+                                    : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
                                 }`}>
                                   {user.subscription_status === 'active' ? '✓' :
                                    user.subscription_status === 'expiring_soon' ? `${user.days_remaining}d` :
@@ -2995,7 +2995,7 @@ export default function SettingsPage() {
                                       {/* Hard Delete Button for Deleted Users */}
                                       <button
                                         onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="p-0.5 bg-black text-white rounded hover:bg-gray-800"
+                                        className="p-0.5 bg-foreground dark:bg-foreground text-background dark:text-background rounded hover:bg-text-primary dark:hover:bg-text-primary"
                                         title="Permanently Delete (CANNOT BE UNDONE)"
                                       >
                                         <Trash2 size={12} className="text-red-500" />
@@ -3026,7 +3026,7 @@ export default function SettingsPage() {
                                       {/* Hard Delete Button */}
                                       <button
                                         onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="p-0.5 bg-black text-white rounded hover:bg-gray-800"
+                                        className="p-0.5 bg-foreground dark:bg-foreground text-background dark:text-background rounded hover:bg-text-primary dark:hover:bg-text-primary"
                                         title="Hard Delete (PERMANENT)"
                                       >
                                         <Trash2 size={12} className="text-red-500" />
@@ -3224,7 +3224,7 @@ export default function SettingsPage() {
                     <div className="flex gap-2 text-sm">
                       <button
                         onClick={() => {/* Could add status filtering here */}}
-                        className="px-3 py-1 bg-gray-100 text-text-secondary rounded"
+                        className="px-3 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded"
                       >
                         All ({reactivationRequests.length})
                       </button>
@@ -3252,7 +3252,7 @@ export default function SettingsPage() {
                     {reactivationRequests.map((request) => (
                       <div
                         key={request.id}
-                        className={`bg-white border-2 rounded-lg p-4 ${
+                        className={`bg-surface dark:bg-surface border-2 rounded-lg p-4 ${
                           request.status === 'pending' ? 'border-yellow-200 bg-yellow-50' :
                           request.status === 'approved' ? 'border-green-200 bg-green-50' :
                           'border-red-200 bg-red-50'
@@ -3288,7 +3288,7 @@ export default function SettingsPage() {
                                 </p>
                               )}
                               {request.admin_notes && (
-                                <p className="mt-2 p-2 bg-white rounded border border-border">
+                                <p className="mt-2 p-2 bg-surface dark:bg-surface rounded border border-border">
                                   <span className="font-medium">Admin Notes:</span> {request.admin_notes}
                                 </p>
                               )}
@@ -3328,7 +3328,7 @@ export default function SettingsPage() {
 
       {/* Subscription Codes Section */}
       {activeSection === 'registration' && (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -3408,7 +3408,7 @@ export default function SettingsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
                   {registrationCodes.map((code) => {
                     const isMaxedOut = code.max_uses !== null && code.current_uses >= code.max_uses
                     return (
@@ -3538,7 +3538,7 @@ export default function SettingsPage() {
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             code.is_active && !isMaxedOut
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
+                              : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
                           }`}>
                             {code.is_active ? (isMaxedOut ? 'Maxed Out' : 'Active') : 'Disabled'}
                           </span>
@@ -3556,7 +3556,7 @@ export default function SettingsPage() {
                               </button>
                               <button
                                 onClick={handleCancelCodeEdit}
-                                className="px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-1"
+                                className="px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded hover:bg-surface dark:hover:bg-surface border border-border flex items-center gap-1"
                                 title="Cancel editing"
                               >
                                 <X size={14} />
@@ -3614,7 +3614,7 @@ export default function SettingsPage() {
       {/* Add Code Modal */}
       {showAddCodeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Create Subscription Code</h3>
               <button
@@ -3767,7 +3767,7 @@ export default function SettingsPage() {
                       date.setMonth(date.getMonth() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-gray-100 text-text-secondary rounded hover:bg-gray-200"
+                    className="text-xs px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded hover:bg-surface dark:hover:bg-surface"
                   >
                     +1 month
                   </button>
@@ -3778,7 +3778,7 @@ export default function SettingsPage() {
                       date.setMonth(date.getMonth() + 6)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-gray-100 text-text-secondary rounded hover:bg-gray-200"
+                    className="text-xs px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded hover:bg-surface dark:hover:bg-surface"
                   >
                     +6 months
                   </button>
@@ -3789,7 +3789,7 @@ export default function SettingsPage() {
                       date.setFullYear(date.getFullYear() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-gray-100 text-text-secondary rounded hover:bg-gray-200"
+                    className="text-xs px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded hover:bg-surface dark:hover:bg-surface"
                   >
                     +1 year
                   </button>
@@ -3839,7 +3839,7 @@ export default function SettingsPage() {
 
       {/* Dropdown Values Section */}
       {activeSection === 'dropdowns' && (
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-surface dark:bg-surface rounded-lg shadow">
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">Dropdown Values Management</h2>
@@ -3865,7 +3865,7 @@ export default function SettingsPage() {
             </div>
 
           {showCategoryForm && (
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6">
               <h3 className="text-xl font-semibold mb-4">
                 {editingCategory ? 'Edit Category' : 'Add New Category'}
               </h3>
@@ -3923,7 +3923,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={resetCategoryForm}
-                    className="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                    className="px-6 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
                   >
                     Cancel
                   </button>
@@ -4021,7 +4021,7 @@ export default function SettingsPage() {
                       setEditingValue({ categoryId: '', value: null })
                       setValueFormData({ value: '', display_order: 0 })
                     }}
-                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm"
+                    className="px-4 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border text-sm"
                   >
                     Cancel
                   </button>
@@ -4056,7 +4056,7 @@ export default function SettingsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
                     {categories
                       .filter(cat => selectedCategoryFilter === 'all' || cat.id === selectedCategoryFilter)
                       .flatMap(category =>
