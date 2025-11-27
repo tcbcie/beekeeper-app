@@ -1873,7 +1873,7 @@ export default function ProfilePage() {
 
             {/* Empty State */}
             {ownedTeams.length === 0 && memberTeams.length === 0 && (
-              <div className="text-center py-12 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+              <div className="text-center py-12 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <Users size={48} className="mx-auto text-text-tertiary mb-3" />
                 <p className="text-text-tertiary mb-4">You haven&apos;t created or joined any teams yet.</p>
                 <button
