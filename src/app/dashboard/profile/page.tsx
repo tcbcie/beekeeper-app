@@ -2316,16 +2316,6 @@ export default function ProfilePage() {
               Coming Soon
             </button>
           </div>
-
-          <div className="flex items-center justify-between p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
-            <div>
-              <div className="font-medium text-foreground">Data Privacy</div>
-              <div className="text-sm text-text-tertiary">View and manage your data</div>
-            </div>
-            <button className="px-4 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-700">
-              Coming Soon
-            </button>
-          </div>
         </div>
       </div>
 
