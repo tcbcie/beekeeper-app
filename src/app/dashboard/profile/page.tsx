@@ -2037,7 +2037,7 @@ export default function ProfilePage() {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="flex-1 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="flex-1 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 <button
                   onClick={handleSendInvite}
@@ -2080,7 +2080,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-sage-100 dark:bg-slate-700 text-text-primary text-xs rounded font-medium capitalize">
+                        <span className="px-3 py-1 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground text-xs rounded font-medium capitalize border border-border">
                           {member.role}
                         </span>
                         {member.role !== 'owner' && (
@@ -2135,7 +2135,7 @@ export default function ProfilePage() {
                   setTeamMembers([])
                   setTeamInvitations([])
                 }}
-                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                className="px-4 py-2 bg-surface-elevated dark:bg-surface-elevated text-text-primary border border-border rounded-lg hover:bg-surface dark:hover:bg-surface"
               >
                 Close
               </button>
