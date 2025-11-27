@@ -570,9 +570,9 @@ function AboutPageContent() {
           <h2 className="text-2xl font-bold text-foreground mb-4">Disclaimer</h2>
 
           <div className="prose max-w-none space-y-4 text-text-secondary">
-            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4">
-              <p className="font-semibold text-amber-900">Important Notice</p>
-              <p className="text-amber-800 mt-2">
+            <div className="bg-surface dark:bg-surface-elevated border-l-4 border-amber-500 p-4 mb-4">
+              <p className="font-semibold text-amber-900 dark:text-amber-300">Important Notice</p>
+              <p className="text-amber-800 dark:text-amber-400 mt-2">
                 Please read this disclaimer carefully before using HiveCraic.
               </p>
             </div>
