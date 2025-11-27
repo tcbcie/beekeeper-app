@@ -63,11 +63,15 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
       setCurrentUserId(user?.id || null)
 
       // Check if hive is shared
-      const { data: hiveData } = await supabase
+      const { data: hiveData, error: hiveError } = await supabase
         .from('hives')
-        .select('user_id, apiaries(is_shared)')
+        .select('user_id, apiary_id, apiaries(is_shared)')
         .eq('id', hiveId)
-        .single()
+        .maybeSingle()
+
+      if (hiveError) {
+        console.error('Error fetching hive data:', hiveError)
+      }
 
       const apiaries = hiveData?.apiaries as { is_shared: boolean } | { is_shared: boolean }[] | null
       const isShared = apiaries
