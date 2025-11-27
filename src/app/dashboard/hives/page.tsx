@@ -1127,7 +1127,7 @@ export default function HivesPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, row_in_apiary: Math.max(1, (formData.row_in_apiary ?? 1) - 1)})}
-                  className="px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg"
+                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   −
                 </button>
@@ -1136,13 +1136,13 @@ export default function HivesPage() {
                   value={formData.row_in_apiary ?? ''}
                   onChange={(e) => setFormData({...formData, row_in_apiary: e.target.value ? parseInt(e.target.value) : null})}
                   placeholder="Optional"
-                  className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-center placeholder-text-tertiary"
+                  className="flex-1 min-w-0 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-center placeholder-text-tertiary"
                   min="1"
                 />
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, row_in_apiary: (formData.row_in_apiary ?? 0) + 1})}
-                  className="px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg"
+                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   +
                 </button>
@@ -1184,7 +1184,7 @@ export default function HivesPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, order_in_apiary: Math.max(1, (formData.order_in_apiary ?? 1) - 1)})}
-                  className="px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg"
+                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   −
                 </button>
@@ -1193,13 +1193,13 @@ export default function HivesPage() {
                   value={formData.order_in_apiary ?? ''}
                   onChange={(e) => setFormData({...formData, order_in_apiary: e.target.value ? parseInt(e.target.value) : null})}
                   placeholder="Optional"
-                  className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-center placeholder-text-tertiary"
+                  className="flex-1 min-w-0 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-center placeholder-text-tertiary"
                   min="1"
                 />
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, order_in_apiary: (formData.order_in_apiary ?? 0) + 1})}
-                  className="px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg"
+                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   +
                 </button>
