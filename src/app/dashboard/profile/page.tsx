@@ -2294,7 +2294,7 @@ export default function ProfilePage() {
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <h2 className="text-xl font-semibold text-foreground mb-4">Additional Settings</h2>
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
             <div>
               <div className="font-medium text-foreground">Change Password</div>
               <div className="text-sm text-text-tertiary">Update your account password</div>
@@ -2307,7 +2307,7 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
             <div>
               <div className="font-medium text-foreground">Email Notifications</div>
               <div className="text-sm text-text-tertiary">Manage your notification preferences</div>
@@ -2322,7 +2322,7 @@ export default function ProfilePage() {
       {/* Danger Zone */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-red-300 dark:border-red-800">
         <h2 className="text-xl font-semibold text-red-900 dark:text-red-100 mb-4">Danger Zone</h2>
-        <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-950/20 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
           <div>
             <div className="font-medium text-red-900 dark:text-red-100">Delete Account</div>
             <div className="text-sm text-red-700 dark:text-red-300">Delete your account - data retained for 12 months</div>
