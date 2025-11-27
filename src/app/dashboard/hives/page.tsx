@@ -1028,7 +1028,7 @@ export default function HivesPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-surface dark:bg-surface-elevated text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -1093,7 +1093,7 @@ export default function HivesPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, row_in_apiary: Math.max(1, (formData.row_in_apiary ?? 1) - 1)})}
-                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
+                  className="px-3 sm:px-4 py-2 bg-surface dark:bg-surface-elevated hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   −
                 </button>
@@ -1108,7 +1108,7 @@ export default function HivesPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, row_in_apiary: (formData.row_in_apiary ?? 0) + 1})}
-                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
+                  className="px-3 sm:px-4 py-2 bg-surface dark:bg-surface-elevated hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   +
                 </button>
@@ -1150,7 +1150,7 @@ export default function HivesPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, order_in_apiary: Math.max(1, (formData.order_in_apiary ?? 1) - 1)})}
-                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
+                  className="px-3 sm:px-4 py-2 bg-surface dark:bg-surface-elevated hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   −
                 </button>
@@ -1165,7 +1165,7 @@ export default function HivesPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, order_in_apiary: (formData.order_in_apiary ?? 0) + 1})}
-                  className="px-3 sm:px-4 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
+                  className="px-3 sm:px-4 py-2 bg-surface dark:bg-surface-elevated hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 text-text-primary rounded-md border border-border font-bold text-lg flex-shrink-0"
                 >
                   +
                 </button>
@@ -1250,7 +1250,7 @@ export default function HivesPage() {
                       className={`px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.queen_marked
                           ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-md hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700'
-                          : 'bg-sage-200 dark:bg-slate-700 text-text-primary hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-text-primary hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500'
                       }`}
                     >
                       <span className="text-lg">{formData.queen_marked ? '✓' : '○'}</span>
@@ -1262,7 +1262,7 @@ export default function HivesPage() {
                       className={`px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.queen_mated
                           ? 'bg-green-600 text-white shadow-md hover:bg-green-700 active:bg-green-800'
-                          : 'bg-sage-200 dark:bg-slate-700 text-text-primary hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-text-primary hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500'
                       }`}
                     >
                       <span className="text-lg">{formData.queen_mated ? '♥' : '○'}</span>
@@ -1274,7 +1274,7 @@ export default function HivesPage() {
                       className={`px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
                         formData.queen_clipped
                           ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 active:bg-blue-800'
-                          : 'bg-sage-200 dark:bg-slate-700 text-text-primary hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-text-primary hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500'
                       }`}
                     >
                       <span className="text-lg">{formData.queen_clipped ? '✂' : '○'}</span>
@@ -1308,7 +1308,7 @@ export default function HivesPage() {
             )}
 
             {/* Hive Configuration Section */}
-            <div className="md:col-span-2 p-4 bg-sage-50 dark:bg-slate-800/50 rounded-lg border-2 border-forest-200 dark:border-forest-900/50">
+            <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border-2 border-forest-200 dark:border-forest-900/50">
               <h4 className="text-md font-semibold text-forest-600 dark:text-forest-400 mb-4">Hive Configuration</h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1325,7 +1325,7 @@ export default function HivesPage() {
                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                           formData.configuration.brood_boxes_full === num
                             ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-md'
-                            : 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border hover:bg-sage-300 dark:hover:bg-slate-600'
+                            : 'bg-surface dark:bg-surface-elevated text-text-primary border border-border hover:bg-surface-elevated dark:hover:bg-slate-600'
                         }`}
                       >
                         {num}
@@ -1347,7 +1347,7 @@ export default function HivesPage() {
                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                           formData.configuration.brood_boxes_half === num
                             ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-md'
-                            : 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border hover:bg-sage-300 dark:hover:bg-slate-600'
+                            : 'bg-surface dark:bg-surface-elevated text-text-primary border border-border hover:bg-surface-elevated dark:hover:bg-slate-600'
                         }`}
                       >
                         {num}
@@ -1369,7 +1369,7 @@ export default function HivesPage() {
                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                           formData.configuration.honey_supers === num
                             ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-md'
-                            : 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border hover:bg-sage-300 dark:hover:bg-slate-600'
+                            : 'bg-surface dark:bg-surface-elevated text-text-primary border border-border hover:bg-surface-elevated dark:hover:bg-slate-600'
                         }`}
                       >
                         {num}
@@ -1412,7 +1412,7 @@ export default function HivesPage() {
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
                       formData.configuration.queen_excluder
                         ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-md'
-                        : 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border hover:bg-sage-300 dark:hover:bg-slate-600'
+                        : 'bg-surface dark:bg-surface-elevated text-text-primary border border-border hover:bg-surface-elevated dark:hover:bg-slate-600'
                     }`}
                   >
                     {formData.configuration.queen_excluder ? '✓' : '○'} Queen Excluder
@@ -1424,7 +1424,7 @@ export default function HivesPage() {
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
                       formData.configuration.entrance_reducer
                         ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-md'
-                        : 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border hover:bg-sage-300 dark:hover:bg-slate-600'
+                        : 'bg-surface dark:bg-surface-elevated text-text-primary border border-border hover:bg-surface-elevated dark:hover:bg-slate-600'
                     }`}
                   >
                     {formData.configuration.entrance_reducer ? '✓' : '○'} Entrance Reducer
@@ -1436,7 +1436,7 @@ export default function HivesPage() {
                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
                       formData.configuration.right_sized_broodbox
                         ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-md'
-                        : 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border hover:bg-sage-300 dark:hover:bg-slate-600'
+                        : 'bg-surface dark:bg-surface-elevated text-text-primary border border-border hover:bg-surface-elevated dark:hover:bg-slate-600'
                     }`}
                   >
                     {formData.configuration.right_sized_broodbox ? '✓' : '○'} Right-Sized Broodbox
@@ -1498,7 +1498,7 @@ export default function HivesPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+                className="px-6 py-3 sm:py-2 min-h-[48px] bg-surface dark:bg-surface-elevated text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
                 Cancel
               </button>
@@ -1528,7 +1528,7 @@ export default function HivesPage() {
                   </span>
                 )}
                 {hive.archived_at && (
-                  <span className="px-2 py-0.5 bg-sage-200 dark:bg-slate-700 text-text-primary text-xs font-medium rounded flex items-center gap-1 w-fit border border-border">
+                  <span className="px-2 py-0.5 bg-surface dark:bg-surface-elevated text-text-primary text-xs font-medium rounded flex items-center gap-1 w-fit border border-border">
                     <span>📦</span>
                     <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
                   </span>
@@ -1545,8 +1545,8 @@ export default function HivesPage() {
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
                   hive.status === 'queenless' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800' :
-                  hive.status === 'archived' ? 'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border' :
-                  'bg-sage-200 dark:bg-slate-700 text-text-primary border border-border'
+                  hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
+                  'bg-surface dark:bg-surface-elevated text-text-primary border border-border'
                 }`}>
                   {hive.status}
                 </span>
@@ -1646,14 +1646,14 @@ export default function HivesPage() {
                 </div>
               )}
               {hive.notes && (
-                <div className="mt-3 p-2 bg-sage-50 dark:bg-slate-800/50 rounded text-text-primary text-xs border border-border">
+                <div className="mt-3 p-2 bg-surface dark:bg-surface-elevated rounded text-text-primary text-xs border border-border">
                   {hive.notes}
                 </div>
               )}
             </div>
 
             {hive.configuration && (
-              <div className="mb-4 p-3 bg-sage-50 dark:bg-slate-800/50 rounded border border-forest-200 dark:border-forest-900/50">
+              <div className="mb-4 p-3 bg-surface dark:bg-surface-elevated rounded border border-forest-200 dark:border-forest-900/50">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-xs font-semibold text-forest-600 dark:text-forest-400">Hive Setup</div>
                   {hive.configuration.hive_size && (
