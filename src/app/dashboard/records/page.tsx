@@ -2659,7 +2659,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.brood_frames === num
                           ? 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-300'
-                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                       }`}
                     >
                       {num}
@@ -2671,7 +2671,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                       formData.brood_frames === null
                         ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                     }`}
                   >
                     Clear
@@ -2693,7 +2693,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                           formData.right_sized_frames === num
                             ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-lg ring-2 ring-forest-300 dark:ring-forest-700'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         {num}
@@ -2705,7 +2705,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
                         formData.right_sized_frames === null
                           ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                       }`}
                     >
                       Clear
@@ -2738,7 +2738,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.queen_cups === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2749,7 +2749,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.queen_cups === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2793,7 +2793,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.queen_cups_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 YES
@@ -2804,7 +2804,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.queen_cups_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 NO
@@ -2826,7 +2826,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.swarm_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2837,7 +2837,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.swarm_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2881,7 +2881,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.swarm_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 YES
@@ -2892,7 +2892,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.swarm_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 NO
@@ -2914,7 +2914,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.supercedure_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✓</span> YES
@@ -2925,7 +2925,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.supercedure_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✕</span> NO
@@ -2969,7 +2969,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.supercedure_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 YES
@@ -2980,7 +2980,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.supercedure_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 NO
@@ -3002,7 +3002,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.emergency_cells === true
                                 ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✓</span> YES
@@ -3013,7 +3013,7 @@ export default function InspectionsPage() {
                             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
                               formData.emergency_cells === false
                                 ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                             }`}
                           >
                             <span>✕</span> NO
@@ -3057,7 +3057,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.emergency_cells_removed_all === true
                                     ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 YES
@@ -3068,7 +3068,7 @@ export default function InspectionsPage() {
                                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                                   formData.emergency_cells_removed_all === false
                                     ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
                                 }`}
                               >
                                 NO
@@ -3191,7 +3191,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.population_strength === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                       }`}
                     >
                       {rating}
@@ -3203,7 +3203,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.population_strength === 0
                         ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                     }`}
                   >
                     Not Recorded
@@ -3243,7 +3243,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.temperament_rating === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                       }`}
                     >
                       {rating}
@@ -3255,7 +3255,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.temperament_rating === 0
                         ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                     }`}
                   >
                     Not Recorded
@@ -3295,7 +3295,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.brood_pattern_rating === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                       }`}
                     >
                       {rating}
@@ -3307,7 +3307,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.brood_pattern_rating === 0
                         ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                     }`}
                   >
                     Not Recorded
@@ -3347,7 +3347,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.swarming_tendency === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                       }`}
                     >
                       {rating}
@@ -3359,7 +3359,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.swarming_tendency === 0
                         ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                     }`}
                   >
                     Not Recorded
@@ -3399,7 +3399,7 @@ export default function InspectionsPage() {
                       className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                         formData.calmness === rating
                           ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                       }`}
                     >
                       {rating}
@@ -3411,7 +3411,7 @@ export default function InspectionsPage() {
                     className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                       formData.calmness === 0
                         ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                     }`}
                   >
                     Not Recorded
@@ -3678,7 +3678,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           formData.drone_brood_present === true
                             ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         <span className="text-xl">✓</span>
@@ -3690,7 +3690,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
                           formData.drone_brood_present === false
                             ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         <span className="text-xl">✕</span>
@@ -3702,7 +3702,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] rounded-lg font-medium text-xs transition-all touch-manipulation ${
                           formData.drone_brood_present === null
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -3758,7 +3758,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.recapping === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -3770,7 +3770,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.recapping === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -3810,7 +3810,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.vsh === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -3822,7 +3822,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.vsh === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -3862,7 +3862,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.smr === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -3874,7 +3874,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.smr === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -3930,7 +3930,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.afb_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -3942,7 +3942,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.afb_disease === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -3982,7 +3982,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.efb_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -3994,7 +3994,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.efb_disease === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -4034,7 +4034,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.chalkbrood_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -4046,7 +4046,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.chalkbrood_disease === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -4086,7 +4086,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.nosemosis_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -4098,7 +4098,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.nosemosis_disease === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -4138,7 +4138,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.dwv_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -4150,7 +4150,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.dwv_disease === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
@@ -4190,7 +4190,7 @@ export default function InspectionsPage() {
                           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
                             formData.iapv_cbpv_disease === rating
                               ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                           }`}
                         >
                           {rating}
@@ -4202,7 +4202,7 @@ export default function InspectionsPage() {
                         className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
                           formData.iapv_cbpv_disease === 0
                             ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
                         }`}
                       >
                         Not Recorded
