@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import UpcomingEvents from '@/components/UpcomingEvents'
-import { Shield, Users, Crown, UserCheck } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet } from 'lucide-react'
 
 interface Inspection {
   id: string
@@ -16,6 +16,57 @@ interface Inspection {
     hive_number: string
   }
 }
+
+interface VarroaTreatment {
+  id: string
+  hive_id: string
+  treatment_date: string
+  treatment_type: string
+  hives?: {
+    hive_number: string
+  }
+}
+
+interface VarroaCheck {
+  id: string
+  hive_id: string
+  check_date: string
+  method: string
+  infestation_rate: number | null
+  hives?: {
+    hive_number: string
+  }
+}
+
+interface Feeding {
+  id: string
+  hive_id: string
+  feed_date: string
+  feed_type: string
+  quantity: number | null
+  hives?: {
+    hive_number: string
+  }
+}
+
+interface Harvest {
+  id: string
+  hive_id: string
+  harvest_date: string
+  honey_weight: number | null
+  frames_harvested: number | null
+  hives?: {
+    hive_number: string
+  }
+}
+
+// Unified record type for displaying all records together
+type RecentActivityRecord =
+  | (Inspection & { record_type: 'inspection', date: string })
+  | (VarroaTreatment & { record_type: 'varroa_treatment', date: string })
+  | (VarroaCheck & { record_type: 'varroa_check', date: string })
+  | (Feeding & { record_type: 'feeding', date: string })
+  | (Harvest & { record_type: 'harvest', date: string })
 
 interface Team {
   id: string
@@ -79,7 +130,7 @@ export default function DashboardPage() {
     inProgressTickets: 0,
     totalTickets: 0,
   })
-  const [recentActivity, setRecentActivity] = useState<Inspection[]>([])
+  const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<UserRole>('User')
@@ -113,15 +164,81 @@ export default function DashboardPage() {
         recentInspections: inspectionsRes.count || 0,
       })
 
-      // Fetch recent activity
-      const { data: inspections } = await supabase
-        .from('inspections')
-        .select('*, hives(hive_number)')
-        .eq('user_id', currentUserId)
-        .order('inspection_date', { ascending: false })
-        .limit(5)
+      // Fetch recent activity from all record types
+      const [activityInspections, activityTreatments, activityChecks, activityFeedings, activityHarvests] = await Promise.all([
+        supabase
+          .from('inspections')
+          .select('*, hives(hive_number)')
+          .eq('user_id', currentUserId)
+          .order('inspection_date', { ascending: false })
+          .limit(10),
+        supabase
+          .from('varroa_treatments')
+          .select('*, hives(hive_number)')
+          .eq('user_id', currentUserId)
+          .order('treatment_date', { ascending: false })
+          .limit(10),
+        supabase
+          .from('varroa_checks')
+          .select('*, hives(hive_number)')
+          .eq('user_id', currentUserId)
+          .order('check_date', { ascending: false })
+          .limit(10),
+        supabase
+          .from('feedings')
+          .select('*, hives(hive_number)')
+          .eq('user_id', currentUserId)
+          .order('feed_date', { ascending: false })
+          .limit(10),
+        supabase
+          .from('harvests')
+          .select('*, hives(hive_number)')
+          .eq('user_id', currentUserId)
+          .order('harvest_date', { ascending: false })
+          .limit(10)
+      ])
 
-      setRecentActivity((inspections as Inspection[]) || [])
+      // Merge all records with their types
+      const merged: RecentActivityRecord[] = [
+        ...((activityInspections.data as Inspection[]) || []).map(i => ({
+          ...i,
+          record_type: 'inspection' as const,
+          date: i.inspection_date
+        })),
+        ...((activityTreatments.data as VarroaTreatment[]) || []).map(vt => ({
+          ...vt,
+          record_type: 'varroa_treatment' as const,
+          date: vt.treatment_date
+        })),
+        ...((activityChecks.data as VarroaCheck[]) || []).map(vc => ({
+          ...vc,
+          record_type: 'varroa_check' as const,
+          date: vc.check_date
+        })),
+        ...((activityFeedings.data as Feeding[]) || []).map(f => ({
+          ...f,
+          record_type: 'feeding' as const,
+          date: f.feed_date
+        })),
+        ...((activityHarvests.data as Harvest[]) || []).map(h => ({
+          ...h,
+          record_type: 'harvest' as const,
+          date: h.harvest_date
+        }))
+      ]
+
+      // Sort by date descending (most recent first)
+      merged.sort((a, b) => {
+        const dateA = new Date(a.date).getTime()
+        const dateB = new Date(b.date).getTime()
+        if (isNaN(dateA) && isNaN(dateB)) return 0
+        if (isNaN(dateA)) return 1
+        if (isNaN(dateB)) return -1
+        return dateB - dateA
+      })
+
+      // Take only the 5 most recent records
+      setRecentActivity(merged.slice(0, 5))
 
       // Fetch user statistics (admin only)
       const role = await getUserRole()
@@ -730,25 +847,83 @@ export default function DashboardPage() {
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
         <div className="space-y-3">
-          {recentActivity.map((inspection) => (
-            <div key={inspection.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-slate-800 rounded border border-border">
-              <div>
-                <span className="font-medium text-foreground">
-                  Inspection of {inspection.hives?.hive_number || 'Unknown Hive'}
-                </span>
-                <span className="text-sm text-text-secondary ml-2">{inspection.inspection_date}</span>
+          {recentActivity.map((record) => {
+            // Determine icon and label based on record type
+            let icon: React.ReactNode
+            let label: string
+            let badge: React.ReactNode = null
+
+            switch (record.record_type) {
+              case 'inspection':
+                icon = <Search size={18} className="text-blue-600 dark:text-blue-400" />
+                label = `Inspection of ${record.hives?.hive_number || 'Unknown Hive'}`
+                badge = (
+                  <span
+                    className={`px-2 py-1 text-xs rounded ${
+                      record.queen_seen
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                        : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                    }`}
+                  >
+                    {record.queen_seen ? 'Queen Seen' : 'No Queen'}
+                  </span>
+                )
+                break
+              case 'varroa_treatment':
+                icon = <Syringe size={18} className="text-red-600 dark:text-red-400" />
+                label = `Varroa Treatment - ${record.hives?.hive_number || 'Unknown Hive'}`
+                badge = (
+                  <span className="px-2 py-1 text-xs rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                    {record.treatment_type}
+                  </span>
+                )
+                break
+              case 'varroa_check':
+                icon = <Bug size={18} className="text-orange-600 dark:text-orange-400" />
+                label = `Varroa Check - ${record.hives?.hive_number || 'Unknown Hive'}`
+                badge = record.infestation_rate !== null ? (
+                  <span className="px-2 py-1 text-xs rounded bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
+                    {record.infestation_rate}% infestation
+                  </span>
+                ) : null
+                break
+              case 'feeding':
+                icon = <Wheat size={18} className="text-amber-600 dark:text-amber-400" />
+                label = `Feeding - ${record.hives?.hive_number || 'Unknown Hive'}`
+                badge = (
+                  <span className="px-2 py-1 text-xs rounded bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                    {record.feed_type}
+                  </span>
+                )
+                break
+              case 'harvest':
+                icon = <Droplet size={18} className="text-yellow-600 dark:text-yellow-400" />
+                label = `Harvest - ${record.hives?.hive_number || 'Unknown Hive'}`
+                badge = record.honey_weight !== null ? (
+                  <span className="px-2 py-1 text-xs rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                    {record.honey_weight} kg
+                  </span>
+                ) : null
+                break
+            }
+
+            return (
+              <div key={record.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-slate-800 rounded border border-border">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {icon}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-foreground block truncate">
+                      {label}
+                    </span>
+                    <span className="text-sm text-text-secondary">
+                      {new Date(record.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                {badge && <div className="ml-2 flex-shrink-0">{badge}</div>}
               </div>
-              <span
-                className={`px-2 py-1 text-xs rounded ${
-                  inspection.queen_seen
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                }`}
-              >
-                {inspection.queen_seen ? 'Queen Seen' : 'No Queen'}
-              </span>
-            </div>
-          ))}
+            )
+          })}
           {recentActivity.length === 0 && (
             <p className="text-text-secondary text-center py-4">No recent activity</p>
           )}
@@ -857,11 +1032,11 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-slate-700 rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Version:</span>
-                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.3.6</span>
+                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.3.7</span>
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-slate-700 rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Last Updated:</span>
-                <span className="font-semibold text-blue-700 dark:text-blue-400">November 25, 2025</span>
+                <span className="font-semibold text-blue-700 dark:text-blue-400">November 27, 2025</span>
               </span>
             </div>
           </div>
