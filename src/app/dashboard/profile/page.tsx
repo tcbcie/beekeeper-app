@@ -1386,8 +1386,8 @@ export default function ProfilePage() {
 
               {/* Association Membership Display */}
               {(userProfile?.association_id || userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
-                <div className="md:col-span-2 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">Association Memberships</div>
+                <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+                  <div className="text-sm font-semibold text-foreground mb-2">Association Memberships</div>
                   <div className="space-y-2">
                     {userProfile?.association_id && (
                       <div className="text-sm text-foreground">
