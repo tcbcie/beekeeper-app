@@ -1022,16 +1022,16 @@ export default function DashboardPage() {
 
 
       {/* Application Version */}
-      <div className="bg-sage-50 dark:bg-slate-800 rounded-lg shadow p-6 border border-border">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-2">HiveCraic</h3>
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-slate-700 rounded-full shadow-sm border border-border">
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Version:</span>
                 <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.4.0</span>
               </span>
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface dark:bg-slate-700 rounded-full shadow-sm border border-border">
+              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Last Updated:</span>
                 <span className="font-semibold text-blue-700 dark:text-blue-400">November 27, 2025</span>
               </span>
