@@ -5853,7 +5853,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {/* Details Section - Compact inline */}
-                <div className="bg-yellow-50 rounded px-3 py-2">
+                <div className="rounded px-3 py-2 border border-border">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <span>
                       <span className="text-text-tertiary">Type:</span> <span className="font-medium text-foreground">{feeding.feed_type}</span>
@@ -5950,7 +5950,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {/* Details Section - Compact inline */}
-                <div className="bg-amber-50 rounded px-3 py-2">
+                <div className="rounded px-3 py-2 border border-border">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {harvest.honey_weight !== null && (
                       <span>
