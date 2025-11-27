@@ -5492,11 +5492,11 @@ export default function InspectionsPage() {
             {/* Disease Section - Compact inline */}
             {(inspection.afb_disease > 0 || inspection.efb_disease > 0 || inspection.chalkbrood_disease > 0 ||
               inspection.nosemosis_disease > 0 || inspection.dwv_disease > 0 || inspection.iapv_cbpv_disease > 0) && (
-              <div className="mb-3 overflow-hidden rounded border border-teal-200 dark:border-teal-800">
-                <div className="bg-teal-100 dark:bg-teal-950/40 px-3 py-1.5 border-b border-teal-200 dark:border-teal-800">
+              <div className="mb-3 overflow-hidden rounded border border-border">
+                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                   <h4 className="text-sm font-semibold text-foreground">Disease</h4>
                 </div>
-                <div className="bg-teal-50 dark:bg-teal-950/20 px-3 py-1.5">
+                <div className="bg-surface dark:bg-surface px-3 py-1.5">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {inspection.afb_disease > 0 && (
                       <span><span className="text-text-secondary">AFB:</span> {renderStars(inspection.afb_disease)}</span>
