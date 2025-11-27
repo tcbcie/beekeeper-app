@@ -3156,7 +3156,7 @@ export default function InspectionsPage() {
             </div>
 
             {/* Behaviour Section - Grouped */}
-            <div className="md:col-span-2 bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
+            <div className="md:col-span-2 bg-teal-50 dark:bg-teal-950/20 p-4 rounded-lg border-2 border-teal-200 dark:border-teal-800">
               <h4 className="text-sm font-semibold text-foreground mb-4">Behaviour</h4>
 
               {/* Population */}
@@ -3718,7 +3718,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
+                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors rounded-t-lg"
               >
                 <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
                 {hygienicBehaviourExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -3890,7 +3890,7 @@ export default function InspectionsPage() {
               <button
                 type="button"
                 onClick={() => setDiseaseExpanded(!diseaseExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 transition-colors rounded-t-lg"
+                className="w-full p-4 flex items-center justify-between hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors rounded-t-lg"
               >
                 <h4 className="text-sm font-semibold text-foreground">Disease</h4>
                 {diseaseExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -5459,10 +5459,10 @@ export default function InspectionsPage() {
             )}
 
             {(inspection.weather_temp !== null || inspection.weather_condition) && (
-              <div className="mb-4 p-3 bg-sky-50 rounded border-2 border-sky-200 hidden md:block">
+              <div className="mb-4 p-3 bg-sky-50 dark:bg-sky-950/20 rounded border-2 border-sky-200 dark:border-sky-800 hidden md:block">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">🌤️</span>
-                  <span className="text-sm font-medium text-sky-700">Weather Conditions</span>
+                  <span className="text-sm font-medium text-sky-700 dark:text-sky-300">Weather Conditions</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm ml-7">
                   {inspection.weather_temp !== null && (
