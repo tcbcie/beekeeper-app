@@ -50,18 +50,7 @@ export default function SubscriptionStatusCard({ onRenewClick }: SubscriptionSta
   }
 
   const getStatusColor = () => {
-    switch (subscriptionStatus.status) {
-      case 'active':
-        return 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
-      case 'expiring_soon':
-        return 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
-      case 'expiring_very_soon':
-        return 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800'
-      case 'expired':
-        return 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'
-      default:
-        return 'bg-sage-50 dark:bg-slate-800/50 border-border'
-    }
+    return 'bg-surface dark:bg-surface border-border'
   }
 
   const getStatusIcon = () => {

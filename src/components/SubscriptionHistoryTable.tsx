@@ -77,7 +77,7 @@ export default function SubscriptionHistoryTable() {
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-sage-50 dark:bg-slate-800/50">
+          <thead className="bg-surface-elevated dark:bg-surface-elevated">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Code
@@ -99,7 +99,7 @@ export default function SubscriptionHistoryTable() {
               const isCurrent = item.is_current
 
               return (
-                <tr key={item.id} className={isCurrent ? 'bg-forest-50 dark:bg-forest-950/20' : ''}>
+                <tr key={item.id} className={isCurrent ? 'bg-surface-elevated dark:bg-surface-elevated' : ''}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm font-semibold text-foreground">
@@ -140,7 +140,7 @@ export default function SubscriptionHistoryTable() {
         </table>
       </div>
 
-      <div className="px-6 py-4 bg-sage-50 dark:bg-slate-800/50 border-t border-border">
+      <div className="px-6 py-4 bg-surface-elevated dark:bg-surface-elevated border-t border-border">
         <p className="text-xs text-text-tertiary">
           Showing all subscription activations and renewals for your account
         </p>
