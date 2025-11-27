@@ -5522,7 +5522,7 @@ export default function InspectionsPage() {
             )}
 
             {inspection.notes && (
-              <div className="p-3 bg-blue-50 rounded">
+              <div className="p-3 rounded border border-border">
                 <span className="text-sm font-medium text-text-secondary">Notes: </span>
                 <span className="text-sm text-text-tertiary">{inspection.notes}</span>
               </div>
