@@ -655,11 +655,11 @@ export default function TasksEventsPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-sage-50 dark:bg-slate-800/50 border-b border-border px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-foreground">
                 {editingTask ? 'Edit Task/Event' : 'Create Task/Event'}
               </h2>
-              <button onClick={resetForm} className="text-text-tertiary hover:text-text-tertiary">
+              <button onClick={resetForm} className="text-text-tertiary hover:text-foreground">
                 <X size={24} />
               </button>
             </div>
