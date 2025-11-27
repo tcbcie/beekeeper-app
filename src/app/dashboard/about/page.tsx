@@ -385,12 +385,12 @@ function AboutPageContent() {
                       onClick={() => setFormData({ ...formData, ticket_type: 'problem' })}
                       className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                         formData.ticket_type === 'problem'
-                          ? 'border-red-500 bg-red-50'
+                          ? 'border-red-500 bg-surface dark:bg-surface-elevated'
                           : 'border-border hover:border border-border'
                       }`}
                       disabled={!!editingTicket}
                     >
-                      <AlertTriangle size={24} className="text-red-600" />
+                      <AlertTriangle size={24} className="text-red-600 dark:text-red-400" />
                       <div className="text-center">
                         <div className="font-semibold">Problem</div>
                         <div className="text-xs text-text-tertiary">Report an issue</div>
@@ -401,12 +401,12 @@ function AboutPageContent() {
                       onClick={() => setFormData({ ...formData, ticket_type: 'suggestion' })}
                       className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                         formData.ticket_type === 'suggestion'
-                          ? 'border-blue-500 bg-blue-50'
+                          ? 'border-blue-500 bg-surface dark:bg-surface-elevated'
                           : 'border-border hover:border border-border'
                       }`}
                       disabled={!!editingTicket}
                     >
-                      <Lightbulb size={24} className="text-blue-600" />
+                      <Lightbulb size={24} className="text-blue-600 dark:text-blue-400" />
                       <div className="text-center">
                         <div className="font-semibold">Suggestion</div>
                         <div className="text-xs text-text-tertiary">Share an idea</div>
@@ -417,12 +417,12 @@ function AboutPageContent() {
                       onClick={() => setFormData({ ...formData, ticket_type: 'subscription' })}
                       className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                         formData.ticket_type === 'subscription'
-                          ? 'border-amber-500 bg-amber-50'
+                          ? 'border-amber-500 bg-surface dark:bg-surface-elevated'
                           : 'border-border hover:border border-border'
                       }`}
                       disabled={!!editingTicket}
                     >
-                      <CreditCard size={24} className="text-amber-600" />
+                      <CreditCard size={24} className="text-amber-600 dark:text-amber-400" />
                       <div className="text-center">
                         <div className="font-semibold">Subscription</div>
                         <div className="text-xs text-text-tertiary">Billing/subscription</div>
@@ -488,7 +488,7 @@ function AboutPageContent() {
             ) : (
               <div className="divide-y divide-border">
                 {tickets.map((ticket) => (
-                  <div key={ticket.id} className="p-6 hover:bg-sage-50 dark:hover:bg-slate-800 transition-colors">
+                  <div key={ticket.id} className="p-6 hover:bg-surface-elevated dark:hover:bg-surface-elevated transition-colors">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-3">
                         {ticket.ticket_type === 'problem' ? (
@@ -546,9 +546,9 @@ function AboutPageContent() {
                     <p className="text-text-secondary mb-3 whitespace-pre-wrap">{ticket.description}</p>
 
                     {ticket.admin_notes && (
-                      <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3">
-                        <p className="text-sm font-semibold text-blue-900 mb-1">Admin Response:</p>
-                        <p className="text-sm text-blue-800 whitespace-pre-wrap">{ticket.admin_notes}</p>
+                      <div className="bg-surface dark:bg-surface-elevated border-l-4 border-blue-500 p-3 mb-3">
+                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-1">Admin Response:</p>
+                        <p className="text-sm text-blue-800 dark:text-blue-400 whitespace-pre-wrap">{ticket.admin_notes}</p>
                       </div>
                     )}
 
@@ -655,9 +655,9 @@ function AboutPageContent() {
           <h2 className="text-2xl font-bold text-foreground mb-4">Privacy Notice</h2>
 
           <div className="prose max-w-none space-y-4 text-text-secondary">
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-              <p className="font-semibold text-blue-900">Your Privacy Matters</p>
-              <p className="text-blue-800 mt-2">
+            <div className="bg-surface dark:bg-surface-elevated border-l-4 border-blue-500 p-4 mb-4">
+              <p className="font-semibold text-blue-900 dark:text-blue-300">Your Privacy Matters</p>
+              <p className="text-blue-800 dark:text-blue-400 mt-2">
                 This privacy notice explains how HiveCraic collects, uses, and protects your personal information.
               </p>
             </div>
@@ -778,7 +778,7 @@ function AboutPageContent() {
               If you have questions or concerns about this privacy notice or how your data is handled,
               please contact us at:
             </p>
-            <div className="bg-sage-50 dark:bg-slate-800 p-4 rounded-lg mt-2">
+            <div className="bg-surface dark:bg-surface-elevated p-4 rounded-lg mt-2 border border-border">
               <p className="font-semibold">HiveCraic Support</p>
               <p>Email: support@tcbc.ie</p>
               <p>Website: tcbc.ie</p>
