@@ -1559,7 +1559,7 @@ export default function ProfilePage() {
                           ) : teamMembers.length > 0 ? (
                             <div className="space-y-2">
                               {teamMembers.map((member) => (
-                                <div key={member.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                                <div key={member.id} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                                   <div className="flex items-center gap-3 flex-1">
                                     <User size={16} className="text-text-tertiary" />
                                     <div className="flex-1">
@@ -1577,7 +1577,7 @@ export default function ProfilePage() {
                                         ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
                                         : member.role === 'admin'
                                         ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200'
-                                        : 'bg-sage-100 dark:bg-slate-800 text-text-primary'
+                                        : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground border border-border'
                                     }`}>
                                       {member.role}
                                     </span>
@@ -1585,7 +1585,7 @@ export default function ProfilePage() {
                                   {member.role !== 'owner' && (
                                     <button
                                       onClick={() => handleRemoveMember(member.id, member.user_email || 'this member')}
-                                      className="ml-3 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center gap-1"
+                                      className="ml-3 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
                                       title="Remove member"
                                     >
                                       <Trash2 size={12} />
@@ -1637,7 +1637,7 @@ export default function ProfilePage() {
                                       </div>
                                       <button
                                         onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
-                                        className="ml-3 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center gap-1"
+                                        className="ml-3 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
                                         title="Cancel invitation"
                                       >
                                         <X size={12} />
@@ -1676,7 +1676,7 @@ export default function ProfilePage() {
                                             )}
                                           </div>
                                         </div>
-                                        <span className="px-2 py-1 text-xs rounded font-medium bg-green-100 text-green-800">
+                                        <span className="px-2 py-1 text-xs rounded font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
                                           Accepted
                                         </span>
                                       </div>
@@ -1713,7 +1713,7 @@ export default function ProfilePage() {
                                             )}
                                           </div>
                                         </div>
-                                        <span className="px-2 py-1 text-xs rounded font-medium bg-red-100 text-red-800">
+                                        <span className="px-2 py-1 text-xs rounded font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
                                           Declined
                                         </span>
                                       </div>
@@ -1754,7 +1754,7 @@ export default function ProfilePage() {
                                           ? `${ta.apiary.name} - ${ta.apiary.eircode}`
                                           : (ta.apiary?.eircode || 'this apiary')
                                       )}
-                                      className="ml-3 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center gap-1"
+                                      className="ml-3 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
                                       title="Remove apiary from team"
                                     >
                                       <X size={12} />
@@ -1764,7 +1764,7 @@ export default function ProfilePage() {
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-sm text-text-tertiary text-center py-4 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                              <p className="text-sm text-text-tertiary text-center py-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                                 No apiaries shared yet. Click &quot;Share Apiary&quot; to share an apiary with this team.
                               </p>
                             )}
@@ -1834,7 +1834,7 @@ export default function ProfilePage() {
                           ) : teamMembers.length > 0 ? (
                             <div className="space-y-2">
                               {teamMembers.map((member) => (
-                                <div key={member.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                                <div key={member.id} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                                   <div className="flex items-center gap-3 flex-1">
                                     <User size={16} className="text-text-tertiary" />
                                     <div className="flex-1">
@@ -1852,7 +1852,7 @@ export default function ProfilePage() {
                                         ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
                                         : member.role === 'admin'
                                         ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200'
-                                        : 'bg-sage-100 dark:bg-slate-800 text-text-primary'
+                                        : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground border border-border'
                                     }`}>
                                       {member.role}
                                     </span>
@@ -2065,7 +2065,7 @@ export default function ProfilePage() {
               {teamMembers.length > 0 ? (
                 <div className="space-y-2">
                   {teamMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50 rounded-lg">
+                    <div key={member.id} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
                           {member.first_name ? member.first_name[0].toUpperCase() : (member.user_email || 'U')[0].toUpperCase()}
