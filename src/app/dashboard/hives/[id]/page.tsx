@@ -105,7 +105,7 @@ interface VarroaTreatment {
 
 interface Feeding {
   id: string
-  feeding_date: string
+  feed_date: string
   hive_id: string
   feed_type: string
   amount: number | null
@@ -903,7 +903,7 @@ export default function HiveDetailPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="font-medium text-foreground">
-                        {new Date(feeding.feeding_date).toLocaleDateString()}
+                        {new Date(feeding.feed_date).toLocaleDateString()}
                       </span>
                       <span className="ml-3 text-sm font-medium text-orange-400">{feeding.feed_type}</span>
                     </div>
