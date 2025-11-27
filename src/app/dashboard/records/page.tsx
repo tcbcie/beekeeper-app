@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId } from '@/lib/auth'
+import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet, ExternalLink, Home, Archive } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
@@ -300,6 +300,7 @@ export default function InspectionsPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
   const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
+  const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
   const [filterHiveId, setFilterHiveId] = useState<string>('')
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [showArchivedHives, setShowArchivedHives] = useState<boolean>(false)
@@ -1092,6 +1093,10 @@ export default function InspectionsPage() {
         return
       }
       setUserId(id)
+
+      // Check if user has active subscription
+      const hasSubscription = await hasActiveSubscription()
+      setUserHasActiveSubscription(hasSubscription)
 
       // Fetch all data in parallel for better performance
       await Promise.all([
@@ -4219,57 +4224,59 @@ export default function InspectionsPage() {
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-2">Inspection Photo (optional)</label>
-              <div className="flex items-start gap-3">
-                {imagePreview ? (
-                  <div className="relative w-20 h-20 flex-shrink-0 group">
-                    <div
-                      className="relative w-full h-full cursor-pointer"
-                      onDoubleClick={() => {
-                        setModalImageUrl(imagePreview)
-                        setImageModalOpen(true)
-                      }}
-                      title="Double-click to enlarge"
-                    >
-                      <Image
-                        src={imagePreview}
-                        alt="Preview"
-                        fill
-                        className="object-cover rounded-lg border-2 border-border shadow-sm"
-                        sizes="80px"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
-                        <Camera size={16} className="text-white" />
+            {userHasActiveSubscription && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2">Inspection Photo (optional)</label>
+                <div className="flex items-start gap-3">
+                  {imagePreview ? (
+                    <div className="relative w-20 h-20 flex-shrink-0 group">
+                      <div
+                        className="relative w-full h-full cursor-pointer"
+                        onDoubleClick={() => {
+                          setModalImageUrl(imagePreview)
+                          setImageModalOpen(true)
+                        }}
+                        title="Double-click to enlarge"
+                      >
+                        <Image
+                          src={imagePreview}
+                          alt="Preview"
+                          fill
+                          className="object-cover rounded-lg border-2 border-border shadow-sm"
+                          sizes="80px"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
+                          <Camera size={16} className="text-white" />
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                        title="Remove image"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
-                      title="Remove image"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ) : null}
-                <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all p-4">
-                  <div className="flex flex-col items-center justify-center">
-                    <Camera size={24} className="text-text-tertiary mb-1" />
-                    <p className="text-xs text-text-tertiary text-center">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                </label>
+                  ) : null}
+                  <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all p-4">
+                    <div className="flex flex-col items-center justify-center">
+                      <Camera size={24} className="text-text-tertiary mb-1" />
+                      <p className="text-xs text-text-tertiary text-center">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
               <button
@@ -5190,7 +5197,7 @@ export default function InspectionsPage() {
                 <div className="w-12 h-12 flex-shrink-0 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Search size={24} className="text-blue-600" />
                 </div>
-                {inspection.image_url && (
+                {userHasActiveSubscription && inspection.image_url && (
                   <div
                     className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
                     onDoubleClick={() => {
