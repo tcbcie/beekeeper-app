@@ -2519,7 +2519,7 @@ export default function InspectionsPage() {
       </div>
 
       {showForm && formType === 'inspection' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
+        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold text-foreground">
               {editingInspection ? 'Edit Inspection' : 'Record New Inspection'}
@@ -4299,7 +4299,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_treatment' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
+        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-semibold">
@@ -4611,7 +4611,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'varroa_check' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
+        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingCheck ? 'Edit Varroa Check' : 'Record New Varroa Check'}
@@ -4905,7 +4905,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'feeding' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
+        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingFeeding ? 'Edit Feeding' : 'Record New Feeding'}
@@ -5051,7 +5051,7 @@ export default function InspectionsPage() {
       )}
 
       {showForm && formType === 'harvest' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
+        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h3 className="text-xl font-semibold">
               {editingHarvest ? 'Edit Harvest' : 'Record New Harvest'}
