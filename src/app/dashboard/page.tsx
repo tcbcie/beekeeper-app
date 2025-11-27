@@ -905,7 +905,7 @@ export default function DashboardPage() {
             }
 
             return (
-              <div key={record.id} className="flex items-center justify-between p-3 bg-sage-50 dark:bg-slate-800 rounded border border-border">
+              <div key={record.id} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded border border-border">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   {icon}
                   <div className="flex-1 min-w-0">
