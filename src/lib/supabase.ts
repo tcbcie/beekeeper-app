@@ -11,11 +11,7 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce'
-  },
-  global: {
-    headers: {
-      // Ensure we always send the content type
-      'Content-Type': 'application/json'
-    }
   }
+  // Note: Removed global Content-Type header as it was overriding image uploads
+  // The Supabase client automatically sets correct Content-Type for each request type
 })
