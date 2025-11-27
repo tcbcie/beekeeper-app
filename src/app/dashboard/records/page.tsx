@@ -1300,14 +1300,30 @@ export default function InspectionsPage() {
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       setUploadingImage(true)
-      const fileExt = file.name.split('.').pop()
+      const fileExt = file.name.split('.').pop()?.toLowerCase()
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
       const filePath = `inspections/${fileName}`
+
+      // Determine correct MIME type - fallback based on extension if file.type is wrong/empty
+      let contentType = file.type
+      if (!contentType || contentType === 'application/json') {
+        // Map common image extensions to MIME types
+        const mimeMap: Record<string, string> = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp'
+        }
+        contentType = mimeMap[fileExt || ''] || 'image/jpeg'
+      }
+
+      console.log('Uploading image:', { fileName, fileType: file.type, contentType, fileSize: file.size })
 
       const { error: uploadError } = await supabase.storage
         .from('inspection-images')
         .upload(filePath, file, {
-          contentType: file.type,
+          contentType: contentType,
           cacheControl: '3600',
           upsert: false
         })
@@ -1321,6 +1337,7 @@ export default function InspectionsPage() {
         .from('inspection-images')
         .getPublicUrl(filePath)
 
+      console.log('Image uploaded successfully:', publicUrl)
       return publicUrl
     } catch (error) {
       console.error('Failed to upload image:', error)
