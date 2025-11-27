@@ -447,18 +447,10 @@ export default function SettingsPage() {
       const { data, error } = await supabase
         .rpc('get_users_with_email')
 
-      console.log('📥 fetchUsers response:', { dataCount: data?.length, error })
-
       if (error) throw error
 
       if (data) {
-        console.log('📊 Users data:', data.map((u: UserProfile) => ({
-          email: u.email,
-          role: u.role,
-          is_active: u.is_active
-        })))
         setUsers(data as UserProfile[])
-        console.log('✅ Users state updated')
       }
     } catch (error) {
       console.error('❌ Error fetching users:', error)
@@ -477,13 +469,10 @@ export default function SettingsPage() {
         .select('*')
         .order('deleted_at', { ascending: false })
 
-      console.log('📥 fetchDeletedUsers response:', { dataCount: data?.length, error })
-
       if (error) throw error
 
       if (data) {
         setDeletedUsers(data as UserProfile[])
-        console.log('✅ Deleted users state updated')
       }
     } catch (error) {
       console.error('❌ Error fetching deleted users:', error)
@@ -494,7 +483,6 @@ export default function SettingsPage() {
   }
 
   const fetchReactivationRequests = async () => {
-    console.log('🔄 fetchReactivationRequests called')
     setLoadingRequests(true)
     try {
       const { data, error } = await supabase
@@ -502,14 +490,11 @@ export default function SettingsPage() {
         .select('*')
         .order('requested_at', { ascending: false })
 
-      console.log('📥 fetchReactivationRequests response:', { dataCount: data?.length, error })
-
       if (error) throw error
 
       if (data) {
         setReactivationRequests(data as ReactivationRequest[])
         setReactivationRequestsFetched(true)
-        console.log('✅ Reactivation requests state updated')
       }
     } catch (error) {
       console.error('❌ Error fetching reactivation requests:', error)
@@ -531,10 +516,6 @@ export default function SettingsPage() {
 
       if (historyError) throw historyError
 
-      console.log('📥 fetchSubscriptionHistory response:', {
-        historyCount: historyData?.length
-      })
-
       if (historyData) {
         // Create a map of user_id to email from existing users data
         const emailMap = new Map(users.map(u => [u.id, u.email]))
@@ -555,7 +536,6 @@ export default function SettingsPage() {
 
         setSubscriptionHistory(formattedData as SubscriptionHistoryRecord[])
         setSubscriptionHistoryFetched(true)
-        console.log('✅ Subscription history state updated')
       }
     } catch (error) {
       console.error('❌ Error fetching subscription history:', error)
@@ -693,8 +673,6 @@ export default function SettingsPage() {
     if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
       return
     }
-
-    console.log('🔄 Attempting role change via API:', { targetUserId, newRole })
 
     try {
       // Get the current session token
@@ -1436,8 +1414,6 @@ export default function SettingsPage() {
 
   // User Account Toggle Function
   const handleToggleUserAccount = async (targetUserId: string, currentStatus: boolean, userEmail: string) => {
-    console.log('🔄 handleToggleUserAccount called:', { targetUserId, currentStatus, userEmail })
-
     if (targetUserId === userId) {
       alert('You cannot disable your own account.')
       return
@@ -1445,31 +1421,23 @@ export default function SettingsPage() {
 
     const action = currentStatus ? 'disable' : 'enable'
     const newStatus = !currentStatus
-    console.log(`📋 Action: ${action}, New status: ${newStatus}`)
 
     if (!confirm(`Are you sure you want to ${action} the account for "${userEmail}"?`)) {
-      console.log('❌ User cancelled')
       return
     }
 
     try {
-      console.log('🚀 Calling toggle_user_account RPC...')
       const { data, error } = await supabase
         .rpc('toggle_user_account', {
           target_user_id: targetUserId,
           enable_account: newStatus
         })
 
-      console.log('📥 RPC Response:', { data, error })
-
       if (error) throw error
 
-      console.log('✅ Toggle successful, showing alert...')
       alert(data.message || `Account ${action}d successfully!`)
 
-      console.log('🔄 Calling fetchUsers to refresh...')
       await fetchUsers()
-      console.log('✅ Users refreshed')
     } catch (error) {
       console.error('❌ Error toggling user account:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'

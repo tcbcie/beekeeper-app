@@ -168,8 +168,6 @@ export default function QueensPage() {
       sharedQueenIds = sharedHives?.map(h => h.queen_id).filter(Boolean) as string[] || []
     }
 
-    console.log('🔍 Shared queen IDs:', sharedQueenIds)
-
     // Fetch my queens + queens from shared apiaries
     let queensQuery = supabase
       .from('queens')

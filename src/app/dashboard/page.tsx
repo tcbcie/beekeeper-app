@@ -529,8 +529,6 @@ export default function DashboardPage() {
     setLoadingTeamMembers(true)
 
     try {
-      console.log('🔍 Fetching my shared team members...')
-
       // Get apiaries owned by the current user
       const { data: myApiaries, error: apiariesError } = await supabase
         .from('apiaries')
@@ -610,7 +608,6 @@ export default function DashboardPage() {
         profiles: profilesMap.get(member.user_id) || { full_name: null, email: 'Unknown' },
       }))
 
-      console.log('✅ Transformed members:', transformedMembers)
       setMySharedTeamMembers(transformedMembers)
     } catch (error) {
       console.error('❌ Error fetching team members:', error)
