@@ -65,7 +65,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
       // Check if hive is shared
       const { data: hiveData, error: hiveError } = await supabase
         .from('hives')
-        .select('user_id, apiary_id, apiaries(is_shared)')
+        .select('user_id, apiary_id')
         .eq('id', hiveId)
         .maybeSingle()
 
@@ -73,10 +73,17 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
         console.error('Error fetching hive data:', hiveError)
       }
 
-      const apiaries = hiveData?.apiaries as { is_shared: boolean } | { is_shared: boolean }[] | null
-      const isShared = apiaries
-        ? (Array.isArray(apiaries) ? apiaries[0]?.is_shared : apiaries.is_shared) || false
-        : false
+      // Check if the apiary is shared by looking in team_apiaries
+      let isShared = false
+      if (hiveData?.apiary_id) {
+        const { data: teamApiaryData } = await supabase
+          .from('team_apiaries')
+          .select('id')
+          .eq('apiary_id', hiveData.apiary_id)
+          .limit(1)
+
+        isShared = (teamApiaryData && teamApiaryData.length > 0) || false
+      }
       setIsHiveShared(isShared)
 
       const { data, error} = await supabase
