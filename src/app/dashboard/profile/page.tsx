@@ -1477,7 +1477,7 @@ export default function ProfilePage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{team.name}</h4>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-medium">
+                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-xs rounded font-medium">
                             Owner
                           </span>
                         </div>
@@ -1574,9 +1574,9 @@ export default function ProfilePage() {
                                     </div>
                                     <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
                                       member.role === 'owner'
-                                        ? 'bg-blue-100 text-blue-800'
+                                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
                                         : member.role === 'admin'
-                                        ? 'bg-purple-100 text-purple-800'
+                                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200'
                                         : 'bg-sage-100 dark:bg-slate-800 text-text-primary'
                                     }`}>
                                       {member.role}
@@ -1654,7 +1654,7 @@ export default function ProfilePage() {
                           {acceptedInvitations.length > 0 && (
                             <div className="mt-6 pt-4 border-t border-border">
                               <h5 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                                <User size={14} className="text-green-600" />
+                                <User size={14} className="text-green-600 dark:text-green-400" />
                                 Accepted Invitations
                               </h5>
                               <div className="space-y-2">
@@ -1664,7 +1664,7 @@ export default function ProfilePage() {
                                   return (
                                     <div key={`accepted-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
                                       <div className="flex items-center gap-3 flex-1">
-                                        <User size={16} className="text-green-600" />
+                                        <User size={16} className="text-green-600 dark:text-green-400" />
                                         <div className="flex-1">
                                           <div className="text-sm font-medium text-foreground">{invitation.email}</div>
                                           <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
@@ -1727,7 +1727,7 @@ export default function ProfilePage() {
                           {/* Shared Apiaries */}
                           <div className="mt-6 pt-4 border-t border-border">
                             <h5 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                              <MapPin size={14} className="text-purple-600" />
+                              <MapPin size={14} className="text-purple-600 dark:text-purple-400" />
                               Shared Apiaries
                             </h5>
                             {teamApiaries.length > 0 ? (
@@ -1735,7 +1735,7 @@ export default function ProfilePage() {
                                 {teamApiaries.map((ta) => (
                                   <div key={ta.id} className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
                                     <div className="flex items-center gap-3 flex-1">
-                                      <MapPin size={16} className="text-purple-600" />
+                                      <MapPin size={16} className="text-purple-600 dark:text-purple-400" />
                                       <div className="flex-1">
                                         <div className="text-sm font-medium text-foreground">
                                           {ta.apiary?.name
@@ -1849,9 +1849,9 @@ export default function ProfilePage() {
                                     </div>
                                     <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
                                       member.role === 'owner'
-                                        ? 'bg-blue-100 text-blue-800'
+                                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
                                         : member.role === 'admin'
-                                        ? 'bg-purple-100 text-purple-800'
+                                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200'
                                         : 'bg-sage-100 dark:bg-slate-800 text-text-primary'
                                     }`}>
                                       {member.role}
@@ -2025,7 +2025,7 @@ export default function ProfilePage() {
             {/* Invite New Member Section */}
             <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
               <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                <UserPlus size={18} className="text-green-600" />
+                <UserPlus size={18} className="text-green-600 dark:text-green-400" />
                 Invite New Member
               </h4>
               <p className="text-sm text-text-tertiary mb-3">
