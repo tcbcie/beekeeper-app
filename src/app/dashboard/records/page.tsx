@@ -2436,50 +2436,50 @@ export default function InspectionsPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setTimePeriod('all')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
                   timePeriod === 'all'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
+                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
                 All Time
               </button>
               <button
                 onClick={() => setTimePeriod('3months')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
                   timePeriod === '3months'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
+                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
                 Last 3 Months
               </button>
               <button
                 onClick={() => setTimePeriod('6months')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
                   timePeriod === '6months'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
+                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
                 Last 6 Months
               </button>
               <button
                 onClick={() => setTimePeriod('1year')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
                   timePeriod === '1year'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
+                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
                 Last Year
               </button>
               <button
                 onClick={() => setTimePeriod('custom')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
                   timePeriod === 'custom'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md'
-                    : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
+                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
                 Custom Range
