@@ -101,10 +101,8 @@ interface TeamApiaryWithOwner {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
-    queens: 0,
-    activeQueens: 0,
+    apiaries: 0,
     hives: 0,
-    activeBatches: 0,
     recentInspections: 0,
   })
   const [mySharedStats, setMySharedStats] = useState({
@@ -148,19 +146,15 @@ export default function DashboardPage() {
 
     try {
       // Fetch all stats in parallel
-      const [queensRes, activeQueensRes, hivesRes, batchesRes, inspectionsRes] = await Promise.all([
-        supabase.from('queens').select('id', { count: 'exact', head: true }).eq('user_id', currentUserId),
-        supabase.from('queens').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('user_id', currentUserId),
+      const [apiariesRes, hivesRes, inspectionsRes] = await Promise.all([
+        supabase.from('apiaries').select('id', { count: 'exact', head: true }).eq('user_id', currentUserId),
         supabase.from('hives').select('id', { count: 'exact', head: true }).eq('user_id', currentUserId),
-        supabase.from('rearing_batches').select('id', { count: 'exact', head: true }).in('status', ['grafted', 'emerged']).eq('user_id', currentUserId),
         supabase.from('inspections').select('id', { count: 'exact', head: true }).gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]).eq('user_id', currentUserId),
       ])
 
       setStats({
-        queens: queensRes.count || 0,
-        activeQueens: activeQueensRes.count || 0,
+        apiaries: apiariesRes.count || 0,
         hives: hivesRes.count || 0,
-        activeBatches: batchesRes.count || 0,
         recentInspections: inspectionsRes.count || 0,
       })
 
@@ -649,10 +643,8 @@ export default function DashboardPage() {
   const isTeamMember = (ownedTeams.length > 0 || memberTeams.length > 0)
 
   const statCards = [
-    { label: 'My Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 text-purple-700' },
-    { label: 'My Active Queens', value: stats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-700' },
-    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-700' },
-    { label: 'Active Queen Rearing Batches', value: stats.activeBatches, icon: '🥚', color: 'bg-blue-50 text-blue-700' },
+    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' },
+    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
     { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' },
   ]
 
