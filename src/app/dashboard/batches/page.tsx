@@ -761,57 +761,57 @@ export default function BatchesPage() {
             </div>
 
             {/* Timeline Dates - Grouped */}
-            <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-              <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-3">Timeline</h4>
+            <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+              <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-3">Timeline</h4>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-purple-800 dark:text-purple-200 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Graft Date *
                   </label>
                   <input
                     type="date"
                     value={formData.graft_date}
                     onChange={(e) => setFormData({...formData, graft_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-purple-800 dark:text-purple-200 mb-1">Acceptance Check</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Acceptance Check</label>
                   <input
                     type="date"
                     value={formData.acceptance_check_date}
                     onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 1 day</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 1 day</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-purple-800 dark:text-purple-200 mb-1">1st Option to Cage</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">1st Option to Cage</label>
                   <input
                     type="date"
                     value={formData.first_option_to_cage_date}
                     onChange={(e) => setFormData({...formData, first_option_to_cage_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 5 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 5 days</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-purple-800 dark:text-purple-200 mb-1">2nd Option to Cage</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">2nd Option to Cage</label>
                   <input
                     type="date"
                     value={formData.second_option_to_cage_date}
                     onChange={(e) => setFormData({...formData, second_option_to_cage_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 10 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 10 days</p>
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-purple-800 dark:text-purple-200 mb-1">
+                  <label className="flex items-center gap-2 text-sm font-medium text-text-secondary mb-1">
                     Expected Day to Hatch
                     <div className="group relative">
                       <MessageCircle size={14} className="text-purple-600 dark:text-purple-300 cursor-help" />
@@ -824,25 +824,25 @@ export default function BatchesPage() {
                     type="date"
                     value={formData.emergence_date}
                     onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-purple-300 dark:border-purple-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">Graft + 12 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 12 days</p>
                 </div>
               </div>
             </div>
 
             {/* Starter Colony Selection - Grouped */}
-            <div className="md:col-span-2 bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-              <h4 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-3">Starter Colony</h4>
+            <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+              <h4 className="text-sm font-semibold text-green-700 dark:text-green-300 mb-3">Starter Colony</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-green-800 dark:text-green-200 mb-1">Apiary</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
                   <select
                     value={formData.starter_apiary_id}
                     onChange={(e) => {
                       setFormData({...formData, starter_apiary_id: e.target.value, starter_colony_hive_id: ''})
                     }}
-                    className="w-full px-3 py-2 border border-green-300 dark:border-green-700 rounded-md bg-white dark:bg-slate-900 text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   >
                     <option value="">Select apiary (optional)</option>
                     {apiaries.map((apiary) => (
@@ -852,11 +852,11 @@ export default function BatchesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-green-800 dark:text-green-200 mb-1">Hive</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
                   <select
                     value={formData.starter_colony_hive_id}
                     onChange={(e) => setFormData({...formData, starter_colony_hive_id: e.target.value})}
-                    className="w-full px-3 py-2 border border-green-300 dark:border-green-700 rounded-md bg-white dark:bg-slate-900 text-foreground disabled:bg-sage-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground disabled:bg-sage-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed"
                     disabled={!formData.starter_apiary_id}
                   >
                     <option value="">Select hive (optional)</option>
@@ -865,19 +865,19 @@ export default function BatchesPage() {
                     ))}
                   </select>
                   {!formData.starter_apiary_id && (
-                    <p className="text-xs text-green-600 dark:text-green-300 mt-1">Select an apiary first</p>
+                    <p className="text-xs text-text-tertiary mt-1">Select an apiary first</p>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Batch Quantities - Grouped Vertically */}
-            <div className="md:col-span-2 bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">Batch Quantities</h4>
+            <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+              <h4 className="text-sm font-semibold text-foreground mb-3">Batch Quantities</h4>
               <div className="space-y-3">
                 {/* Number of Grafts */}
                 <div>
-                  <label className="block text-xs font-medium text-blue-800 dark:text-blue-200 mb-1">Number of Grafts</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Number of Grafts</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -893,7 +893,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.cell_count}
                       onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -912,7 +912,7 @@ export default function BatchesPage() {
 
                 {/* Grafts Accepted */}
                 <div>
-                  <label className="block text-xs font-medium text-blue-800 dark:text-blue-200 mb-1">Grafts Accepted</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Grafts Accepted</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -928,7 +928,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.grafts_accepted}
                       onChange={(e) => setFormData({...formData, grafts_accepted: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -947,7 +947,7 @@ export default function BatchesPage() {
 
                 {/* Queens Hatched */}
                 <div>
-                  <label className="block text-xs font-medium text-blue-800 dark:text-blue-200 mb-1">Queens Hatched</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Hatched</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -963,7 +963,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.queens_hatched}
                       onChange={(e) => setFormData({...formData, queens_hatched: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
@@ -982,7 +982,7 @@ export default function BatchesPage() {
 
                 {/* Queens Mated */}
                 <div>
-                  <label className="block text-xs font-medium text-blue-800 dark:text-blue-200 mb-1">Queens Mated</label>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Mated</label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -998,7 +998,7 @@ export default function BatchesPage() {
                       type="number"
                       value={formData.queens_mated}
                       onChange={(e) => setFormData({...formData, queens_mated: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md bg-white dark:bg-slate-900 text-foreground text-center"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                       min="0"
                       placeholder="0"
                     />
