@@ -9,8 +9,7 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    formats: ['image/webp'],
-    minimumCacheTTL: 60,
+    unoptimized: true,
   },
 };
 
