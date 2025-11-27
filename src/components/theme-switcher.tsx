@@ -13,15 +13,15 @@ export function ThemeSwitcher() {
   ]
 
   return (
-    <div className="flex gap-2 p-1 rounded-2xl bg-sage-100 dark:bg-slate-800 border border-border">
+    <div className="flex gap-2 p-1 rounded-2xl bg-surface dark:bg-surface-elevated border border-border">
       {options.map(({ value, icon: Icon, label, subtitle }) => (
         <button
           key={value}
           onClick={() => setTheme(value)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all touch-manipulation ${
             theme === value
-              ? 'bg-white dark:bg-slate-700 shadow-md'
-              : 'hover:bg-sage-200 dark:hover:bg-slate-700/50 active:bg-sage-200 dark:active:bg-slate-700'
+              ? 'bg-surface-elevated dark:bg-slate-700 shadow-md border border-border'
+              : 'hover:bg-surface-elevated dark:hover:bg-slate-700/50 active:bg-surface-elevated dark:active:bg-slate-700'
           }`}
         >
           <Icon
