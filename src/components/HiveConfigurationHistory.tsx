@@ -53,9 +53,28 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
   const [loading, setLoading] = useState(true)
   const [isSectionExpanded, setIsSectionExpanded] = useState(false)
   const [isShowingMore, setIsShowingMore] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isHiveShared, setIsHiveShared] = useState(false)
 
   const fetchHistory = useCallback(async () => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUserId(user?.id || null)
+
+      // Check if hive is shared
+      const { data: hiveData } = await supabase
+        .from('hives')
+        .select('user_id, apiaries(is_shared)')
+        .eq('id', hiveId)
+        .single()
+
+      const apiaries = hiveData?.apiaries as { is_shared: boolean } | { is_shared: boolean }[] | null
+      const isShared = apiaries
+        ? (Array.isArray(apiaries) ? apiaries[0]?.is_shared : apiaries.is_shared) || false
+        : false
+      setIsHiveShared(isShared)
+
       const { data, error} = await supabase
         .from('hive_configuration_history')
         .select(`
@@ -384,10 +403,13 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-3 text-xs text-text-secondary">
-              <User size={14} className="flex-shrink-0" />
-              <span>Changed by: <span className="font-medium text-text-primary">{changerName}</span></span>
-            </div>
+            {/* Only show "Changed by" if hive is shared or changed by someone other than current user */}
+            {isHiveShared && entry.changed_by !== currentUserId && (
+              <div className="flex items-center gap-2 mb-3 text-xs text-text-secondary">
+                <User size={14} className="flex-shrink-0" />
+                <span>Changed by: <span className="font-medium text-text-primary">{changerName}</span></span>
+              </div>
+            )}
 
             {allChanges.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
