@@ -2265,7 +2265,7 @@ export default function InspectionsPage() {
                     setShowForm(true)
                     setShowDropdown(false)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-red-50 flex items-center gap-2 rounded-b-lg transition-colors text-red-700 border-t border-border"
+                  className="w-full px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 rounded-b-lg transition-colors text-red-700 dark:text-red-400 border-t border-border"
                 >
                   <Archive size={16} />
                   Archive Hive
@@ -2280,7 +2280,7 @@ export default function InspectionsPage() {
       {showForm && formType === 'archive' && (
         <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-red-700">Archive Hive</h3>
+            <h3 className="text-xl font-semibold text-red-700 dark:text-red-400">Archive Hive</h3>
             <button
               onClick={() => {
                 setShowForm(false)
@@ -2296,14 +2296,14 @@ export default function InspectionsPage() {
             </button>
           </div>
 
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+          <div className="bg-red-50 dark:bg-red-950/30 border-l-4 border-red-500 dark:border-red-700 p-4 mb-6">
             <div className="flex items-start">
-              <Archive className="text-red-600 mt-0.5 mr-3 flex-shrink-0" size={20} />
+              <Archive className="text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" size={20} />
               <div>
-                <p className="text-sm font-semibold text-red-900 mb-1">
+                <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
                   Warning: Archiving a hive
                 </p>
-                <p className="text-sm text-red-800">
+                <p className="text-sm text-red-800 dark:text-red-200">
                   Archiving will remove this hive from active hive lists. The hive and all its records will be preserved and accessible in the archived hives view. You can restore the hive later if needed.
                 </p>
               </div>
@@ -5194,8 +5194,8 @@ export default function InspectionsPage() {
             <div className="flex justify-between items-start mb-3 md:mb-4 gap-2 md:gap-4">
               <div className="flex items-start gap-3 flex-1">
                 {/* Icon Badge */}
-                <div className="w-12 h-12 flex-shrink-0 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Search size={24} className="text-blue-600" />
+                <div className="w-12 h-12 flex-shrink-0 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
+                  <Search size={24} className="text-blue-600 dark:text-blue-400" />
                 </div>
                 {userHasActiveSubscription && inspection.image_url && (
                   <div
@@ -5243,14 +5243,14 @@ export default function InspectionsPage() {
               <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => handleEdit(inspection)}
-                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation"
                   aria-label="Edit inspection"
                 >
                   <Edit2 size={20} />
                 </button>
                 <button
                   onClick={() => handleDelete(inspection.id)}
-                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation"
                   aria-label="Delete inspection"
                 >
                   <Trash2 size={20} />
@@ -5536,12 +5536,12 @@ export default function InspectionsPage() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start gap-2 flex-1">
                     {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-red-100 rounded-lg flex items-center justify-center">
-                      <Syringe size={20} className="text-red-600" />
+                    <div className="w-10 h-10 flex-shrink-0 bg-red-100 dark:bg-red-900/40 rounded-lg flex items-center justify-center">
+                      <Syringe size={20} className="text-red-600 dark:text-red-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded">Varroa Treatment</span>
+                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 text-xs font-medium rounded">Varroa Treatment</span>
                         <h3 className="text-base font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
                       </div>
                     <p className="text-xs text-text-tertiary">
@@ -5588,7 +5588,7 @@ export default function InspectionsPage() {
                           formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }, 100)
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit treatment"
                     >
                       <Edit2 size={18} />
@@ -5605,7 +5605,7 @@ export default function InspectionsPage() {
                           if (!error) fetchVarroaTreatments()
                         }
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Delete treatment"
                     >
                       <Trash2 size={18} />
@@ -5614,7 +5614,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {/* Details Section - Compact inline */}
-                <div className="bg-red-50 rounded px-3 py-2">
+                <div className="bg-red-50 dark:bg-red-950/20 rounded px-3 py-2">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <span>
                       <span className="text-text-tertiary">Product:</span> <span className="font-medium text-foreground">{treatment.treatment_type}</span>
@@ -5649,12 +5649,12 @@ export default function InspectionsPage() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start gap-2 flex-1">
                     {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <Bug size={20} className="text-orange-600" />
+                    <div className="w-10 h-10 flex-shrink-0 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center">
+                      <Bug size={20} className="text-orange-600 dark:text-orange-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-xs font-medium rounded">Varroa Check</span>
+                        <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 text-xs font-medium rounded">Varroa Check</span>
                         <h3 className="text-base font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
                       </div>
                     <p className="text-xs text-text-tertiary">
@@ -5693,7 +5693,7 @@ export default function InspectionsPage() {
                           formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }, 100)
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit check"
                     >
                       <Edit2 size={18} />
@@ -5710,7 +5710,7 @@ export default function InspectionsPage() {
                           if (!error) fetchVarroaChecks()
                         }
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Delete check"
                     >
                       <Trash2 size={18} />
@@ -5772,12 +5772,12 @@ export default function InspectionsPage() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start gap-2 flex-1">
                     {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <Wheat size={20} className="text-yellow-600" />
+                    <div className="w-10 h-10 flex-shrink-0 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg flex items-center justify-center">
+                      <Wheat size={20} className="text-yellow-700 dark:text-yellow-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">Feeding</span>
+                        <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 text-xs font-medium rounded">Feeding</span>
                         <h3 className="text-base font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
                       </div>
                     <p className="text-xs text-text-tertiary">
@@ -5827,7 +5827,7 @@ export default function InspectionsPage() {
                           formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }, 100)
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit feeding"
                     >
                       <Edit2 size={18} />
@@ -5844,7 +5844,7 @@ export default function InspectionsPage() {
                           if (!error) fetchFeedings()
                         }
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Delete feeding"
                     >
                       <Trash2 size={18} />
@@ -5880,12 +5880,12 @@ export default function InspectionsPage() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start gap-2 flex-1">
                     {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <Droplet size={20} className="text-amber-600" />
+                    <div className="w-10 h-10 flex-shrink-0 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center">
+                      <Droplet size={20} className="text-amber-600 dark:text-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded">Harvest</span>
+                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 text-xs font-medium rounded">Harvest</span>
                         <h3 className="text-base font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
                       </div>
                     <p className="text-xs text-text-tertiary">
@@ -5924,7 +5924,7 @@ export default function InspectionsPage() {
                           formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                         }, 100)
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 hover:text-blue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Edit harvest"
                     >
                       <Edit2 size={18} />
@@ -5941,7 +5941,7 @@ export default function InspectionsPage() {
                           if (!error) fetchHarvests()
                         }
                       }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 hover:text-red-900 hover:bg-red-50 active:bg-red-100 rounded-lg touch-manipulation transition-colors"
+                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
                       aria-label="Delete harvest"
                     >
                       <Trash2 size={18} />
