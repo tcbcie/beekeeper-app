@@ -122,6 +122,7 @@ if (isDryRun) {
 // Describe what will change
 console.log('\n📝 Files that will be updated:');
 console.log('   • version.json');
+console.log('   • package.json (npm version)');
 console.log('   • src/app/login/page.tsx (version badge & date)');
 console.log('   • src/app/dashboard/page.tsx (version & date display)');
 console.log('   • src/app/dashboard/about/page.tsx (version badge & date)');

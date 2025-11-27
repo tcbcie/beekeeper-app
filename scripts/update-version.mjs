@@ -4,9 +4,10 @@
  *
  * This script updates the version number and date across all application files:
  * 1. version.json (central version registry)
- * 2. Login page (src/app/login/page.tsx)
- * 3. Dashboard page (src/app/dashboard/page.tsx)
- * 4. About page (src/app/dashboard/about/page.tsx)
+ * 2. package.json (npm package version)
+ * 3. Login page (src/app/login/page.tsx)
+ * 4. Dashboard page (src/app/dashboard/page.tsx)
+ * 5. About page (src/app/dashboard/about/page.tsx)
  *
  * Usage:
  *   node scripts/update-version.mjs <version> [date] [options]
@@ -107,6 +108,17 @@ try {
 
 // File update configurations
 const files = [
+  {
+    name: 'Package.json',
+    path: join(ROOT_DIR, 'package.json'),
+    updates: [
+      {
+        search: /("version":\s*")[\d.]+(-[a-zA-Z0-9.]+)?(")/,
+        replace: `$1${newVersion}$3`,
+        description: 'Package version'
+      }
+    ]
+  },
   {
     name: 'Login Page',
     path: join(ROOT_DIR, 'src/app/login/page.tsx'),
