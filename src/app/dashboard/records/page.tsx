@@ -1306,7 +1306,11 @@ export default function InspectionsPage() {
 
       const { error: uploadError } = await supabase.storage
         .from('inspection-images')
-        .upload(filePath, file)
+        .upload(filePath, file, {
+          contentType: file.type,
+          cacheControl: '3600',
+          upsert: false
+        })
 
       if (uploadError) {
         console.error('Image upload error:', uploadError)
