@@ -81,6 +81,7 @@ interface Hive {
   eggs_last_present?: string | null
   team_name?: string | null
   is_shared?: boolean
+  shared_with_team?: string | null
   archived_at?: string | null
   archive_reason_id?: string | null
   archive_notes?: string | null
@@ -240,20 +241,24 @@ export default function HivesPage() {
       // Use joined data from query - apiaries and queens are already included
       const hiveIds = data.map(h => h.id)
 
-      // Batch query for team info for shared apiaries
-      const sharedApiaryIds = [...new Set(
+      // Batch query for team info for ALL apiaries (shared and owned)
+      const allApiaryIds = [...new Set(
         data
-          .filter(h => h.user_id !== currentUserId && h.apiary_id)
+          .filter(h => h.apiary_id)
           .map(h => h.apiary_id)
           .filter((id): id is string => id !== null)
       )]
 
+      // Map for shared apiaries (viewing others' hives)
       const teamDataMap = new Map<string, { name: string }>()
-      if (sharedApiaryIds.length > 0) {
+      // Map for owner's apiaries that are shared with teams
+      const ownerSharedMap = new Map<string, { name: string }>()
+
+      if (allApiaryIds.length > 0) {
         const { data: teamApiaryData } = await supabase
           .from('team_apiaries')
           .select('apiary_id, teams(name)')
-          .in('apiary_id', sharedApiaryIds)
+          .in('apiary_id', allApiaryIds)
 
         if (teamApiaryData) {
           teamApiaryData.forEach((ta) => {
@@ -263,7 +268,13 @@ export default function HivesPage() {
                 ? typedData.teams[0]?.name || ''
                 : typedData.teams.name
               if (teamName) {
-                teamDataMap.set(typedData.apiary_id, { name: teamName })
+                // Check if this apiary belongs to current user or someone else
+                const hiveForApiary = data.find(h => h.apiary_id === typedData.apiary_id)
+                if (hiveForApiary && hiveForApiary.user_id !== currentUserId) {
+                  teamDataMap.set(typedData.apiary_id, { name: teamName })
+                } else {
+                  ownerSharedMap.set(typedData.apiary_id, { name: teamName })
+                }
               }
             }
           })
@@ -406,6 +417,8 @@ export default function HivesPage() {
         // Determine team info for shared hives
         const isShared = hive.user_id !== currentUserId
         const teamData = hive.apiary_id ? teamDataMap.get(hive.apiary_id) : undefined
+        // Get team info for owner's shared apiaries
+        const ownerSharedData = hive.apiary_id ? ownerSharedMap.get(hive.apiary_id) : undefined
 
         // Get queen data if queen is assigned
         const queenData = hive.queen_id ? queensMap.get(hive.queen_id) : undefined
@@ -420,6 +433,7 @@ export default function HivesPage() {
           eggs_last_present: eggsInspection?.inspection_date || null,
           team_name: teamData?.name || null,
           is_shared: isShared,
+          shared_with_team: ownerSharedData?.name || null,
           last_record: lastRecord,
           active_tasks_count: activeTasksByHive.get(hive.id) || 0,
         }
@@ -1525,6 +1539,12 @@ export default function HivesPage() {
                   <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
                     <span>👥</span>
                     <span>Shared via {hive.team_name}</span>
+                  </span>
+                )}
+                {!hive.is_shared && hive.shared_with_team && (
+                  <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-purple-300 dark:border-purple-800">
+                    <span>📤</span>
+                    <span>Shared with {hive.shared_with_team}</span>
                   </span>
                 )}
                 {hive.archived_at && (
