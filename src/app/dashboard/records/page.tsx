@@ -1320,9 +1320,12 @@ export default function InspectionsPage() {
 
       console.log('Uploading image:', { fileName, fileType: file.type, contentType, fileSize: file.size })
 
+      // Create a new File object with the correct MIME type to ensure browser sends it correctly
+      const correctedFile = new File([file], file.name, { type: contentType })
+
       const { error: uploadError } = await supabase.storage
         .from('inspection-images')
-        .upload(filePath, file, {
+        .upload(filePath, correctedFile, {
           contentType: contentType,
           cacheControl: '3600',
           upsert: false
