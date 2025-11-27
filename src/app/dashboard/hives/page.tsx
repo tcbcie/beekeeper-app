@@ -196,16 +196,11 @@ export default function HivesPage() {
       `)
 
     // Apply archive filter FIRST (before ownership filter for better SQL generation)
-    console.log('🔍 Archive filter value:', archiveFilter, 'Type:', typeof archiveFilter)
     if (archiveFilter === 'active') {
-      console.log('  → Applying: archived_at IS NULL')
       query = query.is('archived_at', null)
     } else if (archiveFilter === 'archived') {
-      console.log('  → Applying: archived_at IS NOT NULL')
       // Filter for hives where archived_at is NOT NULL
       query = query.not('archived_at', 'is', null)
-    } else {
-      console.log('  → No archive filter (showing all)')
     }
     // 'all' shows both active and archived hives (no archive filter applied)
 
@@ -236,16 +231,6 @@ export default function HivesPage() {
     }
 
     const { data, error } = await query.order('hive_number')
-
-    console.log(`📊 Hives query (filter: ${archiveFilter}):`, {
-      count: data?.length,
-      hasError: !!error,
-      allHives: data?.map(h => ({
-        hive_number: h.hive_number,
-        archived_at: h.archived_at,
-        status: h.status
-      })) || []
-    })
 
     if (error) {
       console.error('Error fetching hives:', error)
@@ -583,17 +568,8 @@ export default function HivesPage() {
 
   // Refetch hives when ownership or archive filter changes
   useEffect(() => {
-    console.log('⚡ Filter useEffect triggered:', {
-      userId: !!userId,
-      filtersLoaded,
-      ownershipFilter,
-      archiveFilter
-    })
     if (userId) {
-      console.log('  → Calling fetchHives')
       fetchHives(userId)
-    } else {
-      console.log('  → Skipping fetchHives (userId is false)')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownershipFilter, archiveFilter, userId])
@@ -752,17 +728,9 @@ export default function HivesPage() {
 
         // Insert with user_id for RLS policy compliance
         const insertData = { ...dataToSubmit, user_id: userId }
-        console.log('Inserting hive with data:', insertData)
-        console.log('Apiary ID:', insertData.apiary_id, 'Type:', typeof insertData.apiary_id)
-
-        // DEBUG: Check authentication state before insert
-        console.log('About to insert. User ID from getCurrentUserId():', userId)
 
         // Verify the session is valid
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        console.log('Current session exists:', !!session)
-        console.log('Session user ID:', session?.user?.id)
-        console.log('Session access token present:', !!session?.access_token)
 
         if (sessionError) {
           console.error('Session error:', sessionError)
@@ -774,13 +742,12 @@ export default function HivesPage() {
 
         // Test if we can call the ownership function directly
         if (insertData.apiary_id) {
-          const { data: ownershipTest, error: ownershipError } = await supabase
+          const { error: ownershipError } = await supabase
             .rpc('check_user_owns_apiary', {
               apiary_uuid: insertData.apiary_id,
               user_uuid: userId
             })
 
-          console.log('Direct ownership check result:', ownershipTest)
           if (ownershipError) {
             console.error('Direct ownership check error:', ownershipError)
           }
@@ -1026,7 +993,6 @@ export default function HivesPage() {
           <select
             value={archiveFilter}
             onChange={(e) => {
-              console.log('🔄 Archive filter changed from', archiveFilter, 'to', e.target.value)
               setArchiveFilter(e.target.value as 'active' | 'archived' | 'all')
             }}
             className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-border focus:border-border focus:ring-2 focus:ring-border/20 transition-all"

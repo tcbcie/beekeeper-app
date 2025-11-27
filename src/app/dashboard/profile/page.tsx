@@ -897,10 +897,8 @@ export default function ProfilePage() {
         if (inviteError) throw inviteError
 
         // Send invitation email via Edge Function
-        console.log('📧 Attempting to send invitation email to:', inviteEmail)
-
         try {
-          const { data: emailData, error: emailError } = await supabase.functions.invoke('send-team-invitation', {
+          const { error: emailError } = await supabase.functions.invoke('send-team-invitation', {
             body: {
               invitationId: newInvite.id,
               inviteeEmail: inviteEmail.toLowerCase(),
@@ -924,7 +922,6 @@ export default function ProfilePage() {
               alert(`✅ Invitation created successfully!\n\n⚠️ Email failed to send (check console for details).\n\nThe invitation is saved and ${inviteEmail} will be automatically added to the team when they sign up.\n\nPlease contact ${inviteEmail} directly to let them know.`)
             }
           } else {
-            console.log('✅ Invitation email sent successfully:', emailData)
             alert(`📧 Invitation email sent to ${inviteEmail}!\n\nThey will be automatically added to the team when they sign up with this email address.`)
           }
         } catch (emailException) {

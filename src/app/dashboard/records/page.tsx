@@ -843,8 +843,6 @@ export default function InspectionsPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    console.log('📦 Fetching archive records for user:', currentUserId)
-
     // Fetch archived hives with their archive reason
     const { data, error } = await supabase
       .from('hives')
@@ -863,11 +861,9 @@ export default function InspectionsPage() {
       .limit(500)
 
     if (error) {
-      console.error('❌ Error fetching archive records:', error)
+      console.error('Error fetching archive records:', error)
       return
     }
-
-    console.log('📦 Archived hives found:', data?.length || 0, data)
 
     if (data) {
       // Transform the data to match ArchiveRecord interface
@@ -882,7 +878,6 @@ export default function InspectionsPage() {
           ? record.archive_reason_value[0]?.value
           : (record.archive_reason_value as { value?: string } | undefined)?.value
       }))
-      console.log('📦 Transformed archive records:', archiveRecords)
       setArchiveRecords(archiveRecords)
     }
   }, [userId])
@@ -1231,16 +1226,6 @@ export default function InspectionsPage() {
       ...harvests.map(h => ({ ...h, record_type: 'harvest' as const, date: h.harvest_date })),
       ...archiveRecords.map(a => ({ ...a, record_type: 'archive' as const, date: a.archived_at }))
     ]
-
-    console.log('📊 Merged records breakdown:', {
-      inspections: inspections.length,
-      varroaTreatments: varroaTreatments.length,
-      varroaChecks: varroaChecks.length,
-      feedings: feedings.length,
-      harvests: harvests.length,
-      archiveRecords: archiveRecords.length,
-      total: merged.length
-    })
 
     // Sort by date descending (most recent first)
     merged.sort((a, b) => {
@@ -2304,7 +2289,7 @@ export default function InspectionsPage() {
             }
 
             try {
-              const { error, data: updatedData } = await supabase
+              const { error } = await supabase
                 .from('hives')
                 .update({
                   archived_at: new Date().toISOString(),
@@ -2318,7 +2303,6 @@ export default function InspectionsPage() {
 
               if (error) throw error
 
-              console.log('✅ Hive archived:', updatedData)
               alert('Hive archived successfully! Go to Hives page and select "Archived" or "All" filter to see it.')
               setShowForm(false)
               setArchiveData({
