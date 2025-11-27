@@ -1354,7 +1354,7 @@ export default function ProfilePage() {
           /* Display Mode */
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface-elevated rounded-lg border border-border">
+              <div className="flex items-start gap-3 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <User size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
                   <div className="text-sm font-medium text-text-secondary mb-1">First Name</div>
@@ -1364,7 +1364,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface-elevated rounded-lg border border-border">
+              <div className="flex items-start gap-3 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <User size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
                   <div className="text-sm font-medium text-text-secondary mb-1">Last Name</div>
@@ -1374,7 +1374,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-sage-50 dark:bg-surface-elevated rounded-lg border border-border">
+              <div className="md:col-span-2 flex items-start gap-3 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <Phone size={20} className="text-text-tertiary mt-1" />
                 <div className="flex-1">
                   <div className="text-sm font-medium text-text-secondary mb-1">Mobile Number</div>
