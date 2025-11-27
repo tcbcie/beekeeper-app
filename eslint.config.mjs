@@ -20,13 +20,6 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
-  {
-    rules: {
-      // Disable img element warning - we intentionally use <img> instead of <Image>
-      // because Next.js image optimization fails on Vercel for our Supabase storage URLs
-      "@next/next/no-img-element": "off",
-    },
-  },
 ];
 
 export default eslintConfig;

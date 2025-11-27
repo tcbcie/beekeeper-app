@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet, ExternalLink, Home, Archive } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface HiveConfiguration {
@@ -4231,10 +4232,12 @@ export default function InspectionsPage() {
                       }}
                       title="Double-click to enlarge"
                     >
-                      <img
+                      <Image
                         src={imagePreview}
                         alt="Preview"
-                        className="absolute inset-0 w-full h-full object-cover rounded-lg border-2 border-border shadow-sm"
+                        fill
+                        className="object-cover rounded-lg border-2 border-border shadow-sm"
+                        sizes="80px"
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
                         <Camera size={16} className="text-white" />
@@ -5196,10 +5199,12 @@ export default function InspectionsPage() {
                     }}
                     title="Double-click to enlarge"
                   >
-                    <img
+                    <Image
                       src={inspection.image_url}
                       alt="Inspection"
-                      className="absolute inset-0 w-full h-full object-cover rounded-lg border-2 border-border shadow-sm"
+                      fill
+                      className="object-cover rounded-lg border-2 border-border shadow-sm"
+                      sizes="64px"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
                       <Camera size={20} className="text-white" />
@@ -6041,10 +6046,13 @@ export default function InspectionsPage() {
               <X size={24} className="text-text-secondary" />
             </button>
             <div className="relative w-full h-full flex items-center justify-center">
-              <img
+              <Image
                 src={modalImageUrl}
                 alt="Inspection photo full size"
-                className="max-w-full max-h-full object-contain"
+                fill
+                className="object-contain"
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                priority
               />
             </div>
           </div>
