@@ -5614,7 +5614,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {/* Details Section - Compact inline */}
-                <div className="bg-red-50 dark:bg-red-950/20 rounded px-3 py-2">
+                <div className="rounded px-3 py-2 border border-border">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <span>
                       <span className="text-text-tertiary">Product:</span> <span className="font-medium text-foreground">{treatment.treatment_type}</span>
@@ -5719,7 +5719,7 @@ export default function InspectionsPage() {
                 </div>
 
                 {/* Details Section - Compact inline */}
-                <div className="bg-orange-50 rounded px-3 py-2">
+                <div className="rounded px-3 py-2 border border-border">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <span>
                       <span className="text-text-tertiary">Method:</span> <span className="font-medium text-foreground">{check.method}</span>
