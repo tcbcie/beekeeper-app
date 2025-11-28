@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - HiveCraic</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f1e8 0%, #e8f5e8 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      padding: 48px 32px;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #2d5016;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+
+    p {
+      font-size: 16px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .info-box {
+      background: #fff7ed;
+      border-left: 4px solid #f59e0b;
+      padding: 16px;
+      margin: 24px 0;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .info-box h3 {
+      color: #92400e;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .info-box p {
+      color: #78350f;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .retry-btn {
+      display: inline-block;
+      background: #2d5016;
+      color: white;
+      padding: 14px 32px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 24px;
+      transition: background 0.3s ease;
+      cursor: pointer;
+      border: none;
+      font-size: 16px;
+    }
+
+    .retry-btn:hover {
+      background: #1f3710;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status.offline {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status.online {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      }
+
+      .container {
+        background: #1e293b;
+      }
+
+      h1 {
+        color: #10b981;
+      }
+
+      p {
+        color: #cbd5e1;
+      }
+
+      .info-box {
+        background: #422006;
+        border-left-color: #f59e0b;
+      }
+
+      .info-box h3 {
+        color: #fbbf24;
+      }
+
+      .info-box p {
+        color: #fde68a;
+      }
+
+      .retry-btn {
+        background: #10b981;
+        color: #1e293b;
+      }
+
+      .retry-btn:hover {
+        background: #059669;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🐝</div>
+    <h1>You're Offline</h1>
+    <p>HiveCraic requires an internet connection to log in and sync your beekeeping data.</p>
+
+    <div id="status" class="status offline">
+      No Internet Connection
+    </div>
+
+    <div class="info-box">
+      <h3>💡 Already logged in?</h3>
+      <p>If you were previously logged in, you may be able to view some cached data once you're back online. Your session is stored locally and will be restored when connection returns.</p>
+    </div>
+
+    <div class="info-box">
+      <h3>📱 What you can do:</h3>
+      <p>
+        • Check your internet connection<br>
+        • Try switching between WiFi and mobile data<br>
+        • Wait for connection to restore
+      </p>
+    </div>
+
+    <button class="retry-btn" onclick="location.reload()">
+      Try Again
+    </button>
+  </div>
+
+  <script>
+    // Monitor online/offline status
+    function updateStatus() {
+      const statusEl = document.getElementById('status');
+      if (navigator.onLine) {
+        statusEl.textContent = 'Connection Restored! Redirecting...';
+        statusEl.className = 'status online';
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+      } else {
+        statusEl.textContent = 'No Internet Connection';
+        statusEl.className = 'status offline';
+      }
+    }
+
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+
+    // Check status on load
+    updateStatus();
+  </script>
+</body>
+</html>

@@ -8,6 +8,11 @@ import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import MobileDrawer from '@/components/MobileDrawer'
 import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner'
+import OfflineIndicator from '@/components/OfflineIndicator'
+import PendingSyncIndicator from '@/components/PendingSyncIndicator'
+import UpdateNotification from '@/components/UpdateNotification'
+import { updateManager } from '@/lib/update-manager'
+import { registerServiceWorker } from '@/lib/notifications'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth()
@@ -42,6 +47,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
     checkAccount()
   }, [user, authLoading, router])
+
+  // Initialize update manager
+  useEffect(() => {
+    const initUpdateManager = async () => {
+      const registration = await registerServiceWorker()
+      if (registration) {
+        updateManager.initialize(registration)
+      }
+    }
+
+    initUpdateManager()
+  }, [])
 
   // Periodically check if account is still active (every 30 seconds)
   useEffect(() => {
@@ -78,6 +95,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineIndicator />
+      <PendingSyncIndicator />
       <Navbar
         currentUser={user}
         onMenuClick={() => {

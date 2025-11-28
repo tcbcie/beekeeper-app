@@ -28,6 +28,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error getting session:', error)
+
+        // If offline, try to use cached session from localStorage
+        if (!navigator.onLine) {
+          console.log('Offline - checking localStorage for cached session')
+          const cachedSession = localStorage.getItem('supabase.auth.token')
+          if (cachedSession) {
+            try {
+              const parsed = JSON.parse(cachedSession)
+              if (parsed?.currentSession?.user) {
+                console.log('Using cached session while offline')
+                setUser(parsed.currentSession.user)
+                setUserId(parsed.currentSession.user.id)
+                setLoading(false)
+                return
+              }
+            } catch (e) {
+              console.error('Failed to parse cached session:', e)
+            }
+          }
+        }
+
         setUser(null)
         setUserId(null)
         return
@@ -36,7 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Session check:', {
         hasSession: !!session,
         hasUser: !!session?.user,
-        userId: session?.user?.id
+        userId: session?.user?.id,
+        isOnline: navigator.onLine
       })
 
       if (session?.user) {
@@ -48,6 +70,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error refreshing user:', error)
+
+      // If offline and error occurred, try to use cached session
+      if (!navigator.onLine) {
+        console.log('Offline error - attempting to use cached session')
+        const cachedSession = localStorage.getItem('supabase.auth.token')
+        if (cachedSession) {
+          try {
+            const parsed = JSON.parse(cachedSession)
+            if (parsed?.currentSession?.user) {
+              console.log('Using cached session after error')
+              setUser(parsed.currentSession.user)
+              setUserId(parsed.currentSession.user.id)
+              setLoading(false)
+              return
+            }
+          } catch (e) {
+            console.error('Failed to parse cached session:', e)
+          }
+        }
+      }
+
       setUser(null)
       setUserId(null)
     } finally {
