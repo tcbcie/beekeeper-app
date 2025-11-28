@@ -181,7 +181,7 @@ class OfflineDB {
     const db = await this.init()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORES.PENDING_SYNC, 'readonly')
-      const store = transaction.objectStore(storeName)
+      const store = transaction.objectStore(STORES.PENDING_SYNC)
       const index = store.index('userId')
       const request = index.getAll(userId)
 
