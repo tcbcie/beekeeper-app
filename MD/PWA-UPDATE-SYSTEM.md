@@ -56,11 +56,44 @@ The version is managed in multiple places for consistency:
 
 ### How to Update Version
 
+#### Automated (Recommended)
+
+Use the version bump script which automatically updates all files:
+
+```bash
+# Bump patch version (1.4.3 → 1.4.4)
+npm run version:bump
+
+# Bump minor version (1.4.3 → 1.5.0)
+npm run version:bump -- minor
+
+# Bump major version (1.4.3 → 2.0.0)
+npm run version:bump -- major
+
+# Dry run to preview changes
+node scripts/bump-version.mjs patch --dry-run
+```
+
+The script automatically updates:
+- ✅ `package.json` - npm version
+- ✅ `version.json` - version registry
+- ✅ `public/service-worker.js` - PWA cache name
+- ✅ `public/manifest.json` - PWA manifest version
+- ✅ `src/app/login/page.tsx` - version badge
+- ✅ `src/app/dashboard/page.tsx` - version display
+- ✅ `src/app/dashboard/about/page.tsx` - about page version
+
+#### Manual (Not Recommended)
+
+If you need to update manually:
+
 1. Update `package.json` version number
 2. Update cache name in `public/service-worker.js` (e.g., `CACHE_NAME = 'hivecraic-v1.4.3'`)
 3. Update version in `public/manifest.json`
-4. Rebuild the app: `npm run build`
-5. Deploy the new version
+4. Update version in `version.json`
+5. Update UI component versions manually
+6. Rebuild the app: `npm run build`
+7. Deploy the new version
 
 **Note**: The service worker will detect the change and notify users of the update automatically.
 
