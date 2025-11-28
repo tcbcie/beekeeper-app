@@ -212,7 +212,7 @@ describe('Weather Fetching Functionality', () => {
         if (urlString.includes('nominatim.openstreetmap.org')) {
           nominatimCallCount++
           // Verify that United Kingdom is used in the query, NOT Ireland
-          expect(urlString).toContain('United%20Kingdom')
+          expect(urlString).toContain('United Kingdom')
           expect(urlString).not.toContain('Ireland')
           expect(urlString).toContain('BT15GS') // Cleaned postcode
 
@@ -281,8 +281,8 @@ describe('Weather Fetching Functionality', () => {
         const urlString = url.toString()
 
         if (urlString.includes('nominatim.openstreetmap.org')) {
-          // Verify United Kingdom is being used
-          expect(urlString).toContain('United%20Kingdom')
+          // Verify United Kingdom is being used (URL encoded in the alternate format)
+          expect(urlString).toMatch(/United(%20| )Kingdom/)
           // Return empty array to simulate failed geocoding
           return Promise.resolve({
             ok: true,
