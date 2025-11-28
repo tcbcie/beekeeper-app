@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { CloudOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
 import { syncManager } from '@/lib/sync-manager'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,11 +11,35 @@ export default function PendingSyncIndicator() {
   const [syncResult, setSyncResult] = useState<{ success: number; failed: number } | null>(null)
   const [showResult, setShowResult] = useState(false)
 
-  const checkPendingCount = async () => {
+  const checkPendingCount = useCallback(async () => {
     if (!userId) return
     const count = await syncManager.getPendingSyncCount(userId)
     setPendingCount(count)
-  }
+  }, [userId])
+
+  const handleManualSync = useCallback(async () => {
+    if (!navigator.onLine || syncing || !userId) return
+
+    setSyncing(true)
+    setSyncResult(null)
+    setShowResult(false)
+
+    try {
+      const result = await syncManager.syncPendingActions()
+      setSyncResult(result)
+      setShowResult(true)
+
+      // Refresh pending count
+      await checkPendingCount()
+
+      // Hide result after 5 seconds
+      setTimeout(() => setShowResult(false), 5000)
+    } catch (error) {
+      console.error('Manual sync failed:', error)
+    } finally {
+      setSyncing(false)
+    }
+  }, [syncing, userId, checkPendingCount])
 
   useEffect(() => {
     checkPendingCount()
@@ -41,31 +65,7 @@ export default function PendingSyncIndicator() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('background-sync-requested', handleBackgroundSync)
     }
-  }, [userId])
-
-  const handleManualSync = async () => {
-    if (!navigator.onLine || syncing || !userId) return
-
-    setSyncing(true)
-    setSyncResult(null)
-    setShowResult(false)
-
-    try {
-      const result = await syncManager.syncPendingActions()
-      setSyncResult(result)
-      setShowResult(true)
-
-      // Refresh pending count
-      await checkPendingCount()
-
-      // Hide result after 5 seconds
-      setTimeout(() => setShowResult(false), 5000)
-    } catch (error) {
-      console.error('Manual sync failed:', error)
-    } finally {
-      setSyncing(false)
-    }
-  }
+  }, [checkPendingCount, handleManualSync])
 
   if (pendingCount === 0 && !showResult) {
     return null

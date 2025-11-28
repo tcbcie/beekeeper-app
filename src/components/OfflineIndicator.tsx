@@ -52,7 +52,7 @@ export default function OfflineIndicator() {
         <>
           <WifiOff size={20} />
           <div>
-            <p className="font-medium">You're Offline</p>
+            <p className="font-medium">You&apos;re Offline</p>
             <p className="text-sm opacity-90">Viewing cached data. Some features unavailable.</p>
           </div>
         </>

@@ -32,10 +32,6 @@ export default function UpdateNotification() {
     setIsVisible(false)
   }
 
-  const handleCheckForUpdates = () => {
-    updateManager.checkForUpdates()
-  }
-
   // Don't render if not visible or no update available
   if (!isVisible || updateState.status !== 'ready') {
     return null

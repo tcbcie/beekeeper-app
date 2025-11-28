@@ -2,7 +2,7 @@
 // Manages pending actions and syncs them when connection is restored
 
 import { supabase } from './supabase'
-import { offlineDB, STORES, PendingSyncAction } from './offline-db'
+import { offlineDB, PendingSyncAction } from './offline-db'
 
 export class SyncManager {
   private syncInProgress = false
@@ -18,7 +18,7 @@ export class SyncManager {
 
       // Register background sync if supported
       if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
-        navigator.serviceWorker.ready.then((registration) => {
+        navigator.serviceWorker.ready.then(() => {
           console.log('Background Sync API supported')
         })
       }
@@ -29,7 +29,7 @@ export class SyncManager {
   async queueAction(
     action: 'create' | 'update' | 'delete',
     table: string,
-    data: any,
+    data: Record<string, unknown>,
     userId: string
   ): Promise<string> {
     const syncId = await offlineDB.addPendingSync({
@@ -43,7 +43,8 @@ export class SyncManager {
     if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
       try {
         const registration = await navigator.serviceWorker.ready
-        await (registration as any).sync.register('sync-data')
+        // Type assertion needed for Background Sync API
+        await (registration as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }).sync.register('sync-data')
         console.log('Background sync registered for:', syncId)
       } catch (error) {
         console.warn('Background sync registration failed:', error)
