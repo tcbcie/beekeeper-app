@@ -5,6 +5,8 @@ import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Minus, MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner'
+import NotificationStatusCard from '@/components/NotificationStatusCard'
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
 
 interface Queen {
@@ -672,8 +674,10 @@ export default function BatchesPage() {
   if (loading) return <LoadingSpinner text="Loading Queen Rearing..." />
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <>
+      <NotificationPermissionBanner />
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Queen Rearing 🥚</h1>
           <p className="text-sm text-text-secondary mt-1">3-5-8 - The Queen is made!</p>
@@ -1031,6 +1035,12 @@ export default function BatchesPage() {
             {/* Notification Preferences - Grouped */}
             <div className="md:col-span-2 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
               <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-3">Notification Preferences</h4>
+
+              {/* Notification Status Card */}
+              <div className="mb-4">
+                <NotificationStatusCard />
+              </div>
+
               <div className="space-y-3">
                 <div className="flex items-center">
                   <input
@@ -1617,6 +1627,7 @@ export default function BatchesPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
