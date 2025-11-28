@@ -1088,7 +1088,70 @@ export default function BatchesPage() {
             </div>
           )}
 
-          <div className="bg-surface dark:bg-surface rounded-lg shadow overflow-hidden">
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {batches.map((batch: Batch) => (
+              <div key={batch.id} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <h4 className="font-semibold text-foreground text-lg">{batch.batch_name}</h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(batch)}
+                      className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+                      aria-label="Edit batch"
+                    >
+                      <Edit2 size={20} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(batch.id)}
+                      className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+                      aria-label="Delete batch"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-text-tertiary">Breeder Queen:</span>
+                    <span className="text-foreground font-medium">{batch.queens?.queen_number || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-tertiary">Graft Date:</span>
+                    <span className="text-foreground">{formatDateIrish(batch.graft_date)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
+                    <div>
+                      <span className="text-text-tertiary block">Grafts:</span>
+                      <span className="text-foreground font-medium">{batch.cell_count || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-text-tertiary block">Accepted:</span>
+                      <span className="text-foreground font-medium">{batch.grafts_accepted || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-text-tertiary block">Hatched:</span>
+                      <span className="text-foreground font-medium">{batch.queens_hatched || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-text-tertiary block">Mated:</span>
+                      <span className="text-foreground font-medium">{batch.queens_mated || '-'}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-border">
+                    <span className="text-text-tertiary">Acceptance Check:</span>
+                    <span className="text-foreground">{formatDateIrish(batch.acceptance_check_date)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {batches.length === 0 && (
+              <div className="text-center py-8 text-text-tertiary">No rearing batch found. Create your first!</div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-surface dark:bg-surface rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-sage-50 dark:bg-slate-800">
             <tr>
