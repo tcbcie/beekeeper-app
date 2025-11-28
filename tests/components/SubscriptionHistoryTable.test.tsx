@@ -354,8 +354,9 @@ describe('SubscriptionHistoryTable', () => {
 
       await waitFor(() => {
         const rows = container.querySelectorAll('tbody tr')
-        expect(rows[0]).toHaveClass('bg-forest-50')
-        expect(rows[1]).not.toHaveClass('bg-forest-50')
+        expect(rows[0]).toHaveClass('bg-surface-elevated')
+        expect(rows[0]).toHaveClass('dark:bg-surface-elevated')
+        expect(rows[1]).not.toHaveClass('bg-surface-elevated')
       })
     })
   })

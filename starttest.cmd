@@ -1,6 +1,23 @@
+@echo off
+REM Temporarily rename PostCSS config to avoid Tailwind v4 compatibility issues with test environment
+if exist postcss.config.mjs (
+    echo Temporarily moving postcss.config.mjs...
+    rename postcss.config.mjs postcss.config.mjs.backup
+)
+
+REM Run tests
 npm run test:run
 
-REM Run npm test to start writing tests in watch mode
-REM Run npm run test:ui to explore tests visually
-REM Add tests for your critical features (authentication, hive management, inspections)
-REM Run npm run test:coverage to see what needs more test coverage
+REM Restore PostCSS config
+if exist postcss.config.mjs.backup (
+    echo Restoring postcss.config.mjs...
+    rename postcss.config.mjs.backup postcss.config.mjs
+)
+
+echo.
+echo Tests completed!
+echo.
+echo Other test commands:
+echo - npm test           : Run tests in watch mode
+echo - npm run test:ui    : Explore tests visually
+echo - npm run test:coverage : See test coverage report
