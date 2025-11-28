@@ -1,6 +1,6 @@
 {
-  "name": "Hive Craic - Beekeeper App",
-  "short_name": "Hive Craic",
+  "name": "HiveCraic - Beekeeper App",
+  "short_name": "HiveCraic",
   "description": "Comprehensive beekeeping management application for tracking hives, inspections, and queen rearing",
   "start_url": "/dashboard",
   "display": "standalone",
