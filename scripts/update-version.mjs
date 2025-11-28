@@ -5,9 +5,11 @@
  * This script updates the version number and date across all application files:
  * 1. version.json (central version registry)
  * 2. package.json (npm package version)
- * 3. Login page (src/app/login/page.tsx)
- * 4. Dashboard page (src/app/dashboard/page.tsx)
- * 5. About page (src/app/dashboard/about/page.tsx)
+ * 3. public/service-worker.js (PWA cache name)
+ * 4. public/manifest.json (PWA manifest version)
+ * 5. Login page (src/app/login/page.tsx)
+ * 6. Dashboard page (src/app/dashboard/page.tsx)
+ * 7. About page (src/app/dashboard/about/page.tsx)
  *
  * Usage:
  *   node scripts/update-version.mjs <version> [date] [options]
@@ -116,6 +118,28 @@ const files = [
         search: /("version":\s*")[\d.]+(-[a-zA-Z0-9.]+)?(")/,
         replace: `$1${newVersion}$3`,
         description: 'Package version'
+      }
+    ]
+  },
+  {
+    name: 'Service Worker',
+    path: join(ROOT_DIR, 'public/service-worker.js'),
+    updates: [
+      {
+        search: /(const CACHE_NAME = ['"])hivecraic-v[\d.]+(-[a-zA-Z0-9.]+)?(['"])/,
+        replace: `$1hivecraic-v${newVersion}$3`,
+        description: 'PWA cache name'
+      }
+    ]
+  },
+  {
+    name: 'PWA Manifest',
+    path: join(ROOT_DIR, 'public/manifest.json'),
+    updates: [
+      {
+        search: /("version":\s*")[\d.]+(-[a-zA-Z0-9.]+)?(")/,
+        replace: `$1${newVersion}$3`,
+        description: 'PWA manifest version'
       }
     ]
   },

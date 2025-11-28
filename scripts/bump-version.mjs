@@ -123,6 +123,8 @@ if (isDryRun) {
 console.log('\n📝 Files that will be updated:');
 console.log('   • version.json');
 console.log('   • package.json (npm version)');
+console.log('   • public/service-worker.js (PWA cache name)');
+console.log('   • public/manifest.json (PWA version)');
 console.log('   • src/app/login/page.tsx (version badge & date)');
 console.log('   • src/app/dashboard/page.tsx (version & date display)');
 console.log('   • src/app/dashboard/about/page.tsx (version badge & date)');
