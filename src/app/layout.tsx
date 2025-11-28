@@ -28,10 +28,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "HiveCraic",
   description: "Comprehensive beekeeping management system for tracking hives, inspections, queens, and apiary health",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "HiveCraic",
+  },
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/icon-192x192.png",
   },
 };
 
