@@ -1,0 +1,64 @@
+{
+  "name": "Hive Craic - Beekeeper App",
+  "short_name": "Hive Craic",
+  "description": "Comprehensive beekeeping management application for tracking hives, inspections, and queen rearing",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "scope": "/",
+  "prefer_related_applications": false,
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Hives",
+      "short_name": "Hives",
+      "description": "View and manage your hives",
+      "url": "/dashboard/hives",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Inspections",
+      "short_name": "Inspections",
+      "description": "Record new hive inspections",
+      "url": "/dashboard/inspections",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Queen Rearing",
+      "short_name": "Queens",
+      "description": "Manage queen rearing batches",
+      "url": "/dashboard/batches",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "notification_preferences": {
+    "browser_notifications": true,
+    "email_digest": true
+  }
+}
