@@ -97,6 +97,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <OfflineIndicator />
       <PendingSyncIndicator />
+      <UpdateNotification />
       <Navbar
         currentUser={user}
         onMenuClick={() => {
