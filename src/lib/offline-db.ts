@@ -19,7 +19,7 @@ export interface PendingSyncAction {
   timestamp: number
   action: 'create' | 'update' | 'delete'
   table: string
-  data: any
+  data: Record<string, unknown>
   userId: string
   synced: boolean
   error?: string

@@ -2,7 +2,7 @@
 // Provides easy-to-use interface for IndexedDB and sync queue
 
 import { useState, useEffect, useCallback } from 'react'
-import { offlineDB, STORES } from '@/lib/offline-db'
+import { offlineDB } from '@/lib/offline-db'
 import { syncManager } from '@/lib/sync-manager'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
