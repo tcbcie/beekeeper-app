@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
+import VersionDisplay from './VersionDisplay'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -60,6 +61,9 @@ export default function Sidebar() {
           )
         })}
       </nav>
+      <div className="mt-4 pt-4 border-t border-border flex justify-center">
+        <VersionDisplay />
+      </div>
     </aside>
   )
 }
