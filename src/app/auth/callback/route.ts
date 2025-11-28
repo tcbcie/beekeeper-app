@@ -54,8 +54,8 @@ export async function GET(request: Request) {
       if (profile && profile.deleted_at) {
         console.log('OAuth: Account is deleted, signing out and redirecting to reactivation')
 
-        // Sign out the user
-        await supabase.auth.signOut()
+        // Sign out the user - use local scope
+        await supabase.auth.signOut({ scope: 'local' })
 
         // Redirect to reactivation page with their email
         const email = profile.original_email || profile.email

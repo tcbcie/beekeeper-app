@@ -194,8 +194,8 @@ export async function requireActiveAccount(): Promise<void> {
   const active = await isAccountActive()
 
   if (!active) {
-    // Sign out the user since their account is disabled
-    await supabase.auth.signOut()
+    // Sign out the user since their account is disabled - use local scope
+    await supabase.auth.signOut({ scope: 'local' })
     throw new Error('Your account has been disabled. Please contact an administrator.')
   }
 }

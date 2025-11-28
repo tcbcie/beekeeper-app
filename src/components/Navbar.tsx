@@ -14,8 +14,9 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      // Sign out from Supabase - this will trigger auth state change
-      await supabase.auth.signOut()
+      // Sign out from Supabase - use local scope to avoid 403 errors
+      // 'local' scope only removes the session from this device/browser
+      await supabase.auth.signOut({ scope: 'local' })
 
       // Clear any remaining auth data from storage
       if (typeof window !== 'undefined') {
