@@ -471,8 +471,8 @@ export default function ProfilePage() {
 
       console.log('Account deactivation response:', data)
 
-      // Sign out the user
-      await supabase.auth.signOut()
+      // Sign out the user - use local scope
+      await supabase.auth.signOut({ scope: 'local' })
 
       // Show success message with reactivation info
       alert('Your account has been deleted.\n\n✅ Data Retention:\n• All your data will be retained for 12 months\n• You can request reactivation at any time within this period\n• Visit the login page and use the reactivation option\n\n⚠️ Important:\n• If you do not reactivate within 12 months, all data will be permanently deleted\n• After permanent deletion, your data cannot be recovered')
