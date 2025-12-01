@@ -14,6 +14,12 @@ describe('Notification Utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
+
+    // Mock Notification API
+    global.Notification = {
+      permission: 'granted',
+      requestPermission: vi.fn().mockResolvedValue('granted')
+    } as unknown as typeof Notification
   })
 
   afterEach(() => {
