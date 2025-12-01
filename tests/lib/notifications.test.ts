@@ -11,21 +11,25 @@ import {
 } from '@/lib/notifications'
 
 describe('Notification Utilities', () => {
+  let setTimeoutSpy: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
 
-    // Mock Notification API - can be overridden in individual tests
-    if (!global.Notification) {
-      global.Notification = {
-        permission: 'granted',
-        requestPermission: vi.fn().mockResolvedValue('granted')
-      } as unknown as typeof Notification
-    }
+    // Spy on setTimeout
+    setTimeoutSpy = vi.spyOn(global, 'setTimeout')
+
+    // Default Notification API mock
+    global.Notification = {
+      permission: 'granted',
+      requestPermission: vi.fn().mockResolvedValue('granted')
+    } as unknown as typeof Notification
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    setTimeoutSpy.mockRestore()
     // Clean up Notification mock
     delete (global as { Notification?: unknown }).Notification
   })
@@ -239,7 +243,7 @@ describe('Notification Utilities', () => {
       }
 
       scheduleNotification(data, pastDate)
-      expect(setTimeout).not.toHaveBeenCalled()
+      expect(setTimeoutSpy).not.toHaveBeenCalled()
     })
 
     it('should schedule notification for future time', () => {
@@ -251,7 +255,7 @@ describe('Notification Utilities', () => {
       }
 
       scheduleNotification(data, futureDate)
-      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), expect.any(Number))
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), expect.any(Number))
     })
 
     it('should warn if notification scheduled too far in the future', () => {
@@ -305,7 +309,7 @@ describe('Notification Utilities', () => {
       }
 
       scheduleBatchNotifications(batch)
-      expect(setTimeout).not.toHaveBeenCalled()
+      expect(setTimeoutSpy).not.toHaveBeenCalled()
     })
 
     it('should schedule notifications for today dates', () => {
@@ -321,7 +325,7 @@ describe('Notification Utilities', () => {
       }
 
       scheduleBatchNotifications(batch)
-      expect(setTimeout).toHaveBeenCalled()
+      expect(setTimeoutSpy).toHaveBeenCalled()
     })
 
     it('should handle multiple date types', () => {
@@ -337,7 +341,7 @@ describe('Notification Utilities', () => {
       }
 
       scheduleBatchNotifications(batch)
-      expect(setTimeout).toHaveBeenCalledTimes(4)
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(4)
     })
 
     it('should skip null dates', () => {
@@ -353,7 +357,7 @@ describe('Notification Utilities', () => {
       }
 
       scheduleBatchNotifications(batch)
-      expect(setTimeout).toHaveBeenCalledTimes(1)
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1)
     })
 
     it('should not schedule for future dates', () => {
@@ -369,7 +373,7 @@ describe('Notification Utilities', () => {
       }
 
       scheduleBatchNotifications(batch)
-      expect(setTimeout).not.toHaveBeenCalled()
+      expect(setTimeoutSpy).not.toHaveBeenCalled()
     })
   })
 
