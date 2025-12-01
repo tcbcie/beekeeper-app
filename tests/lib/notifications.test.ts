@@ -15,15 +15,19 @@ describe('Notification Utilities', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
 
-    // Mock Notification API
-    global.Notification = {
-      permission: 'granted',
-      requestPermission: vi.fn().mockResolvedValue('granted')
-    } as unknown as typeof Notification
+    // Mock Notification API - can be overridden in individual tests
+    if (!global.Notification) {
+      global.Notification = {
+        permission: 'granted',
+        requestPermission: vi.fn().mockResolvedValue('granted')
+      } as unknown as typeof Notification
+    }
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    // Clean up Notification mock
+    delete (global as { Notification?: unknown }).Notification
   })
 
   describe('registerServiceWorker', () => {
@@ -396,16 +400,20 @@ describe('Notification Utilities', () => {
         configurable: true
       })
 
+      const NotificationMock = {
+        permission: 'default',
+        requestPermission: mockRequestPermission
+      }
+
       Object.defineProperty(global, 'window', {
         value: {
-          Notification: {
-            permission: 'default',
-            requestPermission: mockRequestPermission
-          }
+          Notification: NotificationMock
         },
         writable: true,
         configurable: true
       })
+
+      global.Notification = NotificationMock as unknown as typeof Notification
 
       const result = await initializeNotifications()
       expect(result).toBe(true)
@@ -427,15 +435,19 @@ describe('Notification Utilities', () => {
         configurable: true
       })
 
+      const NotificationMock = {
+        permission: 'denied'
+      }
+
       Object.defineProperty(global, 'window', {
         value: {
-          Notification: {
-            permission: 'denied'
-          }
+          Notification: NotificationMock
         },
         writable: true,
         configurable: true
       })
+
+      global.Notification = NotificationMock as unknown as typeof Notification
 
       const result = await initializeNotifications()
       expect(result).toBe(false)
