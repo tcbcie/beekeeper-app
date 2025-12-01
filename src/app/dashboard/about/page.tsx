@@ -272,6 +272,7 @@ function AboutPageContent() {
               <li>Harvest and feeding records</li>
               <li>Multi-user support with role-based access control</li>
               <li>Data export capabilities</li>
+              <li>Installable mobile application with offline support and background sync</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
@@ -612,6 +613,56 @@ function AboutPageContent() {
               when required, and comply with local regulations regarding bee health management and treatments.
             </p>
 
+            <h3 className="text-lg font-semibold text-foreground mt-6">Subscription and Payment Terms</h3>
+            <p>
+              Subscription services are provided on a recurring billing basis:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li>All subscriptions are non-refundable unless required by law</li>
+              <li>You may cancel your subscription at any time through your profile settings</li>
+              <li>Cancellation will take effect at the end of your current billing period</li>
+              <li>Payment processing is handled by Stripe; HiveCraic is not responsible for payment processing errors or issues</li>
+              <li>Subscription fees are subject to change with advance notice</li>
+              <li>Access to subscription features may be restricted or removed if payment fails</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-foreground mt-6">Offline Features and Data Synchronization</h3>
+            <p>
+              HiveCraic provides offline functionality through browser storage and background synchronization:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li>Offline features require modern browser support and may not work on all devices or browsers</li>
+              <li>Data created or modified offline is stored locally on your device until internet connection is restored</li>
+              <li>Background synchronization may fail or be delayed, potentially resulting in data conflicts or loss</li>
+              <li>Browser storage quotas may limit the amount of data available offline</li>
+              <li>Clearing browser data, cache, or cookies may delete unsynchronized offline data</li>
+              <li>HiveCraic is not responsible for data loss due to offline storage limitations, browser issues, or synchronization failures</li>
+              <li>We strongly recommend maintaining an active internet connection and regularly exporting your data</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-foreground mt-6">Data Backup and Loss</h3>
+            <p>
+              Users are solely responsible for maintaining backups of their data:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li>HiveCraic is not responsible for any data loss, corruption, or deletion for any reason</li>
+              <li>While we maintain database backups for disaster recovery, we do not guarantee data recovery</li>
+              <li>Users should regularly export their data using the database export feature</li>
+              <li>Data loss may occur due to technical issues, user error, account deletion, browser storage issues, or service interruptions</li>
+              <li>Offline data that has not been synchronized to the server may be permanently lost</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold text-foreground mt-6">Third-Party Service Dependencies</h3>
+            <p>
+              HiveCraic relies on third-party services for certain functionality:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li>Service interruptions, outages, or errors from third-party providers (Supabase, Stripe, Weather APIs) may affect HiveCraic functionality</li>
+              <li>We are not responsible for issues, delays, or data loss caused by third-party service providers</li>
+              <li>Third-party services have their own terms of service and limitations</li>
+              <li>Weather data accuracy is dependent on third-party API providers and may be incomplete or incorrect</li>
+            </ul>
+
             <h3 className="text-lg font-semibold text-foreground mt-6">Limitation of Liability</h3>
             <p>
               To the fullest extent permitted by law, HiveCraic, its creators, contributors, and associated
@@ -629,8 +680,12 @@ function AboutPageContent() {
               <li>The accuracy of data they enter into the system</li>
               <li>Making informed decisions about their beekeeping practices</li>
               <li>Complying with local laws and regulations regarding beekeeping</li>
-              <li>Maintaining appropriate backups of their data</li>
-              <li>Securing their account credentials</li>
+              <li>Regularly exporting and maintaining backups of their data</li>
+              <li>Securing their account credentials and payment information</li>
+              <li>Managing their subscription and ensuring payment methods remain valid</li>
+              <li>Understanding the limitations of offline features and potential data loss</li>
+              <li>Verifying that offline data has successfully synchronized to the server</li>
+              <li>Using compatible browsers and devices for offline functionality</li>
             </ul>
 
             <h3 className="text-lg font-semibold text-foreground mt-6">No Guarantee of Service</h3>
@@ -662,7 +717,7 @@ function AboutPageContent() {
               </p>
             </div>
 
-            <p className="text-sm text-text-tertiary">Last Updated: October 2025</p>
+            <p className="text-sm text-text-tertiary">Last Updated: December 2025</p>
 
             <h3 className="text-lg font-semibold text-foreground mt-6">Information We Collect</h3>
             <p>
@@ -672,6 +727,7 @@ function AboutPageContent() {
               <li><strong>Account Information:</strong> Email address, password (encrypted), and user profile data</li>
               <li><strong>Beekeeping Data:</strong> All data you enter about your apiaries, hives, queens, inspections, and related activities</li>
               <li><strong>Usage Data:</strong> Activity timestamps for online user tracking (visible to administrators)</li>
+              <li><strong>Subscription Information:</strong> Subscription status, payment dates, and subscription tier information</li>
             </ul>
 
             <h3 className="text-lg font-semibold text-foreground mt-6">How We Use Your Information</h3>
@@ -684,6 +740,8 @@ function AboutPageContent() {
               <li>Storing and managing your beekeeping records</li>
               <li>Enabling multi-user collaboration features</li>
               <li>Displaying user activity statistics to administrators</li>
+              <li>Processing subscription payments and managing billing</li>
+              <li>Providing access to subscription-based features</li>
             </ul>
 
             <h3 className="text-lg font-semibold text-foreground mt-6">Data Storage and Security</h3>
@@ -724,10 +782,29 @@ function AboutPageContent() {
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li><strong>Supabase:</strong> Database and authentication services</li>
+              <li><strong>Stripe:</strong> Payment processing for subscriptions</li>
               <li><strong>Weather Services:</strong> Weather data for inspection logging</li>
             </ul>
             <p className="mt-2">
               These services have their own privacy policies and terms of service.
+            </p>
+
+            <h3 className="text-lg font-semibold text-foreground mt-6">Payment Processing</h3>
+            <p>
+              Subscription payments are processed securely through Stripe, a PCI-compliant payment processor:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li>HiveCraic does not store or have access to your full credit card details</li>
+              <li>Payment information is encrypted and processed directly by Stripe</li>
+              <li>We only store subscription status and payment confirmation details</li>
+              <li>Stripe may collect billing address and payment method information according to their privacy policy</li>
+              <li>You can manage your payment methods and billing information through your profile settings</li>
+            </ul>
+            <p className="mt-2">
+              For more information about how Stripe handles your payment data, please visit{' '}
+              <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                Stripe&apos;s Privacy Policy
+              </a>.
             </p>
 
             <h3 className="text-lg font-semibold text-foreground mt-6">Your Rights</h3>
