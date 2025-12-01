@@ -172,6 +172,10 @@ describe('Update Manager', () => {
     it('should not check for updates if not initialized', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
+      // Reset the update manager by setting registration to null
+      // @ts-expect-error - accessing private field for testing
+      updateManager['registration'] = null
+
       await updateManager.checkForUpdates()
 
       expect(consoleWarnSpy).toHaveBeenCalledWith('Update manager not initialized')
@@ -198,6 +202,10 @@ describe('Update Manager', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       await updateManager.initialize(mockRegistration)
+
+      // Reset waiting worker to null
+      // @ts-expect-error - accessing private field for testing
+      updateManager['waitingWorker'] = null
 
       updateManager.applyUpdate()
 

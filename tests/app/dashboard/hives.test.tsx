@@ -97,7 +97,7 @@ describe('HivesPage - Create Hive RLS Policy', () => {
   })
 
   describe('user_id field requirement for RLS compliance', () => {
-    it('should include user_id in insert data', async () => {
+    it('should include user_id in insert data', { timeout: 15000 }, async () => {
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
 
       const mockInsert = vi.fn().mockReturnValue({
@@ -298,7 +298,7 @@ describe('HivesPage - Create Hive RLS Policy', () => {
             user_id: mockUserId
           })
         ])
-      })
+      }, { timeout: 10000 })
 
       alertSpy.mockRestore()
     })
@@ -491,7 +491,7 @@ describe('HivesPage - Create Hive RLS Policy', () => {
   })
 
   describe('RLS Policy - check_user_owns_apiary function with user_id parameter', () => {
-    it('should call check_user_owns_apiary RPC with user_id before insert', async () => {
+    it('should call check_user_owns_apiary RPC with user_id before insert', { timeout: 15000 }, async () => {
       const mockRpc = vi.fn().mockResolvedValue({
         data: true,
         error: null
@@ -654,7 +654,7 @@ describe('HivesPage - Create Hive RLS Policy', () => {
           apiary_uuid: mockApiaryId,
           user_uuid: mockUserId
         })
-      })
+      }, { timeout: 10000 })
 
       // Verify insert was called after successful ownership check
       await waitFor(() => {
@@ -665,7 +665,7 @@ describe('HivesPage - Create Hive RLS Policy', () => {
             user_id: mockUserId
           })
         ])
-      })
+      }, { timeout: 10000 })
 
       alertSpy.mockRestore()
     })

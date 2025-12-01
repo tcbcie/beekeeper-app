@@ -310,6 +310,10 @@ describe('PWA Update Flow Integration', () => {
 
       await updateManager.initialize(mockRegistration)
 
+      // Reset waiting worker to null
+      // @ts-expect-error - accessing private field for testing
+      updateManager['waitingWorker'] = null
+
       // Try to apply update when no waiting worker
       updateManager.applyUpdate()
 
