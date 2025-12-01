@@ -130,16 +130,20 @@ describe('Notification Utilities', () => {
 
     it('should request permission if not yet determined', async () => {
       const mockRequestPermission = vi.fn().mockResolvedValue('granted')
+      const NotificationMock = {
+        permission: 'default',
+        requestPermission: mockRequestPermission
+      }
+
       Object.defineProperty(global, 'window', {
         value: {
-          Notification: {
-            permission: 'default',
-            requestPermission: mockRequestPermission
-          }
+          Notification: NotificationMock
         },
         writable: true,
         configurable: true
       })
+
+      global.Notification = NotificationMock as unknown as typeof Notification
 
       const result = await requestNotificationPermission()
       expect(mockRequestPermission).toHaveBeenCalled()
@@ -147,15 +151,19 @@ describe('Notification Utilities', () => {
     })
 
     it('should return denied if permission is denied', async () => {
+      const NotificationMock = {
+        permission: 'denied'
+      }
+
       Object.defineProperty(global, 'window', {
         value: {
-          Notification: {
-            permission: 'denied'
-          }
+          Notification: NotificationMock
         },
         writable: true,
         configurable: true
       })
+
+      global.Notification = NotificationMock as unknown as typeof Notification
 
       const result = await requestNotificationPermission()
       expect(result).toBe('denied')
@@ -165,10 +173,28 @@ describe('Notification Utilities', () => {
   describe('showNotification', () => {
     it('should not show notification if permission not granted', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const NotificationMock = {
+        permission: 'denied'
+      }
+
       Object.defineProperty(global, 'window', {
         value: {
-          Notification: {
-            permission: 'denied'
+          Notification: NotificationMock
+        },
+        writable: true,
+        configurable: true
+      })
+
+      global.Notification = NotificationMock as unknown as typeof Notification
+
+      Object.defineProperty(global, 'navigator', {
+        value: {
+          serviceWorker: {
+            ready: Promise.resolve({
+              active: {
+                postMessage: vi.fn()
+              }
+            })
           }
         },
         writable: true,
@@ -313,8 +339,13 @@ describe('Notification Utilities', () => {
     })
 
     it('should schedule notifications for today dates', () => {
+      // Set fake system time to today at 6 AM (before the 8 AM notification time)
+      const now = new Date()
+      now.setHours(6, 0, 0, 0)
+      vi.setSystemTime(now)
+
       const today = new Date()
-      today.setHours(12, 0, 0, 0)
+      today.setHours(0, 0, 0, 0)
 
       const batch: BatchDates = {
         batchName: 'Test Batch',
@@ -329,6 +360,11 @@ describe('Notification Utilities', () => {
     })
 
     it('should handle multiple date types', () => {
+      // Set fake system time to today at 6 AM
+      const now = new Date()
+      now.setHours(6, 0, 0, 0)
+      vi.setSystemTime(now)
+
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
@@ -345,6 +381,11 @@ describe('Notification Utilities', () => {
     })
 
     it('should skip null dates', () => {
+      // Set fake system time to today at 6 AM
+      const now = new Date()
+      now.setHours(6, 0, 0, 0)
+      vi.setSystemTime(now)
+
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
