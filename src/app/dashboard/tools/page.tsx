@@ -124,10 +124,10 @@ export default function ToolsPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Sugar Amount (kg)
                   </label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => setSugarAmount(Math.max(0.5, sugarAmount - 0.5))}
-                      className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-bold text-lg"
+                      className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-bold text-xl flex-shrink-0"
                     >
                       −
                     </button>
@@ -135,13 +135,13 @@ export default function ToolsPage() {
                       type="number"
                       value={sugarAmount}
                       onChange={(e) => setSugarAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="flex-1 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground text-center text-xl font-semibold"
+                      className="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground text-center text-xl font-semibold"
                       min="0"
                       step="0.5"
                     />
                     <button
                       onClick={() => setSugarAmount(sugarAmount + 0.5)}
-                      className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-bold text-lg"
+                      className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-bold text-xl flex-shrink-0"
                     >
                       +
                     </button>
