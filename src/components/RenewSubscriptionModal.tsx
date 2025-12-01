@@ -390,8 +390,8 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   </div>
                 )}
 
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-                  <p className="text-xs text-blue-800 dark:text-blue-300">
+                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md p-3">
+                  <p className="text-xs text-blue-900 dark:text-blue-200">
                     <strong>Tip:</strong> If your subscription is still active, the new code will extend from your current expiration date. If expired, it will start from today.
                   </p>
                 </div>
@@ -427,14 +427,14 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
             {paymentMethod === 'card' && (
               <form onSubmit={handleCardPayment} className="space-y-4">
                 {/* Pricing Display */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-foreground">Annual Subscription</p>
                       <p className="text-xs text-text-secondary mt-0.5">12 months of access</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">€24</p>
+                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">€24</p>
                       <p className="text-xs text-text-secondary">per year</p>
                     </div>
                   </div>
@@ -447,8 +447,8 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   </div>
                 )}
 
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-                  <p className="text-xs text-blue-800 dark:text-blue-300">
+                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md p-3">
+                  <p className="text-xs text-blue-900 dark:text-blue-200">
                     <strong>Secure Payment:</strong> You&apos;ll be redirected to Stripe for secure card payment processing.
                   </p>
                 </div>
@@ -484,14 +484,14 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
             {paymentMethod === 'association_code' && (
               <form onSubmit={handleAssociationCodePayment} className="space-y-4">
                 {/* Pricing Display */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/40 dark:to-pink-900/40 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-foreground">Association Member Rate</p>
                       <p className="text-xs text-text-secondary mt-0.5">12 months of access + code required</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">€12</p>
+                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">€12</p>
                       <p className="text-xs text-text-secondary">per year</p>
                     </div>
                   </div>
@@ -523,8 +523,8 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   </div>
                 )}
 
-                <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-md p-3">
-                  <p className="text-xs text-purple-800 dark:text-purple-300">
+                <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-md p-3">
+                  <p className="text-xs text-purple-900 dark:text-purple-200">
                     <strong>Association Member Benefit:</strong> After validating your code, you&apos;ll pay €12 (50% off) instead of the standard €24 rate.
                   </p>
                 </div>
