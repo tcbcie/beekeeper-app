@@ -208,7 +208,7 @@ export default function SubscriptionStatusCard({ onRenewClick }: SubscriptionSta
       {subscriptionStatus.status === 'no_subscription' && (
         <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-md">
           <p className="text-sm text-slate-900 dark:text-slate-200">
-            You don&apos;t have an active subscription. Click &quot;Renew Subscription&quot; above to activate with a code.
+            Support the app and the Irish beekeeping community by getting a valid subscription. Click &quot;Renew Subscription&quot; above to activate.
           </p>
         </div>
       )}

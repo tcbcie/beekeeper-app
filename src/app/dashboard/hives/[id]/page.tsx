@@ -591,25 +591,25 @@ export default function HiveDetailPage() {
               Inspection Averages ({averages.inspection_count} inspection{averages.inspection_count !== 1 ? 's' : ''})
             </h3>
             <div className="space-y-2 text-sm">
-              {averages.brood_frames !== null && (
+              {averages.brood_frames !== null && averages.brood_frames > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-text-tertiary">Frames with Brood:</span>
                   <span className="font-bold text-blue-600 dark:text-blue-400">{averages.brood_frames.toFixed(1)}</span>
                 </div>
               )}
-              {averages.brood_pattern !== null && (
+              {averages.brood_pattern !== null && averages.brood_pattern > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-text-tertiary">Brood Pattern:</span>
                   <span className="font-medium text-purple-600 dark:text-purple-400">{'⭐'.repeat(Math.round(averages.brood_pattern))}</span>
                 </div>
               )}
-              {averages.temperament !== null && (
+              {averages.temperament !== null && averages.temperament > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-text-tertiary">Temperament:</span>
                   <span className="font-medium text-amber-600 dark:text-amber-400">{'⭐'.repeat(Math.round(averages.temperament))}</span>
                 </div>
               )}
-              {averages.population !== null && (
+              {averages.population !== null && averages.population > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-text-tertiary">Population:</span>
                   <span className="font-medium text-orange-600 dark:text-orange-400">{'⭐'.repeat(Math.round(averages.population))}</span>
