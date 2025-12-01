@@ -2071,7 +2071,7 @@ export default function InspectionsPage() {
             </div>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full md:w-auto">
           {isTeamMember && (
             <select
               value={ownershipFilter}
@@ -5363,35 +5363,49 @@ export default function InspectionsPage() {
             )}
 
             {/* Behaviour Section - Table Format */}
+            {(inspection.population_strength > 0 || inspection.temperament_rating > 0 ||
+              inspection.brood_pattern_rating > 0 || inspection.swarming_tendency > 0 ||
+              inspection.calmness > 0) && (
             <div className="mb-3 overflow-hidden rounded border border-border">
               <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
                 <h4 className="text-sm font-semibold text-foreground">Behaviour</h4>
               </div>
               <div className="p-2">
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-x-3 gap-y-1.5 text-sm">
+                  {inspection.population_strength > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-text-secondary whitespace-nowrap">Population:</span>
                     <span>{renderStars(inspection.population_strength)}</span>
                   </div>
+                  )}
+                  {inspection.temperament_rating > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-text-secondary whitespace-nowrap">Temperament:</span>
                     <span>{renderStars(inspection.temperament_rating)}</span>
                   </div>
+                  )}
+                  {inspection.brood_pattern_rating > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-text-secondary whitespace-nowrap">Brood Pattern:</span>
                     <span>{renderStars(inspection.brood_pattern_rating)}</span>
                   </div>
+                  )}
+                  {inspection.swarming_tendency > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-text-secondary whitespace-nowrap">Swarming:</span>
                     <span>{renderStars(inspection.swarming_tendency)}</span>
                   </div>
+                  )}
+                  {inspection.calmness > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-text-secondary whitespace-nowrap">Calmness:</span>
                     <span>{renderStars(inspection.calmness)}</span>
                   </div>
+                  )}
                 </div>
               </div>
             </div>
+            )}
 
             {/* Given/Taken Section - Compact inline */}
             {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
