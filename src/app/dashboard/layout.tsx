@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import MobileDrawer from '@/components/MobileDrawer'
-import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner'
 import OfflineIndicator from '@/components/OfflineIndicator'
 import PendingSyncIndicator from '@/components/PendingSyncIndicator'
 import UpdateNotification from '@/components/UpdateNotification'
@@ -105,7 +104,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           setIsMobileMenuOpen(true)
         }}
       />
-      <SubscriptionWarningBanner />
       <MobileDrawer
         isOpen={isMobileMenuOpen}
         onClose={() => {
