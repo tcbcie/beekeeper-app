@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard } from 'lucide-react'
+import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ChangelogDisplay from '@/components/ChangelogDisplay'
 
@@ -25,11 +25,19 @@ interface FormData {
   description: string
 }
 
+interface AppStatistics {
+  totalUsers: number
+  subscribedUsers: number
+  totalApiaries: number
+  totalHives: number
+}
+
 function AboutPageContent() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState<'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support'>('about')
   const [mounted, setMounted] = useState(false)
+  const [statistics, setStatistics] = useState<AppStatistics | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -74,6 +82,40 @@ function AboutPageContent() {
     }
   }, [userId])
 
+  const fetchStatistics = useCallback(async () => {
+    try {
+      // Get total users
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+
+      // Get users with active subscriptions
+      const { count: subscribedUsers } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('subscription_status', 'active')
+
+      // Get total apiaries
+      const { count: totalApiaries } = await supabase
+        .from('apiaries')
+        .select('id', { count: 'exact', head: true })
+
+      // Get total hives
+      const { count: totalHives } = await supabase
+        .from('hives')
+        .select('id', { count: 'exact', head: true })
+
+      setStatistics({
+        totalUsers: totalUsers || 0,
+        subscribedUsers: subscribedUsers || 0,
+        totalApiaries: totalApiaries || 0,
+        totalHives: totalHives || 0,
+      })
+    } catch (error) {
+      console.error('Error fetching statistics:', error)
+    }
+  }, [])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -83,6 +125,7 @@ function AboutPageContent() {
       }
       setUserId(id)
       fetchTickets(id)
+      fetchStatistics()
       setLoading(false)
     }
     initUser()
@@ -291,6 +334,45 @@ function AboutPageContent() {
               Built with modern web technologies including Next.js, React, TypeScript, Tailwind CSS,
               and Supabase for secure data storage and authentication.
             </p>
+
+            <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">App Statistics</h3>
+            {statistics ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Users size={24} className="text-blue-600 dark:text-blue-400" />
+                    <h4 className="text-sm font-medium text-text-secondary">Users Registered</h4>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{statistics.totalUsers}</p>
+                </div>
+
+                <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CreditCard size={24} className="text-green-600 dark:text-green-400" />
+                    <h4 className="text-sm font-medium text-text-secondary">Active Subscriptions</h4>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{statistics.subscribedUsers}</p>
+                </div>
+
+                <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+                  <div className="flex items-center gap-3 mb-2">
+                    <MapPin size={24} className="text-purple-600 dark:text-purple-400" />
+                    <h4 className="text-sm font-medium text-text-secondary">Apiaries Managed</h4>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{statistics.totalApiaries}</p>
+                </div>
+
+                <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Hexagon size={24} className="text-amber-600 dark:text-amber-400" />
+                    <h4 className="text-sm font-medium text-text-secondary">Hives Managed</h4>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{statistics.totalHives}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-text-secondary">Loading statistics...</p>
+            )}
           </div>
         </div>
       )}
