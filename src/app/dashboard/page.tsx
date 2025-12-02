@@ -117,17 +117,6 @@ export default function DashboardPage() {
     hives: 0,
     inspections: 0,
   })
-  const [userStats, setUserStats] = useState({
-    totalUsers: 0,
-    onlineUsers: 0,
-    totalHives: 0,
-    totalApiaries: 0,
-  })
-  const [ticketStats, setTicketStats] = useState({
-    openTickets: 0,
-    inProgressTickets: 0,
-    totalTickets: 0,
-  })
   const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
@@ -233,66 +222,6 @@ export default function DashboardPage() {
 
       // Take only the 5 most recent records
       setRecentActivity(merged.slice(0, 5))
-
-      // Fetch user statistics (admin only)
-      const role = await getUserRole()
-      if (role === 'Admin') {
-        // Get total users from profiles
-        const { count: totalUsers } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-
-        // Get total hives across all users
-        const { count: totalHives } = await supabase
-          .from('hives')
-          .select('id', { count: 'exact', head: true })
-
-        // Get total apiaries across all users
-        const { count: totalApiaries } = await supabase
-          .from('apiaries')
-          .select('id', { count: 'exact', head: true })
-
-        // Consider users "online" if they've been active in the last 15 minutes
-        // We'll check for recent activity in inspections, or any table with updated_at
-        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-
-        // Get distinct user IDs who have activity in the last 15 minutes
-        const { data: recentActivityUsers } = await supabase
-          .from('inspections')
-          .select('user_id')
-          .gte('created_at', fifteenMinutesAgo)
-
-        // Count unique users
-        const uniqueUserIds = new Set(recentActivityUsers?.map(r => r.user_id) || [])
-
-        setUserStats({
-          totalUsers: totalUsers || 0,
-          onlineUsers: uniqueUserIds.size,
-          totalHives: totalHives || 0,
-          totalApiaries: totalApiaries || 0,
-        })
-
-        // Fetch support ticket stats
-        const { count: openTickets } = await supabase
-          .from('support_tickets')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'open')
-
-        const { count: inProgressTickets } = await supabase
-          .from('support_tickets')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'in_progress')
-
-        const { count: totalTickets } = await supabase
-          .from('support_tickets')
-          .select('id', { count: 'exact', head: true })
-
-        setTicketStats({
-          openTickets: openTickets || 0,
-          inProgressTickets: inProgressTickets || 0,
-          totalTickets: totalTickets || 0,
-        })
-      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -678,35 +607,6 @@ export default function DashboardPage() {
               </span>
             )}
           </div>
-          {userRole === 'Admin' && userStats.totalUsers > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-text-secondary">
-              <span className="inline-flex items-center gap-1">
-                <span className="w-2 h-2 bg-forest-600 dark:bg-forest-400 rounded-full animate-pulse"></span>
-                <strong className="text-forest-600 dark:text-forest-400">{userStats.onlineUsers}</strong> of <strong className="text-text-primary">{userStats.totalUsers}</strong> users online
-              </span>
-              <span className="hidden sm:inline text-text-tertiary">•</span>
-              <span className="inline-flex items-center gap-1">
-                🐝 <strong className="text-orange-400">{userStats.totalHives}</strong> hives managed
-              </span>
-              <span className="hidden sm:inline text-text-tertiary">•</span>
-              <span className="inline-flex items-center gap-1">
-                📍 <strong className="text-blue-400">{userStats.totalApiaries}</strong> apiaries
-              </span>
-              {ticketStats.totalTickets > 0 && (
-                <>
-                  <span className="hidden sm:inline text-text-tertiary">•</span>
-                  <span className="inline-flex items-center gap-1">
-                    🎫 <strong className={ticketStats.openTickets > 0 ? "text-red-400" : "text-blue-400"}>{ticketStats.openTickets}</strong> open tickets
-                    {ticketStats.inProgressTickets > 0 && (
-                      <span className="text-text-tertiary">
-                        (<strong className="text-yellow-400">{ticketStats.inProgressTickets}</strong> in progress)
-                      </span>
-                    )}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
