@@ -331,6 +331,7 @@ export default function InspectionsPage() {
   const [otherTreatmentType, setOtherTreatmentType] = useState<string>('')
   const [isOtherTreatment, setIsOtherTreatment] = useState<boolean>(false)
   const [showIpmTips, setShowIpmTips] = useState<boolean>(false)
+  const [selectedHiveHasHoneySupers, setSelectedHiveHasHoneySupers] = useState<boolean>(false)
   const [feedTypeOptions, setFeedTypeOptions] = useState<string[]>([])
   const [otherFeedType, setOtherFeedType] = useState<string>('')
   const [isOtherFeedType, setIsOtherFeedType] = useState<boolean>(false)
@@ -1169,6 +1170,10 @@ export default function InspectionsPage() {
             notes: '',
             user_id: userId || '',
           })
+          // Check if the hive has honey supers
+          const selectedHive = hives.find(h => h.id === hiveParam)
+          const honeySupers = selectedHive?.configuration?.honey_supers || 0
+          setSelectedHiveHasHoneySupers(honeySupers > 0)
         } else if (mappedType === 'varroa_check') {
           setEditingCheck({
             id: '',
@@ -1525,6 +1530,7 @@ export default function InspectionsPage() {
       fetchVarroaTreatments()
       setShowForm(false)
       setEditingTreatment(null)
+      setSelectedHiveHasHoneySupers(false)
     } catch (error) {
       if (error instanceof Error) {
         alert('Error saving treatment: ' + error.message)
@@ -4327,6 +4333,7 @@ export default function InspectionsPage() {
                 onClick={() => {
                   setShowForm(false)
                   setEditingTreatment(null)
+                  setSelectedHiveHasHoneySupers(false)
                 }}
                 className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
               >
@@ -4361,6 +4368,15 @@ export default function InspectionsPage() {
                   if (!editingTreatment) return
 
                   setEditingTreatment({...editingTreatment, hive_id: hiveId})
+
+                  // Check if selected hive has honey supers
+                  if (hiveId) {
+                    const selectedHive = hives.find(h => h.id === hiveId)
+                    const honeySupers = selectedHive?.configuration?.honey_supers || 0
+                    setSelectedHiveHasHoneySupers(honeySupers > 0)
+                  } else {
+                    setSelectedHiveHasHoneySupers(false)
+                  }
 
                   // Fetch weather data for the selected hive
                   if (hiveId) {
@@ -4402,6 +4418,16 @@ export default function InspectionsPage() {
                     <option key={h.id} value={h.id}>{h.hive_number}</option>
                   ))}
               </select>
+              {selectedHiveHasHoneySupers && (
+                <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-600 rounded-md">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
+                    <span className="text-lg">⚠️</span>
+                    <span>
+                      <strong>Warning:</strong> This hive has honey supers installed. Please ensure the treatment product is safe for use with honey supers and check the withdrawal period before harvesting honey.
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -5588,6 +5614,10 @@ export default function InspectionsPage() {
                       onClick={() => {
                         setEditingTreatment(treatment)
                         setFormType('varroa_treatment')
+                        // Check if the hive has honey supers
+                        const selectedHive = hives.find(h => h.id === treatment.hive_id)
+                        const honeySupers = selectedHive?.configuration?.honey_supers || 0
+                        setSelectedHiveHasHoneySupers(honeySupers > 0)
                         // Set otherTreatmentType if the treatment type is not in the products list
                         if (treatment.treatment_type && !treatmentProducts.some(p => p.product_name === treatment.treatment_type)) {
                           setOtherTreatmentType(treatment.treatment_type)
