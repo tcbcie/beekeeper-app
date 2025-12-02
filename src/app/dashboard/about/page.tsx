@@ -84,33 +84,20 @@ function AboutPageContent() {
 
   const fetchStatistics = useCallback(async () => {
     try {
-      // Get total users
-      const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
+      // Call RPC function to get app-wide statistics (bypasses RLS)
+      const { data, error } = await supabase.rpc('get_app_statistics')
 
-      // Get users with active subscriptions
-      const { count: subscribedUsers } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('subscription_status', 'active')
+      if (error) throw error
 
-      // Get total apiaries
-      const { count: totalApiaries } = await supabase
-        .from('apiaries')
-        .select('id', { count: 'exact', head: true })
-
-      // Get total hives
-      const { count: totalHives } = await supabase
-        .from('hives')
-        .select('id', { count: 'exact', head: true })
-
-      setStatistics({
-        totalUsers: totalUsers || 0,
-        subscribedUsers: subscribedUsers || 0,
-        totalApiaries: totalApiaries || 0,
-        totalHives: totalHives || 0,
-      })
+      if (data && data.length > 0) {
+        const stats = data[0]
+        setStatistics({
+          totalUsers: Number(stats.total_users) || 0,
+          subscribedUsers: Number(stats.subscribed_users) || 0,
+          totalApiaries: Number(stats.total_apiaries) || 0,
+          totalHives: Number(stats.total_hives) || 0,
+        })
+      }
     } catch (error) {
       console.error('Error fetching statistics:', error)
     }
