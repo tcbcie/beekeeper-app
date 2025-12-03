@@ -119,7 +119,7 @@ export default function HiveHealthDashboard() {
     if (filter === 'needs-attention') {
       return !hive.archived_at && (
         hive.has_diseases ||
-        hive.queen_seen === false ||
+        // Only flag as attention if no eggs present (eggs present = queen is there and laying)
         hive.eggs_present === false ||
         (hive.days_since_inspection !== null && hive.days_since_inspection > 14) ||
         (hive.population_strength !== null && hive.population_strength < 3)
@@ -131,8 +131,10 @@ export default function HiveHealthDashboard() {
   const getHealthStatus = (hive: HiveHealth) => {
     if (hive.archived_at) return { label: 'Archived', color: 'gray', icon: Archive }
     if (hive.has_diseases) return { label: 'Diseased', color: 'red', icon: AlertTriangle }
-    if (hive.queen_seen === false) return { label: 'No Queen', color: 'orange', icon: AlertTriangle }
+    // If no eggs present, that's the main concern (no laying queen)
     if (hive.eggs_present === false) return { label: 'No Eggs', color: 'orange', icon: AlertTriangle }
+    // Only show "No Queen" if queen not seen AND eggs also not present (already handled above)
+    // If eggs present but queen not seen, queen is there and laying, so don't flag
     if (hive.days_since_inspection !== null && hive.days_since_inspection > 14) {
       return { label: 'Needs Inspection', color: 'yellow', icon: Clock }
     }
@@ -160,7 +162,6 @@ export default function HiveHealthDashboard() {
     active: hives.filter(h => !h.archived_at).length,
     needsAttention: hives.filter(h => !h.archived_at && (
       h.has_diseases ||
-      h.queen_seen === false ||
       h.eggs_present === false ||
       (h.days_since_inspection !== null && h.days_since_inspection > 14) ||
       (h.population_strength !== null && h.population_strength < 3)
