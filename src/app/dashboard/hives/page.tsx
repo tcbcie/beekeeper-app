@@ -698,6 +698,7 @@ export default function HivesPage() {
 
       if (editingHive) {
         // Update hive - RLS policies will handle permissions for both owned and shared hives
+        // Note: The database trigger will automatically create a history entry if configuration changes
         const { error } = await supabase
           .from('hives')
           .update(dataToSubmit)
@@ -705,23 +706,7 @@ export default function HivesPage() {
 
         if (error) throw error
 
-        // Record configuration change in history if configuration changed
-        const configChanged = JSON.stringify(editingHive.configuration) !== JSON.stringify(formData.configuration)
-        if (configChanged) {
-          const { error: historyError } = await supabase
-            .from('hive_configuration_history')
-            .insert([{
-              hive_id: editingHive.id,
-              changed_at: new Date().toISOString(),
-              changed_by: userId,
-              configuration: formData.configuration
-            }])
-
-          if (historyError) {
-            console.error('Failed to record configuration history:', historyError)
-            // Don't throw - configuration was updated successfully, history is supplementary
-          }
-        }
+        // History tracking is handled by database trigger - no manual insert needed
       } else {
         // Verify apiary ownership before inserting
         if (dataToSubmit.apiary_id) {
@@ -782,6 +767,7 @@ export default function HivesPage() {
         }
 
         // Record initial configuration in history for new hive
+        // (INSERT trigger doesn't exist, only UPDATE trigger)
         if (newHive) {
           const { error: historyError } = await supabase
             .from('hive_configuration_history')
@@ -789,7 +775,15 @@ export default function HivesPage() {
               hive_id: newHive.id,
               changed_at: new Date().toISOString(),
               changed_by: userId,
-              configuration: formData.configuration
+              configuration: formData.configuration,
+              apiary_id: formData.apiary_id || null,
+              row_in_apiary: formData.row_in_apiary,
+              order_in_apiary: formData.order_in_apiary,
+              queen_id: formData.queen_id || null,
+              queen_marked: formData.queen_marked,
+              queen_marking_color: formData.queen_marking_color || null,
+              queen_mated: formData.queen_mated,
+              queen_clipped: formData.queen_clipped
             }])
 
           if (historyError) {
