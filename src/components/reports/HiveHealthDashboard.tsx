@@ -11,6 +11,7 @@ interface HiveHealth {
   apiary_name: string | null
   status: string
   queen_seen: boolean | null
+  eggs_present: boolean | null
   population_strength: number | null
   brood_pattern_rating: number | null
   temperament_rating: number | null
@@ -44,6 +45,7 @@ export default function HiveHealthDashboard() {
           inspections (
             inspection_date,
             queen_seen,
+            eggs_present,
             population_strength,
             brood_pattern_rating,
             temperament_rating,
@@ -90,6 +92,7 @@ export default function HiveHealthDashboard() {
           status: hive.status as string,
           archived_at: hive.archived_at as string | null,
           queen_seen: latestInspection?.queen_seen as boolean ?? null,
+          eggs_present: latestInspection?.eggs_present as boolean ?? null,
           population_strength: latestInspection?.population_strength as number ?? null,
           brood_pattern_rating: latestInspection?.brood_pattern_rating as number ?? null,
           temperament_rating: latestInspection?.temperament_rating as number ?? null,
@@ -117,6 +120,7 @@ export default function HiveHealthDashboard() {
       return !hive.archived_at && (
         hive.has_diseases ||
         hive.queen_seen === false ||
+        hive.eggs_present === false ||
         (hive.days_since_inspection !== null && hive.days_since_inspection > 14) ||
         (hive.population_strength !== null && hive.population_strength < 3)
       )
@@ -128,6 +132,7 @@ export default function HiveHealthDashboard() {
     if (hive.archived_at) return { label: 'Archived', color: 'gray', icon: Archive }
     if (hive.has_diseases) return { label: 'Diseased', color: 'red', icon: AlertTriangle }
     if (hive.queen_seen === false) return { label: 'No Queen', color: 'orange', icon: AlertTriangle }
+    if (hive.eggs_present === false) return { label: 'No Eggs', color: 'orange', icon: AlertTriangle }
     if (hive.days_since_inspection !== null && hive.days_since_inspection > 14) {
       return { label: 'Needs Inspection', color: 'yellow', icon: Clock }
     }
@@ -156,6 +161,7 @@ export default function HiveHealthDashboard() {
     needsAttention: hives.filter(h => !h.archived_at && (
       h.has_diseases ||
       h.queen_seen === false ||
+      h.eggs_present === false ||
       (h.days_since_inspection !== null && h.days_since_inspection > 14) ||
       (h.population_strength !== null && h.population_strength < 3)
     )).length,
