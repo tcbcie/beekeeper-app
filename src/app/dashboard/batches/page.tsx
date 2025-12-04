@@ -84,13 +84,13 @@ interface Inspection {
   brood_pattern_rating: number | null
   population_strength: number | null
   temperament_rating: number | null
-  swarming_signs: boolean | null
+  swarming_tendency: number | null
   honey_stores: string | null
-  calmness_rating: number | null
-  recapping_speed: number | null
-  vsh_score: number | null
-  smr_percentage: number | null
-  chalkbrood_severity: number | null
+  calmness: number | null
+  recapping: number | null
+  vsh: number | null
+  smr: number | null
+  chalkbrood_disease: number | null
 }
 
 interface HiveWithInspections {
