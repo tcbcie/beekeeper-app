@@ -28,6 +28,7 @@ interface TaskEvent {
   created_at: string
   updated_at: string
   is_team_task?: boolean
+  creator_name?: string
 }
 
 interface Hive {
@@ -106,13 +107,22 @@ export default function TasksEventsPage() {
 
     const { data, error } = await supabase
       .from('tasks_events')
-      .select('*')
+      .select(`
+        *,
+        profiles!tasks_events_user_id_fkey(full_name)
+      `)
       .order('start_date', { ascending: true })
 
     if (error) {
       console.error('Error fetching tasks:', error)
     } else {
-      setTasks(data || [])
+      // Map the joined profile data to creator_name
+      const tasksWithCreatorNames = (data || []).map(task => ({
+        ...task,
+        creator_name: task.profiles?.full_name || null,
+        profiles: undefined // Remove the nested profiles object
+      }))
+      setTasks(tasksWithCreatorNames)
     }
     setLoading(false)
   }, [userId])
@@ -576,7 +586,7 @@ export default function TasksEventsPage() {
                       )}
                       {task.user_id !== userId && (
                         <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                          Created by team member
+                          Created by {task.creator_name || 'team member'}
                         </span>
                       )}
                     </div>
