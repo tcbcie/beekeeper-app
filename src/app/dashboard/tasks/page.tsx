@@ -29,6 +29,7 @@ interface TaskEvent {
   updated_at: string
   is_team_task?: boolean
   creator_name?: string
+  creator_email?: string
 }
 
 interface Hive {
@@ -119,20 +120,24 @@ export default function TasksEventsPage() {
     // Get unique user IDs from tasks
     const uniqueUserIds = [...new Set(data?.map(task => task.user_id) || [])]
 
-    // Fetch profile names for all users
+    // Fetch profile names and emails for all users
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, full_name')
+      .select('id, full_name, email')
       .in('id', uniqueUserIds)
 
-    // Create a map of user_id to full_name
-    const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || [])
+    // Create a map of user_id to profile info
+    const profileMap = new Map(profiles?.map(p => [p.id, { full_name: p.full_name, email: p.email }]) || [])
 
-    // Add creator_name to tasks
-    const tasksWithCreatorNames = (data || []).map(task => ({
-      ...task,
-      creator_name: profileMap.get(task.user_id) || null
-    }))
+    // Add creator_name and creator_email to tasks
+    const tasksWithCreatorNames = (data || []).map(task => {
+      const profile = profileMap.get(task.user_id)
+      return {
+        ...task,
+        creator_name: profile?.full_name || null,
+        creator_email: profile?.email || null
+      }
+    })
 
     setTasks(tasksWithCreatorNames)
     setLoading(false)
@@ -597,7 +602,7 @@ export default function TasksEventsPage() {
                       )}
                       {task.user_id !== userId && (
                         <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                          Created by {task.creator_name || 'team member'}
+                          Created by {task.creator_name || task.creator_email || 'team member'}
                         </span>
                       )}
                     </div>
