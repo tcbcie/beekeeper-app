@@ -2340,12 +2340,30 @@ export default function ProfilePage() {
                     type="checkbox"
                     id="task-reminders"
                     checked={profileFormData.enable_task_email_reminders}
-                    onChange={(e) => {
+                    onChange={async (e) => {
+                      const newValue = e.target.checked
                       setProfileFormData({
                         ...profileFormData,
-                        enable_task_email_reminders: e.target.checked
+                        enable_task_email_reminders: newValue
                       })
-                      updateUserProfile()
+
+                      // Update database immediately with new value
+                      if (!userId) return
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({ enable_task_email_reminders: newValue })
+                          .eq('id', userId)
+
+                        if (error) throw error
+                      } catch (error) {
+                        console.error('Error updating task reminders:', error)
+                        // Revert on error
+                        setProfileFormData({
+                          ...profileFormData,
+                          enable_task_email_reminders: !newValue
+                        })
+                      }
                     }}
                     className="sr-only peer"
                   />
@@ -2364,12 +2382,30 @@ export default function ProfilePage() {
                     type="checkbox"
                     id="event-reminders"
                     checked={profileFormData.enable_event_email_reminders}
-                    onChange={(e) => {
+                    onChange={async (e) => {
+                      const newValue = e.target.checked
                       setProfileFormData({
                         ...profileFormData,
-                        enable_event_email_reminders: e.target.checked
+                        enable_event_email_reminders: newValue
                       })
-                      updateUserProfile()
+
+                      // Update database immediately with new value
+                      if (!userId) return
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({ enable_event_email_reminders: newValue })
+                          .eq('id', userId)
+
+                        if (error) throw error
+                      } catch (error) {
+                        console.error('Error updating event reminders:', error)
+                        // Revert on error
+                        setProfileFormData({
+                          ...profileFormData,
+                          enable_event_email_reminders: !newValue
+                        })
+                      }
                     }}
                     className="sr-only peer"
                   />
@@ -2385,12 +2421,31 @@ export default function ProfilePage() {
                 <select
                   id="reminder-frequency"
                   value={profileFormData.task_reminder_frequency}
-                  onChange={(e) => {
+                  onChange={async (e) => {
+                    const newValue = e.target.value as 'realtime' | 'daily' | 'weekly' | 'disabled'
+                    const oldValue = profileFormData.task_reminder_frequency
                     setProfileFormData({
                       ...profileFormData,
-                      task_reminder_frequency: e.target.value as 'realtime' | 'daily' | 'weekly' | 'disabled'
+                      task_reminder_frequency: newValue
                     })
-                    updateUserProfile()
+
+                    // Update database immediately with new value
+                    if (!userId) return
+                    try {
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({ task_reminder_frequency: newValue })
+                        .eq('id', userId)
+
+                      if (error) throw error
+                    } catch (error) {
+                      console.error('Error updating reminder frequency:', error)
+                      // Revert on error
+                      setProfileFormData({
+                        ...profileFormData,
+                        task_reminder_frequency: oldValue
+                      })
+                    }
                   }}
                   disabled={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
