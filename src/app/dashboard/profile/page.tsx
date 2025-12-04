@@ -24,6 +24,9 @@ interface UserProfile {
   member_fibka?: boolean
   member_iba?: boolean
   member_nihbs?: boolean
+  enable_task_email_reminders?: boolean
+  enable_event_email_reminders?: boolean
+  task_reminder_frequency?: 'realtime' | 'daily' | 'weekly' | 'disabled'
 }
 
 interface Association {
@@ -105,6 +108,9 @@ export default function ProfilePage() {
     member_fibka: false,
     member_iba: false,
     member_nihbs: false,
+    enable_task_email_reminders: true,
+    enable_event_email_reminders: true,
+    task_reminder_frequency: 'daily' as 'realtime' | 'daily' | 'weekly' | 'disabled',
   })
   const [savingProfile, setSavingProfile] = useState(false)
   const [associations, setAssociations] = useState<Association[]>([])
@@ -212,6 +218,9 @@ export default function ProfilePage() {
           member_fibka: data.member_fibka || false,
           member_iba: data.member_iba || false,
           member_nihbs: data.member_nihbs || false,
+          enable_task_email_reminders: data.enable_task_email_reminders !== undefined ? data.enable_task_email_reminders : true,
+          enable_event_email_reminders: data.enable_event_email_reminders !== undefined ? data.enable_event_email_reminders : true,
+          task_reminder_frequency: data.task_reminder_frequency || 'daily',
         })
       }
     } catch (error) {
@@ -235,6 +244,9 @@ export default function ProfilePage() {
           member_fibka: profileFormData.member_fibka,
           member_iba: profileFormData.member_iba,
           member_nihbs: profileFormData.member_nihbs,
+          enable_task_email_reminders: profileFormData.enable_task_email_reminders,
+          enable_event_email_reminders: profileFormData.enable_event_email_reminders,
+          task_reminder_frequency: profileFormData.task_reminder_frequency,
         })
         .eq('id', userId)
 
@@ -2307,14 +2319,91 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
-            <div>
-              <div className="font-medium text-foreground">Email Notifications</div>
-              <div className="text-sm text-text-tertiary">Manage your notification preferences</div>
+          <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+            <div className="mb-4">
+              <div className="font-medium text-foreground mb-1">Email Notifications</div>
+              <div className="text-sm text-text-tertiary">Manage your email reminder preferences for tasks and events</div>
             </div>
-            <button className="px-4 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-700">
-              Coming Soon
-            </button>
+
+            <div className="space-y-3">
+              {/* Task Email Reminders Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label htmlFor="task-reminders" className="text-sm font-medium text-foreground">Task Reminders</label>
+                  <div className="text-xs text-text-tertiary">Receive email reminders for upcoming tasks</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="task-reminders"
+                    checked={profileFormData.enable_task_email_reminders}
+                    onChange={(e) => {
+                      setProfileFormData({
+                        ...profileFormData,
+                        enable_task_email_reminders: e.target.checked
+                      })
+                      updateUserProfile()
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+
+              {/* Event Email Reminders Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label htmlFor="event-reminders" className="text-sm font-medium text-foreground">Event Reminders</label>
+                  <div className="text-xs text-text-tertiary">Receive email reminders for upcoming events</div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="event-reminders"
+                    checked={profileFormData.enable_event_email_reminders}
+                    onChange={(e) => {
+                      setProfileFormData({
+                        ...profileFormData,
+                        enable_event_email_reminders: e.target.checked
+                      })
+                      updateUserProfile()
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+
+              {/* Reminder Frequency Dropdown */}
+              <div className="pt-2 border-t border-border">
+                <label htmlFor="reminder-frequency" className="block text-sm font-medium text-foreground mb-2">
+                  Reminder Frequency
+                </label>
+                <select
+                  id="reminder-frequency"
+                  value={profileFormData.task_reminder_frequency}
+                  onChange={(e) => {
+                    setProfileFormData({
+                      ...profileFormData,
+                      task_reminder_frequency: e.target.value as 'realtime' | 'daily' | 'weekly' | 'disabled'
+                    })
+                    updateUserProfile()
+                  }}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="realtime">Realtime (Hourly check)</option>
+                  <option value="daily">Daily (Once per day)</option>
+                  <option value="weekly">Weekly (Once per week)</option>
+                  <option value="disabled">Disabled (No emails)</option>
+                </select>
+                <div className="mt-1 text-xs text-text-tertiary">
+                  {profileFormData.task_reminder_frequency === 'realtime' && 'Checks every hour for reminders in next 24 hours'}
+                  {profileFormData.task_reminder_frequency === 'daily' && 'Sends once per day for tasks/events in next 2 days'}
+                  {profileFormData.task_reminder_frequency === 'weekly' && 'Sends once per week for tasks/events in next 7 days'}
+                  {profileFormData.task_reminder_frequency === 'disabled' && 'No email reminders will be sent'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
