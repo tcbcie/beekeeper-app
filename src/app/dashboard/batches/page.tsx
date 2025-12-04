@@ -525,16 +525,17 @@ export default function BatchesPage() {
           apiary_id,
           apiaries (name),
           inspections (
+            inspection_date,
             brood_pattern_rating,
             population_strength,
             temperament_rating,
-            swarming_signs,
+            swarming_tendency,
             honey_stores,
-            calmness_rating,
-            recapping_speed,
-            vsh_score,
-            smr_percentage,
-            chalkbrood_severity
+            calmness,
+            recapping,
+            vsh,
+            smr,
+            chalkbrood_disease
           )
         `)
         .eq('user_id', userId)
@@ -576,7 +577,7 @@ export default function BatchesPage() {
           brood_pattern: inspections.reduce((sum: number, i) => sum + (i.brood_pattern_rating || 0), 0) / inspections.length,
           population: inspections.reduce((sum: number, i) => sum + (i.population_strength || 0), 0) / inspections.length,
           temperament: inspections.reduce((sum: number, i) => sum + (i.temperament_rating || 0), 0) / inspections.length,
-          swarming: inspections.filter((i) => i.swarming_signs).length / inspections.length, // Percentage
+          swarming: inspections.reduce((sum: number, i) => sum + (i.swarming_tendency || 0), 0) / inspections.length, // Average swarming tendency
           honey_yield: inspections.reduce((sum: number, i) => {
             const stores = i.honey_stores?.toLowerCase() || ''
             if (stores.includes('full')) return sum + 5
@@ -585,11 +586,11 @@ export default function BatchesPage() {
             if (stores.includes('low')) return sum + 2
             return sum + 1
           }, 0) / inspections.length,
-          calmness: inspections.reduce((sum: number, i) => sum + (i.calmness_rating || 0), 0) / inspections.length,
-          recapping: inspections.reduce((sum: number, i) => sum + (i.recapping_speed || 0), 0) / inspections.length,
-          vsh: inspections.reduce((sum: number, i) => sum + (i.vsh_score || 0), 0) / inspections.length,
-          smr: inspections.reduce((sum: number, i) => sum + (i.smr_percentage || 0), 0) / inspections.length,
-          chalkbrood: inspections.reduce((sum: number, i) => sum + (i.chalkbrood_severity || 0), 0) / inspections.length,
+          calmness: inspections.reduce((sum: number, i) => sum + (i.calmness || 0), 0) / inspections.length,
+          recapping: inspections.reduce((sum: number, i) => sum + (i.recapping || 0), 0) / inspections.length,
+          vsh: inspections.reduce((sum: number, i) => sum + (i.vsh || 0), 0) / inspections.length,
+          smr: inspections.reduce((sum: number, i) => sum + (i.smr || 0), 0) / inspections.length,
+          chalkbrood: inspections.reduce((sum: number, i) => sum + (i.chalkbrood_disease || 0), 0) / inspections.length,
         }
 
         // Calculate weighted score (lower swarming and chalkbrood are better, so invert them)
@@ -597,7 +598,7 @@ export default function BatchesPage() {
           (avg.brood_pattern * weights.brood_pattern) +
           (avg.population * weights.population) +
           (avg.temperament * weights.temperament) +
-          ((1 - avg.swarming) * 5 * weights.swarming) + // Invert swarming tendency
+          ((6 - avg.swarming) * weights.swarming) + // Invert swarming tendency (1-5 scale, so 6 - value)
           (avg.honey_yield * weights.honey_yield)
 
         // Add optional criteria to score if selected
@@ -1601,7 +1602,7 @@ export default function BatchesPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Brood Pattern</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Population</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Temperament</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Swarming %</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Swarming (Low=Good)</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Honey Yield</th>
                       {optionalColumns.calmness && (
                         <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Calmness</th>
@@ -1651,7 +1652,7 @@ export default function BatchesPage() {
                           {hive.averages.temperament.toFixed(1)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
-                          {(hive.averages.swarming * 100).toFixed(0)}%
+                          {hive.averages.swarming.toFixed(1)}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
                           {hive.averages.honey_yield.toFixed(1)}
