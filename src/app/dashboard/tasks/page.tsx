@@ -109,7 +109,7 @@ export default function TasksEventsPage() {
       .from('tasks_events')
       .select(`
         *,
-        profiles!tasks_events_user_id_fkey(full_name)
+        profiles!user_id(full_name)
       `)
       .order('start_date', { ascending: true })
 
