@@ -1132,6 +1132,14 @@ export default function InspectionsPage() {
     const hiveParam = searchParams.get('hive')
     const typeParam = searchParams.get('type')
 
+    // If only hive parameter is present, just set the filter
+    if (hiveParam && !typeParam && hives.length > 0) {
+      setFilterHiveId(hiveParam)
+      // Clear the URL parameter after setting the filter
+      router.replace('/dashboard/records')
+      return
+    }
+
     if (hiveParam && typeParam && hives.length > 0) {
       // Set the hive filter and source hive ID for navigation
       setFilterHiveId(hiveParam)
@@ -2049,6 +2057,43 @@ export default function InspectionsPage() {
     })
   }, [allRecords, recordTypeFilter, ownershipFilter, showArchivedHives, filterApiaryId, filterHiveId, timePeriod, customStartDate, customEndDate, hiveMap, dateRangeStart])
 
+  // Calculate record counts for each time period
+  const timePeriodCounts = useMemo(() => {
+    const now = new Date()
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+
+    // Filter with everything except time period
+    const baseFilteredRecords = allRecords.filter(record => {
+      if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) return false
+      if (ownershipFilter === 'team' && record.record_type === 'archive') return false
+      if (!showArchivedHives) {
+        const recordHive = hiveMap.get(record.hive_id)
+        if (recordHive?.archived_at) return false
+      }
+      if (filterApiaryId && record.hive_id) {
+        const recordHive = hiveMap.get(record.hive_id)
+        if (recordHive?.apiary_id !== filterApiaryId) return false
+      }
+      if (filterHiveId && record.hive_id !== filterHiveId) return false
+      return true
+    })
+
+    return {
+      all: baseFilteredRecords.length,
+      threeMonths: baseFilteredRecords.filter(r => new Date(r.date) >= threeMonthsAgo).length,
+      sixMonths: baseFilteredRecords.filter(r => new Date(r.date) >= sixMonthsAgo).length,
+      oneYear: baseFilteredRecords.filter(r => new Date(r.date) >= oneYearAgo).length,
+      custom: baseFilteredRecords.filter(r => {
+        const recordDate = new Date(r.date)
+        if (customStartDate && recordDate < new Date(customStartDate)) return false
+        if (customEndDate && recordDate > new Date(customEndDate)) return false
+        return true
+      }).length
+    }
+  }, [allRecords, recordTypeFilter, ownershipFilter, showArchivedHives, filterApiaryId, filterHiveId, customStartDate, customEndDate, hiveMap])
+
   if (loading) return <LoadingSpinner text="Loading records..." />
 
   return (
@@ -2448,7 +2493,7 @@ export default function InspectionsPage() {
                     : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
-                All Time
+                All Time ({timePeriodCounts.all})
               </button>
               <button
                 onClick={() => setTimePeriod('3months')}
@@ -2458,7 +2503,7 @@ export default function InspectionsPage() {
                     : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
-                Last 3 Months
+                Last 3 Months ({timePeriodCounts.threeMonths})
               </button>
               <button
                 onClick={() => setTimePeriod('6months')}
@@ -2468,7 +2513,7 @@ export default function InspectionsPage() {
                     : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
-                Last 6 Months
+                Last 6 Months ({timePeriodCounts.sixMonths})
               </button>
               <button
                 onClick={() => setTimePeriod('1year')}
@@ -2478,7 +2523,7 @@ export default function InspectionsPage() {
                     : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
-                Last Year
+                Last Year ({timePeriodCounts.oneYear})
               </button>
               <button
                 onClick={() => setTimePeriod('custom')}
@@ -2488,7 +2533,7 @@ export default function InspectionsPage() {
                     : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
                 }`}
               >
-                Custom Range
+                Custom Range ({timePeriodCounts.custom})
               </button>
             </div>
           </div>
