@@ -107,23 +107,34 @@ export default function TasksEventsPage() {
 
     const { data, error } = await supabase
       .from('tasks_events')
-      .select(`
-        *,
-        profiles!user_id(full_name)
-      `)
+      .select('*')
       .order('start_date', { ascending: true })
 
     if (error) {
       console.error('Error fetching tasks:', error)
-    } else {
-      // Map the joined profile data to creator_name
-      const tasksWithCreatorNames = (data || []).map(task => ({
-        ...task,
-        creator_name: task.profiles?.full_name || null,
-        profiles: undefined // Remove the nested profiles object
-      }))
-      setTasks(tasksWithCreatorNames)
+      setLoading(false)
+      return
     }
+
+    // Get unique user IDs from tasks
+    const uniqueUserIds = [...new Set(data?.map(task => task.user_id) || [])]
+
+    // Fetch profile names for all users
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', uniqueUserIds)
+
+    // Create a map of user_id to full_name
+    const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || [])
+
+    // Add creator_name to tasks
+    const tasksWithCreatorNames = (data || []).map(task => ({
+      ...task,
+      creator_name: profileMap.get(task.user_id) || null
+    }))
+
+    setTasks(tasksWithCreatorNames)
     setLoading(false)
   }, [userId])
 
