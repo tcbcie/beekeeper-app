@@ -42,6 +42,8 @@ interface Hive {
   archive_reason_id?: string | null
   archive_notes?: string | null
   user_id: string
+  is_shared?: boolean
+  shared_with_team?: string
   archive_reason_value?: {
     value?: string
   }
@@ -175,6 +177,28 @@ export default function HiveDetailPage() {
 
         if (queenData) {
           hiveData.queens = queenData
+        }
+      }
+
+      // Check if this hive's apiary is shared with teams
+      if (hiveData.apiary_id) {
+        const { data: teamApiaries } = await supabase
+          .from('team_apiaries')
+          .select(`
+            team_id,
+            teams(name)
+          `)
+          .eq('apiary_id', hiveData.apiary_id)
+
+        if (teamApiaries && teamApiaries.length > 0) {
+          // Check if this is a shared hive (user is viewing someone else's hive)
+          const isShared = hiveData.user_id !== currentUserId
+          hiveData.is_shared = isShared
+
+          // Get team name for owner's shared hives
+          if (!isShared && teamApiaries[0].teams) {
+            hiveData.shared_with_team = (teamApiaries[0].teams as { name: string }).name
+          }
         }
       }
 
@@ -400,9 +424,23 @@ export default function HiveDetailPage() {
           </Link>
         </div>
         <h1 className="text-3xl font-bold text-foreground">Hive {hive.hive_number}</h1>
-        {hive.apiaries && (
-          <p className="text-text-tertiary mt-1">📍 {hive.apiaries.name}</p>
-        )}
+        <div className="flex flex-wrap items-center gap-2 mt-1">
+          {hive.apiaries && (
+            <p className="text-text-tertiary">📍 {hive.apiaries.name}</p>
+          )}
+          {hive.is_shared && (
+            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 border border-blue-300 dark:border-blue-800">
+              <span>👥</span>
+              <span>Shared with SensibleTeam</span>
+            </span>
+          )}
+          {!hive.is_shared && hive.shared_with_team && (
+            <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-medium rounded flex items-center gap-1 border border-purple-300 dark:border-purple-800">
+              <span>📤</span>
+              <span>Shared with {hive.shared_with_team}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Hive Details Card */}
