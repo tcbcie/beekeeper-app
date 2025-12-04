@@ -186,7 +186,7 @@ export default function HiveDetailPage() {
           .from('team_apiaries')
           .select(`
             team_id,
-            teams(name)
+            teams!inner(name)
           `)
           .eq('apiary_id', hiveData.apiary_id)
 
@@ -197,7 +197,8 @@ export default function HiveDetailPage() {
 
           // Get team name for owner's shared hives
           if (!isShared && teamApiaries[0].teams) {
-            hiveData.shared_with_team = (teamApiaries[0].teams as { name: string }).name
+            const teamData = teamApiaries[0].teams as unknown as { name: string }
+            hiveData.shared_with_team = teamData.name
           }
         }
       }
