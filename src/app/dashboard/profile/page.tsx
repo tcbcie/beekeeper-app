@@ -2392,7 +2392,8 @@ export default function ProfilePage() {
                     })
                     updateUserProfile()
                   }}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  disabled={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="realtime">Realtime (Hourly check)</option>
                   <option value="daily">Daily (Once per day)</option>
@@ -2400,10 +2401,16 @@ export default function ProfilePage() {
                   <option value="disabled">Disabled (No emails)</option>
                 </select>
                 <div className="mt-1 text-xs text-text-tertiary">
-                  {profileFormData.task_reminder_frequency === 'realtime' && 'Checks every hour for reminders in next 24 hours'}
-                  {profileFormData.task_reminder_frequency === 'daily' && 'Sends once per day for tasks/events in next 2 days'}
-                  {profileFormData.task_reminder_frequency === 'weekly' && 'Sends once per week for tasks/events in next 7 days'}
-                  {profileFormData.task_reminder_frequency === 'disabled' && 'No email reminders will be sent'}
+                  {!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders ? (
+                    'Enable task or event reminders above to set frequency'
+                  ) : (
+                    <>
+                      {profileFormData.task_reminder_frequency === 'realtime' && 'Checks every hour for reminders in next 24 hours'}
+                      {profileFormData.task_reminder_frequency === 'daily' && 'Sends once per day for tasks/events in next 2 days'}
+                      {profileFormData.task_reminder_frequency === 'weekly' && 'Sends once per week for tasks/events in next 7 days'}
+                      {profileFormData.task_reminder_frequency === 'disabled' && 'No email reminders will be sent'}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
