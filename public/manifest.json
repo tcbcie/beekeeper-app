@@ -1,7 +1,7 @@
 {
   "name": "HiveCraic - Beekeeper App",
   "short_name": "HiveCraic",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "Comprehensive beekeeping management application for tracking hives, inspections, and queen rearing",
   "start_url": "/dashboard",
   "display": "standalone",
