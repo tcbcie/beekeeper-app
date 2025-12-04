@@ -14,8 +14,9 @@ interface NavbarProps {
 export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
   const router = useRouter()
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatusResponse | null>(null)
+  const [hasProfileName, setHasProfileName] = useState<boolean>(true)
 
-  // Fetch subscription status on mount
+  // Fetch subscription status and profile completeness on mount
   useEffect(() => {
     const fetchSubscriptionStatus = async () => {
       try {
@@ -27,8 +28,28 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
       }
     }
 
+    const checkProfileCompleteness = async () => {
+      if (!currentUser?.id) return
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', currentUser.id)
+          .single()
+
+        if (error) throw error
+
+        // Check if user has at least first name or last name set
+        setHasProfileName(!!(data?.first_name || data?.last_name))
+      } catch (error) {
+        console.error('Error checking profile completeness:', error)
+      }
+    }
+
     fetchSubscriptionStatus()
-  }, [])
+    checkProfileCompleteness()
+  }, [currentUser?.id])
 
   const handleLogout = async () => {
     try {
@@ -91,9 +112,26 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
             </h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden sm:inline text-sm text-text-secondary truncate max-w-[150px] lg:max-w-none">
-              {currentUser?.email}
-            </span>
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-sm text-text-secondary truncate max-w-[150px] lg:max-w-none">
+                {currentUser?.email}
+              </span>
+              {/* Profile incompleteness indicator */}
+              {!hasProfileName && (
+                <div className="relative group">
+                  <AlertCircle
+                    className="w-5 h-5 cursor-pointer text-amber-600 dark:text-amber-400"
+                    aria-label="Profile incomplete"
+                  />
+                  {/* Tooltip */}
+                  <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-white dark:bg-slate-800 border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <p className="text-sm text-text-primary">
+                      Please complete your profile by adding your name. This helps team members identify you when working on shared tasks and hives.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Subscription status indicator */}
             {subscriptionStatus && subscriptionStatus.status !== 'active' && (
               <div className="relative group">
