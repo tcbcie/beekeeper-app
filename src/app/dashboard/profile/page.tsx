@@ -279,6 +279,9 @@ export default function ProfilePage() {
         member_fibka: userProfile.member_fibka || false,
         member_iba: userProfile.member_iba || false,
         member_nihbs: userProfile.member_nihbs || false,
+        enable_task_email_reminders: userProfile.enable_task_email_reminders !== undefined ? userProfile.enable_task_email_reminders : true,
+        enable_event_email_reminders: userProfile.enable_event_email_reminders !== undefined ? userProfile.enable_event_email_reminders : true,
+        task_reminder_frequency: userProfile.task_reminder_frequency || 'daily',
       })
     }
   }
