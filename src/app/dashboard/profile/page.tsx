@@ -1634,7 +1634,7 @@ export default function ProfilePage() {
                                       <div className="flex items-center gap-3 flex-1">
                                         <Mail size={16} className="text-orange-400" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
+                                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{invitation.email}</div>
                                           <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {isExpired ? (
@@ -1681,7 +1681,7 @@ export default function ProfilePage() {
                                       <div className="flex items-center gap-3 flex-1">
                                         <User size={16} className="text-green-600 dark:text-green-400" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
+                                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{invitation.email}</div>
                                           <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {acceptedDate ? (
@@ -1752,7 +1752,7 @@ export default function ProfilePage() {
                                     <div className="flex items-center gap-3 flex-1">
                                       <MapPin size={16} className="text-purple-600 dark:text-purple-400" />
                                       <div className="flex-1">
-                                        <div className="text-sm font-medium text-foreground">
+                                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                           {ta.apiary?.name
                                             ? `${ta.apiary.name} - ${ta.apiary.eircode}`
                                             : (ta.apiary?.eircode || 'Unknown Location')}
@@ -2123,7 +2123,7 @@ export default function ProfilePage() {
                   {teamInvitations.map((invitation) => (
                     <div key={invitation.id} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
                       <div>
-                        <div className="font-medium text-foreground">{invitation.email}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{invitation.email}</div>
                         <div className="text-xs text-text-tertiary">
                           Invited {new Date(invitation.invited_at).toLocaleDateString()}
                           {' • Expires '}{new Date(invitation.expires_at).toLocaleDateString()}
