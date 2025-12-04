@@ -2448,12 +2448,12 @@ export default function ProfilePage() {
                     }
                   }}
                   disabled={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <option value="realtime">Realtime (Hourly check)</option>
-                  <option value="daily">Daily (Once per day)</option>
-                  <option value="weekly">Weekly (Once per week)</option>
-                  <option value="disabled">Disabled (No emails)</option>
+                  <option value="realtime" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Realtime (Hourly check)</option>
+                  <option value="daily" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Daily (Once per day)</option>
+                  <option value="weekly" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Weekly (Once per week)</option>
+                  <option value="disabled" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Disabled (No emails)</option>
                 </select>
                 <div className="mt-1 text-xs text-text-tertiary">
                   {!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders ? (
