@@ -205,7 +205,7 @@ export default function QueensPage() {
               )
             `)
             .eq('queen_id', queen.id)
-            .eq('status', 'active')
+            .ilike('status', 'active')
             .maybeSingle()
 
           if (hiveError) {
