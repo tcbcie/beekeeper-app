@@ -343,6 +343,14 @@ export default function TasksEventsPage() {
 
   // Delete task
   const handleDelete = async (id: string) => {
+    // Find the task to check ownership
+    const task = tasks.find(t => t.id === id)
+
+    if (task && task.user_id !== userId) {
+      alert('You cannot delete this task because it was created by another team member. Only the task creator can delete it.')
+      return
+    }
+
     if (!confirm('Are you sure you want to delete this task/event?')) return
 
     const { error } = await supabase
@@ -904,8 +912,8 @@ export default function TasksEventsPage() {
                     onChange={(e) => setFormData({ ...formData, reminder_enabled: e.target.checked })}
                     className="w-4 h-4 text-forest-600 dark:text-blue-600 border-border rounded focus:ring-forest-500 dark:focus:ring-forest-400"
                   />
-                  <label htmlFor="reminder_enabled" className="text-sm font-medium text-text-secondary">
-                    Enable reminder
+                  <label htmlFor="reminder_enabled" className="text-sm font-semibold text-foreground">
+                    Enable reminder <span className="text-amber-600 dark:text-amber-400">(required for email notifications)</span>
                   </label>
                 </div>
                 {formData.reminder_enabled && (
