@@ -17,6 +17,7 @@ interface Apiary {
 interface Queen {
   id: string
   queen_number: string
+  assigned_hive_id?: string | null
 }
 
 interface HiveConfiguration {
@@ -560,7 +561,35 @@ export default function HivesPage() {
     const { data, error } = await queensQuery.order('queen_number')
 
     if (!error && data) {
-      setQueens(data as Queen[])
+      // Fetch all queen IDs to check which ones are assigned to hives
+      const queenIds = data.map(q => q.id)
+
+      if (queenIds.length > 0) {
+        // Get all hives that have any of these queens assigned
+        const { data: assignedHives } = await supabase
+          .from('hives')
+          .select('id, queen_id')
+          .in('queen_id', queenIds)
+          .not('queen_id', 'is', null)
+
+        // Create a map of queen_id -> hive_id for quick lookup
+        const assignmentMap = new Map<string, string>()
+        assignedHives?.forEach(hive => {
+          if (hive.queen_id) {
+            assignmentMap.set(hive.queen_id, hive.id)
+          }
+        })
+
+        // Add assignment info to queens
+        const queensWithAssignments = data.map(q => ({
+          ...q,
+          assigned_hive_id: assignmentMap.get(q.id) || null
+        }))
+
+        setQueens(queensWithAssignments as Queen[])
+      } else {
+        setQueens(data as Queen[])
+      }
     }
   }, [userId])
 
@@ -1227,10 +1256,11 @@ export default function HivesPage() {
                 {queens
                   .filter(q => {
                     // Show unassigned queens OR the queen currently assigned to this hive (if editing)
-                    const isAssignedToOtherHive = hives.some(h =>
-                      h.queen_id === q.id && h.id !== editingHive?.id
-                    )
-                    return !isAssignedToOtherHive
+                    if (!q.assigned_hive_id) {
+                      return true // Unassigned queen - always show
+                    }
+                    // If editing, show the queen if it's assigned to THIS hive
+                    return editingHive && q.assigned_hive_id === editingHive.id
                   })
                   .map((q) => (
                     <option key={q.id} value={q.id}>{q.queen_number}</option>
