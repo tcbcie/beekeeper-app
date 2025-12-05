@@ -155,26 +155,25 @@ export default function QueensPage() {
       sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
     }
 
-    // Get hives from shared apiaries to find their queens
-    let sharedQueenIds: string[] = []
+    // Get user IDs who share apiaries with me (owners of shared apiaries)
+    let sharedUserIds: string[] = []
     if (sharedApiaryIds.length > 0) {
-      const { data: sharedHives } = await supabase
-        .from('hives')
-        .select('queen_id')
-        .in('apiary_id', sharedApiaryIds)
-        .not('queen_id', 'is', null)
+      const { data: sharedApiaries } = await supabase
+        .from('apiaries')
+        .select('user_id')
+        .in('id', sharedApiaryIds)
         .neq('user_id', currentUserId)
 
-      sharedQueenIds = sharedHives?.map(h => h.queen_id).filter(Boolean) as string[] || []
+      sharedUserIds = [...new Set(sharedApiaries?.map(a => a.user_id).filter(Boolean) as string[])] || []
     }
 
-    // Fetch my queens + queens from shared apiaries
+    // Fetch my queens + queens from users who share apiaries with me
     let queensQuery = supabase
       .from('queens')
       .select('*')
 
-    if (sharedQueenIds.length > 0) {
-      queensQuery = queensQuery.or(`user_id.eq.${currentUserId},id.in.(${sharedQueenIds.join(',')})`)
+    if (sharedUserIds.length > 0) {
+      queensQuery = queensQuery.or(`user_id.eq.${currentUserId},user_id.in.(${sharedUserIds.join(',')})`)
     } else {
       queensQuery = queensQuery.eq('user_id', currentUserId)
     }
