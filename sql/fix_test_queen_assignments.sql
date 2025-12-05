@@ -1,76 +1,49 @@
--- Fix test data: Assign Q2024 queens to hives H1-H10
--- This script bypasses RLS to properly assign test queens to test hives
+-- Fix test data: Assign Q2024 queens to hives H1-H6
+-- This script assigns test queens to test hives
+-- Note: Only H1-H6 exist in the database, H7-H10 were not created
 
--- Update hives to assign queens
+-- Update hives to assign queens (case-insensitive status check)
 UPDATE hives h
 SET queen_id = q.id
 FROM queens q
 WHERE h.hive_number = 'H1'
   AND q.queen_number = 'Q2024-001'
-  AND h.status = 'active';
+  AND LOWER(h.status) = 'active';
 
 UPDATE hives h
 SET queen_id = q.id
 FROM queens q
 WHERE h.hive_number = 'H2'
   AND q.queen_number = 'Q2024-002'
-  AND h.status = 'active';
+  AND LOWER(h.status) = 'active';
 
 UPDATE hives h
 SET queen_id = q.id
 FROM queens q
 WHERE h.hive_number = 'H3'
   AND q.queen_number = 'Q2024-003'
-  AND h.status = 'active';
+  AND LOWER(h.status) = 'active';
 
 UPDATE hives h
 SET queen_id = q.id
 FROM queens q
 WHERE h.hive_number = 'H4'
   AND q.queen_number = 'Q2024-004'
-  AND h.status = 'active';
+  AND LOWER(h.status) = 'active';
 
 UPDATE hives h
 SET queen_id = q.id
 FROM queens q
 WHERE h.hive_number = 'H5'
   AND q.queen_number = 'Q2024-005'
-  AND h.status = 'active';
+  AND LOWER(h.status) IN ('active', 'weak');
 
 UPDATE hives h
 SET queen_id = q.id
 FROM queens q
 WHERE h.hive_number = 'H6'
   AND q.queen_number = 'Q2024-006'
-  AND h.status = 'active';
-
-UPDATE hives h
-SET queen_id = q.id
-FROM queens q
-WHERE h.hive_number = 'H7'
-  AND q.queen_number = 'Q2024-007'
-  AND h.status = 'active';
-
-UPDATE hives h
-SET queen_id = q.id
-FROM queens q
-WHERE h.hive_number = 'H8'
-  AND q.queen_number = 'Q2024-008'
-  AND h.status = 'active';
-
-UPDATE hives h
-SET queen_id = q.id
-FROM queens q
-WHERE h.hive_number = 'H9'
-  AND q.queen_number = 'Q2024-009'
-  AND h.status = 'active';
-
-UPDATE hives h
-SET queen_id = q.id
-FROM queens q
-WHERE h.hive_number = 'H10'
-  AND q.queen_number = 'Q2024-010'
-  AND h.status = 'active';
+  AND LOWER(h.status) = 'active';
 
 -- Verify the assignments
 SELECT
