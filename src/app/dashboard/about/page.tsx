@@ -301,6 +301,7 @@ function AboutPageContent() {
               <li>Queen rearing batch management</li>
               <li>Harvest and feeding records</li>
               <li>Multi-user support with role-based access control</li>
+              <li>Email notifications for tasks, events, and batch reminders</li>
               <li>Data export capabilities</li>
               <li>Installable mobile application with offline support and background sync</li>
             </ul>
