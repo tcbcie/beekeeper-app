@@ -195,7 +195,7 @@ export default function QueensPage() {
           if (!queen.id) return queen
 
           // Find hive that has this queen (either my hive or shared hive)
-          const { data: hiveData } = await supabase
+          const { data: hiveData, error: hiveError } = await supabase
             .from('hives')
             .select(`
               id,
@@ -206,7 +206,11 @@ export default function QueensPage() {
             `)
             .eq('queen_id', queen.id)
             .eq('status', 'active')
-            .single()
+            .maybeSingle()
+
+          if (hiveError) {
+            console.error(`Error fetching hive for queen ${queen.queen_number}:`, hiveError)
+          }
 
           return {
             ...queen,
