@@ -1052,7 +1052,7 @@ export default function BatchesPage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="browser-notifications" className="ml-2 text-sm text-amber-900 dark:text-amber-200">
-                    Enable Browser Notifications
+                    Send Browser Notifications for This Batch
                     <span className="block text-xs text-amber-700 dark:text-amber-300 mt-0.5">
                       Get notified on the day of important dates (acceptance check, cage dates, hatch date)
                     </span>
@@ -1068,7 +1068,7 @@ export default function BatchesPage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="email-digest" className="ml-2 text-sm text-amber-900 dark:text-amber-200">
-                    Include in Weekly Email Digest
+                    Include This Batch in Weekly Email Digest
                     <span className="block text-xs text-amber-700 dark:text-amber-300 mt-0.5">
                       Receive a weekly summary of upcoming dates for this batch
                     </span>
