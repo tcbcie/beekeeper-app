@@ -127,6 +127,7 @@ export default function DashboardPage() {
   const [showMySharedDetails, setShowMySharedDetails] = useState(false)
   const [mySharedTeamMembers, setMySharedTeamMembers] = useState<TeamMember[]>([])
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
+  const [openTicketsCount, setOpenTicketsCount] = useState<number>(0)
   const router = useRouter()
 
   const fetchDashboardData = useCallback(async (userIdParam?: string) => {
@@ -539,6 +540,21 @@ export default function DashboardPage() {
     }
   }, [userId])
 
+  // Fetch open support tickets count for admins
+  const fetchOpenTicketsCount = useCallback(async () => {
+    try {
+      const { count, error } = await supabase
+        .from('support_tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'open')
+
+      if (error) throw error
+      setOpenTicketsCount(count || 0)
+    } catch (error) {
+      console.error('Error fetching open tickets count:', error)
+    }
+  }, [])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -552,11 +568,16 @@ export default function DashboardPage() {
       const role = await getUserRole()
       setUserRole(role)
 
+      // Fetch open tickets count if admin
+      if (role === 'Admin') {
+        fetchOpenTicketsCount()
+      }
+
       // Call fetch functions directly with the ID
       fetchDashboardData(id)
     }
     initUser()
-  }, [router, fetchDashboardData])
+  }, [router, fetchDashboardData, fetchOpenTicketsCount])
 
   // Separate effect for team data that depends on userId being set
   useEffect(() => {
@@ -601,10 +622,17 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
             {userRole === 'Admin' && (
-              <span className="px-3 py-1 bg-purple-900/50 dark:bg-purple-900/30 text-purple-300 dark:text-purple-200 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-700 dark:border-purple-600">
-                <Shield size={14} />
-                Admin
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-purple-900/50 dark:bg-purple-900/30 text-purple-300 dark:text-purple-200 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-700 dark:border-purple-600">
+                  <Shield size={14} />
+                  Admin
+                </span>
+                {openTicketsCount > 0 && (
+                  <span className="px-2 py-1 bg-red-500 dark:bg-red-600 text-white text-xs font-bold rounded-full flex items-center gap-1 min-w-[24px] justify-center">
+                    {openTicketsCount}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
