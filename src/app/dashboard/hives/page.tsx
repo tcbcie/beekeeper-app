@@ -679,14 +679,13 @@ export default function HivesPage() {
         }
       }
 
-      // Validate queen assignment: check if queen is already assigned to another active hive
+      // Validate queen assignment: check if queen is already assigned to another active hive (including shared hives)
       if (dataToSubmit.queen_id) {
         const { data: existingHives, error: checkError } = await supabase
           .from('hives')
-          .select('id, hive_number, apiaries(name)')
+          .select('id, hive_number, apiaries(name), user_id')
           .eq('queen_id', dataToSubmit.queen_id)
           .eq('status', 'active')
-          .eq('user_id', userId)
 
         if (checkError) {
           throw new Error('Failed to validate queen assignment')
@@ -702,8 +701,9 @@ export default function HivesPage() {
           const apiaryText = apiaryName || 'Unknown apiary'
           const selectedQueen = queens.find(q => q.id === dataToSubmit.queen_id)
           const queenName = selectedQueen?.queen_number || 'this queen'
+          const ownership = hive.user_id === userId ? 'your' : 'a team member\'s'
 
-          alert(`Cannot assign queen: ${queenName} is already assigned to active hive "${hive.hive_number}" at ${apiaryText}.\n\nA queen can only be in one active hive at a time.`)
+          alert(`Cannot assign queen: ${queenName} is already assigned to ${ownership} active hive "${hive.hive_number}" at ${apiaryText}.\n\nA queen can only be in one active hive at a time.`)
           return
         }
       }
