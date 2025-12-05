@@ -49,6 +49,8 @@ interface Batch {
   notes: string | null
   enable_browser_notifications: boolean
   enable_email_digest: boolean
+  enable_batch_event_reminders?: boolean
+  batch_reminder_minutes_before?: number
   queens?: {
     queen_number: string
   } | null
@@ -77,6 +79,8 @@ interface FormData {
   notes: string
   enable_browser_notifications: boolean
   enable_email_digest: boolean
+  enable_batch_event_reminders: boolean
+  batch_reminder_minutes_before: string
 }
 
 interface Inspection {
@@ -189,6 +193,8 @@ export default function BatchesPage() {
     notes: '',
     enable_browser_notifications: false,
     enable_email_digest: false,
+    enable_batch_event_reminders: false,
+    batch_reminder_minutes_before: '60',
   })
 
   const fetchBatches = useCallback(async (userIdParam?: string) => {
@@ -418,6 +424,8 @@ export default function BatchesPage() {
         notes: formData.notes || null,
         enable_browser_notifications: formData.enable_browser_notifications,
         enable_email_digest: formData.enable_email_digest,
+        enable_batch_event_reminders: formData.enable_batch_event_reminders,
+        batch_reminder_minutes_before: formData.batch_reminder_minutes_before ? parseInt(formData.batch_reminder_minutes_before) : 60,
       }
 
       if (editingBatch) {
@@ -465,6 +473,8 @@ export default function BatchesPage() {
       notes: batch.notes || '',
       enable_browser_notifications: batch.enable_browser_notifications || false,
       enable_email_digest: batch.enable_email_digest || false,
+      enable_batch_event_reminders: batch.enable_batch_event_reminders || false,
+      batch_reminder_minutes_before: batch.batch_reminder_minutes_before?.toString() || '60',
     })
     setShowForm(true)
   }
@@ -1073,6 +1083,41 @@ export default function BatchesPage() {
                       Receive a weekly summary of upcoming dates for this batch
                     </span>
                   </label>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="batch-event-reminders"
+                      checked={formData.enable_batch_event_reminders}
+                      onChange={(e) => setFormData({...formData, enable_batch_event_reminders: e.target.checked})}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="batch-event-reminders" className="ml-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                      Enable Email Reminders for Batch Events
+                      <span className="block text-xs font-normal text-amber-700 dark:text-amber-300 mt-0.5">
+                        Send individual email reminders for all auto-created batch events (acceptance check, cage dates, emergence)
+                      </span>
+                    </label>
+                  </div>
+
+                  {formData.enable_batch_event_reminders && (
+                    <div className="ml-6 flex items-center gap-2">
+                      <label htmlFor="batch-reminder-minutes" className="text-sm text-amber-900 dark:text-amber-200">
+                        Remind me (minutes before):
+                      </label>
+                      <input
+                        type="number"
+                        id="batch-reminder-minutes"
+                        value={formData.batch_reminder_minutes_before}
+                        onChange={(e) => setFormData({...formData, batch_reminder_minutes_before: e.target.value})}
+                        min="0"
+                        step="15"
+                        className="w-24 px-3 py-1 border border-sage-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-foreground"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
