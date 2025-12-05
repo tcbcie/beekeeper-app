@@ -680,28 +680,26 @@ export default function HivesPage() {
       }
 
       // Validate queen assignment: check if queen is already assigned to another active hive (including shared hives)
+      // Use RPC function to bypass RLS and check ALL hives in the system
       if (dataToSubmit.queen_id) {
-        const { data: existingHives, error: checkError } = await supabase
-          .from('hives')
-          .select('id, hive_number, apiaries(name), user_id')
-          .eq('queen_id', dataToSubmit.queen_id)
-          .eq('status', 'active')
+        const { data: assignedHive, error: checkError } = await supabase
+          .rpc('check_queen_assignment', {
+            p_queen_id: dataToSubmit.queen_id,
+            p_exclude_hive_id: editingHive?.id || null
+          })
 
         if (checkError) {
+          console.error('Queen assignment check error:', checkError)
           throw new Error('Failed to validate queen assignment')
         }
 
-        // Filter out the current hive being edited (if editing)
-        const otherHives = existingHives?.filter(h => h.id !== editingHive?.id) || []
-
-        if (otherHives.length > 0) {
-          const hive = otherHives[0]
-          const apiaryData = hive.apiaries as { name: string } | { name: string }[] | null
-          const apiaryName = Array.isArray(apiaryData) ? apiaryData[0]?.name : apiaryData?.name
-          const apiaryText = apiaryName || 'Unknown apiary'
+        // If the function returns a row, the queen is already assigned
+        if (assignedHive && assignedHive.length > 0) {
+          const hive = assignedHive[0]
+          const apiaryText = hive.apiary_name || 'Unknown apiary'
           const selectedQueen = queens.find(q => q.id === dataToSubmit.queen_id)
           const queenName = selectedQueen?.queen_number || 'this queen'
-          const ownership = hive.user_id === userId ? 'your' : 'a team member\'s'
+          const ownership = hive.hive_owner_id === userId ? 'your' : 'a team member\'s'
 
           alert(`Cannot assign queen: ${queenName} is already assigned to ${ownership} active hive "${hive.hive_number}" at ${apiaryText}.\n\nA queen can only be in one active hive at a time.`)
           return
