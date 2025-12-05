@@ -195,6 +195,7 @@ export default function QueensPage() {
           if (!queen.id) return queen
 
           // Find hive that has this queen (either my hive or shared hive)
+          // Include all hives regardless of status (Active, Weak, Queenless, etc.)
           const { data: hiveData, error: hiveError } = await supabase
             .from('hives')
             .select(`
@@ -205,7 +206,6 @@ export default function QueensPage() {
               )
             `)
             .eq('queen_id', queen.id)
-            .ilike('status', 'active')
             .maybeSingle()
 
           if (hiveError) {
