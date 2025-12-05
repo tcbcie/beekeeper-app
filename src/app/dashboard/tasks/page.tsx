@@ -603,6 +603,11 @@ export default function TasksEventsPage() {
                           {getCategoryLabel(task.category)}
                         </span>
                       )}
+                      {task.reminder_enabled && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          📧 Email Reminder
+                        </span>
+                      )}
                       {task.is_team_task && (
                         <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                           Team Task
