@@ -142,10 +142,54 @@ async function getUpcomingReminders(supabase: any, frequency: string): Promise<M
 
     // Check if we should send reminder now
     if (hoursUntil <= reminderHours && hoursUntil >= 0) {
+      // Always add to task creator
       if (!eventsByUser.has(event.user_id)) {
         eventsByUser.set(event.user_id, [])
       }
       eventsByUser.get(event.user_id)!.push(event)
+
+      // If task is associated with a hive, check if it's shared
+      if (event.hive_id) {
+        // Get hive to check if it's shared
+        const { data: hive } = await supabase
+          .from('hives')
+          .select('user_id, is_shared')
+          .eq('id', event.hive_id)
+          .single()
+
+        // If hive is shared, get all team members with access
+        if (hive && hive.is_shared) {
+          const { data: teamAccess } = await supabase
+            .from('team_hive_access')
+            .select('team_member_id')
+            .eq('hive_id', event.hive_id)
+
+          // Add task to all team members' reminder lists
+          if (teamAccess) {
+            for (const access of teamAccess) {
+              if (!eventsByUser.has(access.team_member_id)) {
+                eventsByUser.set(access.team_member_id, [])
+              }
+              // Only add if not already in the list (to avoid duplicates)
+              const userEvents = eventsByUser.get(access.team_member_id)!
+              if (!userEvents.find(e => e.id === event.id)) {
+                userEvents.push(event)
+              }
+            }
+          }
+
+          // Also add to hive owner if not already included
+          if (hive.user_id !== event.user_id) {
+            if (!eventsByUser.has(hive.user_id)) {
+              eventsByUser.set(hive.user_id, [])
+            }
+            const ownerEvents = eventsByUser.get(hive.user_id)!
+            if (!ownerEvents.find(e => e.id === event.id)) {
+              ownerEvents.push(event)
+            }
+          }
+        }
+      }
     }
   }
 

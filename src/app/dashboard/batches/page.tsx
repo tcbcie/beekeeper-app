@@ -1152,7 +1152,7 @@ export default function BatchesPage() {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-surface dark:bg-surface rounded-lg shadow overflow-hidden">
+          <div className="hidden md:block bg-surface dark:bg-surface rounded-lg shadow overflow-x-auto">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-sage-50 dark:bg-slate-800">
             <tr>
