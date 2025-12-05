@@ -514,12 +514,50 @@ export default function HivesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data, error } = await supabase
+    // Get shared apiary IDs
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', currentUserId)
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaryIds: string[] = []
+    if (teamIds.length > 0) {
+      const { data: sharedApiaries } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
+    }
+
+    // Get hives from shared apiaries to find their queens
+    let sharedQueenIds: string[] = []
+    if (sharedApiaryIds.length > 0) {
+      const { data: sharedHives } = await supabase
+        .from('hives')
+        .select('queen_id')
+        .in('apiary_id', sharedApiaryIds)
+        .not('queen_id', 'is', null)
+        .neq('user_id', currentUserId)
+
+      sharedQueenIds = sharedHives?.map(h => h.queen_id).filter(Boolean) as string[] || []
+    }
+
+    // Fetch my queens + queens from shared apiaries
+    let queensQuery = supabase
       .from('queens')
       .select('id, queen_number')
       .eq('status', 'active')
-      .eq('user_id', currentUserId)
-      .order('queen_number')
+
+    if (sharedQueenIds.length > 0) {
+      queensQuery = queensQuery.or(`user_id.eq.${currentUserId},id.in.(${sharedQueenIds.join(',')})`)
+    } else {
+      queensQuery = queensQuery.eq('user_id', currentUserId)
+    }
+
+    const { data, error } = await queensQuery.order('queen_number')
 
     if (!error && data) {
       setQueens(data as Queen[])
