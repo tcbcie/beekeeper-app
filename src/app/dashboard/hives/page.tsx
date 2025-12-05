@@ -1224,9 +1224,18 @@ export default function HivesPage() {
                 className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
               >
                 <option value="">Record manual</option>
-                {queens.map((q) => (
-                  <option key={q.id} value={q.id}>{q.queen_number}</option>
-                ))}
+                {queens
+                  .filter(q => {
+                    // Show unassigned queens OR the queen currently assigned to this hive (if editing)
+                    const isAssignedToOtherHive = hives.some(h =>
+                      h.queen_id === q.id && h.id !== editingHive?.id
+                    )
+                    return !isAssignedToOtherHive
+                  })
+                  .map((q) => (
+                    <option key={q.id} value={q.id}>{q.queen_number}</option>
+                  ))
+                }
               </select>
             </div>
 
