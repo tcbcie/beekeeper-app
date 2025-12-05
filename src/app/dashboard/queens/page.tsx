@@ -164,7 +164,9 @@ export default function QueensPage() {
         .in('id', sharedApiaryIds)
         .neq('user_id', currentUserId)
 
-      sharedUserIds = [...new Set(sharedApiaries?.map(a => a.user_id).filter(Boolean) as string[])] || []
+      sharedUserIds = sharedApiaries
+        ? [...new Set(sharedApiaries.map(a => a.user_id).filter(Boolean) as string[])]
+        : []
     }
 
     // Fetch my queens + queens from users who share apiaries with me
