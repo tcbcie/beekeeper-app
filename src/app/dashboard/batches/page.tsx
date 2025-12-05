@@ -679,6 +679,8 @@ export default function BatchesPage() {
       notes: '',
       enable_browser_notifications: false,
       enable_email_digest: false,
+      enable_batch_event_reminders: false,
+      batch_reminder_minutes_before: '60',
     })
   }
 
