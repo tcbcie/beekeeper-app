@@ -904,12 +904,12 @@ export default function HiveDetailPage() {
             <div className="space-y-3">
               {varroaTreatments.map((treatment) => (
                 <div key={treatment.id} className="border border-border rounded-lg p-4 hover:bg-sage-50 dark:hover:bg-slate-800/50">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
                       <span className="font-medium text-foreground">
                         {new Date(treatment.treatment_date).toLocaleDateString()}
                       </span>
-                      <span className="ml-3 text-sm font-medium text-red-400">{treatment.treatment_type}</span>
+                      <span className="text-sm font-medium text-red-400">{treatment.treatment_type}</span>
                     </div>
                     {treatment.dosage && (
                       <span className="text-sm text-text-tertiary">Dosage: {treatment.dosage}</span>
