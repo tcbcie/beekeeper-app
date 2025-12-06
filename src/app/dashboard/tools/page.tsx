@@ -150,34 +150,6 @@ export default function ToolsPage() {
 
                 {/* Results Grid */}
                 <div className="grid md:grid-cols-2 gap-6">
-                  {/* 3:2 Ratio */}
-                  <div className="bg-blue-50 dark:bg-blue-950/20 p-5 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                      3:2 Ratio
-                    </h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                      Standard winter feeding
-                    </p>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center pb-2 border-b border-blue-200 dark:border-blue-800">
-                        <span className="text-sm text-blue-800 dark:text-blue-200">Water needed:</span>
-                        <span className="font-semibold text-blue-900 dark:text-blue-100">{ratio32.water} L</span>
-                      </div>
-                      <div className="flex justify-between items-center pb-2 border-b border-blue-200 dark:border-blue-800">
-                        <span className="text-sm text-blue-800 dark:text-blue-200">Total solution:</span>
-                        <span className="font-semibold text-blue-900 dark:text-blue-100">{ratio32.totalSolution} L</span>
-                      </div>
-                      <div className="flex justify-between items-center pb-2 border-b border-blue-200 dark:border-blue-800">
-                        <span className="text-sm text-blue-800 dark:text-blue-200">Theoretical stored:</span>
-                        <span className="font-semibold text-blue-900 dark:text-blue-100">{ratio32.theoreticalStored} kg</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Actually stored:</span>
-                        <span className="font-bold text-lg text-blue-900 dark:text-blue-100">{ratio32.actualStored} kg</span>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* 1:1 Ratio */}
                   <div className="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-lg border border-amber-200 dark:border-amber-800">
                     <h4 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-1">
@@ -202,6 +174,34 @@ export default function ToolsPage() {
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Actually stored:</span>
                         <span className="font-bold text-lg text-amber-900 dark:text-amber-100">{ratio11.actualStored} kg</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3:2 Ratio */}
+                  <div className="bg-blue-50 dark:bg-blue-950/20 p-5 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                      3:2 Ratio
+                    </h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                      Standard winter feeding
+                    </p>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center pb-2 border-b border-blue-200 dark:border-blue-800">
+                        <span className="text-sm text-blue-800 dark:text-blue-200">Water needed:</span>
+                        <span className="font-semibold text-blue-900 dark:text-blue-100">{ratio32.water} L</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-2 border-b border-blue-200 dark:border-blue-800">
+                        <span className="text-sm text-blue-800 dark:text-blue-200">Total solution:</span>
+                        <span className="font-semibold text-blue-900 dark:text-blue-100">{ratio32.totalSolution} L</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-2 border-b border-blue-200 dark:border-blue-800">
+                        <span className="text-sm text-blue-800 dark:text-blue-200">Theoretical stored:</span>
+                        <span className="font-semibold text-blue-900 dark:text-blue-100">{ratio32.theoreticalStored} kg</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Actually stored:</span>
+                        <span className="font-bold text-lg text-blue-900 dark:text-blue-100">{ratio32.actualStored} kg</span>
                       </div>
                     </div>
                   </div>
