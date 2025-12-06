@@ -209,6 +209,8 @@ export default function HiveDetailPage() {
       setIsOwner(hiveData.user_id === currentUserId)
 
       // Fetch all records for this hive
+      // Note: RLS policies handle access control via can_access_hive()
+      // No user_id filter needed - team members should see all records for shared hives
       const [
         { data: inspectionsData },
         { data: varroaChecksData },
@@ -221,31 +223,26 @@ export default function HiveDetailPage() {
           .from('inspections')
           .select('*')
           .eq('hive_id', hiveId)
-          .eq('user_id', currentUserId)
           .order('inspection_date', { ascending: false }),
         supabase
           .from('varroa_checks')
           .select('*')
           .eq('hive_id', hiveId)
-          .eq('user_id', currentUserId)
           .order('check_date', { ascending: false }),
         supabase
           .from('varroa_treatments')
           .select('*')
           .eq('hive_id', hiveId)
-          .eq('user_id', currentUserId)
           .order('treatment_date', { ascending: false }),
         supabase
           .from('feedings')
           .select('*')
           .eq('hive_id', hiveId)
-          .eq('user_id', currentUserId)
           .order('feed_date', { ascending: false }),
         supabase
           .from('harvests')
           .select('*')
           .eq('hive_id', hiveId)
-          .eq('user_id', currentUserId)
           .order('harvest_date', { ascending: false }),
         supabase
           .from('tasks_events')
