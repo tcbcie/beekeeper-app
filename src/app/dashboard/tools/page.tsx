@@ -325,6 +325,8 @@ export default function ToolsPage() {
                   <h5 className="font-semibold text-green-900 dark:text-green-100 mb-2">Important Notes:</h5>
                   <ul className="space-y-1 text-sm text-green-800 dark:text-green-200">
                     <li>• Mix ingredients thoroughly until you get a dough-like consistency</li>
+                    <li>• DO NOT add any more water even though the dough might appear dry - the recipe is precise</li>
+                    <li>• This recipe is particularly used for setting up Apideas (mating nucs)</li>
                     <li>• Store fondant in airtight containers to prevent drying</li>
                     <li>• Place fondant directly above the cluster for easy access</li>
                     <li>• Best used for winter feeding or emergency feeding situations</li>
