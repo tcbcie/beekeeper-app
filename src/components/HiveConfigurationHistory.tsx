@@ -141,7 +141,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
   }, [fetchHistory])
 
   const formatFieldValue = (key: string, value: unknown): string => {
-    if (value === null || value === undefined) return 'None'
+    if (value === null || value === undefined || value === '') return 'None'
 
     switch (key) {
       case 'hive_size':
