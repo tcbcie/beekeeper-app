@@ -1153,6 +1153,7 @@ export default function InspectionsPage() {
                           typeParam as 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest' | 'archive'
 
         const currentDate = new Date().toISOString().split('T')[0]
+        const currentDateTime = new Date().toISOString().slice(0, 16)
 
         // Set the appropriate form data based on type
         if (mappedType === 'archive') {
@@ -1186,7 +1187,7 @@ export default function InspectionsPage() {
           setEditingCheck({
             id: '',
             hive_id: hiveParam,
-            check_date: currentDate,
+            check_date: currentDateTime,
             method: '',
             mites_count: null,
             sample_size: null,
@@ -1579,6 +1580,42 @@ export default function InspectionsPage() {
           .insert([{ ...submitData, user_id: userId }])
 
         if (error) throw error
+      }
+
+      // If action threshold is reached, create a treatment task
+      if (editingCheck.action_threshold_reached && !editingCheck.id) {
+        const selectedHive = hives.find(h => h.id === editingCheck.hive_id)
+        const taskDate = new Date()
+        taskDate.setDate(taskDate.getDate() + 1) // Schedule for 24 hours later
+
+        const taskData = {
+          user_id: userId,
+          title: `Treat hive ${selectedHive?.hive_number || 'Unknown'} for varroa`,
+          description: `Action threshold reached on varroa check. Infestation rate: ${editingCheck.infestation_rate?.toFixed(2)}%`,
+          event_type: 'task',
+          category: 'Treatment',
+          priority: 'high',
+          start_date: taskDate.toISOString().split('T')[0],
+          start_time: '09:00',
+          end_date: null,
+          end_time: null,
+          all_day: false,
+          hive_id: editingCheck.hive_id,
+          apiary_id: selectedHive?.apiary_id || null,
+          batch_id: null,
+          reminder_enabled: true,
+          reminder_minutes_before: 60,
+          notes: `Auto-created from varroa check with ${editingCheck.method} method`,
+          completed: false
+        }
+
+        const { error: taskError } = await supabase
+          .from('tasks_events')
+          .insert([taskData])
+
+        if (taskError) {
+          console.error('Error creating treatment task:', taskError)
+        }
       }
 
       fetchVarroaChecks()
@@ -2244,7 +2281,7 @@ export default function InspectionsPage() {
                       id: '',
                       hive_id: '',
                       user_id: userId || '',
-                      check_date: new Date().toISOString().split('T')[0],
+                      check_date: new Date().toISOString().slice(0, 16),
                       method: '',
                       mites_count: null,
                       sample_size: null,
@@ -4743,9 +4780,9 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Check Date *</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Check Date & Time *</label>
               <input
-                type="date"
+                type="datetime-local"
                 value={editingCheck?.check_date || ''}
                 onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, check_date: e.target.value} : null)}
                 className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
@@ -4972,6 +5009,25 @@ export default function InspectionsPage() {
               />
             </div>
           </form>
+          <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full sm:w-auto sm:justify-end">
+            <button
+              type="submit"
+              form="check-form"
+              className="px-6 py-3 sm:py-2 min-h-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 transition-all touch-manipulation font-medium"
+            >
+              {editingCheck ? 'Update' : 'Save'} Check
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false)
+                setEditingCheck(null)
+              }}
+              className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
@@ -5774,7 +5830,10 @@ export default function InspectionsPage() {
                   <div className="flex gap-1 flex-shrink-0">
                     <button
                       onClick={() => {
-                        setEditingCheck(check)
+                        setEditingCheck({
+                          ...check,
+                          check_date: check.check_date.slice(0, 16)
+                        })
                         setFormType('varroa_check')
                         setShowForm(true)
                         // Scroll to the top where the form is
