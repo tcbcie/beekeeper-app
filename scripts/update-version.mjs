@@ -369,7 +369,10 @@ if (!verifyOnly) {
   console.log('║          Next Steps                    ║');
   console.log('╚════════════════════════════════════════╝\n');
   console.log('📝 Don\'t forget to:');
-  console.log('   1. Update the changelog in src/app/dashboard/about/page.tsx');
+  console.log('   1. ⚠️  IMPORTANT: Update changelog database entries:');
+  console.log(`      node scripts/add-changelog.mjs ${newVersion} <type> <title> <description>`);
+  console.log('      Types: feature, bugfix, improvement, documentation');
+  console.log('      Or extract from git: node scripts/extract-git-changelog.mjs');
   console.log('   2. Test the build: npm run build');
   console.log('   3. Review changes: git diff');
   console.log(`   4. Commit: git add . && git commit -m "chore: update to v${newVersion}"`);
