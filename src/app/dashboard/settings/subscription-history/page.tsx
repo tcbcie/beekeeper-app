@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Search, Calendar, CreditCard, DollarSign, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Search, Calendar, CreditCard, Euro, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -124,7 +124,7 @@ export default function SubscriptionHistoryPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IE', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount)
@@ -269,7 +269,7 @@ export default function SubscriptionHistoryPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                         <div className="flex items-center gap-1">
-                          <DollarSign size={14} className="text-text-tertiary" />
+                          <Euro size={14} className="text-text-tertiary" />
                           {formatCurrency(record.price_paid)}
                         </div>
                       </td>
