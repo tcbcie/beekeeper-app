@@ -1,7 +1,7 @@
 // Service Worker for Browser Push Notifications and Offline Support
 // Handles notification display, click events, and offline caching
 
-const CACHE_NAME = 'hivecraic-v1.4.11'
+const CACHE_NAME = 'hivecraic-v1.4.12'
 const OFFLINE_URLS = [
   '/',
   '/login',
@@ -73,29 +73,6 @@ self.addEventListener('message', (event) => {
       requireInteraction: false,
       vibrate: [200, 100, 200],
     })
-  }
-})
-
-// Background Sync handler for offline data synchronization
-self.addEventListener('sync', (event) => {
-  console.log('Background sync event triggered:', event.tag)
-
-  if (event.tag === 'sync-data') {
-    event.waitUntil(
-      // Notify all clients to trigger sync
-      self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({
-            type: 'BACKGROUND_SYNC',
-            tag: event.tag
-          })
-        })
-      }).then(() => {
-        console.log('Background sync notification sent to clients')
-      }).catch((error) => {
-        console.error('Background sync failed:', error)
-      })
-    )
   }
 })
 
