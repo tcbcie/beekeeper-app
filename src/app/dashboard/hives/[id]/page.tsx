@@ -791,7 +791,7 @@ export default function HiveDetailPage() {
             ) : (
               <Link
                 href={`/dashboard/records?hive=${hiveId}&type=archive`}
-                className="bg-sage-200 dark:bg-gray-600 text-foreground dark:text-white p-4 rounded-lg hover:bg-sage-300 dark:hover:bg-gray-700 text-center border-2 border-border"
+                className="bg-sage-200 dark:bg-slate-700 text-foreground p-4 rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 text-center border-2 border-border"
               >
                 <Archive className="mx-auto mb-2" size={24} />
                 <div className="font-medium text-sm">Archive Hive</div>

@@ -205,7 +205,7 @@ function AcceptInvitationContent() {
               <CheckCircle size={64} className="mx-auto text-green-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Success!</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+              <p className="text-sm text-text-tertiary">Redirecting to dashboard...</p>
             </>
           )}
 
@@ -238,7 +238,7 @@ function AcceptInvitationContent() {
                   <li>Return to this invitation link to join the team</li>
                 </ol>
               </div>
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-xs text-text-tertiary mb-4">
                 Important: You must use the email address <strong>{invitedEmail}</strong> when signing up.
               </p>
               <div className="space-y-3">
@@ -250,7 +250,7 @@ function AcceptInvitationContent() {
                 </button>
                 <button
                   onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
-                  className="w-full px-6 py-2 bg-gray-100 text-text-secondary rounded-lg hover:bg-gray-200 font-medium"
+                  className="w-full px-6 py-2 bg-sage-100 dark:bg-slate-700 text-text-secondary rounded-lg hover:bg-sage-200 dark:hover:bg-slate-600 font-medium"
                 >
                   Already have an account? Sign In
                 </button>
@@ -263,7 +263,7 @@ function AcceptInvitationContent() {
               <XCircle size={64} className="mx-auto text-orange-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Invitation Expired</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-text-tertiary mb-4">
                 Please contact the team owner to send you a new invitation.
               </p>
               <button

@@ -6128,11 +6128,11 @@ export default function InspectionsPage() {
           } else if (record.record_type === 'archive') {
             const archiveRecord = record
             return (
-              <div key={`archive-${archiveRecord.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-gray-500">
+              <div key={`archive-${archiveRecord.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-sage-500 dark:border-slate-500">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-start gap-3 flex-1">
                     {/* Icon Badge */}
-                    <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="w-12 h-12 flex-shrink-0 bg-sage-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
                       <Archive size={24} className="text-text-tertiary" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -6195,7 +6195,7 @@ export default function InspectionsPage() {
                 setImageModalOpen(false)
                 setModalImageUrl(null)
               }}
-              className="absolute top-4 right-4 z-10 bg-surface dark:bg-surface-elevated rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
+              className="absolute top-4 right-4 z-10 bg-surface dark:bg-surface-elevated rounded-full p-2 hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors shadow-lg"
               aria-label="Close modal"
             >
               <X size={24} className="text-text-secondary" />

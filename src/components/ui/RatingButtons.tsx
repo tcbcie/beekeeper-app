@@ -21,7 +21,7 @@ export default function RatingButtons({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-text-secondary">
         {label}: {value === 0 ? 'Not Recorded' : renderStars(value)}
       </label>
 
@@ -35,7 +35,7 @@ export default function RatingButtons({
             className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
               value === rating
                 ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
             }`}
             aria-label={`Rate ${rating} stars`}
           >
@@ -48,8 +48,8 @@ export default function RatingButtons({
             onClick={() => onChange(0)}
             className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
               value === 0
-                ? 'bg-gray-500 text-white shadow-lg ring-2 ring-gray-400'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                ? 'bg-sage-500 dark:bg-slate-500 text-white shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
+                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
             }`}
             aria-label="Not recorded"
           >
@@ -59,7 +59,7 @@ export default function RatingButtons({
       </div>
 
       {helpText && (
-        <p className="text-xs text-gray-500 mt-2">{helpText}</p>
+        <p className="text-xs text-text-tertiary mt-2">{helpText}</p>
       )}
     </div>
   )

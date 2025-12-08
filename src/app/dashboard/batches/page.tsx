@@ -1061,7 +1061,7 @@ export default function BatchesPage() {
                     id="browser-notifications"
                     checked={formData.enable_browser_notifications}
                     onChange={(e) => setFormData({...formData, enable_browser_notifications: e.target.checked})}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
                   />
                   <label htmlFor="browser-notifications" className="ml-2 text-sm text-amber-900 dark:text-amber-200">
                     Send Browser Notifications for This Batch
@@ -1077,7 +1077,7 @@ export default function BatchesPage() {
                     id="email-digest"
                     checked={formData.enable_email_digest}
                     onChange={(e) => setFormData({...formData, enable_email_digest: e.target.checked})}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
                   />
                   <label htmlFor="email-digest" className="ml-2 text-sm text-amber-900 dark:text-amber-200">
                     Include This Batch in Weekly Email Digest
@@ -1094,7 +1094,7 @@ export default function BatchesPage() {
                       id="batch-event-reminders"
                       checked={formData.enable_batch_event_reminders}
                       onChange={(e) => setFormData({...formData, enable_batch_event_reminders: e.target.checked})}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-blue-600 border-border rounded focus:ring-blue-500"
                     />
                     <label htmlFor="batch-event-reminders" className="ml-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
                       Enable Email Reminders for Batch Events

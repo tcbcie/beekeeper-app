@@ -1792,7 +1792,7 @@ export default function HivesPage() {
 
                   {/* Queen Excluder - always directly above brood boxes if present */}
                   {hive.configuration.queen_excluder && (
-                    <div className="w-full h-3 bg-slate-300 dark:bg-gray-400 border-2 border-slate-500 dark:border-gray-600 rounded flex items-center justify-center text-xs font-bold">
+                    <div className="w-full h-3 bg-slate-300 dark:bg-slate-500 border-2 border-slate-500 dark:border-slate-600 rounded flex items-center justify-center text-xs font-bold">
                       ═══
                     </div>
                   )}
@@ -1833,7 +1833,7 @@ export default function HivesPage() {
 
                   {/* Varroa Mesh Floor - always at the very bottom with feet */}
                   <div className="w-full relative">
-                    <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-slate-200 dark:bg-gray-200' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
+                    <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-slate-200 dark:bg-slate-400' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
                       {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
                     </div>
                     {/* Hive stand feet */}
