@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { CloudOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
 import { syncManager } from '@/lib/sync-manager'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,6 +10,7 @@ export default function PendingSyncIndicator() {
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<{ success: number; failed: number } | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const syncingRef = useRef(false) // Ref to prevent race conditions
 
   const checkPendingCount = useCallback(async () => {
     if (!userId) return
@@ -18,8 +19,10 @@ export default function PendingSyncIndicator() {
   }, [userId])
 
   const handleManualSync = useCallback(async () => {
-    if (!navigator.onLine || syncing || !userId) return
+    // Use ref for immediate check to prevent race conditions
+    if (!navigator.onLine || syncingRef.current || !userId) return
 
+    syncingRef.current = true
     setSyncing(true)
     setSyncResult(null)
     setShowResult(false)
@@ -37,9 +40,10 @@ export default function PendingSyncIndicator() {
     } catch (error) {
       console.error('Manual sync failed:', error)
     } finally {
+      syncingRef.current = false
       setSyncing(false)
     }
-  }, [syncing, userId, checkPendingCount])
+  }, [userId, checkPendingCount])
 
   useEffect(() => {
     checkPendingCount()

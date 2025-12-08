@@ -128,12 +128,14 @@ export default function DashboardPage() {
   const [mySharedTeamMembers, setMySharedTeamMembers] = useState<TeamMember[]>([])
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
   const [openTicketsCount, setOpenTicketsCount] = useState<number>(0)
+  const [dashboardError, setDashboardError] = useState<string | null>(null)
   const router = useRouter()
 
   const fetchDashboardData = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    setDashboardError(null)
     try {
       // Fetch all stats in parallel
       const [apiariesRes, hivesRes, inspectionsRes] = await Promise.all([
@@ -225,6 +227,7 @@ export default function DashboardPage() {
       setRecentActivity(merged.slice(0, 5))
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      setDashboardError('Unable to load dashboard data. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -833,8 +836,19 @@ export default function DashboardPage() {
               </div>
             )
           })}
-          {recentActivity.length === 0 && (
+          {recentActivity.length === 0 && !dashboardError && (
             <p className="text-text-secondary text-center py-4">No recent activity</p>
+          )}
+          {dashboardError && (
+            <div className="text-center py-4">
+              <p className="text-red-600 dark:text-red-400 mb-2">{dashboardError}</p>
+              <button
+                onClick={() => userId && fetchDashboardData(userId)}
+                className="text-sm text-forest-600 dark:text-forest-400 hover:underline"
+              >
+                Try again
+              </button>
+            </div>
           )}
         </div>
       </div>
