@@ -1,59 +1,77 @@
-# Offline Functionality Cleanup
+# GDD (Growing Degree Days) Tracking Feature
 
-## Task: Remove unused offline code (Option B)
+## Status: COMPLETED
+
+## Overview
+Added a new tool under the Tools section to track Growing Degree Days (GDD) for vegetation blooming periods per apiary.
 
 ## Completed Items
-- [x] Remove useOfflineData hook
-- [x] Remove offline-db.ts
-- [x] Remove sync-manager.ts
-- [x] Remove PendingSyncIndicator component
-- [x] Remove PendingSyncIndicator from layout
-- [x] Clean up service worker (remove background sync handler)
-- [x] Update CLAUDE.md documentation
-- [x] Remove OFFLINE_FEATURES.md and OFFLINE_SETUP.md
-- [x] Verify build passes
+
+- [x] Create database migration for `gdd_records` table
+- [x] Add `vegetation_type` dropdown category with 16 vegetation types
+- [x] Create GDDTracker component with full CRUD functionality
+- [x] Add GDD tool to Tools page
+- [x] Implement GDD calculation using Open-Meteo historical weather API
+- [x] Add sharing toggle with privacy hint
+- [x] Add gdd_records to user data exports (JSON & CSV)
+- [x] Add gdd_records to admin export fallback list
+- [x] Add gdd_records to settings page export list
 
 ## Review Section
 
-### Summary of Changes
+### Files Created
+- `src/components/tools/GDDTracker.tsx` - Main GDD tracking component
 
-**Files Deleted:**
-- `src/hooks/useOfflineData.ts` - Unused offline data hook
-- `src/lib/offline-db.ts` - IndexedDB wrapper (never used)
-- `src/lib/sync-manager.ts` - Sync queue manager (never used)
-- `src/components/PendingSyncIndicator.tsx` - UI component for sync status
-- `MD/OFFLINE_FEATURES.md` - Outdated documentation
-- `MD/OFFLINE_SETUP.md` - Outdated documentation
+### Files Modified
+- `src/app/dashboard/tools/page.tsx` - Added GDD Tracking tool card
+- `src/app/dashboard/profile/page.tsx` - Added gdd_records to JSON & CSV exports
+- `src/app/api/admin/export-all-data/route.ts` - Added gdd_records to fallback table list
+- `src/app/dashboard/settings/page.tsx` - Added gdd_records to SQL export list
 
-**Files Modified:**
-- `src/app/dashboard/layout.tsx` - Removed PendingSyncIndicator import and usage
-- `public/service-worker.js` - Removed background sync event handler
-- `.claude/CLAUDE.md` - Updated to reflect current state (no offline data support)
+### Database Changes
+1. Created `gdd_records` table with:
+   - Foreign keys to apiaries and dropdown_values
+   - RLS policies for user access and shared data viewing
+   - Unique constraint per apiary/vegetation/year
 
-### Rationale
+2. Added `vegetation_type` dropdown category with 16 initial values:
+   - Oil Seed Rape (Canola), Clover (White/Red), Hawthorn, Blackberry
+   - Heather, Ivy, Dandelion, Apple Blossom, Cherry Blossom
+   - Lime (Linden), Willow, Sycamore, Horse Chestnut, Field Bean, Borage
 
-The offline functionality infrastructure existed but was **never integrated** into the actual UI components:
-- All dashboard pages made direct Supabase calls
-- The `useOfflineData` hook was never imported anywhere
-- This was essentially dead code adding maintenance burden
+### Features Implemented
+1. **Add GDD Record Form**
+   - Apiary selector (only shows apiaries with eircode)
+   - Vegetation type dropdown (from dropdown_values)
+   - Start/End date pickers
+   - Notes field
+   - Sharing toggle with privacy hint
 
-### What Remains
+2. **GDD Calculation**
+   - Uses Open-Meteo Archive API for historical weather data
+   - Base temperature: 10°C
+   - Formula: GDD = sum(max(0, (Tmax + Tmin) / 2 - 10))
+   - Triggered when end date is set
 
-- **Service Worker** - Still handles PWA installation, page caching, and push notifications
-- **OfflineIndicator** - Shows when user is offline (visual indicator only)
-- **Push Notifications** - Still fully functional
+3. **Records Table**
+   - Shows year, apiary, vegetation, dates, GDD value
+   - Share toggle per record
+   - Delete functionality
+   - "Calculate" button for records without GDD value
 
-### Impact
-
-- Reduced codebase complexity
-- Removed ~500 lines of unused code
-- Build still passes with no errors
-- App behavior unchanged (offline data never worked anyway)
+4. **Data Sharing**
+   - Per-record sharing toggle
+   - Privacy hint: "Data will be anonymized and only shown to users within 20km"
+   - RLS policy allows viewing shared records
 
 ### Build Verification
-
 ```
-✓ Compiled successfully in 19.7s
+✓ Compiled successfully in 30.6s
 ✓ Linting and checking validity of types
 ✓ Generating static pages (30/30)
 ```
+
+### Future Enhancements (Not in Scope)
+- Historical comparison columns (last year, 5-year average)
+- Nearby users' shared data display (requires geocoding/distance calculation)
+- These can be added in a future iteration

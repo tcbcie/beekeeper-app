@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Thermometer } from 'lucide-react'
+import GDDTracker from '@/components/tools/GDDTracker'
 
 export default function ToolsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -98,6 +99,13 @@ export default function ToolsPage() {
       description: 'Calculate ingredients for making bee fondant',
       status: 'Available',
       onClick: () => setActiveTool(activeTool === 'fondant' ? null : 'fondant')
+    },
+    {
+      icon: Thermometer,
+      title: 'GDD Tracking',
+      description: 'Track Growing Degree Days for vegetation blooming periods',
+      status: 'Available',
+      onClick: () => setActiveTool(activeTool === 'gdd' ? null : 'gdd')
     }
   ]
 
@@ -118,7 +126,7 @@ export default function ToolsPage() {
             <div
               onClick={tool.onClick}
               className={`bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow cursor-pointer hover:border-forest-300 dark:hover:border-forest-700 ${
-                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') ? 'border-forest-500 dark:border-forest-500' : ''
+                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') || (activeTool === 'gdd' && tool.title === 'GDD Tracking') ? 'border-forest-500 dark:border-forest-500' : ''
               }`}
             >
               <div className="flex items-start gap-4">
@@ -336,6 +344,13 @@ export default function ToolsPage() {
                     <li>• Best used for winter feeding or emergency feeding situations</li>
                   </ul>
                 </div>
+              </div>
+            )}
+
+            {/* GDD Tracking Tool */}
+            {tool.title === 'GDD Tracking' && activeTool === 'gdd' && (
+              <div className="mt-4 bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
+                <GDDTracker userId={userId} />
               </div>
             )}
           </div>

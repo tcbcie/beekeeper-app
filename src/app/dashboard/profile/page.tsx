@@ -299,6 +299,13 @@ export default function ProfilePage() {
         { data: inspections },
         { data: varroaChecks },
         { data: varroaTreatments },
+        { data: feedings },
+        { data: harvests },
+        { data: rearingBatches },
+        { data: tasksEvents },
+        { data: colonies },
+        { data: colonyMovements },
+        { data: gddRecords },
       ] = await Promise.all([
         supabase.from('apiaries').select('*').eq('user_id', userId),
         supabase.from('hives').select('*').eq('user_id', userId),
@@ -306,6 +313,13 @@ export default function ProfilePage() {
         supabase.from('inspections').select('*').eq('user_id', userId),
         supabase.from('varroa_checks').select('*').eq('user_id', userId),
         supabase.from('varroa_treatments').select('*').eq('user_id', userId),
+        supabase.from('feedings').select('*').eq('user_id', userId),
+        supabase.from('harvests').select('*').eq('user_id', userId),
+        supabase.from('rearing_batches').select('*').eq('user_id', userId),
+        supabase.from('tasks_events').select('*').eq('user_id', userId),
+        supabase.from('colonies').select('*').eq('user_id', userId),
+        supabase.from('colony_movements').select('*').eq('user_id', userId),
+        supabase.from('gdd_records').select('*').eq('user_id', userId),
       ])
 
       const exportData = {
@@ -320,6 +334,13 @@ export default function ProfilePage() {
         inspections: inspections || [],
         varroa_checks: varroaChecks || [],
         varroa_treatments: varroaTreatments || [],
+        feedings: feedings || [],
+        harvests: harvests || [],
+        rearing_batches: rearingBatches || [],
+        tasks_events: tasksEvents || [],
+        colonies: colonies || [],
+        colony_movements: colonyMovements || [],
+        gdd_records: gddRecords || [],
       }
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
@@ -355,6 +376,13 @@ export default function ProfilePage() {
         { data: inspections },
         { data: varroaChecks },
         { data: varroaTreatments },
+        { data: feedings },
+        { data: harvests },
+        { data: rearingBatches },
+        { data: tasksEvents },
+        { data: colonies },
+        { data: colonyMovements },
+        { data: gddRecords },
       ] = await Promise.all([
         supabase.from('apiaries').select('*').eq('user_id', userId),
         supabase.from('hives').select('*').eq('user_id', userId),
@@ -362,6 +390,13 @@ export default function ProfilePage() {
         supabase.from('inspections').select('*').eq('user_id', userId),
         supabase.from('varroa_checks').select('*').eq('user_id', userId),
         supabase.from('varroa_treatments').select('*').eq('user_id', userId),
+        supabase.from('feedings').select('*').eq('user_id', userId),
+        supabase.from('harvests').select('*').eq('user_id', userId),
+        supabase.from('rearing_batches').select('*').eq('user_id', userId),
+        supabase.from('tasks_events').select('*').eq('user_id', userId),
+        supabase.from('colonies').select('*').eq('user_id', userId),
+        supabase.from('colony_movements').select('*').eq('user_id', userId),
+        supabase.from('gdd_records').select('*').eq('user_id', userId),
       ])
 
       const convertToCSV = (data: Record<string, unknown>[], tableName: string) => {
@@ -387,6 +422,13 @@ export default function ProfilePage() {
       csvContent += convertToCSV(inspections || [], 'Inspections')
       csvContent += convertToCSV(varroaChecks || [], 'Varroa Checks')
       csvContent += convertToCSV(varroaTreatments || [], 'Varroa Treatments')
+      csvContent += convertToCSV(feedings || [], 'Feedings')
+      csvContent += convertToCSV(harvests || [], 'Harvests')
+      csvContent += convertToCSV(rearingBatches || [], 'Rearing Batches')
+      csvContent += convertToCSV(tasksEvents || [], 'Tasks and Events')
+      csvContent += convertToCSV(colonies || [], 'Colonies')
+      csvContent += convertToCSV(colonyMovements || [], 'Colony Movements')
+      csvContent += convertToCSV(gddRecords || [], 'GDD Records')
 
       const blob = new Blob([csvContent], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
