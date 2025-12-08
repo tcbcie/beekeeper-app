@@ -303,12 +303,12 @@ function AboutPageContent() {
               <li>Multi-user support with role-based access control</li>
               <li>Email notifications for tasks, events, and batch reminders</li>
               <li>Data export capabilities</li>
-              <li>Installable mobile application with offline support and background sync</li>
+              <li>Installable mobile application (PWA)</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
             <p className="text-text-secondary">
-              <strong>Current Version:</strong> 1.4.12 (December 2025)
+              <strong>Current Version:</strong> 1.4.13 (December 2025)
             </p>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Credits</h3>
@@ -696,20 +696,6 @@ function AboutPageContent() {
               <li>Access to subscription features may be restricted or removed if payment fails</li>
             </ul>
 
-            <h3 className="text-lg font-semibold text-foreground mt-6">Offline Features and Data Synchronization</h3>
-            <p>
-              HiveCraic provides offline functionality through browser storage and background synchronization:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Offline features require modern browser support and may not work on all devices or browsers</li>
-              <li>Data created or modified offline is stored locally on your device until internet connection is restored</li>
-              <li>Background synchronization may fail or be delayed, potentially resulting in data conflicts or loss</li>
-              <li>Browser storage quotas may limit the amount of data available offline</li>
-              <li>Clearing browser data, cache, or cookies may delete unsynchronized offline data</li>
-              <li>HiveCraic is not responsible for data loss due to offline storage limitations, browser issues, or synchronization failures</li>
-              <li>We strongly recommend maintaining an active internet connection and regularly exporting your data</li>
-            </ul>
-
             <h3 className="text-lg font-semibold text-foreground mt-6">Data Backup and Loss</h3>
             <p>
               Users are solely responsible for maintaining backups of their data:
@@ -718,8 +704,7 @@ function AboutPageContent() {
               <li>HiveCraic is not responsible for any data loss, corruption, or deletion for any reason</li>
               <li>While we maintain database backups for disaster recovery, we do not guarantee data recovery</li>
               <li>Users should regularly export their data using the database export feature</li>
-              <li>Data loss may occur due to technical issues, user error, account deletion, browser storage issues, or service interruptions</li>
-              <li>Offline data that has not been synchronized to the server may be permanently lost</li>
+              <li>Data loss may occur due to technical issues, user error, account deletion, or service interruptions</li>
             </ul>
 
             <h3 className="text-lg font-semibold text-foreground mt-6">Third-Party Service Dependencies</h3>
@@ -753,9 +738,6 @@ function AboutPageContent() {
               <li>Regularly exporting and maintaining backups of their data</li>
               <li>Securing their account credentials and payment information</li>
               <li>Managing their subscription and ensuring payment methods remain valid</li>
-              <li>Understanding the limitations of offline features and potential data loss</li>
-              <li>Verifying that offline data has successfully synchronized to the server</li>
-              <li>Using compatible browsers and devices for offline functionality</li>
             </ul>
 
             <h3 className="text-lg font-semibold text-foreground mt-6">No Guarantee of Service</h3>

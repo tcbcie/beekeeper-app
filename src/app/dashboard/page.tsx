@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import UpcomingEvents from '@/components/UpcomingEvents'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle } from 'lucide-react'
 
 interface Inspection {
   id: string
@@ -128,6 +128,7 @@ export default function DashboardPage() {
   const [mySharedTeamMembers, setMySharedTeamMembers] = useState<TeamMember[]>([])
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
   const [openTicketsCount, setOpenTicketsCount] = useState<number>(0)
+  const [userTicketStatus, setUserTicketStatus] = useState<{ open: number; in_progress: number; resolved: number } | null>(null)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -558,6 +559,34 @@ export default function DashboardPage() {
     }
   }, [])
 
+  // Fetch user's own ticket statuses
+  const fetchUserTicketStatus = useCallback(async (currentUserId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('status')
+        .eq('user_id', currentUserId)
+        .in('status', ['open', 'in_progress', 'resolved'])
+
+      if (error) throw error
+
+      // Count tickets by status
+      const counts = { open: 0, in_progress: 0, resolved: 0 }
+      data?.forEach(ticket => {
+        if (ticket.status === 'open') counts.open++
+        else if (ticket.status === 'in_progress') counts.in_progress++
+        else if (ticket.status === 'resolved') counts.resolved++
+      })
+
+      // Only set if user has any active tickets
+      if (counts.open > 0 || counts.in_progress > 0 || counts.resolved > 0) {
+        setUserTicketStatus(counts)
+      }
+    } catch (error) {
+      console.error('Error fetching user ticket status:', error)
+    }
+  }, [])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -576,11 +605,14 @@ export default function DashboardPage() {
         fetchOpenTicketsCount()
       }
 
+      // Fetch user's own ticket status (for non-admins)
+      fetchUserTicketStatus(id)
+
       // Call fetch functions directly with the ID
       fetchDashboardData(id)
     }
     initUser()
-  }, [router, fetchDashboardData, fetchOpenTicketsCount])
+  }, [router, fetchDashboardData, fetchOpenTicketsCount, fetchUserTicketStatus])
 
   // Separate effect for team data that depends on userId being set
   useEffect(() => {
@@ -622,7 +654,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
             {userRole === 'Admin' && (
               <div className="flex items-center gap-2">
@@ -636,6 +668,28 @@ export default function DashboardPage() {
                   </span>
                 )}
               </div>
+            )}
+            {/* User ticket status indicator */}
+            {userRole !== 'Admin' && userTicketStatus && (
+              <a href="/dashboard/support" className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-full border border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                <MessageCircle size={14} />
+                <span>Tickets:</span>
+                {userTicketStatus.open > 0 && (
+                  <span className="px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full min-w-[18px] text-center" title="Open tickets">
+                    {userTicketStatus.open}
+                  </span>
+                )}
+                {userTicketStatus.in_progress > 0 && (
+                  <span className="px-1.5 py-0.5 bg-blue-500 text-white text-xs font-bold rounded-full min-w-[18px] text-center" title="In progress">
+                    {userTicketStatus.in_progress}
+                  </span>
+                )}
+                {userTicketStatus.resolved > 0 && (
+                  <span className="px-1.5 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full min-w-[18px] text-center" title="Resolved">
+                    {userTicketStatus.resolved}
+                  </span>
+                )}
+              </a>
             )}
           </div>
         </div>
@@ -955,7 +1009,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Version:</span>
-                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.4.12</span>
+                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.4.13</span>
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Last Updated:</span>
