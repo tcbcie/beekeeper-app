@@ -15,8 +15,8 @@ This document outlines the structure of the `.claude` directory and provides pro
 ## Project Context: HiveCraic
 
 **Project Type:** Next.js 14 PWA (Progressive Web App)
-**Purpose:** Beekeeping management application with offline-first capabilities
-**Tech Stack:** Next.js, TypeScript, Supabase, TailwindCSS, IndexedDB
+**Purpose:** Beekeeping management application
+**Tech Stack:** Next.js, TypeScript, Supabase, TailwindCSS
 **Target Users:** Beekeepers managing apiaries, hives, queens, and breeding batches
 
 ## Key Features
@@ -29,10 +29,8 @@ This document outlines the structure of the `.claude` directory and provides pro
 - **Inspection Records** - Log hive inspections and observations
 
 ### Technical Features
-- **Offline-First Architecture** - IndexedDB local storage with background sync
 - **PWA Support** - Installable on mobile devices
 - **Web Push Notifications** - Persistent notifications for important dates
-- **Background Sync** - Automatic data sync when connection returns
 - **Responsive Design** - Mobile-first UI with desktop support
 - **Dark Mode** - User preference-based theming
 
@@ -54,9 +52,7 @@ src/
 ├── contexts/         # React context providers (Auth, etc.)
 ├── hooks/            # Custom React hooks
 ├── lib/              # Utility libraries and helpers
-│   ├── supabase.ts   # Supabase client
-│   ├── offline-db.ts # IndexedDB wrapper
-│   └── sync-manager.ts # Offline sync logic
+│   └── supabase.ts   # Supabase client
 └── sql/              # Database migrations and schemas
 ```
 
@@ -79,12 +75,10 @@ src/
 ### Common Tasks
 
 #### Adding a New Feature
-1. Check if offline support is needed (`useOfflineData` hook)
-2. Add database migration in `sql/` directory
-3. Create component in `src/components/`
-4. Update routing in `src/app/`
-5. Test mobile responsiveness
-6. Test offline functionality
+1. Add database migration in `sql/` directory
+2. Create component in `src/components/`
+3. Update routing in `src/app/`
+4. Test mobile responsiveness
 
 #### Fixing Linting Errors
 - Replace `'` with `&apos;` in JSX
@@ -101,29 +95,17 @@ src/
 ## Important Files
 
 ### Documentation
-- `OFFLINE_FEATURES.md` - Complete offline functionality documentation
-- `OFFLINE_SETUP.md` - Deployment and setup guide
 - `README.md` - Project overview and setup instructions
 
 ### Core Libraries
-- `src/lib/offline-db.ts` - IndexedDB wrapper for local storage
-- `src/lib/sync-manager.ts` - Offline sync queue manager
+- `src/lib/supabase.ts` - Supabase client
 - `src/lib/push-notifications.ts` - Web push notification manager
-- `src/hooks/useOfflineData.ts` - React hook for offline data operations
+- `src/lib/notifications.ts` - Browser notification utilities
 
 ### Service Worker
-- `public/service-worker.js` - PWA service worker with offline caching, background sync, and push notifications
+- `public/service-worker.js` - PWA service worker with caching and push notifications
 
 ## Common Patterns
-
-### Offline Data Hook Usage
-```typescript
-import { useOfflineData } from '@/hooks/useOfflineData'
-import { STORES } from '@/lib/offline-db'
-
-const { data, create, update, remove, isOnline } =
-  useOfflineData('hives', STORES.HIVES)
-```
 
 ### Supabase Queries with RLS
 ```typescript
@@ -151,17 +133,14 @@ const { data, error } = await supabase
 
 ### Manual Testing Checklist
 - [ ] Test on mobile device (Chrome/Safari)
-- [ ] Test offline mode (airplane mode)
 - [ ] Test PWA installation
 - [ ] Test notification permissions
-- [ ] Test background sync
 - [ ] Test dark mode
 - [ ] Test all CRUD operations
 
 ### Browser DevTools Testing
-- Network tab: Set to "Offline" to test offline mode
-- Application tab: Check service worker status, cache, and IndexedDB
-- Console: Check for errors and sync logs
+- Application tab: Check service worker status and cache
+- Console: Check for errors
 
 ## Deployment
 
@@ -179,34 +158,27 @@ const { data, error } = await supabase
 ## Known Limitations
 
 ### Browser Support
-- **Background Sync** - Chrome/Edge only (not Safari)
 - **Web Push** - Desktop/Android only (not iOS Safari)
-- **IndexedDB** - All modern browsers supported
 
-### Offline Functionality
-- Cannot login while offline (server auth required)
-- Cached session expires after ~1 hour
-- Only previously loaded data available offline
-- Sync queue works on next connection
+### Connectivity
+- App requires internet connection for data operations
+- Service worker provides basic page caching for PWA
 
 ## AI Assistant Guidelines
 
 When assisting with this project:
 
-1. **Prioritize offline functionality** - Always consider how features work offline
-2. **Follow mobile-first approach** - Design for mobile, enhance for desktop
-3. **Maintain type safety** - Use TypeScript properly, avoid `any`
-4. **Consider RLS policies** - All queries must respect Row Level Security
-5. **Test thoroughly** - Check linting, TypeScript errors, and offline mode
-6. **Document changes** - Update relevant docs when adding features
-7. **Commit hygiene** - Clear commit messages, logical grouping of changes
+1. **Follow mobile-first approach** - Design for mobile, enhance for desktop
+2. **Maintain type safety** - Use TypeScript properly, avoid `any`
+3. **Consider RLS policies** - All queries must respect Row Level Security
+4. **Test thoroughly** - Check linting and TypeScript errors
+5. **Document changes** - Update relevant docs when adding features
+6. **Commit hygiene** - Clear commit messages, logical grouping of changes
 
 ### When Making Changes
 
 **DO:**
-- Use `useOfflineData` hook for data operations
 - Add responsive mobile/desktop views
-- Test offline scenarios
 - Follow existing code patterns
 - Update documentation
 
@@ -219,8 +191,7 @@ When assisting with this project:
 
 ## Version History
 
-- **v1.4.3** - Added comprehensive offline support (IndexedDB, Background Sync, Web Push)
-- **v1.4.2** - Mobile batch editing fixes
+- **v1.4.11** - Current version
 - Earlier versions tracked in git history
 
 ## Support & Resources
@@ -228,7 +199,6 @@ When assisting with this project:
 - **Project Repository:** GitHub (check git remote)
 - **Database:** Supabase dashboard
 - **Deployment:** Vercel dashboard
-- **Documentation:** See `OFFLINE_FEATURES.md` for detailed feature docs
 
 ---
 

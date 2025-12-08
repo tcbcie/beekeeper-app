@@ -8,7 +8,6 @@ import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import MobileDrawer from '@/components/MobileDrawer'
 import OfflineIndicator from '@/components/OfflineIndicator'
-import PendingSyncIndicator from '@/components/PendingSyncIndicator'
 import UpdateNotification from '@/components/UpdateNotification'
 import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
@@ -95,7 +94,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <OfflineIndicator />
-      <PendingSyncIndicator />
       <UpdateNotification />
       <Navbar
         currentUser={user}
