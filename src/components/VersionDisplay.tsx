@@ -6,7 +6,7 @@ export default function VersionDisplay() {
   const version = getAppVersion()
 
   return (
-    <div className="text-xs text-gray-500 dark:text-gray-400">
+    <div className="text-xs text-text-tertiary">
       v{version}
     </div>
   )

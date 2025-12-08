@@ -115,10 +115,10 @@ function DeclineInvitationContent() {
               <CheckCircle size={64} className="mx-auto text-blue-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Invitation Declined</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-text-tertiary mb-4">
                 If you change your mind, you can ask the team owner to send you another invitation.
               </p>
-              <p className="text-sm text-gray-500">Redirecting...</p>
+              <p className="text-sm text-text-tertiary">Redirecting...</p>
             </>
           )}
 
@@ -141,7 +141,7 @@ function DeclineInvitationContent() {
               <XCircle size={64} className="mx-auto text-orange-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Invitation Expired</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-text-tertiary mb-4">
                 This invitation is no longer valid.
               </p>
               <button

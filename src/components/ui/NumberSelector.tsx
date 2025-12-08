@@ -19,7 +19,7 @@ export default function NumberSelector({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-text-secondary">
         {label} {value !== null ? `(${value})` : ''}
       </label>
 
@@ -33,7 +33,7 @@ export default function NumberSelector({
             className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
               value === num
                 ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
             }`}
             aria-label={`Select ${num}`}
           >
@@ -45,8 +45,8 @@ export default function NumberSelector({
           onClick={() => onChange(null)}
           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
             value === null
-              ? 'bg-gray-400 text-white shadow-lg ring-2 ring-gray-300'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+              ? 'bg-sage-400 dark:bg-slate-500 text-white shadow-lg ring-2 ring-sage-300 dark:ring-slate-400'
+              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
           }`}
           aria-label="Clear selection"
         >

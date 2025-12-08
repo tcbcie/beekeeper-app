@@ -99,9 +99,13 @@ interface SupportTicket {
   updated_at: string
   user_profiles?: {
     email: string
+    first_name?: string
+    last_name?: string
   } | null
   resolver?: {
     email: string
+    first_name?: string
+    last_name?: string
   } | null
 }
 
@@ -843,10 +847,14 @@ export default function SettingsPage() {
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true)
     try {
-      // Fetch tickets without joins first
+      // Fetch tickets with profile joins
       let query = supabase
         .from('support_tickets')
-        .select('*')
+        .select(`
+          *,
+          user_profiles:profiles!support_tickets_user_id_fkey(email, first_name, last_name),
+          resolver:profiles!support_tickets_resolved_by_fkey(email, first_name, last_name)
+        `)
         .order('created_at', { ascending: false })
 
       if (ticketFilter !== 'all') {
@@ -864,52 +872,51 @@ export default function SettingsPage() {
           setTickets([])
           return
         }
-        console.error('Error details:', ticketsError)
-        throw ticketsError
-      }
+        // If join fails, fallback to manual lookup
+        console.warn('Join failed, falling back to manual lookup:', ticketsError)
 
-      // Enrich tickets with user emails
-      if (ticketsData && ticketsData.length > 0) {
-        const enrichedTickets = await Promise.all(
-          ticketsData.map(async (ticket) => {
-            // Get user email from profiles table
-            let userEmail = null
-            const { data: authUser } = await supabase
-              .from('profiles')
-              .select('email')
-              .eq('id', ticket.user_id)
-              .maybeSingle()
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('support_tickets')
+          .select('*')
+          .order('created_at', { ascending: false })
 
-            if (authUser?.email) {
-              userEmail = authUser.email
-            }
+        if (fallbackError) throw fallbackError
 
-            // Fetch resolver email if exists
-            let resolverEmail = null
-            if (ticket.resolved_by) {
-              const { data: authResolver } = await supabase
+        if (fallbackData && fallbackData.length > 0) {
+          const enrichedTickets = await Promise.all(
+            fallbackData.map(async (ticket) => {
+              const { data: authUser } = await supabase
                 .from('profiles')
-                .select('email')
-                .eq('id', ticket.resolved_by)
+                .select('email, first_name, last_name')
+                .eq('id', ticket.user_id)
                 .maybeSingle()
 
-              if (authResolver?.email) {
-                resolverEmail = authResolver.email
+              let resolverData = null
+              if (ticket.resolved_by) {
+                const { data: authResolver } = await supabase
+                  .from('profiles')
+                  .select('email, first_name, last_name')
+                  .eq('id', ticket.resolved_by)
+                  .maybeSingle()
+                resolverData = authResolver
               }
-            }
 
-            return {
-              ...ticket,
-              user_profiles: userEmail ? { email: userEmail } : null,
-              resolver: resolverEmail ? { email: resolverEmail } : null,
-            }
-          })
-        )
-        console.log('Fetched tickets with user data:', enrichedTickets)
-        setTickets(enrichedTickets)
-      } else {
-        setTickets([])
+              return {
+                ...ticket,
+                user_profiles: authUser || null,
+                resolver: resolverData || null,
+              }
+            })
+          )
+          setTickets(enrichedTickets)
+        } else {
+          setTickets([])
+        }
+        return
       }
+
+      console.log('Fetched tickets with user data:', ticketsData)
+      setTickets(ticketsData || [])
     } catch (error) {
       console.error('Error fetching tickets:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -2380,7 +2387,9 @@ export default function SettingsPage() {
                             {ticket.subject}
                           </h3>
                           <p className="text-sm text-text-tertiary mb-2">
-                            From: {ticket.user_profiles?.email || 'Unknown'} |{' '}
+                            From: {ticket.user_profiles?.first_name && ticket.user_profiles?.last_name
+                              ? `${ticket.user_profiles.first_name} ${ticket.user_profiles.last_name}`
+                              : ticket.user_profiles?.email || 'Unknown'} |{' '}
                             {new Date(ticket.created_at).toLocaleString()}
                           </p>
                           <div className="flex gap-2 mb-3">
@@ -2477,7 +2486,9 @@ export default function SettingsPage() {
                               {ticket.subject}
                             </h3>
                             <p className="text-sm text-text-tertiary">
-                              From: {ticket.user_profiles?.email || 'Unknown'} |{' '}
+                              From: {ticket.user_profiles?.first_name && ticket.user_profiles?.last_name
+                                ? `${ticket.user_profiles.first_name} ${ticket.user_profiles.last_name}`
+                                : ticket.user_profiles?.email || 'Unknown'} |{' '}
                               {new Date(ticket.created_at).toLocaleString()}
                             </p>
                           </div>
@@ -2769,7 +2780,7 @@ export default function SettingsPage() {
             <div className="mb-4 space-y-3">
               {/* Search Bar */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary" size={20} />
                 <input
                   type="text"
                   placeholder="Search users by email or ID..."
@@ -2900,7 +2911,7 @@ export default function SettingsPage() {
                             {/* Expand Button */}
                             <button
                               onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
-                              className="flex-shrink-0 p-1 text-gray-400 hover:text-text-tertiary rounded hover:bg-surface-elevated dark:hover:bg-surface-elevated"
+                              className="flex-shrink-0 p-1 text-text-tertiary hover:text-text-tertiary rounded hover:bg-surface-elevated dark:hover:bg-surface-elevated"
                               title={isExpanded ? 'Hide details' : 'Show details'}
                             >
                               <ChevronDown
@@ -2966,7 +2977,7 @@ export default function SettingsPage() {
                             {/* Actions */}
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               {user.id === userId ? (
-                                <span className="text-gray-400 text-xs italic px-2">Your account</span>
+                                <span className="text-text-tertiary text-xs italic px-2">Your account</span>
                               ) : (
                                 <>
                                   {/* Role Selector */}
@@ -3074,7 +3085,7 @@ export default function SettingsPage() {
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-gray-400 italic">None</p>
+                                  <p className="text-text-tertiary italic">None</p>
                                 )}
                               </div>
 
@@ -3097,7 +3108,7 @@ export default function SettingsPage() {
                                       </a>
                                     </div>
                                   ) : (
-                                    <p className="text-gray-400 italic text-xs">No transaction</p>
+                                    <p className="text-text-tertiary italic text-xs">No transaction</p>
                                   )}
                                 </div>
                               )}
@@ -3166,7 +3177,7 @@ export default function SettingsPage() {
                                     </p>
                                   </div>
                                 ) : (
-                                  <p className="text-gray-400 italic">Never</p>
+                                  <p className="text-text-tertiary italic">Never</p>
                                 )}
                               </div>
 
@@ -3417,7 +3428,7 @@ export default function SettingsPage() {
                           {code.code}
                         </td>
                         <td className="px-4 py-4 text-sm text-text-tertiary">
-                          {code.description || <span className="italic text-gray-400">No description</span>}
+                          {code.description || <span className="italic text-text-tertiary">No description</span>}
                         </td>
                         <td className="px-4 py-4 text-sm text-text-tertiary">
                           {code.code_type === 'individual' ? (
@@ -3629,7 +3640,7 @@ export default function SettingsPage() {
                     association_id: '',
                   })
                 }}
-                className="text-gray-400 hover:text-text-tertiary"
+                className="text-text-tertiary hover:text-text-tertiary"
               >
                 <X size={24} />
               </button>
@@ -3821,7 +3832,7 @@ export default function SettingsPage() {
                       association_id: ''
                     })
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-text-secondary rounded-lg hover:bg-gray-300"
+                  className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-secondary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
                 >
                   Cancel
                 </button>

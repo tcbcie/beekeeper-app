@@ -84,7 +84,7 @@ export function HiveStrengthAnalyzer() {
   const getTrendIcon = () => {
     if (analysis.trend === 'improving') return <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
     if (analysis.trend === 'declining') return <TrendingDown className="text-red-600 dark:text-red-400" size={20} />
-    return <Minus className="text-gray-600 dark:text-gray-400" size={20} />
+    return <Minus className="text-text-tertiary" size={20} />
   }
 
   const getScoreColor = (score: number) => {

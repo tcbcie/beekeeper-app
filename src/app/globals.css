@@ -234,6 +234,51 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Improve select/option styling for better contrast */
+select {
+  color: var(--foreground);
+  background-color: var(--surface);
+}
+
+/* Style options for better readability */
+select option {
+  color: var(--text-primary);
+  background-color: var(--surface);
+  padding: 8px 12px;
+}
+
+/* Highlighted/selected option in dropdown */
+select option:checked,
+select option:hover {
+  background-color: var(--forest-100);
+  color: var(--forest-800);
+}
+
+/* Dark mode option styling */
+.dark select option {
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.dark select option:checked,
+.dark select option:hover {
+  background-color: var(--forest-900);
+  color: var(--forest-200);
+}
+
+/* Input placeholder styling for better contrast */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-tertiary);
+  opacity: 1;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.8;
+}
+
 /* Better focus states for accessibility and touch - Emerald accent */
 *:focus-visible {
   outline: 2px solid var(--accent-primary);

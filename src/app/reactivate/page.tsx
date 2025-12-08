@@ -67,7 +67,7 @@ function ReactivateForm() {
             </div>
             <div>
               <h2 className="text-xl font-semibold text-foreground">Request Account Reactivation</h2>
-              <p className="text-sm text-gray-500">Restore your deleted account</p>
+              <p className="text-sm text-text-tertiary">Restore your deleted account</p>
             </div>
           </div>
 
@@ -123,15 +123,15 @@ function ReactivateForm() {
             <button
               type="submit"
               disabled={status === 'loading' || !email}
-              className="w-full py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
             >
               {status === 'loading' ? 'Submitting...' : 'Submit Reactivation Request'}
             </button>
           </form>
 
           {/* Help Text */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-xs text-text-tertiary text-center">
               Once your request is submitted, an administrator will review it and contact you via email.
               This process typically takes 1-2 business days.
             </p>
@@ -150,7 +150,7 @@ function ReactivateForm() {
 
         {/* Footer */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-text-tertiary">
             Need help? Contact{' '}
             <a href="mailto:support@tcbc.ie" className="text-forest-600 dark:text-amber-600 hover:text-amber-700">
               support@tcbc.ie

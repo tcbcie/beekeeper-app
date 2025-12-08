@@ -1634,7 +1634,7 @@ export default function ProfilePage() {
                                       <div className="flex items-center gap-3 flex-1">
                                         <Mail size={16} className="text-orange-400" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{invitation.email}</div>
+                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
                                           <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {isExpired ? (
@@ -1681,7 +1681,7 @@ export default function ProfilePage() {
                                       <div className="flex items-center gap-3 flex-1">
                                         <User size={16} className="text-green-600 dark:text-green-400" />
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{invitation.email}</div>
+                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
                                           <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {acceptedDate ? (
@@ -1752,7 +1752,7 @@ export default function ProfilePage() {
                                     <div className="flex items-center gap-3 flex-1">
                                       <MapPin size={16} className="text-purple-600 dark:text-purple-400" />
                                       <div className="flex-1">
-                                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        <div className="text-sm font-medium text-foreground">
                                           {ta.apiary?.name
                                             ? `${ta.apiary.name} - ${ta.apiary.eircode}`
                                             : (ta.apiary?.eircode || 'Unknown Location')}
@@ -2123,7 +2123,7 @@ export default function ProfilePage() {
                   {teamInvitations.map((invitation) => (
                     <div key={invitation.id} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{invitation.email}</div>
+                        <div className="font-medium text-foreground">{invitation.email}</div>
                         <div className="text-xs text-text-tertiary">
                           Invited {new Date(invitation.invited_at).toLocaleDateString()}
                           {' • Expires '}{new Date(invitation.expires_at).toLocaleDateString()}
@@ -2367,7 +2367,7 @@ export default function ProfilePage() {
                     }}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                  <div className="w-11 h-6 bg-sage-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-sage-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-amber-600"></div>
                 </label>
               </div>
 
@@ -2409,7 +2409,7 @@ export default function ProfilePage() {
                     }}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                  <div className="w-11 h-6 bg-sage-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-sage-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-amber-600"></div>
                 </label>
               </div>
 
@@ -2448,12 +2448,12 @@ export default function ProfilePage() {
                     }
                   }}
                   disabled={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-surface dark:bg-surface-elevated border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <option value="realtime" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Realtime (Hourly check)</option>
-                  <option value="daily" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Daily (Once per day)</option>
-                  <option value="weekly" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Weekly (Once per week)</option>
-                  <option value="disabled" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Disabled (No emails)</option>
+                  <option value="realtime">Realtime (Hourly check)</option>
+                  <option value="daily">Daily (Once per day)</option>
+                  <option value="weekly">Weekly (Once per week)</option>
+                  <option value="disabled">Disabled (No emails)</option>
                 </select>
                 <div className="mt-1 text-xs text-text-tertiary">
                   {!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders ? (

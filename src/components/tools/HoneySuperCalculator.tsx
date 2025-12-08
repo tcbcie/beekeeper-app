@@ -71,11 +71,11 @@ export function HoneySuperCalculator() {
         </div>
       </div>
 
-      <div className={`p-6 rounded-lg border-2 ${recommendation.addSuper ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : recommendation.removeSuper ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 bg-gray-50 dark:bg-gray-900/20'}`}>
+      <div className={`p-6 rounded-lg border-2 ${recommendation.addSuper ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : recommendation.removeSuper ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-border bg-sage-50 dark:bg-slate-900/20'}`}>
         <div className="flex items-start gap-3 mb-4">
           {recommendation.addSuper ? <CheckCircle className="text-green-600 dark:text-green-400" size={28} /> :
            recommendation.removeSuper ? <Layers className="text-blue-600 dark:text-blue-400" size={28} /> :
-           <XCircle className="text-gray-600 dark:text-gray-400" size={28} />}
+           <XCircle className="text-text-tertiary" size={28} />}
           <div className="flex-1">
             <h4 className="font-bold text-lg text-foreground mb-2">
               {recommendation.addSuper ? 'Add Super Now' : recommendation.removeSuper ? 'Ready to Harvest' : 'No Action Needed'}
@@ -88,7 +88,7 @@ export function HoneySuperCalculator() {
           <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-lg">
             <div className="text-sm text-text-secondary mb-1">Harvest Readiness</div>
             <div className="text-2xl font-bold text-foreground">{recommendation.harvestReadiness.toFixed(0)}%</div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+            <div className="w-full bg-sage-200 dark:bg-slate-700 rounded-full h-2 mt-2">
               <div className="bg-forest-600 h-2 rounded-full" style={{ width: `${Math.min(100, recommendation.harvestReadiness)}%` }}></div>
             </div>
           </div>

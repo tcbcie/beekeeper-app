@@ -39,7 +39,7 @@ export default function UpdateNotification() {
 
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-2 border-amber-500 max-w-md mx-4">
+      <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-2xl border-2 border-amber-500 max-w-md mx-4">
         <div className="p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -58,10 +58,10 @@ export default function UpdateNotification() {
               </svg>
             </div>
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+              <h3 className="text-sm font-medium text-foreground">
                 Update Available
               </h3>
-              <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+              <div className="mt-2 text-sm text-text-secondary">
                 <p>A new version of HiveCraic is ready. Update now for the latest features and improvements.</p>
               </div>
               <div className="mt-4 flex space-x-3">
@@ -73,7 +73,7 @@ export default function UpdateNotification() {
                 </button>
                 <button
                   onClick={handleDismiss}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
+                  className="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-md text-text-secondary bg-surface dark:bg-surface-elevated hover:bg-sage-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
                 >
                   Later
                 </button>
@@ -108,7 +108,7 @@ export function UpdateCheckButton() {
     <button
       onClick={handleCheckForUpdates}
       disabled={isChecking}
-      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className="inline-flex items-center px-3 py-2 border border-border shadow-sm text-sm leading-4 font-medium rounded-md text-text-secondary bg-surface dark:bg-surface-elevated hover:bg-sage-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
       <svg
         className={`-ml-0.5 mr-2 h-4 w-4 ${isChecking ? 'animate-spin' : ''}`}

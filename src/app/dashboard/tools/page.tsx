@@ -258,10 +258,12 @@ export default function ToolsPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Icing Sugar Amount (kg)
                   </label>
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-3 w-full">
                     <button
+                      type="button"
                       onClick={() => setFondantAmount(Math.max(1, fondantAmount - 1))}
-                      className="px-4 py-2 bg-sage-200 dark:bg-sage-800 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-sage-700 active:bg-sage-400 dark:active:bg-sage-600 transition-colors min-h-[48px] min-w-[48px] text-2xl font-bold touch-manipulation"
+                      className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-sage-200 dark:bg-sage-800 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-sage-700 active:bg-sage-400 dark:active:bg-sage-600 transition-colors text-2xl font-bold touch-manipulation"
+                      aria-label="Decrease amount"
                     >
                       −
                     </button>
@@ -269,13 +271,15 @@ export default function ToolsPage() {
                       type="number"
                       value={fondantAmount}
                       onChange={(e) => setFondantAmount(Math.max(1, parseFloat(e.target.value) || 1))}
-                      className="flex-1 px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-center text-xl font-semibold focus:border-forest-500 focus:ring-2 focus:ring-forest-500 touch-manipulation"
+                      className="flex-1 min-w-0 px-4 py-3 h-12 sm:h-14 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-center text-xl font-semibold focus:border-forest-500 focus:ring-2 focus:ring-forest-500 touch-manipulation"
                       step="1"
                       min="1"
                     />
                     <button
+                      type="button"
                       onClick={() => setFondantAmount(fondantAmount + 1)}
-                      className="px-4 py-2 bg-sage-200 dark:bg-sage-800 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-sage-700 active:bg-sage-400 dark:active:bg-sage-600 transition-colors min-h-[48px] min-w-[48px] text-2xl font-bold touch-manipulation"
+                      className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-sage-200 dark:bg-sage-800 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-sage-700 active:bg-sage-400 dark:active:bg-sage-600 transition-colors text-2xl font-bold touch-manipulation"
+                      aria-label="Increase amount"
                     >
                       +
                     </button>
