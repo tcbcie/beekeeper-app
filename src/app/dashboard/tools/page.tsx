@@ -120,6 +120,13 @@ export default function ToolsPage() {
         Helpful tools and utilities for managing your beekeeping operations.
       </p>
 
+      {/* GDD Tracking Tool - Full Width */}
+      {activeTool === 'gdd' && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
+          <GDDTracker userId={userId} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {tools.map((tool, index) => (
           <div key={index}>
@@ -344,13 +351,6 @@ export default function ToolsPage() {
                     <li>• Best used for winter feeding or emergency feeding situations</li>
                   </ul>
                 </div>
-              </div>
-            )}
-
-            {/* GDD Tracking Tool */}
-            {tool.title === 'GDD Tracking' && activeTool === 'gdd' && (
-              <div className="mt-4 bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
-                <GDDTracker userId={userId} />
               </div>
             )}
           </div>

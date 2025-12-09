@@ -119,8 +119,8 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     }
   }
 
-  // Calculate GDD from historical weather data
-  const calculateGDD = async (recordId: string, startDate: string, endDate: string, eircode: string, isUkNi: boolean) => {
+  // Calculate GDD from historical weather data (from Jan 1st to start date)
+  const calculateGDD = async (recordId: string, startDate: string, eircode: string, isUkNi: boolean) => {
     setCalculatingGDD(recordId)
     try {
       const coords = await getCoordinates(eircode, isUkNi)
@@ -129,9 +129,13 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
         return
       }
 
+      // Calculate from January 1st of the year to the start date (bloom observation)
+      const year = new Date(startDate).getFullYear()
+      const janFirst = `${year}-01-01`
+
       // Fetch historical weather data from Open-Meteo
       const response = await fetch(
-        `https://archive-api.open-meteo.com/v1/archive?latitude=${coords.lat}&longitude=${coords.lon}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
+        `https://archive-api.open-meteo.com/v1/archive?latitude=${coords.lat}&longitude=${coords.lon}&start_date=${janFirst}&end_date=${startDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
       )
       const data = await response.json()
 
@@ -223,8 +227,9 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       // Refresh and calculate GDD if end date is set
       await fetchData()
 
-      if (endDate && data) {
-        await calculateGDD(data.id, startDate, endDate, apiary.eircode, apiary.is_uk_ni)
+      // Calculate GDD from Jan 1st to start date
+      if (data) {
+        await calculateGDD(data.id, startDate, apiary.eircode, apiary.is_uk_ni)
       }
     } catch (error) {
       console.error('Error saving GDD record:', error)
@@ -338,17 +343,18 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Start Date (Bloom Start) *</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Bloom Observed Date *</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               />
+              <p className="text-xs text-text-tertiary mt-1">GDD calculated from Jan 1st to this date</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">End Date (Bloom End)</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Bloom End Date (optional)</label>
               <input
                 type="date"
                 value={endDate}
@@ -417,7 +423,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Year</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Apiary</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Vegetation</th>
-                <th className="text-left p-3 text-sm font-semibold text-foreground">Start</th>
+                <th className="text-left p-3 text-sm font-semibold text-foreground">Bloom Date</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">End</th>
                 <th className="text-right p-3 text-sm font-semibold text-foreground">GDD</th>
                 <th className="text-center p-3 text-sm font-semibold text-foreground">Shared</th>
@@ -437,12 +443,12 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                   <td className="p-3 text-right">
                     {record.gdd_value !== null ? (
                       <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value}</span>
-                    ) : record.end_date ? (
+                    ) : (
                       <button
                         onClick={() => {
                           const apiary = apiaries.find(a => a.id === record.apiary_id)
                           if (apiary?.eircode) {
-                            calculateGDD(record.id, record.start_date, record.end_date!, apiary.eircode, apiary.is_uk_ni)
+                            calculateGDD(record.id, record.start_date, apiary.eircode, apiary.is_uk_ni)
                           }
                         }}
                         disabled={calculatingGDD === record.id}
@@ -455,8 +461,6 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                         )}
                         Calculate
                       </button>
-                    ) : (
-                      <span className="text-text-tertiary text-sm">Set end date</span>
                     )}
                   </td>
                   <td className="p-3 text-center">
@@ -495,7 +499,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
 
       {/* Legend */}
       <div className="text-xs text-text-tertiary">
-        <p>GDD calculated using base temperature of {BASE_TEMP}°C. Formula: GDD = max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2 - {BASE_TEMP})</p>
+        <p>Cumulative GDD from Jan 1st to bloom start date. Base temp: {BASE_TEMP}°C. Formula: GDD = Σ max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2 - {BASE_TEMP})</p>
       </div>
     </div>
   )
