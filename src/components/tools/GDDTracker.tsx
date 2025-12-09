@@ -35,8 +35,8 @@ interface GDDTrackerProps {
   userId: string
 }
 
-// Base temperature for GDD calculation (5°C)
-const BASE_TEMP = 5
+// Base temperature for GDD calculation (6°C - standard for Irish phenology)
+const BASE_TEMP = 6
 
 export default function GDDTracker({ userId }: GDDTrackerProps) {
   const [apiaries, setApiaries] = useState<Apiary[]>([])
