@@ -54,9 +54,39 @@ export default function ApiariesPage() {
 
     setGeocoding(true)
     try {
-      // Try city + country first (more reliable than eircode)
+      // UK/NI: Use Postcodes.io (free, no API key, very accurate)
+      if (isUkNi && eircode) {
+        const cleanPostcode = eircode.trim().replace(/\s+/g, '%20')
+        const response = await fetch(`https://api.postcodes.io/postcodes/${cleanPostcode}`)
+        const data = await response.json()
+
+        if (data.status === 200 && data.result) {
+          return { lat: String(data.result.latitude), lon: String(data.result.longitude) }
+        }
+      }
+
+      // Ireland: Use Google Maps Geocoding API (10,000 free/month)
+      const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      if (googleApiKey) {
+        // Build search query - prefer eircode, fallback to city
+        const searchAddress = eircode
+          ? `${eircode}, ${isUkNi ? 'United Kingdom' : 'Ireland'}`
+          : `${city}, ${isUkNi ? 'United Kingdom' : 'Ireland'}`
+
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchAddress)}&key=${googleApiKey}`
+        )
+        const data = await response.json()
+
+        if (data.status === 'OK' && data.results?.[0]?.geometry?.location) {
+          const { lat, lng } = data.results[0].geometry.location
+          return { lat: String(lat), lon: String(lng) }
+        }
+      }
+
+      // Fallback: Nominatim with city (if no Google API key or Google failed)
       const country = isUkNi ? 'United Kingdom' : 'Ireland'
-      let searchQuery = city ? `${city}, ${country}` : `${eircode}, ${country}`
+      const searchQuery = city ? `${city}, ${country}` : `${eircode}, ${country}`
 
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1&countrycodes=${isUkNi ? 'gb' : 'ie'}`,
