@@ -1013,7 +1013,7 @@ export default function DashboardPage() {
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Last Updated:</span>
-                <span className="font-semibold text-blue-700 dark:text-blue-400">December 8, 2025</span>
+                <span className="font-semibold text-blue-700 dark:text-blue-400">December 9, 2025</span>
               </span>
             </div>
           </div>
