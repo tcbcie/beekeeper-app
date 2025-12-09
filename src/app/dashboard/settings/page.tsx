@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check } from 'lucide-react'
+import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -2921,14 +2921,25 @@ export default function SettingsPage() {
                               />
                             </button>
 
-                            {/* Email */}
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                            {/* Email and Stats */}
+                            <div className="flex-1 min-w-0 flex items-center gap-3">
                               <span className="text-sm font-medium text-foreground truncate">{user.email || 'No email'}</span>
                               {user.id === userId && (
                                 <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded flex-shrink-0">
                                   You
                                 </span>
                               )}
+                              {/* Apiary & Hive Counts */}
+                              <div className="flex items-center gap-2 text-xs text-text-tertiary flex-shrink-0">
+                                <span title="Apiaries" className="flex items-center gap-0.5">
+                                  <Building2 size={12} />
+                                  {user.apiaries_count ?? 0}
+                                </span>
+                                <span title="Hives" className="flex items-center gap-0.5">
+                                  <Hexagon size={12} />
+                                  {user.hives_count ?? 0}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Status Badges */}
