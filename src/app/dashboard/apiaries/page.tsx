@@ -306,7 +306,7 @@ export default function ApiariesPage() {
                   className="text-sm px-3 py-1 bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   {geocoding ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
-                  Lookup from City
+                  Lookup Coordinates
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -331,7 +331,7 @@ export default function ApiariesPage() {
                   />
                 </div>
               </div>
-              <p className="text-xs text-text-tertiary mt-2">Used for GDD calculations. Click &quot;Lookup from City&quot; or enter manually.</p>
+              <p className="text-xs text-text-tertiary mt-2">Required for GDD calculations. Fill in City above, then click &quot;Lookup Coordinates&quot; or enter manually.</p>
             </div>
 
             <div>
