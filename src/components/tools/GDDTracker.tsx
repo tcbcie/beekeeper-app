@@ -7,6 +7,8 @@ interface Apiary {
   id: string
   name: string
   eircode: string | null
+  latitude: number | null
+  longitude: number | null
   is_uk_ni: boolean
 }
 
@@ -57,10 +59,10 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      // Fetch apiaries with eircode
+      // Fetch apiaries with coordinates
       const { data: apiaryData } = await supabase
         .from('apiaries')
-        .select('id, name, eircode, is_uk_ni')
+        .select('id, name, eircode, latitude, longitude, is_uk_ni')
         .eq('user_id', userId)
         .order('name')
 
@@ -98,36 +100,10 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     fetchData()
   }, [fetchData])
 
-  // Get coordinates from eircode using Nominatim
-  const getCoordinates = async (eircode: string, isUkNi: boolean): Promise<{ lat: string; lon: string } | null> => {
-    try {
-      const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
-      const country = isUkNi ? 'United Kingdom' : 'Ireland'
-
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode)},${country}&format=json&limit=1`,
-        { headers: { 'User-Agent': 'HiveCraic/1.0' } }
-      )
-      const data = await response.json()
-
-      if (data && data.length > 0) {
-        return { lat: data[0].lat, lon: data[0].lon }
-      }
-      return null
-    } catch {
-      return null
-    }
-  }
-
   // Calculate GDD from historical weather data (from Jan 1st to start date)
-  const calculateGDD = async (recordId: string, startDate: string, eircode: string, isUkNi: boolean) => {
+  const calculateGDD = async (recordId: string, startDate: string, latitude: number, longitude: number) => {
     setCalculatingGDD(recordId)
     try {
-      const coords = await getCoordinates(eircode, isUkNi)
-      if (!coords) {
-        alert('Could not find location for the apiary eircode')
-        return
-      }
 
       // Calculate from January 1st of the year to the start date (bloom observation)
       const year = new Date(startDate).getFullYear()
@@ -135,7 +111,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
 
       // Fetch historical weather data from Open-Meteo
       const response = await fetch(
-        `https://archive-api.open-meteo.com/v1/archive?latitude=${coords.lat}&longitude=${coords.lon}&start_date=${janFirst}&end_date=${startDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
+        `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${janFirst}&end_date=${startDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
       )
       const data = await response.json()
 
@@ -182,8 +158,8 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     }
 
     const apiary = apiaries.find(a => a.id === selectedApiary)
-    if (!apiary?.eircode) {
-      alert('Selected apiary does not have an Eircode. Please add one in the Apiaries page.')
+    if (!apiary?.latitude || !apiary?.longitude) {
+      alert('Selected apiary does not have GPS coordinates. Please add them in the Apiaries page.')
       return
     }
 
@@ -229,7 +205,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
 
       // Calculate GDD from Jan 1st to start date
       if (data) {
-        await calculateGDD(data.id, startDate, apiary.eircode, apiary.is_uk_ni)
+        await calculateGDD(data.id, startDate, apiary.latitude, apiary.longitude)
       }
     } catch (error) {
       console.error('Error saving GDD record:', error)
@@ -321,8 +297,8 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
               >
                 <option value="">Select apiary...</option>
                 {apiaries.map(a => (
-                  <option key={a.id} value={a.id} disabled={!a.eircode}>
-                    {a.name} {!a.eircode && '(no eircode)'}
+                  <option key={a.id} value={a.id} disabled={!a.latitude || !a.longitude}>
+                    {a.name} {(!a.latitude || !a.longitude) && '(no coordinates)'}
                   </option>
                 ))}
               </select>
@@ -447,8 +423,10 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                       <button
                         onClick={() => {
                           const apiary = apiaries.find(a => a.id === record.apiary_id)
-                          if (apiary?.eircode) {
-                            calculateGDD(record.id, record.start_date, apiary.eircode, apiary.is_uk_ni)
+                          if (apiary?.latitude && apiary?.longitude) {
+                            calculateGDD(record.id, record.start_date, apiary.latitude, apiary.longitude)
+                          } else {
+                            alert('Apiary is missing GPS coordinates. Please add them in the Apiaries page.')
                           }
                         }}
                         disabled={calculatingGDD === record.id}

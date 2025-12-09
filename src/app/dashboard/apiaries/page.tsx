@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Loader2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 
@@ -12,6 +12,8 @@ interface Apiary {
   location: string | null
   city: string | null
   eircode: string | null
+  latitude: number | null
+  longitude: number | null
   notes: string | null
   created_at?: string
 }
@@ -21,6 +23,8 @@ interface FormData {
   location: string
   city: string
   eircode: string
+  latitude: string
+  longitude: string
   notes: string
   is_uk_ni: boolean
 }
@@ -37,9 +41,53 @@ export default function ApiariesPage() {
     location: '',
     city: '',
     eircode: '',
+    latitude: '',
+    longitude: '',
     notes: '',
     is_uk_ni: false,
   })
+  const [geocoding, setGeocoding] = useState(false)
+
+  // Geocode eircode/postcode to get coordinates
+  const geocodeAddress = async (eircode: string, city: string, isUkNi: boolean) => {
+    if (!eircode && !city) return null
+
+    setGeocoding(true)
+    try {
+      // Try city + country first (more reliable than eircode)
+      const country = isUkNi ? 'United Kingdom' : 'Ireland'
+      let searchQuery = city ? `${city}, ${country}` : `${eircode}, ${country}`
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1&countrycodes=${isUkNi ? 'gb' : 'ie'}`,
+        { headers: { 'User-Agent': 'HiveCraic/1.0' } }
+      )
+      const data = await response.json()
+
+      if (data && data.length > 0) {
+        return { lat: data[0].lat, lon: data[0].lon }
+      }
+      return null
+    } catch {
+      return null
+    } finally {
+      setGeocoding(false)
+    }
+  }
+
+  // Lookup coordinates when eircode or city changes
+  const handleLookupCoordinates = async () => {
+    const coords = await geocodeAddress(formData.eircode, formData.city, formData.is_uk_ni)
+    if (coords) {
+      setFormData(prev => ({
+        ...prev,
+        latitude: coords.lat,
+        longitude: coords.lon
+      }))
+    } else {
+      alert('Could not find coordinates for this location. Please enter them manually.')
+    }
+  }
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
@@ -85,10 +133,21 @@ export default function ApiariesPage() {
     }
 
     try {
+      const dataToSave = {
+        name: formData.name,
+        location: formData.location || null,
+        city: formData.city || null,
+        eircode: formData.eircode || null,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        notes: formData.notes || null,
+        is_uk_ni: formData.is_uk_ni,
+      }
+
       if (editingApiary) {
         const { error } = await supabase
           .from('apiaries')
-          .update(formData)
+          .update(dataToSave)
           .eq('id', editingApiary.id)
           .eq('user_id', userId)
 
@@ -96,7 +155,7 @@ export default function ApiariesPage() {
       } else {
         const { error } = await supabase
           .from('apiaries')
-          .insert([{ ...formData, user_id: userId }])
+          .insert([{ ...dataToSave, user_id: userId }])
 
         if (error) throw error
       }
@@ -116,6 +175,8 @@ export default function ApiariesPage() {
       location: apiary.location || '',
       city: apiary.city || '',
       eircode: apiary.eircode || '',
+      latitude: apiary.latitude?.toString() || '',
+      longitude: apiary.longitude?.toString() || '',
       notes: apiary.notes || '',
       is_uk_ni: false,
     })
@@ -143,6 +204,8 @@ export default function ApiariesPage() {
       location: '',
       city: '',
       eircode: '',
+      latitude: '',
+      longitude: '',
       notes: '',
       is_uk_ni: false,
     })
@@ -227,6 +290,48 @@ export default function ApiariesPage() {
                 </label>
               </div>
               <p className="text-xs text-text-tertiary mt-1">Optional - Used for automatic weather data on inspections</p>
+            </div>
+
+            {/* GPS Coordinates */}
+            <div className="bg-sage-50 dark:bg-slate-800/50 p-4 rounded-lg border border-sage-200 dark:border-slate-700">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-medium text-text-secondary flex items-center gap-2">
+                  <MapPin size={16} />
+                  GPS Coordinates
+                </label>
+                <button
+                  type="button"
+                  onClick={handleLookupCoordinates}
+                  disabled={geocoding || (!formData.city && !formData.eircode)}
+                  className="text-sm px-3 py-1 bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  {geocoding ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                  Lookup from City
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-text-tertiary mb-1">Latitude</label>
+                  <input
+                    type="text"
+                    value={formData.latitude}
+                    onChange={(e) => setFormData({...formData, latitude: e.target.value})}
+                    placeholder="e.g., 53.2744"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-text-tertiary mb-1">Longitude</label>
+                  <input
+                    type="text"
+                    value={formData.longitude}
+                    onChange={(e) => setFormData({...formData, longitude: e.target.value})}
+                    placeholder="e.g., -9.0490"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-text-tertiary mt-2">Used for GDD calculations. Click &quot;Lookup from City&quot; or enter manually.</p>
             </div>
 
             <div>
