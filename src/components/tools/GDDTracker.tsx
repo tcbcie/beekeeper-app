@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw } from 'lucide-react'
+import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, X } from 'lucide-react'
 
 interface Apiary {
   id: string
@@ -264,10 +264,14 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
         </h3>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            showForm
+              ? 'bg-gray-500 hover:bg-gray-600 text-white'
+              : 'bg-forest-600 hover:bg-forest-700 text-white'
+          }`}
         >
-          <Plus size={18} />
-          Add Record
+          {showForm ? <X size={18} /> : <Plus size={18} />}
+          {showForm ? 'Cancel' : 'Add Record'}
         </button>
       </div>
 
