@@ -6,6 +6,7 @@ import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore } from 'lucide-reac
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 
 interface Apiary {
   id: string
@@ -122,6 +123,7 @@ export default function HivesPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
   const router = useRouter()
+  const toast = useToast()
   const formRef = useRef<HTMLDivElement>(null)
 
   // Initialize filters from sessionStorage
@@ -236,7 +238,7 @@ export default function HivesPage() {
 
     if (error) {
       console.error('Error fetching hives:', error)
-      alert(`Error loading hives: ${error.message}`)
+      toast.error(`Error loading hives: ${error.message}`)
       setHives([])
     } else if (data && data.length > 0) {
       // Use joined data from query - apiaries and queens are already included
@@ -448,7 +450,7 @@ export default function HivesPage() {
     // IMPORTANT: ownershipFilter and archiveFilter MUST be in deps so fetchHives
     // can read their current values. The useEffect that calls fetchHives has
     // eslint-disable to prevent infinite loops.
-  }, [userId, ownershipFilter, archiveFilter])
+  }, [userId, ownershipFilter, archiveFilter, toast])
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
@@ -731,7 +733,7 @@ export default function HivesPage() {
           const queenName = selectedQueen?.queen_number || 'this queen'
           const ownership = hive.hive_owner_id === userId ? 'your' : 'a team member\'s'
 
-          alert(`Cannot assign queen: ${queenName} is already assigned to ${ownership} active hive "${hive.hive_number}" at ${apiaryText}.\n\nA queen can only be in one active hive at a time.`)
+          toast.warning(`Cannot assign queen: ${queenName} is already assigned to ${ownership} active hive "${hive.hive_number}" at ${apiaryText}. A queen can only be in one active hive at a time.`)
           return
         }
       }
@@ -757,7 +759,7 @@ export default function HivesPage() {
         }
 
         if (existingPosition && existingPosition.length > 0) {
-          alert(`Row ${dataToSubmit.row_in_apiary}, Position ${dataToSubmit.order_in_apiary} is already used by hive "${existingPosition[0].hive_number}" in this apiary.\n\nEach hive must have a unique row and order combination within the apiary.`)
+          toast.warning(`Row ${dataToSubmit.row_in_apiary}, Position ${dataToSubmit.order_in_apiary} is already used by hive "${existingPosition[0].hive_number}" in this apiary. Each hive must have a unique row and order combination within the apiary.`)
           return
         }
       }
@@ -863,7 +865,7 @@ export default function HivesPage() {
       resetForm()
     } catch (error) {
       if (error instanceof Error) {
-        alert(`Failed to save hive: ${error.message}`)
+        toast.error(`Failed to save hive: ${error.message}`)
       }
     }
   }
@@ -949,15 +951,15 @@ export default function HivesPage() {
 
       if (error) {
         console.error('Error unarchiving hive:', error)
-        alert('Failed to unarchive hive: ' + error.message)
+        toast.error('Failed to unarchive hive: ' + error.message)
       } else {
-        alert(`Hive ${hive.hive_number} has been successfully unarchived!`)
+        toast.success(`Hive ${hive.hive_number} has been successfully unarchived!`)
         setOpenMenuId(null) // Close the menu
         fetchHives(userId) // Refresh hives list
       }
     } catch (error) {
       console.error('Error unarchiving hive:', error)
-      alert('Failed to unarchive hive')
+      toast.error('Failed to unarchive hive')
     }
   }
 

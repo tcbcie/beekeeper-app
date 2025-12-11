@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 
 interface Queen {
   id: string
@@ -104,6 +105,7 @@ const calculateQueenAge = (birthDate: string): string => {
 export default function QueensPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const toast = useToast()
   const highlightedQueenId = searchParams.get('id')
   const queenRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
@@ -342,7 +344,7 @@ export default function QueensPage() {
       resetForm()
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message)
+        toast.error(error.message)
       }
     }
   }

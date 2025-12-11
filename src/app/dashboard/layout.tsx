@@ -97,17 +97,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <UpdateNotification />
       <Navbar
         currentUser={user}
-        onMenuClick={() => {
-          console.log('Setting mobile menu open to true')
-          setIsMobileMenuOpen(true)
-        }}
+        onMenuClick={() => setIsMobileMenuOpen(true)}
       />
       <MobileDrawer
         isOpen={isMobileMenuOpen}
-        onClose={() => {
-          console.log('Closing mobile menu')
-          setIsMobileMenuOpen(false)
-        }}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <div className="flex gap-4 md:gap-6">

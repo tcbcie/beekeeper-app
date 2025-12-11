@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import UpcomingEvents from '@/components/UpcomingEvents'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle } from 'lucide-react'
 
 interface Inspection {
   id: string
@@ -463,13 +463,11 @@ export default function DashboardPage() {
         .select('id, name')
         .eq('user_id', userId)
 
-      console.log('📍 My apiaries:', myApiaries)
       if (apiariesError) throw apiariesError
 
       const myApiaryIds = (myApiaries || []).map(a => a.id)
 
       if (myApiaryIds.length === 0) {
-        console.log('⚠️ No apiaries found for user')
         setMySharedTeamMembers([])
         setLoadingTeamMembers(false)
         return
@@ -481,14 +479,11 @@ export default function DashboardPage() {
         .select('team_id, teams(name)')
         .in('apiary_id', myApiaryIds)
 
-      console.log('🔗 Team apiaries:', teamApiaries)
       if (teamApiariesError) throw teamApiariesError
 
       const teamIds = [...new Set((teamApiaries || []).map(ta => ta.team_id))]
-      console.log('👥 Team IDs:', teamIds)
 
       if (teamIds.length === 0) {
-        console.log('⚠️ No teams sharing these apiaries')
         setMySharedTeamMembers([])
         setLoadingTeamMembers(false)
         return
@@ -500,7 +495,6 @@ export default function DashboardPage() {
         .select('user_id, team_id, role, teams(name)')
         .in('team_id', teamIds)
 
-      console.log('👤 Team members raw:', teamMembers)
       if (membersError) throw membersError
 
       if (!teamMembers || teamMembers.length === 0) {
@@ -511,7 +505,6 @@ export default function DashboardPage() {
 
       // Get unique user IDs
       const userIds = [...new Set(teamMembers.map(m => m.user_id))]
-      console.log('👥 User IDs to fetch:', userIds)
 
       // Fetch profiles separately
       const { data: profilesData, error: profilesError } = await supabase
@@ -519,7 +512,6 @@ export default function DashboardPage() {
         .select('id, full_name, email')
         .in('id', userIds)
 
-      console.log('👤 Profiles data:', profilesData)
       if (profilesError) throw profilesError
 
       // Create a map of user_id to profile
@@ -671,22 +663,25 @@ export default function DashboardPage() {
             )}
             {/* User ticket status indicator */}
             {userRole !== 'Admin' && userTicketStatus && (
-              <a href="/dashboard/support" className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-full border border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+              <a href="/dashboard/about?section=support" className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-full border border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
                 <MessageCircle size={14} />
                 <span>Tickets:</span>
                 {userTicketStatus.open > 0 && (
-                  <span className="px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full min-w-[18px] text-center" title="Open tickets">
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full" title={`${userTicketStatus.open} open ticket(s) - awaiting response`}>
                     {userTicketStatus.open}
+                    <Clock size={10} />
                   </span>
                 )}
                 {userTicketStatus.in_progress > 0 && (
-                  <span className="px-1.5 py-0.5 bg-blue-500 text-white text-xs font-bold rounded-full min-w-[18px] text-center" title="In progress">
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-500 text-white text-xs font-bold rounded-full" title={`${userTicketStatus.in_progress} ticket(s) being addressed`}>
                     {userTicketStatus.in_progress}
+                    <span className="animate-pulse">●</span>
                   </span>
                 )}
                 {userTicketStatus.resolved > 0 && (
-                  <span className="px-1.5 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full min-w-[18px] text-center" title="Resolved">
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full" title={`${userTicketStatus.resolved} ticket(s) resolved - review & close`}>
                     {userTicketStatus.resolved}
+                    <CheckCircle size={10} />
                   </span>
                 )}
               </a>
@@ -1009,11 +1004,11 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Version:</span>
-                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.4.13</span>
+                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.4.14</span>
               </span>
               <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
                 <span className="font-medium text-text-secondary">Last Updated:</span>
-                <span className="font-semibold text-blue-700 dark:text-blue-400">December 9, 2025</span>
+                <span className="font-semibold text-blue-700 dark:text-blue-400">December 11, 2025</span>
               </span>
             </div>
           </div>

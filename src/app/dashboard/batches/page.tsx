@@ -5,6 +5,7 @@ import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Minus, MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner'
 import NotificationStatusCard from '@/components/NotificationStatusCard'
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
@@ -139,6 +140,7 @@ const formatDateIrish = (dateString: string | null): string => {
 
 export default function BatchesPage() {
   const router = useRouter()
+  const toast = useToast()
   const [batches, setBatches] = useState<Batch[]>([])
   const [queens, setQueens] = useState<Queen[]>([])
   const [apiaries, setApiaries] = useState<Apiary[]>([])
@@ -295,13 +297,7 @@ export default function BatchesPage() {
 
   // Initialize browser notifications
   useEffect(() => {
-    const setupNotifications = async () => {
-      const isGranted = await initializeNotifications()
-      if (isGranted) {
-        console.log('Browser notifications initialized successfully')
-      }
-    }
-    setupNotifications()
+    initializeNotifications()
   }, [])
 
   // Schedule notifications for batches with browser notifications enabled
@@ -448,7 +444,7 @@ export default function BatchesPage() {
       resetForm()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred'
-      alert(errorMessage)
+      toast.error(errorMessage)
     }
   }
 

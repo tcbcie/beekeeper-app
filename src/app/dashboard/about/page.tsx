@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ChangelogDisplay from '@/components/ChangelogDisplay'
+import { useToast } from '@/components/ui/Toast'
 
 interface SupportTicket {
   id: string
@@ -40,6 +41,7 @@ function AboutPageContent() {
   const [statistics, setStatistics] = useState<AppStatistics | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const toast = useToast()
 
   // Wait for client-side mount
   useEffect(() => {
@@ -152,13 +154,13 @@ function AboutPageContent() {
       resetForm()
     } catch (error) {
       console.error('Error submitting ticket:', error)
-      alert(error instanceof Error ? error.message : 'An error occurred')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
   const handleEdit = (ticket: SupportTicket) => {
     if (ticket.status === 'closed' || ticket.status === 'resolved') {
-      alert('Cannot edit resolved or closed tickets')
+      toast.warning('Cannot edit resolved or closed tickets')
       return
     }
 
@@ -198,7 +200,7 @@ function AboutPageContent() {
       fetchTickets()
     } catch (error) {
       console.error('Error closing ticket:', error)
-      alert(error instanceof Error ? error.message : 'Failed to close ticket')
+      toast.error(error instanceof Error ? error.message : 'Failed to close ticket')
     }
   }
 
@@ -308,7 +310,7 @@ function AboutPageContent() {
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
             <p className="text-text-secondary">
-              <strong>Current Version:</strong> 1.4.13 (December 2025)
+              <strong>Current Version:</strong> 1.4.14 (December 2025)
             </p>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Credits</h3>

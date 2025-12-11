@@ -5,6 +5,7 @@ import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
 import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/Toast'
 
 interface DropdownCategory {
   id: string
@@ -153,6 +154,7 @@ interface ReactivationRequest {
 
 export default function SettingsPage() {
   const router = useRouter()
+  const toast = useToast()
   const [userId, setUserId] = useState<string | null>(null)
   const [userIsAdmin, setUserIsAdmin] = useState(false)
   const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
@@ -337,7 +339,7 @@ export default function SettingsPage() {
       resetCategoryForm()
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message)
+        toast.error(error.message)
       }
     }
   }
@@ -369,7 +371,7 @@ export default function SettingsPage() {
       resetValueForm()
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message)
+        toast.error(error.message)
       }
     }
   }
@@ -442,8 +444,7 @@ export default function SettingsPage() {
   }
 
   // User Management Functions
-  const fetchUsers = async () => {
-    console.log('👥 fetchUsers called')
+  const fetchUsers = useCallback(async () => {
     setLoadingUsers(true)
     try {
       // Call the function that joins user_profiles with auth.users to get emails
@@ -458,14 +459,13 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('❌ Error fetching users:', error)
-      alert('Failed to fetch users. Make sure you have admin permissions.')
+      toast.error('Failed to fetch users. Make sure you have admin permissions.')
     } finally {
       setLoadingUsers(false)
     }
-  }
+  }, [toast])
 
-  const fetchDeletedUsers = async () => {
-    console.log('🗑️ fetchDeletedUsers called')
+  const fetchDeletedUsers = useCallback(async () => {
     setLoadingUsers(true)
     try {
       const { data, error } = await supabase
@@ -480,11 +480,11 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('❌ Error fetching deleted users:', error)
-      alert('Failed to fetch deleted users. Make sure you have admin permissions.')
+      toast.error('Failed to fetch deleted users. Make sure you have admin permissions.')
     } finally {
       setLoadingUsers(false)
     }
-  }
+  }, [toast])
 
   const fetchReactivationRequests = async () => {
     setLoadingRequests(true)
@@ -502,14 +502,13 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('❌ Error fetching reactivation requests:', error)
-      alert('Failed to fetch reactivation requests. Make sure you have admin permissions and the table exists.')
+      toast.error('Failed to fetch reactivation requests. Make sure you have admin permissions.')
     } finally {
       setLoadingRequests(false)
     }
   }
 
   const fetchSubscriptionHistory = async () => {
-    console.log('📜 fetchSubscriptionHistory called')
     setLoadingHistory(true)
     try {
       // Fetch subscription history
@@ -543,7 +542,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('❌ Error fetching subscription history:', error)
-      alert('Failed to fetch subscription history. Make sure you have admin permissions.')
+      toast.error('Failed to fetch subscription history. Make sure you have admin permissions.')
     } finally {
       setLoadingHistory(false)
     }
@@ -560,39 +559,37 @@ export default function SettingsPage() {
         p_admin_notes: notes || null
       })
 
-      console.log('Reactivation response:', { data, error })
-
       if (error) {
         console.error('❌ Error approving reactivation:', error)
         let errorMessage = 'Failed to approve reactivation request.'
 
         // Handle specific error codes
         if (error.code === '23505' || (error.message && error.message.includes('unique'))) {
-          errorMessage = `❌ Email conflict: The email ${email} may already be in use by another account.\n\nPlease check if there are duplicate accounts or if the user created a new account after deletion.`
+          errorMessage = `Email conflict: The email ${email} may already be in use by another account.`
         } else if (error.message) {
-          errorMessage = `❌ Error: ${error.message}`
+          errorMessage = error.message
         }
 
-        alert(errorMessage)
+        toast.error(errorMessage)
         return
       }
 
       if (data && typeof data === 'object' && 'success' in data) {
         if (data.success) {
-          alert(`✅ Account reactivated successfully for ${email}!\n\nThe user can now log in with their original email and password.`)
+          toast.success(`Account reactivated successfully for ${email}!`)
           fetchReactivationRequests() // Refresh requests list
           fetchUsers() // Refresh active users list
         } else {
           // Function returned success: false with a message
-          alert(`❌ Failed to reactivate:\n\n${data.message || 'Unknown error'}`)
+          toast.error(`Failed to reactivate: ${data.message || 'Unknown error'}`)
         }
       } else {
-        alert('❌ Unexpected response from server. Please try again.')
+        toast.error('Unexpected response from server. Please try again.')
       }
     } catch (error) {
       console.error('❌ Exception approving reactivation:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`❌ Failed to approve reactivation request:\n\n${errorMessage}`)
+      toast.error(`Failed to approve reactivation request: ${errorMessage}`)
     }
   }
 
@@ -600,7 +597,7 @@ export default function SettingsPage() {
     const notes = prompt(`❌ Reject reactivation request for ${email}?\n\nPlease provide a reason (required):`)
 
     if (!notes || notes.trim() === '') {
-      alert('Rejection reason is required')
+      toast.warning('Rejection reason is required')
       return
     }
 
@@ -614,15 +611,15 @@ export default function SettingsPage() {
 
       if (data && typeof data === 'object' && 'success' in data) {
         if (data.success) {
-          alert(`✅ Reactivation request rejected for ${email}`)
+          toast.success(`Reactivation request rejected for ${email}`)
           fetchReactivationRequests() // Refresh list
         } else {
-          alert(`❌ Failed to reject: ${data.message}`)
+          toast.error(`Failed to reject: ${data.message}`)
         }
       }
     } catch (error) {
       console.error('❌ Error rejecting reactivation:', error)
-      alert('Failed to reject reactivation request. Please try again.')
+      toast.error('Failed to reject reactivation request. Please try again.')
     }
   }
 
@@ -636,7 +633,7 @@ export default function SettingsPage() {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(newEmail)) {
-      alert('Invalid email format. Please enter a valid email address.')
+      toast.warning('Invalid email format. Please enter a valid email address.')
       return
     }
 
@@ -652,17 +649,17 @@ export default function SettingsPage() {
       if (error) throw error
 
       if (data && !data.success) {
-        alert(`Failed to restore user: ${data.message}`)
+        toast.error(`Failed to restore user: ${data.message}`)
         return
       }
 
-      alert('User account restored successfully!')
+      toast.success('User account restored successfully!')
       // Refresh both lists
       fetchDeletedUsers()
       fetchUsers()
     } catch (error) {
       console.error('Error restoring user:', error)
-      alert('Failed to restore user account.')
+      toast.error('Failed to restore user account.')
     } finally {
       setRestoringUserId(null)
     }
@@ -670,7 +667,7 @@ export default function SettingsPage() {
 
   const handleRoleChange = async (targetUserId: string, newRole: 'User' | 'Power User' | 'Admin') => {
     if (targetUserId === userId) {
-      alert('You cannot change your own role.')
+      toast.warning('You cannot change your own role.')
       return
     }
 
@@ -683,7 +680,7 @@ export default function SettingsPage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.access_token) {
-        alert('You must be logged in to perform this action.')
+        toast.error('You must be logged in to perform this action.')
         return
       }
 
@@ -702,23 +699,21 @@ export default function SettingsPage() {
 
       const result = await response.json()
 
-      console.log('📤 API response:', { status: response.status, result })
-
       if (!response.ok) {
         throw new Error(result.error || 'Failed to update role')
       }
 
-      alert(`User role updated to ${newRole} successfully!`)
+      toast.success(`User role updated to ${newRole} successfully!`)
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('❌ Error updating user role:', error)
-      alert(`Failed to update user role: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error(`Failed to update user role: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
   const handleExpiryDateChange = async (targetUserId: string, newExpiryDate: string) => {
     if (!newExpiryDate) {
-      alert('Please enter a valid date.')
+      toast.warning('Please enter a valid date.')
       return
     }
 
@@ -733,17 +728,17 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Subscription expiry date updated successfully!')
+      toast.success('Subscription expiry date updated successfully!')
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('Error updating subscription expiry date:', error)
-      alert('Failed to update subscription expiry date.')
+      toast.error('Failed to update subscription expiry date.')
     }
   }
 
   const handleDeleteUser = async (targetUserId: string, userEmail: string) => {
     if (targetUserId === userId) {
-      alert('You cannot delete your own account.')
+      toast.warning('You cannot delete your own account.')
       return
     }
 
@@ -752,8 +747,6 @@ export default function SettingsPage() {
     }
 
     try {
-      console.log('🗑️ Soft deleting user:', { targetUserId, userEmail })
-
       // Call soft_delete_user function
       const { data, error } = await supabase
         .rpc('soft_delete_user', {
@@ -763,11 +756,11 @@ export default function SettingsPage() {
       if (error) throw error
 
       if (data && !data.success) {
-        alert(`Failed to delete user: ${data.message}`)
+        toast.error(`Failed to delete user: ${data.message}`)
         return
       }
 
-      alert(`✅ User "${userEmail}" has been soft deleted successfully!\n\n✅ Preserved:\n• All subscription history\n• All payment records\n• All beekeeping data (hives, inspections, etc.)\n• All team memberships\n\n🚫 Account Status:\n• User cannot log in\n• Marked as deleted\n• Can be restored by admin at any time\n\nThis is a SAFE deletion that preserves all data for compliance and recovery.`)
+      toast.success(`User "${userEmail}" has been soft deleted successfully!`)
 
       // Refresh both user lists
       fetchUsers()
@@ -775,13 +768,13 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('❌ Error deleting user:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to delete user: ${errorMessage}`)
+      toast.error(`Failed to delete user: ${errorMessage}`)
     }
   }
 
   const handleHardDeleteUser = async (targetUserId: string, userEmail: string) => {
     if (targetUserId === userId) {
-      alert('You cannot delete your own account.')
+      toast.warning('You cannot delete your own account.')
       return
     }
 
@@ -798,13 +791,11 @@ export default function SettingsPage() {
     // Final typed confirmation
     const confirmation = prompt(`Type "DELETE ${userEmail}" exactly to confirm permanent deletion:`)
     if (confirmation !== `DELETE ${userEmail}`) {
-      alert('Deletion cancelled - confirmation text did not match.')
+      toast.warning('Deletion cancelled - confirmation text did not match.')
       return
     }
 
     try {
-      console.log('💀 HARD deleting user:', { targetUserId, userEmail })
-
       // Call hard_delete_user function
       const { data, error } = await supabase
         .rpc('hard_delete_user', {
@@ -814,13 +805,12 @@ export default function SettingsPage() {
       if (error) throw error
 
       if (data && !data.success) {
-        alert(`Failed to hard delete user: ${data.message}`)
+        toast.error(`Failed to hard delete user: ${data.message}`)
         return
       }
 
       // Show what was deleted
-      const counts = data.deleted_counts || {}
-      alert(`💀 User "${userEmail}" has been PERMANENTLY DELETED!\n\n🗑️ Deleted Records:\n• Apiaries: ${counts.apiaries || 0}\n• Hives: ${counts.hives || 0}\n• Queens: ${counts.queens || 0}\n• Inspections: ${counts.inspections || 0}\n• Varroa Checks: ${counts.varroa_checks || 0}\n• Varroa Treatments: ${counts.varroa_treatments || 0}\n• Feedings: ${counts.feedings || 0}\n• Harvests: ${counts.harvests || 0}\n• Rearing Batches: ${counts.rearing_batches || 0}\n• Teams Owned: ${counts.teams_owned || 0}\n• Team Memberships: ${counts.team_memberships || 0}\n• Subscription History: ${counts.subscription_history || 0}\n\n⚠️ This data is gone forever and cannot be recovered.`)
+      toast.success(`User "${userEmail}" has been PERMANENTLY DELETED!`)
 
       // Refresh both user lists
       fetchUsers()
@@ -828,7 +818,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('❌ Error hard deleting user:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to hard delete user: ${errorMessage}`)
+      toast.error(`Failed to hard delete user: ${errorMessage}`)
     }
   }
 
@@ -842,7 +832,7 @@ export default function SettingsPage() {
         fetchDeletedUsers()
       }
     }
-  }, [showUserManagement, users.length, deletedUsers.length])
+  }, [showUserManagement, users.length, deletedUsers.length, fetchUsers, fetchDeletedUsers])
 
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true)
@@ -868,7 +858,7 @@ export default function SettingsPage() {
         if (ticketsError.message?.includes('relation "support_tickets" does not exist') ||
             ticketsError.code === '42P01') {
           console.error('Support tickets table does not exist. Please run the migration.')
-          alert('Support tickets table not found. Please run the SQL migration: sql/create_support_tickets.sql')
+          toast.error('Support tickets table not found. Please run the SQL migration.')
           setTickets([])
           return
         }
@@ -915,18 +905,17 @@ export default function SettingsPage() {
         return
       }
 
-      console.log('Fetched tickets with user data:', ticketsData)
       setTickets(ticketsData || [])
     } catch (error) {
       console.error('Error fetching tickets:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Full error details:', error)
-      alert(`Failed to fetch tickets: ${errorMessage}\n\nCheck browser console for details.`)
+      toast.error(`Failed to fetch tickets: ${errorMessage}`)
       setTickets([])
     } finally {
       setLoadingTickets(false)
     }
-  }, [ticketFilter])
+  }, [ticketFilter, toast])
 
   // Fetch tickets when ticket management section is opened
   useEffect(() => {
@@ -946,18 +935,18 @@ export default function SettingsPage() {
 
       if (error) {
         console.error('Error fetching varroa treatment products:', error)
-        alert('Failed to fetch varroa treatment products.')
+        toast.error('Failed to fetch varroa treatment products.')
         return
       }
 
       setVarroaTreatments(data || [])
     } catch (error) {
       console.error('Error fetching varroa treatment products:', error)
-      alert('Failed to fetch varroa treatment products.')
+      toast.error('Failed to fetch varroa treatment products.')
     } finally {
       setLoadingVarroaTreatments(false)
     }
-  }, [])
+  }, [toast])
 
   // Auto-expand sections when tabs are clicked
   useEffect(() => {
@@ -990,18 +979,18 @@ export default function SettingsPage() {
 
       if (error) {
         console.error('Error fetching associations:', error)
-        alert('Failed to fetch beekeeping associations.')
+        toast.error('Failed to fetch beekeeping associations.')
         return
       }
 
       setAssociations(data || [])
     } catch (error) {
       console.error('Error fetching associations:', error)
-      alert('Failed to fetch beekeeping associations.')
+      toast.error('Failed to fetch beekeeping associations.')
     } finally {
       setLoadingAssociations(false)
     }
-  }, [])
+  }, [toast])
 
   // Fetch associations when section is opened
   useEffect(() => {
@@ -1009,13 +998,6 @@ export default function SettingsPage() {
       fetchAssociations()
     }
   }, [showAssociations, fetchAssociations])
-
-  // Fetch registration codes when section is opened
-  useEffect(() => {
-    if (activeSection === 'registration') {
-      fetchRegistrationCodes()
-    }
-  }, [activeSection])
 
   const handleTicketUpdate = async (ticketId: string, updates: TicketUpdate) => {
     try {
@@ -1027,9 +1009,7 @@ export default function SettingsPage() {
         updateData.resolved_at = new Date().toISOString()
       }
 
-      console.log('Updating ticket with data:', updateData)
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('support_tickets')
         .update(updateData)
         .eq('id', ticketId)
@@ -1040,14 +1020,13 @@ export default function SettingsPage() {
         throw error
       }
 
-      console.log('Update successful:', data)
-      alert('Ticket updated successfully!')
+      toast.success('Ticket updated successfully!')
       fetchTickets()
       setEditingTicket(null)
     } catch (error) {
       console.error('Error updating ticket:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to update ticket: ${errorMessage}\n\nCheck browser console for details.`)
+      toast.error(`Failed to update ticket: ${errorMessage}`)
     }
   }
 
@@ -1064,11 +1043,11 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Ticket deleted successfully!')
+      toast.success('Ticket deleted successfully!')
       fetchTickets()
     } catch (error) {
       console.error('Error deleting ticket:', error)
-      alert('Failed to delete ticket.')
+      toast.error('Failed to delete ticket.')
     }
   }
 
@@ -1088,7 +1067,7 @@ export default function SettingsPage() {
           .eq('id', editingVarroaTreatment.id)
 
         if (error) throw error
-        alert('Varroa treatment product updated successfully!')
+        toast.success('Varroa treatment product updated successfully!')
       } else {
         // Create new treatment product
         const { error } = await supabase
@@ -1096,7 +1075,7 @@ export default function SettingsPage() {
           .insert([varroaTreatmentFormData])
 
         if (error) throw error
-        alert('Varroa treatment product added successfully!')
+        toast.success('Varroa treatment product added successfully!')
       }
 
       fetchVarroaTreatments()
@@ -1104,7 +1083,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error saving varroa treatment product:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to save varroa treatment product: ${errorMessage}`)
+      toast.error(`Failed to save varroa treatment product: ${errorMessage}`)
     }
   }
 
@@ -1136,11 +1115,11 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Varroa treatment product deleted successfully!')
+      toast.success('Varroa treatment product deleted successfully!')
       fetchVarroaTreatments()
     } catch (error) {
       console.error('Error deleting varroa treatment product:', error)
-      alert('Failed to delete varroa treatment product.')
+      toast.error('Failed to delete varroa treatment product.')
     }
   }
 
@@ -1175,7 +1154,7 @@ export default function SettingsPage() {
           .eq('id', editingAssociation.id)
 
         if (error) throw error
-        alert('Beekeeping association updated successfully!')
+        toast.success('Beekeeping association updated successfully!')
       } else {
         // Create new association
         const { error } = await supabase
@@ -1183,7 +1162,7 @@ export default function SettingsPage() {
           .insert([associationFormData])
 
         if (error) throw error
-        alert('Beekeeping association added successfully!')
+        toast.success('Beekeeping association added successfully!')
       }
 
       fetchAssociations()
@@ -1191,7 +1170,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error saving beekeeping association:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to save beekeeping association: ${errorMessage}`)
+      toast.error(`Failed to save beekeeping association: ${errorMessage}`)
     }
   }
 
@@ -1218,11 +1197,11 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Beekeeping association deleted successfully!')
+      toast.success('Beekeeping association deleted successfully!')
       fetchAssociations()
     } catch (error) {
       console.error('Error deleting beekeeping association:', error)
-      alert('Failed to delete beekeeping association.')
+      toast.error('Failed to delete beekeeping association.')
     }
   }
 
@@ -1237,7 +1216,7 @@ export default function SettingsPage() {
   }
 
   // Registration Codes Functions
-  const fetchRegistrationCodes = async () => {
+  const fetchRegistrationCodes = useCallback(async () => {
     setLoadingCodes(true)
     try {
       const { data, error } = await supabase
@@ -1259,11 +1238,18 @@ export default function SettingsPage() {
       setRegistrationCodes(transformedData)
     } catch (error) {
       console.error('Error fetching registration codes:', error)
-      alert('Failed to fetch registration codes.')
+      toast.error('Failed to fetch registration codes.')
     } finally {
       setLoadingCodes(false)
     }
-  }
+  }, [toast])
+
+  // Fetch registration codes when section is opened
+  useEffect(() => {
+    if (activeSection === 'registration') {
+      fetchRegistrationCodes()
+    }
+  }, [activeSection, fetchRegistrationCodes])
 
   const fetchAssociationsForCodes = async () => {
     setLoadingAssociations(true)
@@ -1287,13 +1273,13 @@ export default function SettingsPage() {
     e.preventDefault()
 
     if (!newCodeData.code.trim()) {
-      alert('Code is required')
+      toast.warning('Code is required')
       return
     }
 
     // Validate association code has association selected
     if (newCodeData.code_type === 'association' && !newCodeData.association_id) {
-      alert('Please select an association for association codes')
+      toast.warning('Please select an association for association codes')
       return
     }
 
@@ -1316,7 +1302,7 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Subscription code created successfully!')
+      toast.success('Subscription code created successfully!')
       setShowAddCodeModal(false)
       setNewCodeData({
         code: '',
@@ -1333,9 +1319,9 @@ export default function SettingsPage() {
 
       // Check if it's a duplicate code error
       if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
-        alert(`This code already exists. Please choose a different code.`)
+        toast.error(`This code already exists. Please choose a different code.`)
       } else {
-        alert(`Failed to create code: ${errorMessage}`)
+        toast.error(`Failed to create code: ${errorMessage}`)
       }
     }
   }
@@ -1349,11 +1335,11 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert(`Code ${!currentStatus ? 'activated' : 'deactivated'} successfully!`)
+      toast.success(`Code ${!currentStatus ? 'activated' : 'deactivated'} successfully!`)
       fetchRegistrationCodes()
     } catch (error) {
       console.error('Error toggling code status:', error)
-      alert('Failed to update code status.')
+      toast.error('Failed to update code status.')
     }
   }
 
@@ -1381,12 +1367,12 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Code updated successfully!')
+      toast.success('Code updated successfully!')
       setEditingCodeId(null)
       fetchRegistrationCodes()
     } catch (error) {
       console.error('Error updating code:', error)
-      alert('Failed to update code.')
+      toast.error('Failed to update code.')
     }
   }
 
@@ -1411,18 +1397,18 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert('Code deleted successfully!')
+      toast.success('Code deleted successfully!')
       fetchRegistrationCodes()
     } catch (error) {
       console.error('Error deleting code:', error)
-      alert('Failed to delete code.')
+      toast.error('Failed to delete code.')
     }
   }
 
   // User Account Toggle Function
   const handleToggleUserAccount = async (targetUserId: string, currentStatus: boolean, userEmail: string) => {
     if (targetUserId === userId) {
-      alert('You cannot disable your own account.')
+      toast.warning('You cannot disable your own account.')
       return
     }
 
@@ -1442,13 +1428,13 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      alert(data.message || `Account ${action}d successfully!`)
+      toast.success(data.message || `Account ${action}d successfully!`)
 
       await fetchUsers()
     } catch (error) {
       console.error('❌ Error toggling user account:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to ${action} account: ${errorMessage}`)
+      toast.error(`Failed to ${action} account: ${errorMessage}`)
     }
   }
 
@@ -1457,13 +1443,11 @@ export default function SettingsPage() {
     try {
       // If user is admin, use admin API to export ALL users' data
       if (userIsAdmin) {
-        console.log('Admin export: fetching all users data via API...')
-
         // Get the current session to get auth token
         const { data: { session } } = await supabase.auth.getSession()
 
         if (!session) {
-          alert('Session expired. Please log in again.')
+          toast.error('Session expired. Please log in again.')
           return
         }
 
@@ -1495,11 +1479,9 @@ export default function SettingsPage() {
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
 
-        alert('✅ Complete database exported successfully!\n\nThis export includes ALL users\' data from ALL tables including tasks_events.')
+        toast.success('Complete database exported successfully!')
       } else {
         // Regular user: export only their own data
-        console.log('User export: fetching current user data only...')
-
         const tables = [
           'apiaries',
           'colonies',
@@ -1578,11 +1560,11 @@ export default function SettingsPage() {
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
 
-        alert('✅ Your personal data exported successfully!\n\nThis export includes your data from all tables including tasks and events.')
+        toast.success('Your personal data exported successfully!')
       }
     } catch (error) {
       console.error('Error exporting database:', error)
-      alert('Failed to export database. Check console for details.')
+      toast.error('Failed to export database. Check console for details.')
     } finally {
       setExporting(false)
     }
@@ -2496,8 +2478,7 @@ export default function SettingsPage() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => {
-                                console.log('Editing ticket:', ticket)
-                                setEditingTicket(ticket)
+                                  setEditingTicket(ticket)
                               }}
                               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
                             >

@@ -6,6 +6,7 @@ import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Min
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 
 interface HiveConfiguration {
   brood_boxes?: number // Legacy field
@@ -268,6 +269,7 @@ interface TreatmentProduct {
 
 export default function InspectionsPage() {
   const router = useRouter()
+  const toast = useToast()
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
   const [inspections, setInspections] = useState<Inspection[]>([])
@@ -1338,8 +1340,6 @@ export default function InspectionsPage() {
         contentType = mimeMap[fileExt || ''] || 'image/jpeg'
       }
 
-      console.log('Uploading image:', { fileName, fileType: file.type, contentType, fileSize: file.size })
-
       // Create a new File object with the correct MIME type to ensure browser sends it correctly
       const correctedFile = new File([file], file.name, { type: contentType })
 
@@ -1360,12 +1360,11 @@ export default function InspectionsPage() {
         .from('inspection-images')
         .getPublicUrl(filePath)
 
-      console.log('Image uploaded successfully:', publicUrl)
       return publicUrl
     } catch (error) {
       console.error('Failed to upload image:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to upload image: ${errorMessage}`)
+      toast.error(`Failed to upload image: ${errorMessage}`)
       return null
     } finally {
       setUploadingImage(false)
@@ -1542,7 +1541,7 @@ export default function InspectionsPage() {
       setSelectedHiveHasHoneySupers(false)
     } catch (error) {
       if (error instanceof Error) {
-        alert('Error saving treatment: ' + error.message)
+        toast.error('Error saving treatment: ' + error.message)
       }
     }
   }
@@ -1623,7 +1622,7 @@ export default function InspectionsPage() {
       setEditingCheck(null)
     } catch (error) {
       if (error instanceof Error) {
-        alert('Error saving check: ' + error.message)
+        toast.error('Error saving check: ' + error.message)
       }
     }
   }
@@ -1671,7 +1670,7 @@ export default function InspectionsPage() {
       setOtherFeedType('')
     } catch (error) {
       if (error instanceof Error) {
-        alert('Error saving feeding: ' + error.message)
+        toast.error('Error saving feeding: ' + error.message)
       }
     }
   }
@@ -1715,7 +1714,7 @@ export default function InspectionsPage() {
       setEditingHarvest(null)
     } catch (error) {
       if (error instanceof Error) {
-        alert('Error saving harvest: ' + error.message)
+        toast.error('Error saving harvest: ' + error.message)
       }
     }
   }
@@ -1830,7 +1829,7 @@ export default function InspectionsPage() {
       resetForm()
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message)
+        toast.error(error.message)
       }
     }
   }
@@ -2401,7 +2400,7 @@ export default function InspectionsPage() {
           <form onSubmit={async (e) => {
             e.preventDefault()
             if (!userId || !archiveData.hive_id || !archiveData.archive_reason_id) {
-              alert('Please select a hive and a reason for archiving')
+              toast.warning('Please select a hive and a reason for archiving')
               return
             }
 
@@ -2420,7 +2419,7 @@ export default function InspectionsPage() {
 
               if (error) throw error
 
-              alert('Hive archived successfully! Go to Hives page and select "Archived" or "All" filter to see it.')
+              toast.success('Hive archived successfully! Go to Hives page and select "Archived" or "All" filter to see it.')
               setShowForm(false)
               setArchiveData({
                 hive_id: '',
@@ -2431,7 +2430,7 @@ export default function InspectionsPage() {
               fetchHives(userId)
             } catch (error) {
               console.error('Error archiving hive:', error)
-              alert(error instanceof Error ? error.message : 'Failed to archive hive')
+              toast.error(error instanceof Error ? error.message : 'Failed to archive hive')
             }
           }} className="space-y-4">
             <div>

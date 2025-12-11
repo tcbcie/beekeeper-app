@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 interface TaskEvent {
   id: string
@@ -53,6 +54,7 @@ interface Batch {
 
 export default function TasksEventsPage() {
   const searchParams = useSearchParams()
+  const toast = useToast()
   const [userId, setUserId] = useState<string>('')
   const [tasks, setTasks] = useState<TaskEvent[]>([])
   const [hives, setHives] = useState<Hive[]>([])
@@ -274,7 +276,7 @@ export default function TasksEventsPage() {
         .eq('id', editingTask.id)
 
       if (error) {
-        alert('Error updating task: ' + error.message)
+        toast.error('Error updating task: ' + error.message)
       } else {
         await fetchTasks()
         resetForm()
@@ -285,7 +287,7 @@ export default function TasksEventsPage() {
         .insert([taskData])
 
       if (error) {
-        alert('Error creating task: ' + error.message)
+        toast.error('Error creating task: ' + error.message)
       } else {
         await fetchTasks()
         resetForm()
@@ -347,7 +349,7 @@ export default function TasksEventsPage() {
     const task = tasks.find(t => t.id === id)
 
     if (task && task.user_id !== userId) {
-      alert('You cannot delete this task because it was created by another team member. Only the task creator can delete it.')
+      toast.warning('You cannot delete this task because it was created by another team member. Only the task creator can delete it.')
       return
     }
 
@@ -359,7 +361,7 @@ export default function TasksEventsPage() {
       .eq('id', id)
 
     if (error) {
-      alert('Error deleting task: ' + error.message)
+      toast.error('Error deleting task: ' + error.message)
     } else {
       await fetchTasks()
     }
@@ -376,7 +378,7 @@ export default function TasksEventsPage() {
       .eq('id', task.id)
 
     if (error) {
-      alert('Error updating task: ' + error.message)
+      toast.error('Error updating task: ' + error.message)
     } else {
       await fetchTasks()
     }

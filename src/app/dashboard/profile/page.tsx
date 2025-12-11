@@ -9,6 +9,7 @@ import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
+import { useToast } from '@/components/ui/Toast'
 
 interface UserProfile {
   id: string
@@ -95,6 +96,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const toast = useToast()
   const [, setPaymentStatus] = useState<string | null>(null)
 
   // Profile editing state
@@ -255,13 +257,13 @@ export default function ProfilePage() {
         throw error
       }
 
-      alert('Profile updated successfully!')
+      toast.success('Profile updated successfully!')
       setEditingProfile(false)
       fetchUserProfile() // Refresh profile data
     } catch (error) {
       console.error('Error updating profile:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to update profile: ${errorMessage}`)
+      toast.error(`Failed to update profile: ${errorMessage}`)
     } finally {
       setSavingProfile(false)
     }
@@ -354,10 +356,10 @@ export default function ProfilePage() {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
-      alert('Your data has been exported successfully!')
+      toast.success('Your data has been exported successfully!')
     } catch (error) {
       console.error('Error exporting data:', error)
-      alert('Failed to export data. Check console for details.')
+      toast.error('Failed to export data. Check console for details.')
     } finally {
       setExportingMyData(false)
     }
@@ -441,10 +443,10 @@ export default function ProfilePage() {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
-      alert('Your data has been exported successfully!')
+      toast.success('Your data has been exported successfully!')
     } catch (error) {
       console.error('Error exporting data:', error)
-      alert('Failed to export data. Check console for details.')
+      toast.error('Failed to export data. Check console for details.')
     } finally {
       setExportingMyData(false)
     }
@@ -493,7 +495,7 @@ export default function ProfilePage() {
       }
 
       // Success
-      alert('Password changed successfully!')
+      toast.success('Password changed successfully!')
       setShowChangePasswordModal(false)
       setCurrentPassword('')
       setNewPassword('')
@@ -512,34 +514,32 @@ export default function ProfilePage() {
 
     // Verify confirmation text
     if (deleteConfirmText !== 'DELETE') {
-      alert('Please type DELETE to confirm account deletion.')
+      toast.warning('Please type DELETE to confirm account deletion.')
       return
     }
 
     setDeletingAccount(true)
     try {
       // Call the delete_own_account RPC function
-      const { data, error } = await supabase.rpc('delete_own_account')
+      const { error } = await supabase.rpc('delete_own_account')
 
       if (error) {
         console.error('Error deleting account:', error)
         throw error
       }
 
-      console.log('Account deactivation response:', data)
-
       // Sign out the user - use local scope
       await supabase.auth.signOut({ scope: 'local' })
 
       // Show success message with reactivation info
-      alert('Your account has been deleted.\n\n✅ Data Retention:\n• All your data will be retained for 12 months\n• You can request reactivation at any time within this period\n• Visit the login page and use the reactivation option\n\n⚠️ Important:\n• If you do not reactivate within 12 months, all data will be permanently deleted\n• After permanent deletion, your data cannot be recovered')
+      toast.success('Your account has been deleted. Your data will be retained for 12 months. You can reactivate via the login page.')
 
       // Redirect to login page
       router.push('/login')
     } catch (error) {
       console.error('Error deleting account:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to delete account: ${errorMessage}\n\nPlease try again or contact support.`)
+      toast.error(`Failed to delete account: ${errorMessage}. Please try again or contact support.`)
     } finally {
       setDeletingAccount(false)
       setShowDeleteAccountModal(false)
@@ -553,13 +553,6 @@ export default function ProfilePage() {
     setLoadingTeams(true)
 
     try {
-      // Debug: Log the user ID being used
-      console.log('Fetching teams for user ID:', userId)
-
-      // Verify auth.uid() matches
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('Current auth user:', user?.id)
-
       // Fetch owned teams
       const { data: owned, error: ownedError } = await supabase
         .from('teams')
@@ -567,7 +560,6 @@ export default function ProfilePage() {
         .eq('owner_id', userId)
         .order('created_at', { ascending: false })
 
-      console.log('Owned teams query result:', { owned, error: ownedError })
       if (ownedError) throw ownedError
 
       // Get member count for each owned team
@@ -605,11 +597,11 @@ export default function ProfilePage() {
       console.error('Error fetching teams:', error)
       // More detailed error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to load teams: ${errorMessage}\n\nPlease ensure the teams tables have been created in Supabase by running the migration in sql/create_teams_tables.sql`)
+      toast.error(`Failed to load teams: ${errorMessage}. Please ensure the teams tables have been created in Supabase.`)
     } finally {
       setLoadingTeams(false)
     }
-  }, [userId])
+  }, [userId, toast])
 
   // Fetch user's apiaries
   const fetchUserApiaries = useCallback(async () => {
@@ -655,7 +647,7 @@ export default function ProfilePage() {
   // Share an apiary with a team
   const handleShareApiary = async () => {
     if (!userId || !selectedTeam || !selectedApiaryId) {
-      alert('Please select an apiary to share.')
+      toast.warning('Please select an apiary to share.')
       return
     }
 
@@ -671,14 +663,14 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      alert('Apiary shared with team successfully!')
+      toast.success('Apiary shared with team successfully!')
       setSelectedApiaryId('')
       setShowShareApiaryModal(false)
       fetchTeamApiaries(selectedTeam.id)
     } catch (error) {
       console.error('Error sharing apiary:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to share apiary: ${errorMessage}`)
+      toast.error(`Failed to share apiary: ${errorMessage}`)
     } finally {
       setSharingApiary(false)
     }
@@ -696,20 +688,20 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      alert('Apiary removed from team successfully!')
+      toast.success('Apiary removed from team successfully!')
       if (selectedTeam) {
         fetchTeamApiaries(selectedTeam.id)
       }
     } catch (error) {
       console.error('Error unsharing apiary:', error)
-      alert('Failed to remove apiary from team.')
+      toast.error('Failed to remove apiary from team.')
     }
   }
 
   // Create a new team
   const handleCreateTeam = async () => {
     if (!userId || !newTeamName.trim()) {
-      alert('Please enter a team name.')
+      toast.warning('Please enter a team name.')
       return
     }
 
@@ -726,14 +718,14 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      alert(`Team "${newTeamName}" created successfully!`)
+      toast.success(`Team "${newTeamName}" created successfully!`)
       setNewTeamName('')
       setShowCreateTeamModal(false)
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error creating team:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to create team: ${errorMessage}\n\nThe teams tables may not exist in your Supabase database yet.\n\nPlease run the migration:\n1. Go to Supabase Dashboard > SQL Editor\n2. Open and run: sql/create_teams_tables.sql`)
+      toast.error(`Failed to create team: ${errorMessage}. The teams tables may not exist in Supabase yet.`)
     } finally {
       setCreatingTeam(false)
     }
@@ -822,14 +814,14 @@ export default function ProfilePage() {
   // Send invitation to join team
   const handleSendInvite = async () => {
     if (!selectedTeam || !inviteEmail.trim()) {
-      alert('Please enter an email address.')
+      toast.warning('Please enter an email address.')
       return
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(inviteEmail)) {
-      alert('Please enter a valid email address.')
+      toast.warning('Please enter a valid email address.')
       return
     }
 
@@ -842,12 +834,12 @@ export default function ProfilePage() {
 
     if (sharedError) {
       console.error('Error checking shared apiaries:', sharedError)
-      alert('Failed to verify team apiaries. Please try again.')
+      toast.error('Failed to verify team apiaries. Please try again.')
       return
     }
 
     if (!sharedApiaries || sharedApiaries.length === 0) {
-      alert('Before inviting team members, you must share at least one apiary with this team.\n\nTeam members can only access apiaries that are explicitly shared with the team.\n\nGo to the Apiaries page and use the "Share with Team" option to share an apiary first.')
+      toast.warning('Before inviting team members, you must share at least one apiary with this team.')
       return
     }
 
@@ -864,8 +856,6 @@ export default function ProfilePage() {
 
       const existingUser = lookupResult && lookupResult.length > 0 ? lookupResult[0] : null
 
-      console.log('Looking up user:', inviteEmail, 'Found:', existingUser)
-
       // Check if already a member
       if (existingUser) {
         const { data: existingMember } = await supabase
@@ -876,7 +866,7 @@ export default function ProfilePage() {
           .maybeSingle()
 
         if (existingMember) {
-          alert('This user is already a member of the team.')
+          toast.warning('This user is already a member of the team.')
           setSendingInvite(false)
           return
         }
@@ -893,7 +883,7 @@ export default function ProfilePage() {
 
       if (existingInvite) {
         if (existingInvite.status === 'pending') {
-          alert('An invitation has already been sent to this email.')
+          toast.warning('An invitation has already been sent to this email.')
           setSendingInvite(false)
           return
         } else if (existingInvite.status === 'declined') {
@@ -905,7 +895,7 @@ export default function ProfilePage() {
 
           if (deleteError) {
             console.error('Error deleting declined invitation:', deleteError)
-            alert('Failed to resend invitation. Please try again.')
+            toast.error('Failed to resend invitation. Please try again.')
             setSendingInvite(false)
             return
           }
@@ -937,7 +927,7 @@ export default function ProfilePage() {
             accepted_at: new Date().toISOString(),
           })
 
-        alert(`${inviteEmail} has been added to the team!`)
+        toast.success(`${inviteEmail} has been added to the team!`)
       } else {
         // User doesn't exist yet - create pending invitation
         const { data: newInvite, error: inviteError } = await supabase
@@ -974,16 +964,16 @@ export default function ProfilePage() {
 
             // Check if it's a "function not found" error
             if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
-              alert(`✅ Invitation created successfully!\n\n⚠️ Email system not yet configured.\n\nThe invitation is saved and ${inviteEmail} will be automatically added to the team when they sign up.\n\nTo enable email notifications:\n1. Deploy: supabase functions deploy send-team-invitation\n2. Set API key: See TEAM_INVITATION_SETUP.md\n\nFor now, please contact ${inviteEmail} directly to let them know.`)
+              toast.info(`Invitation created! Email system not configured yet. ${inviteEmail} will be added when they sign up.`)
             } else {
-              alert(`✅ Invitation created successfully!\n\n⚠️ Email failed to send (check console for details).\n\nThe invitation is saved and ${inviteEmail} will be automatically added to the team when they sign up.\n\nPlease contact ${inviteEmail} directly to let them know.`)
+              toast.warning(`Invitation created but email failed to send. Please contact ${inviteEmail} directly.`)
             }
           } else {
-            alert(`📧 Invitation email sent to ${inviteEmail}!\n\nThey will be automatically added to the team when they sign up with this email address.`)
+            toast.success(`Invitation email sent to ${inviteEmail}!`)
           }
         } catch (emailException) {
           console.error('❌ Exception sending invitation email:', emailException)
-          alert(`✅ Invitation created successfully!\n\n⚠️ Email system not configured yet.\n\nThe invitation is saved and ${inviteEmail} will be automatically added to the team when they sign up.\n\nTo enable email notifications, see: TEAM_INVITATION_SETUP.md\n\nFor now, please contact ${inviteEmail} directly to let them know.`)
+          toast.info(`Invitation created! Email system not configured. Please contact ${inviteEmail} directly.`)
         }
       }
 
@@ -992,7 +982,7 @@ export default function ProfilePage() {
       fetchTeamDetails(selectedTeam.id) // Refresh team details
     } catch (error) {
       console.error('Error sending invitation:', error)
-      alert('Failed to send invitation. Please try again.')
+      toast.error('Failed to send invitation. Please try again.')
     } finally {
       setSendingInvite(false)
     }
@@ -1012,23 +1002,23 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      alert(`Team "${teamName}" deleted successfully.`)
+      toast.success(`Team "${teamName}" deleted successfully.`)
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error deleting team:', error)
-      alert('Failed to delete team. Please try again.')
+      toast.error('Failed to delete team. Please try again.')
     }
   }
 
   // Rename team
   const handleRenameTeam = async () => {
     if (!selectedTeam || !renameTeamName.trim()) {
-      alert('Please enter a new team name.')
+      toast.warning('Please enter a new team name.')
       return
     }
 
     if (renameTeamName.trim() === selectedTeam.name) {
-      alert('New name is the same as current name.')
+      toast.warning('New name is the same as current name.')
       return
     }
 
@@ -1042,14 +1032,14 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      alert(`Team renamed to "${renameTeamName.trim()}" successfully!`)
+      toast.success(`Team renamed to "${renameTeamName.trim()}" successfully!`)
       setShowRenameTeamModal(false)
       setRenameTeamName('')
       setSelectedTeam(null)
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error renaming team:', error)
-      alert('Failed to rename team. Please try again.')
+      toast.error('Failed to rename team. Please try again.')
     } finally {
       setRenamingTeam(false)
     }
@@ -1069,21 +1059,21 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      alert(`${memberEmail} removed from team.`)
+      toast.success(`${memberEmail} removed from team.`)
       if (selectedTeam) {
         fetchTeamDetails(selectedTeam.id) // Refresh team details
       }
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error removing member:', error)
-      alert('Failed to remove member. Please try again.')
+      toast.error('Failed to remove member. Please try again.')
     }
   }
 
   // Leave team (for members)
   const handleLeaveTeam = async (teamId: string, teamName: string) => {
     if (!userId) {
-      alert('User not authenticated.')
+      toast.error('User not authenticated.')
       return
     }
 
@@ -1092,16 +1082,12 @@ export default function ProfilePage() {
     }
 
     try {
-      console.log('🚪 Attempting to leave team:', { teamId, userId })
-
       const { data, error } = await supabase
         .from('team_members')
         .delete()
         .eq('team_id', teamId)
         .eq('user_id', userId)
         .select()
-
-      console.log('🚪 Leave team response:', { data, error })
 
       if (error) {
         console.error('Leave team error details:', error)
@@ -1110,16 +1096,16 @@ export default function ProfilePage() {
 
       if (!data || data.length === 0) {
         console.warn('No team_member record was deleted')
-        alert('You are not a member of this team or membership not found.')
+        toast.warning('You are not a member of this team or membership not found.')
         return
       }
 
-      alert(`You have left the team "${teamName}".`)
+      toast.success(`You have left the team "${teamName}".`)
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error leaving team:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Failed to leave team: ${errorMessage}`)
+      toast.error(`Failed to leave team: ${errorMessage}`)
     }
   }
 
@@ -1146,10 +1132,10 @@ export default function ProfilePage() {
       }
 
       // Show success message AFTER refresh completes
-      alert(`Invitation to ${email} cancelled.`)
+      toast.success(`Invitation to ${email} cancelled.`)
     } catch (error) {
       console.error('Error cancelling invitation:', error)
-      alert('Failed to cancel invitation. Please try again.')
+      toast.error('Failed to cancel invitation. Please try again.')
       // Refresh to restore correct state if delete failed
       if (selectedTeam) {
         fetchTeamDetails(selectedTeam.id)
@@ -1166,18 +1152,18 @@ export default function ProfilePage() {
       const newUrl = window.location.pathname
       window.history.replaceState({}, '', newUrl)
 
-      // Show alert based on payment status
+      // Show toast based on payment status
       if (payment === 'success') {
         setTimeout(() => {
-          alert('✅ Payment successful! Your subscription has been activated.\n\nPlease refresh the page to see your updated subscription status.')
+          toast.success('Payment successful! Your subscription has been activated.')
         }, 500)
       } else if (payment === 'cancelled') {
         setTimeout(() => {
-          alert('Payment was cancelled. You can try again whenever you\'re ready.')
+          toast.info('Payment was cancelled. You can try again whenever you\'re ready.')
         }, 500)
       }
     }
-  }, [searchParams])
+  }, [searchParams, toast])
 
   useEffect(() => {
     const initUser = async () => {

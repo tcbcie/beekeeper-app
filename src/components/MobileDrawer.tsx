@@ -14,11 +14,6 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname()
   const [userRole, setUserRole] = useState<UserRole>('User')
 
-  // Debug logging
-  useEffect(() => {
-    console.log('MobileDrawer isOpen:', isOpen)
-  }, [isOpen])
-
   useEffect(() => {
     const fetchRole = async () => {
       const role = await getUserRole()
