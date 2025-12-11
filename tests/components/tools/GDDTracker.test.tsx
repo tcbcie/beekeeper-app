@@ -3,13 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import GDDTracker from '@/components/tools/GDDTracker'
 
 // Mock Toast
+const mockToast = {
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+  info: vi.fn(),
+}
 vi.mock('@/components/ui/Toast', () => ({
-  useToast: () => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn(),
-    info: vi.fn(),
-  }),
+  useToast: () => mockToast,
 }))
 
 // Mock data
@@ -161,7 +162,8 @@ describe('GDDTracker', () => {
       render(<GDDTracker userId="test-user-id" />)
 
       await waitFor(() => {
-        expect(screen.getByText(/GDD calculated using base temperature of 5°C/)).toBeInTheDocument()
+        // Check for the new legend format with base temp 6°C
+        expect(screen.getByText(/Base temp:/)).toBeInTheDocument()
       })
     })
 
@@ -190,7 +192,7 @@ describe('GDDTracker', () => {
         expect(screen.getByText('Year')).toBeInTheDocument()
         expect(screen.getByText('Apiary')).toBeInTheDocument()
         expect(screen.getByText('Vegetation')).toBeInTheDocument()
-        expect(screen.getByText('Start')).toBeInTheDocument()
+        expect(screen.getByText('Bloom Date')).toBeInTheDocument()
         expect(screen.getByText('End')).toBeInTheDocument()
         expect(screen.getByText('GDD')).toBeInTheDocument()
         expect(screen.getByText('Shared')).toBeInTheDocument()
@@ -198,11 +200,11 @@ describe('GDDTracker', () => {
       })
     })
 
-    it('should show "Set end date" for records without end date', async () => {
+    it('should show Calculate button for records without GDD value', async () => {
       render(<GDDTracker userId="test-user-id" />)
 
       await waitFor(() => {
-        expect(screen.getByText('Set end date')).toBeInTheDocument()
+        expect(screen.getByText('Calculate')).toBeInTheDocument()
       })
     })
 
@@ -265,8 +267,8 @@ describe('GDDTracker', () => {
         expect(screen.getByText('New GDD Record')).toBeInTheDocument()
         expect(screen.getByText('Apiary *')).toBeInTheDocument()
         expect(screen.getByText('Vegetation Type *')).toBeInTheDocument()
-        expect(screen.getByText('Start Date (Bloom Start) *')).toBeInTheDocument()
-        expect(screen.getByText('End Date (Bloom End)')).toBeInTheDocument()
+        expect(screen.getByText('Bloom Observed Date *')).toBeInTheDocument()
+        expect(screen.getByText('Bloom End Date (optional)')).toBeInTheDocument()
       })
     })
 
@@ -280,8 +282,8 @@ describe('GDDTracker', () => {
       fireEvent.click(screen.getByText('Add Record'))
 
       await waitFor(() => {
-        const apiarySelect = screen.getByRole('combobox', { name: /apiary/i })
-        expect(apiarySelect).toBeInTheDocument()
+        // Check the apiary dropdown exists with placeholder option
+        expect(screen.getByText('Select apiary...')).toBeInTheDocument()
       })
     })
 
@@ -311,7 +313,10 @@ describe('GDDTracker', () => {
         expect(screen.getByText('New GDD Record')).toBeInTheDocument()
       })
 
-      fireEvent.click(screen.getByText('Cancel'))
+      // Click the Cancel button inside the form (not the header toggle)
+      const cancelButtons = screen.getAllByText('Cancel')
+      // The form's Cancel button is the second one (inside the form)
+      fireEvent.click(cancelButtons[1])
 
       await waitFor(() => {
         expect(screen.queryByText('New GDD Record')).not.toBeInTheDocument()
@@ -332,7 +337,7 @@ describe('GDDTracker', () => {
   })
 
   describe('Form Validation', () => {
-    it('should alert when trying to save without required fields', async () => {
+    it('should show warning toast when trying to save without required fields', async () => {
       render(<GDDTracker userId="test-user-id" />)
 
       await waitFor(() => {
@@ -343,7 +348,7 @@ describe('GDDTracker', () => {
         fireEvent.click(screen.getByText('Save Record'))
       })
 
-      expect(global.alert).toHaveBeenCalledWith(
+      expect(mockToast.warning).toHaveBeenCalledWith(
         'Please select an apiary, vegetation type, and start date'
       )
     })
@@ -375,10 +380,13 @@ describe('GDDTracker', () => {
         expect(screen.getByText('Home Apiary')).toBeInTheDocument()
       })
 
+      // Clear mock calls from initialization before testing delete
+      mockSupabaseFrom.mockClear()
+
       const deleteButtons = screen.getAllByTitle('Delete record')
       fireEvent.click(deleteButtons[0])
 
-      // Verify delete was not called on Supabase
+      // Verify delete was not called on Supabase (no calls after clearing)
       expect(mockSupabaseFrom).not.toHaveBeenCalledWith('gdd_records')
     })
   })

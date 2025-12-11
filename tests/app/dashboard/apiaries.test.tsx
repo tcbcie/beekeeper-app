@@ -428,7 +428,7 @@ describe('ApiariesPage', () => {
         expect(mockInsert).toHaveBeenCalledWith([
           expect.objectContaining({
             name: 'New Apiary',
-            eircode: '',
+            eircode: null,
             user_id: mockUserId
           })
         ])
@@ -994,7 +994,7 @@ describe('ApiariesPage', () => {
         expect(mockInsert).toHaveBeenCalledWith([
           expect.objectContaining({
             name: 'Test Apiary',
-            eircode: '',
+            eircode: null,
             is_uk_ni: false,
             user_id: mockUserId
           })
