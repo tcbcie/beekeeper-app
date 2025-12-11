@@ -6,23 +6,33 @@
  * - Reminder calculation logic
  * - Email generation
  * - Database updates
+ *
+ * NOTE: This is an integration test that requires real Supabase credentials.
+ * It will be skipped if SUPABASE_SERVICE_ROLE_KEY is not set.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Test configuration
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+// Test configuration - skip tests if env vars not available
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const HAS_ENV_VARS = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+
+// Only create client if we have the required env vars
+const supabase: SupabaseClient | null = HAS_ENV_VARS
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  : null
 
 // Test user IDs
 let testUserId: string
 let testTaskId: string
 let testEventId: string
 
-describe('Email Reminder System - User Preferences', () => {
+// Skip all tests if env vars not available
+describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - User Preferences', () => {
   beforeEach(async () => {
+    if (!supabase) return
     // Create test user profile
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -126,7 +136,7 @@ describe('Email Reminder System - User Preferences', () => {
   })
 })
 
-describe('Email Reminder System - Task Creation', () => {
+describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - Task Creation', () => {
   beforeEach(async () => {
     // Create test user
     const { data: profile } = await supabase
@@ -222,7 +232,7 @@ describe('Email Reminder System - Task Creation', () => {
   })
 })
 
-describe('Email Reminder System - Reminder Logic', () => {
+describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - Reminder Logic', () => {
   beforeEach(async () => {
     // Create test user
     const { data: profile } = await supabase
@@ -367,7 +377,7 @@ describe('Email Reminder System - Reminder Logic', () => {
   })
 })
 
-describe('Email Reminder System - Frequency Filters', () => {
+describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - Frequency Filters', () => {
   beforeEach(async () => {
     const { data: profile } = await supabase
       .from('profiles')
@@ -461,7 +471,7 @@ describe('Email Reminder System - Frequency Filters', () => {
   })
 })
 
-describe('Email Reminder System - Marking Reminders as Sent', () => {
+describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - Marking Reminders as Sent', () => {
   beforeEach(async () => {
     const { data: profile } = await supabase
       .from('profiles')
@@ -576,7 +586,7 @@ describe('Email Reminder System - Marking Reminders as Sent', () => {
   })
 })
 
-describe('Email Reminder System - Edge Function Integration', () => {
+describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - Edge Function Integration', () => {
   it('should call Edge Function successfully', async () => {
     const response = await fetch(
       `${SUPABASE_URL}/functions/v1/task-event-reminders`,
@@ -612,7 +622,7 @@ describe('Email Reminder System - Edge Function Integration', () => {
   })
 })
 
-describe('Email Reminder System - Cron Job Verification', () => {
+describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - Cron Job Verification', () => {
   it('should have task-event-reminders cron job scheduled', async () => {
     const { data: jobs } = await supabase.rpc('cron.job', {})
       .select('*')
