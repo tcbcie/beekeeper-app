@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import UpcomingEvents from '@/components/UpcomingEvents'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply } from 'lucide-react'
 
 interface Inspection {
   id: string
@@ -128,7 +128,7 @@ export default function DashboardPage() {
   const [mySharedTeamMembers, setMySharedTeamMembers] = useState<TeamMember[]>([])
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
   const [openTicketsCount, setOpenTicketsCount] = useState<number>(0)
-  const [userTicketStatus, setUserTicketStatus] = useState<{ open: number; in_progress: number; resolved: number } | null>(null)
+  const [userTicketStatus, setUserTicketStatus] = useState<{ open: number; in_progress: number; resolved: number; has_response: number } | null>(null)
   const [dashboardError, setDashboardError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -556,22 +556,26 @@ export default function DashboardPage() {
     try {
       const { data, error } = await supabase
         .from('support_tickets')
-        .select('status')
+        .select('status, admin_notes')
         .eq('user_id', currentUserId)
         .in('status', ['open', 'in_progress', 'resolved'])
 
       if (error) throw error
 
-      // Count tickets by status
-      const counts = { open: 0, in_progress: 0, resolved: 0 }
+      // Count tickets by status and those with admin responses
+      const counts = { open: 0, in_progress: 0, resolved: 0, has_response: 0 }
       data?.forEach(ticket => {
         if (ticket.status === 'open') counts.open++
         else if (ticket.status === 'in_progress') counts.in_progress++
         else if (ticket.status === 'resolved') counts.resolved++
+        // Count tickets that have an admin response
+        if (ticket.admin_notes && ticket.status !== 'resolved' && ticket.status !== 'closed') {
+          counts.has_response++
+        }
       })
 
       // Only set if user has any active tickets
-      if (counts.open > 0 || counts.in_progress > 0 || counts.resolved > 0) {
+      if (counts.open > 0 || counts.in_progress > 0 || counts.resolved > 0 || counts.has_response > 0) {
         setUserTicketStatus(counts)
       }
     } catch (error) {
@@ -666,6 +670,12 @@ export default function DashboardPage() {
               <a href="/dashboard/about?section=support" className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-full border border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
                 <MessageCircle size={14} />
                 <span>Tickets:</span>
+                {userTicketStatus.has_response > 0 && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs font-bold rounded-full animate-pulse" title={`${userTicketStatus.has_response} ticket(s) have a new response - click to view`}>
+                    {userTicketStatus.has_response}
+                    <Reply size={10} />
+                  </span>
+                )}
                 {userTicketStatus.open > 0 && (
                   <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full" title={`${userTicketStatus.open} open ticket(s) - awaiting response`}>
                     {userTicketStatus.open}
