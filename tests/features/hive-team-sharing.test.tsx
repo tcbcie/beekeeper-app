@@ -13,6 +13,16 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams()
 }))
 
+// Mock Toast
+vi.mock('@/components/ui/Toast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  }),
+}))
+
 // Hoist mock objects for module initialization
 const { mockAuth, mockFrom, mockSupabaseClient } = vi.hoisted(() => {
   const mockAuth = {

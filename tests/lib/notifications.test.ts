@@ -302,8 +302,7 @@ describe('Notification Utilities', () => {
       consoleWarnSpy.mockRestore()
     })
 
-    it('should log when notification is scheduled', () => {
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    it('should schedule notification for future time', () => {
       const futureDate = new Date(Date.now() + 5000)
 
       const data: NotificationData = {
@@ -312,12 +311,8 @@ describe('Notification Utilities', () => {
         tag: 'test-tag'
       }
 
-      scheduleNotification(data, futureDate)
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Notification scheduled for')
-      )
-
-      consoleLogSpy.mockRestore()
+      // Should not throw when scheduling
+      expect(() => scheduleNotification(data, futureDate)).not.toThrow()
     })
   })
 

@@ -40,8 +40,7 @@ describe('VersionDisplay', () => {
 
     const versionElement = container.querySelector('div')
     expect(versionElement).toHaveClass('text-xs')
-    expect(versionElement).toHaveClass('text-gray-500')
-    expect(versionElement).toHaveClass('dark:text-gray-400')
+    expect(versionElement).toHaveClass('text-text-tertiary')
   })
 
   it('should display different version numbers correctly', () => {

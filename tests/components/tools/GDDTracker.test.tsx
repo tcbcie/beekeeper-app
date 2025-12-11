@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import GDDTracker from '@/components/tools/GDDTracker'
 
+// Mock Toast
+vi.mock('@/components/ui/Toast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  }),
+}))
+
 // Mock data
 const mockApiaries = [
   { id: 'apiary-1', name: 'Home Apiary', eircode: 'D02X285', is_uk_ni: false },
