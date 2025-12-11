@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, X } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 interface Apiary {
   id: string
@@ -39,6 +40,7 @@ interface GDDTrackerProps {
 const BASE_TEMP = 6
 
 export default function GDDTracker({ userId }: GDDTrackerProps) {
+  const toast = useToast()
   const [apiaries, setApiaries] = useState<Apiary[]>([])
   const [vegetationTypes, setVegetationTypes] = useState<VegetationType[]>([])
   const [records, setRecords] = useState<GDDRecord[]>([])
@@ -116,7 +118,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       const data = await response.json()
 
       if (!data.daily || !data.daily.temperature_2m_max) {
-        alert('Could not fetch weather data for the selected date range')
+        toast.error('Could not fetch weather data for the selected date range')
         return
       }
 
@@ -144,7 +146,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       fetchData()
     } catch (error) {
       console.error('Error calculating GDD:', error)
-      alert('Error calculating GDD. Please try again.')
+      toast.error('Error calculating GDD. Please try again.')
     } finally {
       setCalculatingGDD(null)
     }
@@ -153,13 +155,13 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
   // Save new record
   const handleSave = async () => {
     if (!selectedApiary || !selectedVegetation || !startDate) {
-      alert('Please select an apiary, vegetation type, and start date')
+      toast.warning('Please select an apiary, vegetation type, and start date')
       return
     }
 
     const apiary = apiaries.find(a => a.id === selectedApiary)
     if (!apiary?.latitude || !apiary?.longitude) {
-      alert('Selected apiary does not have GPS coordinates. Please add them in the Apiaries page.')
+      toast.warning('Selected apiary does not have GPS coordinates. Please add them in the Apiaries page.')
       return
     }
 
@@ -184,7 +186,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
 
       if (error) {
         if (error.code === '23505') {
-          alert('A record already exists for this apiary, vegetation type, and year.')
+          toast.warning('A record already exists for this apiary, vegetation type, and year.')
         } else {
           throw error
         }
@@ -209,7 +211,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       }
     } catch (error) {
       console.error('Error saving GDD record:', error)
-      alert('Error saving record. Please try again.')
+      toast.error('Error saving record. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -430,7 +432,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                           if (apiary?.latitude && apiary?.longitude) {
                             calculateGDD(record.id, record.start_date, apiary.latitude, apiary.longitude)
                           } else {
-                            alert('Apiary is missing GPS coordinates. Please add them in the Apiaries page.')
+                            toast.warning('Apiary is missing GPS coordinates. Please add them in the Apiaries page.')
                           }
                         }}
                         disabled={calculatingGDD === record.id}

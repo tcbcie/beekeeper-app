@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, MapPin, Loader2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 
 interface Apiary {
@@ -30,6 +31,7 @@ interface FormData {
 }
 
 export default function ApiariesPage() {
+  const toast = useToast()
   const [apiaries, setApiaries] = useState<Apiary[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingApiary, setEditingApiary] = useState<Apiary | null>(null)
@@ -115,7 +117,7 @@ export default function ApiariesPage() {
         longitude: coords.lon
       }))
     } else {
-      alert('Could not find coordinates for this location. Please enter them manually.')
+      toast.warning('Could not find coordinates for this location. Please enter them manually.')
     }
   }
 
@@ -194,7 +196,7 @@ export default function ApiariesPage() {
       resetForm()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred'
-      alert(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
