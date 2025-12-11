@@ -8,7 +8,7 @@
  * - Database updates
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 
 // Test configuration

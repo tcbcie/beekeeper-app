@@ -7,6 +7,17 @@ afterEach(() => {
   cleanup()
 })
 
+// Mock Toast context to avoid "useToast must be used within a ToastProvider" errors
+vi.mock('@/components/ui/Toast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  }),
+  ToastProvider: ({ children }: { children: React.ReactNode }) => children,
+}))
+
 // Mock environment variables
 beforeAll(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'

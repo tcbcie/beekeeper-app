@@ -11,6 +11,16 @@ vi.mock('next/navigation', () => ({
   })
 }))
 
+// Mock Toast
+vi.mock('@/components/ui/Toast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  }),
+}))
+
 // Hoist mocks
 const { mockFrom, mockSupabaseClient } = vi.hoisted(() => {
   const mockFrom = vi.fn()
