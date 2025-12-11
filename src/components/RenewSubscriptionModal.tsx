@@ -169,15 +169,11 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
 
     try {
       // Step 1: Validate the association code
-      console.log('Looking up code:', associationCode.trim().toUpperCase())
-
       const { data: codeData, error: codeError } = await supabase
         .from('registration_codes')
         .select('id, code, code_type, association_id, is_active, max_uses, current_uses, subscription_expires_at, beekeeping_associations!registration_codes_association_id_fkey(name)')
         .eq('code', associationCode.trim().toUpperCase())
         .maybeSingle()
-
-      console.log('Code validation result:', { codeData, codeError })
 
       if (codeError) {
         console.error('Error validating association code:', codeError)

@@ -31,13 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // If offline, try to use cached session from localStorage
         if (!navigator.onLine) {
-          console.log('Offline - checking localStorage for cached session')
           const cachedSession = localStorage.getItem('supabase.auth.token')
           if (cachedSession) {
             try {
               const parsed = JSON.parse(cachedSession)
               if (parsed?.currentSession?.user) {
-                console.log('Using cached session while offline')
                 setUser(parsed.currentSession.user)
                 setUserId(parsed.currentSession.user.id)
                 setLoading(false)
@@ -54,13 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      console.log('Session check:', {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        userId: session?.user?.id,
-        isOnline: navigator.onLine
-      })
-
       if (session?.user) {
         setUser(session.user)
         setUserId(session.user.id)
@@ -73,13 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // If offline and error occurred, try to use cached session
       if (!navigator.onLine) {
-        console.log('Offline error - attempting to use cached session')
         const cachedSession = localStorage.getItem('supabase.auth.token')
         if (cachedSession) {
           try {
             const parsed = JSON.parse(cachedSession)
             if (parsed?.currentSession?.user) {
-              console.log('Using cached session after error')
               setUser(parsed.currentSession.user)
               setUserId(parsed.currentSession.user.id)
               setLoading(false)
@@ -104,8 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event)
-
       if (session?.user) {
         setUser(session.user)
         setUserId(session.user.id)

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { MessageCircle, Plus, Edit2, X, AlertCircle, Lightbulb, Clock, CheckCircle, XCircle, CreditCard } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 
 interface SupportTicket {
   id: string
@@ -31,6 +32,7 @@ export default function SupportPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingTicket, setEditingTicket] = useState<SupportTicket | null>(null)
   const router = useRouter()
+  const toast = useToast()
 
   const [formData, setFormData] = useState<FormData>({
     ticket_type: 'problem',
@@ -104,14 +106,14 @@ export default function SupportPage() {
       resetForm()
     } catch (error) {
       console.error('Error submitting ticket:', error)
-      alert(error instanceof Error ? error.message : 'An error occurred')
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     }
   }
 
   const handleEdit = (ticket: SupportTicket) => {
     // Only allow editing if ticket is still open
     if (ticket.status === 'closed' || ticket.status === 'resolved') {
-      alert('Cannot edit resolved or closed tickets')
+      toast.warning('Cannot edit resolved or closed tickets')
       return
     }
 
@@ -151,7 +153,7 @@ export default function SupportPage() {
       fetchTickets()
     } catch (error) {
       console.error('Error closing ticket:', error)
-      alert(error instanceof Error ? error.message : 'Failed to close ticket')
+      toast.error(error instanceof Error ? error.message : 'Failed to close ticket')
     }
   }
 

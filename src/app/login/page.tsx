@@ -56,14 +56,12 @@ function LoginForm() {
     try {
       if (isSignUp) {
         // FIRST: Check if this email belongs to a deleted account BEFORE attempting signup
-        const { data: checkData, error: checkError } = await supabase
+        const { data: checkData } = await supabase
           .from('profiles')
           .select('id, deleted_at, original_email')
           .eq('original_email', email)
           .not('deleted_at', 'is', null)
           .maybeSingle()
-
-        console.log('Deleted account check:', { checkData, checkError, email })
 
         if (checkData && checkData.deleted_at) {
           // This email belongs to a deleted account - redirect to reactivation
@@ -271,9 +269,9 @@ function LoginForm() {
           </button>
         </div>
         <div className="flex items-center justify-center gap-3 text-xs text-text-tertiary">
-          <span className="px-2 py-1 bg-emerald-900/30 text-forest-600 dark:text-emerald-400 rounded font-medium">v1.4.13</span>
+          <span className="px-2 py-1 bg-emerald-900/30 text-forest-600 dark:text-emerald-400 rounded font-medium">v1.4.14</span>
           <span>•</span>
-          <span>December 9, 2025</span>
+          <span>December 11, 2025</span>
         </div>
       </div>
     </div>

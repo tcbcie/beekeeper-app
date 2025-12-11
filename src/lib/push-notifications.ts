@@ -38,7 +38,6 @@ export class PushNotificationManager {
     }
 
     const permission = await Notification.requestPermission()
-    console.log('Notification permission:', permission)
     return permission
   }
 
@@ -52,7 +51,6 @@ export class PushNotificationManager {
     try {
       const permission = await this.requestPermission()
       if (permission !== 'granted') {
-        console.log('Notification permission not granted')
         return null
       }
 
@@ -70,9 +68,6 @@ export class PushNotificationManager {
         }
 
         subscription = await registration.pushManager.subscribe(options)
-        console.log('Push notification subscription created')
-      } else {
-        console.log('Push notification subscription already exists')
       }
 
       // Save subscription to database
@@ -113,8 +108,6 @@ export class PushNotificationManager {
 
       if (error) {
         console.error('Failed to update push subscription:', error)
-      } else {
-        console.log('Push subscription updated in database')
       }
     } else {
       // Insert new subscription
@@ -124,8 +117,6 @@ export class PushNotificationManager {
 
       if (error) {
         console.error('Failed to save push subscription:', error)
-      } else {
-        console.log('Push subscription saved to database')
       }
     }
   }
@@ -152,8 +143,6 @@ export class PushNotificationManager {
 
         if (error) {
           console.error('Failed to remove push subscription from database:', error)
-        } else {
-          console.log('Push subscription removed')
         }
 
         return true
@@ -203,7 +192,6 @@ export const pushNotificationManager = new PushNotificationManager()
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'BACKGROUND_SYNC') {
-      console.log('Received background sync message from service worker')
       // Trigger sync manager
       const syncEvent = new CustomEvent('background-sync-requested')
       window.dispatchEvent(syncEvent)

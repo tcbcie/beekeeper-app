@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
 
 interface HiveConfiguration {
@@ -138,6 +139,7 @@ interface Task {
 export default function HiveDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast()
   const hiveId = params.id as string
 
   const [hive, setHive] = useState<Hive | null>(null)
@@ -303,11 +305,11 @@ export default function HiveDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching hive data:', error)
-      alert('Failed to load hive data')
+      toast.error('Failed to load hive data')
     } finally {
       setLoading(false)
     }
-  }, [hiveId])
+  }, [hiveId, toast])
 
   const handleCompleteTask = async (taskId: string) => {
     try {
@@ -321,14 +323,14 @@ export default function HiveDetailPage() {
 
       if (error) {
         console.error('Error completing task:', error)
-        alert('Failed to complete task: ' + error.message)
+        toast.error('Failed to complete task: ' + error.message)
       } else {
         // Remove the completed task from the local state
         setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId))
       }
     } catch (error) {
       console.error('Error completing task:', error)
-      alert('Failed to complete task')
+      toast.error('Failed to complete task')
     }
   }
 
@@ -348,7 +350,7 @@ export default function HiveDetailPage() {
     try {
       const userId = await getCurrentUserId()
       if (!userId) {
-        alert('You must be logged in to unarchive a hive')
+        toast.error('You must be logged in to unarchive a hive')
         return
       }
 
@@ -365,15 +367,15 @@ export default function HiveDetailPage() {
 
       if (error) {
         console.error('Error unarchiving hive:', error)
-        alert('Failed to unarchive hive: ' + error.message)
+        toast.error('Failed to unarchive hive: ' + error.message)
       } else {
-        alert(`Hive ${hive.hive_number} has been successfully unarchived!`)
+        toast.success(`Hive ${hive.hive_number} has been successfully unarchived!`)
         // Refresh hive data to reflect changes
         fetchHiveData(userId)
       }
     } catch (error) {
       console.error('Error unarchiving hive:', error)
-      alert('Failed to unarchive hive')
+      toast.error('Failed to unarchive hive')
     }
   }
 

@@ -331,7 +331,7 @@ export default function ToolsPage() {
                   <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Why These Ingredients?</h5>
                   <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
                     <li>
-                      <strong>Yeast:</strong> Acts as an invertase enzyme to help break down complex sugars into simpler ones (glucose and fructose), making the fondant easier for bees to digest and preventing crystallization
+                      <strong>Yeast (Fresh Baker&apos;s Yeast):</strong> Must be <em className="font-semibold text-amber-700 dark:text-amber-400">fresh baker&apos;s yeast</em> - acts as an invertase enzyme to help break down complex sugars into simpler ones (glucose and fructose), making the fondant easier for bees to digest and preventing crystallization
                     </li>
                     <li>
                       <strong>Lemon Juice:</strong> Provides acidity (citric acid) which helps invert the sugar and prevents the fondant from becoming too hard or crystallizing, keeping it soft and pliable for the bees

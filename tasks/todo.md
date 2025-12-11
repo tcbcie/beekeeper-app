@@ -1,77 +1,64 @@
-# GDD (Growing Degree Days) Tracking Feature
+# Priority 1: Quick Wins - UX Improvements
 
-## Status: COMPLETED
-
-## Overview
-Added a new tool under the Tools section to track Growing Degree Days (GDD) for vegetation blooming periods per apiary.
+## Status: IN PROGRESS
 
 ## Completed Items
 
-- [x] Create database migration for `gdd_records` table
-- [x] Add `vegetation_type` dropdown category with 16 vegetation types
-- [x] Create GDDTracker component with full CRUD functionality
-- [x] Add GDD tool to Tools page
-- [x] Implement GDD calculation using Open-Meteo historical weather API
-- [x] Add sharing toggle with privacy hint
-- [x] Add gdd_records to user data exports (JSON & CSV)
-- [x] Add gdd_records to admin export fallback list
-- [x] Add gdd_records to settings page export list
+- [x] Create Toast notification component (`src/components/ui/Toast.tsx`)
+- [x] Improve LoadingSpinner with actual animation
+- [x] Add ToastProvider to app layout
+- [x] Add CSS animations (slide-in, spin) to globals.css
+- [x] Replace alert() calls with toast in GDDTracker (7 alerts)
+- [x] Replace alert() calls with toast in Apiaries page (2 alerts)
+- [x] Replace alert() calls with toast in About page (3 alerts)
+- [x] Remove console.log statements from client-side code:
+  - dashboard/page.tsx (8 removed)
+  - dashboard/settings/page.tsx (10 removed)
+  - login/page.tsx (1 removed)
+  - dashboard/profile/page.tsx (7 removed)
+  - dashboard/layout.tsx (2 removed)
+  - dashboard/batches/page.tsx (1 removed)
+  - dashboard/records/page.tsx (2 removed)
+  - accept-invitation/page.tsx (7 removed)
+  - components/MobileDrawer.tsx (1 removed)
+  - components/Navbar.tsx (1 removed)
+  - components/RenewSubscriptionModal.tsx (2 removed)
+  - contexts/AuthContext.tsx (6 removed)
+  - lib/push-notifications.ts (8 removed)
+  - lib/notifications.ts (2 removed)
+
+## Remaining Items
+
+- [ ] Replace remaining ~150 alert() calls with toast notifications
+  - dashboard/records/page.tsx (9 alerts)
+  - dashboard/batches/page.tsx (1 alert)
+  - dashboard/profile/page.tsx (48 alerts)
+  - dashboard/hives/page.tsx (7 alerts)
+  - dashboard/hives/[id]/page.tsx (7 alerts)
+  - dashboard/queens/page.tsx (1 alert)
+  - dashboard/support/page.tsx (3 alerts)
+  - dashboard/tasks/page.tsx (5 alerts)
+  - dashboard/settings/page.tsx (74 alerts)
+  - dashboard/settings/subscription-history/page.tsx (1 alert)
+  - components/NotificationStatusCard.tsx (1 alert)
+  - dashboard/layout.tsx (2 alerts - account deactivation, keep as blocking)
+- [ ] Add loading states to form submit buttons
 
 ## Review Section
 
 ### Files Created
-- `src/components/tools/GDDTracker.tsx` - Main GDD tracking component
+- `src/components/ui/Toast.tsx` - Toast notification system with ToastProvider
 
 ### Files Modified
-- `src/app/dashboard/tools/page.tsx` - Added GDD Tracking tool card
-- `src/app/dashboard/profile/page.tsx` - Added gdd_records to JSON & CSV exports
-- `src/app/api/admin/export-all-data/route.ts` - Added gdd_records to fallback table list
-- `src/app/dashboard/settings/page.tsx` - Added gdd_records to SQL export list
+- `src/components/ui/LoadingSpinner.tsx` - Added spinning animation and size variants
+- `src/app/layout.tsx` - Added ToastProvider wrapper
+- `src/app/globals.css` - Added slide-in and spin animations
+- `src/components/tools/GDDTracker.tsx` - Replaced 7 alert() calls with toast
+- `src/app/dashboard/apiaries/page.tsx` - Replaced 2 alert() calls with toast
+- `src/app/dashboard/about/page.tsx` - Replaced 3 alert() calls with toast
+- Multiple files - Removed ~58 console.log statements
 
-### Database Changes
-1. Created `gdd_records` table with:
-   - Foreign keys to apiaries and dropdown_values
-   - RLS policies for user access and shared data viewing
-   - Unique constraint per apiary/vegetation/year
-
-2. Added `vegetation_type` dropdown category with 16 initial values:
-   - Oil Seed Rape (Canola), Clover (White/Red), Hawthorn, Blackberry
-   - Heather, Ivy, Dandelion, Apple Blossom, Cherry Blossom
-   - Lime (Linden), Willow, Sycamore, Horse Chestnut, Field Bean, Borage
-
-### Features Implemented
-1. **Add GDD Record Form**
-   - Apiary selector (only shows apiaries with eircode)
-   - Vegetation type dropdown (from dropdown_values)
-   - Start/End date pickers
-   - Notes field
-   - Sharing toggle with privacy hint
-
-2. **GDD Calculation**
-   - Uses Open-Meteo Archive API for historical weather data
-   - Base temperature: 10°C
-   - Formula: GDD = sum(max(0, (Tmax + Tmin) / 2 - 10))
-   - Triggered when end date is set
-
-3. **Records Table**
-   - Shows year, apiary, vegetation, dates, GDD value
-   - Share toggle per record
-   - Delete functionality
-   - "Calculate" button for records without GDD value
-
-4. **Data Sharing**
-   - Per-record sharing toggle
-   - Privacy hint: "Data will be anonymized and only shown to users within 20km"
-   - RLS policy allows viewing shared records
-
-### Build Verification
-```
-✓ Compiled successfully in 30.6s
-✓ Linting and checking validity of types
-✓ Generating static pages (30/30)
-```
-
-### Future Enhancements (Not in Scope)
-- Historical comparison columns (last year, 5-year average)
-- Nearby users' shared data display (requires geocoding/distance calculation)
-- These can be added in a future iteration
+### Notes
+- Server-side API routes (auth/callback, stripe webhooks) retain console.log for server logging
+- Dashboard layout alerts for account deactivation are kept as blocking alerts since they precede sign-out
+- Toast notifications auto-dismiss after 5 seconds with manual close option

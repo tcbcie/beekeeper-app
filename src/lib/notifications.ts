@@ -21,7 +21,6 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     const registration = await navigator.serviceWorker.register('/service-worker.js', {
       scope: '/',
     })
-    console.log('Service Worker registered successfully:', registration)
     return registration
   } catch (error) {
     console.error('Service Worker registration failed:', error)
@@ -98,8 +97,6 @@ export function scheduleNotification(data: NotificationData, scheduledTime: Date
   setTimeout(() => {
     showNotification(data)
   }, timeUntil)
-
-  console.log(`Notification scheduled for ${scheduledTime.toLocaleString()}`)
 }
 
 /**

@@ -98,7 +98,6 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('Hamburger menu clicked')
                 onMenuClick?.()
               }}
               className="md:hidden p-2 rounded-lg hover:bg-sage-100 dark:hover:bg-slate-800 active:bg-sage-200 dark:active:bg-slate-700 text-text-secondary hover:text-foreground touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"

@@ -44,13 +44,8 @@ function AcceptInvitationContent() {
       // Clean the invitation ID - remove any trailing # or other URL fragments
       invitationId = invitationId.trim().replace(/#$/, '')
 
-      console.log('Processing invitation ID:', invitationId)
-
       try {
         // Fetch invitation details first (before checking auth)
-        console.log('🔍 Fetching invitation with ID:', invitationId)
-
-        // Use service role or admin context to fetch invitation
         // We need to fetch this before auth check to get the invited email
         const { data: invitation, error: invitationError } = await supabase
           .from('team_invitations')
@@ -60,9 +55,6 @@ function AcceptInvitationContent() {
           `)
           .eq('id', invitationId)
           .maybeSingle()
-
-        console.log('📦 Invitation data:', invitation)
-        console.log('❌ Invitation error:', invitationError)
 
         if (invitationError) {
           console.error('Error fetching invitation:', invitationError)
@@ -86,8 +78,6 @@ function AcceptInvitationContent() {
           setLoading(false)
           return
         }
-
-        console.log('✅ Invitation found:', invitation.id, 'Status:', invitation.status)
 
         // Extract team name (handle both object and array responses from Supabase)
         const extractedTeamName = Array.isArray(invitation.teams)
@@ -123,14 +113,11 @@ function AcceptInvitationContent() {
 
         // If no user logged in, direct them to create an account
         if (!userId) {
-          console.log('👤 No user logged in, directing to signup')
           setInvitedEmail(invitation.email)
           setStatus('needs-signup')
           setLoading(false)
           return
         }
-
-        console.log('👤 Current user ID:', userId)
 
         // Verify the logged-in user's email matches the invitation
         const { data: { user: currentUser } } = await supabase.auth.getUser()
