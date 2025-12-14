@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapPin, Crosshair, X, Circle } from 'lucide-react'
+import { MapPin, Crosshair, X, Circle, Layers, Map, Satellite } from 'lucide-react'
 
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
@@ -37,6 +37,97 @@ function calculateCenterOfApiaries(apiaries: ApiaryLocation[]): [number, number]
   const sumLng = validApiaries.reduce((sum, a) => sum + a.longitude!, 0)
 
   return [sumLng / validApiaries.length, sumLat / validApiaries.length]
+}
+
+// Map style options
+const MAP_STYLES = {
+  outdoors: 'mapbox://styles/mapbox/outdoors-v12',
+  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+  terrain: 'mapbox://styles/mapbox/satellite-v9',
+} as const
+
+type MapStyleKey = keyof typeof MAP_STYLES
+
+// Calculate distance between two points using Haversine formula
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371 // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// Calculate overlap between two circles (approximation using distance)
+// Returns percentage of overlap (0-100) based on how much the circles overlap
+function calculateCircleOverlap(
+  center1: [number, number],
+  center2: [number, number],
+  radius1Km: number,
+  radius2Km: number
+): number {
+  const distance = haversineDistance(center1[1], center1[0], center2[1], center2[0])
+  const sumRadii = radius1Km + radius2Km
+
+  // No overlap if distance > sum of radii
+  if (distance >= sumRadii) return 0
+
+  // Complete overlap if one circle contains the other
+  if (distance <= Math.abs(radius1Km - radius2Km)) {
+    const smallerRadius = Math.min(radius1Km, radius2Km)
+    const largerRadius = Math.max(radius1Km, radius2Km)
+    return (smallerRadius / largerRadius) * 100
+  }
+
+  // Partial overlap - use lens area formula approximation
+  // Area of intersection of two circles
+  const r1 = radius1Km
+  const r2 = radius2Km
+  const d = distance
+
+  const part1 = r1 * r1 * Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1))
+  const part2 = r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2))
+  const part3 = 0.5 * Math.sqrt((-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2))
+
+  const intersectionArea = part1 + part2 - part3
+  const smallerCircleArea = Math.PI * Math.min(r1, r2) * Math.min(r1, r2)
+
+  // Return percentage of smaller circle that is overlapped
+  return Math.min(100, (intersectionArea / smallerCircleArea) * 100)
+}
+
+// Calculate total overlap percentage with all existing apiaries
+function calculateTotalOverlap(
+  newCenter: [number, number],
+  newRadius: number,
+  existingApiaries: ApiaryLocation[],
+  existingRadius: number
+): { totalOverlap: number; overlappingApiaries: string[] } {
+  if (newRadius === 0 || existingRadius === 0) {
+    return { totalOverlap: 0, overlappingApiaries: [] }
+  }
+
+  const overlappingApiaries: string[] = []
+  let maxOverlap = 0
+
+  existingApiaries.forEach(apiary => {
+    if (apiary.latitude && apiary.longitude) {
+      const overlap = calculateCircleOverlap(
+        newCenter,
+        [apiary.longitude, apiary.latitude],
+        newRadius,
+        existingRadius
+      )
+      if (overlap > 0) {
+        overlappingApiaries.push(apiary.name)
+        maxOverlap = Math.max(maxOverlap, overlap)
+      }
+    }
+  })
+
+  return { totalOverlap: Math.round(maxOverlap), overlappingApiaries }
 }
 
 // Flight radius options in km
@@ -122,6 +213,8 @@ export default function MapLocationPicker({
   const [isLocating, setIsLocating] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [flightRadius, setFlightRadius] = useState(() => getSavedFlightRadius())
+  const [mapStyle, setMapStyle] = useState<MapStyleKey>('outdoors')
+  const [overlapInfo, setOverlapInfo] = useState<{ totalOverlap: number; overlappingApiaries: string[] }>({ totalOverlap: 0, overlappingApiaries: [] })
 
   // Filter out the apiary being edited from existing apiaries
   const otherApiaries = existingApiaries.filter(a => a.id !== editingApiaryId && a.latitude && a.longitude)
@@ -183,8 +276,47 @@ export default function MapLocationPicker({
       if (source && flightRadiusRef.current > 0) {
         source.setData(createCircleGeoJSON([lng, lat], flightRadiusRef.current))
       }
+
+      // Calculate and update overlap
+      const overlap = calculateTotalOverlap([lng, lat], flightRadiusRef.current, otherApiaries, flightRadiusRef.current)
+      setOverlapInfo(overlap)
+
+      // Update overlap visualization
+      updateOverlapLayer(lng, lat, flightRadiusRef.current)
     }
-  }, [reverseGeocode])
+  }, [reverseGeocode, otherApiaries])
+
+  // Update overlap layer on the map
+  const updateOverlapLayer = useCallback((lng: number, lat: number, radiusKm: number) => {
+    if (!map.current || !mapLoaded || radiusKm === 0) return
+
+    // Create overlap polygons where circles intersect
+    const overlapFeatures: GeoJSON.Feature<GeoJSON.Polygon>[] = []
+
+    otherApiaries.forEach(apiary => {
+      if (apiary.latitude && apiary.longitude) {
+        const distance = haversineDistance(lat, lng, apiary.latitude, apiary.longitude)
+        const sumRadii = radiusKm * 2 // Both circles have same radius
+
+        // If circles overlap, create a highlight
+        if (distance < sumRadii && distance > 0) {
+          // Create a smaller circle at the midpoint for visual overlap indication
+          const midLng = (lng + apiary.longitude) / 2
+          const midLat = (lat + apiary.latitude) / 2
+          const overlapRadius = Math.max(0.5, (sumRadii - distance) / 2)
+          overlapFeatures.push(createCircleGeoJSON([midLng, midLat], overlapRadius))
+        }
+      }
+    })
+
+    const overlapSource = map.current.getSource('overlap-zones') as mapboxgl.GeoJSONSource
+    if (overlapSource) {
+      overlapSource.setData({
+        type: 'FeatureCollection',
+        features: overlapFeatures
+      })
+    }
+  }, [mapLoaded, otherApiaries])
 
   // Initialize map - only runs once on mount
   useEffect(() => {
@@ -341,6 +473,39 @@ export default function MapLocationPicker({
         }
       })
 
+      // Add overlap zones layer (purple for competition areas)
+      map.current.addSource('overlap-zones', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      })
+
+      map.current.addLayer({
+        id: 'overlap-zones-fill',
+        type: 'fill',
+        source: 'overlap-zones',
+        paint: {
+          'fill-color': '#9333ea', // Purple for overlap
+          'fill-opacity': 0.35
+        }
+      })
+
+      map.current.addLayer({
+        id: 'overlap-zones-outline',
+        type: 'line',
+        source: 'overlap-zones',
+        paint: {
+          'line-color': '#7c3aed',
+          'line-width': 2,
+          'line-opacity': 0.8
+        }
+      })
+
+      // Calculate initial overlap if position is set
+      if (hasExistingLocation) {
+        const overlap = calculateTotalOverlap([lng, lat], savedRadius, otherApiaries, savedRadius)
+        setOverlapInfo(overlap)
+      }
+
       setMapLoaded(true)
     })
 
@@ -430,6 +595,112 @@ export default function MapLocationPicker({
     )
   }
 
+  // Handle map style change
+  const handleStyleChange = (newStyle: MapStyleKey) => {
+    if (!map.current) return
+
+    setMapStyle(newStyle)
+    map.current.setStyle(MAP_STYLES[newStyle])
+
+    // Re-add layers after style change
+    map.current.once('style.load', () => {
+      if (!map.current) return
+
+      const savedRadius = getSavedFlightRadius()
+      const lat = parseFloat(latitude)
+      const lng = parseFloat(longitude)
+      const currentCenter: [number, number] = (!isNaN(lat) && !isNaN(lng)) ? [lng, lat] : DEFAULT_CENTER
+
+      // Re-add existing apiaries circles
+      if (otherApiaries.length > 0) {
+        map.current.addSource('existing-apiaries-radius', {
+          type: 'geojson',
+          data: createMultiCircleGeoJSON(otherApiaries, savedRadius)
+        })
+
+        map.current.addLayer({
+          id: 'existing-apiaries-radius-fill',
+          type: 'fill',
+          source: 'existing-apiaries-radius',
+          paint: {
+            'fill-color': '#f59e0b',
+            'fill-opacity': 0.12
+          }
+        })
+
+        map.current.addLayer({
+          id: 'existing-apiaries-radius-outline',
+          type: 'line',
+          source: 'existing-apiaries-radius',
+          paint: {
+            'line-color': '#f59e0b',
+            'line-width': 2,
+            'line-opacity': 0.5
+          }
+        })
+      }
+
+      // Re-add current apiary circle
+      map.current.addSource('flight-radius', {
+        type: 'geojson',
+        data: createCircleGeoJSON(currentCenter, savedRadius)
+      })
+
+      map.current.addLayer({
+        id: 'flight-radius-fill',
+        type: 'fill',
+        source: 'flight-radius',
+        paint: {
+          'fill-color': '#ef4444',
+          'fill-opacity': 0.15
+        }
+      })
+
+      map.current.addLayer({
+        id: 'flight-radius-outline',
+        type: 'line',
+        source: 'flight-radius',
+        paint: {
+          'line-color': '#ef4444',
+          'line-width': 2,
+          'line-opacity': 0.6
+        }
+      })
+
+      // Re-add overlap zones
+      map.current.addSource('overlap-zones', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      })
+
+      map.current.addLayer({
+        id: 'overlap-zones-fill',
+        type: 'fill',
+        source: 'overlap-zones',
+        paint: {
+          'fill-color': '#9333ea',
+          'fill-opacity': 0.35
+        }
+      })
+
+      map.current.addLayer({
+        id: 'overlap-zones-outline',
+        type: 'line',
+        source: 'overlap-zones',
+        paint: {
+          'line-color': '#7c3aed',
+          'line-width': 2,
+          'line-opacity': 0.8
+        }
+      })
+
+      // Recalculate overlap
+      if (!isNaN(lat) && !isNaN(lng)) {
+        updateOverlapLayer(lng, lat, savedRadius)
+      }
+    })
+  }
+
   return (
     <div className="relative">
       {/* Header with instructions */}
@@ -467,6 +738,10 @@ export default function MapLocationPicker({
                 const lng = parseFloat(longitude)
                 if (!isNaN(lat) && !isNaN(lng)) {
                   updateCircle(lng, lat, newRadius)
+                  // Update overlap calculation
+                  const overlap = calculateTotalOverlap([lng, lat], newRadius, otherApiaries, newRadius)
+                  setOverlapInfo(overlap)
+                  updateOverlapLayer(lng, lat, newRadius)
                 }
               }}
               className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer pr-6"
@@ -479,6 +754,42 @@ export default function MapLocationPicker({
             </select>
           </div>
         </div>
+
+        {/* Map style toggle */}
+        <div className="absolute top-4 right-14 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex">
+          <button
+            type="button"
+            onClick={() => handleStyleChange('outdoors')}
+            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            title="Outdoors map"
+          >
+            <Map size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleStyleChange('satellite')}
+            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'satellite' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            title="Satellite view"
+          >
+            <Satellite size={18} />
+          </button>
+        </div>
+
+        {/* Overlap warning indicator */}
+        {overlapInfo.totalOverlap > 0 && (
+          <div className="absolute top-16 left-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border px-3 py-2 max-w-[200px]">
+            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+              <Layers size={16} />
+              <span className="text-sm font-medium">{overlapInfo.totalOverlap}% overlap</span>
+            </div>
+            {overlapInfo.overlappingApiaries.length > 0 && (
+              <p className="text-xs text-text-tertiary mt-1 truncate" title={overlapInfo.overlappingApiaries.join(', ')}>
+                with: {overlapInfo.overlappingApiaries.slice(0, 2).join(', ')}
+                {overlapInfo.overlappingApiaries.length > 2 && ` +${overlapInfo.overlappingApiaries.length - 2}`}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Current location button */}
         <button
