@@ -2,8 +2,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Loader2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import dynamic from 'next/dynamic'
+
+// Dynamic import to avoid SSR issues with Mapbox
+const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker'), {
+  ssr: false,
+  loading: () => <div className="h-[300px] bg-sage-100 dark:bg-slate-800 rounded-lg animate-pulse flex items-center justify-center text-text-tertiary">Loading map...</div>
+})
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 
@@ -49,6 +56,7 @@ export default function ApiariesPage() {
     is_uk_ni: false,
   })
   const [geocoding, setGeocoding] = useState(false)
+  const [showMapPicker, setShowMapPicker] = useState(false)
 
   // Geocode eircode/postcode to get coordinates
   const geocodeAddress = async (eircode: string, city: string, isUkNi: boolean) => {
@@ -119,6 +127,23 @@ export default function ApiariesPage() {
     } else {
       toast.warning('Could not find coordinates for this location. Please enter them manually.')
     }
+  }
+
+  // Handle location change from map picker
+  const handleMapLocationChange = (lat: string, lng: string) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng
+    }))
+  }
+
+  // Handle city change from map reverse geocoding
+  const handleMapCityChange = (city: string) => {
+    setFormData(prev => ({
+      ...prev,
+      city: city
+    }))
   }
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
@@ -231,6 +256,7 @@ export default function ApiariesPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingApiary(null)
+    setShowMapPicker(false)
     setFormData({
       name: '',
       location: '',
@@ -331,16 +357,40 @@ export default function ApiariesPage() {
                   <MapPin size={16} />
                   GPS Coordinates
                 </label>
-                <button
-                  type="button"
-                  onClick={handleLookupCoordinates}
-                  disabled={geocoding || (!formData.city && !formData.eircode)}
-                  className="text-sm px-3 py-1 bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                >
-                  {geocoding ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
-                  Lookup Coordinates
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPicker(!showMapPicker)}
+                    className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                  >
+                    <Map size={14} />
+                    {showMapPicker ? 'Hide Map' : 'Pick on Map'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLookupCoordinates}
+                    disabled={geocoding || (!formData.city && !formData.eircode)}
+                    className="text-sm px-3 py-1 bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    {geocoding ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                    Lookup
+                  </button>
+                </div>
               </div>
+
+              {/* Map Picker */}
+              {showMapPicker && (
+                <div className="mb-4">
+                  <MapLocationPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    onLocationChange={handleMapLocationChange}
+                    onCityChange={handleMapCityChange}
+                    onClose={() => setShowMapPicker(false)}
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-text-tertiary mb-1">Latitude</label>
@@ -363,7 +413,7 @@ export default function ApiariesPage() {
                   />
                 </div>
               </div>
-              <p className="text-xs text-text-tertiary mt-2">Required for GDD calculations. Fill in City above, then click &quot;Lookup Coordinates&quot; or enter manually.</p>
+              <p className="text-xs text-text-tertiary mt-2">Required for GDD calculations. Use &quot;Pick on Map&quot;, &quot;Lookup&quot; from city/postcode, or enter manually.</p>
             </div>
 
             <div>
