@@ -3,10 +3,47 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapPin, Crosshair, X } from 'lucide-react'
+import { MapPin, Crosshair, X, Circle } from 'lucide-react'
 
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
+
+// Flight radius options in km
+const FLIGHT_RADIUS_OPTIONS = [
+  { value: 0, label: 'No radius' },
+  { value: 1, label: '1 km' },
+  { value: 2, label: '2 km' },
+  { value: 2.5, label: '2.5 km' },
+  { value: 3, label: '3 km' },
+  { value: 3.5, label: '3.5 km' },
+  { value: 5, label: '5 km' },
+  { value: 6, label: '6 km' },
+  { value: 7, label: '7 km' },
+  { value: 8, label: '8 km' },
+]
+
+// Generate circle coordinates for GeoJSON
+function createCircleGeoJSON(center: [number, number], radiusKm: number): GeoJSON.Feature<GeoJSON.Polygon> {
+  const points = 64
+  const coords: [number, number][] = []
+  const earthRadiusKm = 6371
+
+  for (let i = 0; i <= points; i++) {
+    const angle = (i / points) * 2 * Math.PI
+    const latOffset = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.cos(angle)
+    const lngOffset = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.sin(angle) / Math.cos(center[1] * Math.PI / 180)
+    coords.push([center[0] + lngOffset, center[1] + latOffset])
+  }
+
+  return {
+    type: 'Feature',
+    properties: {},
+    geometry: {
+      type: 'Polygon',
+      coordinates: [coords]
+    }
+  }
+}
 
 interface MapLocationPickerProps {
   latitude: string
@@ -28,6 +65,7 @@ export default function MapLocationPicker({
   const marker = useRef<mapboxgl.Marker | null>(null)
   const [isLocating, setIsLocating] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
+  const [flightRadius, setFlightRadius] = useState(3) // Default 3km flight radius
 
   // Store callbacks in refs to avoid stale closures
   const onLocationChangeRef = useRef(onLocationChange)
@@ -66,6 +104,12 @@ export default function MapLocationPicker({
     }
   }, [])
 
+  // Store flightRadius in ref for use in callbacks
+  const flightRadiusRef = useRef(flightRadius)
+  useEffect(() => {
+    flightRadiusRef.current = flightRadius
+  }, [flightRadius])
+
   // Update marker position
   const updateMarkerPosition = useCallback((lng: number, lat: number) => {
     if (marker.current) {
@@ -73,6 +117,14 @@ export default function MapLocationPicker({
     }
     onLocationChangeRef.current(lat.toFixed(7), lng.toFixed(7))
     reverseGeocode(lat, lng)
+
+    // Update circle position
+    if (map.current) {
+      const source = map.current.getSource('flight-radius') as mapboxgl.GeoJSONSource
+      if (source && flightRadiusRef.current > 0) {
+        source.setData(createCircleGeoJSON([lng, lat], flightRadiusRef.current))
+      }
+    }
   }, [reverseGeocode])
 
   // Initialize map - only runs once on mount
@@ -126,6 +178,34 @@ export default function MapLocationPicker({
     })
 
     map.current.on('load', () => {
+      // Add flight radius circle source and layer
+      if (map.current) {
+        map.current.addSource('flight-radius', {
+          type: 'geojson',
+          data: createCircleGeoJSON(initialCenter, 3) // Default 3km
+        })
+
+        map.current.addLayer({
+          id: 'flight-radius-fill',
+          type: 'fill',
+          source: 'flight-radius',
+          paint: {
+            'fill-color': '#ef4444',
+            'fill-opacity': 0.15
+          }
+        })
+
+        map.current.addLayer({
+          id: 'flight-radius-outline',
+          type: 'line',
+          source: 'flight-radius',
+          paint: {
+            'line-color': '#ef4444',
+            'line-width': 2,
+            'line-opacity': 0.6
+          }
+        })
+      }
       setMapLoaded(true)
     })
 
@@ -138,7 +218,26 @@ export default function MapLocationPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Intentionally empty - only run on mount
 
-  // Update marker when coordinates change externally
+  // Update circle when radius or coordinates change
+  const updateCircle = useCallback((lng: number, lat: number, radiusKm: number) => {
+    if (!map.current || !mapLoaded) return
+
+    const source = map.current.getSource('flight-radius') as mapboxgl.GeoJSONSource
+    if (source) {
+      if (radiusKm === 0) {
+        // Hide circle by setting empty geometry
+        source.setData({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Polygon', coordinates: [[]] }
+        })
+      } else {
+        source.setData(createCircleGeoJSON([lng, lat], radiusKm))
+      }
+    }
+  }, [mapLoaded])
+
+  // Update marker and circle when coordinates change externally
   useEffect(() => {
     if (!mapLoaded || !marker.current || !map.current) return
 
@@ -148,8 +247,9 @@ export default function MapLocationPicker({
     if (!isNaN(lat) && !isNaN(lng)) {
       marker.current.setLngLat([lng, lat])
       map.current.flyTo({ center: [lng, lat], zoom: 14 })
+      updateCircle(lng, lat, flightRadius)
     }
-  }, [latitude, longitude, mapLoaded])
+  }, [latitude, longitude, mapLoaded, flightRadius, updateCircle])
 
   // Get user's current location
   const handleGetCurrentLocation = () => {
@@ -199,6 +299,32 @@ export default function MapLocationPicker({
       {/* Map container */}
       <div className="relative rounded-lg overflow-hidden border border-border">
         <div ref={mapContainer} className="w-full h-[300px] md:h-[400px]" />
+
+        {/* Flight radius dropdown */}
+        <div className="absolute top-4 left-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <Circle size={16} className="text-red-500" />
+            <select
+              value={flightRadius}
+              onChange={(e) => {
+                const newRadius = parseFloat(e.target.value)
+                setFlightRadius(newRadius)
+                const lat = parseFloat(latitude)
+                const lng = parseFloat(longitude)
+                if (!isNaN(lat) && !isNaN(lng)) {
+                  updateCircle(lng, lat, newRadius)
+                }
+              }}
+              className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer pr-6"
+            >
+              {FLIGHT_RADIUS_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {/* Current location button */}
         <button
