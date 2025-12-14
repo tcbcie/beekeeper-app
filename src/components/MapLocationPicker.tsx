@@ -45,12 +45,34 @@ function createCircleGeoJSON(center: [number, number], radiusKm: number): GeoJSO
   }
 }
 
+// Generate multi-polygon GeoJSON for all apiaries
+function createMultiCircleGeoJSON(apiaries: ApiaryLocation[], radiusKm: number): GeoJSON.FeatureCollection<GeoJSON.Polygon> {
+  const features = apiaries
+    .filter(a => a.latitude !== null && a.longitude !== null)
+    .map(apiary => createCircleGeoJSON([apiary.longitude!, apiary.latitude!], radiusKm))
+
+  return {
+    type: 'FeatureCollection',
+    features
+  }
+}
+
+// Interface for apiary locations to display on map
+interface ApiaryLocation {
+  id: string
+  name: string
+  latitude: number | null
+  longitude: number | null
+}
+
 interface MapLocationPickerProps {
   latitude: string
   longitude: string
   onLocationChange: (lat: string, lng: string) => void
   onCityChange?: (city: string) => void
   onClose?: () => void
+  existingApiaries?: ApiaryLocation[]  // Other apiaries to show on map
+  editingApiaryId?: string  // ID of apiary being edited (to exclude from existing)
 }
 
 export default function MapLocationPicker({
@@ -59,13 +81,19 @@ export default function MapLocationPicker({
   onLocationChange,
   onCityChange,
   onClose,
+  existingApiaries = [],
+  editingApiaryId,
 }: MapLocationPickerProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const marker = useRef<mapboxgl.Marker | null>(null)
+  const existingMarkers = useRef<mapboxgl.Marker[]>([])
   const [isLocating, setIsLocating] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [flightRadius, setFlightRadius] = useState(3) // Default 3km flight radius
+
+  // Filter out the apiary being edited from existing apiaries
+  const otherApiaries = existingApiaries.filter(a => a.id !== editingApiaryId && a.latitude && a.longitude)
 
   // Store callbacks in refs to avoid stale closures
   const onLocationChangeRef = useRef(onLocationChange)
@@ -178,38 +206,90 @@ export default function MapLocationPicker({
     })
 
     map.current.on('load', () => {
-      // Add flight radius circle source and layer
-      if (map.current) {
-        map.current.addSource('flight-radius', {
+      if (!map.current) return
+
+      // Add existing apiaries circles (shown in orange/amber)
+      if (otherApiaries.length > 0) {
+        map.current.addSource('existing-apiaries-radius', {
           type: 'geojson',
-          data: createCircleGeoJSON(initialCenter, 3) // Default 3km
+          data: createMultiCircleGeoJSON(otherApiaries, 3) // Default 3km
         })
 
         map.current.addLayer({
-          id: 'flight-radius-fill',
+          id: 'existing-apiaries-radius-fill',
           type: 'fill',
-          source: 'flight-radius',
+          source: 'existing-apiaries-radius',
           paint: {
-            'fill-color': '#ef4444',
-            'fill-opacity': 0.15
+            'fill-color': '#f59e0b', // Amber color for existing
+            'fill-opacity': 0.12
           }
         })
 
         map.current.addLayer({
-          id: 'flight-radius-outline',
+          id: 'existing-apiaries-radius-outline',
           type: 'line',
-          source: 'flight-radius',
+          source: 'existing-apiaries-radius',
           paint: {
-            'line-color': '#ef4444',
+            'line-color': '#f59e0b',
             'line-width': 2,
-            'line-opacity': 0.6
+            'line-opacity': 0.5
+          }
+        })
+
+        // Add markers for existing apiaries
+        otherApiaries.forEach(apiary => {
+          if (apiary.latitude && apiary.longitude && map.current) {
+            const el = document.createElement('div')
+            el.className = 'existing-apiary-marker'
+            el.innerHTML = `<div style="background-color: #f59e0b; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+            </div>`
+            el.title = apiary.name
+
+            const marker = new mapboxgl.Marker({ element: el })
+              .setLngLat([apiary.longitude, apiary.latitude])
+              .addTo(map.current)
+
+            existingMarkers.current.push(marker)
           }
         })
       }
+
+      // Add current/new apiary flight radius circle (shown in red)
+      map.current.addSource('flight-radius', {
+        type: 'geojson',
+        data: createCircleGeoJSON(initialCenter, 3) // Default 3km
+      })
+
+      map.current.addLayer({
+        id: 'flight-radius-fill',
+        type: 'fill',
+        source: 'flight-radius',
+        paint: {
+          'fill-color': '#ef4444',
+          'fill-opacity': 0.15
+        }
+      })
+
+      map.current.addLayer({
+        id: 'flight-radius-outline',
+        type: 'line',
+        source: 'flight-radius',
+        paint: {
+          'line-color': '#ef4444',
+          'line-width': 2,
+          'line-opacity': 0.6
+        }
+      })
+
       setMapLoaded(true)
     })
 
     return () => {
+      // Clean up existing markers
+      existingMarkers.current.forEach(m => m.remove())
+      existingMarkers.current = []
+
       if (map.current) {
         map.current.remove()
         map.current = null
@@ -222,6 +302,7 @@ export default function MapLocationPicker({
   const updateCircle = useCallback((lng: number, lat: number, radiusKm: number) => {
     if (!map.current || !mapLoaded) return
 
+    // Update current apiary circle
     const source = map.current.getSource('flight-radius') as mapboxgl.GeoJSONSource
     if (source) {
       if (radiusKm === 0) {
@@ -235,7 +316,20 @@ export default function MapLocationPicker({
         source.setData(createCircleGeoJSON([lng, lat], radiusKm))
       }
     }
-  }, [mapLoaded])
+
+    // Update existing apiaries circles with new radius
+    const existingSource = map.current.getSource('existing-apiaries-radius') as mapboxgl.GeoJSONSource
+    if (existingSource && otherApiaries.length > 0) {
+      if (radiusKm === 0) {
+        existingSource.setData({
+          type: 'FeatureCollection',
+          features: []
+        })
+      } else {
+        existingSource.setData(createMultiCircleGeoJSON(otherApiaries, radiusKm))
+      }
+    }
+  }, [mapLoaded, otherApiaries])
 
   // Update marker and circle when coordinates change externally
   useEffect(() => {
