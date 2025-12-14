@@ -8,6 +8,37 @@ import { MapPin, Crosshair, X, Circle } from 'lucide-react'
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
 
+// LocalStorage key for flight radius preference
+const FLIGHT_RADIUS_STORAGE_KEY = 'hivecraic-map-flight-radius'
+
+// Get saved flight radius from localStorage
+function getSavedFlightRadius(): number {
+  if (typeof window === 'undefined') return 3
+  const saved = localStorage.getItem(FLIGHT_RADIUS_STORAGE_KEY)
+  if (saved) {
+    const parsed = parseFloat(saved)
+    if (!isNaN(parsed)) return parsed
+  }
+  return 3 // Default 3km
+}
+
+// Save flight radius to localStorage
+function saveFlightRadius(radius: number): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(FLIGHT_RADIUS_STORAGE_KEY, radius.toString())
+}
+
+// Calculate center point from multiple apiaries
+function calculateCenterOfApiaries(apiaries: ApiaryLocation[]): [number, number] | null {
+  const validApiaries = apiaries.filter(a => a.latitude !== null && a.longitude !== null)
+  if (validApiaries.length === 0) return null
+
+  const sumLat = validApiaries.reduce((sum, a) => sum + a.latitude!, 0)
+  const sumLng = validApiaries.reduce((sum, a) => sum + a.longitude!, 0)
+
+  return [sumLng / validApiaries.length, sumLat / validApiaries.length]
+}
+
 // Flight radius options in km
 const FLIGHT_RADIUS_OPTIONS = [
   { value: 0, label: 'No radius' },
@@ -90,7 +121,7 @@ export default function MapLocationPicker({
   const existingMarkers = useRef<mapboxgl.Marker[]>([])
   const [isLocating, setIsLocating] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
-  const [flightRadius, setFlightRadius] = useState(3) // Default 3km flight radius
+  const [flightRadius, setFlightRadius] = useState(() => getSavedFlightRadius())
 
   // Filter out the apiary being edited from existing apiaries
   const otherApiaries = existingApiaries.filter(a => a.id !== editingApiaryId && a.latitude && a.longitude)
@@ -167,17 +198,34 @@ export default function MapLocationPicker({
 
     mapboxgl.accessToken = accessToken
 
-    // Get initial center from current props
+    // Get initial center from current props, or center on existing apiaries
     const lat = parseFloat(latitude)
     const lng = parseFloat(longitude)
-    const initialCenter: [number, number] = (!isNaN(lat) && !isNaN(lng)) ? [lng, lat] : DEFAULT_CENTER
     const hasExistingLocation = !isNaN(lat) && !isNaN(lng)
+
+    let initialCenter: [number, number]
+    let initialZoom: number
+
+    if (hasExistingLocation) {
+      // Use current apiary location
+      initialCenter = [lng, lat]
+      initialZoom = 14
+    } else if (otherApiaries.length > 0) {
+      // Center on existing apiaries
+      const apiaryCenter = calculateCenterOfApiaries(otherApiaries)
+      initialCenter = apiaryCenter || DEFAULT_CENTER
+      initialZoom = otherApiaries.length === 1 ? 12 : 10
+    } else {
+      // Default to Ireland
+      initialCenter = DEFAULT_CENTER
+      initialZoom = 6
+    }
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: initialCenter,
-      zoom: hasExistingLocation ? 14 : 6,
+      zoom: initialZoom,
     })
 
     // Add navigation controls
@@ -208,11 +256,14 @@ export default function MapLocationPicker({
     map.current.on('load', () => {
       if (!map.current) return
 
+      // Get saved radius for initial display
+      const savedRadius = getSavedFlightRadius()
+
       // Add existing apiaries circles (shown in orange/amber)
       if (otherApiaries.length > 0) {
         map.current.addSource('existing-apiaries-radius', {
           type: 'geojson',
-          data: createMultiCircleGeoJSON(otherApiaries, 3) // Default 3km
+          data: createMultiCircleGeoJSON(otherApiaries, savedRadius)
         })
 
         map.current.addLayer({
@@ -236,7 +287,7 @@ export default function MapLocationPicker({
           }
         })
 
-        // Add markers for existing apiaries
+        // Add markers for existing apiaries with popups
         otherApiaries.forEach(apiary => {
           if (apiary.latitude && apiary.longitude && map.current) {
             const el = document.createElement('div')
@@ -244,13 +295,21 @@ export default function MapLocationPicker({
             el.innerHTML = `<div style="background-color: #f59e0b; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
             </div>`
-            el.title = apiary.name
 
-            const marker = new mapboxgl.Marker({ element: el })
+            // Create popup with apiary name
+            const popup = new mapboxgl.Popup({
+              offset: 25,
+              closeButton: false,
+              closeOnClick: true,
+              className: 'apiary-popup'
+            }).setHTML(`<div style="font-weight: 600; padding: 4px 8px;">${apiary.name}</div>`)
+
+            const existingMarker = new mapboxgl.Marker({ element: el })
               .setLngLat([apiary.longitude, apiary.latitude])
+              .setPopup(popup)
               .addTo(map.current)
 
-            existingMarkers.current.push(marker)
+            existingMarkers.current.push(existingMarker)
           }
         })
       }
@@ -258,7 +317,7 @@ export default function MapLocationPicker({
       // Add current/new apiary flight radius circle (shown in red)
       map.current.addSource('flight-radius', {
         type: 'geojson',
-        data: createCircleGeoJSON(initialCenter, 3) // Default 3km
+        data: createCircleGeoJSON(initialCenter, savedRadius)
       })
 
       map.current.addLayer({
@@ -403,6 +462,7 @@ export default function MapLocationPicker({
               onChange={(e) => {
                 const newRadius = parseFloat(e.target.value)
                 setFlightRadius(newRadius)
+                saveFlightRadius(newRadius) // Save preference
                 const lat = parseFloat(latitude)
                 const lng = parseFloat(longitude)
                 if (!isNaN(lat) && !isNaN(lng)) {
