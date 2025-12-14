@@ -5,6 +5,9 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { MapPin, Crosshair, X } from 'lucide-react'
 
+// Default center (Ireland)
+const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
+
 interface MapLocationPickerProps {
   latitude: string
   longitude: string
@@ -26,22 +29,18 @@ export default function MapLocationPicker({
   const [isLocating, setIsLocating] = useState(false)
   const [mapLoaded, setMapLoaded] = useState(false)
 
-  // Default center (Ireland)
-  const defaultCenter: [number, number] = [-8.2439, 53.4129]
+  // Store callbacks in refs to avoid stale closures
+  const onLocationChangeRef = useRef(onLocationChange)
+  const onCityChangeRef = useRef(onCityChange)
 
-  // Get initial coordinates or default
-  const getInitialCenter = useCallback((): [number, number] => {
-    const lat = parseFloat(latitude)
-    const lng = parseFloat(longitude)
-    if (!isNaN(lat) && !isNaN(lng)) {
-      return [lng, lat]
-    }
-    return defaultCenter
-  }, [latitude, longitude])
+  useEffect(() => {
+    onLocationChangeRef.current = onLocationChange
+    onCityChangeRef.current = onCityChange
+  }, [onLocationChange, onCityChange])
 
   // Reverse geocode to get city name
-  const reverseGeocode = async (lat: number, lng: number) => {
-    if (!onCityChange) return
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    if (!onCityChangeRef.current) return
 
     try {
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
@@ -59,24 +58,24 @@ export default function MapLocationPicker({
             f.place_type.includes('place') || f.place_type.includes('locality')
         )
         if (place) {
-          onCityChange(place.text)
+          onCityChangeRef.current(place.text)
         }
       }
     } catch (error) {
       console.error('Reverse geocoding failed:', error)
     }
-  }
+  }, [])
 
   // Update marker position
   const updateMarkerPosition = useCallback((lng: number, lat: number) => {
     if (marker.current) {
       marker.current.setLngLat([lng, lat])
     }
-    onLocationChange(lat.toFixed(7), lng.toFixed(7))
+    onLocationChangeRef.current(lat.toFixed(7), lng.toFixed(7))
     reverseGeocode(lat, lng)
-  }, [onLocationChange])
+  }, [reverseGeocode])
 
-  // Initialize map
+  // Initialize map - only runs once on mount
   useEffect(() => {
     if (!mapContainer.current || map.current) return
 
@@ -88,8 +87,11 @@ export default function MapLocationPicker({
 
     mapboxgl.accessToken = accessToken
 
-    const initialCenter = getInitialCenter()
-    const hasExistingLocation = !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude))
+    // Get initial center from current props
+    const lat = parseFloat(latitude)
+    const lng = parseFloat(longitude)
+    const initialCenter: [number, number] = (!isNaN(lat) && !isNaN(lng)) ? [lng, lat] : DEFAULT_CENTER
+    const hasExistingLocation = !isNaN(lat) && !isNaN(lng)
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -109,11 +111,11 @@ export default function MapLocationPicker({
       .setLngLat(initialCenter)
       .addTo(map.current)
 
-    // Handle marker drag
+    // Handle marker drag - use refs for callbacks
     marker.current.on('dragend', () => {
       if (marker.current) {
         const lngLat = marker.current.getLngLat()
-        onLocationChange(lngLat.lat.toFixed(7), lngLat.lng.toFixed(7))
+        onLocationChangeRef.current(lngLat.lat.toFixed(7), lngLat.lng.toFixed(7))
         reverseGeocode(lngLat.lat, lngLat.lng)
       }
     })
@@ -133,7 +135,8 @@ export default function MapLocationPicker({
         map.current = null
       }
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Intentionally empty - only run on mount
 
   // Update marker when coordinates change externally
   useEffect(() => {
