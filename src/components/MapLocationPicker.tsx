@@ -624,12 +624,11 @@ export default function MapLocationPicker({
       document.addEventListener('keydown', handleKeyDown)
       // Prevent body scroll when fullscreen
       document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
+      // Always restore scroll on cleanup
       document.body.style.overflow = ''
     }
   }, [isFullscreen])
@@ -741,7 +740,7 @@ export default function MapLocationPicker({
   }
 
   return (
-    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-slate-900 p-4' : ''}`}>
+    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-slate-900 p-4 overflow-auto' : ''}`}>
       {/* Header with instructions */}
       <div className={`flex items-center justify-between ${isFullscreen ? 'mb-4' : 'mb-2'}`}>
         <div className="flex items-center gap-2 text-sm text-text-secondary">
