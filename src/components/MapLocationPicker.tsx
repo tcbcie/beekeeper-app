@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapPin, Crosshair, X, Circle, Layers, Map, Satellite } from 'lucide-react'
+import { MapPin, Crosshair, X, Circle, Layers, Map, Satellite, Maximize2, Minimize2 } from 'lucide-react'
 
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
@@ -215,6 +215,7 @@ export default function MapLocationPicker({
   const [flightRadius, setFlightRadius] = useState(() => getSavedFlightRadius())
   const [mapStyle, setMapStyle] = useState<MapStyleKey>('outdoors')
   const [overlapInfo, setOverlapInfo] = useState<{ totalOverlap: number; overlappingApiaries: string[] }>({ totalOverlap: 0, overlappingApiaries: [] })
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Filter out the apiary being edited from existing apiaries
   const otherApiaries = existingApiaries.filter(a => a.id !== editingApiaryId && a.latitude && a.longitude)
@@ -595,6 +596,44 @@ export default function MapLocationPicker({
     )
   }
 
+  // Handle fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev)
+    // Resize map after state change
+    setTimeout(() => {
+      if (map.current) {
+        map.current.resize()
+      }
+    }, 100)
+  }, [])
+
+  // Handle Escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+        setTimeout(() => {
+          if (map.current) {
+            map.current.resize()
+          }
+        }, 100)
+      }
+    }
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyDown)
+      // Prevent body scroll when fullscreen
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [isFullscreen])
+
   // Handle map style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
     if (!map.current) return
@@ -702,27 +741,32 @@ export default function MapLocationPicker({
   }
 
   return (
-    <div className="relative">
+    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-slate-900 p-4' : ''}`}>
       {/* Header with instructions */}
-      <div className="flex items-center justify-between mb-2">
+      <div className={`flex items-center justify-between ${isFullscreen ? 'mb-4' : 'mb-2'}`}>
         <div className="flex items-center gap-2 text-sm text-text-secondary">
           <MapPin size={16} className="text-forest-600" />
           <span>Click on the map or drag the marker to set location</span>
         </div>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 text-text-tertiary hover:text-foreground rounded"
-          >
-            <X size={18} />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isFullscreen && (
+            <span className="text-xs text-text-tertiary hidden sm:inline">Press Esc to exit</span>
+          )}
+          {onClose && !isFullscreen && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 text-text-tertiary hover:text-foreground rounded"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Map container */}
-      <div className="relative rounded-lg overflow-hidden border border-border">
-        <div ref={mapContainer} className="w-full h-[300px] md:h-[400px]" />
+      <div className={`relative rounded-lg overflow-hidden border border-border ${isFullscreen ? 'h-[calc(100vh-120px)]' : ''}`}>
+        <div ref={mapContainer} className={`w-full ${isFullscreen ? 'h-full' : 'h-[300px] md:h-[400px]'}`} />
 
         {/* Flight radius dropdown */}
         <div className="absolute top-4 left-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border">
@@ -791,19 +835,36 @@ export default function MapLocationPicker({
           </div>
         )}
 
-        {/* Current location button */}
-        <button
-          type="button"
-          onClick={handleGetCurrentLocation}
-          disabled={isLocating}
-          className="absolute bottom-4 right-4 bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors border border-border"
-          title="Use my current location"
-        >
-          <Crosshair
-            size={20}
-            className={`text-forest-600 ${isLocating ? 'animate-pulse' : ''}`}
-          />
-        </button>
+        {/* Bottom controls */}
+        <div className="absolute bottom-4 right-4 flex gap-2">
+          {/* Fullscreen toggle */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border border-border"
+            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {isFullscreen ? (
+              <Minimize2 size={20} className="text-text-secondary" />
+            ) : (
+              <Maximize2 size={20} className="text-text-secondary" />
+            )}
+          </button>
+
+          {/* Current location button */}
+          <button
+            type="button"
+            onClick={handleGetCurrentLocation}
+            disabled={isLocating}
+            className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors border border-border"
+            title="Use my current location"
+          >
+            <Crosshair
+              size={20}
+              className={`text-forest-600 ${isLocating ? 'animate-pulse' : ''}`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Coordinates display */}
