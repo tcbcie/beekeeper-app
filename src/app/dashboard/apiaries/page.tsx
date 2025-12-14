@@ -387,6 +387,8 @@ export default function ApiariesPage() {
                     onLocationChange={handleMapLocationChange}
                     onCityChange={handleMapCityChange}
                     onClose={() => setShowMapPicker(false)}
+                    existingApiaries={apiaries}
+                    editingApiaryId={editingApiary?.id}
                   />
                 </div>
               )}
