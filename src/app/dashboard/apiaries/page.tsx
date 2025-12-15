@@ -492,6 +492,15 @@ export default function ApiariesPage() {
                       Location shared publicly (~5km radius)
                     </p>
                   )}
+                  {apiary.latitude && apiary.longitude && (
+                    <button
+                      onClick={() => router.push('/dashboard/community-map')}
+                      className="text-xs text-purple-600 dark:text-purple-400 mt-1 flex items-center gap-1 hover:underline"
+                    >
+                      <Map size={12} />
+                      View on community map
+                    </button>
+                  )}
                 </div>
               </div>
 

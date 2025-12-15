@@ -263,30 +263,6 @@ export default function MapLocationPicker({
     flightRadiusRef.current = flightRadius
   }, [flightRadius])
 
-  // Update marker position
-  const updateMarkerPosition = useCallback((lng: number, lat: number) => {
-    if (marker.current) {
-      marker.current.setLngLat([lng, lat])
-    }
-    onLocationChangeRef.current(lat.toFixed(7), lng.toFixed(7))
-    reverseGeocode(lat, lng)
-
-    // Update circle position
-    if (map.current) {
-      const source = map.current.getSource('flight-radius') as mapboxgl.GeoJSONSource
-      if (source && flightRadiusRef.current > 0) {
-        source.setData(createCircleGeoJSON([lng, lat], flightRadiusRef.current))
-      }
-
-      // Calculate and update overlap
-      const overlap = calculateTotalOverlap([lng, lat], flightRadiusRef.current, otherApiaries, flightRadiusRef.current)
-      setOverlapInfo(overlap)
-
-      // Update overlap visualization
-      updateOverlapLayer(lng, lat, flightRadiusRef.current)
-    }
-  }, [reverseGeocode, otherApiaries])
-
   // Update overlap layer on the map
   const updateOverlapLayer = useCallback((lng: number, lat: number, radiusKm: number) => {
     if (!map.current || !mapLoaded || radiusKm === 0) return
@@ -318,6 +294,30 @@ export default function MapLocationPicker({
       })
     }
   }, [mapLoaded, otherApiaries])
+
+  // Update marker position
+  const updateMarkerPosition = useCallback((lng: number, lat: number) => {
+    if (marker.current) {
+      marker.current.setLngLat([lng, lat])
+    }
+    onLocationChangeRef.current(lat.toFixed(7), lng.toFixed(7))
+    reverseGeocode(lat, lng)
+
+    // Update circle position
+    if (map.current) {
+      const source = map.current.getSource('flight-radius') as mapboxgl.GeoJSONSource
+      if (source && flightRadiusRef.current > 0) {
+        source.setData(createCircleGeoJSON([lng, lat], flightRadiusRef.current))
+      }
+
+      // Calculate and update overlap
+      const overlap = calculateTotalOverlap([lng, lat], flightRadiusRef.current, otherApiaries, flightRadiusRef.current)
+      setOverlapInfo(overlap)
+
+      // Update overlap visualization
+      updateOverlapLayer(lng, lat, flightRadiusRef.current)
+    }
+  }, [reverseGeocode, otherApiaries, updateOverlapLayer])
 
   // Initialize map - only runs once on mount
   useEffect(() => {

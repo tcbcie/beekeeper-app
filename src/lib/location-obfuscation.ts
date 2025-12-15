@@ -46,9 +46,6 @@ export function obfuscateCoordinates(
   // Random distance (0 to radiusKm), with sqrt for uniform distribution in circle
   const distance = Math.sqrt(rand2) * radiusKm
 
-  // Earth's radius in km
-  const earthRadius = 6371
-
   // Convert distance to degrees
   // 1 degree latitude ≈ 111km
   const latOffset = (distance * Math.cos(angle)) / 111
