@@ -401,7 +401,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-sage-100 dark:bg-slate-700">
+              <tr className="bg-sage-100 dark:bg-slate-800 border-b border-border">
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Year</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Apiary</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Vegetation</th>
