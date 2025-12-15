@@ -516,7 +516,7 @@ export default function CommunityMapPage() {
       <div ref={mapContainer} className={`w-full ${isFullscreen ? 'h-full' : 'h-[500px] md:h-[600px]'}`} />
 
       {/* Top-left controls: Map Style + Terrain */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2">
+      <div className="absolute top-4 left-4 flex flex-col gap-2 w-56 max-w-[90vw]">
         {/* Map Style Toggle */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex">
           <button
