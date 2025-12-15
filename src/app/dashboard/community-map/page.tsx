@@ -560,11 +560,22 @@ export default function CommunityMapPage() {
             type="button"
             onClick={() => setShowHeatMap(prev => !prev)}
             className={`flex items-center gap-2 px-2 py-1 rounded text-sm w-full transition-colors ${showHeatMap ? 'text-orange-600' : 'text-text-tertiary'}`}
+            title="Show density heat map - warmer colors indicate more apiaries in the area. Useful for finding drone congregation zones."
           >
             <Flame size={14} />
             <span>Heat map</span>
           </button>
         </div>
+
+        {/* Heat map info tooltip when active */}
+        {showHeatMap && (
+          <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg shadow-lg border border-orange-200 dark:border-orange-800 p-2">
+            <p className="text-xs text-orange-800 dark:text-orange-200">
+              <strong>Heat Map:</strong> Warmer colors (red/orange) show areas with more apiaries.
+              Useful for identifying potential drone congregation areas.
+            </p>
+          </div>
+        )}
 
         {/* Time Filter */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border">
