@@ -609,8 +609,10 @@ export default function MapLocationPicker({
 
   // Handle Escape key to exit fullscreen
   useEffect(() => {
+    if (!isFullscreen) return
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) {
+      if (e.key === 'Escape') {
         setIsFullscreen(false)
         setTimeout(() => {
           if (map.current) {
@@ -620,16 +622,9 @@ export default function MapLocationPicker({
       }
     }
 
-    if (isFullscreen) {
-      document.addEventListener('keydown', handleKeyDown)
-      // Prevent body scroll when fullscreen
-      document.body.style.overflow = 'hidden'
-    }
-
+    document.addEventListener('keydown', handleKeyDown)
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-      // Always restore scroll on cleanup
-      document.body.style.overflow = ''
     }
   }, [isFullscreen])
 
@@ -740,7 +735,7 @@ export default function MapLocationPicker({
   }
 
   return (
-    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-slate-900 p-4 overflow-auto' : ''}`}>
+    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-slate-900 p-4' : ''}`}>
       {/* Header with instructions */}
       <div className={`flex items-center justify-between ${isFullscreen ? 'mb-4' : 'mb-2'}`}>
         <div className="flex items-center gap-2 text-sm text-text-secondary">
@@ -749,7 +744,17 @@ export default function MapLocationPicker({
         </div>
         <div className="flex items-center gap-2">
           {isFullscreen && (
-            <span className="text-xs text-text-tertiary hidden sm:inline">Press Esc to exit</span>
+            <>
+              <span className="text-xs text-text-tertiary hidden sm:inline">Press Esc to exit</span>
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                title="Exit fullscreen"
+              >
+                <X size={20} />
+              </button>
+            </>
           )}
           {onClose && !isFullscreen && (
             <button
