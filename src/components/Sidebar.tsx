@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import VersionDisplay from './VersionDisplay'
 
@@ -24,6 +24,7 @@ export default function Sidebar() {
     { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/hives', label: 'Hives', icon: Archive },
     { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
+    { href: '/dashboard/community-map', label: 'Community Map', icon: Users },
     { href: '/dashboard/records', label: 'Records', icon: ClipboardList },
     { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
