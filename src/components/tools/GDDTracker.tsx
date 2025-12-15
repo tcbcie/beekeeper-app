@@ -398,7 +398,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
 
       {/* Records Table */}
       {records.length > 0 ? (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-white dark:bg-slate-900 rounded-lg border border-border">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-sage-100 dark:bg-slate-800 border-b border-border">
@@ -414,7 +414,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
             </thead>
             <tbody>
               {records.map((record) => (
-                <tr key={record.id} className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-800">
+                <tr key={record.id} className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-700/50">
                   <td className="p-3 text-foreground font-medium">{record.year}</td>
                   <td className="p-3 text-foreground">{record.apiaries?.name || '-'}</td>
                   <td className="p-3 text-foreground">{record.dropdown_values?.value || '-'}</td>
