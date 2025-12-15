@@ -1,64 +1,80 @@
-# Priority 1: Quick Wins - UX Improvements
+# Community Map Improvements - Implementation Plan
 
-## Status: IN PROGRESS
+## Status: COMPLETED
 
-## Completed Items
+## Todo Items
 
-- [x] Create Toast notification component (`src/components/ui/Toast.tsx`)
-- [x] Improve LoadingSpinner with actual animation
-- [x] Add ToastProvider to app layout
-- [x] Add CSS animations (slide-in, spin) to globals.css
-- [x] Replace alert() calls with toast in GDDTracker (7 alerts)
-- [x] Replace alert() calls with toast in Apiaries page (2 alerts)
-- [x] Replace alert() calls with toast in About page (3 alerts)
-- [x] Remove console.log statements from client-side code:
-  - dashboard/page.tsx (8 removed)
-  - dashboard/settings/page.tsx (10 removed)
-  - login/page.tsx (1 removed)
-  - dashboard/profile/page.tsx (7 removed)
-  - dashboard/layout.tsx (2 removed)
-  - dashboard/batches/page.tsx (1 removed)
-  - dashboard/records/page.tsx (2 removed)
-  - accept-invitation/page.tsx (7 removed)
-  - components/MobileDrawer.tsx (1 removed)
-  - components/Navbar.tsx (1 removed)
-  - components/RenewSubscriptionModal.tsx (2 removed)
-  - contexts/AuthContext.tsx (6 removed)
-  - lib/push-notifications.ts (8 removed)
-  - lib/notifications.ts (2 removed)
+- [x] 1. Flight radius visualization - Add 3km flight radius circles around apiaries
+- [x] 2. Filter controls - Toggle show/hide user's own vs shared apiaries
+- [x] 3. Fullscreen mode - Add fullscreen toggle for the map
+- [x] 4. Terrain layer option - Add terrain map style with 3D elevation
+- [x] 5. "View on map" link - Add button on apiary cards to navigate to community map
+- [x] 6. Distance indicator - Show distance from nearest apiary when clicking shared apiary
+- [x] 7. Heat map layer - Toggle to show density heat map visualization
+- [x] 8. Time-based filtering - Filter apiaries by creation date (30/90/365 days)
+- [x] 9. Shared apiary count per user - Already existed in stats badge
 
-## Remaining Items
+## Implementation Notes
+- Kept changes simple and focused on high-value features
+- Reused existing code patterns from MapLocationPicker for flight radius circles
+- Skipped marker clustering as heat map provides similar density visualization
 
-- [ ] Replace remaining ~150 alert() calls with toast notifications
-  - dashboard/records/page.tsx (9 alerts)
-  - dashboard/batches/page.tsx (1 alert)
-  - dashboard/profile/page.tsx (48 alerts)
-  - dashboard/hives/page.tsx (7 alerts)
-  - dashboard/hives/[id]/page.tsx (7 alerts)
-  - dashboard/queens/page.tsx (1 alert)
-  - dashboard/support/page.tsx (3 alerts)
-  - dashboard/tasks/page.tsx (5 alerts)
-  - dashboard/settings/page.tsx (74 alerts)
-  - dashboard/settings/subscription-history/page.tsx (1 alert)
-  - components/NotificationStatusCard.tsx (1 alert)
-  - dashboard/layout.tsx (2 alerts - account deactivation, keep as blocking)
-- [ ] Add loading states to form submit buttons
+## Review
 
-## Review Section
+### Features Implemented
 
-### Files Created
-- `src/components/ui/Toast.tsx` - Toast notification system with ToastProvider
+1. **Flight Radius Visualization**
+   - Added 3km/5km flight radius circles around all apiaries
+   - Green circles for user's apiaries, purple for shared
+   - Dropdown to select radius (No radius, 3km, 5km)
+
+2. **Filter Controls**
+   - Toggle buttons to show/hide your apiaries vs shared apiaries
+   - Eye/EyeOff icons for clear visual feedback
+   - Both markers and flight radius circles respect filters
+
+3. **Fullscreen Mode**
+   - Expand button to enter fullscreen
+   - Red X close button for mobile (no Escape key)
+   - Escape key support for desktop
+   - Map resizes properly on toggle
+
+4. **Terrain Layer**
+   - Added Mountain icon for terrain map style
+   - 3D terrain with 1.5x exaggeration when selected
+   - Three map styles: Outdoors, Satellite, Terrain
+
+5. **View on Map Link**
+   - Added "View on community map" link on apiary cards
+   - Only shows when apiary has coordinates
+   - Purple styling to match community map theme
+
+6. **Distance Indicator**
+   - Shows distance to nearest user apiary in shared apiary popups
+   - Format: "X.X km from your nearest apiary"
+   - Green text for positive visual distinction
+
+7. **Heat Map Layer**
+   - Toggle button with Flame icon
+   - Shows apiary density as heat map (blue → cyan → green → yellow → orange → red)
+   - Hides individual markers and flight radius when enabled
+   - Works with both user and shared apiaries
+
+8. **Time-Based Filtering**
+   - Dropdown with Calendar icon
+   - Options: All time, Last 30 days, Last 90 days, Last year
+   - Filters based on apiary `created_at` date
+   - Affects all views (markers, flight radius, heat map)
 
 ### Files Modified
-- `src/components/ui/LoadingSpinner.tsx` - Added spinning animation and size variants
-- `src/app/layout.tsx` - Added ToastProvider wrapper
-- `src/app/globals.css` - Added slide-in and spin animations
-- `src/components/tools/GDDTracker.tsx` - Replaced 7 alert() calls with toast
-- `src/app/dashboard/apiaries/page.tsx` - Replaced 2 alert() calls with toast
-- `src/app/dashboard/about/page.tsx` - Replaced 3 alert() calls with toast
-- Multiple files - Removed ~58 console.log statements
 
-### Notes
-- Server-side API routes (auth/callback, stripe webhooks) retain console.log for server logging
-- Dashboard layout alerts for account deactivation are kept as blocking alerts since they precede sign-out
-- Toast notifications auto-dismiss after 5 seconds with manual close option
+- `src/app/dashboard/community-map/page.tsx` - Major updates for all map features
+- `src/app/dashboard/apiaries/page.tsx` - Added "View on community map" link
+
+### Helper Functions Added
+
+- `haversineDistance()` - Calculate distance between coordinates
+- `createCircleGeoJSON()` - Generate GeoJSON polygon for flight radius circle
+- `createMultiCircleGeoJSON()` - Generate multiple circles for all apiaries
+- `calculateNearestDistance()` - Find distance to closest user apiary
+- `filterByTime()` - Filter apiaries by creation date
