@@ -35,7 +35,7 @@ const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
 const MAP_STYLES = {
   outdoors: 'mapbox://styles/mapbox/outdoors-v12',
   satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
-  terrain: 'mapbox://styles/mapbox/outdoors-v12', // Terrain uses outdoors with 3D
+  terrain: 'mapbox://styles/mapbox/satellite-v9', // Terrain uses satellite with 3D elevation
 } as const
 
 type MapStyleKey = keyof typeof MAP_STYLES
