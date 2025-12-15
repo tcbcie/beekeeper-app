@@ -395,3 +395,36 @@ textarea::placeholder {
     transform: rotate(360deg);
   }
 }
+
+/* Mapbox popup dark mode styling */
+.dark .mapboxgl-popup-content {
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.dark .mapboxgl-popup-tip {
+  border-top-color: var(--surface-elevated);
+  border-bottom-color: var(--surface-elevated);
+}
+
+/* Ensure popup anchor colors match in dark mode */
+.dark .mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.dark .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+.dark .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+  border-bottom-color: var(--surface-elevated);
+}
+
+.dark .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.dark .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.dark .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
+  border-top-color: var(--surface-elevated);
+}
+
+.dark .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: var(--surface-elevated);
+}
+
+.dark .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: var(--surface-elevated);
+}

@@ -370,9 +370,9 @@ export default function CommunityMapPage() {
             closeOnClick: true,
           }).setHTML(`
             <div style="padding: 4px 8px;">
-              <div style="font-weight: 600; color: #16a34a;">${apiary.name}</div>
-              ${apiary.city ? `<div style="font-size: 12px; color: #666;">${apiary.city}</div>` : ''}
-              <div style="font-size: 11px; color: #16a34a; margin-top: 4px;">Your apiary</div>
+              <div style="font-weight: 600; color: #22c55e;">${apiary.name}</div>
+              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">${apiary.city}</div>` : ''}
+              <div style="font-size: 11px; color: #22c55e; margin-top: 4px;">Your apiary</div>
             </div>
           `)
 
@@ -393,7 +393,7 @@ export default function CommunityMapPage() {
 
           // Calculate distance to nearest user apiary
           const distance = calculateNearestDistance(apiary.latitude, apiary.longitude)
-          const distanceText = distance !== undefined ? `<div style="font-size: 11px; color: #059669; margin-top: 4px;">${distance} km from your nearest apiary</div>` : ''
+          const distanceText = distance !== undefined ? `<div style="font-size: 11px; color: #34d399; margin-top: 4px;">${distance} km from your nearest apiary</div>` : ''
 
           const el = document.createElement('div')
           el.className = 'community-apiary-marker'
@@ -406,9 +406,9 @@ export default function CommunityMapPage() {
             closeOnClick: true,
           }).setHTML(`
             <div style="padding: 4px 8px;">
-              <div style="font-weight: 600; color: #7c3aed;">Shared Apiary</div>
-              ${originalApiary.city ? `<div style="font-size: 12px; color: #666;">Near ${originalApiary.city}</div>` : ''}
-              <div style="font-size: 11px; color: #999; margin-top: 4px;">~5km accuracy</div>
+              <div style="font-weight: 600; color: #a78bfa;">Shared Apiary</div>
+              ${originalApiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${originalApiary.city}</div>` : ''}
+              <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
               ${distanceText}
             </div>
           `)
