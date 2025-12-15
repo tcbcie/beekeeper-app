@@ -16,6 +16,7 @@ interface SharedApiary {
   latitude: number
   longitude: number
   created_at: string
+  hive_count: number
 }
 
 interface UserApiary {
@@ -129,17 +130,22 @@ export default function CommunityMapPage() {
         return
       }
 
-      // Fetch shared apiaries (excluding user's own)
+      // Fetch shared apiaries (excluding user's own) with hive count
       const { data: sharedData, error: sharedError } = await supabase
         .from('apiaries')
-        .select('id, city, latitude, longitude, created_at')
+        .select('id, city, latitude, longitude, created_at, hives(count)')
         .eq('share_location', true)
         .neq('user_id', id)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
 
       if (!sharedError && sharedData) {
-        setSharedApiaries(sharedData)
+        // Transform the data to extract hive count from nested structure
+        const transformedData = sharedData.map((apiary: any) => ({
+          ...apiary,
+          hive_count: apiary.hives?.[0]?.count || 0
+        }))
+        setSharedApiaries(transformedData)
       }
 
       // Fetch user's own apiaries with coordinates
@@ -408,6 +414,7 @@ export default function CommunityMapPage() {
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #a78bfa;">Shared Apiary</div>
               ${originalApiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${originalApiary.city}</div>` : ''}
+              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${originalApiary.hive_count} ${originalApiary.hive_count === 1 ? 'hive' : 'hives'}</div>
               <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
               ${distanceText}
             </div>
