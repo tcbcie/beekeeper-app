@@ -417,7 +417,7 @@ export default function ApiariesPage() {
                   />
                 </div>
               </div>
-              <p className="text-xs text-text-tertiary mt-2">Required for GDD calculations. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>
+              <p className="text-xs text-text-tertiary mt-2">Used for GDD calculations, weather data on inspections, and identifying potential drone congregation areas. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>
             </div>
 
             <div>
