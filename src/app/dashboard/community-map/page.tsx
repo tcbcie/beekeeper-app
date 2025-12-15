@@ -17,6 +17,14 @@ interface SharedApiary {
   longitude: number
 }
 
+interface UserApiary {
+  id: string
+  name: string
+  city: string | null
+  latitude: number
+  longitude: number
+}
+
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
 
@@ -32,6 +40,7 @@ export default function CommunityMapPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [sharedApiaries, setSharedApiaries] = useState<SharedApiary[]>([])
+  const [userApiaries, setUserApiaries] = useState<UserApiary[]>([])
   const [mapStyle, setMapStyle] = useState<MapStyleKey>('outdoors')
   const [mapLoaded, setMapLoaded] = useState(false)
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -50,7 +59,7 @@ export default function CommunityMapPage() {
       setUserId(id)
 
       // Fetch shared apiaries (excluding user's own)
-      const { data, error } = await supabase
+      const { data: sharedData, error: sharedError } = await supabase
         .from('apiaries')
         .select('id, city, latitude, longitude')
         .eq('share_location', true)
@@ -58,8 +67,20 @@ export default function CommunityMapPage() {
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
 
-      if (!error && data) {
-        setSharedApiaries(data)
+      if (!sharedError && sharedData) {
+        setSharedApiaries(sharedData)
+      }
+
+      // Fetch user's own apiaries with coordinates
+      const { data: userData, error: userError } = await supabase
+        .from('apiaries')
+        .select('id, name, city, latitude, longitude')
+        .eq('user_id', id)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+
+      if (!userError && userData) {
+        setUserApiaries(userData)
       }
 
       setLoading(false)
@@ -103,7 +124,7 @@ export default function CommunityMapPage() {
     }
   }, [loading])
 
-  // Add markers for shared apiaries
+  // Add markers for all apiaries
   useEffect(() => {
     if (!mapLoaded || !map.current) return
 
@@ -111,7 +132,37 @@ export default function CommunityMapPage() {
     markers.current.forEach(m => m.remove())
     markers.current = []
 
-    // Add markers for each shared apiary with obfuscated coordinates
+    // Add markers for user's own apiaries (green, exact location)
+    userApiaries.forEach(apiary => {
+      if (!map.current) return
+
+      // Create custom marker element (green for user's own)
+      const el = document.createElement('div')
+      el.className = 'user-apiary-marker'
+      el.innerHTML = `<div style="background-color: #16a34a; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>`
+
+      // Create popup
+      const popup = new mapboxgl.Popup({
+        offset: 15,
+        closeButton: false,
+        closeOnClick: true,
+      }).setHTML(`
+        <div style="padding: 4px 8px;">
+          <div style="font-weight: 600; color: #16a34a;">${apiary.name}</div>
+          ${apiary.city ? `<div style="font-size: 12px; color: #666;">${apiary.city}</div>` : ''}
+          <div style="font-size: 11px; color: #16a34a; margin-top: 4px;">Your apiary</div>
+        </div>
+      `)
+
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([apiary.longitude, apiary.latitude])
+        .setPopup(popup)
+        .addTo(map.current)
+
+      markers.current.push(marker)
+    })
+
+    // Add markers for shared apiaries with obfuscated coordinates (purple)
     sharedApiaries.forEach(apiary => {
       if (!map.current) return
 
@@ -127,7 +178,7 @@ export default function CommunityMapPage() {
       const lat = roundCoordinate(obfuscated.latitude, 2) // ~1km precision
       const lng = roundCoordinate(obfuscated.longitude, 2)
 
-      // Create custom marker element
+      // Create custom marker element (purple for shared)
       const el = document.createElement('div')
       el.className = 'community-apiary-marker'
       el.innerHTML = `<div style="background-color: #8b5cf6; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); opacity: 0.8;"></div>`
@@ -153,16 +204,25 @@ export default function CommunityMapPage() {
       markers.current.push(marker)
     })
 
-    // Fit bounds if there are apiaries
-    if (sharedApiaries.length > 0) {
+    // Fit bounds to include all apiaries
+    const allApiaries = [...userApiaries, ...sharedApiaries]
+    if (allApiaries.length > 0) {
       const bounds = new mapboxgl.LngLatBounds()
+
+      // Add user apiaries (exact coords)
+      userApiaries.forEach(apiary => {
+        bounds.extend([apiary.longitude, apiary.latitude])
+      })
+
+      // Add shared apiaries (obfuscated coords)
       sharedApiaries.forEach(apiary => {
         const obfuscated = obfuscateCoordinates(apiary.latitude, apiary.longitude, apiary.id, 5)
         bounds.extend([obfuscated.longitude, obfuscated.latitude])
       })
+
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 10 })
     }
-  }, [mapLoaded, sharedApiaries])
+  }, [mapLoaded, sharedApiaries, userApiaries])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -230,10 +290,17 @@ export default function CommunityMapPage() {
 
           {/* Stats Badge */}
           <div className="absolute top-4 right-14 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border px-3 py-2">
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin size={16} className="text-purple-600" />
-              <span className="font-medium text-foreground">{sharedApiaries.length}</span>
-              <span className="text-text-secondary">shared {sharedApiaries.length === 1 ? 'apiary' : 'apiaries'}</span>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-green-600 border border-white"></div>
+                <span className="font-medium text-foreground">{userApiaries.length}</span>
+                <span className="text-text-secondary">yours</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-purple-500 border border-white"></div>
+                <span className="font-medium text-foreground">{sharedApiaries.length}</span>
+                <span className="text-text-secondary">shared</span>
+              </div>
             </div>
           </div>
         </div>
@@ -242,7 +309,11 @@ export default function CommunityMapPage() {
       {/* Legend */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-4">
         <h3 className="text-sm font-medium text-foreground mb-3">Map Legend</h3>
-        <div className="flex flex-wrap gap-4 text-sm">
+        <div className="flex flex-wrap gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-green-600 border-2 border-white shadow"></div>
+            <span className="text-text-secondary">Your apiary (exact location)</span>
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-purple-500 opacity-80 border-2 border-white shadow"></div>
             <span className="text-text-secondary">Shared apiary (~5km accuracy)</span>
