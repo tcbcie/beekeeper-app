@@ -23,6 +23,7 @@ interface Apiary {
   latitude: number | null
   longitude: number | null
   notes: string | null
+  share_location: boolean
   created_at?: string
 }
 
@@ -35,6 +36,7 @@ interface FormData {
   longitude: string
   notes: string
   is_uk_ni: boolean
+  share_location: boolean
 }
 
 export default function ApiariesPage() {
@@ -54,6 +56,7 @@ export default function ApiariesPage() {
     longitude: '',
     notes: '',
     is_uk_ni: false,
+    share_location: false,
   })
   const [geocoding, setGeocoding] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
@@ -201,6 +204,7 @@ export default function ApiariesPage() {
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         notes: formData.notes || null,
         is_uk_ni: formData.is_uk_ni,
+        share_location: formData.share_location,
       }
 
       if (editingApiary) {
@@ -238,6 +242,7 @@ export default function ApiariesPage() {
       longitude: apiary.longitude?.toString() || '',
       notes: apiary.notes || '',
       is_uk_ni: false,
+      share_location: apiary.share_location || false,
     })
     setShowForm(true)
   }
@@ -268,6 +273,7 @@ export default function ApiariesPage() {
       longitude: '',
       notes: '',
       is_uk_ni: false,
+      share_location: false,
     })
   }
 
@@ -431,6 +437,27 @@ export default function ApiariesPage() {
               />
             </div>
 
+            {/* Share Location Option */}
+            {formData.latitude && formData.longitude && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.share_location}
+                    onChange={(e) => setFormData({...formData, share_location: e.target.checked})}
+                    className="mt-1 h-4 w-4 text-forest-600 border-border rounded focus:ring-forest-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-text-primary">Share apiary location publicly</span>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      Your exact location will be <strong>obfuscated to a ~5km radius</strong> to protect your privacy.
+                      This helps beekeepers identify drone congregation areas and plan apiary placement.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <button type="submit" className="px-6 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 min-h-[48px]">
                 {editingApiary ? 'Update' : 'Add'} Apiary
@@ -457,6 +484,12 @@ export default function ApiariesPage() {
                   {apiary.eircode && (
                     <p className="text-sm text-forest-600 dark:text-forest-400 font-medium mt-1">
                       Eircode: {apiary.eircode}
+                    </p>
+                  )}
+                  {apiary.share_location && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
+                      <MapPin size={12} />
+                      Location shared publicly (~5km radius)
                     </p>
                   )}
                 </div>
