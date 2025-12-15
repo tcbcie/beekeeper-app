@@ -141,9 +141,13 @@ export default function CommunityMapPage() {
 
       if (!sharedError && sharedData) {
         // Transform the data to extract hive count from nested structure
-        const transformedData = sharedData.map((apiary: any) => ({
-          ...apiary,
-          hive_count: apiary.hives?.[0]?.count || 0
+        const transformedData = sharedData.map((apiary: Record<string, unknown>) => ({
+          id: apiary.id as string,
+          city: apiary.city as string | null,
+          latitude: apiary.latitude as number,
+          longitude: apiary.longitude as number,
+          created_at: apiary.created_at as string,
+          hive_count: (apiary.hives as Array<{ count: number }>)?.[0]?.count || 0
         }))
         setSharedApiaries(transformedData)
       }
