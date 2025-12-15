@@ -124,6 +124,8 @@ export default function ApiariesPage() {
         latitude: coords.lat,
         longitude: coords.lon
       }))
+      // Show warning that coordinates are approximate
+      toast.info('Coordinates are approximate. Use "Pick on Map" to verify exact location.')
     } else {
       toast.warning('Could not find coordinates for this location. Please enter them manually.')
     }
@@ -415,7 +417,7 @@ export default function ApiariesPage() {
                   />
                 </div>
               </div>
-              <p className="text-xs text-text-tertiary mt-2">Required for GDD calculations. Use &quot;Pick on Map&quot;, &quot;Get Coordinates&quot; from Eircode/postcode, or enter manually.</p>
+              <p className="text-xs text-text-tertiary mt-2">Required for GDD calculations. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>
             </div>
 
             <div>
