@@ -699,14 +699,14 @@ export default function CommunityMapPage() {
         </div>
       </div>
 
-      {/* Call to Action */}
-      {sharedApiaries.length === 0 && (
+      {/* Call to Action - only show if no apiaries at all on map */}
+      {sharedApiaries.length === 0 && userApiaries.length === 0 && (
         <div className="text-center py-8 bg-surface dark:bg-surface rounded-lg border border-border">
           <MapPin size={48} className="mx-auto text-text-tertiary mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No Shared Apiaries Yet</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">No Apiaries on Map</h3>
           <p className="text-text-secondary max-w-md mx-auto">
-            Be the first to share your apiary location! Go to your Apiaries page,
-            edit an apiary with GPS coordinates, and enable location sharing.
+            Add GPS coordinates to your apiaries to see them on the map.
+            You can also enable location sharing to appear on other users&apos; community maps.
           </p>
         </div>
       )}
