@@ -345,9 +345,23 @@ export default function CommunityMapPage() {
         source: 'apiaries-geojson',
         paint: {
           'heatmap-weight': 1,
-          'heatmap-intensity': 1,
-          'heatmap-radius': 30,
-          'heatmap-opacity': 0.7,
+          'heatmap-intensity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            5, 0.3,
+            10, 0.8,
+            15, 1.2
+          ],
+          'heatmap-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            5, 5,
+            8, 12,
+            12, 25
+          ],
+          'heatmap-opacity': 0.65,
           'heatmap-color': [
             'interpolate',
             ['linear'],
