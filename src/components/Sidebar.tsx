@@ -52,7 +52,7 @@ export default function Sidebar() {
               href={item.href}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-forest-100 dark:bg-forest-900/40 text-forest-800 dark:text-forest-200 font-medium border-l-2 border-forest-600 dark:border-forest-400'
+                  ? 'bg-forest-100 dark:bg-forest-700 text-forest-800 dark:text-white font-medium border-l-2 border-forest-600 dark:border-forest-400'
                   : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 hover:text-foreground'
               }`}
             >
