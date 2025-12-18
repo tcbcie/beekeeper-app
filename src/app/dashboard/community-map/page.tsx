@@ -43,6 +43,7 @@ type MapStyleKey = keyof typeof MAP_STYLES
 // Flight radius options
 const FLIGHT_RADIUS_OPTIONS = [
   { value: 0, label: 'No radius' },
+  { value: 2, label: '2 km' },
   { value: 3, label: '3 km' },
   { value: 5, label: '5 km' },
 ]
@@ -516,13 +517,13 @@ export default function CommunityMapPage() {
       <div ref={mapContainer} className={`w-full ${isFullscreen ? 'h-full' : 'h-[500px] md:h-[600px]'}`} />
 
       {/* Top-left controls: Map Style + Terrain */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 w-56 max-w-[90vw]">
+      <div className="absolute top-4 left-4 flex flex-col gap-2">
         {/* Map Style Toggle */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex">
           <button
             type="button"
             onClick={() => handleStyleChange('outdoors')}
-            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Outdoors map"
           >
             <Map size={18} />
@@ -530,7 +531,7 @@ export default function CommunityMapPage() {
           <button
             type="button"
             onClick={() => handleStyleChange('satellite')}
-            className={`p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Satellite view"
           >
             <Satellite size={18} />
@@ -538,7 +539,7 @@ export default function CommunityMapPage() {
           <button
             type="button"
             onClick={() => handleStyleChange('terrain')}
-            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Terrain view"
           >
             <Mountain size={18} />
@@ -546,48 +547,46 @@ export default function CommunityMapPage() {
         </div>
 
         {/* Flight Radius Control */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border">
-          <div className="flex items-center gap-2 px-3 py-2">
-            <Circle size={16} className="text-purple-500" />
-            <select
-              value={flightRadius}
-              onChange={(e) => setFlightRadius(parseFloat(e.target.value))}
-              className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer pr-6"
-            >
-              {FLIGHT_RADIUS_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex items-center gap-1 px-2 py-1.5">
+          <Circle size={14} className="text-purple-500" />
+          <select
+            value={flightRadius}
+            onChange={(e) => setFlightRadius(parseFloat(e.target.value))}
+            className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer"
+          >
+            {FLIGHT_RADIUS_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Visibility Filters */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border p-2 space-y-1">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border p-1.5 space-y-0.5">
           <button
             type="button"
             onClick={() => setShowUserApiaries(prev => !prev)}
-            className={`flex items-center gap-2 px-2 py-1 rounded text-sm w-full transition-colors ${showUserApiaries ? 'text-green-600' : 'text-text-tertiary'}`}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showUserApiaries ? 'text-green-600' : 'text-text-tertiary'}`}
           >
-            {showUserApiaries ? <Eye size={14} /> : <EyeOff size={14} />}
+            {showUserApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
             <span>Your apiaries</span>
           </button>
           <button
             type="button"
             onClick={() => setShowSharedApiaries(prev => !prev)}
-            className={`flex items-center gap-2 px-2 py-1 rounded text-sm w-full transition-colors ${showSharedApiaries ? 'text-purple-600' : 'text-text-tertiary'}`}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showSharedApiaries ? 'text-purple-600' : 'text-text-tertiary'}`}
           >
-            {showSharedApiaries ? <Eye size={14} /> : <EyeOff size={14} />}
+            {showSharedApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
             <span>Shared apiaries</span>
           </button>
           <button
             type="button"
             onClick={() => setShowHeatMap(prev => !prev)}
-            className={`flex items-center gap-2 px-2 py-1 rounded text-sm w-full transition-colors ${showHeatMap ? 'text-orange-600' : 'text-text-tertiary'}`}
-            title="Show density heat map - warmer colors indicate more apiaries in the area. Useful for finding drone congregation zones."
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showHeatMap ? 'text-orange-600' : 'text-text-tertiary'}`}
+            title="Show density heat map"
           >
-            <Flame size={14} />
+            <Flame size={12} />
             <span>Heat map</span>
           </button>
         </div>
@@ -603,21 +602,19 @@ export default function CommunityMapPage() {
         )}
 
         {/* Time Filter */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border">
-          <div className="flex items-center gap-2 px-3 py-2">
-            <Calendar size={16} className="text-blue-500" />
-            <select
-              value={timeFilter}
-              onChange={(e) => setTimeFilter(parseInt(e.target.value))}
-              className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer pr-6"
-            >
-              {TIME_FILTER_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex items-center gap-1 px-2 py-1.5">
+          <Calendar size={14} className="text-blue-500" />
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(parseInt(e.target.value))}
+            className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer"
+          >
+            {TIME_FILTER_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
