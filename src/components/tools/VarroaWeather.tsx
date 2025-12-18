@@ -432,14 +432,14 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse bg-white dark:bg-slate-900 rounded-lg border border-border">
               <thead>
-                <tr className="bg-sage-100 dark:bg-slate-800">
-                  <th className="text-left p-3 text-sm font-semibold text-foreground border-b border-border min-w-[160px]">
+                <tr className="bg-sage-100 dark:bg-slate-700">
+                  <th className="text-left p-3 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[160px]">
                     Treatment
                   </th>
                   {forecast.map((day) => (
-                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-foreground border-b border-border min-w-[60px]">
+                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[60px]">
                       <div>{day.dayName}</div>
-                      <div className="text-xs font-normal text-text-secondary">
+                      <div className="text-xs font-normal text-gray-600 dark:text-gray-300">
                         {new Date(day.date).toLocaleDateString('en-IE', { day: 'numeric', month: 'short' })}
                       </div>
                     </th>
@@ -468,12 +468,12 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse bg-white dark:bg-slate-900 rounded-lg border border-border">
               <thead>
-                <tr className="bg-sage-100 dark:bg-slate-800">
-                  <th className="text-left p-3 text-sm font-semibold text-foreground border-b border-border min-w-[120px]">
+                <tr className="bg-sage-100 dark:bg-slate-700">
+                  <th className="text-left p-3 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[120px]">
                     Weather
                   </th>
                   {forecast.map((day) => (
-                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-foreground border-b border-border min-w-[60px]">
+                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[60px]">
                       {day.dayName}
                     </th>
                   ))}
