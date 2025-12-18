@@ -340,7 +340,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Cloud size={24} className="text-forest-600 dark:text-forest-400" />
-        <h3 className="text-xl font-semibold text-foreground">Varroa Weather</h3>
+        <h3 className="text-xl font-semibold text-foreground">Evaluate Varroa Treatment</h3>
       </div>
 
       {/* Info Box */}
@@ -350,6 +350,17 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           <div className="text-sm text-blue-800 dark:text-blue-200">
             <p className="font-medium mb-1">Treatment Weather Forecast</p>
             <p>See which varroa treatments are suitable for the coming week based on weather conditions at your apiary location. Temperature is the key factor for most treatments.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Honey Super Warning */}
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+        <div className="flex gap-3">
+          <Info size={20} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800 dark:text-amber-200">
+            <p className="font-medium mb-1">Important: Honey Supers</p>
+            <p>Most varroa treatments require honey supers to be removed before application. Always check the product label for specific instructions and withdrawal periods.</p>
           </div>
         </div>
       </div>
