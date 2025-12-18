@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Thermometer } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Thermometer, Cloud } from 'lucide-react'
 import GDDTracker from '@/components/tools/GDDTracker'
+import VarroaWeather from '@/components/tools/VarroaWeather'
 
 export default function ToolsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -87,6 +88,13 @@ export default function ToolsPage() {
 
   const tools = [
     {
+      icon: Cloud,
+      title: 'Evaluate Varroa Treatment',
+      description: 'See which treatments suit this week\'s weather forecast',
+      status: 'Available',
+      onClick: () => setActiveTool(activeTool === 'varroa' ? null : 'varroa')
+    },
+    {
       icon: Droplet,
       title: 'Feeding Calculator',
       description: 'Calculate sugar-to-water ratios and feeding quantities',
@@ -120,6 +128,13 @@ export default function ToolsPage() {
         Helpful tools and utilities for managing your beekeeping operations.
       </p>
 
+      {/* Varroa Weather Tool - Full Width */}
+      {activeTool === 'varroa' && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
+          <VarroaWeather userId={userId} />
+        </div>
+      )}
+
       {/* GDD Tracking Tool - Full Width */}
       {activeTool === 'gdd' && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
@@ -133,7 +148,7 @@ export default function ToolsPage() {
             <div
               onClick={tool.onClick}
               className={`bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow cursor-pointer hover:border-forest-300 dark:hover:border-forest-700 ${
-                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') || (activeTool === 'gdd' && tool.title === 'GDD Tracking') ? 'border-forest-500 dark:border-forest-500' : ''
+                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') || (activeTool === 'gdd' && tool.title === 'GDD Tracking') || (activeTool === 'varroa' && tool.title === 'Evaluate Varroa Treatment') ? 'border-forest-500 dark:border-forest-500' : ''
               }`}
             >
               <div className="flex items-start gap-4">
