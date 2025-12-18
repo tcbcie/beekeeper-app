@@ -547,35 +547,35 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           </div>
 
           {/* Legend */}
-          <div className="bg-sage-50 dark:bg-slate-800/50 rounded-lg p-4">
-            <h4 className="font-semibold text-foreground mb-3">Legend</h4>
+          <div className="bg-sage-50 dark:bg-slate-700 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Legend</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div className="flex items-center gap-2">
                 <Plus className="text-green-600 dark:text-green-400" size={18} strokeWidth={3} />
-                <span className="text-foreground">Optimal conditions</span>
+                <span className="text-gray-900 dark:text-gray-100">Optimal conditions</span>
               </div>
               <div className="flex items-center gap-2">
                 <Circle className="text-green-600 dark:text-green-400 fill-green-600 dark:fill-green-400" size={10} />
-                <span className="text-foreground">Favorable conditions</span>
+                <span className="text-gray-900 dark:text-gray-100">Favorable conditions</span>
               </div>
               <div className="flex items-center gap-2">
                 <Circle className="text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" size={10} />
-                <span className="text-foreground">Less effective</span>
+                <span className="text-gray-900 dark:text-gray-100">Less effective</span>
               </div>
               <div className="flex items-center gap-2">
                 <ArrowDown className="text-blue-600 dark:text-blue-400" size={18} strokeWidth={3} />
-                <span className="text-foreground">Too cold</span>
+                <span className="text-gray-900 dark:text-gray-100">Too cold</span>
               </div>
               <div className="flex items-center gap-2">
                 <ArrowUp className="text-red-600 dark:text-red-400" size={18} strokeWidth={3} />
-                <span className="text-foreground">Too hot</span>
+                <span className="text-gray-900 dark:text-gray-100">Too hot</span>
               </div>
               <div className="flex items-center gap-2">
                 <Ban className="text-gray-400 dark:text-gray-500" size={16} />
-                <span className="text-foreground">Not recommended</span>
+                <span className="text-gray-900 dark:text-gray-100">Not recommended</span>
               </div>
             </div>
-            <p className="text-xs text-text-secondary mt-3">
+            <p className="text-xs text-gray-600 dark:text-gray-300 mt-3">
               Recommendations vary based on colony status. Oxalic acid is most effective during broodless periods. Thymol treatments need active bees to spread the product.
             </p>
           </div>
