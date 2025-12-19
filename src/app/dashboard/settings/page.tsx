@@ -2,8 +2,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon } from 'lucide-react'
+import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon, BookOpen } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toast'
 
@@ -161,7 +162,7 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration' | 'knowledge'>('profile')
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
@@ -1603,6 +1604,7 @@ export default function SettingsPage() {
     { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true },
     { id: 'associations' as const, label: 'Beekeeping Associations', icon: Building2, adminOnly: true },
     { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true },
+    { id: 'knowledge' as const, label: 'AI Knowledge Base', icon: BookOpen, adminOnly: true },
   ].filter(section => !section.adminOnly || userIsAdmin)
 
   return (
@@ -4171,6 +4173,13 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* AI Knowledge Base Section */}
+      {activeSection === 'knowledge' && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+          <KnowledgeBaseManager />
         </div>
       )}
     </div>
