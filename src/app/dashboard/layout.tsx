@@ -9,6 +9,7 @@ import Sidebar from '@/components/Sidebar'
 import MobileDrawer from '@/components/MobileDrawer'
 import OfflineIndicator from '@/components/OfflineIndicator'
 import UpdateNotification from '@/components/UpdateNotification'
+import ChatButton from '@/components/chat/ChatButton'
 import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
 
@@ -109,6 +110,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <main className="flex-1 w-full min-w-0">{children}</main>
         </div>
       </div>
+      <ChatButton />
     </div>
   )
 }
