@@ -2,9 +2,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon, BookOpen } from 'lucide-react'
+import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon, BookOpen, BookText, Ruler } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager'
+import TerminologyTable from '@/components/settings/TerminologyTable'
+import FrameStandardsManager from '@/components/settings/FrameStandardsManager'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toast'
 
@@ -162,7 +164,7 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<CategoryWithValues[]>([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration' | 'knowledge'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration' | 'knowledge' | 'terminology' | 'frame_standards'>('profile')
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<DropdownCategory | null>(null)
   const [editingValue, setEditingValue] = useState<{ categoryId: string; value: DropdownValue | null }>({ categoryId: '', value: null })
@@ -1605,6 +1607,8 @@ export default function SettingsPage() {
     { id: 'associations' as const, label: 'Beekeeping Associations', icon: Building2, adminOnly: true },
     { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true },
     { id: 'knowledge' as const, label: 'AI Knowledge Base', icon: BookOpen, adminOnly: true },
+    { id: 'terminology' as const, label: 'Terminology', icon: BookText, adminOnly: false },
+    { id: 'frame_standards' as const, label: 'Frame Standards', icon: Ruler, adminOnly: true },
   ].filter(section => !section.adminOnly || userIsAdmin)
 
   return (
@@ -4180,6 +4184,19 @@ export default function SettingsPage() {
       {activeSection === 'knowledge' && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
           <KnowledgeBaseManager />
+        </div>
+      )}
+
+      {/* Terminology Section */}
+      {activeSection === 'terminology' && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+          <TerminologyTable />
+        </div>
+      )}
+
+      {activeSection === 'frame_standards' && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+          <FrameStandardsManager />
         </div>
       )}
     </div>
