@@ -1,6 +1,7 @@
 import { generateChatResponse, generateEmbedding, classifyQuery } from './openai'
 import { createClient } from '@supabase/supabase-js'
 import DB_SCHEMA from './db-schema'
+import { tools, executeTool, getToolDescriptions } from './ai/tools'
 
 // Create Supabase client for server-side operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -8,6 +9,45 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export function getServerSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey)
+}
+
+// Match user query to a tool using LLM
+async function matchQueryToTool(query: string): Promise<{
+  toolName: string | null
+  args: Record<string, unknown>
+} | null> {
+  const toolList = getToolDescriptions()
+
+  const systemPrompt = `You are a tool router for a beekeeping app. Given a user query, determine if any of the available tools can answer it.
+
+Available tools:
+${toolList}
+
+RULES:
+1. If a tool matches, return JSON: {"toolName": "tool_name", "args": {}}
+2. Extract any parameters from the query (hive names, numbers, limits, etc.)
+3. If no tool matches well, return: {"toolName": null, "args": {}}
+4. Return ONLY valid JSON, nothing else`
+
+  try {
+    const response = await generateChatResponse([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: query }
+    ], 'gpt-4o-mini')
+
+    // Clean response - remove markdown code blocks if present
+    let cleanResponse = response.trim()
+    if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/^```(?:json)?\s*\n?/, '')
+      cleanResponse = cleanResponse.replace(/\n?```\s*$/, '')
+    }
+
+    const result = JSON.parse(cleanResponse)
+    return result
+  } catch (error) {
+    console.error('Tool matching error:', error)
+    return null
+  }
 }
 
 // Search knowledge base using vector similarity
@@ -128,29 +168,57 @@ export async function handleChatQuery(
       // Search knowledge base
       const results = await searchKnowledgeBase(query)
       if (results.length > 0) {
-        context = `Relevant beekeeping information:\n\n${results.map(r => r.content).join('\n\n')}`
+        // Format context with source attribution for each chunk
+        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r, i) => {
+          const meta = r.metadata as { source?: string; loc?: { pageNumber?: number } }
+          const sourceName = meta?.source || 'Knowledge Base'
+          const pageNum = meta?.loc?.pageNumber
+          const sourceRef = pageNum ? `${sourceName}, page ${pageNum}` : sourceName
+          return `[Source ${i + 1}: ${sourceRef}]\n${r.content}`
+        }).join('\n\n---\n\n')}`
         sources = results.map(r => (r.metadata as { source?: string })?.source || 'Knowledge Base').filter(Boolean)
       }
       break
     }
 
     case 'sql': {
-      // Generate and execute SQL query
-      const sql = await generateSQLQuery(query, userId)
-      console.log('Generated SQL:', sql)
-      if (sql && sql !== 'CANNOT_QUERY') {
-        const result = await executeQuery(sql)
-        console.log('Query result:', result)
-        if (result.data && Array.isArray(result.data) && result.data.length > 0) {
-          context = `Here is the data from your records:\n\n${JSON.stringify(result.data, null, 2)}\n\nUse this data to answer the user's question directly.`
-        } else if (result.data && Array.isArray(result.data) && result.data.length === 0) {
-          context = `I searched your records but found no matching data. The user may not have recorded this information yet.`
-        } else if (result.error) {
-          console.error('SQL execution error:', result.error)
-          context = `I tried to look up your data but encountered an issue: ${result.error}. Let me answer based on general knowledge instead.`
+      // Try tools first, then fall back to SQL generation
+      const toolMatch = await matchQueryToTool(query)
+
+      if (toolMatch?.toolName && tools[toolMatch.toolName]) {
+        console.log('Tool matched:', toolMatch.toolName, 'with args:', toolMatch.args)
+        try {
+          const toolResult = await executeTool(toolMatch.toolName, toolMatch.args, userId)
+          console.log('Tool result:', toolResult)
+          if (typeof toolResult === 'string') {
+            context = toolResult
+          } else {
+            context = `Here is the data from your records:\n\n${JSON.stringify(toolResult, null, 2)}\n\nUse this data to answer the user's question directly.`
+          }
+        } catch (error) {
+          console.error('Tool execution error:', error)
+          // Fall through to SQL generation
         }
-      } else {
-        context = `This question requires data that isn't available in your records.`
+      }
+
+      // Fall back to SQL generation if no tool matched or tool failed
+      if (!context) {
+        const sql = await generateSQLQuery(query, userId)
+        console.log('Generated SQL:', sql)
+        if (sql && sql !== 'CANNOT_QUERY') {
+          const result = await executeQuery(sql)
+          console.log('Query result:', result)
+          if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+            context = `Here is the data from your records:\n\n${JSON.stringify(result.data, null, 2)}\n\nUse this data to answer the user's question directly.`
+          } else if (result.data && Array.isArray(result.data) && result.data.length === 0) {
+            context = `I searched your records but found no matching data. The user may not have recorded this information yet.`
+          } else if (result.error) {
+            console.error('SQL execution error:', result.error)
+            context = `I tried to look up your data but encountered an issue: ${result.error}. Let me answer based on general knowledge instead.`
+          }
+        } else {
+          context = `This question requires data that isn't available in your records.`
+        }
       }
       break
     }
@@ -160,7 +228,15 @@ export async function handleChatQuery(
       // We'll implement inspection notes search in Phase 4
       const results = await searchKnowledgeBase(query)
       if (results.length > 0) {
-        context = `Relevant information:\n\n${results.map(r => r.content).join('\n\n')}`
+        // Use same formatting as knowledge case
+        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r, i) => {
+          const meta = r.metadata as { source?: string; loc?: { pageNumber?: number } }
+          const sourceName = meta?.source || 'Knowledge Base'
+          const pageNum = meta?.loc?.pageNumber
+          const sourceRef = pageNum ? `${sourceName}, page ${pageNum}` : sourceName
+          return `[Source ${i + 1}: ${sourceRef}]\n${r.content}`
+        }).join('\n\n---\n\n')}`
+        sources = results.map(r => (r.metadata as { source?: string })?.source || 'Knowledge Base').filter(Boolean)
       }
       break
     }
@@ -178,6 +254,12 @@ You help beekeepers with questions about their hives, inspections, and general b
 Be concise, friendly, and practical in your responses.
 If you have specific data from the user's records, reference it directly.
 For beekeeping advice, be accurate and mention if something is region-specific.
+
+When answering from KNOWLEDGE BASE RESULTS:
+- Cite your sources naturally, e.g. "According to [Source Name]..." or "(Source: [Name])"
+- If page numbers are available, include them
+- Synthesize information if multiple sources agree
+- If no relevant sources are found, say so and provide general guidance
 
 ${context ? `\nCONTEXT:\n${context}` : ''}`
 

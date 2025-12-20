@@ -83,18 +83,35 @@ function splitTextIntoChunks(text: string, chunkSize: number = 1000, overlap: nu
   return chunks.filter(c => c.length > 50) // Filter out tiny chunks
 }
 
-// GET - List knowledge base entries
+// GET - List knowledge base entries or sources
 export async function GET(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
 
   const { searchParams } = new URL(request.url)
+  const view = searchParams.get('view') || 'entries' // 'entries' or 'sources'
   const limit = parseInt(searchParams.get('limit') || '50')
   const offset = parseInt(searchParams.get('offset') || '0')
 
+  // List sources (for source management view)
+  if (view === 'sources') {
+    const { data, error, count } = await supabaseAdmin
+      .from('knowledge_sources')
+      .select('id, name, author, published_date, chunks_count, created_at, updated_at', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ data, total: count, view: 'sources' })
+  }
+
+  // Default: list entries
   const { data, error, count } = await supabaseAdmin
     .from('knowledge_base')
-    .select('id, content, metadata, created_at', { count: 'exact' })
+    .select('id, content, metadata, source_id, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
@@ -102,7 +119,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ data, total: count })
+  return NextResponse.json({ data, total: count, view: 'entries' })
 }
 
 // Helper to extract text from PDF buffer
@@ -161,15 +178,38 @@ async function extractTextFromUrl(url: string): Promise<string> {
 // Helper to process content and add to knowledge base
 async function processAndStoreContent(
   content: string,
-  source: string,
-  topic: string
-): Promise<{ success: boolean; chunks_created: number; message: string }> {
+  sourceName: string,
+  topic: string,
+  author?: string,
+  publishedYear?: string
+): Promise<{ success: boolean; chunks_created: number; message: string; source_id?: string }> {
   const chunks = splitTextIntoChunks(content)
 
   if (chunks.length === 0) {
     return { success: false, chunks_created: 0, message: 'No valid content chunks to process' }
   }
 
+  // Create source record first
+  const publishedDate = publishedYear ? `${publishedYear}-01-01` : null
+  const { data: sourceRecord, error: sourceError } = await supabaseAdmin
+    .from('knowledge_sources')
+    .insert({
+      name: sourceName,
+      author: author || null,
+      published_date: publishedDate,
+      chunks_count: 0
+    })
+    .select('id')
+    .single()
+
+  if (sourceError) {
+    console.error('Error creating source:', sourceError)
+    return { success: false, chunks_created: 0, message: `Failed to create source: ${sourceError.message}` }
+  }
+
+  const sourceId = sourceRecord.id
+
+  // Process chunks and link to source
   const results = []
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]
@@ -180,12 +220,14 @@ async function processAndStoreContent(
       .insert({
         content: chunk,
         metadata: {
-          source,
+          source: sourceName,
+          author: author || undefined,
           topic: topic || 'General',
           chunk_index: i,
           total_chunks: chunks.length
         },
-        embedding
+        embedding,
+        source_id: sourceId
       })
       .select('id')
       .single()
@@ -198,10 +240,17 @@ async function processAndStoreContent(
     results.push(data)
   }
 
+  // Update source with chunks count
+  await supabaseAdmin
+    .from('knowledge_sources')
+    .update({ chunks_count: results.length })
+    .eq('id', sourceId)
+
   return {
     success: true,
     chunks_created: results.length,
-    message: `Added ${results.length} chunks to knowledge base`
+    message: `Added ${results.length} chunks to knowledge base`,
+    source_id: sourceId
   }
 }
 
@@ -212,10 +261,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { type = 'text', content, source, topic, pdfData, url } = body as {
+    const { type = 'text', content, source, author, published_year, topic, pdfData, url } = body as {
       type?: 'text' | 'pdf' | 'url'
       content?: string
       source?: string
+      author?: string
+      published_year?: string
       topic?: string
       pdfData?: string // base64 encoded PDF
       url?: string
@@ -274,7 +325,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Extracted content too short (min 100 characters)' }, { status: 400 })
     }
 
-    const result = await processAndStoreContent(textContent, contentSource, topic || 'General')
+    const result = await processAndStoreContent(textContent, contentSource, topic || 'General', author, published_year)
 
     if (!result.success) {
       return NextResponse.json({ error: result.message }, { status: 400 })
@@ -291,16 +342,110 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - Remove entry from knowledge base
+// PATCH - Update source metadata
+export async function PATCH(request: NextRequest) {
+  const authResult = await verifyAdmin(request)
+  if (authResult instanceof NextResponse) return authResult
+
+  try {
+    const body = await request.json()
+    const { source_id, name, author, published_year } = body as {
+      source_id: string
+      name?: string
+      author?: string | null
+      published_year?: string | null
+    }
+
+    if (!source_id) {
+      return NextResponse.json({ error: 'source_id is required' }, { status: 400 })
+    }
+
+    // Build update object
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (name !== undefined) updates.name = name
+    if (author !== undefined) updates.author = author
+    if (published_year !== undefined) {
+      updates.published_date = published_year ? `${published_year}-01-01` : null
+    }
+
+    const { error } = await supabaseAdmin
+      .from('knowledge_sources')
+      .update(updates)
+      .eq('id', source_id)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Also update metadata in linked chunks if name changed (best-effort)
+    if (name) {
+      try {
+        await supabaseAdmin.rpc('update_knowledge_chunks_source', {
+          p_source_id: source_id,
+          p_source_name: name,
+          p_author: author || null
+        })
+      } catch {
+        // RPC may not exist - chunks will have old metadata but still work
+      }
+    }
+
+    return NextResponse.json({ success: true })
+
+  } catch (error) {
+    console.error('Knowledge base PATCH error:', error)
+    return NextResponse.json(
+      { error: 'Failed to update source', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Remove entry or source from knowledge base
 export async function DELETE(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
 
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
+  const sourceId = searchParams.get('source_id')
 
+  // Delete entire source (and all its chunks via CASCADE)
+  if (sourceId) {
+    // Get source info for response
+    const { data: source } = await supabaseAdmin
+      .from('knowledge_sources')
+      .select('name, chunks_count')
+      .eq('id', sourceId)
+      .single()
+
+    if (!source) {
+      return NextResponse.json({ error: 'Source not found' }, { status: 404 })
+    }
+
+    const { error } = await supabaseAdmin
+      .from('knowledge_sources')
+      .delete()
+      .eq('id', sourceId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      deleted: 'source',
+      name: source.name,
+      chunks_deleted: source.chunks_count
+    })
+  }
+
+  // Delete individual entry
   if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    return NextResponse.json({ error: 'ID or source_id is required' }, { status: 400 })
   }
 
   const { error } = await supabaseAdmin
@@ -312,5 +457,5 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, deleted: 'entry' })
 }

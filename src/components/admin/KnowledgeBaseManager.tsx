@@ -2,45 +2,48 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, BookOpen, Loader2, FileText, Upload, Link, FileType } from 'lucide-react'
+import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 type InputMode = 'text' | 'pdf' | 'url'
 
-interface KnowledgeEntry {
+interface KnowledgeSource {
   id: string
-  content: string
-  metadata: {
-    source?: string
-    topic?: string
-    chunk_index?: number
-    total_chunks?: number
-  }
+  name: string
+  author: string | null
+  published_date: string | null
+  chunks_count: number
   created_at: string
 }
 
 export default function KnowledgeBaseManager() {
-  const [entries, setEntries] = useState<KnowledgeEntry[]>([])
+  const [sources, setSources] = useState<KnowledgeSource[]>([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [inputMode, setInputMode] = useState<InputMode>('text')
+  const [inputMode, setInputMode] = useState<InputMode>('pdf')
   const [newContent, setNewContent] = useState('')
   const [newSource, setNewSource] = useState('')
+  const [newAuthor, setNewAuthor] = useState('')
+  const [newYear, setNewYear] = useState('')
   const [newTopic, setNewTopic] = useState('')
   const [newUrl, setNewUrl] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [total, setTotal] = useState(0)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editAuthor, setEditAuthor] = useState('')
+  const [editYear, setEditYear] = useState('')
+  const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
 
-  const fetchEntries = useCallback(async () => {
+  const fetchSources = useCallback(async () => {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) return
 
-      const response = await fetch('/api/admin/knowledge-base?limit=100', {
+      const response = await fetch('/api/admin/knowledge-base?view=sources&limit=100', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -48,8 +51,7 @@ export default function KnowledgeBaseManager() {
 
       const data = await response.json()
       if (response.ok) {
-        setEntries(data.data || [])
-        setTotal(data.total || 0)
+        setSources(data.data || [])
       } else {
         toast.error(data.error || 'Failed to load knowledge base')
       }
@@ -62,11 +64,10 @@ export default function KnowledgeBaseManager() {
   }, [toast])
 
   useEffect(() => {
-    fetchEntries()
-  }, [fetchEntries])
+    fetchSources()
+  }, [fetchSources])
 
   const handleAdd = async () => {
-    // Validate based on input mode
     if (inputMode === 'text' && !newContent.trim()) {
       toast.error('Content is required')
       return
@@ -92,18 +93,19 @@ export default function KnowledgeBaseManager() {
       const requestBody: Record<string, unknown> = {
         type: inputMode,
         source: newSource || undefined,
+        author: newAuthor || undefined,
+        published_year: newYear || undefined,
         topic: newTopic || undefined
       }
 
       if (inputMode === 'text') {
         requestBody.content = newContent
       } else if (inputMode === 'pdf' && selectedFile) {
-        // Convert file to base64
         const buffer = await selectedFile.arrayBuffer()
         const base64 = Buffer.from(buffer).toString('base64')
         requestBody.pdfData = base64
         if (!newSource) {
-          requestBody.source = selectedFile.name
+          requestBody.source = selectedFile.name.replace(/\.pdf$/i, '')
         }
       } else if (inputMode === 'url') {
         requestBody.url = newUrl
@@ -123,6 +125,8 @@ export default function KnowledgeBaseManager() {
         toast.success(data.message || 'Content added successfully')
         setNewContent('')
         setNewSource('')
+        setNewAuthor('')
+        setNewYear('')
         setNewTopic('')
         setNewUrl('')
         setSelectedFile(null)
@@ -130,7 +134,7 @@ export default function KnowledgeBaseManager() {
           fileInputRef.current.value = ''
         }
         setShowAddForm(false)
-        fetchEntries()
+        fetchSources()
       } else {
         toast.error(data.error || 'Failed to add content')
       }
@@ -142,14 +146,14 @@ export default function KnowledgeBaseManager() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this knowledge entry?')) return
+  const handleDeleteSource = async (id: string, name: string, chunksCount: number) => {
+    if (!confirm(`Delete "${name}" and all ${chunksCount} chunks? This cannot be undone.`)) return
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) return
 
-      const response = await fetch(`/api/admin/knowledge-base?id=${id}`, {
+      const response = await fetch(`/api/admin/knowledge-base?source_id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -157,8 +161,8 @@ export default function KnowledgeBaseManager() {
       })
 
       if (response.ok) {
-        toast.success('Entry deleted')
-        fetchEntries()
+        toast.success(`Deleted "${name}" and ${chunksCount} chunks`)
+        fetchSources()
       } else {
         const data = await response.json()
         toast.error(data.error || 'Failed to delete')
@@ -168,6 +172,63 @@ export default function KnowledgeBaseManager() {
       toast.error('Failed to delete')
     }
   }
+
+  const startEditing = (source: KnowledgeSource) => {
+    setEditingId(source.id)
+    setEditName(source.name)
+    setEditAuthor(source.author || '')
+    setEditYear(source.published_date ? source.published_date.split('-')[0] : '')
+  }
+
+  const cancelEditing = () => {
+    setEditingId(null)
+    setEditName('')
+    setEditAuthor('')
+    setEditYear('')
+  }
+
+  const saveEditing = async () => {
+    if (!editingId || !editName.trim()) {
+      toast.error('Name is required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const response = await fetch('/api/admin/knowledge-base', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          source_id: editingId,
+          name: editName.trim(),
+          author: editAuthor.trim() || null,
+          published_year: editYear.trim() || null
+        })
+      })
+
+      if (response.ok) {
+        toast.success('Source updated')
+        setEditingId(null)
+        fetchSources()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to update')
+      }
+    } catch (error) {
+      console.error('Error updating:', error)
+      toast.error('Failed to update')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const totalChunks = sources.reduce((sum, s) => sum + s.chunks_count, 0)
 
   if (loading) {
     return (
@@ -188,7 +249,7 @@ export default function KnowledgeBaseManager() {
             AI Knowledge Base
           </h3>
           <p className="text-sm text-text-tertiary mt-1">
-            {total} entries stored for AI chat responses
+            {sources.length} sources ({totalChunks} chunks)
           </p>
         </div>
         <button
@@ -207,17 +268,6 @@ export default function KnowledgeBaseManager() {
 
           {/* Input Mode Tabs */}
           <div className="flex gap-2 border-b border-border pb-2">
-            <button
-              onClick={() => setInputMode('text')}
-              className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-colors ${
-                inputMode === 'text'
-                  ? 'bg-forest-600 text-white'
-                  : 'bg-surface hover:bg-surface-secondary text-text-secondary'
-              }`}
-            >
-              <FileType size={16} />
-              Text
-            </button>
             <button
               onClick={() => setInputMode('pdf')}
               className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-colors ${
@@ -240,39 +290,76 @@ export default function KnowledgeBaseManager() {
               <Link size={16} />
               URL
             </button>
+            <button
+              onClick={() => setInputMode('text')}
+              className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-colors ${
+                inputMode === 'text'
+                  ? 'bg-forest-600 text-white'
+                  : 'bg-surface hover:bg-surface-secondary text-text-secondary'
+              }`}
+            >
+              <FileType size={16} />
+              Text
+            </button>
           </div>
 
           <p className="text-sm text-text-tertiary">
-            {inputMode === 'text' && 'Paste text from beekeeping books, guides, or articles. Long text will be automatically split into chunks.'}
-            {inputMode === 'pdf' && 'Upload a PDF file (max 5MB). Text will be extracted and split into chunks automatically.'}
-            {inputMode === 'url' && 'Enter a URL to a beekeeping article or guide. Content will be extracted and processed.'}
+            {inputMode === 'text' && 'Paste text from beekeeping books, guides, or articles.'}
+            {inputMode === 'pdf' && 'Upload a PDF file (max 5MB). Text will be extracted automatically.'}
+            {inputMode === 'url' && 'Enter a URL to a beekeeping article or guide.'}
           </p>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
-                Source (optional)
+                Name / Title
               </label>
               <input
                 type="text"
                 value={newSource}
                 onChange={(e) => setNewSource(e.target.value)}
-                placeholder={inputMode === 'pdf' ? 'Uses filename if empty' : inputMode === 'url' ? 'Uses URL if empty' : 'e.g., The Beekeeper\'s Handbook'}
+                placeholder="e.g., The Beekeeper's Handbook"
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
-                Topic (optional)
+                Author
               </label>
               <input
                 type="text"
-                value={newTopic}
-                onChange={(e) => setNewTopic(e.target.value)}
-                placeholder="e.g., Varroa Treatment"
+                value={newAuthor}
+                onChange={(e) => setNewAuthor(e.target.value)}
+                placeholder="e.g., Diana Sammataro"
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">
+                Year Published
+              </label>
+              <input
+                type="text"
+                value={newYear}
+                onChange={(e) => setNewYear(e.target.value)}
+                placeholder="e.g., 2021"
+                maxLength={4}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Topic (optional)
+            </label>
+            <input
+              type="text"
+              value={newTopic}
+              onChange={(e) => setNewTopic(e.target.value)}
+              placeholder="e.g., Varroa Treatment"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+            />
           </div>
 
           {/* Text Input */}
@@ -285,7 +372,7 @@ export default function KnowledgeBaseManager() {
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
                 placeholder="Paste beekeeping text here (min 100 characters)..."
-                rows={8}
+                rows={6}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground resize-y"
               />
               <p className="text-xs text-text-muted mt-1">
@@ -300,15 +387,13 @@ export default function KnowledgeBaseManager() {
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 PDF File *
               </label>
-              <div className="flex items-center gap-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-forest-600 file:text-white file:text-sm"
-                />
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-forest-600 file:text-white file:text-sm"
+              />
               {selectedFile && (
                 <p className="text-xs text-text-muted mt-1">
                   Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
@@ -353,7 +438,7 @@ export default function KnowledgeBaseManager() {
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 border border-border rounded-lg hover:bg-surface-secondary"
+              className="px-4 py-2 border border-border rounded-lg hover:bg-surface-secondary text-foreground"
             >
               Cancel
             </button>
@@ -361,56 +446,119 @@ export default function KnowledgeBaseManager() {
         </div>
       )}
 
-      {/* Entries List */}
-      {entries.length === 0 ? (
+      {/* Sources List */}
+      {sources.length === 0 ? (
         <div className="text-center py-8 text-text-tertiary">
-          <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>No knowledge entries yet</p>
+          <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p>No knowledge sources yet</p>
           <p className="text-sm">Add beekeeping content to improve AI responses</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {entries.map((entry) => (
-            <div
-              key={entry.id}
-              className="bg-surface border border-border rounded-lg p-4"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    {entry.metadata?.source && (
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">
-                        {entry.metadata.source}
-                      </span>
-                    )}
-                    {entry.metadata?.topic && (
-                      <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded">
-                        {entry.metadata.topic}
-                      </span>
-                    )}
-                    {entry.metadata?.chunk_index !== undefined && (
-                      <span className="text-xs text-text-muted">
-                        Chunk {entry.metadata.chunk_index + 1}/{entry.metadata.total_chunks}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-text-secondary line-clamp-3">
-                    {entry.content}
-                  </p>
-                  <p className="text-xs text-text-muted mt-2">
-                    Added {new Date(entry.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDelete(entry.id)}
-                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Name</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Author</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Year</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary text-center">Chunks</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sources.map((source) => (
+                <tr key={source.id} className="border-b border-border hover:bg-surface-secondary/50">
+                  {editingId === source.id ? (
+                    <>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                          autoFocus
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editAuthor}
+                          onChange={(e) => setEditAuthor(e.target.value)}
+                          placeholder="Author"
+                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editYear}
+                          onChange={(e) => setEditYear(e.target.value)}
+                          placeholder="Year"
+                          maxLength={4}
+                          className="w-20 px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-text-secondary">
+                        {source.chunks_count}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={saveEditing}
+                            disabled={saving}
+                            className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                            title="Save"
+                          >
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="p-1.5 text-text-secondary hover:bg-surface-secondary rounded"
+                            title="Cancel"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3 text-sm text-foreground font-medium">
+                        {source.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">
+                        {source.author || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">
+                        {source.published_date ? source.published_date.split('-')[0] : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary text-center">
+                        {source.chunks_count}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => startEditing(source)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                            title="Edit"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSource(source.id, source.name, source.chunks_count)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
