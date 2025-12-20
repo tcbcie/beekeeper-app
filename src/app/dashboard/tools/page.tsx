@@ -2,9 +2,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Thermometer, Cloud } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Thermometer, Cloud, Grid3X3 } from 'lucide-react'
 import GDDTracker from '@/components/tools/GDDTracker'
 import VarroaWeather from '@/components/tools/VarroaWeather'
+import FrameCellCalculator from '@/components/tools/FrameCellCalculator'
 
 export default function ToolsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -114,6 +115,13 @@ export default function ToolsPage() {
       description: 'Track Growing Degree Days for vegetation blooming periods',
       status: 'Available',
       onClick: () => setActiveTool(activeTool === 'gdd' ? null : 'gdd')
+    },
+    {
+      icon: Grid3X3,
+      title: 'Frame Cell Counter',
+      description: 'Calculate approximate cell count for different frame sizes',
+      status: 'Available',
+      onClick: () => setActiveTool(activeTool === 'cells' ? null : 'cells')
     }
   ]
 
@@ -148,7 +156,7 @@ export default function ToolsPage() {
             <div
               onClick={tool.onClick}
               className={`bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow cursor-pointer hover:border-forest-300 dark:hover:border-forest-700 ${
-                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') || (activeTool === 'gdd' && tool.title === 'GDD Tracking') || (activeTool === 'varroa' && tool.title === 'Evaluate Varroa Treatment') ? 'border-forest-500 dark:border-forest-500' : ''
+                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') || (activeTool === 'gdd' && tool.title === 'GDD Tracking') || (activeTool === 'varroa' && tool.title === 'Evaluate Varroa Treatment') || (activeTool === 'cells' && tool.title === 'Frame Cell Counter') ? 'border-forest-500 dark:border-forest-500' : ''
               }`}
             >
               <div className="flex items-start gap-4">
@@ -366,6 +374,13 @@ export default function ToolsPage() {
                     <li>• Best used for winter feeding or emergency feeding situations</li>
                   </ul>
                 </div>
+              </div>
+            )}
+
+            {/* Frame Cell Counter Tool */}
+            {tool.title === 'Frame Cell Counter' && activeTool === 'cells' && (
+              <div className="mt-4 bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
+                <FrameCellCalculator />
               </div>
             )}
           </div>
