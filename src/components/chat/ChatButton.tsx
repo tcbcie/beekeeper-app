@@ -19,7 +19,7 @@ export default function ChatButton() {
                       ? 'bg-slate-600 dark:bg-slate-700 rotate-0'
                       : 'bg-forest-600 dark:bg-forest-600 hover:bg-forest-700'
                     }`}
-        aria-label={isOpen ? 'Close AI assistant' : 'Open AI assistant'}
+        aria-label={isOpen ? 'Close Mel' : 'Open Mel'}
       >
         {isOpen ? (
           <X className="w-6 h-6 text-white" />

@@ -342,3 +342,68 @@ export const getSwarmRiskHives: Tool = {
     }
   }
 }
+
+// Get inspection counts per hive
+export const getInspectionCounts: Tool = {
+  name: 'getInspectionCounts',
+  description: 'Get the number of inspections per hive, sorted by most inspections first. Use this to find which hive has the most inspection records.',
+  parameters: z.object({
+    limit: z.number().optional().describe('Maximum number of hives to return (default 10)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { limit?: number }
+    const supabase = getSupabase()
+    const apiaryIds = await getAccessibleApiaryIds(userId)
+
+    if (apiaryIds.length === 0) {
+      return 'No apiaries found.'
+    }
+
+    const limit = args.limit || 10
+
+    const { data: hives, error } = await supabase
+      .from('hives')
+      .select('id, hive_number, apiaries(name)')
+      .in('apiary_id', apiaryIds)
+      .is('archived_at', null)
+
+    if (error) return `Error fetching hives: ${error.message}`
+    if (!hives?.length) return 'No active hives found.'
+
+    const hiveCounts: Array<{
+      hive: string
+      apiary: string
+      inspectionCount: number
+      lastInspection: string | null
+    }> = []
+
+    for (const hive of hives) {
+      const { count, error: countError } = await supabase
+        .from('inspections')
+        .select('*', { count: 'exact', head: true })
+        .eq('hive_id', hive.id)
+
+      if (countError) continue
+
+      const { data: lastInspection } = await supabase
+        .from('inspections')
+        .select('inspection_date')
+        .eq('hive_id', hive.id)
+        .order('inspection_date', { ascending: false })
+        .limit(1)
+        .single()
+
+      hiveCounts.push({
+        hive: hive.hive_number,
+        apiary: getApiaryName(hive.apiaries),
+        inspectionCount: count || 0,
+        lastInspection: lastInspection?.inspection_date ? formatDate(lastInspection.inspection_date) : null
+      })
+    }
+
+    // Sort by inspection count descending
+    hiveCounts.sort((a, b) => b.inspectionCount - a.inspectionCount)
+
+    return hiveCounts.slice(0, limit)
+  }
+}

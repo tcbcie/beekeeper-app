@@ -318,3 +318,74 @@ export const getHivesNeedingTreatment: Tool = {
     }
   }
 }
+
+// Get treatment counts per hive
+export const getTreatmentCounts: Tool = {
+  name: 'getTreatmentCounts',
+  description: 'Get the number of varroa treatments per hive, sorted by most treatments first. Use this to find which hive has the most treatment records.',
+  parameters: z.object({
+    limit: z.number().optional().describe('Maximum number of hives to return (default 10)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { limit?: number }
+    const supabase = getSupabase()
+    const apiaryIds = await getAccessibleApiaryIds(userId)
+
+    if (apiaryIds.length === 0) {
+      return 'No apiaries found.'
+    }
+
+    const limit = args.limit || 10
+
+    const { data: hives, error } = await supabase
+      .from('hives')
+      .select('id, hive_number, apiaries(name)')
+      .in('apiary_id', apiaryIds)
+      .is('archived_at', null)
+
+    if (error) return `Error fetching hives: ${error.message}`
+    if (!hives?.length) return 'No active hives found.'
+
+    const hiveCounts: Array<{
+      hive: string
+      apiary: string
+      treatmentCount: number
+      lastTreatment: string | null
+    }> = []
+
+    for (const hive of hives) {
+      const { count, error: countError } = await supabase
+        .from('varroa_treatments')
+        .select('*', { count: 'exact', head: true })
+        .eq('hive_id', hive.id)
+
+      if (countError) continue
+
+      const { data: lastTreatment } = await supabase
+        .from('varroa_treatments')
+        .select('treatment_date, treatment_type')
+        .eq('hive_id', hive.id)
+        .order('treatment_date', { ascending: false })
+        .limit(1)
+        .single()
+
+      hiveCounts.push({
+        hive: hive.hive_number,
+        apiary: getApiaryName(hive.apiaries),
+        treatmentCount: count || 0,
+        lastTreatment: lastTreatment?.treatment_date ? `${formatDate(lastTreatment.treatment_date)} (${lastTreatment.treatment_type || 'Unknown'})` : null
+      })
+    }
+
+    // Sort by treatment count descending
+    hiveCounts.sort((a, b) => b.treatmentCount - a.treatmentCount)
+
+    // Filter out hives with 0 treatments if there are any with treatments
+    const withTreatments = hiveCounts.filter(h => h.treatmentCount > 0)
+    if (withTreatments.length > 0) {
+      return withTreatments.slice(0, limit)
+    }
+
+    return hiveCounts.slice(0, limit)
+  }
+}
