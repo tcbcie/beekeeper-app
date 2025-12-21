@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check } from 'lucide-react'
+import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 type InputMode = 'text' | 'pdf' | 'url'
@@ -12,6 +12,7 @@ interface KnowledgeSource {
   name: string
   author: string | null
   published_date: string | null
+  source_url: string | null
   chunks_count: number
   created_at: string
 }
@@ -28,14 +29,83 @@ export default function KnowledgeBaseManager() {
   const [newYear, setNewYear] = useState('')
   const [newTopic, setNewTopic] = useState('')
   const [newUrl, setNewUrl] = useState('')
+  const [newSourceUrl, setNewSourceUrl] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editAuthor, setEditAuthor] = useState('')
   const [editYear, setEditYear] = useState('')
+  const [editSourceUrl, setEditSourceUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const risInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
+
+  // Parse RIS citation file and extract metadata
+  const parseRisFile = (content: string): { title?: string; author?: string; year?: string } => {
+    const lines = content.split('\n')
+    const authors: string[] = []
+    let title = ''
+    let year = ''
+
+    for (const line of lines) {
+      const match = line.match(/^([A-Z][A-Z0-9])\s+-\s+(.*)$/)
+      if (!match) continue
+
+      const [, tag, value] = match
+      const trimmedValue = value.trim()
+
+      switch (tag) {
+        case 'TI': // Title
+        case 'T1': // Primary Title (alternative)
+          if (!title) title = trimmedValue
+          break
+        case 'AU': // Author
+        case 'A1': // Primary Author (alternative)
+          if (trimmedValue) authors.push(trimmedValue)
+          break
+        case 'PY': // Publication Year
+        case 'Y1': // Primary Date
+        case 'DA': // Date
+          if (!year && trimmedValue) {
+            // Extract just the year (first 4 digits)
+            const yearMatch = trimmedValue.match(/(\d{4})/)
+            if (yearMatch) year = yearMatch[1]
+          }
+          break
+      }
+    }
+
+    return {
+      title: title || undefined,
+      author: authors.length > 0 ? authors.join(', ') : undefined,
+      year: year || undefined
+    }
+  }
+
+  const handleRisImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const content = event.target?.result as string
+      const parsed = parseRisFile(content)
+
+      if (parsed.title) setEditName(parsed.title)
+      if (parsed.author) setEditAuthor(parsed.author)
+      if (parsed.year) setEditYear(parsed.year)
+
+      toast.success('Citation imported')
+    }
+    reader.onerror = () => {
+      toast.error('Failed to read RIS file')
+    }
+    reader.readAsText(file)
+
+    // Reset input so same file can be selected again
+    if (risInputRef.current) risInputRef.current.value = ''
+  }
 
   const fetchSources = useCallback(async () => {
     setLoading(true)
@@ -95,7 +165,8 @@ export default function KnowledgeBaseManager() {
         source: newSource || undefined,
         author: newAuthor || undefined,
         published_year: newYear || undefined,
-        topic: newTopic || undefined
+        topic: newTopic || undefined,
+        source_url: newSourceUrl || undefined
       }
 
       if (inputMode === 'text') {
@@ -129,6 +200,7 @@ export default function KnowledgeBaseManager() {
         setNewYear('')
         setNewTopic('')
         setNewUrl('')
+        setNewSourceUrl('')
         setSelectedFile(null)
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
@@ -178,6 +250,7 @@ export default function KnowledgeBaseManager() {
     setEditName(source.name)
     setEditAuthor(source.author || '')
     setEditYear(source.published_date ? source.published_date.split('-')[0] : '')
+    setEditSourceUrl(source.source_url || '')
   }
 
   const cancelEditing = () => {
@@ -185,6 +258,7 @@ export default function KnowledgeBaseManager() {
     setEditName('')
     setEditAuthor('')
     setEditYear('')
+    setEditSourceUrl('')
   }
 
   const saveEditing = async () => {
@@ -208,7 +282,8 @@ export default function KnowledgeBaseManager() {
           source_id: editingId,
           name: editName.trim(),
           author: editAuthor.trim() || null,
-          published_year: editYear.trim() || null
+          published_year: editYear.trim() || null,
+          source_url: editSourceUrl.trim() || null
         })
       })
 
@@ -241,6 +316,15 @@ export default function KnowledgeBaseManager() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden RIS file input for citation import */}
+      <input
+        ref={risInputRef}
+        type="file"
+        accept=".ris"
+        onChange={handleRisImport}
+        className="hidden"
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -349,17 +433,31 @@ export default function KnowledgeBaseManager() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
-              Topic (optional)
-            </label>
-            <input
-              type="text"
-              value={newTopic}
-              onChange={(e) => setNewTopic(e.target.value)}
-              placeholder="e.g., Varroa Treatment"
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">
+                Topic (optional)
+              </label>
+              <input
+                type="text"
+                value={newTopic}
+                onChange={(e) => setNewTopic(e.target.value)}
+                placeholder="e.g., Varroa Treatment"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">
+                Source URL (optional)
+              </label>
+              <input
+                type="url"
+                value={newSourceUrl}
+                onChange={(e) => setNewSourceUrl(e.target.value)}
+                placeholder="https://example.com/source"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+              />
+            </div>
           </div>
 
           {/* Text Input */}
@@ -461,6 +559,7 @@ export default function KnowledgeBaseManager() {
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Name</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Author</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Year</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">URL</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary text-center">Chunks</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary text-right">Actions</th>
               </tr>
@@ -498,11 +597,27 @@ export default function KnowledgeBaseManager() {
                           className="w-20 px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
                         />
                       </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="url"
+                          value={editSourceUrl}
+                          onChange={(e) => setEditSourceUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                        />
+                      </td>
                       <td className="px-4 py-3 text-center text-sm text-text-secondary">
                         {source.chunks_count}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => risInputRef.current?.click()}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
+                            title="Import from RIS citation"
+                          >
+                            <FileText size={16} />
+                          </button>
                           <button
                             onClick={saveEditing}
                             disabled={saving}
@@ -531,6 +646,18 @@ export default function KnowledgeBaseManager() {
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary">
                         {source.published_date ? source.published_date.split('-')[0] : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">
+                        {source.source_url ? (
+                          <a
+                            href={source.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center gap-1"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        ) : '—'}
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary text-center">
                         {source.chunks_count}

@@ -50,12 +50,63 @@ RULES:
   }
 }
 
-// Search knowledge base using vector similarity
-export async function searchKnowledgeBase(query: string, limit: number = 5): Promise<{
+// Format a citation from source data
+export function formatCitation(source: {
+  source_name?: string | null
+  source_author?: string | null
+  source_year?: number | null
+  source_url?: string | null
+}): string {
+  const { source_name, source_author, source_year } = source
+
+  // Build citation parts
+  const parts: string[] = []
+
+  if (source_author) {
+    parts.push(source_author)
+  }
+
+  if (source_year) {
+    parts.push(`(${source_year})`)
+  }
+
+  if (source_name) {
+    parts.push(source_name)
+  }
+
+  // Join with appropriate separators
+  if (parts.length === 0) {
+    return 'Knowledge Base'
+  }
+
+  // Format: "Author (Year). Title" or variations
+  if (source_author && source_year && source_name) {
+    return `${source_author} (${source_year}). ${source_name}`
+  } else if (source_author && source_name) {
+    return `${source_author}. ${source_name}`
+  } else if (source_year && source_name) {
+    return `${source_name} (${source_year})`
+  } else if (source_name) {
+    return source_name
+  }
+
+  return parts.join('. ')
+}
+
+// Knowledge base search result type
+export interface KnowledgeSearchResult {
   content: string
   metadata: Record<string, unknown>
   similarity: number
-}[]> {
+  source_name: string | null
+  source_author: string | null
+  source_year: number | null
+  source_url: string | null
+  citation: string
+}
+
+// Search knowledge base using vector similarity
+export async function searchKnowledgeBase(query: string, limit: number = 5): Promise<KnowledgeSearchResult[]> {
   const supabase = getServerSupabase()
   const embedding = await generateEmbedding(query)
 
@@ -70,7 +121,19 @@ export async function searchKnowledgeBase(query: string, limit: number = 5): Pro
     return []
   }
 
-  return data || []
+  // Add formatted citation to each result
+  return (data || []).map((r: {
+    content: string
+    metadata: Record<string, unknown>
+    similarity: number
+    source_name: string | null
+    source_author: string | null
+    source_year: number | null
+    source_url: string | null
+  }) => ({
+    ...r,
+    citation: formatCitation(r)
+  }))
 }
 
 // Generate SQL query from natural language
@@ -168,15 +231,13 @@ export async function handleChatQuery(
       // Search knowledge base
       const results = await searchKnowledgeBase(query)
       if (results.length > 0) {
-        // Format context with source attribution for each chunk
-        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r, i) => {
-          const meta = r.metadata as { source?: string; loc?: { pageNumber?: number } }
-          const sourceName = meta?.source || 'Knowledge Base'
-          const pageNum = meta?.loc?.pageNumber
-          const sourceRef = pageNum ? `${sourceName}, page ${pageNum}` : sourceName
-          return `[Source ${i + 1}: ${sourceRef}]\n${r.content}`
-        }).join('\n\n---\n\n')}`
-        sources = results.map(r => (r.metadata as { source?: string })?.source || 'Knowledge Base').filter(Boolean)
+        // Format context with proper citations from source table
+        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r) => {
+          const pageNum = (r.metadata as { loc?: { pageNumber?: number } })?.loc?.pageNumber
+          const pageInfo = pageNum ? ` (page ${pageNum})` : ''
+          return `--- Source: ${r.citation}${pageInfo} ---\n${r.content}`
+        }).join('\n\n')}`
+        sources = results.map(r => r.citation).filter(Boolean)
       }
       break
     }
@@ -225,18 +286,15 @@ export async function handleChatQuery(
 
     case 'hybrid': {
       // For now, treat hybrid as knowledge search
-      // We'll implement inspection notes search in Phase 4
       const results = await searchKnowledgeBase(query)
       if (results.length > 0) {
         // Use same formatting as knowledge case
-        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r, i) => {
-          const meta = r.metadata as { source?: string; loc?: { pageNumber?: number } }
-          const sourceName = meta?.source || 'Knowledge Base'
-          const pageNum = meta?.loc?.pageNumber
-          const sourceRef = pageNum ? `${sourceName}, page ${pageNum}` : sourceName
-          return `[Source ${i + 1}: ${sourceRef}]\n${r.content}`
-        }).join('\n\n---\n\n')}`
-        sources = results.map(r => (r.metadata as { source?: string })?.source || 'Knowledge Base').filter(Boolean)
+        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r) => {
+          const pageNum = (r.metadata as { loc?: { pageNumber?: number } })?.loc?.pageNumber
+          const pageInfo = pageNum ? ` (page ${pageNum})` : ''
+          return `--- Source: ${r.citation}${pageInfo} ---\n${r.content}`
+        }).join('\n\n')}`
+        sources = results.map(r => r.citation).filter(Boolean)
       }
       break
     }
@@ -248,7 +306,7 @@ export async function handleChatQuery(
   }
 
   // Step 3: Generate response
-  const systemPrompt = `You are a helpful AI assistant for HiveCraic, a beekeeping management app.
+  const systemPrompt = `You are Mel, the friendly virtual assistant for HiveCraic, a beekeeping management app.
 You help beekeepers with questions about their hives, inspections, and general beekeeping knowledge.
 
 Be concise, friendly, and practical in your responses.
@@ -256,8 +314,8 @@ If you have specific data from the user's records, reference it directly.
 For beekeeping advice, be accurate and mention if something is region-specific.
 
 When answering from KNOWLEDGE BASE RESULTS:
-- Cite your sources naturally, e.g. "According to [Source Name]..." or "(Source: [Name])"
-- If page numbers are available, include them
+- ALWAYS cite sources using the exact citation provided, e.g. "According to Smith (2021). The Beekeeper's Handbook..." or "(Source: Smith (2021). The Beekeeper's Handbook)"
+- Include page numbers when available
 - Synthesize information if multiple sources agree
 - If no relevant sources are found, say so and provide general guidance
 

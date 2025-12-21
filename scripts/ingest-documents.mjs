@@ -8,6 +8,8 @@
  * - Ingests all PDF files from specified directory
  * - Detects duplicates via file hash
  * - Tracks sources in knowledge_sources table
+ * - OCR fallback using OpenAI Vision API for scanned PDFs
+ * - Auto-translation to English for non-English content
  * - Supports author and publish date via filename convention:
  *   "Book Title - Author Name (2023).pdf"
  *
@@ -34,6 +36,8 @@ const pdfParse = (await import('pdf-parse')).default
 const CHUNK_SIZE = 1000
 const CHUNK_OVERLAP = 200
 const EMBEDDING_MODEL = 'text-embedding-3-small'
+const MIN_TEXT_LENGTH = 100 // Minimum chars to consider text extraction successful
+const OCR_BATCH_SIZE = 5 // Pages to process at once for OCR
 
 // Initialize clients
 const supabase = createClient(
@@ -123,6 +127,140 @@ async function generateEmbedding(text) {
   return response.data[0].embedding
 }
 
+// Detect language of text using GPT
+async function detectLanguage(text) {
+  // Take a sample of text for detection
+  const sample = text.slice(0, 500)
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a language detector. Respond with ONLY the ISO 639-1 language code (e.g., "en", "de", "fr", "es", "it", "nl", "pl", "cs", "sk"). Nothing else.'
+        },
+        {
+          role: 'user',
+          content: `Detect the language of this text:\n\n${sample}`
+        }
+      ],
+      max_tokens: 10,
+      temperature: 0
+    })
+
+    const lang = response.choices[0].message.content.trim().toLowerCase()
+    return lang.slice(0, 2) // Ensure we only get 2-char code
+  } catch (err) {
+    console.log(`  Warning: Language detection failed - ${err.message}`)
+    return 'en' // Default to English
+  }
+}
+
+// Translate text to English using GPT
+async function translateToEnglish(text, sourceLanguage) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional translator. Translate the following text from ${sourceLanguage} to English. Preserve all technical beekeeping terminology. Maintain paragraph structure. Output ONLY the translation, nothing else.`
+        },
+        {
+          role: 'user',
+          content: text
+        }
+      ],
+      max_tokens: 4000,
+      temperature: 0.3
+    })
+
+    return response.choices[0].message.content.trim()
+  } catch (err) {
+    console.log(`  Warning: Translation failed - ${err.message}`)
+    return text // Return original if translation fails
+  }
+}
+
+// Translate chunks in batches
+async function translateChunks(chunks, sourceLanguage) {
+  console.log(`  Translating ${chunks.length} chunks from ${sourceLanguage} to English...`)
+  const translatedChunks = []
+
+  for (let i = 0; i < chunks.length; i++) {
+    const translated = await translateToEnglish(chunks[i], sourceLanguage)
+    translatedChunks.push(translated)
+
+    if ((i + 1) % 10 === 0) {
+      process.stdout.write(`  Translation progress: ${i + 1}/${chunks.length}\r`)
+    }
+  }
+
+  console.log(`  Translation complete: ${translatedChunks.length} chunks`)
+  return translatedChunks
+}
+
+// Extract text from PDF using OCR (OpenAI Vision API)
+async function extractTextWithOCR(pdfBuffer) {
+  console.log('  Using OCR (OpenAI Vision API)...')
+
+  // Dynamically import pdf-to-img
+  const { pdf } = await import('pdf-to-img')
+
+  // pdf-to-img v5 API: returns document object with getPage(n) method
+  const document = await pdf(pdfBuffer, { scale: 2.0 })
+  const totalPages = document.length
+
+  console.log(`  PDF has ${totalPages} pages`)
+
+  // Process pages
+  const allText = []
+
+  for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+    try {
+      // Get page image buffer (1-indexed)
+      const imageBuffer = await document.getPage(pageNum)
+
+      // Convert buffer to base64
+      const base64Image = imageBuffer.toString('base64')
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Extract ALL text from this page. Preserve paragraph structure. Output only the extracted text, nothing else.'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/png;base64,${base64Image}`,
+                  detail: 'high'
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 4000
+      })
+
+      const pageText = response.choices[0].message.content
+      allText.push(pageText)
+
+      process.stdout.write(`  OCR progress: ${pageNum}/${totalPages} pages\r`)
+    } catch (err) {
+      console.log(`\n  Warning: OCR failed for page ${pageNum}: ${err.message}`)
+    }
+  }
+
+  console.log(`\n  OCR complete: ${allText.length} pages processed`)
+  return allText.join('\n\n')
+}
+
 // Check if source already exists by hash
 async function checkDuplicate(fileHash) {
   const { data, error } = await supabase
@@ -139,7 +277,7 @@ async function checkDuplicate(fileHash) {
 }
 
 // Create source record
-async function createSource(name, author, publishedDate, filePath, fileHash) {
+async function createSource(name, author, publishedDate, filePath, fileHash, metadata = {}) {
   const { data, error } = await supabase
     .from('knowledge_sources')
     .insert({
@@ -148,7 +286,8 @@ async function createSource(name, author, publishedDate, filePath, fileHash) {
       published_date: publishedDate,
       file_path: filePath,
       file_hash: fileHash,
-      chunks_count: 0
+      chunks_count: 0,
+      ...metadata
     })
     .select('id')
     .single()
@@ -158,17 +297,21 @@ async function createSource(name, author, publishedDate, filePath, fileHash) {
 }
 
 // Update source chunks count
-async function updateSourceChunksCount(sourceId, count) {
+async function updateSourceChunksCount(sourceId, count, metadata = {}) {
   const { error } = await supabase
     .from('knowledge_sources')
-    .update({ chunks_count: count, updated_at: new Date().toISOString() })
+    .update({
+      chunks_count: count,
+      updated_at: new Date().toISOString(),
+      ...metadata
+    })
     .eq('id', sourceId)
 
   if (error) throw error
 }
 
 // Process a single PDF file
-async function processFile(filePath) {
+async function processFile(filePath, options = {}) {
   const filename = path.basename(filePath)
   console.log(`\nProcessing: ${filename}`)
 
@@ -178,8 +321,23 @@ async function processFile(filePath) {
   // Check for duplicate
   const existing = await checkDuplicate(fileHash)
   if (existing) {
-    console.log(`  SKIPPED: Already ingested as "${existing.name}"`)
-    return { status: 'skipped', reason: 'duplicate' }
+    if (!options.force) {
+      console.log(`  SKIPPED: Already ingested as "${existing.name}"`)
+      return { status: 'skipped', reason: 'duplicate' }
+    } else {
+      // Force mode: delete existing source first
+      console.log(`  Force mode: Deleting existing source "${existing.name}"...`)
+      const { error: deleteError } = await supabase
+        .from('knowledge_sources')
+        .delete()
+        .eq('id', existing.id)
+
+      if (deleteError) {
+        console.log(`  ERROR: Failed to delete existing source: ${deleteError.message}`)
+        return { status: 'error', reason: 'delete failed' }
+      }
+      console.log(`  Deleted existing source, re-ingesting...`)
+    }
   }
 
   // Parse filename for metadata
@@ -188,31 +346,66 @@ async function processFile(filePath) {
   if (author) console.log(`  Author: ${author}`)
   if (publishedDate) console.log(`  Published: ${publishedDate}`)
 
-  // Read and parse PDF
+  // Read PDF
   const buffer = fs.readFileSync(filePath)
-  let pdfData
-  try {
-    pdfData = await pdfParse(buffer)
-  } catch (err) {
-    console.log(`  ERROR: Failed to parse PDF - ${err.message}`)
-    return { status: 'error', reason: err.message }
+
+  // Try standard text extraction first (unless --ocr flag)
+  let text = ''
+  let usedOCR = false
+
+  if (options.forceOCR) {
+    console.log('  Forced OCR mode enabled')
+    text = await extractTextWithOCR(buffer)
+    usedOCR = true
+  } else {
+    try {
+      const pdfData = await pdfParse(buffer)
+      text = pdfData.text?.trim() || ''
+
+      // Check if we got enough text
+      if (text.length < MIN_TEXT_LENGTH) {
+        console.log(`  Standard extraction got ${text.length} chars (below threshold ${MIN_TEXT_LENGTH})`)
+        console.log('  Falling back to OCR...')
+        text = await extractTextWithOCR(buffer)
+        usedOCR = true
+      } else {
+        console.log(`  Extracted ${text.length} characters (standard)`)
+      }
+    } catch (err) {
+      console.log(`  Standard extraction failed: ${err.message}`)
+      console.log('  Falling back to OCR...')
+      text = await extractTextWithOCR(buffer)
+      usedOCR = true
+    }
   }
 
-  const text = pdfData.text
-  if (text.length < 100) {
+  if (text.length < MIN_TEXT_LENGTH) {
     console.log(`  ERROR: Extracted text too short (${text.length} chars)`)
     return { status: 'error', reason: 'text too short' }
   }
 
-  console.log(`  Extracted ${text.length} characters`)
+  if (usedOCR) {
+    console.log(`  OCR extracted ${text.length} characters`)
+  }
 
-  // Create source record
+  // Detect language
+  const detectedLanguage = await detectLanguage(text)
+  console.log(`  Detected language: ${detectedLanguage}`)
+
+  // Split into chunks first (before translation to maintain chunk boundaries)
+  let chunks = splitTextIntoChunks(text)
+  console.log(`  Split into ${chunks.length} chunks`)
+
+  // Translate if not English
+  let wasTranslated = false
+  if (detectedLanguage !== 'en') {
+    chunks = await translateChunks(chunks, detectedLanguage)
+    wasTranslated = true
+  }
+
+  // Create source record with metadata
   const sourceId = await createSource(name, author, publishedDate, filePath, fileHash)
   console.log(`  Created source: ${sourceId}`)
-
-  // Split into chunks
-  const chunks = splitTextIntoChunks(text)
-  console.log(`  Split into ${chunks.length} chunks`)
 
   // Process each chunk
   let successCount = 0
@@ -230,7 +423,10 @@ async function processFile(filePath) {
             author: author || undefined,
             topic: 'Beekeeping',
             chunk_index: i,
-            total_chunks: chunks.length
+            total_chunks: chunks.length,
+            original_language: detectedLanguage,
+            was_translated: wasTranslated,
+            used_ocr: usedOCR
           },
           embedding,
           source_id: sourceId
@@ -244,18 +440,19 @@ async function processFile(filePath) {
 
       // Progress indicator
       if ((i + 1) % 10 === 0) {
-        process.stdout.write(`  Progress: ${i + 1}/${chunks.length}\r`)
+        process.stdout.write(`  Embedding progress: ${i + 1}/${chunks.length}\r`)
       }
     } catch (err) {
       console.log(`  Warning: Error processing chunk ${i + 1}: ${err.message}`)
     }
   }
 
-  // Update chunks count
+  // Update chunks count with processing metadata
   await updateSourceChunksCount(sourceId, successCount)
   console.log(`  Completed: ${successCount}/${chunks.length} chunks stored`)
+  console.log(`  Metadata: OCR=${usedOCR}, Translated=${wasTranslated}, Lang=${detectedLanguage}`)
 
-  return { status: 'success', chunks: successCount }
+  return { status: 'success', chunks: successCount, usedOCR, wasTranslated, language: detectedLanguage }
 }
 
 // List all sources in the knowledge base
@@ -332,8 +529,18 @@ Commands:
   --list          List all ingested sources
   --delete <id>   Delete a source and all its chunks
 
+Options:
+  --force         Re-ingest even if duplicate detected
+  --ocr           Force OCR for all files (skip pdf-parse)
+
+Features:
+  - Automatic OCR for scanned PDFs (uses OpenAI Vision API)
+  - Automatic translation to English for non-English content
+  - Duplicate detection via file hash
+
 Examples:
   node scripts/ingest-documents.mjs ./books
+  node scripts/ingest-documents.mjs ./books --force
   node scripts/ingest-documents.mjs --list
   node scripts/ingest-documents.mjs --delete abc123...
 
@@ -361,6 +568,10 @@ Filename convention for metadata:
 
   // Directory ingestion
   const directoryPath = args[0]
+  const options = {
+    force: args.includes('--force'),
+    forceOCR: args.includes('--ocr')
+  }
 
   if (!fs.existsSync(directoryPath)) {
     console.error(`Directory not found: ${directoryPath}`)
@@ -384,18 +595,23 @@ Filename convention for metadata:
   }
 
   console.log(`Found ${files.length} PDF files to process`)
+  console.log('Features: OCR fallback enabled, Auto-translation enabled')
   console.log('='.repeat(50))
 
   const results = {
     success: 0,
     skipped: 0,
-    error: 0
+    error: 0,
+    ocrUsed: 0,
+    translated: 0
   }
 
   for (const file of files) {
     try {
-      const result = await processFile(file)
+      const result = await processFile(file, options)
       results[result.status]++
+      if (result.usedOCR) results.ocrUsed++
+      if (result.wasTranslated) results.translated++
     } catch (err) {
       console.error(`  FATAL ERROR: ${err.message}`)
       results.error++
@@ -407,6 +623,8 @@ Filename convention for metadata:
   console.log(`  Success: ${results.success}`)
   console.log(`  Skipped (duplicates): ${results.skipped}`)
   console.log(`  Errors: ${results.error}`)
+  console.log(`  Used OCR: ${results.ocrUsed}`)
+  console.log(`  Translated: ${results.translated}`)
 }
 
 main().catch(console.error)

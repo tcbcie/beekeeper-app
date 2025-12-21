@@ -74,7 +74,7 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
 
       if (!response.ok) {
         if (data.code === 'SUBSCRIPTION_REQUIRED') {
-          throw new Error('This feature requires a premium subscription. Please upgrade to access the AI assistant.')
+          throw new Error('This feature requires a premium subscription. Please upgrade to access Mel.')
         }
         throw new Error(data.error || 'Failed to get response')
       }
@@ -118,7 +118,7 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-secondary dark:bg-slate-800">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-500" />
-            <h2 className="font-semibold text-text-primary">AI Assistant</h2>
+            <h2 className="font-semibold text-text-primary">Mel your Virtual Assistant</h2>
           </div>
           <button
             onClick={onClose}

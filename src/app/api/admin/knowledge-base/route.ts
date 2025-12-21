@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
   if (view === 'sources') {
     const { data, error, count } = await supabaseAdmin
       .from('knowledge_sources')
-      .select('id, name, author, published_date, chunks_count, created_at, updated_at', { count: 'exact' })
+      .select('id, name, author, published_date, source_url, chunks_count, created_at, updated_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -181,7 +181,8 @@ async function processAndStoreContent(
   sourceName: string,
   topic: string,
   author?: string,
-  publishedYear?: string
+  publishedYear?: string,
+  sourceUrl?: string
 ): Promise<{ success: boolean; chunks_created: number; message: string; source_id?: string }> {
   const chunks = splitTextIntoChunks(content)
 
@@ -197,6 +198,7 @@ async function processAndStoreContent(
       name: sourceName,
       author: author || null,
       published_date: publishedDate,
+      source_url: sourceUrl || null,
       chunks_count: 0
     })
     .select('id')
@@ -261,7 +263,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { type = 'text', content, source, author, published_year, topic, pdfData, url } = body as {
+    const { type = 'text', content, source, author, published_year, topic, pdfData, url, source_url } = body as {
       type?: 'text' | 'pdf' | 'url'
       content?: string
       source?: string
@@ -270,6 +272,7 @@ export async function POST(request: NextRequest) {
       topic?: string
       pdfData?: string // base64 encoded PDF
       url?: string
+      source_url?: string
     }
 
     let textContent = ''
@@ -325,7 +328,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Extracted content too short (min 100 characters)' }, { status: 400 })
     }
 
-    const result = await processAndStoreContent(textContent, contentSource, topic || 'General', author, published_year)
+    const result = await processAndStoreContent(textContent, contentSource, topic || 'General', author, published_year, source_url)
 
     if (!result.success) {
       return NextResponse.json({ error: result.message }, { status: 400 })
@@ -349,11 +352,12 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { source_id, name, author, published_year } = body as {
+    const { source_id, name, author, published_year, source_url } = body as {
       source_id: string
       name?: string
       author?: string | null
       published_year?: string | null
+      source_url?: string | null
     }
 
     if (!source_id) {
@@ -370,6 +374,7 @@ export async function PATCH(request: NextRequest) {
     if (published_year !== undefined) {
       updates.published_date = published_year ? `${published_year}-01-01` : null
     }
+    if (source_url !== undefined) updates.source_url = source_url
 
     const { error } = await supabaseAdmin
       .from('knowledge_sources')
