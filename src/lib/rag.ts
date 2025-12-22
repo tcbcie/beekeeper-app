@@ -50,47 +50,36 @@ RULES:
   }
 }
 
-// Format a citation from source data
+// Format a citation from source data (with optional URL as markdown link)
 export function formatCitation(source: {
   source_name?: string | null
   source_author?: string | null
   source_year?: number | null
   source_url?: string | null
 }): string {
-  const { source_name, source_author, source_year } = source
+  const { source_name, source_author, source_year, source_url } = source
 
-  // Build citation parts
-  const parts: string[] = []
+  // Build the citation text
+  let citation = ''
 
-  if (source_author) {
-    parts.push(source_author)
-  }
-
-  if (source_year) {
-    parts.push(`(${source_year})`)
-  }
-
-  if (source_name) {
-    parts.push(source_name)
-  }
-
-  // Join with appropriate separators
-  if (parts.length === 0) {
-    return 'Knowledge Base'
-  }
-
-  // Format: "Author (Year). Title" or variations
   if (source_author && source_year && source_name) {
-    return `${source_author} (${source_year}). ${source_name}`
+    citation = `${source_author} (${source_year}). ${source_name}`
   } else if (source_author && source_name) {
-    return `${source_author}. ${source_name}`
+    citation = `${source_author}. ${source_name}`
   } else if (source_year && source_name) {
-    return `${source_name} (${source_year})`
+    citation = `${source_name} (${source_year})`
   } else if (source_name) {
-    return source_name
+    citation = source_name
+  } else {
+    citation = 'Knowledge Base'
   }
 
-  return parts.join('. ')
+  // Wrap in markdown link if URL is available
+  if (source_url) {
+    return `[${citation}](${source_url})`
+  }
+
+  return citation
 }
 
 // Knowledge base search result type
@@ -335,7 +324,9 @@ If you have specific data from the user's records, reference it directly.
 For beekeeping advice, be accurate and mention if something is region-specific.
 
 When answering from KNOWLEDGE BASE RESULTS:
-- ALWAYS cite sources using the exact citation provided, e.g. "According to Smith (2021). The Beekeeper's Handbook..." or "(Source: Smith (2021). The Beekeeper's Handbook)"
+- ALWAYS cite sources using the EXACT citation provided (preserve markdown links if present)
+- If the citation is a markdown link like [Author (Year). Title](url), use it exactly as-is so it renders as a clickable link
+- Example: "According to [Preuss (1919). Beekeeping Methods](https://example.com)..."
 - Include page numbers when available
 - Synthesize information if multiple sources agree
 - If no relevant sources are found, say so and provide general guidance
