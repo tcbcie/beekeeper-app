@@ -5,17 +5,22 @@ import { generateEmbedding } from '@/lib/openai'
 const pdfParse = require('pdf-parse')
 import * as cheerio from 'cheerio'
 
-// Create admin client with service role key
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
+// Create admin client with service role key (lazy initialization)
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase environment variables')
+  }
+
+  return createClient(url, key, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
     }
-  }
-)
+  })
+}
 
 // Helper to verify admin access
 async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | NextResponse> {
@@ -25,13 +30,14 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
   }
 
   const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+  const supabase = getSupabaseAdmin()
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
   }
 
-  const { data: profile } = await supabaseAdmin
+  const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
@@ -95,7 +101,7 @@ export async function GET(request: NextRequest) {
 
   // List sources (for source management view)
   if (view === 'sources') {
-    const { data, error, count } = await supabaseAdmin
+    const { data, error, count } = await getSupabaseAdmin()
       .from('knowledge_sources')
       .select('id, name, author, published_date, source_url, chunks_count, created_at, updated_at', { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -109,7 +115,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Default: list entries
-  const { data, error, count } = await supabaseAdmin
+  const { data, error, count } = await getSupabaseAdmin()
     .from('knowledge_base')
     .select('id, content, metadata, source_id, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
@@ -192,7 +198,7 @@ async function processAndStoreContent(
 
   // Create source record first
   const publishedDate = publishedYear ? `${publishedYear}-01-01` : null
-  const { data: sourceRecord, error: sourceError } = await supabaseAdmin
+  const { data: sourceRecord, error: sourceError } = await getSupabaseAdmin()
     .from('knowledge_sources')
     .insert({
       name: sourceName,
@@ -217,7 +223,7 @@ async function processAndStoreContent(
     const chunk = chunks[i]
     const embedding = await generateEmbedding(chunk)
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('knowledge_base')
       .insert({
         content: chunk,
@@ -243,7 +249,7 @@ async function processAndStoreContent(
   }
 
   // Update source with chunks count
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('knowledge_sources')
     .update({ chunks_count: results.length })
     .eq('id', sourceId)
@@ -376,7 +382,7 @@ export async function PATCH(request: NextRequest) {
     }
     if (source_url !== undefined) updates.source_url = source_url
 
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from('knowledge_sources')
       .update(updates)
       .eq('id', source_id)
@@ -388,7 +394,7 @@ export async function PATCH(request: NextRequest) {
     // Also update metadata in linked chunks if name changed (best-effort)
     if (name) {
       try {
-        await supabaseAdmin.rpc('update_knowledge_chunks_source', {
+        await getSupabaseAdmin().rpc('update_knowledge_chunks_source', {
           p_source_id: source_id,
           p_source_name: name,
           p_author: author || null
@@ -421,7 +427,7 @@ export async function DELETE(request: NextRequest) {
   // Delete entire source (and all its chunks via CASCADE)
   if (sourceId) {
     // Get source info for response
-    const { data: source } = await supabaseAdmin
+    const { data: source } = await getSupabaseAdmin()
       .from('knowledge_sources')
       .select('name, chunks_count')
       .eq('id', sourceId)
@@ -431,7 +437,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Source not found' }, { status: 404 })
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from('knowledge_sources')
       .delete()
       .eq('id', sourceId)
@@ -453,7 +459,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'ID or source_id is required' }, { status: 400 })
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('knowledge_base')
     .delete()
     .eq('id', id)
