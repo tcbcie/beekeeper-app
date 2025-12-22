@@ -209,6 +209,22 @@ export async function executeQuery(sql: string): Promise<{
   return { data, error: null }
 }
 
+// Log queries that fell back to SQL (no dedicated tool) for developer insights
+async function logToolSuggestion(query: string, generatedSql: string | null, hadResults: boolean, userId: string) {
+  try {
+    const supabase = getServerSupabase()
+    await supabase.from('tool_suggestions').insert({
+      query,
+      generated_sql: generatedSql,
+      had_results: hadResults,
+      user_id: userId
+    })
+  } catch (error) {
+    // Silent fail - this is just analytics
+    console.error('Failed to log tool suggestion:', error)
+  }
+}
+
 // Main RAG handler - orchestrates the entire chat flow
 export async function handleChatQuery(
   query: string,
@@ -269,7 +285,12 @@ export async function handleChatQuery(
         if (sql && sql !== 'CANNOT_QUERY') {
           const result = await executeQuery(sql)
           console.log('Query result:', result)
-          if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+          const hadResults = !!(result.data && Array.isArray(result.data) && result.data.length > 0)
+
+          // Log this SQL fallback for developer insights (helps identify needed tools)
+          logToolSuggestion(query, sql, hadResults, userId)
+
+          if (hadResults) {
             context = `Here is the data from your records:\n\n${JSON.stringify(result.data, null, 2)}\n\nUse this data to answer the user's question directly.`
           } else if (result.data && Array.isArray(result.data) && result.data.length === 0) {
             context = `I searched your records but found no matching data. The user may not have recorded this information yet.`
