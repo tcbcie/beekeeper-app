@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateEmbedding } from '@/lib/openai'
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse')
 import * as cheerio from 'cheerio'
+
+// Lazy load pdf-parse to avoid module initialization issues in serverless
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _pdfParse: any = null
+function getPdfParse() {
+  if (!_pdfParse) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _pdfParse = require('pdf-parse')
+  }
+  return _pdfParse
+}
 
 // Create admin client with service role key (lazy initialization)
 function getSupabaseAdmin() {
@@ -130,7 +139,7 @@ export async function GET(request: NextRequest) {
 
 // Helper to extract text from PDF buffer
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const data = await pdfParse(buffer)
+  const data = await getPdfParse()(buffer)
   return data.text
 }
 
