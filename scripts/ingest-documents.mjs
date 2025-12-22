@@ -8,7 +8,7 @@
  * - Ingests all PDF files from specified directory
  * - Detects duplicates via file hash
  * - Tracks sources in knowledge_sources table
- * - OCR using Gemini 1.5 Pro (preferred) or OpenAI Vision (fallback)
+ * - OCR using Gemini 2.0 Flash (preferred) or OpenAI Vision (fallback)
  * - Full-text translation BEFORE chunking (preserves sentence context)
  * - Auto-translation to English for non-English content
  * - Supports author and publish date via filename convention:
@@ -20,7 +20,7 @@
  * - OPENAI_API_KEY
  *
  * Optional environment variables:
- * - GOOGLE_API_KEY: Enables Gemini 1.5 Pro for better OCR and translation
+ * - GOOGLE_API_KEY: Enables Gemini 2.0 Flash for better OCR and translation
  */
 
 import fs from 'fs'
@@ -38,7 +38,7 @@ config({ path: '.env.local' })
 const genAI = process.env.GOOGLE_API_KEY
   ? new GoogleGenerativeAI(process.env.GOOGLE_API_KEY)
   : null
-const geminiModel = genAI?.getGenerativeModel({ model: 'gemini-1.5-pro' })
+const geminiModel = genAI?.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
 // Dynamically import pdf-parse (CommonJS module)
 const pdfParse = (await import('pdf-parse')).default
@@ -272,14 +272,14 @@ async function extractTextWithOCR(pdfBuffer) {
   return allText.join('\n\n')
 }
 
-// Extract text using Gemini 1.5 Pro with page batching (OCR + Translation in one pass)
+// Extract text using Gemini 2.0 Flash with page batching (OCR + Translation in one pass)
 // Processes PDF in batches of ~25 pages to avoid output token limits
 async function extractWithGeminiBatched(pdfBuffer) {
   if (!geminiModel) {
     throw new Error('Gemini not configured')
   }
 
-  console.log('  ⚡ Using Gemini 1.5 Pro for OCR + Translation...')
+  console.log('  ⚡ Using Gemini 2.0 Flash for OCR + Translation...')
 
   const { pdf } = await import('pdf-to-img')
   const document = await pdf(pdfBuffer, { scale: 2.0 })
@@ -508,7 +508,7 @@ async function processFile(filePath, options = {}) {
     try {
       text = await extractWithGeminiBatched(buffer)
       usedGemini = true
-      processedBy = 'gemini-1.5-pro'
+      processedBy = 'gemini-2.0-flash'
     } catch (err) {
       console.log(`  Gemini extraction failed: ${err.message}`)
       console.log('  Falling back to OpenAI Vision OCR...')
@@ -523,7 +523,7 @@ async function processFile(filePath, options = {}) {
       try {
         text = await extractWithGeminiBatched(buffer)
         usedGemini = true
-        processedBy = 'gemini-1.5-pro'
+        processedBy = 'gemini-2.0-flash'
       } catch (err) {
         console.log(`  Gemini OCR failed: ${err.message}, falling back to OpenAI Vision...`)
         text = await extractTextWithOCR(buffer)
@@ -550,7 +550,7 @@ async function processFile(filePath, options = {}) {
           try {
             text = await extractWithGeminiBatched(buffer)
             usedGemini = true
-            processedBy = 'gemini-1.5-pro'
+            processedBy = 'gemini-2.0-flash'
           } catch (err) {
             console.log(`  Gemini OCR failed: ${err.message}, falling back to OpenAI Vision...`)
             text = await extractTextWithOCR(buffer)
@@ -573,7 +573,7 @@ async function processFile(filePath, options = {}) {
         try {
           text = await extractWithGeminiBatched(buffer)
           usedGemini = true
-          processedBy = 'gemini-1.5-pro'
+          processedBy = 'gemini-2.0-flash'
         } catch (geminiErr) {
           console.log(`  Gemini OCR failed: ${geminiErr.message}, falling back to OpenAI Vision...`)
           text = await extractTextWithOCR(buffer)
@@ -771,16 +771,16 @@ Commands:
 Options:
   --force         Re-ingest even if duplicate detected
   --ocr           Force OCR for all files (skip pdf-parse)
-  --gemini        Force Gemini 1.5 Pro for all files (OCR + translation)
+  --gemini        Force Gemini 2.0 Flash for all files (OCR + translation)
 
 Features:
-  - Automatic OCR for scanned PDFs (Gemini 1.5 Pro or OpenAI Vision)
+  - Automatic OCR for scanned PDFs (Gemini 2.0 Flash or OpenAI Vision)
   - Automatic translation to English for non-English content
   - Full-text translation before chunking (preserves context)
   - Duplicate detection via file hash
 
 Environment:
-  - GOOGLE_API_KEY: Optional. Enables Gemini 1.5 Pro for OCR/translation
+  - GOOGLE_API_KEY: Optional. Enables Gemini 2.0 Flash for OCR/translation
   - OPENAI_API_KEY: Required. Used for embeddings and fallback OCR/translation
 
 Examples:
@@ -843,7 +843,7 @@ Filename convention for metadata:
 
   console.log(`Found ${files.length} PDF files to process`)
   console.log(`Features: OCR fallback enabled, Auto-translation enabled`)
-  console.log(`Gemini 1.5 Pro: ${geminiModel ? 'Available' : 'Not configured (set GOOGLE_API_KEY)'}`)
+  console.log(`Gemini 2.0 Flash: ${geminiModel ? 'Available' : 'Not configured (set GOOGLE_API_KEY)'}`)
   console.log('='.repeat(50))
 
   const results = {
