@@ -1,13 +1,22 @@
 import OpenAI from 'openai'
 
-// Initialize OpenAI client (server-side only)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Lazy initialization of OpenAI client (server-side only)
+let _openai: OpenAI | null = null
+
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      throw new Error('Missing OPENAI_API_KEY environment variable')
+    }
+    _openai = new OpenAI({ apiKey })
+  }
+  return _openai
+}
 
 // Generate embedding for text using OpenAI's embedding model
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
+  const response = await getOpenAI().embeddings.create({
     model: 'text-embedding-3-small',
     input: text,
   })
@@ -19,7 +28,7 @@ export async function generateChatResponse(
   messages: OpenAI.Chat.ChatCompletionMessageParam[],
   model: 'gpt-4o-mini' | 'gpt-4o' = 'gpt-4o-mini'
 ): Promise<string> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model,
     messages,
     temperature: 0.7,
@@ -64,7 +73,7 @@ IMPORTANT: If the user asks about "which hive/colony" or their specific mite cou
 
 Respond with JSON only: {"intent": "category", "confidence": 0.0-1.0}`
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       { role: 'system', content: systemPrompt },
@@ -86,4 +95,4 @@ Respond with JSON only: {"intent": "category", "confidence": 0.0-1.0}`
   }
 }
 
-export { openai }
+export { getOpenAI as openai }
