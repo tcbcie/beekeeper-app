@@ -24,13 +24,13 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
   const baseNavItems = [
     { href: '/dashboard', label: 'Overview', icon: Home },
-    { href: '/dashboard/queens', label: 'Queens', icon: Crown },
-    { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/hives', label: 'Hives', icon: Archive },
     { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
-    { href: '/dashboard/community-map', label: 'Community Map', icon: Users },
     { href: '/dashboard/records', label: 'Records', icon: ClipboardList },
     { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar },
+    { href: '/dashboard/community-map', label: 'Community Map', icon: Users },
+    { href: '/dashboard/queens', label: 'Queens', icon: Crown },
+    { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
     { href: '/dashboard/profile', label: 'Profile', icon: User },
     { href: '/dashboard/about', label: 'About', icon: Info },
