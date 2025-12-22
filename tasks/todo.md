@@ -161,3 +161,57 @@ Generate proper citations from `knowledge_sources` table data and format them co
 1. Run the two SQL migrations in Supabase
 2. Test by asking the AI a beekeeping question
 3. Verify citations use the new format
+
+---
+
+# Task: Track Original Filename for Ingested Documents
+
+## Problem
+When ingesting documents via `ingest-documents.mjs`, only the Name field is saved. If the Name is later edited in the admin UI, there's no way to link back to the original source file.
+
+## Solution
+Added `original_filename` column to track the actual filename separately from the editable Name field.
+
+## Todo List
+
+- [x] **1. Add `original_filename` column to `knowledge_sources` table**
+  - Created and applied migration via Supabase MCP
+
+- [x] **2. Update `ingest-documents.mjs` to record original filename**
+  - Modified `createSource()` to accept `originalFilename` parameter
+  - Updated caller to pass the filename
+
+- [x] **3. Update admin API to handle `original_filename`**
+  - GET: Returns `original_filename` in sources view
+  - PATCH: Accepts `original_filename` for updates
+
+- [x] **4. Update KnowledgeBaseManager UI**
+  - Added `original_filename` to interface
+  - Added "Original File" column to table
+  - Added edit field for original filename in edit mode
+  - Added state management for editing
+
+## Review
+
+### Changes Made
+
+**Database:**
+- Added `original_filename TEXT` column to `knowledge_sources` table
+
+**Ingest Script (`scripts/ingest-documents.mjs`):**
+- Updated `createSource()` function signature to include `originalFilename`
+- Passes the PDF filename when creating sources
+
+**Backend API (`src/app/api/admin/knowledge-base/route.ts`):**
+- GET: Selects `original_filename` in sources query
+- PATCH: Accepts and updates `original_filename`
+
+**Frontend (`src/components/admin/KnowledgeBaseManager.tsx`):**
+- Added `original_filename` to `KnowledgeSource` interface
+- Added `editOriginalFilename` state variable
+- Updated `startEditing()` to load original filename
+- Updated `cancelEditing()` to reset original filename
+- Updated `saveEditing()` to include original filename in PATCH
+- Added "Original File" table header column
+- Added original filename input field in edit mode
+- Added original filename display cell in view mode

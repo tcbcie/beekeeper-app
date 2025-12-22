@@ -306,11 +306,13 @@ function AboutPageContent() {
               <li>Email notifications for tasks, events, and batch reminders</li>
               <li>Data export capabilities</li>
               <li>Installable mobile application (PWA)</li>
+              <li>AI Assistant (Mel) with access to your hive data and inspection records</li>
+              <li>AI-powered beekeeping knowledge base with literature-sourced answers</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
             <p className="text-text-secondary">
-              <strong>Current Version:</strong> 1.4.22 (December 2025)
+              <strong>Current Version:</strong> 1.4.23 (December 2025)
             </p>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Credits</h3>

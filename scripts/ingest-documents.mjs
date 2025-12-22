@@ -8,7 +8,8 @@
  * - Ingests all PDF files from specified directory
  * - Detects duplicates via file hash
  * - Tracks sources in knowledge_sources table
- * - OCR fallback using OpenAI Vision API for scanned PDFs
+ * - OCR using Gemini 1.5 Pro (preferred) or OpenAI Vision (fallback)
+ * - Full-text translation BEFORE chunking (preserves sentence context)
  * - Auto-translation to English for non-English content
  * - Supports author and publish date via filename convention:
  *   "Book Title - Author Name (2023).pdf"
@@ -17,6 +18,9 @@
  * - NEXT_PUBLIC_SUPABASE_URL
  * - SUPABASE_SERVICE_ROLE_KEY
  * - OPENAI_API_KEY
+ *
+ * Optional environment variables:
+ * - GOOGLE_API_KEY: Enables Gemini 1.5 Pro for better OCR and translation
  */
 
 import fs from 'fs'
@@ -24,10 +28,17 @@ import path from 'path'
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // Load environment variables from .env.local
 import { config } from 'dotenv'
 config({ path: '.env.local' })
+
+// Initialize Gemini (optional - graceful degradation if not configured)
+const genAI = process.env.GOOGLE_API_KEY
+  ? new GoogleGenerativeAI(process.env.GOOGLE_API_KEY)
+  : null
+const geminiModel = genAI?.getGenerativeModel({ model: 'gemini-1.5-pro' })
 
 // Dynamically import pdf-parse (CommonJS module)
 const pdfParse = (await import('pdf-parse')).default
@@ -261,6 +272,141 @@ async function extractTextWithOCR(pdfBuffer) {
   return allText.join('\n\n')
 }
 
+// Extract text using Gemini 1.5 Pro with page batching (OCR + Translation in one pass)
+// Processes PDF in batches of ~25 pages to avoid output token limits
+async function extractWithGeminiBatched(pdfBuffer) {
+  if (!geminiModel) {
+    throw new Error('Gemini not configured')
+  }
+
+  console.log('  ⚡ Using Gemini 1.5 Pro for OCR + Translation...')
+
+  const { pdf } = await import('pdf-to-img')
+  const document = await pdf(pdfBuffer, { scale: 2.0 })
+  const totalPages = document.length
+  const BATCH_SIZE = 25
+
+  console.log(`  PDF has ${totalPages} pages, processing in batches of ${BATCH_SIZE}`)
+
+  const allText = []
+  const totalBatches = Math.ceil(totalPages / BATCH_SIZE)
+
+  for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+    const startPage = batchNum * BATCH_SIZE + 1
+    const endPage = Math.min((batchNum + 1) * BATCH_SIZE, totalPages)
+
+    console.log(`  Processing batch ${batchNum + 1}/${totalBatches} (pages ${startPage}-${endPage})...`)
+
+    // Collect images for this batch
+    const batchImages = []
+    for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+      const imageBuffer = await document.getPage(pageNum)
+      batchImages.push({
+        inlineData: {
+          data: imageBuffer.toString('base64'),
+          mimeType: 'image/png'
+        }
+      })
+    }
+
+    const prompt = `You are a professional document extraction and translation engine.
+
+1. Extract ALL text from these ${batchImages.length} page images in order.
+2. If any text is not in English, translate it to English.
+3. If text is already in English, keep it as is.
+4. Preserve paragraph structure and flow.
+5. Output ONLY the extracted/translated text. No markdown blocks, no preambles.`
+
+    try {
+      const result = await geminiModel.generateContent([prompt, ...batchImages])
+      const batchText = result.response.text().trim()
+      allText.push(batchText)
+    } catch (err) {
+      console.log(`  Warning: Gemini batch ${batchNum + 1} failed: ${err.message}`)
+      // Don't throw - continue with other batches
+    }
+  }
+
+  console.log(`  Gemini OCR complete: ${allText.length}/${totalBatches} batches processed`)
+  return allText.join('\n\n')
+}
+
+// Translate full text using Gemini (before chunking, preserves context)
+async function translateFullText(text, sourceLanguage) {
+  if (!geminiModel) {
+    throw new Error('Gemini not configured')
+  }
+
+  console.log(`  ⚡ Translating full text with Gemini (${sourceLanguage} -> en)...`)
+
+  // For very long texts, batch by character count (~50k chars per batch)
+  const CHAR_BATCH_SIZE = 50000
+
+  if (text.length <= CHAR_BATCH_SIZE) {
+    // Single pass for shorter texts
+    const prompt = `You are a professional translator specializing in beekeeping literature.
+
+Translate the following text from ${sourceLanguage} to English.
+- Preserve all technical beekeeping terminology
+- Maintain paragraph structure
+- Output ONLY the translation, nothing else.
+
+Text to translate:
+${text}`
+
+    try {
+      const result = await geminiModel.generateContent(prompt)
+      return result.response.text().trim()
+    } catch (err) {
+      throw new Error(`Gemini translation failed: ${err.message}`)
+    }
+  }
+
+  // Batch translation for long texts
+  console.log(`  Text is ${text.length} chars, translating in batches...`)
+  const translatedParts = []
+  let start = 0
+
+  while (start < text.length) {
+    let end = Math.min(start + CHAR_BATCH_SIZE, text.length)
+
+    // Try to break at paragraph boundary
+    if (end < text.length) {
+      const lastParagraph = text.lastIndexOf('\n\n', end)
+      if (lastParagraph > start + CHAR_BATCH_SIZE * 0.5) {
+        end = lastParagraph + 2
+      }
+    }
+
+    const chunk = text.slice(start, end)
+    const batchNum = translatedParts.length + 1
+
+    const prompt = `You are a professional translator specializing in beekeeping literature.
+
+Translate this text from ${sourceLanguage} to English.
+- Preserve all technical beekeeping terminology
+- Maintain paragraph structure
+- Output ONLY the translation, nothing else.
+
+Text:
+${chunk}`
+
+    try {
+      const result = await geminiModel.generateContent(prompt)
+      translatedParts.push(result.response.text().trim())
+      process.stdout.write(`  Translation batch ${batchNum} complete\r`)
+    } catch (err) {
+      console.log(`  Warning: Translation batch ${batchNum} failed: ${err.message}`)
+      translatedParts.push(chunk) // Keep original if translation fails
+    }
+
+    start = end
+  }
+
+  console.log(`  Translation complete: ${translatedParts.length} batches`)
+  return translatedParts.join('\n\n')
+}
+
 // Check if source already exists by hash
 async function checkDuplicate(fileHash) {
   const { data, error } = await supabase
@@ -277,7 +423,7 @@ async function checkDuplicate(fileHash) {
 }
 
 // Create source record
-async function createSource(name, author, publishedDate, filePath, fileHash, metadata = {}) {
+async function createSource(name, author, publishedDate, filePath, fileHash, originalFilename, metadata = {}) {
   const { data, error } = await supabase
     .from('knowledge_sources')
     .insert({
@@ -286,6 +432,7 @@ async function createSource(name, author, publishedDate, filePath, fileHash, met
       published_date: publishedDate,
       file_path: filePath,
       file_hash: fileHash,
+      original_filename: originalFilename,
       chunks_count: 0,
       ...metadata
     })
@@ -349,15 +496,47 @@ async function processFile(filePath, options = {}) {
   // Read PDF
   const buffer = fs.readFileSync(filePath)
 
-  // Try standard text extraction first (unless --ocr flag)
+  // Try standard text extraction first (unless --ocr or --gemini flag)
   let text = ''
   let usedOCR = false
+  let usedGemini = false
+  let processedBy = 'pdf-parse'
 
-  if (options.forceOCR) {
+  if (options.forceGemini && geminiModel) {
+    // Force Gemini mode: use Gemini for everything
+    console.log('  Forced Gemini mode enabled')
+    try {
+      text = await extractWithGeminiBatched(buffer)
+      usedGemini = true
+      processedBy = 'gemini-1.5-pro'
+    } catch (err) {
+      console.log(`  Gemini extraction failed: ${err.message}`)
+      console.log('  Falling back to OpenAI Vision OCR...')
+      text = await extractTextWithOCR(buffer)
+      usedOCR = true
+      processedBy = 'openai-vision'
+    }
+  } else if (options.forceOCR) {
+    // Force OCR mode: try Gemini first if available, fallback to OpenAI
     console.log('  Forced OCR mode enabled')
-    text = await extractTextWithOCR(buffer)
-    usedOCR = true
+    if (geminiModel) {
+      try {
+        text = await extractWithGeminiBatched(buffer)
+        usedGemini = true
+        processedBy = 'gemini-1.5-pro'
+      } catch (err) {
+        console.log(`  Gemini OCR failed: ${err.message}, falling back to OpenAI Vision...`)
+        text = await extractTextWithOCR(buffer)
+        usedOCR = true
+        processedBy = 'openai-vision'
+      }
+    } else {
+      text = await extractTextWithOCR(buffer)
+      usedOCR = true
+      processedBy = 'openai-vision'
+    }
   } else {
+    // Standard mode: try pdf-parse first
     try {
       const pdfData = await pdfParse(buffer)
       text = pdfData.text?.trim() || ''
@@ -366,16 +545,46 @@ async function processFile(filePath, options = {}) {
       if (text.length < MIN_TEXT_LENGTH) {
         console.log(`  Standard extraction got ${text.length} chars (below threshold ${MIN_TEXT_LENGTH})`)
         console.log('  Falling back to OCR...')
-        text = await extractTextWithOCR(buffer)
-        usedOCR = true
+        // Try Gemini first if available
+        if (geminiModel) {
+          try {
+            text = await extractWithGeminiBatched(buffer)
+            usedGemini = true
+            processedBy = 'gemini-1.5-pro'
+          } catch (err) {
+            console.log(`  Gemini OCR failed: ${err.message}, falling back to OpenAI Vision...`)
+            text = await extractTextWithOCR(buffer)
+            usedOCR = true
+            processedBy = 'openai-vision'
+          }
+        } else {
+          text = await extractTextWithOCR(buffer)
+          usedOCR = true
+          processedBy = 'openai-vision'
+        }
       } else {
         console.log(`  Extracted ${text.length} characters (standard)`)
       }
     } catch (err) {
       console.log(`  Standard extraction failed: ${err.message}`)
       console.log('  Falling back to OCR...')
-      text = await extractTextWithOCR(buffer)
-      usedOCR = true
+      // Try Gemini first if available
+      if (geminiModel) {
+        try {
+          text = await extractWithGeminiBatched(buffer)
+          usedGemini = true
+          processedBy = 'gemini-1.5-pro'
+        } catch (geminiErr) {
+          console.log(`  Gemini OCR failed: ${geminiErr.message}, falling back to OpenAI Vision...`)
+          text = await extractTextWithOCR(buffer)
+          usedOCR = true
+          processedBy = 'openai-vision'
+        }
+      } else {
+        text = await extractTextWithOCR(buffer)
+        usedOCR = true
+        processedBy = 'openai-vision'
+      }
     }
   }
 
@@ -384,28 +593,56 @@ async function processFile(filePath, options = {}) {
     return { status: 'error', reason: 'text too short' }
   }
 
-  if (usedOCR) {
+  if (usedGemini) {
+    console.log(`  Gemini extracted ${text.length} characters`)
+  } else if (usedOCR) {
     console.log(`  OCR extracted ${text.length} characters`)
   }
 
-  // Detect language
-  const detectedLanguage = await detectLanguage(text)
-  console.log(`  Detected language: ${detectedLanguage}`)
+  // Detect language (skip if Gemini already translated during OCR)
+  let detectedLanguage = 'en'
+  if (!usedGemini) {
+    detectedLanguage = await detectLanguage(text)
+    console.log(`  Detected language: ${detectedLanguage}`)
+  } else {
+    console.log(`  Language: en (Gemini translated during extraction)`)
+  }
 
-  // Split into chunks first (before translation to maintain chunk boundaries)
+  // Translate if not English and not already translated by Gemini
+  let wasTranslated = usedGemini // Gemini already translates during OCR
+  if (detectedLanguage !== 'en' && !usedGemini) {
+    // Try Gemini for full-text translation first (preserves context)
+    if (geminiModel) {
+      try {
+        text = await translateFullText(text, detectedLanguage)
+        wasTranslated = true
+        processedBy = processedBy === 'pdf-parse' ? 'pdf-parse+gemini-translate' : processedBy
+      } catch (err) {
+        console.log(`  Gemini translation failed: ${err.message}, falling back to chunk translation...`)
+        // Fall through to chunk translation below
+      }
+    }
+
+    // Fallback: chunk-by-chunk translation with OpenAI
+    if (!wasTranslated) {
+      // Split, translate chunks, then continue
+      let chunks = splitTextIntoChunks(text)
+      console.log(`  Split into ${chunks.length} chunks for translation`)
+      chunks = await translateChunks(chunks, detectedLanguage)
+      wasTranslated = true
+      // Rejoin for re-chunking (to maintain proper boundaries)
+      text = chunks.join('\n\n')
+    }
+  }
+
+  // Split into chunks (now on English text)
   let chunks = splitTextIntoChunks(text)
   console.log(`  Split into ${chunks.length} chunks`)
 
-  // Translate if not English
-  let wasTranslated = false
-  if (detectedLanguage !== 'en') {
-    chunks = await translateChunks(chunks, detectedLanguage)
-    wasTranslated = true
-  }
-
-  // Create source record with metadata
-  const sourceId = await createSource(name, author, publishedDate, filePath, fileHash)
+  // Create source record with metadata (store original filename for traceability)
+  const sourceId = await createSource(name, author, publishedDate, filePath, fileHash, filename)
   console.log(`  Created source: ${sourceId}`)
+  console.log(`  Original file: ${filename}`)
 
   // Process each chunk
   let successCount = 0
@@ -426,7 +663,9 @@ async function processFile(filePath, options = {}) {
             total_chunks: chunks.length,
             original_language: detectedLanguage,
             was_translated: wasTranslated,
-            used_ocr: usedOCR
+            used_ocr: usedOCR,
+            used_gemini: usedGemini,
+            processed_by: processedBy
           },
           embedding,
           source_id: sourceId
@@ -450,9 +689,9 @@ async function processFile(filePath, options = {}) {
   // Update chunks count with processing metadata
   await updateSourceChunksCount(sourceId, successCount)
   console.log(`  Completed: ${successCount}/${chunks.length} chunks stored`)
-  console.log(`  Metadata: OCR=${usedOCR}, Translated=${wasTranslated}, Lang=${detectedLanguage}`)
+  console.log(`  Metadata: ProcessedBy=${processedBy}, Translated=${wasTranslated}, Lang=${detectedLanguage}`)
 
-  return { status: 'success', chunks: successCount, usedOCR, wasTranslated, language: detectedLanguage }
+  return { status: 'success', chunks: successCount, usedOCR, usedGemini, wasTranslated, language: detectedLanguage, processedBy }
 }
 
 // List all sources in the knowledge base
@@ -532,15 +771,22 @@ Commands:
 Options:
   --force         Re-ingest even if duplicate detected
   --ocr           Force OCR for all files (skip pdf-parse)
+  --gemini        Force Gemini 1.5 Pro for all files (OCR + translation)
 
 Features:
-  - Automatic OCR for scanned PDFs (uses OpenAI Vision API)
+  - Automatic OCR for scanned PDFs (Gemini 1.5 Pro or OpenAI Vision)
   - Automatic translation to English for non-English content
+  - Full-text translation before chunking (preserves context)
   - Duplicate detection via file hash
+
+Environment:
+  - GOOGLE_API_KEY: Optional. Enables Gemini 1.5 Pro for OCR/translation
+  - OPENAI_API_KEY: Required. Used for embeddings and fallback OCR/translation
 
 Examples:
   node scripts/ingest-documents.mjs ./books
   node scripts/ingest-documents.mjs ./books --force
+  node scripts/ingest-documents.mjs ./books --gemini
   node scripts/ingest-documents.mjs --list
   node scripts/ingest-documents.mjs --delete abc123...
 
@@ -570,7 +816,8 @@ Filename convention for metadata:
   const directoryPath = args[0]
   const options = {
     force: args.includes('--force'),
-    forceOCR: args.includes('--ocr')
+    forceOCR: args.includes('--ocr'),
+    forceGemini: args.includes('--gemini')
   }
 
   if (!fs.existsSync(directoryPath)) {
@@ -595,7 +842,8 @@ Filename convention for metadata:
   }
 
   console.log(`Found ${files.length} PDF files to process`)
-  console.log('Features: OCR fallback enabled, Auto-translation enabled')
+  console.log(`Features: OCR fallback enabled, Auto-translation enabled`)
+  console.log(`Gemini 1.5 Pro: ${geminiModel ? 'Available' : 'Not configured (set GOOGLE_API_KEY)'}`)
   console.log('='.repeat(50))
 
   const results = {
@@ -603,6 +851,7 @@ Filename convention for metadata:
     skipped: 0,
     error: 0,
     ocrUsed: 0,
+    geminiUsed: 0,
     translated: 0
   }
 
@@ -611,6 +860,7 @@ Filename convention for metadata:
       const result = await processFile(file, options)
       results[result.status]++
       if (result.usedOCR) results.ocrUsed++
+      if (result.usedGemini) results.geminiUsed++
       if (result.wasTranslated) results.translated++
     } catch (err) {
       console.error(`  FATAL ERROR: ${err.message}`)
@@ -623,7 +873,8 @@ Filename convention for metadata:
   console.log(`  Success: ${results.success}`)
   console.log(`  Skipped (duplicates): ${results.skipped}`)
   console.log(`  Errors: ${results.error}`)
-  console.log(`  Used OCR: ${results.ocrUsed}`)
+  console.log(`  Used Gemini: ${results.geminiUsed}`)
+  console.log(`  Used OpenAI OCR: ${results.ocrUsed}`)
   console.log(`  Translated: ${results.translated}`)
 }
 

@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
         'hive_configuration_history',
         'hives',
         'inspections',
+        'knowledge_sources',
+        'knowledge_base',
         'profiles',
         'push_subscriptions',
         'queens',
