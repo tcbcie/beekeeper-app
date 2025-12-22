@@ -7,6 +7,46 @@ interface ChatMessageProps {
   message: ChatMessageType
 }
 
+// Parse markdown links [text](url) into clickable anchor tags
+function parseMarkdownLinks(text: string, isUser: boolean): React.ReactNode[] {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  let match
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+
+    // Add the link
+    const [, linkText, url] = match
+    parts.push(
+      <a
+        key={match.index}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`underline hover:opacity-80 ${
+          isUser ? 'text-green-200' : 'text-amber-600 dark:text-amber-400'
+        }`}
+      >
+        {linkText}
+      </a>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : [text]
+}
+
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user'
 
@@ -35,7 +75,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             : 'bg-surface-secondary dark:bg-slate-700 text-text-primary'
         }`}
       >
-        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+        <p className="text-sm whitespace-pre-wrap break-words">
+          {parseMarkdownLinks(message.content, isUser)}
+        </p>
         <span
           className={`text-xs mt-1 block ${
             isUser ? 'text-green-200' : 'text-text-muted'
