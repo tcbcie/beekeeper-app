@@ -20,6 +20,54 @@ function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string
   }
 }
 
+// Get all recent inspections across all hives
+export const getAllInspections: Tool = {
+  name: 'getAllInspections',
+  description: 'Get all recent inspections across all hives. Use this when user asks to see all inspections, recent inspections, or inspection records without specifying a hive.',
+  parameters: z.object({
+    limit: z.number().optional().describe('Maximum number of inspections to return (default 20)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { limit?: number }
+    const supabase = getSupabase()
+    const hiveIds = await getAccessibleHiveIds(userId)
+
+    if (hiveIds.length === 0) {
+      return 'No hives found.'
+    }
+
+    const limit = args.limit || 20
+
+    const { data, error } = await supabase
+      .from('inspections')
+      .select('inspection_date, queen_seen, eggs_present, temperament, population, notes, weather_temp, weather_conditions, weather_humidity, weather_wind_speed, hives(hive_number, apiaries(name))')
+      .in('hive_id', hiveIds)
+      .order('inspection_date', { ascending: false })
+      .limit(limit)
+
+    if (error) return `Error fetching inspections: ${error.message}`
+    if (!data?.length) return 'No inspections found.'
+
+    return {
+      total: data.length,
+      inspections: data.map(i => {
+        const info = getHiveInfo(i.hives)
+        return {
+          hive: info.hive_number,
+          apiary: info.apiary_name,
+          date: formatDate(i.inspection_date),
+          queenSeen: i.queen_seen ? 'Yes' : 'No',
+          eggsPresent: i.eggs_present ? 'Yes' : 'No',
+          temperament: i.temperament || 'N/A',
+          population: i.population || 'N/A',
+          notes: i.notes || 'None',
+          weather: i.weather_temp ? `${i.weather_temp}°C, ${i.weather_conditions || 'N/A'}, Humidity: ${i.weather_humidity || 'N/A'}%, Wind: ${i.weather_wind_speed || 'N/A'} km/h` : 'Not recorded'
+        }
+      })
+    }
+  }
+}
+
 // Get last inspection for a hive
 export const getLastInspection: Tool = {
   name: 'getLastInspection',

@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
   if (view === 'sources') {
     const { data, error, count } = await getSupabaseAdmin()
       .from('knowledge_sources')
-      .select('id, name, author, published_date, source_url, chunks_count, created_at, updated_at', { count: 'exact' })
+      .select('id, name, author, published_date, source_url, original_filename, chunks_count, created_at, updated_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -367,12 +367,13 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { source_id, name, author, published_year, source_url } = body as {
+    const { source_id, name, author, published_year, source_url, original_filename } = body as {
       source_id: string
       name?: string
       author?: string | null
       published_year?: string | null
       source_url?: string | null
+      original_filename?: string | null
     }
 
     if (!source_id) {
@@ -390,6 +391,7 @@ export async function PATCH(request: NextRequest) {
       updates.published_date = published_year ? `${published_year}-01-01` : null
     }
     if (source_url !== undefined) updates.source_url = source_url
+    if (original_filename !== undefined) updates.original_filename = original_filename
 
     const { error } = await getSupabaseAdmin()
       .from('knowledge_sources')

@@ -13,6 +13,7 @@ interface KnowledgeSource {
   author: string | null
   published_date: string | null
   source_url: string | null
+  original_filename: string | null
   chunks_count: number
   created_at: string
 }
@@ -36,6 +37,7 @@ export default function KnowledgeBaseManager() {
   const [editAuthor, setEditAuthor] = useState('')
   const [editYear, setEditYear] = useState('')
   const [editSourceUrl, setEditSourceUrl] = useState('')
+  const [editOriginalFilename, setEditOriginalFilename] = useState('')
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const risInputRef = useRef<HTMLInputElement>(null)
@@ -251,6 +253,7 @@ export default function KnowledgeBaseManager() {
     setEditAuthor(source.author || '')
     setEditYear(source.published_date ? source.published_date.split('-')[0] : '')
     setEditSourceUrl(source.source_url || '')
+    setEditOriginalFilename(source.original_filename || '')
   }
 
   const cancelEditing = () => {
@@ -259,6 +262,7 @@ export default function KnowledgeBaseManager() {
     setEditAuthor('')
     setEditYear('')
     setEditSourceUrl('')
+    setEditOriginalFilename('')
   }
 
   const saveEditing = async () => {
@@ -283,7 +287,8 @@ export default function KnowledgeBaseManager() {
           name: editName.trim(),
           author: editAuthor.trim() || null,
           published_year: editYear.trim() || null,
-          source_url: editSourceUrl.trim() || null
+          source_url: editSourceUrl.trim() || null,
+          original_filename: editOriginalFilename.trim() || null
         })
       })
 
@@ -557,6 +562,7 @@ export default function KnowledgeBaseManager() {
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Name</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Original File</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Author</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Year</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">URL</th>
@@ -576,6 +582,15 @@ export default function KnowledgeBaseManager() {
                           onChange={(e) => setEditName(e.target.value)}
                           className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
                           autoFocus
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editOriginalFilename}
+                          onChange={(e) => setEditOriginalFilename(e.target.value)}
+                          placeholder="filename.pdf"
+                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -640,6 +655,9 @@ export default function KnowledgeBaseManager() {
                     <>
                       <td className="px-4 py-3 text-sm text-foreground font-medium">
                         {source.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">
+                        {source.original_filename || '—'}
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary">
                         {source.author || '—'}

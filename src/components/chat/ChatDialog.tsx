@@ -30,7 +30,7 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
         {
           id: 'welcome',
           role: 'assistant',
-          content: 'Hello! I\'m your beekeeping assistant. Ask me anything about your hives, inspections, or general beekeeping knowledge.',
+          content: 'Hi I\'m Mel, your Virtual Assistant. Ask me anything about your hives, inspections, or general beekeeping knowledge.',
           timestamp: new Date()
         }
       ])
