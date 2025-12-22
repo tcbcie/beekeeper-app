@@ -561,13 +561,13 @@ export default function KnowledgeBaseManager() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left">
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Actions</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Name</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Original File</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Author</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Year</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">URL</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary text-center">Chunks</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -576,10 +576,37 @@ export default function KnowledgeBaseManager() {
                   {editingId === source.id ? (
                     <>
                       <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => risInputRef.current?.click()}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
+                            title="Import from RIS citation"
+                          >
+                            <FileText size={16} />
+                          </button>
+                          <button
+                            onClick={saveEditing}
+                            disabled={saving}
+                            className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                            title="Save"
+                          >
+                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="p-1.5 text-text-secondary hover:bg-surface-secondary rounded"
+                            title="Cancel"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
                         <input
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
+                          placeholder="Source name/title"
                           className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
                           autoFocus
                         />
@@ -624,35 +651,27 @@ export default function KnowledgeBaseManager() {
                       <td className="px-4 py-3 text-center text-sm text-text-secondary">
                         {source.chunks_count}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => risInputRef.current?.click()}
-                            className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
-                            title="Import from RIS citation"
-                          >
-                            <FileText size={16} />
-                          </button>
-                          <button
-                            onClick={saveEditing}
-                            disabled={saving}
-                            className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
-                            title="Save"
-                          >
-                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                          </button>
-                          <button
-                            onClick={cancelEditing}
-                            className="p-1.5 text-text-secondary hover:bg-surface-secondary rounded"
-                            title="Cancel"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      </td>
                     </>
                   ) : (
                     <>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEditing(source)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                            title="Edit"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSource(source.id, source.name, source.chunks_count)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-sm text-foreground font-medium">
                         {source.name}
                       </td>
@@ -679,24 +698,6 @@ export default function KnowledgeBaseManager() {
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary text-center">
                         {source.chunks_count}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => startEditing(source)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-                            title="Edit"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSource(source.id, source.name, source.chunks_count)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
                       </td>
                     </>
                   )}
