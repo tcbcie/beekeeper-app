@@ -271,14 +271,15 @@ async function extractTextWithOCR(pdfBuffer) {
   return allText.join('\n\n')
 }
 
-// Extract text using Gemini 2.0 Flash with page batching (OCR + Translation in one pass)
+// Extract text using Gemini 2.0 Flash with page batching (OCR only - no translation)
+// Translation is handled separately after extraction to ensure accuracy
 // Processes PDF in batches of ~25 pages to avoid output token limits
 async function extractWithGeminiBatched(pdfBuffer) {
   if (!geminiModel) {
     throw new Error('Gemini not configured')
   }
 
-  console.log('  ⚡ Using Gemini 2.0 Flash for OCR + Translation...')
+  console.log('  ⚡ Using Gemini 2.0 Flash for OCR (text extraction only)...')
 
   const { pdf } = await import('pdf-to-img')
   const document = await pdf(pdfBuffer, { scale: 2.0 })
@@ -308,16 +309,16 @@ async function extractWithGeminiBatched(pdfBuffer) {
       })
     }
 
-    const prompt = `You are a professional document extraction and translation engine.
+    // OCR ONLY - no translation. Keep original language for accurate extraction.
+    const prompt = `You are a professional OCR (Optical Character Recognition) engine.
 
-CRITICAL INSTRUCTIONS:
-1. Extract ALL text from these ${batchImages.length} page images in order.
-2. ALWAYS translate the extracted text to English, regardless of the source language.
-3. Do NOT output any non-English text. Every word in your output must be in English.
-4. Preserve paragraph structure and flow.
-5. Output ONLY the English translation. No markdown blocks, no preambles, no original text.
+INSTRUCTIONS:
+1. Extract ALL text from these ${batchImages.length} page images in reading order.
+2. Preserve the ORIGINAL language - do NOT translate anything.
+3. Preserve paragraph structure and flow.
+4. Output ONLY the extracted text. No markdown, no commentary.
 
-Remember: Your output must be 100% in English. Translate everything from any language to English.`
+Extract the text exactly as written in the document.`
 
     try {
       const result = await geminiModel.generateContent([prompt, ...batchImages])
@@ -601,24 +602,22 @@ async function processFile(filePath, options = {}) {
     console.log(`  OCR extracted ${text.length} characters`)
   }
 
-  // Detect language (skip if Gemini already translated during OCR)
-  let detectedLanguage = 'en'
-  if (!usedGemini) {
-    detectedLanguage = await detectLanguage(text)
-    console.log(`  Detected language: ${detectedLanguage}`)
-  } else {
-    console.log(`  Language: en (Gemini translated during extraction)`)
-  }
+  // ALWAYS detect language - never assume English
+  console.log('  Detecting language...')
+  const detectedLanguage = await detectLanguage(text)
+  console.log(`  Detected language: ${detectedLanguage}`)
 
-  // Translate if not English and not already translated by Gemini
-  let wasTranslated = usedGemini // Gemini already translates during OCR
-  if (detectedLanguage !== 'en' && !usedGemini) {
+  // Translate if not English
+  let wasTranslated = false
+  if (detectedLanguage !== 'en') {
+    console.log(`  Document is in ${detectedLanguage}, translation required...`)
+
     // Try Gemini for full-text translation first (preserves context)
     if (geminiModel) {
       try {
         text = await translateFullText(text, detectedLanguage)
         wasTranslated = true
-        processedBy = processedBy === 'pdf-parse' ? 'pdf-parse+gemini-translate' : processedBy
+        processedBy = processedBy + '+gemini-translate'
       } catch (err) {
         console.log(`  Gemini translation failed: ${err.message}, falling back to chunk translation...`)
         // Fall through to chunk translation below
@@ -632,9 +631,14 @@ async function processFile(filePath, options = {}) {
       console.log(`  Split into ${chunks.length} chunks for translation`)
       chunks = await translateChunks(chunks, detectedLanguage)
       wasTranslated = true
+      processedBy = processedBy + '+openai-translate'
       // Rejoin for re-chunking (to maintain proper boundaries)
       text = chunks.join('\n\n')
     }
+
+    console.log(`  Translation complete`)
+  } else {
+    console.log(`  Document is in English, no translation needed`)
   }
 
   // Split into chunks (now on English text)

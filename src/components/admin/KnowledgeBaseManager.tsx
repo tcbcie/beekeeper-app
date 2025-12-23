@@ -85,20 +85,68 @@ export default function KnowledgeBaseManager() {
     }
   }
 
-  const handleRisImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRisImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !editingId) return
 
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const content = event.target?.result as string
       const parsed = parseRisFile(content)
 
-      if (parsed.title) setEditName(parsed.title)
-      if (parsed.author) setEditAuthor(parsed.author)
-      if (parsed.year) setEditYear(parsed.year)
+      if (!parsed.title && !parsed.author && !parsed.year) {
+        toast.error('No citation data found in RIS file')
+        return
+      }
 
-      toast.success('Citation imported')
+      // Update local state for UI
+      const newName = parsed.title || editName
+      const newAuthor = parsed.author || editAuthor
+      const newYear = parsed.year || editYear
+
+      setEditName(newName)
+      setEditAuthor(newAuthor)
+      setEditYear(newYear)
+
+      // Auto-save to database
+      setSaving(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          toast.error('Not authenticated')
+          return
+        }
+
+        const response = await fetch('/api/admin/knowledge-base', {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            source_id: editingId,
+            name: newName.trim(),
+            author: newAuthor.trim() || null,
+            published_year: newYear.trim() || null,
+            source_url: editSourceUrl.trim() || null,
+            original_filename: editOriginalFilename.trim() || null
+          })
+        })
+
+        if (response.ok) {
+          toast.success('Citation imported and saved')
+          setEditingId(null)
+          fetchSources()
+        } else {
+          const data = await response.json()
+          toast.error(data.error || 'Failed to save citation')
+        }
+      } catch (error) {
+        console.error('Error saving citation:', error)
+        toast.error('Failed to save citation')
+      } finally {
+        setSaving(false)
+      }
     }
     reader.onerror = () => {
       toast.error('Failed to read RIS file')
