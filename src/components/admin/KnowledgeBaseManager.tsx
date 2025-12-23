@@ -42,6 +42,7 @@ export default function KnowledgeBaseManager() {
   const [editOriginalFilename, setEditOriginalFilename] = useState('')
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [yearFilter, setYearFilter] = useState<string>('')
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -364,16 +365,33 @@ export default function KnowledgeBaseManager() {
     }
   }
 
+  // Get unique years for dropdown
+  const availableYears = [...new Set(
+    sources
+      .map(s => s.published_date ? s.published_date.split('-')[0] : null)
+      .filter((y): y is string => y !== null)
+  )].sort((a, b) => parseInt(b) - parseInt(a))
+
   // Filter and sort sources
   const filteredSources = sources
     .filter(source => {
-      if (!searchQuery.trim()) return true
-      const query = searchQuery.toLowerCase()
-      return (
-        source.name.toLowerCase().includes(query) ||
-        (source.author && source.author.toLowerCase().includes(query)) ||
-        (source.published_date && source.published_date.includes(query))
-      )
+      // Text search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase()
+        const matchesSearch = (
+          source.name.toLowerCase().includes(query) ||
+          (source.author && source.author.toLowerCase().includes(query))
+        )
+        if (!matchesSearch) return false
+      }
+
+      // Year filter
+      if (yearFilter) {
+        const sourceYear = source.published_date ? source.published_date.split('-')[0] : ''
+        if (sourceYear !== yearFilter) return false
+      }
+
+      return true
     })
     .sort((a, b) => {
       let aVal: string | number = ''
@@ -660,21 +678,41 @@ export default function KnowledgeBaseManager() {
 
       {/* Search and Filter Bar */}
       {sources.length > 0 && (
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, author, or year..."
+              placeholder="Search by name or author..."
               className="w-full pl-9 pr-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm"
             />
           </div>
-          {searchQuery && (
-            <span className="text-sm text-text-tertiary">
-              {filteredSources.length} of {sources.length} sources
-            </span>
+          {availableYears.length > 0 && (
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[120px]"
+            >
+              <option value="">All Years</option>
+              {availableYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          )}
+          {(searchQuery || yearFilter) && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-text-tertiary">
+                {filteredSources.length} of {sources.length}
+              </span>
+              <button
+                onClick={() => { setSearchQuery(''); setYearFilter('') }}
+                className="text-xs text-forest-600 hover:underline"
+              >
+                Clear
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -863,16 +901,16 @@ export default function KnowledgeBaseManager() {
                   )}
                 </tr>
               ))}
-              {filteredSources.length === 0 && searchQuery && (
+              {filteredSources.length === 0 && (searchQuery || yearFilter) && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>No sources match &quot;{searchQuery}&quot;</p>
+                    <p>No sources match your filters</p>
                     <button
-                      onClick={() => setSearchQuery('')}
+                      onClick={() => { setSearchQuery(''); setYearFilter('') }}
                       className="text-sm text-forest-600 hover:underline mt-1"
                     >
-                      Clear search
+                      Clear filters
                     </button>
                   </td>
                 </tr>
