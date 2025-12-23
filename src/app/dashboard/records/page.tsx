@@ -5831,7 +5831,7 @@ export default function InspectionsPage() {
                       onClick={() => {
                         setEditingCheck({
                           ...check,
-                          check_date: check.check_date.slice(0, 16)
+                          check_date: check.check_date.replace(' ', 'T').slice(0, 16)
                         })
                         setFormType('varroa_check')
                         setShowForm(true)
