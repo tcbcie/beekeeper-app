@@ -44,6 +44,7 @@ export default function KnowledgeBaseManager() {
   const toast = useToast()
 
   // Parse RIS citation file and extract metadata
+  // RIS format: TAG  - value (tag + spaces + hyphen + space + value)
   const parseRisFile = (content: string): { title?: string; author?: string; year?: string } => {
     const lines = content.split('\n')
     const authors: string[] = []
@@ -51,7 +52,8 @@ export default function KnowledgeBaseManager() {
     let year = ''
 
     for (const line of lines) {
-      const match = line.match(/^([A-Z][A-Z0-9])\s+-\s+(.*)$/)
+      // RIS format: "TY  - JOUR" or "T1  - Title" (2 chars + spaces + hyphen + space + value)
+      const match = line.match(/^([A-Z][A-Z0-9])\s*-\s*(.*)$/)
       if (!match) continue
 
       const [, tag, value] = match
@@ -59,11 +61,11 @@ export default function KnowledgeBaseManager() {
 
       switch (tag) {
         case 'TI': // Title
-        case 'T1': // Primary Title (alternative)
+        case 'T1': // Primary Title
           if (!title) title = trimmedValue
           break
         case 'AU': // Author
-        case 'A1': // Primary Author (alternative)
+        case 'A1': // Primary Author
           if (trimmedValue) authors.push(trimmedValue)
           break
         case 'PY': // Publication Year
