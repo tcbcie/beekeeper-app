@@ -128,7 +128,7 @@ export const getHiveTimeline: Tool = {
     const limit = args.limit || 20
 
     const [inspections, varroaChecks, treatments, feedings, harvests] = await Promise.all([
-      supabase.from('inspections').select('id, inspection_date, temperament, laying_pattern, notes').eq('hive_id', hive.id).order('inspection_date', { ascending: false }).limit(limit),
+      supabase.from('inspections').select('id, inspection_date, temperament_rating, laying_pattern, notes').eq('hive_id', hive.id).order('inspection_date', { ascending: false }).limit(limit),
       supabase.from('varroa_checks').select('id, check_date, mites_count, method, infestation_rate').eq('hive_id', hive.id).order('check_date', { ascending: false }).limit(limit),
       supabase.from('varroa_treatments').select('id, treatment_date, treatment_type, product_used').eq('hive_id', hive.id).order('treatment_date', { ascending: false }).limit(limit),
       supabase.from('feedings').select('id, feed_date, feed_type, quantity, unit').eq('hive_id', hive.id).order('feed_date', { ascending: false }).limit(limit),
@@ -141,7 +141,7 @@ export const getHiveTimeline: Tool = {
       timeline.push({
         date: i.inspection_date,
         type: 'Inspection',
-        details: `Temperament: ${i.temperament || 'N/A'}, Laying: ${i.laying_pattern || 'N/A'}${i.notes ? `, Notes: ${i.notes.substring(0, 50)}...` : ''}`
+        details: `Temperament: ${i.temperament_rating || 'N/A'}, Laying: ${i.laying_pattern || 'N/A'}${i.notes ? `, Notes: ${i.notes.substring(0, 50)}...` : ''}`
       })
     })
 

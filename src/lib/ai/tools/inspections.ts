@@ -40,7 +40,7 @@ export const getAllInspections: Tool = {
 
     const { data, error } = await supabase
       .from('inspections')
-      .select('inspection_date, queen_seen, eggs_present, temperament, population, notes, weather_temp, weather_conditions, weather_humidity, weather_wind_speed, hives(hive_number, apiaries(name))')
+      .select('inspection_date, queen_seen, eggs_present, temperament_rating, population, notes, weather_temp, weather_conditions, weather_humidity, weather_wind_speed, hives(hive_number, apiaries(name))')
       .in('hive_id', hiveIds)
       .order('inspection_date', { ascending: false })
       .limit(limit)
@@ -58,7 +58,7 @@ export const getAllInspections: Tool = {
           date: formatDate(i.inspection_date),
           queenSeen: i.queen_seen ? 'Yes' : 'No',
           eggsPresent: i.eggs_present ? 'Yes' : 'No',
-          temperament: i.temperament || 'N/A',
+          temperament: i.temperament_rating || 'N/A',
           population: i.population || 'N/A',
           notes: i.notes || 'None',
           weather: i.weather_temp ? `${i.weather_temp}°C, ${i.weather_conditions || 'N/A'}, Humidity: ${i.weather_humidity || 'N/A'}%, Wind: ${i.weather_wind_speed || 'N/A'} km/h` : 'Not recorded'
@@ -101,7 +101,7 @@ export const getLastInspection: Tool = {
       apiary: hive.apiary_name,
       date: formatDate(data.inspection_date),
       daysAgo: daysSince(data.inspection_date),
-      temperament: data.temperament || 'Not recorded',
+      temperament: data.temperament_rating || 'Not recorded',
       layingPattern: data.laying_pattern || 'Not recorded',
       queenSeen: data.queen_seen ? 'Yes' : 'No',
       queenCells: data.queen_cells ? 'Yes' : 'No',
@@ -135,7 +135,7 @@ export const getInspectionHistory: Tool = {
 
     const { data, error } = await supabase
       .from('inspections')
-      .select('inspection_date, temperament, laying_pattern, queen_seen, brood_frames, honey_frames, population, notes')
+      .select('inspection_date, temperament_rating, laying_pattern, queen_seen, brood_frames, honey_frames, population, notes')
       .eq('hive_id', hive.id)
       .order('inspection_date', { ascending: false })
       .limit(args.limit || 10)
@@ -148,7 +148,7 @@ export const getInspectionHistory: Tool = {
       apiary: hive.apiary_name,
       inspections: data.map(i => ({
         date: formatDate(i.inspection_date),
-        temperament: i.temperament || 'N/A',
+        temperament: i.temperament_rating || 'N/A',
         laying: i.laying_pattern || 'N/A',
         queenSeen: i.queen_seen ? 'Yes' : 'No',
         brood: i.brood_frames,
