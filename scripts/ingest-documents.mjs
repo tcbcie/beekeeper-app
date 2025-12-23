@@ -48,7 +48,6 @@ const CHUNK_SIZE = 1000
 const CHUNK_OVERLAP = 200
 const EMBEDDING_MODEL = 'text-embedding-3-small'
 const MIN_TEXT_LENGTH = 100 // Minimum chars to consider text extraction successful
-const OCR_BATCH_SIZE = 5 // Pages to process at once for OCR
 
 // Initialize clients
 const supabase = createClient(
@@ -311,11 +310,14 @@ async function extractWithGeminiBatched(pdfBuffer) {
 
     const prompt = `You are a professional document extraction and translation engine.
 
+CRITICAL INSTRUCTIONS:
 1. Extract ALL text from these ${batchImages.length} page images in order.
-2. If any text is not in English, translate it to English.
-3. If text is already in English, keep it as is.
+2. ALWAYS translate the extracted text to English, regardless of the source language.
+3. Do NOT output any non-English text. Every word in your output must be in English.
 4. Preserve paragraph structure and flow.
-5. Output ONLY the extracted/translated text. No markdown blocks, no preambles.`
+5. Output ONLY the English translation. No markdown blocks, no preambles, no original text.
+
+Remember: Your output must be 100% in English. Translate everything from any language to English.`
 
     try {
       const result = await geminiModel.generateContent([prompt, ...batchImages])

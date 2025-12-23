@@ -563,7 +563,6 @@ export default function KnowledgeBaseManager() {
               <tr className="border-b border-border text-left">
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Actions</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Name</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Original File</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Author</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Year</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">URL</th>
@@ -602,23 +601,23 @@ export default function KnowledgeBaseManager() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          placeholder="Source name/title"
-                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
-                          autoFocus
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={editOriginalFilename}
-                          onChange={(e) => setEditOriginalFilename(e.target.value)}
-                          placeholder="filename.pdf"
-                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
-                        />
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Source name/title"
+                            className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                            autoFocus
+                          />
+                          <input
+                            type="text"
+                            value={editOriginalFilename}
+                            onChange={(e) => setEditOriginalFilename(e.target.value)}
+                            placeholder="Original filename (optional)"
+                            className="w-full px-2 py-1 border border-border rounded bg-surface text-text-secondary text-sm"
+                          />
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <input
@@ -674,9 +673,6 @@ export default function KnowledgeBaseManager() {
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground font-medium">
                         {source.name}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-text-secondary">
-                        {source.original_filename || '—'}
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary">
                         {source.author || '—'}
