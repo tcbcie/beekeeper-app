@@ -48,8 +48,8 @@ export const compareHives: Tool = {
     ] = await Promise.all([
       supabase.from('hives').select('status, queen_marked, queen_marking_color').eq('id', hive1Data.id).single(),
       supabase.from('hives').select('status, queen_marked, queen_marking_color').eq('id', hive2Data.id).single(),
-      supabase.from('inspections').select('inspection_date, temperament, laying_pattern, brood_frames, honey_frames, population').eq('hive_id', hive1Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
-      supabase.from('inspections').select('inspection_date, temperament, laying_pattern, brood_frames, honey_frames, population').eq('hive_id', hive2Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
+      supabase.from('inspections').select('inspection_date, temperament_rating, laying_pattern, brood_frames, honey_frames, population').eq('hive_id', hive1Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
+      supabase.from('inspections').select('inspection_date, temperament_rating, laying_pattern, brood_frames, honey_frames, population').eq('hive_id', hive2Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
       supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive1Data.id).order('check_date', { ascending: false }).limit(1).single(),
       supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive2Data.id).order('check_date', { ascending: false }).limit(1).single(),
       supabase.from('harvests').select('honey_weight').eq('hive_id', hive1Data.id),
@@ -67,7 +67,7 @@ export const compareHives: Tool = {
         queenMarked: hive1Info.data?.queen_marked ? 'Yes' : 'No',
         queenColor: hive1Info.data?.queen_marking_color || 'None',
         lastInspection: hive1Inspection.data?.inspection_date ? formatDate(hive1Inspection.data.inspection_date) : 'Never',
-        temperament: hive1Inspection.data?.temperament || 'N/A',
+        temperament: hive1Inspection.data?.temperament_rating || 'N/A',
         layingPattern: hive1Inspection.data?.laying_pattern || 'N/A',
         broodFrames: hive1Inspection.data?.brood_frames ?? 'N/A',
         honeyFrames: hive1Inspection.data?.honey_frames ?? 'N/A',
@@ -84,7 +84,7 @@ export const compareHives: Tool = {
         queenMarked: hive2Info.data?.queen_marked ? 'Yes' : 'No',
         queenColor: hive2Info.data?.queen_marking_color || 'None',
         lastInspection: hive2Inspection.data?.inspection_date ? formatDate(hive2Inspection.data.inspection_date) : 'Never',
-        temperament: hive2Inspection.data?.temperament || 'N/A',
+        temperament: hive2Inspection.data?.temperament_rating || 'N/A',
         layingPattern: hive2Inspection.data?.laying_pattern || 'N/A',
         broodFrames: hive2Inspection.data?.brood_frames ?? 'N/A',
         honeyFrames: hive2Inspection.data?.honey_frames ?? 'N/A',
@@ -163,7 +163,7 @@ export const getBestPerformingHives: Tool = {
     for (const hive of hives) {
       const { data: inspection } = await supabase
         .from('inspections')
-        .select('temperament, laying_pattern, population')
+        .select('temperament_rating, laying_pattern, population')
         .eq('hive_id', hive.id)
         .order('inspection_date', { ascending: false })
         .limit(1)
@@ -174,9 +174,9 @@ export const getBestPerformingHives: Tool = {
       let value = 0
       let display = 'N/A'
 
-      if (args.metric === 'temperament' && inspection.temperament) {
-        value = scoreMap[inspection.temperament] || 0
-        display = inspection.temperament
+      if (args.metric === 'temperament' && inspection.temperament_rating) {
+        value = scoreMap[inspection.temperament_rating] || 0
+        display = inspection.temperament_rating
       } else if (args.metric === 'laying_pattern' && inspection.laying_pattern) {
         value = scoreMap[inspection.laying_pattern] || 0
         display = inspection.laying_pattern
