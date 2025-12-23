@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 type InputMode = 'text' | 'pdf' | 'url'
+type SortField = 'name' | 'author' | 'year' | 'chunks'
+type SortDirection = 'asc' | 'desc'
 
 interface KnowledgeSource {
   id: string
@@ -39,6 +41,9 @@ export default function KnowledgeBaseManager() {
   const [editSourceUrl, setEditSourceUrl] = useState('')
   const [editOriginalFilename, setEditOriginalFilename] = useState('')
   const [saving, setSaving] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const risInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
@@ -359,6 +364,59 @@ export default function KnowledgeBaseManager() {
     }
   }
 
+  // Filter and sort sources
+  const filteredSources = sources
+    .filter(source => {
+      if (!searchQuery.trim()) return true
+      const query = searchQuery.toLowerCase()
+      return (
+        source.name.toLowerCase().includes(query) ||
+        (source.author && source.author.toLowerCase().includes(query)) ||
+        (source.published_date && source.published_date.includes(query))
+      )
+    })
+    .sort((a, b) => {
+      let aVal: string | number = ''
+      let bVal: string | number = ''
+
+      switch (sortField) {
+        case 'name':
+          aVal = a.name.toLowerCase()
+          bVal = b.name.toLowerCase()
+          break
+        case 'author':
+          aVal = (a.author || '').toLowerCase()
+          bVal = (b.author || '').toLowerCase()
+          break
+        case 'year':
+          aVal = a.published_date ? parseInt(a.published_date.split('-')[0]) : 0
+          bVal = b.published_date ? parseInt(b.published_date.split('-')[0]) : 0
+          break
+        case 'chunks':
+          aVal = a.chunks_count
+          bVal = b.chunks_count
+          break
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown size={14} className="opacity-40" />
+    return sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+  }
+
   const totalChunks = sources.reduce((sum, s) => sum + s.chunks_count, 0)
 
   if (loading) {
@@ -600,6 +658,27 @@ export default function KnowledgeBaseManager() {
         </div>
       )}
 
+      {/* Search and Filter Bar */}
+      {sources.length > 0 && (
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, author, or year..."
+              className="w-full pl-9 pr-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm"
+            />
+          </div>
+          {searchQuery && (
+            <span className="text-sm text-text-tertiary">
+              {filteredSources.length} of {sources.length} sources
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Sources List */}
       {sources.length === 0 ? (
         <div className="text-center py-8 text-text-tertiary">
@@ -613,15 +692,43 @@ export default function KnowledgeBaseManager() {
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Actions</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Name</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Author</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Year</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">
+                  <button
+                    onClick={() => handleSort('name')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Name <SortIcon field="name" />
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">
+                  <button
+                    onClick={() => handleSort('author')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Author <SortIcon field="author" />
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">
+                  <button
+                    onClick={() => handleSort('year')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Year <SortIcon field="year" />
+                  </button>
+                </th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">URL</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary text-center">Chunks</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary text-center">
+                  <button
+                    onClick={() => handleSort('chunks')}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors mx-auto"
+                  >
+                    Chunks <SortIcon field="chunks" />
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {sources.map((source) => (
+              {filteredSources.map((source) => (
                 <tr key={source.id} className="border-b border-border hover:bg-surface-secondary/50">
                   {editingId === source.id ? (
                     <>
@@ -756,6 +863,20 @@ export default function KnowledgeBaseManager() {
                   )}
                 </tr>
               ))}
+              {filteredSources.length === 0 && searchQuery && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">
+                    <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No sources match &quot;{searchQuery}&quot;</p>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="text-sm text-forest-600 hover:underline mt-1"
+                    >
+                      Clear search
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
