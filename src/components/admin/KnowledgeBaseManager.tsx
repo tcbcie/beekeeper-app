@@ -602,21 +602,27 @@ export default function KnowledgeBaseManager() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            placeholder="Source name/title"
-                            className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
-                            autoFocus
-                          />
-                          <input
-                            type="text"
-                            value={editOriginalFilename}
-                            onChange={(e) => setEditOriginalFilename(e.target.value)}
-                            placeholder="Original filename (optional)"
-                            className="w-full px-2 py-1 border border-border rounded bg-surface text-text-secondary text-sm"
-                          />
+                          <div>
+                            <label className="block text-xs text-text-tertiary mb-0.5">Display Name (for citations)</label>
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              placeholder="e.g., Nosema Disease - White (1919)"
+                              className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                              autoFocus
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-text-tertiary mb-0.5">Original Filename</label>
+                            <input
+                              type="text"
+                              value={editOriginalFilename}
+                              onChange={(e) => setEditOriginalFilename(e.target.value)}
+                              placeholder="e.g., White-GF (1919) Nosema-Disease.pdf"
+                              className="w-full px-2 py-1 border border-border rounded bg-surface text-text-secondary text-sm"
+                            />
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
