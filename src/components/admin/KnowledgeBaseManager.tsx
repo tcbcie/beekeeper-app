@@ -46,7 +46,8 @@ export default function KnowledgeBaseManager() {
   // Parse RIS citation file and extract metadata
   // RIS format: TAG  - value (tag + spaces + hyphen + space + value)
   const parseRisFile = (content: string): { title?: string; author?: string; year?: string } => {
-    const lines = content.split('\n')
+    // Handle both Windows (CRLF) and Unix (LF) line endings
+    const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
     const authors: string[] = []
     let title = ''
     let year = ''
