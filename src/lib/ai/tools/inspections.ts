@@ -40,7 +40,7 @@ export const getAllInspections: Tool = {
 
     const { data, error } = await supabase
       .from('inspections')
-      .select('inspection_date, queen_seen, eggs_present, temperament_rating, population, notes, weather_temp, weather_conditions, weather_humidity, weather_wind_speed, hives(hive_number, apiaries(name))')
+      .select('inspection_date, queen_seen, eggs_present, temperament_rating, population_strength, notes, weather_temp, weather_condition, weather_humidity, weather_wind_speed, hives(hive_number, apiaries(name))')
       .in('hive_id', hiveIds)
       .order('inspection_date', { ascending: false })
       .limit(limit)
@@ -59,9 +59,9 @@ export const getAllInspections: Tool = {
           queenSeen: i.queen_seen ? 'Yes' : 'No',
           eggsPresent: i.eggs_present ? 'Yes' : 'No',
           temperament: i.temperament_rating || 'N/A',
-          population: i.population || 'N/A',
+          population: i.population_strength || 'N/A',
           notes: i.notes || 'None',
-          weather: i.weather_temp ? `${i.weather_temp}°C, ${i.weather_conditions || 'N/A'}, Humidity: ${i.weather_humidity || 'N/A'}%, Wind: ${i.weather_wind_speed || 'N/A'} km/h` : 'Not recorded'
+          weather: i.weather_temp ? `${i.weather_temp}°C, ${i.weather_condition || 'N/A'}, Humidity: ${i.weather_humidity || 'N/A'}%, Wind: ${i.weather_wind_speed || 'N/A'} km/h` : 'Not recorded'
         }
       })
     }
@@ -109,7 +109,7 @@ export const getLastInspection: Tool = {
       broodFrames: data.brood_frames,
       honeyFrames: data.honey_frames,
       pollenFrames: data.pollen_frames,
-      population: data.population,
+      population: data.population_strength,
       diseasesSigns: data.diseases_signs || 'None',
       notes: data.notes || 'None'
     }
@@ -135,7 +135,7 @@ export const getInspectionHistory: Tool = {
 
     const { data, error } = await supabase
       .from('inspections')
-      .select('inspection_date, temperament_rating, laying_pattern, queen_seen, brood_frames, honey_frames, population, notes')
+      .select('inspection_date, temperament_rating, laying_pattern, queen_seen, brood_frames, honey_frames, population_strength, notes')
       .eq('hive_id', hive.id)
       .order('inspection_date', { ascending: false })
       .limit(args.limit || 10)
@@ -153,7 +153,7 @@ export const getInspectionHistory: Tool = {
         queenSeen: i.queen_seen ? 'Yes' : 'No',
         brood: i.brood_frames,
         honey: i.honey_frames,
-        population: i.population || 'N/A',
+        population: i.population_strength || 'N/A',
         notes: i.notes ? i.notes.substring(0, 100) : 'None'
       }))
     }
