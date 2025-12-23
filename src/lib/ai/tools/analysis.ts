@@ -48,8 +48,8 @@ export const compareHives: Tool = {
     ] = await Promise.all([
       supabase.from('hives').select('status, queen_marked, queen_marking_color').eq('id', hive1Data.id).single(),
       supabase.from('hives').select('status, queen_marked, queen_marking_color').eq('id', hive2Data.id).single(),
-      supabase.from('inspections').select('inspection_date, temperament_rating, laying_pattern, brood_frames, honey_frames, population').eq('hive_id', hive1Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
-      supabase.from('inspections').select('inspection_date, temperament_rating, laying_pattern, brood_frames, honey_frames, population').eq('hive_id', hive2Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
+      supabase.from('inspections').select('inspection_date, temperament_rating, laying_pattern, brood_frames, honey_frames, population_strength').eq('hive_id', hive1Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
+      supabase.from('inspections').select('inspection_date, temperament_rating, laying_pattern, brood_frames, honey_frames, population_strength').eq('hive_id', hive2Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
       supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive1Data.id).order('check_date', { ascending: false }).limit(1).single(),
       supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive2Data.id).order('check_date', { ascending: false }).limit(1).single(),
       supabase.from('harvests').select('honey_weight').eq('hive_id', hive1Data.id),
@@ -71,7 +71,7 @@ export const compareHives: Tool = {
         layingPattern: hive1Inspection.data?.laying_pattern || 'N/A',
         broodFrames: hive1Inspection.data?.brood_frames ?? 'N/A',
         honeyFrames: hive1Inspection.data?.honey_frames ?? 'N/A',
-        population: hive1Inspection.data?.population || 'N/A',
+        population: hive1Inspection.data?.population_strength || 'N/A',
         lastVarroaCheck: hive1Varroa.data?.check_date ? formatDate(hive1Varroa.data.check_date) : 'Never',
         miteCount: hive1Varroa.data?.mites_count ?? 'N/A',
         infestationRate: hive1Varroa.data?.infestation_rate ? `${hive1Varroa.data.infestation_rate.toFixed(1)}%` : 'N/A',
@@ -88,7 +88,7 @@ export const compareHives: Tool = {
         layingPattern: hive2Inspection.data?.laying_pattern || 'N/A',
         broodFrames: hive2Inspection.data?.brood_frames ?? 'N/A',
         honeyFrames: hive2Inspection.data?.honey_frames ?? 'N/A',
-        population: hive2Inspection.data?.population || 'N/A',
+        population: hive2Inspection.data?.population_strength || 'N/A',
         lastVarroaCheck: hive2Varroa.data?.check_date ? formatDate(hive2Varroa.data.check_date) : 'Never',
         miteCount: hive2Varroa.data?.mites_count ?? 'N/A',
         infestationRate: hive2Varroa.data?.infestation_rate ? `${hive2Varroa.data.infestation_rate.toFixed(1)}%` : 'N/A',
@@ -163,7 +163,7 @@ export const getBestPerformingHives: Tool = {
     for (const hive of hives) {
       const { data: inspection } = await supabase
         .from('inspections')
-        .select('temperament_rating, laying_pattern, population')
+        .select('temperament_rating, laying_pattern, population_strength')
         .eq('hive_id', hive.id)
         .order('inspection_date', { ascending: false })
         .limit(1)
@@ -180,9 +180,9 @@ export const getBestPerformingHives: Tool = {
       } else if (args.metric === 'laying_pattern' && inspection.laying_pattern) {
         value = scoreMap[inspection.laying_pattern] || 0
         display = inspection.laying_pattern
-      } else if (args.metric === 'population' && inspection.population) {
-        value = scoreMap[inspection.population] || 0
-        display = inspection.population
+      } else if (args.metric === 'population' && inspection.population_strength) {
+        value = scoreMap[inspection.population_strength] || 0
+        display = inspection.population_strength
       }
 
       if (value > 0) {
