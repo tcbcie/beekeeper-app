@@ -435,6 +435,15 @@ export default function KnowledgeBaseManager() {
     return sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
   }
 
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      saveEditing()
+    } else if (e.key === 'Escape') {
+      cancelEditing()
+    }
+  }
+
   const totalChunks = sources.reduce((sum, s) => sum + s.chunks_count, 0)
 
   if (loading) {
@@ -804,6 +813,7 @@ export default function KnowledgeBaseManager() {
                               type="text"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
+                              onKeyDown={handleEditKeyDown}
                               placeholder="e.g., Nosema Disease - White (1919)"
                               className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
                               autoFocus
@@ -815,6 +825,7 @@ export default function KnowledgeBaseManager() {
                               type="text"
                               value={editOriginalFilename}
                               onChange={(e) => setEditOriginalFilename(e.target.value)}
+                              onKeyDown={handleEditKeyDown}
                               placeholder="e.g., White-GF (1919) Nosema-Disease.pdf"
                               className="w-full px-2 py-1 border border-border rounded bg-surface text-text-secondary text-sm"
                             />
@@ -826,6 +837,7 @@ export default function KnowledgeBaseManager() {
                           type="text"
                           value={editAuthor}
                           onChange={(e) => setEditAuthor(e.target.value)}
+                          onKeyDown={handleEditKeyDown}
                           placeholder="Author"
                           className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
                         />
@@ -835,6 +847,7 @@ export default function KnowledgeBaseManager() {
                           type="text"
                           value={editYear}
                           onChange={(e) => setEditYear(e.target.value)}
+                          onKeyDown={handleEditKeyDown}
                           placeholder="Year"
                           maxLength={4}
                           className="w-20 px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
@@ -845,6 +858,7 @@ export default function KnowledgeBaseManager() {
                           type="url"
                           value={editSourceUrl}
                           onChange={(e) => setEditSourceUrl(e.target.value)}
+                          onKeyDown={handleEditKeyDown}
                           placeholder="https://..."
                           className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
                         />
