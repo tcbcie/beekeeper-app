@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon } from 'lucide-react'
+import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon, Globe } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ChangelogDisplay from '@/components/ChangelogDisplay'
 import { useToast } from '@/components/ui/Toast'
@@ -31,6 +31,7 @@ interface AppStatistics {
   subscribedUsers: number
   totalApiaries: number
   totalHives: number
+  sharedApiaries: number
 }
 
 function AboutPageContent() {
@@ -98,6 +99,7 @@ function AboutPageContent() {
           subscribedUsers: Number(stats.subscribed_users) || 0,
           totalApiaries: Number(stats.total_apiaries) || 0,
           totalHives: Number(stats.total_hives) || 0,
+          sharedApiaries: Number(stats.shared_apiaries) || 0,
         })
       }
     } catch (error) {
@@ -329,7 +331,7 @@ function AboutPageContent() {
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">App Statistics</h3>
             {statistics ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
                 <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
                   <div className="flex items-center gap-3 mb-2">
                     <Users size={24} className="text-blue-600 dark:text-blue-400" />
@@ -360,6 +362,14 @@ function AboutPageContent() {
                     <h4 className="text-sm font-medium text-text-secondary">Hives Managed</h4>
                   </div>
                   <p className="text-3xl font-bold text-foreground">{statistics.totalHives}</p>
+                </div>
+
+                <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Globe size={24} className="text-teal-600 dark:text-teal-400" />
+                    <h4 className="text-sm font-medium text-text-secondary">Shared Apiaries</h4>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{statistics.sharedApiaries}</p>
                 </div>
               </div>
             ) : (
