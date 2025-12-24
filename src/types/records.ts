@@ -108,11 +108,13 @@ export interface VarroaTreatment {
   temperature: number | null
   weather_conditions: string
   notes: string
+  application_method_id: string | null
   hives?: {
     hive_number: string
     apiary_id: string | null
   }
   profiles?: ProfileInfo
+  application_method?: { value: string } | null
 }
 
 export interface VarroaCheck {
@@ -308,12 +310,19 @@ export interface UIState {
   showIpmTips: boolean
 }
 
+// Dropdown value from dropdown_values table
+export interface DropdownValue {
+  id: string
+  value: string
+}
+
 // Options state for dynamic dropdowns
 export interface OptionsState {
   checkMethodOptions: string[]
   feedTypeOptions: string[]
   treatmentProducts: TreatmentProduct[]
   archiveReasons: Array<{ id: string; value: string }>
+  applicationMethods: DropdownValue[]
 }
 
 // Helper to get default inspection form data

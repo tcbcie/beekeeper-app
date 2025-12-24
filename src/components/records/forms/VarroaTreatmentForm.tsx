@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { HelpCircle } from 'lucide-react'
-import type { VarroaTreatment, Hive, Apiary, TreatmentProduct } from '@/types/records'
+import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
 
 interface VarroaTreatmentFormProps {
   treatment: VarroaTreatment | null
   hives: Hive[]
   apiaries: Apiary[]
   treatmentProducts: TreatmentProduct[]
+  applicationMethods: DropdownValue[]
   onSubmit: (treatment: VarroaTreatment, isOther: boolean, otherType: string) => Promise<void>
   onCancel: () => void
   onShowIpmTips: () => void
@@ -20,6 +21,7 @@ export default function VarroaTreatmentForm({
   hives,
   apiaries,
   treatmentProducts,
+  applicationMethods,
   onSubmit,
   onCancel,
   onShowIpmTips,
@@ -35,7 +37,8 @@ export default function VarroaTreatmentForm({
     dosage: '',
     temperature: null,
     weather_conditions: '',
-    notes: ''
+    notes: '',
+    application_method_id: null
   })
 
   const [formApiaryId, setFormApiaryId] = useState<string>('')
@@ -325,6 +328,22 @@ export default function VarroaTreatmentForm({
             placeholder="e.g., 5ml per hive"
             required
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Application Method</label>
+          <select
+            value={formData.application_method_id || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, application_method_id: e.target.value || null }))}
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+          >
+            <option value="">Select application method</option>
+            {applicationMethods.map((method) => (
+              <option key={method.id} value={method.id}>
+                {method.value}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

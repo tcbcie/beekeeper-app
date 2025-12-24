@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Search, BookText, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
+import { Search, BookText, Plus, Edit2, Trash2, Save, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+
+const ITEMS_PER_PAGE = 15
 
 interface TerminologyEntry {
   id: string
@@ -26,6 +28,7 @@ export default function TerminologyTable() {
   const [newTerm, setNewTerm] = useState({ english_term: '', german_term: '' })
   const [editingTerm, setEditingTerm] = useState<EditingTerm | null>(null)
   const [saving, setSaving] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     fetchTerminology()
@@ -54,6 +57,17 @@ export default function TerminologyTable() {
       term.german_term.toLowerCase().includes(searchQuery.toLowerCase())
     )
   }, [terms, searchQuery])
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredTerms.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedTerms = filteredTerms.slice(startIndex, endIndex)
 
   async function handleAdd() {
     if (!newTerm.english_term.trim() || !newTerm.german_term.trim()) {
@@ -230,7 +244,8 @@ export default function TerminologyTable() {
 
       {/* Results count */}
       <p className="text-sm text-text-tertiary">
-        Showing {filteredTerms.length} of {terms.length} terms
+        Showing {startIndex + 1}-{Math.min(endIndex, filteredTerms.length)} of {filteredTerms.length} terms
+        {searchQuery && ` (filtered from ${terms.length})`}
       </p>
 
       {/* Table */}
@@ -244,14 +259,14 @@ export default function TerminologyTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {filteredTerms.length === 0 ? (
+            {paginatedTerms.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-text-tertiary">
                   No terms found matching your search.
                 </td>
               </tr>
             ) : (
-              filteredTerms.map((term) => (
+              paginatedTerms.map((term) => (
                 <tr key={term.id} className="hover:bg-muted/30 dark:hover:bg-muted/10 transition-colors">
                   {editingTerm?.id === term.id ? (
                     <>
@@ -260,6 +275,10 @@ export default function TerminologyTable() {
                           type="text"
                           value={editingTerm.english_term}
                           onChange={(e) => setEditingTerm(prev => prev ? { ...prev, english_term: e.target.value } : null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleUpdate()
+                            else if (e.key === 'Escape') cancelEdit()
+                          }}
                           className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
                         />
                       </td>
@@ -268,6 +287,10 @@ export default function TerminologyTable() {
                           type="text"
                           value={editingTerm.german_term}
                           onChange={(e) => setEditingTerm(prev => prev ? { ...prev, german_term: e.target.value } : null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleUpdate()
+                            else if (e.key === 'Escape') cancelEdit()
+                          }}
                           className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
                         />
                       </td>
@@ -321,6 +344,31 @@ export default function TerminologyTable() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="flex items-center gap-1 px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={16} />
+            Previous
+          </button>
+          <span className="text-sm text-text-tertiary">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="flex items-center gap-1 px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

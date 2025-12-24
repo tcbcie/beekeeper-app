@@ -78,6 +78,7 @@ export default function RecordsPage() {
     feedTypeOptions,
     treatmentProducts,
     archiveReasons,
+    applicationMethods,
     loading,
     isTeamMember,
     sharedHiveIds,
@@ -185,7 +186,8 @@ export default function RecordsPage() {
         temperature: null,
         weather_conditions: '',
         notes: '',
-        user_id: userId || ''
+        user_id: userId || '',
+        application_method_id: null
       })
     } else if (type === 'varroa_check') {
       setEditingCheck({
@@ -470,7 +472,8 @@ export default function RecordsPage() {
         dosage: treatment.dosage,
         temperature: treatment.temperature,
         weather_conditions: treatment.weather_conditions || '',
-        notes: treatment.notes || ''
+        notes: treatment.notes || '',
+        application_method_id: treatment.application_method_id || null
       }
 
       if (treatment.id) {
@@ -927,6 +930,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 treatmentProducts={treatmentProducts}
+                applicationMethods={applicationMethods}
                 onSubmit={handleTreatmentSubmit}
                 onCancel={resetForm}
                 onShowIpmTips={() => setShowIpmTips(true)}
