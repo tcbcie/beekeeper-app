@@ -135,6 +135,7 @@ interface VarroaCheck {
   infestation_rate: number | null
   action_threshold_reached: boolean
   notes: string
+  image_url: string | null
   hives?: {
     hive_number: string
   }
@@ -318,6 +319,9 @@ export default function InspectionsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [checkImageFile, setCheckImageFile] = useState<File | null>(null)
+  const [checkImagePreview, setCheckImagePreview] = useState<string | null>(null)
+  const [uploadingCheckImage, setUploadingCheckImage] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
@@ -1196,6 +1200,7 @@ export default function InspectionsPage() {
             infestation_rate: null,
             action_threshold_reached: false,
             notes: '',
+            image_url: null,
             user_id: userId || '',
           })
         } else if (mappedType === 'feeding') {
@@ -1317,6 +1322,76 @@ export default function InspectionsPage() {
     setImageFile(null)
     setImagePreview(null)
     setFormData({ ...formData, image_url: null })
+  }
+
+  // Varroa check image handlers
+  const handleCheckImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setCheckImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setCheckImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveCheckImage = () => {
+    setCheckImageFile(null)
+    setCheckImagePreview(null)
+    if (editingCheck) {
+      setEditingCheck({ ...editingCheck, image_url: null })
+    }
+  }
+
+  const uploadCheckImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingCheckImage(true)
+      const fileExt = file.name.split('.').pop()?.toLowerCase()
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
+      const filePath = `varroa-checks/${fileName}`
+
+      let contentType = file.type
+      if (!contentType || contentType === 'application/json') {
+        const mimeMap: Record<string, string> = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp'
+        }
+        contentType = mimeMap[fileExt || ''] || 'image/jpeg'
+      }
+
+      const correctedFile = new File([file], file.name, { type: contentType })
+
+      const { error: uploadError } = await supabase.storage
+        .from('inspection-images')
+        .upload(filePath, correctedFile, {
+          contentType: contentType,
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error('Check image upload error:', uploadError)
+        throw uploadError
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('inspection-images')
+        .getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error('Failed to upload check image:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Failed to upload image: ${errorMessage}`)
+      return null
+    } finally {
+      setUploadingCheckImage(false)
+    }
   }
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -1552,6 +1627,15 @@ export default function InspectionsPage() {
     if (!userId || !editingCheck) return
 
     try {
+      // Upload image if there's a new one
+      let imageUrl = editingCheck.image_url
+      if (checkImageFile) {
+        const uploadedUrl = await uploadCheckImage(checkImageFile)
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl
+        }
+      }
+
       const submitData = {
         hive_id: editingCheck.hive_id,
         check_date: editingCheck.check_date,
@@ -1561,6 +1645,7 @@ export default function InspectionsPage() {
         infestation_rate: editingCheck.infestation_rate,
         action_threshold_reached: editingCheck.action_threshold_reached,
         notes: editingCheck.notes || '',
+        image_url: imageUrl,
       }
 
       if (editingCheck.id) {
@@ -1620,6 +1705,8 @@ export default function InspectionsPage() {
       fetchVarroaChecks()
       setShowForm(false)
       setEditingCheck(null)
+      setCheckImageFile(null)
+      setCheckImagePreview(null)
     } catch (error) {
       if (error instanceof Error) {
         toast.error('Error saving check: ' + error.message)
@@ -2287,6 +2374,7 @@ export default function InspectionsPage() {
                       infestation_rate: null,
                       action_threshold_reached: false,
                       notes: '',
+                      image_url: null,
                     })
                     setShowForm(true)
                     setShowDropdown(false)
@@ -5007,14 +5095,69 @@ export default function InspectionsPage() {
                 placeholder="Optional notes about the check"
               />
             </div>
+
+            {userHasActiveSubscription && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2">Photo (optional)</label>
+                <div className="flex items-start gap-3">
+                  {(checkImagePreview || editingCheck?.image_url) ? (
+                    <div className="relative w-20 h-20 flex-shrink-0 group">
+                      <div
+                        className="relative w-full h-full cursor-pointer"
+                        onDoubleClick={() => {
+                          setModalImageUrl(checkImagePreview || editingCheck?.image_url || null)
+                          setImageModalOpen(true)
+                        }}
+                        title="Double-click to enlarge"
+                      >
+                        <Image
+                          src={checkImagePreview || editingCheck?.image_url || ''}
+                          alt="Preview"
+                          fill
+                          className="object-cover rounded-lg border-2 border-border shadow-sm"
+                          sizes="80px"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
+                          <Camera size={16} className="text-white" />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCheckImage}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                        title="Remove image"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : null}
+                  <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all p-4">
+                    <div className="flex flex-col items-center justify-center">
+                      <Camera size={24} className="text-text-tertiary mb-1" />
+                      <p className="text-xs text-text-tertiary text-center">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleCheckImageChange}
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
           </form>
           <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full sm:w-auto sm:justify-end">
             <button
               type="submit"
               form="check-form"
-              className="px-6 py-3 sm:py-2 min-h-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 transition-all touch-manipulation font-medium"
+              disabled={uploadingCheckImage}
+              className="px-6 py-3 sm:py-2 min-h-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 disabled:bg-orange-300 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
             >
-              {editingCheck ? 'Update' : 'Save'} Check
+              {uploadingCheckImage ? 'Uploading...' : editingCheck ? 'Update' : 'Save'} Check
             </button>
             <button
               type="button"
@@ -5796,6 +5939,27 @@ export default function InspectionsPage() {
                     <div className="w-10 h-10 flex-shrink-0 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center">
                       <Bug size={20} className="text-orange-600 dark:text-orange-400" />
                     </div>
+                    {userHasActiveSubscription && check.image_url && (
+                      <div
+                        className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
+                        onDoubleClick={() => {
+                          setModalImageUrl(check.image_url)
+                          setImageModalOpen(true)
+                        }}
+                        title="Double-click to enlarge"
+                      >
+                        <Image
+                          src={check.image_url}
+                          alt="Varroa Check"
+                          fill
+                          className="object-cover rounded-lg border-2 border-border shadow-sm"
+                          sizes="64px"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
+                          <Camera size={20} className="text-white" />
+                        </div>
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 text-xs font-medium rounded">Varroa Check</span>
@@ -5833,6 +5997,8 @@ export default function InspectionsPage() {
                           ...check,
                           check_date: check.check_date.replace(' ', 'T').slice(0, 16)
                         })
+                        setCheckImageFile(null)
+                        setCheckImagePreview(null)
                         setFormType('varroa_check')
                         setShowForm(true)
                         // Scroll to the top where the form is
