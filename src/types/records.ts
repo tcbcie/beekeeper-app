@@ -102,6 +102,7 @@ export interface VarroaTreatment {
   hive_id: string
   user_id: string
   treatment_date: string
+  treatment_time: string | null
   treatment_type: string
   dosage: string
   temperature: number | null
