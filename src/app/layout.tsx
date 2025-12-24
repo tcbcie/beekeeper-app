@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "./providers/theme-provider";
 import { ToastProvider } from "@/components/ui/Toast";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,6 +41,9 @@ export const metadata: Metadata = {
     icon: "/icon-192x192.png",
     apple: "/icon-192x192.png",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -58,6 +62,7 @@ export default function RootLayout({
           </ToastProvider>
         </ThemeProvider>
         <ServiceWorkerRegistration />
+        <InstallPrompt />
         <Analytics />
       </body>
     </html>
