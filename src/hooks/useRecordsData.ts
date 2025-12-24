@@ -12,7 +12,8 @@ import type {
   Hive,
   Apiary,
   TreatmentProduct,
-  OwnershipFilter
+  OwnershipFilter,
+  DropdownValue
 } from '@/types/records'
 
 interface UseRecordsDataReturn {
@@ -31,6 +32,7 @@ interface UseRecordsDataReturn {
   feedTypeOptions: string[]
   treatmentProducts: TreatmentProduct[]
   archiveReasons: Array<{ id: string; value: string }>
+  applicationMethods: DropdownValue[]
 
   // State
   loading: boolean
@@ -145,6 +147,7 @@ export function useRecordsData(): UseRecordsDataReturn {
   const [feedTypeOptions, setFeedTypeOptions] = useState<string[]>([])
   const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
   const [archiveReasons, setArchiveReasons] = useState<Array<{ id: string; value: string }>>([])
+  const [applicationMethods, setApplicationMethods] = useState<DropdownValue[]>([])
 
   // UI state
   const [loading, setLoading] = useState(true)
@@ -232,7 +235,7 @@ export function useRecordsData(): UseRecordsDataReturn {
 
     const { data } = await supabase
       .from('varroa_treatments')
-      .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email)')
+      .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email), application_method:dropdown_values!varroa_treatments_application_method_id_fkey(value)')
       .in('hive_id', allAccessibleHiveIds)
       .order('treatment_date', { ascending: false })
       .limit(500)
@@ -520,14 +523,40 @@ export function useRecordsData(): UseRecordsDataReturn {
     }
   }, [])
 
+  const fetchApplicationMethods = useCallback(async () => {
+    try {
+      const { data: category } = await supabase
+        .from('dropdown_categories')
+        .select('id')
+        .eq('category_key', 'application_method')
+        .single()
+
+      if (category) {
+        const { data: values } = await supabase
+          .from('dropdown_values')
+          .select('id, value')
+          .eq('category_id', category.id)
+          .eq('is_active', true)
+          .order('display_order')
+
+        if (values) {
+          setApplicationMethods(values)
+        }
+      }
+    } catch {
+      // Silently handle error
+    }
+  }, [])
+
   const fetchAllOptions = useCallback(async () => {
     await Promise.all([
       fetchCheckMethods(),
       fetchFeedTypes(),
       fetchTreatmentProducts(),
-      fetchArchiveReasons()
+      fetchArchiveReasons(),
+      fetchApplicationMethods()
     ])
-  }, [fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts, fetchArchiveReasons])
+  }, [fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts, fetchArchiveReasons, fetchApplicationMethods])
 
   const fetchAllData = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
     setLoading(true)
@@ -571,6 +600,7 @@ export function useRecordsData(): UseRecordsDataReturn {
     feedTypeOptions,
     treatmentProducts,
     archiveReasons,
+    applicationMethods,
 
     // State
     loading,

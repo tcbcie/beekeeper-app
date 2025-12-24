@@ -80,6 +80,12 @@ export default function TreatmentCard({
             <span className="text-text-tertiary">Dosage:</span>{' '}
             <span className="font-medium text-foreground">{treatment.dosage}</span>
           </span>
+          {treatment.application_method?.value && (
+            <span>
+              <span className="text-text-tertiary">Method:</span>{' '}
+              <span className="font-medium text-foreground">{treatment.application_method.value}</span>
+            </span>
+          )}
           {treatment.temperature && (
             <span>
               <span className="text-text-tertiary">Temp:</span>{' '}

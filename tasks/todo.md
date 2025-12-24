@@ -304,6 +304,52 @@ The code is now modular and each piece can be tested, modified, or reused indepe
 
 ---
 
+# Application Method Dropdown for Varroa Treatment - COMPLETE
+
+## Summary
+
+Added "Application Method" dropdown field to the Varroa Treatment form, populated from the dropdown_values table.
+
+## Completed Tasks
+
+- [x] Create 'application_method' category in dropdown_categories
+- [x] Add application method values (Trickle, Sublimation/Vaporization, Strip, Spray, Fumigation, Drip, Pad/Sponge, Other)
+- [x] Add `application_method_id` column to `varroa_treatments` table
+- [x] Update `VarroaTreatment` TypeScript interface
+- [x] Update `VarroaTreatmentForm` with Application Method dropdown
+- [x] Update useRecordsData hook to fetch application methods
+- [x] Update records page to pass application methods to form
+- [x] Update TreatmentCard to display application method
+- [x] Build and test successfully
+
+## Files Modified
+
+**Database (Migration):**
+- Created `application_method` category in `dropdown_categories`
+- Added 8 application method values to `dropdown_values`
+- Added `application_method_id` foreign key column to `varroa_treatments`
+
+**Types:**
+- `src/types/records.ts` - Added `application_method_id` and `application_method` fields to VarroaTreatment interface, added DropdownValue type
+
+**Hooks:**
+- `src/hooks/useRecordsData.ts` - Added fetchApplicationMethods function, updated query to join application_method
+
+**Components:**
+- `src/components/records/forms/VarroaTreatmentForm.tsx` - Added Application Method dropdown field
+- `src/components/records/cards/TreatmentCard.tsx` - Display application method in card details
+
+**Page:**
+- `src/app/dashboard/records/page.tsx` - Pass applicationMethods to form, include in submit data
+
+## Build Verification
+
+```
+npm run build - ✓ Successful
+```
+
+---
+
 # Varroa Treatment Time & 24-Hour Format - COMPLETE
 
 ## Summary
