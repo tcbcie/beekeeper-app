@@ -1,1249 +1,98 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
-import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, HelpCircle, Camera, X, Minus, Search, Bug, Syringe, Wheat, Droplet, ExternalLink, Home, Archive } from 'lucide-react'
+import { Home, X } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import { useRecordsData } from '@/hooks/useRecordsData'
+import { useRecordFilters } from '@/hooks/useRecordFilters'
+import {
+  RecordFiltersBar,
+  NewRecordDropdown,
+  InspectionCard,
+  VarroaCheckCard,
+  TreatmentCard,
+  FeedingCard,
+  HarvestCard,
+  ArchiveCard,
+  InspectionForm,
+  VarroaCheckForm,
+  VarroaTreatmentForm,
+  FeedingForm,
+  HarvestForm
+} from '@/components/records'
+import type {
+  RecordType,
+  UnifiedRecord,
+  Inspection,
+  VarroaTreatment,
+  VarroaCheck,
+  Feeding,
+  Harvest,
+  InspectionFormData,
+  ArchiveFormData
+} from '@/types/records'
+import { getDefaultArchiveFormData } from '@/types/records'
 
-interface HiveConfiguration {
-  brood_boxes?: number // Legacy field
-  brood_boxes_full?: number
-  brood_boxes_half?: number
-  honey_supers?: number
-  queen_excluder?: boolean
-  feeder?: boolean
-  feeder_type?: string
-  entrance_reducer?: boolean
-  varroa_mesh_floor?: string
-  right_sized_broodbox?: boolean
-}
-
-interface Hive {
-  id: string
-  hive_number: string
-  apiary_id: string | null
-  configuration: HiveConfiguration | null
-  status: string
-  archived_at: string | null
-}
-
-interface Apiary {
-  id: string
-  name: string
-  is_shared?: boolean
-}
-
-interface Inspection {
-  id: string
-  hive_id: string
-  user_id: string
-  inspection_date: string
-  inspection_time: string | null
-  weight: number | null
-  queen_seen: boolean
-  eggs_present: boolean
-  drones_present: number
-  drone_brood_present: boolean | null
-  brood_frames: number | null
-  right_sized_frames: number | null
-  brood_pattern_rating: number
-  temperament_rating: number
-  population_strength: number
-  swarming_tendency: number
-  calmness: number
-  frames_foundation: number
-  frames_brood: number
-  frames_drawn: number
-  honey_supers: number
-  drone_frames: number
-  store_frames: number
-  recapping: number
-  vsh: number
-  smr: number
-  afb_disease: number
-  efb_disease: number
-  chalkbrood_disease: number
-  nosemosis_disease: number
-  dwv_disease: number
-  iapv_cbpv_disease: number
-  queen_cups: boolean
-  queen_cups_number: number
-  queen_cups_removed_all: boolean
-  swarm_cells: boolean
-  swarm_cells_number: number
-  swarm_cells_removed_all: boolean
-  supercedure_cells: boolean
-  supercedure_cells_number: number
-  supercedure_cells_removed_all: boolean
-  emergency_cells: boolean
-  emergency_cells_number: number
-  emergency_cells_removed_all: boolean
-  removed_cells: number
-  remaining_cells: number
-  queen_cells_notes: string
-  notes: string
-  image_url: string | null
-  weather_temp: number | null
-  weather_condition: string | null
-  weather_humidity: number | null
-  weather_wind_speed: number | null
-  hives?: {
-    hive_number: string
-    apiaries?: {
-      eircode: string | null
-    }
-  }
-  profiles?: {
-    first_name: string | null
-    last_name: string | null
-    email: string
-  }
-}
-
-interface VarroaTreatment {
-  id: string
-  hive_id: string
-  user_id: string
-  treatment_date: string
-  treatment_type: string
-  dosage: string
-  temperature: number | null
-  weather_conditions: string
-  notes: string
-  hives?: {
-    hive_number: string
-    apiary_id: string | null
-  }
-  profiles?: {
-    first_name: string | null
-    last_name: string | null
-    email: string
-  }
-}
-
-interface VarroaCheck {
-  id: string
-  hive_id: string
-  user_id: string
-  check_date: string
-  method: string
-  mites_count: number | null
-  sample_size: number | null
-  infestation_rate: number | null
-  action_threshold_reached: boolean
-  notes: string
-  image_url: string | null
-  hives?: {
-    hive_number: string
-  }
-  profiles?: {
-    first_name: string | null
-    last_name: string | null
-    email: string
-  }
-}
-
-interface Feeding {
-  id: string
-  hive_id: string
-  user_id: string
-  feed_date: string
-  feed_type: string
-  quantity: number | null
-  unit: string
-  notes: string
-  hives?: {
-    hive_number: string
-  }
-  profiles?: {
-    first_name: string | null
-    last_name: string | null
-    email: string
-  }
-}
-
-interface Harvest {
-  id: string
-  hive_id: string
-  user_id: string
-  harvest_date: string
-  honey_weight: number | null
-  wax_weight: number | null
-  unit: string
-  frames_harvested: number | null
-  notes: string
-  hives?: {
-    hive_number: string
-  }
-  profiles?: {
-    first_name: string | null
-    last_name: string | null
-    email: string
-  }
-}
-
-interface ArchiveRecord {
-  id: string
-  hive_id: string
-  hive_number: string
-  archived_at: string
-  archive_reason_id: string | null
-  archive_notes: string | null
-  archive_reason_value?: string
-}
-
-// Unified record type for displaying all records together
-type UnifiedRecord =
-  | (Inspection & { record_type: 'inspection', date: string })
-  | (VarroaTreatment & { record_type: 'varroa_treatment', date: string })
-  | (VarroaCheck & { record_type: 'varroa_check', date: string })
-  | (Feeding & { record_type: 'feeding', date: string })
-  | (Harvest & { record_type: 'harvest', date: string })
-  | (ArchiveRecord & { record_type: 'archive', date: string })
-
-interface FormData {
-  hive_id: string
-  inspection_date: string
-  inspection_time: string
-  weight: number | null
-  queen_seen: boolean
-  eggs_present: boolean
-  drones_present: number
-  drone_brood_present: boolean | null
-  brood_frames: number | null
-  right_sized_frames: number | null
-  brood_pattern_rating: number
-  temperament_rating: number
-  population_strength: number
-  swarming_tendency: number
-  calmness: number
-  frames_foundation: number
-  frames_brood: number
-  frames_drawn: number
-  honey_supers: number
-  drone_frames: number
-  store_frames: number
-  recapping: number
-  vsh: number
-  smr: number
-  afb_disease: number
-  efb_disease: number
-  chalkbrood_disease: number
-  nosemosis_disease: number
-  dwv_disease: number
-  iapv_cbpv_disease: number
-  queen_cups: boolean
-  queen_cups_number: number
-  queen_cups_removed_all: boolean
-  swarm_cells: boolean
-  swarm_cells_number: number
-  swarm_cells_removed_all: boolean
-  supercedure_cells: boolean
-  supercedure_cells_number: number
-  supercedure_cells_removed_all: boolean
-  emergency_cells: boolean
-  emergency_cells_number: number
-  emergency_cells_removed_all: boolean
-  removed_cells: number
-  remaining_cells: number
-  queen_cells_notes: string
-  notes: string
-  image_url: string | null
-}
-
-interface TreatmentProduct {
-  id: string
-  product_name: string
-  active_ingredients: string | null
-  application_method: string | null
-  treatment_duration: string | null
-  temperature_range: string | null
-  honey_flow_restrictions: string | null
-  withdrawal_period_days: number | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-export default function InspectionsPage() {
+export default function RecordsPage() {
   const router = useRouter()
   const toast = useToast()
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
-  const [inspections, setInspections] = useState<Inspection[]>([])
-  const [varroaTreatments, setVarroaTreatments] = useState<VarroaTreatment[]>([])
-  const [varroaChecks, setVarroaChecks] = useState<VarroaCheck[]>([])
-  const [feedings, setFeedings] = useState<Feeding[]>([])
-  const [harvests, setHarvests] = useState<Harvest[]>([])
-  const [archiveRecords, setArchiveRecords] = useState<ArchiveRecord[]>([])
-  const [allRecords, setAllRecords] = useState<UnifiedRecord[]>([])
-  const [hives, setHives] = useState<Hive[]>([])
-  const [apiaries, setApiaries] = useState<Apiary[]>([])
+
+  // User state
+  const [userId, setUserId] = useState<string | null>(null)
+  const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
+
+  // Form state
   const [showForm, setShowForm] = useState(false)
-  const [formType, setFormType] = useState<'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest' | 'archive'>('inspection')
+  const [formType, setFormType] = useState<RecordType>('inspection')
   const [editingInspection, setEditingInspection] = useState<Inspection | null>(null)
   const [editingTreatment, setEditingTreatment] = useState<VarroaTreatment | null>(null)
   const [editingCheck, setEditingCheck] = useState<VarroaCheck | null>(null)
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null)
   const [editingHarvest, setEditingHarvest] = useState<Harvest | null>(null)
-  const [archiveReasons, setArchiveReasons] = useState<Array<{id: string, value: string}>>([])
-  const [archiveData, setArchiveData] = useState<{
-    hive_id: string
-    archive_reason_id: string
-    archive_notes: string
-  }>({
-    hive_id: '',
-    archive_reason_id: '',
-    archive_notes: ''
-  })
-  const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [isTeamMember, setIsTeamMember] = useState(false)
-  const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
-  const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
-  const [filterHiveId, setFilterHiveId] = useState<string>('')
-  const [filterApiaryId, setFilterApiaryId] = useState<string>('')
-  const [showArchivedHives, setShowArchivedHives] = useState<boolean>(false)
-  const [timePeriod, setTimePeriod] = useState<string>('all')
-  const [customStartDate, setCustomStartDate] = useState<string>('')
-  const [customEndDate, setCustomEndDate] = useState<string>('')
-  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
-  const [recordTypeFilter, setRecordTypeFilter] = useState<'all' | 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest' | 'archive'>('all')
-  const [showDropdown, setShowDropdown] = useState(false)
-  const [sourceHiveId, setSourceHiveId] = useState<string>('')
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_lastInspection, setLastInspection] = useState<Inspection | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
-  const [checkImageFile, setCheckImageFile] = useState<File | null>(null)
-  const [checkImagePreview, setCheckImagePreview] = useState<string | null>(null)
-  const [uploadingCheckImage, setUploadingCheckImage] = useState(false)
-  const [fetchingWeather, setFetchingWeather] = useState(false)
-  const [formApiaryId, setFormApiaryId] = useState<string>('')
-  const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
-  const [dronesExpanded, setDronesExpanded] = useState(false)
-  const [diseaseExpanded, setDiseaseExpanded] = useState(false)
-  const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
-  const [queenCellsExpanded, setQueenCellsExpanded] = useState(false)
+  const [archiveData, setArchiveData] = useState<ArchiveFormData>(getDefaultArchiveFormData())
+
+  // UI state
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
-  const [checkMethodOptions, setCheckMethodOptions] = useState<string[]>([])
-  const [otherCheckMethod, setOtherCheckMethod] = useState<string>('')
-  const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
-  const [otherTreatmentType, setOtherTreatmentType] = useState<string>('')
-  const [isOtherTreatment, setIsOtherTreatment] = useState<boolean>(false)
-  const [showIpmTips, setShowIpmTips] = useState<boolean>(false)
-  const [selectedHiveHasHoneySupers, setSelectedHiveHasHoneySupers] = useState<boolean>(false)
-  const [feedTypeOptions, setFeedTypeOptions] = useState<string[]>([])
-  const [otherFeedType, setOtherFeedType] = useState<string>('')
-  const [isOtherFeedType, setIsOtherFeedType] = useState<boolean>(false)
-  const [formData, setFormData] = useState<FormData>({
-    hive_id: '',
-    inspection_date: new Date().toISOString().split('T')[0],
-    inspection_time: new Date().toTimeString().slice(0, 5),
-    weight: null,
-    queen_seen: false,
-    eggs_present: false,
-    drones_present: -1,
-    drone_brood_present: null,
-    brood_frames: null,
-    right_sized_frames: null,
-    brood_pattern_rating: 0,
-    temperament_rating: 0,
-    population_strength: 0,
-    swarming_tendency: 0,
-    calmness: 0,
-    frames_foundation: 0,
-    frames_brood: 0,
-    frames_drawn: 0,
-    honey_supers: 0,
-    drone_frames: 0,
-    store_frames: 0,
-    recapping: 0,
-    vsh: 0,
-    smr: 0,
-    afb_disease: 0,
-    efb_disease: 0,
-    chalkbrood_disease: 0,
-    nosemosis_disease: 0,
-    dwv_disease: 0,
-    iapv_cbpv_disease: 0,
-    queen_cups: false,
-    queen_cups_number: 0,
-    queen_cups_removed_all: false,
-    swarm_cells: false,
-    swarm_cells_number: 0,
-    swarm_cells_removed_all: false,
-    supercedure_cells: false,
-    supercedure_cells_number: 0,
-    supercedure_cells_removed_all: false,
-    emergency_cells: false,
-    emergency_cells_number: 0,
-    emergency_cells_removed_all: false,
-    removed_cells: 0,
-    remaining_cells: 0,
-    queen_cells_notes: '',
-    notes: '',
-    image_url: null,
-  })
-
-  const fetchInspections = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch user's own hive IDs
-    const { data: ownHivesData } = await supabase
-      .from('hives')
-      .select('id')
-      .eq('user_id', currentUserId)
-
-    const ownHiveIds = ownHivesData?.map(h => h.id) || []
-
-    // Get shared hive IDs (hives in team apiaries that are NOT owned by current user)
-    const { data: sharedHiveData } = await supabase
-      .from('team_members')
-      .select(`
-        team_id,
-        teams!inner(
-          team_apiaries!inner(
-            apiary_id,
-            apiaries!inner(
-              hives!inner(id, user_id)
-            )
-          )
-        )
-      `)
-      .eq('user_id', currentUserId)
-
-    // Extract team hive IDs (hives NOT owned by current user)
-    const teamHiveIds: string[] = []
-    // Also collect ALL hives in team apiaries for "Recorded by" visibility logic
-    const allTeamHiveIds: string[] = []
-    if (sharedHiveData) {
-      type TeamData = {
-        teams?: {
-          team_apiaries?: Array<{
-            apiaries?: {
-              hives?: Array<{ id: string; user_id: string }>
-            }
-          }>
-        }
-      }
-      (sharedHiveData as TeamData[]).forEach(tm => {
-        if (tm.teams?.team_apiaries) {
-          tm.teams.team_apiaries.forEach(ta => {
-            if (ta.apiaries?.hives) {
-              ta.apiaries.hives.forEach(h => {
-                if (h.id) {
-                  // Collect all team hive IDs
-                  allTeamHiveIds.push(h.id)
-                  // Only include hives NOT owned by current user for filtering
-                  if (h.user_id !== currentUserId) teamHiveIds.push(h.id)
-                }
-              })
-            }
-          })
-        }
-      })
-    }
-
-    // Store all team hive IDs in state for "Recorded by" visibility
-    setSharedHiveIds(allTeamHiveIds)
-
-    // Build query based on ownership filter
-    let query = supabase
-      .from('inspections')
-      .select('*, hives(hive_number, apiaries(eircode)), profiles!inspections_user_id_fkey(first_name, last_name, email)')
-
-    // Apply ownership filter
-    if (ownershipFilter === 'my') {
-      // Show inspections for hives I own (created by me or team members)
-      if (ownHiveIds.length > 0) {
-        query = query.in('hive_id', ownHiveIds)
-      } else {
-        // No own hives, return empty result
-        setInspections([])
-        setLoading(false)
-        return
-      }
-    } else if (ownershipFilter === 'team') {
-      // Only inspections for hives from team apiaries (not owned by me)
-      if (teamHiveIds.length > 0) {
-        query = query.in('hive_id', teamHiveIds)
-      } else {
-        // No team hives, return empty result
-        setInspections([])
-        setLoading(false)
-        return
-      }
-    } else {
-      // 'all' = inspections for my hives + inspections for team hives
-      const allAccessibleHiveIds = [...ownHiveIds, ...teamHiveIds]
-      if (allAccessibleHiveIds.length > 0) {
-        query = query.in('hive_id', allAccessibleHiveIds)
-      } else {
-        // No accessible hives, return empty result
-        setInspections([])
-        setLoading(false)
-        return
-      }
-    }
-
-    const { data } = await query
-      .order('inspection_date', { ascending: false })
-      .limit(500)  // Limit to most recent 500 inspections for performance
-
-    if (data && data.length > 0) {
-      // If profiles data is missing, fetch it manually (fallback for missing foreign key)
-      if (data[0] && !data[0].profiles) {
-        const userIds = [...new Set(data.map(i => i.user_id).filter(Boolean))]
-
-        if (userIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name, email')
-            .in('id', userIds)
-
-          if (profilesData) {
-            const profilesMap = new Map(profilesData.map(p => [p.id, p]))
-            data.forEach((inspection: Inspection) => {
-              if (inspection.user_id) {
-                const profile = profilesMap.get(inspection.user_id)
-                if (profile) {
-                  inspection.profiles = {
-                    first_name: profile.first_name,
-                    last_name: profile.last_name,
-                    email: profile.email
-                  }
-                }
-              }
-            })
-          }
-        }
-      }
-    }
-
-    if (data) setInspections(data as Inspection[])
-    setLoading(false)
-  }, [userId, ownershipFilter])
-
-  const fetchVarroaTreatments = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch user's own hive IDs
-    const { data: ownHivesData } = await supabase
-      .from('hives')
-      .select('id')
-      .eq('user_id', currentUserId)
-
-    const ownHiveIds = ownHivesData?.map(h => h.id) || []
-
-    // Get shared hive IDs (hives in team apiaries)
-    const { data: sharedHiveData } = await supabase
-      .from('team_members')
-      .select(`
-        team_id,
-        teams!inner(
-          team_apiaries!inner(
-            apiary_id,
-            apiaries!inner(
-              hives!inner(id)
-            )
-          )
-        )
-      `)
-      .eq('user_id', currentUserId)
-
-    // Extract shared hive IDs from the nested structure
-    const localSharedHiveIds: string[] = []
-    if (sharedHiveData) {
-      type TeamData = {
-        teams?: {
-          team_apiaries?: Array<{
-            apiaries?: {
-              hives?: Array<{ id: string }>
-            }
-          }>
-        }
-      }
-      (sharedHiveData as TeamData[]).forEach(tm => {
-        if (tm.teams?.team_apiaries) {
-          tm.teams.team_apiaries.forEach(ta => {
-            if (ta.apiaries?.hives) {
-              ta.apiaries.hives.forEach(h => {
-                if (h.id) localSharedHiveIds.push(h.id)
-              })
-            }
-          })
-        }
-      })
-    }
-
-    // Store all team hive IDs in state for "Recorded by" visibility
-    setSharedHiveIds(localSharedHiveIds)
-
-    // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
-
-    // Build query to show treatments for all accessible hives
-    let query = supabase
-      .from('varroa_treatments')
-      .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email)')
-
-    if (allAccessibleHiveIds.length > 0) {
-      query = query.in('hive_id', allAccessibleHiveIds)
-    } else {
-      // No accessible hives, return empty result
-      setVarroaTreatments([])
-      return
-    }
-
-    const { data } = await query
-      .order('treatment_date', { ascending: false })
-      .limit(500)  // Limit to most recent 500 treatments for performance
-
-    if (data) setVarroaTreatments(data as VarroaTreatment[])
-  }, [userId])
-
-  const fetchVarroaChecks = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch user's own hive IDs
-    const { data: ownHivesData } = await supabase
-      .from('hives')
-      .select('id')
-      .eq('user_id', currentUserId)
-
-    const ownHiveIds = ownHivesData?.map(h => h.id) || []
-
-    // Get shared hive IDs (hives in team apiaries)
-    const { data: sharedHiveData } = await supabase
-      .from('team_members')
-      .select(`
-        team_id,
-        teams!inner(
-          team_apiaries!inner(
-            apiary_id,
-            apiaries!inner(
-              hives!inner(id)
-            )
-          )
-        )
-      `)
-      .eq('user_id', currentUserId)
-
-    // Extract shared hive IDs from the nested structure
-    const localSharedHiveIds: string[] = []
-    if (sharedHiveData) {
-      type TeamData = {
-        teams?: {
-          team_apiaries?: Array<{
-            apiaries?: {
-              hives?: Array<{ id: string }>
-            }
-          }>
-        }
-      }
-      (sharedHiveData as TeamData[]).forEach(tm => {
-        if (tm.teams?.team_apiaries) {
-          tm.teams.team_apiaries.forEach(ta => {
-            if (ta.apiaries?.hives) {
-              ta.apiaries.hives.forEach(h => {
-                if (h.id) localSharedHiveIds.push(h.id)
-              })
-            }
-          })
-        }
-      })
-    }
-
-    // Store all team hive IDs in state for "Recorded by" visibility
-    setSharedHiveIds(localSharedHiveIds)
-
-    // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
-
-    // Build query to show checks for all accessible hives
-    let query = supabase
-      .from('varroa_checks')
-      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-
-    if (allAccessibleHiveIds.length > 0) {
-      query = query.in('hive_id', allAccessibleHiveIds)
-    } else {
-      // No accessible hives, return empty result
-      setVarroaChecks([])
-      return
-    }
-
-    const { data } = await query
-      .order('check_date', { ascending: false })
-      .limit(500)  // Limit to most recent 500 checks for performance
-
-    if (data) setVarroaChecks(data as VarroaCheck[])
-  }, [userId])
-
-  const fetchFeedings = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch user's own hive IDs
-    const { data: ownHivesData } = await supabase
-      .from('hives')
-      .select('id')
-      .eq('user_id', currentUserId)
-
-    const ownHiveIds = ownHivesData?.map(h => h.id) || []
-
-    // Get shared hive IDs (hives in team apiaries)
-    const { data: sharedHiveData } = await supabase
-      .from('team_members')
-      .select(`
-        team_id,
-        teams!inner(
-          team_apiaries!inner(
-            apiary_id,
-            apiaries!inner(
-              hives!inner(id)
-            )
-          )
-        )
-      `)
-      .eq('user_id', currentUserId)
-
-    // Extract shared hive IDs from the nested structure
-    const localSharedHiveIds: string[] = []
-    if (sharedHiveData) {
-      type TeamData = {
-        teams?: {
-          team_apiaries?: Array<{
-            apiaries?: {
-              hives?: Array<{ id: string }>
-            }
-          }>
-        }
-      }
-      (sharedHiveData as TeamData[]).forEach(tm => {
-        if (tm.teams?.team_apiaries) {
-          tm.teams.team_apiaries.forEach(ta => {
-            if (ta.apiaries?.hives) {
-              ta.apiaries.hives.forEach(h => {
-                if (h.id) localSharedHiveIds.push(h.id)
-              })
-            }
-          })
-        }
-      })
-    }
-
-    // Store all team hive IDs in state for "Recorded by" visibility
-    setSharedHiveIds(localSharedHiveIds)
-
-    // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
-
-    // Build query to show feedings for all accessible hives
-    let query = supabase
-      .from('feedings')
-      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-
-    if (allAccessibleHiveIds.length > 0) {
-      query = query.in('hive_id', allAccessibleHiveIds)
-    } else {
-      // No accessible hives, return empty result
-      setFeedings([])
-      return
-    }
-
-    const { data } = await query
-      .order('feed_date', { ascending: false })
-      .limit(500)  // Limit to most recent 500 feedings for performance
-
-    if (data) setFeedings(data as Feeding[])
-  }, [userId])
-
-  const fetchHarvests = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch user's own hive IDs
-    const { data: ownHivesData } = await supabase
-      .from('hives')
-      .select('id')
-      .eq('user_id', currentUserId)
-
-    const ownHiveIds = ownHivesData?.map(h => h.id) || []
-
-    // Get shared hive IDs (hives in team apiaries)
-    const { data: sharedHiveData } = await supabase
-      .from('team_members')
-      .select(`
-        team_id,
-        teams!inner(
-          team_apiaries!inner(
-            apiary_id,
-            apiaries!inner(
-              hives!inner(id)
-            )
-          )
-        )
-      `)
-      .eq('user_id', currentUserId)
-
-    // Extract shared hive IDs from the nested structure
-    const localSharedHiveIds: string[] = []
-    if (sharedHiveData) {
-      type TeamData = {
-        teams?: {
-          team_apiaries?: Array<{
-            apiaries?: {
-              hives?: Array<{ id: string }>
-            }
-          }>
-        }
-      }
-      (sharedHiveData as TeamData[]).forEach(tm => {
-        if (tm.teams?.team_apiaries) {
-          tm.teams.team_apiaries.forEach(ta => {
-            if (ta.apiaries?.hives) {
-              ta.apiaries.hives.forEach(h => {
-                if (h.id) localSharedHiveIds.push(h.id)
-              })
-            }
-          })
-        }
-      })
-    }
-
-    // Store all team hive IDs in state for "Recorded by" visibility
-    setSharedHiveIds(localSharedHiveIds)
-
-    // Combine own hives and shared hives
-    const allAccessibleHiveIds = [...ownHiveIds, ...localSharedHiveIds]
-
-    // Build query to show harvests for all accessible hives
-    let query = supabase
-      .from('harvests')
-      .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-
-    if (allAccessibleHiveIds.length > 0) {
-      query = query.in('hive_id', allAccessibleHiveIds)
-    } else {
-      // No accessible hives, return empty result
-      setHarvests([])
-      return
-    }
-
-    const { data } = await query
-      .order('harvest_date', { ascending: false })
-      .limit(500)  // Limit to most recent 500 harvests for performance
-
-    if (data) setHarvests(data as Harvest[])
-  }, [userId])
-
-  const fetchArchiveRecords = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch archived hives with their archive reason
-    const { data, error } = await supabase
-      .from('hives')
-      .select(`
-        id,
-        hive_id:id,
-        hive_number,
-        archived_at,
-        archive_reason_id,
-        archive_notes,
-        archive_reason_value:dropdown_values(value)
-      `)
-      .eq('user_id', currentUserId)
-      .not('archived_at', 'is', null)
-      .order('archived_at', { ascending: false })
-      .limit(500)
-
-    if (error) {
-      console.error('Error fetching archive records:', error)
-      return
-    }
-
-    if (data) {
-      // Transform the data to match ArchiveRecord interface
-      const archiveRecords = data.map(record => ({
-        id: record.id,
-        hive_id: record.hive_id,
-        hive_number: record.hive_number,
-        archived_at: record.archived_at || '',
-        archive_reason_id: record.archive_reason_id,
-        archive_notes: record.archive_notes,
-        archive_reason_value: Array.isArray(record.archive_reason_value)
-          ? record.archive_reason_value[0]?.value
-          : (record.archive_reason_value as { value?: string } | undefined)?.value
-      }))
-      setArchiveRecords(archiveRecords)
-    }
-  }, [userId])
-
-  const fetchHives = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch user's own hives (including archived)
-    const { data: ownHives, error: ownError } = await supabase
-      .from('hives')
-      .select('*')
-      .eq('user_id', currentUserId)
-      .order('hive_number')
-
-    if (ownError) {
-    }
-
-    // Fetch team memberships to get shared hives
-    const { data: teamMemberships } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', currentUserId)
-
-    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-
-    // Update isTeamMember state based on whether user has any team memberships
-    setIsTeamMember(teamIds.length > 0)
-
-    let sharedHives: Hive[] = []
-    if (teamIds.length > 0) {
-      const { data: teamApiaryData } = await supabase
-        .from('team_apiaries')
-        .select('apiary_id')
-        .in('team_id', teamIds)
-
-      const sharedApiaryIds = teamApiaryData?.map(ta => ta.apiary_id) || []
-
-      if (sharedApiaryIds.length > 0) {
-        const { data: sharedHivesData } = await supabase
-          .from('hives')
-          .select('*')
-          .in('apiary_id', sharedApiaryIds)
-          .order('hive_number')
-
-        sharedHives = sharedHivesData || []
-      }
-    }
-
-    // Combine own and shared hives, removing duplicates
-    const allHives = [...(ownHives || []), ...sharedHives]
-    const uniqueHives = Array.from(
-      new Map(allHives.map(h => [h.id, h])).values()
-    ).sort((a, b) => a.hive_number.localeCompare(b.hive_number))
-
-    setHives(uniqueHives as Hive[])
-  }, [userId])
-
-  const fetchApiaries = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
-    // Fetch user's own apiaries
-    const { data: ownApiaries } = await supabase
-      .from('apiaries')
-      .select('id, name, user_id')
-      .eq('user_id', currentUserId)
-      .order('name')
-
-    // Fetch team memberships to get shared apiaries
-    const { data: teamMemberships } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', currentUserId)
-
-    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-
-    let sharedApiaries: Apiary[] = []
-    if (teamIds.length > 0) {
-      const { data: teamApiaryData } = await supabase
-        .from('team_apiaries')
-        .select('apiary_id, apiaries(id, name, user_id)')
-        .in('team_id', teamIds)
-
-      if (teamApiaryData) {
-        sharedApiaries = teamApiaryData
-          .filter(ta => ta.apiaries)
-          .map(ta => {
-            const apiary = Array.isArray(ta.apiaries) ? ta.apiaries[0] : ta.apiaries
-            return {
-              id: apiary!.id,
-              name: apiary!.name,
-              is_shared: apiary!.user_id !== currentUserId // Mark as shared if not owned by current user
-            }
-          })
-          .filter(apiary => apiary.is_shared) // Only include apiaries not owned by current user
-      }
-    }
-
-    // Combine own and shared apiaries
-    const allApiaries = [
-      ...(ownApiaries || []).map(a => ({ ...a, is_shared: false })),
-      ...sharedApiaries
-    ]
-
-    // Sort by name
-    const sortedApiaries = allApiaries.sort((a, b) => a.name.localeCompare(b.name))
-
-    setApiaries(sortedApiaries)
-  }, [userId])
-
-  const fetchCheckMethods = useCallback(async () => {
-    try {
-      // Fetch the varroa_check_method category (shared across all users)
-      const { data: category } = await supabase
-        .from('dropdown_categories')
-        .select('id')
-        .eq('category_key', 'varroa_check_method')
-        .single()
-
-      if (category) {
-        // Fetch active dropdown values for this category
-        const { data: values } = await supabase
-          .from('dropdown_values')
-          .select('value')
-          .eq('category_id', category.id)
-          .eq('is_active', true)
-          .order('display_order')
-
-        if (values) {
-          const methods = values.map(v => v.value)
-          setCheckMethodOptions(methods)
-        }
-      }
-    } catch {
-    }
-  }, [])
-
-  const fetchFeedTypes = useCallback(async () => {
-    try {
-      // Fetch the feed_type category (shared across all users)
-      const { data: category } = await supabase
-        .from('dropdown_categories')
-        .select('id')
-        .eq('category_key', 'feed_type')
-        .single()
-
-      if (category) {
-        // Fetch active dropdown values for this category
-        const { data: values } = await supabase
-          .from('dropdown_values')
-          .select('value')
-          .eq('category_id', category.id)
-          .eq('is_active', true)
-          .order('display_order')
-
-        if (values) {
-          const types = values.map(v => v.value)
-          setFeedTypeOptions(types)
-        }
-      }
-    } catch {
-    }
-  }, [])
-
-  const fetchTreatmentProducts = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('varroa_treatment_products')
-        .select('*')
-        .order('product_name')
-
-      if (error) {
-      } else if (data) {
-        setTreatmentProducts(data)
-      }
-    } catch {
-    }
-  }, [])
-
-  const fetchArchiveReasons = useCallback(async () => {
-    try {
-      // Fetch the archive_reason category
-      const { data: category } = await supabase
-        .from('dropdown_categories')
-        .select('id')
-        .eq('category_key', 'archive_reason')
-        .single()
-
-      if (category) {
-        // Fetch active dropdown values for this category
-        const { data: values } = await supabase
-          .from('dropdown_values')
-          .select('id, value')
-          .eq('category_id', category.id)
-          .eq('is_active', true)
-          .order('display_order')
-
-        if (values) {
-          setArchiveReasons(values)
-        }
-      }
-    } catch {
-    }
-  }, [])
-
-  useEffect(() => {
-    const initUser = async () => {
-      const id = await getCurrentUserId()
-      if (!id) {
-        router.push('/login')
-        return
-      }
-      setUserId(id)
-
-      // Check if user has active subscription
-      const hasSubscription = await hasActiveSubscription()
-      setUserHasActiveSubscription(hasSubscription)
-
-      // Fetch all data in parallel for better performance
-      await Promise.all([
-        fetchInspections(id),
-        fetchVarroaTreatments(id),
-        fetchVarroaChecks(id),
-        fetchFeedings(id),
-        fetchHarvests(id),
-        fetchArchiveRecords(id),
-        fetchHives(id),
-        fetchApiaries(id),
-        fetchCheckMethods(),
-        fetchFeedTypes(),
-        fetchTreatmentProducts(),
-        fetchArchiveReasons()
-      ])
-    }
-    initUser()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router])
-
-  // Refetch inspections when ownership filter changes
-  useEffect(() => {
-    if (userId) {
-      fetchInspections(userId)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownershipFilter, userId])
-
-  // Handle URL query parameters to open specific form dialogs
-  useEffect(() => {
-    const hiveParam = searchParams.get('hive')
-    const typeParam = searchParams.get('type')
-
-    // If only hive parameter is present, just set the filter
-    if (hiveParam && !typeParam && hives.length > 0) {
-      setFilterHiveId(hiveParam)
-      // Clear the URL parameter after setting the filter
-      router.replace('/dashboard/records')
-      return
-    }
-
-    if (hiveParam && typeParam && hives.length > 0) {
-      // Set the hive filter and source hive ID for navigation
-      setFilterHiveId(hiveParam)
-      setSourceHiveId(hiveParam)
-
-      // Set the form type and open the form
-      const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest', 'archive']
-      if (validTypes.includes(typeParam)) {
-        const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
-                          typeParam === 'varroa-treatment' ? 'varroa_treatment' :
-                          typeParam as 'inspection' | 'varroa_treatment' | 'varroa_check' | 'feeding' | 'harvest' | 'archive'
-
-        const currentDate = new Date().toISOString().split('T')[0]
-        const currentDateTime = new Date().toISOString().slice(0, 16)
-
-        // Set the appropriate form data based on type
-        if (mappedType === 'archive') {
-          setArchiveData({
-            hive_id: hiveParam,
-            archive_reason_id: '',
-            archive_notes: ''
-          })
-        } else if (mappedType === 'inspection') {
-          setFormData(prev => ({
-            ...prev,
-            hive_id: hiveParam
-          }))
-        } else if (mappedType === 'varroa_treatment') {
-          setEditingTreatment({
-            id: '',
-            hive_id: hiveParam,
-            treatment_date: currentDate,
-            treatment_type: '',
-            dosage: '',
-            temperature: null,
-            weather_conditions: '',
-            notes: '',
-            user_id: userId || '',
-          })
-          // Check if the hive has honey supers
-          const selectedHive = hives.find(h => h.id === hiveParam)
-          const honeySupers = selectedHive?.configuration?.honey_supers || 0
-          setSelectedHiveHasHoneySupers(honeySupers > 0)
-        } else if (mappedType === 'varroa_check') {
-          setEditingCheck({
-            id: '',
-            hive_id: hiveParam,
-            check_date: currentDateTime,
-            method: '',
-            mites_count: null,
-            sample_size: null,
-            infestation_rate: null,
-            action_threshold_reached: false,
-            notes: '',
-            image_url: null,
-            user_id: userId || '',
-          })
-        } else if (mappedType === 'feeding') {
-          setEditingFeeding({
-            id: '',
-            hive_id: hiveParam,
-            feed_date: currentDate,
-            feed_type: '',
-            quantity: null,
-            unit: '',
-            notes: '',
-            user_id: userId || '',
-          })
-        } else if (mappedType === 'harvest') {
-          setEditingHarvest({
-            id: '',
-            hive_id: hiveParam,
-            harvest_date: currentDate,
-            honey_weight: null,
-            wax_weight: null,
-            unit: '',
-            frames_harvested: null,
-            notes: '',
-            user_id: userId || '',
-          })
-        }
-
-        setFormType(mappedType)
-        setShowForm(true)
-
-        // Scroll to form after it renders
-        setTimeout(() => {
-          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }, 100)
-
-        // Clear the URL parameters after opening the form
-        router.replace('/dashboard/records')
-      }
-    }
-  }, [searchParams, hives, router, userId])
-
-  // Merge all records - memoized for performance
-  const mergedRecords = useMemo(() => {
+  const [showIpmTips, setShowIpmTips] = useState(false)
+  const [fetchingWeather, setFetchingWeather] = useState(false)
+
+  // Use the data hook
+  const {
+    inspections,
+    varroaTreatments,
+    varroaChecks,
+    feedings,
+    harvests,
+    archiveRecords,
+    hives,
+    apiaries,
+    checkMethodOptions,
+    feedTypeOptions,
+    treatmentProducts,
+    archiveReasons,
+    loading,
+    isTeamMember,
+    sharedHiveIds,
+    fetchInspections,
+    fetchVarroaTreatments,
+    fetchVarroaChecks,
+    fetchFeedings,
+    fetchHarvests,
+    fetchArchiveRecords,
+    fetchHives,
+    fetchAllData
+  } = useRecordsData()
+
+  // Merge all records
+  const allRecords = useMemo(() => {
     const merged: UnifiedRecord[] = [
       ...inspections.map(i => ({ ...i, record_type: 'inspection' as const, date: i.inspection_date })),
       ...varroaTreatments.map(vt => ({ ...vt, record_type: 'varroa_treatment' as const, date: vt.treatment_date })),
@@ -1253,183 +102,264 @@ export default function InspectionsPage() {
       ...archiveRecords.map(a => ({ ...a, record_type: 'archive' as const, date: a.archived_at }))
     ]
 
-    // Sort by date descending (most recent first)
     merged.sort((a, b) => {
       const dateA = new Date(a.date).getTime()
       const dateB = new Date(b.date).getTime()
-      // Handle invalid dates
       if (isNaN(dateA) && isNaN(dateB)) return 0
-      if (isNaN(dateA)) return 1  // Put invalid dates at the end
+      if (isNaN(dateA)) return 1
       if (isNaN(dateB)) return -1
-      // Most recent first (descending)
       return dateB - dateA
     })
 
     return merged
   }, [inspections, varroaTreatments, varroaChecks, feedings, harvests, archiveRecords])
 
-  // Update state when merged records change
-  useEffect(() => {
-    setAllRecords(mergedRecords)
-  }, [mergedRecords])
+  // Use the filters hook
+  const {
+    filters,
+    setHiveId,
+    setApiaryId,
+    setShowArchivedHives,
+    setTimePeriod,
+    setCustomStartDate,
+    setCustomEndDate,
+    setOwnershipFilter,
+    setRecordTypeFilter,
+    filteredRecords,
+    timePeriodCounts
+  } = useRecordFilters({ allRecords, hives })
 
+  // Initialize user and fetch data
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (showDropdown && !target.closest('.dropdown-container')) {
-        setShowDropdown(false)
+    const initUser = async () => {
+      const id = await getCurrentUserId()
+      if (!id) {
+        router.push('/login')
+        return
       }
+      setUserId(id)
+
+      const hasSubscription = await hasActiveSubscription()
+      setUserHasActiveSubscription(hasSubscription)
+
+      await fetchAllData(id, filters.ownershipFilter)
+    }
+    initUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
+
+  // Refetch inspections when ownership filter changes
+  useEffect(() => {
+    if (userId) {
+      fetchInspections(userId, filters.ownershipFilter)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.ownershipFilter, userId])
+
+  // New record handler - defined before useEffect that uses it
+  const handleNewRecord = useCallback((type: RecordType, presetHiveId?: string) => {
+    const currentDate = new Date().toISOString().split('T')[0]
+    const currentDateTime = new Date().toISOString().slice(0, 16)
+
+    setFormType(type)
+    setEditingInspection(null)
+    setEditingTreatment(null)
+    setEditingCheck(null)
+    setEditingFeeding(null)
+    setEditingHarvest(null)
+
+    if (type === 'archive') {
+      setArchiveData({
+        hive_id: presetHiveId || '',
+        archive_reason_id: '',
+        archive_notes: ''
+      })
+    } else if (type === 'varroa_treatment') {
+      setEditingTreatment({
+        id: '',
+        hive_id: presetHiveId || '',
+        treatment_date: currentDate,
+        treatment_type: '',
+        dosage: '',
+        temperature: null,
+        weather_conditions: '',
+        notes: '',
+        user_id: userId || ''
+      })
+    } else if (type === 'varroa_check') {
+      setEditingCheck({
+        id: '',
+        hive_id: presetHiveId || '',
+        check_date: currentDateTime,
+        method: '',
+        mites_count: null,
+        sample_size: null,
+        infestation_rate: null,
+        action_threshold_reached: false,
+        notes: '',
+        image_url: null,
+        user_id: userId || ''
+      })
+    } else if (type === 'feeding') {
+      setEditingFeeding({
+        id: '',
+        hive_id: presetHiveId || '',
+        feed_date: currentDate,
+        feed_type: '',
+        quantity: null,
+        unit: '',
+        notes: '',
+        user_id: userId || ''
+      })
+    } else if (type === 'harvest') {
+      setEditingHarvest({
+        id: '',
+        hive_id: presetHiveId || '',
+        harvest_date: currentDate,
+        honey_weight: null,
+        wax_weight: null,
+        unit: '',
+        frames_harvested: null,
+        notes: '',
+        user_id: userId || ''
+      })
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showDropdown])
+    setShowForm(true)
 
-  const fetchLastInspection = async (hiveId: string) => {
-    if (!hiveId || !userId) {
-      setLastInspection(null)
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }, [userId])
+
+  // Handle URL query parameters
+  useEffect(() => {
+    const hiveParam = searchParams.get('hive')
+    const typeParam = searchParams.get('type')
+
+    if (hiveParam && !typeParam && hives.length > 0) {
+      setHiveId(hiveParam)
+      router.replace('/dashboard/records')
       return
     }
 
-    const { data } = await supabase
-      .from('inspections')
-      .select('*')
-      .eq('hive_id', hiveId)
-      .eq('user_id', userId)
-      .order('inspection_date', { ascending: false })
-      .limit(1)
+    if (hiveParam && typeParam && hives.length > 0) {
+      setHiveId(hiveParam)
+      const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest', 'archive']
+      if (validTypes.includes(typeParam)) {
+        const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
+                          typeParam === 'varroa-treatment' ? 'varroa_treatment' :
+                          typeParam as RecordType
 
-    if (data && data.length > 0) {
-      setLastInspection(data[0] as Inspection)
-    } else {
-      setLastInspection(null)
-    }
-  }
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
+        handleNewRecord(mappedType, hiveParam)
+        router.replace('/dashboard/records')
       }
-      reader.readAsDataURL(file)
     }
-  }
+  }, [searchParams, hives, router, userId, setHiveId, handleNewRecord])
 
-  const handleRemoveImage = () => {
-    setImageFile(null)
-    setImagePreview(null)
-    setFormData({ ...formData, image_url: null })
-  }
 
-  // Varroa check image handlers
-  const handleCheckImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setCheckImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setCheckImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleRemoveCheckImage = () => {
-    setCheckImageFile(null)
-    setCheckImagePreview(null)
-    if (editingCheck) {
-      setEditingCheck({ ...editingCheck, image_url: null })
-    }
-  }
-
-  const uploadCheckImage = async (file: File): Promise<string | null> => {
+  // Weather fetching
+  const fetchWeatherData = async (eircode: string, isUkNi: boolean = false) => {
     try {
-      setUploadingCheckImage(true)
-      const fileExt = file.name.split('.').pop()?.toLowerCase()
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
-      const filePath = `varroa-checks/${fileName}`
+      const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
+      const headers = { 'User-Agent': 'HiveCraic/1.0' }
+      const country = isUkNi ? 'United Kingdom' : 'Ireland'
+      const fallbackLat = isUkNi ? '54.5973' : '53.3498'
+      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
 
-      let contentType = file.type
-      if (!contentType || contentType === 'application/json') {
-        const mimeMap: Record<string, string> = {
-          'jpg': 'image/jpeg',
-          'jpeg': 'image/jpeg',
-          'png': 'image/png',
-          'gif': 'image/gif',
-          'webp': 'image/webp'
+      const geocodeResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode)},${country}&format=json&limit=1`,
+        { headers }
+      )
+      const geocodeData = await geocodeResponse.json()
+
+      if (!geocodeData || geocodeData.length === 0) {
+        const altResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode + ' ' + country)}&format=json&limit=1`,
+          { headers }
+        )
+        const altData = await altResponse.json()
+
+        if (!altData || altData.length === 0) {
+          return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
         }
-        contentType = mimeMap[fileExt || ''] || 'image/jpeg'
+        return await getWeatherFromCoordinates(altData[0].lat, altData[0].lon)
       }
 
-      const correctedFile = new File([file], file.name, { type: contentType })
+      return await getWeatherFromCoordinates(geocodeData[0].lat, geocodeData[0].lon)
+    } catch {
+      const fallbackLat = isUkNi ? '54.5973' : '53.3498'
+      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
+      return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
+    }
+  }
 
-      const { error: uploadError } = await supabase.storage
-        .from('inspection-images')
-        .upload(filePath, correctedFile, {
-          contentType: contentType,
-          cacheControl: '3600',
-          upsert: false
-        })
+  const getWeatherFromCoordinates = async (lat: string, lon: string) => {
+    try {
+      const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe/Dublin`
+      )
+      const weatherData = await weatherResponse.json()
 
-      if (uploadError) {
-        console.error('Check image upload error:', uploadError)
-        throw uploadError
+      if (!weatherData.current) return null
+
+      const weatherCodeMap: { [key: number]: string } = {
+        0: 'Clear', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
+        45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle',
+        55: 'Dense Drizzle', 61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain',
+        71: 'Slight Snow', 73: 'Moderate Snow', 75: 'Heavy Snow', 80: 'Slight Rain Showers',
+        81: 'Moderate Rain Showers', 82: 'Violent Rain Showers', 95: 'Thunderstorm', 96: 'Thunderstorm with Hail'
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('inspection-images')
-        .getPublicUrl(filePath)
-
-      return publicUrl
-    } catch (error) {
-      console.error('Failed to upload check image:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Failed to upload image: ${errorMessage}`)
+      return {
+        temp: Math.round(weatherData.current.temperature_2m),
+        condition: weatherCodeMap[weatherData.current.weather_code] || 'Unknown',
+        humidity: weatherData.current.relative_humidity_2m,
+        wind_speed: Math.round(weatherData.current.wind_speed_10m)
+      }
+    } catch {
       return null
-    } finally {
-      setUploadingCheckImage(false)
     }
   }
 
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const handleFetchWeatherForHive = async (hiveId: string) => {
+    const selectedHive = hives.find(h => h.id === hiveId)
+    if (!selectedHive?.apiary_id) return null
+
+    const { data: apiaryData } = await supabase
+      .from('apiaries')
+      .select('eircode, is_uk_ni')
+      .eq('id', selectedHive.apiary_id)
+      .single()
+
+    if (!apiaryData?.eircode) return null
+
+    return await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
+  }
+
+  // Image upload helper
+  const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     try {
-      setUploadingImage(true)
       const fileExt = file.name.split('.').pop()?.toLowerCase()
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
-      const filePath = `inspections/${fileName}`
+      const filePath = `${folder}/${fileName}`
 
-      // Determine correct MIME type - fallback based on extension if file.type is wrong/empty
       let contentType = file.type
       if (!contentType || contentType === 'application/json') {
-        // Map common image extensions to MIME types
         const mimeMap: Record<string, string> = {
-          'jpg': 'image/jpeg',
-          'jpeg': 'image/jpeg',
-          'png': 'image/png',
-          'gif': 'image/gif',
-          'webp': 'image/webp'
+          'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+          'gif': 'image/gif', 'webp': 'image/webp'
         }
         contentType = mimeMap[fileExt || ''] || 'image/jpeg'
       }
 
-      // Create a new File object with the correct MIME type to ensure browser sends it correctly
       const correctedFile = new File([file], file.name, { type: contentType })
 
       const { error: uploadError } = await supabase.storage
         .from('inspection-images')
-        .upload(filePath, correctedFile, {
-          contentType: contentType,
-          cacheControl: '3600',
-          upsert: false
-        })
+        .upload(filePath, correctedFile, { contentType, cacheControl: '3600', upsert: false })
 
-      if (uploadError) {
-        console.error('Image upload error:', uploadError)
-        throw uploadError
-      }
+      if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage
         .from('inspection-images')
@@ -1438,388 +368,22 @@ export default function InspectionsPage() {
       return publicUrl
     } catch (error) {
       console.error('Failed to upload image:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Failed to upload image: ${errorMessage}`)
-      return null
-    } finally {
-      setUploadingImage(false)
-    }
-  }
-
-  const fetchWeatherData = async (eircode: string, isUkNi: boolean = false) => {
-    try {
-      // Remove spaces and encode the Eircode/Postcode for the URL
-      const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
-
-      // Nominatim requires a User-Agent header
-      const headers = {
-        'User-Agent': 'HiveCraic/1.0'
-      }
-
-      // Use appropriate country based on is_uk_ni flag
-      const country = isUkNi ? 'United Kingdom' : 'Ireland'
-      const fallbackLat = isUkNi ? '54.5973' : '53.3498'  // Belfast vs Dublin
-      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
-
-      // First, try searching with the postcode and country
-      const geocodeResponse = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode)},${country}&format=json&limit=1`,
-        { headers }
-      )
-      const geocodeData = await geocodeResponse.json()
-
-      if (!geocodeData || geocodeData.length === 0) {
-        // Try with different format - just search term
-        const altResponse = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode + ' ' + country)}&format=json&limit=1`,
-          { headers }
-        )
-        const altData = await altResponse.json()
-
-        if (!altData || altData.length === 0) {
-          // Fallback to capital city coordinates if postcode lookup fails
-          return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
-        }
-
-        const { lat, lon } = altData[0]
-        return await getWeatherFromCoordinates(lat, lon)
-      }
-
-      const { lat, lon } = geocodeData[0]
-      return await getWeatherFromCoordinates(lat, lon)
-    } catch {
-      // Fallback to capital city coordinates on error
-      const fallbackLat = isUkNi ? '54.5973' : '53.3498'  // Belfast vs Dublin
-      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
-      return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
-    }
-  }
-
-  const getWeatherFromCoordinates = async (lat: string, lon: string) => {
-    try {
-      // Get current weather from Open-Meteo API (free, no API key required)
-      const weatherResponse = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe/Dublin`
-      )
-      const weatherData = await weatherResponse.json()
-
-      if (!weatherData.current) {
-        return null
-      }
-
-      // Map weather codes to conditions
-      const weatherCodeMap: { [key: number]: string } = {
-        0: 'Clear',
-        1: 'Mainly Clear',
-        2: 'Partly Cloudy',
-        3: 'Overcast',
-        45: 'Fog',
-        48: 'Depositing Rime Fog',
-        51: 'Light Drizzle',
-        53: 'Moderate Drizzle',
-        55: 'Dense Drizzle',
-        61: 'Slight Rain',
-        63: 'Moderate Rain',
-        65: 'Heavy Rain',
-        71: 'Slight Snow',
-        73: 'Moderate Snow',
-        75: 'Heavy Snow',
-        80: 'Slight Rain Showers',
-        81: 'Moderate Rain Showers',
-        82: 'Violent Rain Showers',
-        95: 'Thunderstorm',
-        96: 'Thunderstorm with Hail',
-      }
-
-      const result = {
-        temp: Math.round(weatherData.current.temperature_2m),
-        condition: weatherCodeMap[weatherData.current.weather_code] || 'Unknown',
-        humidity: weatherData.current.relative_humidity_2m,
-        wind_speed: Math.round(weatherData.current.wind_speed_10m),
-      }
-
-      return result
-    } catch {
+      toast.error(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`)
       return null
     }
   }
 
-  const handleHiveChange = async (hiveId: string) => {
-    await fetchLastInspection(hiveId)
-
-    // Don't update if we're editing an existing inspection
-    if (editingInspection) {
-      setFormData({ ...formData, hive_id: hiveId })
-      return
-    }
-
+  // Inspection handlers
+  const handleInspectionSubmit = async (formData: InspectionFormData, imageFile: File | null) => {
     if (!userId) return
 
-    // Fetch last inspection for this hive
-    const { data } = await supabase
-      .from('inspections')
-      .select('*')
-      .eq('hive_id', hiveId)
-      .eq('user_id', userId)
-      .order('inspection_date', { ascending: false })
-      .limit(1)
-
-    const lastInsp = data && data.length > 0 ? data[0] as Inspection : null
-
-    setFormData({
-      ...formData,
-      hive_id: hiveId,
-      brood_pattern_rating: lastInsp?.brood_pattern_rating || 3,
-      temperament_rating: lastInsp?.temperament_rating || 3,
-      population_strength: lastInsp?.population_strength || 3,
-      image_url: null,
-    })
-  }
-
-  // Varroa Treatment CRUD Handler
-  const handleTreatmentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!userId || !editingTreatment) return
-
     try {
-      const submitData = {
-        hive_id: editingTreatment.hive_id,
-        treatment_date: editingTreatment.treatment_date,
-        treatment_type: editingTreatment.treatment_type,
-        dosage: editingTreatment.dosage,
-        temperature: editingTreatment.temperature,
-        weather_conditions: editingTreatment.weather_conditions || '',
-        notes: editingTreatment.notes || '',
-      }
-
-      if (editingTreatment.id) {
-        // Update existing treatment
-        const { error } = await supabase
-          .from('varroa_treatments')
-          .update(submitData)
-          .eq('id', editingTreatment.id)
-          .eq('user_id', userId)
-
-        if (error) throw error
-      } else {
-        // Insert new treatment
-        const { error } = await supabase
-          .from('varroa_treatments')
-          .insert([{ ...submitData, user_id: userId }])
-
-        if (error) throw error
-      }
-
-      fetchVarroaTreatments()
-      setShowForm(false)
-      setEditingTreatment(null)
-      setSelectedHiveHasHoneySupers(false)
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error('Error saving treatment: ' + error.message)
-      }
-    }
-  }
-
-  // Varroa Check CRUD Handler
-  const handleCheckSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!userId || !editingCheck) return
-
-    try {
-      // Upload image if there's a new one
-      let imageUrl = editingCheck.image_url
-      if (checkImageFile) {
-        const uploadedUrl = await uploadCheckImage(checkImageFile)
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl
-        }
-      }
-
-      const submitData = {
-        hive_id: editingCheck.hive_id,
-        check_date: editingCheck.check_date,
-        method: editingCheck.method,
-        mites_count: editingCheck.mites_count,
-        sample_size: editingCheck.sample_size,
-        infestation_rate: editingCheck.infestation_rate,
-        action_threshold_reached: editingCheck.action_threshold_reached,
-        notes: editingCheck.notes || '',
-        image_url: imageUrl,
-      }
-
-      if (editingCheck.id) {
-        // Update existing check
-        const { error } = await supabase
-          .from('varroa_checks')
-          .update(submitData)
-          .eq('id', editingCheck.id)
-          .eq('user_id', userId)
-
-        if (error) throw error
-      } else {
-        // Insert new check
-        const { error } = await supabase
-          .from('varroa_checks')
-          .insert([{ ...submitData, user_id: userId }])
-
-        if (error) throw error
-      }
-
-      // If action threshold is reached, create a treatment task
-      if (editingCheck.action_threshold_reached && !editingCheck.id) {
-        const selectedHive = hives.find(h => h.id === editingCheck.hive_id)
-        const taskDate = new Date()
-        taskDate.setDate(taskDate.getDate() + 1) // Schedule for 24 hours later
-
-        const taskData = {
-          user_id: userId,
-          title: `Treat hive ${selectedHive?.hive_number || 'Unknown'} for varroa`,
-          description: `Action threshold reached on varroa check. Infestation rate: ${editingCheck.infestation_rate?.toFixed(2)}%`,
-          event_type: 'task',
-          category: 'Treatment',
-          priority: 'high',
-          start_date: taskDate.toISOString().split('T')[0],
-          start_time: '09:00',
-          end_date: null,
-          end_time: null,
-          all_day: false,
-          hive_id: editingCheck.hive_id,
-          apiary_id: selectedHive?.apiary_id || null,
-          batch_id: null,
-          reminder_enabled: true,
-          reminder_minutes_before: 60,
-          notes: `Auto-created from varroa check with ${editingCheck.method} method`,
-          completed: false
-        }
-
-        const { error: taskError } = await supabase
-          .from('tasks_events')
-          .insert([taskData])
-
-        if (taskError) {
-          console.error('Error creating treatment task:', taskError)
-        }
-      }
-
-      fetchVarroaChecks()
-      setShowForm(false)
-      setEditingCheck(null)
-      setCheckImageFile(null)
-      setCheckImagePreview(null)
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error('Error saving check: ' + error.message)
-      }
-    }
-  }
-
-  // Feeding CRUD Handler
-  const handleFeedingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!userId || !editingFeeding) return
-
-    try {
-      // Use otherFeedType if "Other" is selected, otherwise use the dropdown value
-      const finalFeedType = isOtherFeedType ? otherFeedType : editingFeeding.feed_type
-
-      const submitData = {
-        hive_id: editingFeeding.hive_id,
-        feed_date: editingFeeding.feed_date,
-        feed_type: finalFeedType,
-        quantity: editingFeeding.quantity,
-        unit: editingFeeding.unit,
-        notes: editingFeeding.notes || '',
-      }
-
-      if (editingFeeding.id) {
-        // Update existing feeding
-        const { error } = await supabase
-          .from('feedings')
-          .update(submitData)
-          .eq('id', editingFeeding.id)
-          .eq('user_id', userId)
-
-        if (error) throw error
-      } else {
-        // Insert new feeding
-        const { error } = await supabase
-          .from('feedings')
-          .insert([{ ...submitData, user_id: userId }])
-
-        if (error) throw error
-      }
-
-      fetchFeedings()
-      setShowForm(false)
-      setEditingFeeding(null)
-      setIsOtherFeedType(false)
-      setOtherFeedType('')
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error('Error saving feeding: ' + error.message)
-      }
-    }
-  }
-
-  // Harvest CRUD Handler
-  const handleHarvestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!userId || !editingHarvest) return
-
-    try {
-      const submitData = {
-        hive_id: editingHarvest.hive_id,
-        harvest_date: editingHarvest.harvest_date,
-        honey_weight: editingHarvest.honey_weight,
-        wax_weight: editingHarvest.wax_weight,
-        unit: editingHarvest.unit,
-        frames_harvested: editingHarvest.frames_harvested,
-        notes: editingHarvest.notes || '',
-      }
-
-      if (editingHarvest.id) {
-        // Update existing harvest
-        const { error } = await supabase
-          .from('harvests')
-          .update(submitData)
-          .eq('id', editingHarvest.id)
-          .eq('user_id', userId)
-
-        if (error) throw error
-      } else {
-        // Insert new harvest
-        const { error } = await supabase
-          .from('harvests')
-          .insert([{ ...submitData, user_id: userId }])
-
-        if (error) throw error
-      }
-
-      fetchHarvests()
-      setShowForm(false)
-      setEditingHarvest(null)
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error('Error saving harvest: ' + error.message)
-      }
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    try {
-      // Upload image if one was selected
       let imageUrl = formData.image_url
       if (imageFile) {
-        const uploadedUrl = await uploadImage(imageFile)
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl
-        }
+        const uploadedUrl = await uploadImage(imageFile, 'inspections')
+        if (uploadedUrl) imageUrl = uploadedUrl
       }
 
-      // Fetch weather data based on hive's apiary Eircode
       setFetchingWeather(true)
       let weatherData = null
       const selectedHive = hives.find(h => h.id === formData.hive_id)
@@ -1838,57 +402,14 @@ export default function InspectionsPage() {
       setFetchingWeather(false)
 
       const submitData = {
-        hive_id: formData.hive_id,
-        inspection_date: formData.inspection_date,
-        inspection_time: formData.inspection_time,
-        weight: formData.weight,
-        queen_seen: formData.queen_seen,
-        eggs_present: formData.eggs_present,
+        ...formData,
         drones_present: formData.drones_present === -1 ? null : formData.drones_present,
-        drone_brood_present: formData.drone_brood_present,
-        brood_frames: formData.brood_frames,
-        right_sized_frames: formData.right_sized_frames,
-        brood_pattern_rating: formData.brood_pattern_rating,
-        temperament_rating: formData.temperament_rating,
-        population_strength: formData.population_strength,
-        swarming_tendency: formData.swarming_tendency,
-        calmness: formData.calmness,
-        frames_foundation: formData.frames_foundation,
-        frames_brood: formData.frames_brood,
-        frames_drawn: formData.frames_drawn,
-        honey_supers: formData.honey_supers,
-        drone_frames: formData.drone_frames,
-        store_frames: formData.store_frames,
-        recapping: formData.recapping,
-        vsh: formData.vsh,
-        smr: formData.smr,
-        afb_disease: formData.afb_disease,
-        efb_disease: formData.efb_disease,
-        chalkbrood_disease: formData.chalkbrood_disease,
-        nosemosis_disease: formData.nosemosis_disease,
-        dwv_disease: formData.dwv_disease,
-        iapv_cbpv_disease: formData.iapv_cbpv_disease,
-        queen_cups: formData.queen_cups,
-        queen_cups_number: formData.queen_cups_number,
-        queen_cups_removed_all: formData.queen_cups_removed_all,
-        swarm_cells: formData.swarm_cells,
-        swarm_cells_number: formData.swarm_cells_number,
-        swarm_cells_removed_all: formData.swarm_cells_removed_all,
-        supercedure_cells: formData.supercedure_cells,
-        supercedure_cells_number: formData.supercedure_cells_number,
-        supercedure_cells_removed_all: formData.supercedure_cells_removed_all,
-        emergency_cells: formData.emergency_cells,
-        emergency_cells_number: formData.emergency_cells_number,
-        emergency_cells_removed_all: formData.emergency_cells_removed_all,
-        notes: formData.notes,
         image_url: imageUrl,
         weather_temp: weatherData?.temp || null,
         weather_condition: weatherData?.condition || null,
         weather_humidity: weatherData?.humidity || null,
-        weather_wind_speed: weatherData?.wind_speed || null,
+        weather_wind_speed: weatherData?.wind_speed || null
       }
-
-      if (!userId) return
 
       if (editingInspection) {
         const { error } = await supabase
@@ -1896,114 +417,33 @@ export default function InspectionsPage() {
           .update(submitData)
           .eq('id', editingInspection.id)
           .eq('user_id', userId)
-          .select()
 
-        if (error) {
-          throw error
-        }
+        if (error) throw error
       } else {
         const { error } = await supabase
           .from('inspections')
           .insert([{ ...submitData, user_id: userId }])
-          .select()
 
-        if (error) {
-          throw error
-        }
+        if (error) throw error
       }
 
-      fetchInspections()
+      await fetchInspections(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message)
-      }
+      toast.error(error instanceof Error ? error.message : 'Error saving inspection')
     }
   }
 
-  const handleEdit = (inspection: Inspection) => {
+  const handleInspectionEdit = (inspection: Inspection) => {
     setEditingInspection(inspection)
-
-    // Find the hive's apiary to pre-populate the apiary selector
-    const selectedHive = hives.find(h => h.id === inspection.hive_id)
-    if (selectedHive?.apiary_id) {
-      setFormApiaryId(selectedHive.apiary_id)
-    } else {
-      setFormApiaryId('')
-    }
-
-    // Scroll to the top where the form is
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
-
-    setFormData({
-      hive_id: inspection.hive_id,
-      inspection_date: inspection.inspection_date,
-      inspection_time: inspection.inspection_time || '',
-      weight: inspection.weight ?? null,
-      queen_seen: inspection.queen_seen || false,
-      eggs_present: inspection.eggs_present || false,
-      drones_present: inspection.drones_present ?? -1,
-      drone_brood_present: inspection.drone_brood_present ?? null,
-      brood_frames: inspection.brood_frames ?? null,
-      right_sized_frames: inspection.right_sized_frames ?? null,
-      brood_pattern_rating: inspection.brood_pattern_rating ?? 3,
-      temperament_rating: inspection.temperament_rating ?? 3,
-      population_strength: inspection.population_strength ?? 3,
-      swarming_tendency: inspection.swarming_tendency ?? 3,
-      calmness: inspection.calmness ?? 3,
-      frames_foundation: inspection.frames_foundation ?? 0,
-      frames_brood: inspection.frames_brood ?? 0,
-      frames_drawn: inspection.frames_drawn ?? 0,
-      honey_supers: inspection.honey_supers ?? 0,
-      drone_frames: inspection.drone_frames ?? 0,
-      store_frames: inspection.store_frames ?? 0,
-      recapping: inspection.recapping ?? 0,
-      vsh: inspection.vsh ?? 0,
-      smr: inspection.smr ?? 0,
-      afb_disease: inspection.afb_disease ?? 0,
-      efb_disease: inspection.efb_disease ?? 0,
-      chalkbrood_disease: inspection.chalkbrood_disease ?? 0,
-      nosemosis_disease: inspection.nosemosis_disease ?? 0,
-      dwv_disease: inspection.dwv_disease ?? 0,
-      iapv_cbpv_disease: inspection.iapv_cbpv_disease ?? 0,
-      queen_cups: inspection.queen_cups ?? false,
-      queen_cups_number: inspection.queen_cups_number ?? 0,
-      queen_cups_removed_all: inspection.queen_cups_removed_all ?? false,
-      swarm_cells: inspection.swarm_cells ?? false,
-      swarm_cells_number: inspection.swarm_cells_number ?? 0,
-      swarm_cells_removed_all: inspection.swarm_cells_removed_all ?? false,
-      supercedure_cells: inspection.supercedure_cells ?? false,
-      supercedure_cells_number: inspection.supercedure_cells_number ?? 0,
-      supercedure_cells_removed_all: inspection.supercedure_cells_removed_all ?? false,
-      emergency_cells: inspection.emergency_cells ?? false,
-      emergency_cells_number: inspection.emergency_cells_number ?? 0,
-      emergency_cells_removed_all: inspection.emergency_cells_removed_all ?? false,
-      removed_cells: inspection.removed_cells ?? 0,
-      remaining_cells: inspection.remaining_cells ?? 0,
-      queen_cells_notes: inspection.queen_cells_notes || '',
-      notes: inspection.notes || '',
-      image_url: inspection.image_url || null,
-    })
-
-    // Set image preview if there's an existing image
-    if (inspection.image_url) {
-      setImagePreview(inspection.image_url)
-    } else {
-      setImagePreview(null)
-    }
-    setImageFile(null)
-
+    setFormType('inspection')
     setShowForm(true)
-
-    // Scroll to the top where the form is
     setTimeout(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
   }
 
-  const handleDelete = async (id: string) => {
+  const handleInspectionDelete = async (id: string) => {
     if (!userId) return
     if (confirm('Are you sure you want to delete this inspection?')) {
       const { error } = await supabase
@@ -2012,4446 +452,722 @@ export default function InspectionsPage() {
         .eq('id', id)
         .eq('user_id', userId)
 
-      if (!error) fetchInspections()
+      if (!error && userId) await fetchInspections(userId, filters.ownershipFilter)
+    }
+  }
+
+  // Treatment handlers
+  const handleTreatmentSubmit = async (treatment: VarroaTreatment, isOther: boolean, otherType: string) => {
+    if (!userId) return
+
+    try {
+      const submitData = {
+        hive_id: treatment.hive_id,
+        treatment_date: treatment.treatment_date,
+        treatment_type: isOther ? otherType : treatment.treatment_type,
+        dosage: treatment.dosage,
+        temperature: treatment.temperature,
+        weather_conditions: treatment.weather_conditions || '',
+        notes: treatment.notes || ''
+      }
+
+      if (treatment.id) {
+        const { error } = await supabase
+          .from('varroa_treatments')
+          .update(submitData)
+          .eq('id', treatment.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('varroa_treatments')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+      }
+
+      await fetchVarroaTreatments(userId)
+      resetForm()
+    } catch (error) {
+      toast.error('Error saving treatment: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
+  }
+
+  const handleTreatmentEdit = (treatment: VarroaTreatment) => {
+    setEditingTreatment(treatment)
+    setFormType('varroa_treatment')
+    setShowForm(true)
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+
+  const handleTreatmentDelete = async (treatment: VarroaTreatment) => {
+    if (!userId) return
+    if (confirm('Are you sure you want to delete this treatment?')) {
+      const { error } = await supabase
+        .from('varroa_treatments')
+        .delete()
+        .eq('id', treatment.id)
+        .eq('user_id', userId)
+
+      if (!error) await fetchVarroaTreatments(userId)
+    }
+  }
+
+  // Check handlers
+  const handleCheckSubmit = async (check: VarroaCheck, imageFile: File | null) => {
+    if (!userId) return
+
+    try {
+      let imageUrl = check.image_url
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile, 'varroa-checks')
+        if (uploadedUrl) imageUrl = uploadedUrl
+      }
+
+      const submitData = {
+        hive_id: check.hive_id,
+        check_date: check.check_date,
+        method: check.method,
+        mites_count: check.mites_count,
+        sample_size: check.sample_size,
+        infestation_rate: check.infestation_rate,
+        action_threshold_reached: check.action_threshold_reached,
+        notes: check.notes || '',
+        image_url: imageUrl
+      }
+
+      if (check.id) {
+        const { error } = await supabase
+          .from('varroa_checks')
+          .update(submitData)
+          .eq('id', check.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('varroa_checks')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+
+        // Create treatment task if threshold reached
+        if (check.action_threshold_reached) {
+          const selectedHive = hives.find(h => h.id === check.hive_id)
+          const taskDate = new Date()
+          taskDate.setDate(taskDate.getDate() + 1)
+
+          await supabase.from('tasks_events').insert([{
+            user_id: userId,
+            title: `Treat hive ${selectedHive?.hive_number || 'Unknown'} for varroa`,
+            description: `Action threshold reached. Infestation rate: ${check.infestation_rate?.toFixed(2)}%`,
+            event_type: 'task',
+            category: 'Treatment',
+            priority: 'high',
+            start_date: taskDate.toISOString().split('T')[0],
+            start_time: '09:00',
+            hive_id: check.hive_id,
+            apiary_id: selectedHive?.apiary_id || null,
+            reminder_enabled: true,
+            reminder_minutes_before: 60,
+            notes: `Auto-created from varroa check with ${check.method} method`,
+            completed: false
+          }])
+        }
+      }
+
+      await fetchVarroaChecks(userId)
+      resetForm()
+    } catch (error) {
+      toast.error('Error saving check: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
+  }
+
+  const handleCheckEdit = (check: VarroaCheck) => {
+    setEditingCheck(check)
+    setFormType('varroa_check')
+    setShowForm(true)
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+
+  const handleCheckDelete = async (check: VarroaCheck) => {
+    if (!userId) return
+    if (confirm('Are you sure you want to delete this varroa check?')) {
+      const { error } = await supabase
+        .from('varroa_checks')
+        .delete()
+        .eq('id', check.id)
+        .eq('user_id', userId)
+
+      if (!error) await fetchVarroaChecks(userId)
+    }
+  }
+
+  // Feeding handlers
+  const handleFeedingSubmit = async (feeding: Feeding, isOther: boolean, otherType: string) => {
+    if (!userId) return
+
+    try {
+      const submitData = {
+        hive_id: feeding.hive_id,
+        feed_date: feeding.feed_date,
+        feed_type: isOther ? otherType : feeding.feed_type,
+        quantity: feeding.quantity,
+        unit: feeding.unit,
+        notes: feeding.notes || ''
+      }
+
+      if (feeding.id) {
+        const { error } = await supabase
+          .from('feedings')
+          .update(submitData)
+          .eq('id', feeding.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('feedings')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+      }
+
+      await fetchFeedings(userId)
+      resetForm()
+    } catch (error) {
+      toast.error('Error saving feeding: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
+  }
+
+  const handleFeedingEdit = (feeding: Feeding) => {
+    setEditingFeeding(feeding)
+    setFormType('feeding')
+    setShowForm(true)
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+
+  const handleFeedingDelete = async (feeding: Feeding) => {
+    if (!userId) return
+    if (confirm('Are you sure you want to delete this feeding record?')) {
+      const { error } = await supabase
+        .from('feedings')
+        .delete()
+        .eq('id', feeding.id)
+        .eq('user_id', userId)
+
+      if (!error) await fetchFeedings(userId)
+    }
+  }
+
+  // Harvest handlers
+  const handleHarvestSubmit = async (harvest: Harvest) => {
+    if (!userId) return
+
+    try {
+      const submitData = {
+        hive_id: harvest.hive_id,
+        harvest_date: harvest.harvest_date,
+        honey_weight: harvest.honey_weight,
+        wax_weight: harvest.wax_weight,
+        unit: harvest.unit,
+        frames_harvested: harvest.frames_harvested,
+        notes: harvest.notes || ''
+      }
+
+      if (harvest.id) {
+        const { error } = await supabase
+          .from('harvests')
+          .update(submitData)
+          .eq('id', harvest.id)
+          .eq('user_id', userId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('harvests')
+          .insert([{ ...submitData, user_id: userId }])
+
+        if (error) throw error
+      }
+
+      await fetchHarvests(userId)
+      resetForm()
+    } catch (error) {
+      toast.error('Error saving harvest: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    }
+  }
+
+  const handleHarvestEdit = (harvest: Harvest) => {
+    setEditingHarvest(harvest)
+    setFormType('harvest')
+    setShowForm(true)
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+
+  const handleHarvestDelete = async (harvest: Harvest) => {
+    if (!userId) return
+    if (confirm('Are you sure you want to delete this harvest record?')) {
+      const { error } = await supabase
+        .from('harvests')
+        .delete()
+        .eq('id', harvest.id)
+        .eq('user_id', userId)
+
+      if (!error) await fetchHarvests(userId)
+    }
+  }
+
+  // Archive handler
+  const handleArchiveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!userId || !archiveData.hive_id) return
+
+    try {
+      const { error } = await supabase
+        .from('hives')
+        .update({
+          archived_at: new Date().toISOString(),
+          archive_reason_id: archiveData.archive_reason_id || null,
+          archive_notes: archiveData.archive_notes || null,
+          status: 'archived'
+        })
+        .eq('id', archiveData.hive_id)
+        .eq('user_id', userId)
+
+      if (error) throw error
+
+      await Promise.all([
+        fetchHives(userId),
+        fetchArchiveRecords(userId)
+      ])
+      resetForm()
+      toast.success('Hive archived successfully')
+    } catch (error) {
+      toast.error('Error archiving hive: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
   }
 
   const resetForm = () => {
     setShowForm(false)
     setEditingInspection(null)
-    setFormApiaryId('')
-    setImageFile(null)
-    setImagePreview(null)
-    setGivenTakenExpanded(false)
-    setDronesExpanded(false)
-    setDiseaseExpanded(false)
-    setHygienicBehaviourExpanded(false)
-    setQueenCellsExpanded(false)
-    setFormData({
-      hive_id: '',
-      inspection_date: new Date().toISOString().split('T')[0],
-      inspection_time: new Date().toTimeString().slice(0, 5),
-      weight: null,
-      queen_seen: false,
-      eggs_present: false,
-      drones_present: -1,
-      drone_brood_present: null,
-      brood_frames: null,
-      right_sized_frames: null,
-      brood_pattern_rating: 3,
-      temperament_rating: 3,
-      population_strength: 3,
-      swarming_tendency: 3,
-      calmness: 3,
-      frames_foundation: 0,
-      frames_brood: 0,
-      frames_drawn: 0,
-      honey_supers: 0,
-      drone_frames: 0,
-      store_frames: 0,
-      recapping: 0,
-      vsh: 0,
-      smr: 0,
-      afb_disease: 0,
-      efb_disease: 0,
-      chalkbrood_disease: 0,
-      nosemosis_disease: 0,
-      dwv_disease: 0,
-      iapv_cbpv_disease: 0,
-      queen_cups: false,
-      queen_cups_number: 0,
-      queen_cups_removed_all: false,
-      swarm_cells: false,
-      swarm_cells_number: 0,
-      swarm_cells_removed_all: false,
-      supercedure_cells: false,
-      supercedure_cells_number: 0,
-      supercedure_cells_removed_all: false,
-      emergency_cells: false,
-      emergency_cells_number: 0,
-      emergency_cells_removed_all: false,
-      removed_cells: 0,
-      remaining_cells: 0,
-      queen_cells_notes: '',
-      notes: '',
-      image_url: null,
-    })
+    setEditingTreatment(null)
+    setEditingCheck(null)
+    setEditingFeeding(null)
+    setEditingHarvest(null)
+    setArchiveData(getDefaultArchiveFormData())
+    setShowIpmTips(false)
   }
 
-  const renderStars = (rating: number) => '⭐'.repeat(rating || 0)
+  const handleImageClick = (url: string) => {
+    setModalImageUrl(url)
+    setImageModalOpen(true)
+  }
 
-  // Calculate date range based on time period
-  const getDateRange = useCallback(() => {
-    const today = new Date()
-    let startDate: Date | null = null
-
-    switch (timePeriod) {
-      case '3months':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate())
-        break
-      case '6months':
-        startDate = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate())
-        break
-      case '1year':
-        startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
-        break
-      case 'custom':
-        if (customStartDate) startDate = new Date(customStartDate)
-        break
-      case 'all':
-      default:
-        return null
+  const handleHiveChange = async (hiveId: string) => {
+    // Fetch weather data when hive changes (for inspection form)
+    if (hiveId) {
+      await handleFetchWeatherForHive(hiveId)
     }
+  }
 
-    return startDate
-  }, [timePeriod, customStartDate])
-
-  // Create hive lookup map for O(1) access - memoized for performance
-  const hiveMap = useMemo(() =>
-    new Map(hives.map(h => [h.id, h])),
-    [hives]
-  )
-
-  // Memoize date range calculation
-  const dateRangeStart = useMemo(() => getDateRange(), [getDateRange])
-
-  // Filter all records - memoized for performance
-  const filteredRecords = useMemo(() => {
-    return allRecords.filter(record => {
-      // Filter by record type
-      if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) {
-        return false
-      }
-
-      // Filter by ownership - archive records are always user's own records
-      // So exclude them when filtering for 'team' records
-      if (ownershipFilter === 'team' && record.record_type === 'archive') {
-        return false
-      }
-
-      // Filter archived hives - hide ALL records for archived hives unless showArchivedHives is true
-      if (!showArchivedHives) {
-        // Hide archive record type
-        if (record.record_type === 'archive') {
-          return false
-        }
-        // Hide all records belonging to archived hives
-        const hive = hiveMap.get(record.hive_id)
-        if (hive && hive.archived_at) {
-          return false
-        }
-      }
-
-      // Filter by apiary (checks if the record's hive belongs to the selected apiary)
-      // Using Map lookup for O(1) instead of O(n)
-      if (filterApiaryId) {
-        const hive = hiveMap.get(record.hive_id)
-        if (!hive || hive.apiary_id !== filterApiaryId) {
-          return false
-        }
-      }
-
-      // Filter by hive
-      if (filterHiveId && record.hive_id !== filterHiveId) {
-        return false
-      }
-
-      // Filter by time period
-      if (dateRangeStart) {
-        const recordDate = new Date(record.date)
-
-        // For custom range, check both start and end dates
-        if (timePeriod === 'custom') {
-          if (customStartDate && recordDate < new Date(customStartDate)) {
-            return false
-          }
-          if (customEndDate && recordDate > new Date(customEndDate)) {
-            return false
-          }
-        } else {
-          // For preset ranges, just check start date
-          if (recordDate < dateRangeStart) {
-            return false
-          }
-        }
-      }
-
-      return true
-    })
-  }, [allRecords, recordTypeFilter, ownershipFilter, showArchivedHives, filterApiaryId, filterHiveId, timePeriod, customStartDate, customEndDate, hiveMap, dateRangeStart])
-
-  // Calculate record counts for each time period
-  const timePeriodCounts = useMemo(() => {
-    const now = new Date()
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
-    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
-
-    // Filter with everything except time period
-    const baseFilteredRecords = allRecords.filter(record => {
-      if (recordTypeFilter !== 'all' && record.record_type !== recordTypeFilter) return false
-      if (ownershipFilter === 'team' && record.record_type === 'archive') return false
-      if (!showArchivedHives) {
-        const recordHive = hiveMap.get(record.hive_id)
-        if (recordHive?.archived_at) return false
-      }
-      if (filterApiaryId && record.hive_id) {
-        const recordHive = hiveMap.get(record.hive_id)
-        if (recordHive?.apiary_id !== filterApiaryId) return false
-      }
-      if (filterHiveId && record.hive_id !== filterHiveId) return false
-      return true
-    })
-
+  // Convert inspection to form data
+  const getInspectionFormData = (): InspectionFormData | null => {
+    if (!editingInspection) return null
     return {
-      all: baseFilteredRecords.length,
-      threeMonths: baseFilteredRecords.filter(r => new Date(r.date) >= threeMonthsAgo).length,
-      sixMonths: baseFilteredRecords.filter(r => new Date(r.date) >= sixMonthsAgo).length,
-      oneYear: baseFilteredRecords.filter(r => new Date(r.date) >= oneYearAgo).length,
-      custom: baseFilteredRecords.filter(r => {
-        const recordDate = new Date(r.date)
-        if (customStartDate && recordDate < new Date(customStartDate)) return false
-        if (customEndDate && recordDate > new Date(customEndDate)) return false
-        return true
-      }).length
+      hive_id: editingInspection.hive_id,
+      inspection_date: editingInspection.inspection_date,
+      inspection_time: editingInspection.inspection_time || '',
+      weight: editingInspection.weight,
+      queen_seen: editingInspection.queen_seen || false,
+      eggs_present: editingInspection.eggs_present || false,
+      drones_present: editingInspection.drones_present ?? -1,
+      drone_brood_present: editingInspection.drone_brood_present ?? null,
+      brood_frames: editingInspection.brood_frames,
+      right_sized_frames: editingInspection.right_sized_frames,
+      brood_pattern_rating: editingInspection.brood_pattern_rating ?? 3,
+      temperament_rating: editingInspection.temperament_rating ?? 3,
+      population_strength: editingInspection.population_strength ?? 3,
+      swarming_tendency: editingInspection.swarming_tendency ?? 3,
+      calmness: editingInspection.calmness ?? 3,
+      frames_foundation: editingInspection.frames_foundation ?? 0,
+      frames_brood: editingInspection.frames_brood ?? 0,
+      frames_drawn: editingInspection.frames_drawn ?? 0,
+      honey_supers: editingInspection.honey_supers ?? 0,
+      drone_frames: editingInspection.drone_frames ?? 0,
+      store_frames: editingInspection.store_frames ?? 0,
+      recapping: editingInspection.recapping ?? 0,
+      vsh: editingInspection.vsh ?? 0,
+      smr: editingInspection.smr ?? 0,
+      afb_disease: editingInspection.afb_disease ?? 0,
+      efb_disease: editingInspection.efb_disease ?? 0,
+      chalkbrood_disease: editingInspection.chalkbrood_disease ?? 0,
+      nosemosis_disease: editingInspection.nosemosis_disease ?? 0,
+      dwv_disease: editingInspection.dwv_disease ?? 0,
+      iapv_cbpv_disease: editingInspection.iapv_cbpv_disease ?? 0,
+      queen_cups: editingInspection.queen_cups ?? false,
+      queen_cups_number: editingInspection.queen_cups_number ?? 0,
+      queen_cups_removed_all: editingInspection.queen_cups_removed_all ?? false,
+      swarm_cells: editingInspection.swarm_cells ?? false,
+      swarm_cells_number: editingInspection.swarm_cells_number ?? 0,
+      swarm_cells_removed_all: editingInspection.swarm_cells_removed_all ?? false,
+      supercedure_cells: editingInspection.supercedure_cells ?? false,
+      supercedure_cells_number: editingInspection.supercedure_cells_number ?? 0,
+      supercedure_cells_removed_all: editingInspection.supercedure_cells_removed_all ?? false,
+      emergency_cells: editingInspection.emergency_cells ?? false,
+      emergency_cells_number: editingInspection.emergency_cells_number ?? 0,
+      emergency_cells_removed_all: editingInspection.emergency_cells_removed_all ?? false,
+      removed_cells: editingInspection.removed_cells ?? 0,
+      remaining_cells: editingInspection.remaining_cells ?? 0,
+      queen_cells_notes: editingInspection.queen_cells_notes || '',
+      notes: editingInspection.notes || '',
+      image_url: editingInspection.image_url
     }
-  }, [allRecords, recordTypeFilter, ownershipFilter, showArchivedHives, filterApiaryId, filterHiveId, customStartDate, customEndDate, hiveMap])
+  }
 
-  if (loading) return <LoadingSpinner text="Loading records..." />
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-responsive-3xl font-bold text-foreground">Records 📋</h1>
-          {sourceHiveId && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => router.push(`/dashboard/hives/${sourceHiveId}`)}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
-                title="View hive detail"
-              >
-                <ExternalLink size={18} />
-                Hive Detail
-              </button>
-              <button
-                onClick={() => router.push('/dashboard/hives')}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border transition-colors"
-                title="Go to hives page"
-              >
-                <Home size={18} />
-                Hives
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full md:w-auto">
-          {isTeamMember && (
-            <select
-              value={ownershipFilter}
-              onChange={(e) => {
-                setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
-                fetchInspections()
-              }}
-              className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
-            >
-              <option value="my">My Records</option>
-              <option value="team">Team Records</option>
-              <option value="all">All Records</option>
-            </select>
-          )}
-          <select
-            value={recordTypeFilter}
-            onChange={(e) => {
-              setRecordTypeFilter(e.target.value as typeof recordTypeFilter)
-            }}
-            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
-          >
-            <option value="all">All Types</option>
-            <option value="inspection">Hive Inspection</option>
-            <option value="varroa_treatment">Varroa Treatment</option>
-            <option value="varroa_check">Varroa Check</option>
-            <option value="feeding">Feeding</option>
-            <option value="harvest">Harvest</option>
-            <option value="archive">Hive Archived</option>
-          </select>
-          <select
-            value={filterApiaryId}
-            onChange={(e) => {
-              setFilterApiaryId(e.target.value)
-              setFilterHiveId('') // Clear hive filter when apiary changes
-            }}
-            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
-          >
-            <option value="">All Apiaries</option>
-            {apiaries.map((apiary) => (
-              <option key={apiary.id} value={apiary.id}>
-                {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filterHiveId}
-            onChange={(e) => setFilterHiveId(e.target.value)}
-            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
-          >
-            <option value="">All Hives</option>
-            {hives
-              .filter(hive => !filterApiaryId || hive.apiary_id === filterApiaryId)
-              .filter(hive => showArchivedHives || !hive.archived_at)
-              .map((hive) => (
-                <option key={hive.id} value={hive.id}>
-                  {hive.hive_number}{hive.archived_at ? ' (Archived)' : ''}
-                </option>
-              ))}
-          </select>
-          <label className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showArchivedHives}
-              onChange={(e) => setShowArchivedHives(e.target.checked)}
-              className="w-4 h-4 text-blue-600 bg-surface border-border rounded focus:ring-blue-500 focus:ring-2"
-            />
-            <span className="text-sm">Show Archived Hives</span>
-          </label>
-          <div className="relative dropdown-container">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="px-4 py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 font-medium flex items-center gap-2 justify-center touch-manipulation w-full sm:w-auto"
+              onClick={() => router.push('/dashboard')}
+              className="p-2 rounded-lg hover:bg-surface-elevated transition-colors"
+              aria-label="Back to dashboard"
             >
-              <Plus size={18} />
-              New Record
-              <ChevronDown size={18} />
+              <Home size={24} />
             </button>
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-surface dark:bg-surface rounded-lg shadow-lg border border-border z-10">
-                <button
-                  onClick={() => {
-                    setFormType('inspection')
-                    setShowForm(true)
-                    setShowDropdown(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 rounded-t-lg transition-colors"
-                >
-                  <Plus size={16} />
-                  Hive Inspection
-                </button>
-                <button
-                  onClick={() => {
-                    setFormType('varroa_treatment')
-                    setEditingTreatment({
-                      id: '',
-                      hive_id: '',
-                      user_id: userId || '',
-                      treatment_date: new Date().toISOString().split('T')[0],
-                      treatment_type: '',
-                      dosage: '',
-                      temperature: null,
-                      weather_conditions: '',
-                      notes: '',
-                    })
-                    setOtherTreatmentType('')
-                    setIsOtherTreatment(false)
-                    setShowForm(true)
-                    setShowDropdown(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 transition-colors"
-                >
-                  <Plus size={16} />
-                  Varroa Treatment
-                </button>
-                <button
-                  onClick={() => {
-                    setFormType('varroa_check')
-                    setEditingCheck({
-                      id: '',
-                      hive_id: '',
-                      user_id: userId || '',
-                      check_date: new Date().toISOString().slice(0, 16),
-                      method: '',
-                      mites_count: null,
-                      sample_size: null,
-                      infestation_rate: null,
-                      action_threshold_reached: false,
-                      notes: '',
-                      image_url: null,
-                    })
-                    setShowForm(true)
-                    setShowDropdown(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 transition-colors"
-                >
-                  <Plus size={16} />
-                  Varroa Check
-                </button>
-                <button
-                  onClick={() => {
-                    setFormType('feeding')
-                    setEditingFeeding({
-                      id: '',
-                      hive_id: '',
-                      user_id: userId || '',
-                      feed_date: new Date().toISOString().split('T')[0],
-                      feed_type: '',
-                      quantity: null,
-                      unit: 'L',
-                      notes: '',
-                    })
-                    setIsOtherFeedType(false)
-                    setOtherFeedType('')
-                    setShowForm(true)
-                    setShowDropdown(false)
-                  }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2 transition-colors"
-                >
-                  <Plus size={16} />
-                  Feeding
-                </button>
-                <button
-                  onClick={() => {
-                    setFormType('harvest')
-                    setEditingHarvest({
-                      id: '',
-                      hive_id: '',
-                      user_id: userId || '',
-                      harvest_date: new Date().toISOString().split('T')[0],
-                      honey_weight: null,
-                      wax_weight: null,
-                      unit: 'kg',
-                      frames_harvested: null,
-                      notes: '',
-                    })
-                    setShowForm(true)
-                    setShowDropdown(false)
-                  }}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2 transition-colors"
-                >
-                  <Plus size={16} />
-                  Harvest
-                </button>
-                <button
-                  onClick={() => {
-                    setFormType('archive')
-                    setArchiveData({
-                      hive_id: '',
-                      archive_reason_id: '',
-                      archive_notes: ''
-                    })
-                    setShowForm(true)
-                    setShowDropdown(false)
-                  }}
-                  className="w-full px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 rounded-b-lg transition-colors text-red-700 dark:text-red-400 border-t border-border"
-                >
-                  <Archive size={16} />
-                  Archive Hive
-                </button>
-              </div>
-            )}
+            <h1 className="text-2xl font-bold text-foreground">Records</h1>
           </div>
         </div>
-      </div>
 
-      {/* Archive Hive Form */}
-      {showForm && formType === 'archive' && (
-        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-red-700 dark:text-red-400">Archive Hive</h3>
-            <button
-              onClick={() => {
-                setShowForm(false)
-                setArchiveData({
-                  hive_id: '',
-                  archive_reason_id: '',
-                  archive_notes: ''
-                })
-              }}
-              className="text-text-tertiary hover:text-text-secondary"
-            >
-              <X size={24} />
-            </button>
-          </div>
+        {/* Filters */}
+        <RecordFiltersBar
+          hives={hives}
+          apiaries={apiaries}
+          isTeamMember={isTeamMember}
+          ownershipFilter={filters.ownershipFilter}
+          recordTypeFilter={filters.recordTypeFilter}
+          apiaryId={filters.apiaryId}
+          hiveId={filters.hiveId}
+          showArchivedHives={filters.showArchivedHives}
+          timePeriod={filters.timePeriod}
+          customStartDate={filters.customStartDate}
+          customEndDate={filters.customEndDate}
+          timePeriodCounts={timePeriodCounts}
+          onHiveChange={setHiveId}
+          onApiaryChange={setApiaryId}
+          onShowArchivedChange={setShowArchivedHives}
+          onTimePeriodChange={setTimePeriod}
+          onCustomStartDateChange={setCustomStartDate}
+          onCustomEndDateChange={setCustomEndDate}
+          onOwnershipChange={setOwnershipFilter}
+          onRecordTypeChange={setRecordTypeFilter}
+        />
 
-          <div className="bg-red-50 dark:bg-red-950/30 border-l-4 border-red-500 dark:border-red-700 p-4 mb-6">
-            <div className="flex items-start">
-              <Archive className="text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" size={20} />
-              <div>
-                <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
-                  Warning: Archiving a hive
-                </p>
-                <p className="text-sm text-red-800 dark:text-red-200">
-                  Archiving will remove this hive from active hive lists. The hive and all its records will be preserved and accessible in the archived hives view. You can restore the hive later if needed.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={async (e) => {
-            e.preventDefault()
-            if (!userId || !archiveData.hive_id || !archiveData.archive_reason_id) {
-              toast.warning('Please select a hive and a reason for archiving')
-              return
-            }
-
-            try {
-              const { error } = await supabase
-                .from('hives')
-                .update({
-                  archived_at: new Date().toISOString(),
-                  archive_reason_id: archiveData.archive_reason_id,
-                  archive_notes: archiveData.archive_notes || null,
-                  status: 'archived'
-                })
-                .eq('id', archiveData.hive_id)
-                .eq('user_id', userId)
-                .select()
-
-              if (error) throw error
-
-              toast.success('Hive archived successfully! Go to Hives page and select "Archived" or "All" filter to see it.')
-              setShowForm(false)
-              setArchiveData({
-                hive_id: '',
-                archive_reason_id: '',
-                archive_notes: ''
-              })
-              // Refresh hives list
-              fetchHives(userId)
-            } catch (error) {
-              console.error('Error archiving hive:', error)
-              toast.error(error instanceof Error ? error.message : 'Failed to archive hive')
-            }
-          }} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                Select Hive to Archive *
-              </label>
-              <select
-                value={archiveData.hive_id}
-                onChange={(e) => setArchiveData({ ...archiveData, hive_id: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">-- Select Hive --</option>
-                {hives
-                  .filter(h => h.status === 'active')
-                  .map((hive) => (
-                    <option key={hive.id} value={hive.id}>
-                      {hive.hive_number}
-                      {hive.apiary_id && apiaries.find(a => a.id === hive.apiary_id)
-                        ? ` - ${apiaries.find(a => a.id === hive.apiary_id)?.name}`
-                        : ''}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                Reason for Archiving *
-              </label>
-              <select
-                value={archiveData.archive_reason_id}
-                onChange={(e) => setArchiveData({ ...archiveData, archive_reason_id: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">-- Select Reason --</option>
-                {archiveReasons.map((reason) => (
-                  <option key={reason.id} value={reason.id}>
-                    {reason.value}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                Additional Notes (Optional)
-              </label>
-              <textarea
-                value={archiveData.archive_notes}
-                onChange={(e) => setArchiveData({ ...archiveData, archive_notes: e.target.value })}
-                rows={4}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Add any additional details about why this hive is being archived..."
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
+        {/* Form Section */}
+        {showForm && (
+          <div ref={formRef} className="mb-6 bg-surface rounded-xl p-4 border border-border shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">
+                {formType === 'inspection' && (editingInspection ? 'Edit Inspection' : 'New Inspection')}
+                {formType === 'varroa_treatment' && (editingTreatment?.id ? 'Edit Treatment' : 'New Treatment')}
+                {formType === 'varroa_check' && (editingCheck?.id ? 'Edit Varroa Check' : 'New Varroa Check')}
+                {formType === 'feeding' && (editingFeeding?.id ? 'Edit Feeding' : 'New Feeding')}
+                {formType === 'harvest' && (editingHarvest?.id ? 'Edit Harvest' : 'New Harvest')}
+                {formType === 'archive' && 'Archive Hive'}
+              </h2>
               <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
-              >
-                Archive Hive
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setArchiveData({
-                    hive_id: '',
-                    archive_reason_id: '',
-                    archive_notes: ''
-                  })
-                }}
-                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Time Period Filter */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm font-medium text-text-secondary">Time Period:</label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setTimePeriod('all')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
-                  timePeriod === 'all'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
-                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
-                }`}
-              >
-                All Time ({timePeriodCounts.all})
-              </button>
-              <button
-                onClick={() => setTimePeriod('3months')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
-                  timePeriod === '3months'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
-                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
-                }`}
-              >
-                Last 3 Months ({timePeriodCounts.threeMonths})
-              </button>
-              <button
-                onClick={() => setTimePeriod('6months')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
-                  timePeriod === '6months'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
-                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
-                }`}
-              >
-                Last 6 Months ({timePeriodCounts.sixMonths})
-              </button>
-              <button
-                onClick={() => setTimePeriod('1year')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
-                  timePeriod === '1year'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
-                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
-                }`}
-              >
-                Last Year ({timePeriodCounts.oneYear})
-              </button>
-              <button
-                onClick={() => setTimePeriod('custom')}
-                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-all touch-manipulation border ${
-                  timePeriod === 'custom'
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-md border-blue-600 dark:border-blue-500'
-                    : 'bg-surface dark:bg-surface text-foreground hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border-border'
-                }`}
-              >
-                Custom Range ({timePeriodCounts.custom})
-              </button>
-            </div>
-          </div>
-
-          {/* Custom Date Range Inputs */}
-          {timePeriod === 'custom' && (
-            <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-28">
-              <label className="text-sm font-medium text-text-secondary">From:</label>
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
-              />
-              <label className="text-sm font-medium text-text-secondary">To:</label>
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
-              />
-              <button
-                onClick={() => {
-                  setCustomStartDate('')
-                  setCustomEndDate('')
-                }}
-                className="px-3 py-2 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border"
-              >
-                Clear Dates
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {showForm && formType === 'inspection' && (
-        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h3 className="text-xl font-semibold text-foreground">
-              {editingInspection ? 'Edit Inspection' : 'Record New Inspection'}
-            </h3>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button
-                type="submit"
-                form="inspection-form"
-                disabled={uploadingImage || fetchingWeather}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
-              >
-                {uploadingImage ? 'Uploading Image...' : fetchingWeather ? 'Fetching Weather...' : editingInspection ? 'Update' : 'Save'} Inspection
-              </button>
-              <button
-                type="button"
                 onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+                className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
+                aria-label="Close form"
               >
-                Cancel
+                <X size={20} />
               </button>
             </div>
-          </div>
-          <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Inspection Details Section - Grouped */}
-            <div className="md:col-span-2 p-4 rounded-lg border border-border">
-              <h4 className="text-sm font-semibold text-foreground mb-4">Inspection Details</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {formType === 'inspection' && (
+              <InspectionForm
+                initialData={getInspectionFormData()}
+                hives={hives}
+                apiaries={apiaries}
+                userHasActiveSubscription={userHasActiveSubscription}
+                onSubmit={handleInspectionSubmit}
+                onCancel={resetForm}
+                onHiveChange={handleHiveChange}
+                onImageClick={handleImageClick}
+                fetchingWeather={fetchingWeather}
+              />
+            )}
+
+            {formType === 'varroa_treatment' && editingTreatment && (
+              <VarroaTreatmentForm
+                treatment={editingTreatment}
+                hives={hives}
+                apiaries={apiaries}
+                treatmentProducts={treatmentProducts}
+                onSubmit={handleTreatmentSubmit}
+                onCancel={resetForm}
+                onShowIpmTips={() => setShowIpmTips(true)}
+                onFetchWeather={handleFetchWeatherForHive}
+              />
+            )}
+
+            {formType === 'varroa_check' && editingCheck && (
+              <VarroaCheckForm
+                check={editingCheck}
+                hives={hives}
+                apiaries={apiaries}
+                checkMethodOptions={checkMethodOptions}
+                userHasActiveSubscription={userHasActiveSubscription}
+                onSubmit={handleCheckSubmit}
+                onCancel={resetForm}
+                onImageClick={handleImageClick}
+              />
+            )}
+
+            {formType === 'feeding' && editingFeeding && (
+              <FeedingForm
+                feeding={editingFeeding}
+                hives={hives}
+                apiaries={apiaries}
+                feedTypeOptions={feedTypeOptions}
+                onSubmit={handleFeedingSubmit}
+                onCancel={resetForm}
+              />
+            )}
+
+            {formType === 'harvest' && editingHarvest && (
+              <HarvestForm
+                harvest={editingHarvest}
+                hives={hives}
+                apiaries={apiaries}
+                onSubmit={handleHarvestSubmit}
+                onCancel={resetForm}
+              />
+            )}
+
+            {formType === 'archive' && (
+              <form onSubmit={handleArchiveSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
                   <select
-                    value={formApiaryId}
-                    onChange={(e) => {
-                      setFormApiaryId(e.target.value)
-                      setFormData({...formData, hive_id: ''}) // Reset hive selection when apiary changes
-                    }}
-                    className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    value={archiveData.hive_id}
+                    onChange={(e) => setArchiveData({ ...archiveData, hive_id: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                    required
                   >
-                    <option value="">All Apiaries</option>
-                    {apiaries.map((apiary) => (
-                      <option key={apiary.id} value={apiary.id}>
-                        {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
-                      </option>
+                    <option value="">Select hive...</option>
+                    {hives.filter(h => !h.archived_at).map(hive => (
+                      <option key={hive.id} value={hive.id}>{hive.hive_number}</option>
                     ))}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Reason</label>
                   <select
-                    value={formData.hive_id}
-                    onChange={(e) => handleHiveChange(e.target.value)}
-                    className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                    required
+                    value={archiveData.archive_reason_id}
+                    onChange={(e) => setArchiveData({ ...archiveData, archive_reason_id: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   >
-                    <option value="">Select hive</option>
-                    {hives
-                      .filter(h => !h.archived_at) // Only show active (non-archived) hives
-                      .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
-                      .map((h) => (
-                        <option key={h.id} value={h.id}>{h.hive_number}</option>
-                      ))}
+                    <option value="">Select reason...</option>
+                    {archiveReasons.map(reason => (
+                      <option key={reason.id} value={reason.id}>{reason.value}</option>
+                    ))}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Date *</label>
-                  <input
-                    type="date"
-                    value={formData.inspection_date}
-                    onChange={(e) => setFormData({...formData, inspection_date: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                    required
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
+                  <textarea
+                    value={archiveData.archive_notes}
+                    onChange={(e) => setArchiveData({ ...archiveData, archive_notes: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
+                    rows={3}
+                    placeholder="Optional notes..."
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Time *</label>
-                  <input
-                    type="time"
-                    value={formData.inspection_time}
-                    onChange={(e) => setFormData({...formData, inspection_time: e.target.value})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Weight (kg)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.weight ?? ''}
-                    onChange={(e) => setFormData({...formData, weight: e.target.value ? parseFloat(e.target.value) : null})}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Queen & Brood Section - Grouped */}
-            <div className="md:col-span-2 p-4 rounded-lg border border-border">
-              <h4 className="text-sm font-semibold text-foreground mb-4">Queen & Brood</h4>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <label className="flex items-center gap-3 p-3 bg-surface dark:bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border border-purple-200 dark:border-purple-800">
-                  <input
-                    type="checkbox"
-                    checked={formData.queen_seen}
-                    onChange={(e) => setFormData({...formData, queen_seen: e.target.checked})}
-                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
-                  />
-                  <span className="text-sm font-medium text-text-secondary">Queen Seen</span>
-                </label>
-
-                <label className="flex items-center gap-3 p-3 bg-surface dark:bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border border-purple-200 dark:border-purple-800">
-                  <input
-                    type="checkbox"
-                    checked={formData.eggs_present}
-                    onChange={(e) => setFormData({...formData, eggs_present: e.target.checked})}
-                    className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
-                  />
-                  <span className="text-sm font-medium text-text-secondary">Eggs Present</span>
-                </label>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-text-secondary mb-3">
-                  Frames with Brood {formData.brood_frames !== null ? `(${formData.brood_frames})` : ''}
-                </label>
-                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setFormData({...formData, brood_frames: num})}
-                      className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                        formData.brood_frames === num
-                          ? 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-300'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
+                <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setFormData({...formData, brood_frames: null})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
-                      formData.brood_frames === null
-                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                    }`}
+                    onClick={resetForm}
+                    className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground hover:bg-surface-elevated transition-colors"
                   >
-                    Clear
+                    Cancel
                   </button>
-                </div>
-              </div>
-
-              {hives.find(h => h.id === formData.hive_id)?.configuration?.right_sized_broodbox && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-text-secondary mb-3">
-                    Right-Sized to How Many Frames {formData.right_sized_frames !== null ? `(${formData.right_sized_frames})` : ''}
-                  </label>
-                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                      <button
-                        key={num}
-                        type="button"
-                        onClick={() => setFormData({...formData, right_sized_frames: num})}
-                        className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                          formData.right_sized_frames === num
-                            ? 'bg-forest-600 dark:bg-forest-500 text-white shadow-lg ring-2 ring-forest-300 dark:ring-forest-700'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        {num}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => setFormData({...formData, right_sized_frames: null})}
-                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
-                        formData.right_sized_frames === null
-                          ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                      }`}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Queen Cells Subsection - Collapsible */}
-              <div className="mt-4 rounded-lg border border-border">
-                <button
-                  type="button"
-                  onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
-                  className="w-full p-3 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
-                >
-                  <h5 className="text-sm font-semibold text-foreground">Queen Cells</h5>
-                  {queenCellsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                </button>
-
-                {queenCellsExpanded && (
-                  <div className="p-4 pt-0 space-y-4">
-                    {/* Queen Cups */}
-                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-text-secondary">Queen cups</label>
-                        <div className="flex gap-2 ml-auto">
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, queen_cups: true})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.queen_cups === true
-                                ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✓</span> YES
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, queen_cups: false, queen_cups_number: 0, queen_cups_removed_all: false})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.queen_cups === false
-                                ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✕</span> NO
-                          </button>
-                        </div>
-                      </div>
-                      {formData.queen_cups && (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, queen_cups_number: Math.max(0, formData.queen_cups_number - 1)})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                −
-                              </button>
-                              <input
-                                type="number"
-                                value={formData.queen_cups_number}
-                                onChange={(e) => setFormData({...formData, queen_cups_number: parseInt(e.target.value) || 0})}
-                                className="w-20 px-3 py-2 border rounded text-center"
-                                min="0"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, queen_cups_number: formData.queen_cups_number + 1})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, queen_cups_removed_all: true})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.queen_cups_removed_all === true
-                                    ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                YES
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, queen_cups_removed_all: false})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.queen_cups_removed_all === false
-                                    ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                NO
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Swarm Cells */}
-                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-text-secondary">Swarm cell</label>
-                        <div className="flex gap-2 ml-auto">
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, swarm_cells: true})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.swarm_cells === true
-                                ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✓</span> YES
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, swarm_cells: false, swarm_cells_number: 0, swarm_cells_removed_all: false})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.swarm_cells === false
-                                ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✕</span> NO
-                          </button>
-                        </div>
-                      </div>
-                      {formData.swarm_cells && (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, swarm_cells_number: Math.max(0, formData.swarm_cells_number - 1)})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                −
-                              </button>
-                              <input
-                                type="number"
-                                value={formData.swarm_cells_number}
-                                onChange={(e) => setFormData({...formData, swarm_cells_number: parseInt(e.target.value) || 0})}
-                                className="w-20 px-3 py-2 border rounded text-center"
-                                min="0"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, swarm_cells_number: formData.swarm_cells_number + 1})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, swarm_cells_removed_all: true})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.swarm_cells_removed_all === true
-                                    ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                YES
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, swarm_cells_removed_all: false})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.swarm_cells_removed_all === false
-                                    ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                NO
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Supercedure Cells */}
-                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-text-secondary">Supercedure cell</label>
-                        <div className="flex gap-2 ml-auto">
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, supercedure_cells: true})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.supercedure_cells === true
-                                ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✓</span> YES
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, supercedure_cells: false, supercedure_cells_number: 0, supercedure_cells_removed_all: false})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.supercedure_cells === false
-                                ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✕</span> NO
-                          </button>
-                        </div>
-                      </div>
-                      {formData.supercedure_cells && (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, supercedure_cells_number: Math.max(0, formData.supercedure_cells_number - 1)})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                −
-                              </button>
-                              <input
-                                type="number"
-                                value={formData.supercedure_cells_number}
-                                onChange={(e) => setFormData({...formData, supercedure_cells_number: parseInt(e.target.value) || 0})}
-                                className="w-20 px-3 py-2 border rounded text-center"
-                                min="0"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, supercedure_cells_number: formData.supercedure_cells_number + 1})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, supercedure_cells_removed_all: true})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.supercedure_cells_removed_all === true
-                                    ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                YES
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, supercedure_cells_removed_all: false})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.supercedure_cells_removed_all === false
-                                    ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                NO
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Emergency Cells */}
-                    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-text-secondary">Emergency cell</label>
-                        <div className="flex gap-2 ml-auto">
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, emergency_cells: true})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.emergency_cells === true
-                                ? 'bg-green-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✓</span> YES
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, emergency_cells: false, emergency_cells_number: 0, emergency_cells_removed_all: false})}
-                            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-                              formData.emergency_cells === false
-                                ? 'bg-red-600 text-white shadow-lg'
-                                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                            }`}
-                          >
-                            <span>✕</span> NO
-                          </button>
-                        </div>
-                      </div>
-                      {formData.emergency_cells && (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, emergency_cells_number: Math.max(0, formData.emergency_cells_number - 1)})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                −
-                              </button>
-                              <input
-                                type="number"
-                                value={formData.emergency_cells_number}
-                                onChange={(e) => setFormData({...formData, emergency_cells_number: parseInt(e.target.value) || 0})}
-                                className="w-20 px-3 py-2 border rounded text-center"
-                                min="0"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, emergency_cells_number: formData.emergency_cells_number + 1})}
-                                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, emergency_cells_removed_all: true})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.emergency_cells_removed_all === true
-                                    ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                YES
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setFormData({...formData, emergency_cells_removed_all: false})}
-                                className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
-                                  formData.emergency_cells_removed_all === false
-                                    ? 'bg-red-600 text-white shadow-lg'
-                                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
-                                }`}
-                              >
-                                NO
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Removed cells and Remaining cells */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-text-tertiary mb-2">Removed cells</label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, removed_cells: Math.max(0, formData.removed_cells - 1)})}
-                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            value={formData.removed_cells}
-                            onChange={(e) => setFormData({...formData, removed_cells: parseInt(e.target.value) || 0})}
-                            className="w-16 px-2 py-2 border rounded text-center"
-                            min="0"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, removed_cells: formData.removed_cells + 1})}
-                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-text-tertiary mb-2">Remaining cells</label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, remaining_cells: Math.max(0, formData.remaining_cells - 1)})}
-                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            value={formData.remaining_cells}
-                            onChange={(e) => setFormData({...formData, remaining_cells: parseInt(e.target.value) || 0})}
-                            className="w-16 px-2 py-2 border rounded text-center"
-                            min="0"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFormData({...formData, remaining_cells: formData.remaining_cells + 1})}
-                            className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Note field */}
-                    <div>
-                      <label className="block text-xs font-medium text-text-tertiary mb-2">Note</label>
-                      <textarea
-                        value={formData.queen_cells_notes}
-                        onChange={(e) => setFormData({...formData, queen_cells_notes: e.target.value})}
-                        rows={2}
-                        maxLength={2500}
-                        placeholder="Additional notes about queen cells..."
-                        className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-sm"
-                      />
-                      <div className="text-right text-xs text-text-tertiary mt-1">
-                        {formData.queen_cells_notes.length} / 2500
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Behaviour Section - Grouped */}
-            <div className="md:col-span-2 p-4 rounded-lg border border-border">
-              <h4 className="text-sm font-semibold text-foreground mb-4">Behaviour</h4>
-
-              {/* Population */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-text-secondary">
-                    Population: {formData.population_strength === 0 ? 'Not Recorded' : renderStars(formData.population_strength)}
-                  </label>
-                  <div className="relative group">
-                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                      <div className="font-semibold mb-2">Population Rating Guide:</div>
-                      <div className="space-y-1">
-                        <div><strong>⭐ (1):</strong> Very Weak - Few bees, struggling colony</div>
-                        <div><strong>⭐⭐ (2):</strong> Weak - Low population, needs attention</div>
-                        <div><strong>⭐⭐⭐ (3):</strong> Moderate - Average strength, room to grow</div>
-                        <div><strong>⭐⭐⭐⭐ (4):</strong> Strong - Good population, healthy colony</div>
-                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very Strong - Bursting with bees, may need space</div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                        Population strength indicates colony health and productivity potential.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setFormData({...formData, population_strength: rating})}
-                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                        formData.population_strength === rating
-                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                      }`}
-                    >
-                      {rating}
-                    </button>
-                  ))}
                   <button
-                    type="button"
-                    onClick={() => setFormData({...formData, population_strength: 0})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                      formData.population_strength === 0
-                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                    }`}
+                    type="submit"
+                    className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                   >
-                    Not Recorded
+                    Archive Hive
                   </button>
                 </div>
-              </div>
-
-              {/* Temperament */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-text-secondary">
-                    Temperament: {formData.temperament_rating === 0 ? 'Not Recorded' : renderStars(formData.temperament_rating)}
-                  </label>
-                  <div className="relative group">
-                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                      <div className="font-semibold mb-2">Temperament Rating Guide:</div>
-                      <div className="space-y-1">
-                        <div><strong>⭐ (1):</strong> Aggressive - Very defensive, difficult to work with</div>
-                        <div><strong>⭐⭐ (2):</strong> Defensive - Quite agitated, requires care</div>
-                        <div><strong>⭐⭐⭐ (3):</strong> Average - Some defensiveness, manageable</div>
-                        <div><strong>⭐⭐⭐⭐ (4):</strong> Calm - Easy to work with, minimal smoke needed</div>
-                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Gentle - Very calm, pleasant to inspect</div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                        Temperament affects how easy the colony is to manage and inspect safely.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setFormData({...formData, temperament_rating: rating})}
-                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                        formData.temperament_rating === rating
-                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                      }`}
-                    >
-                      {rating}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, temperament_rating: 0})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                      formData.temperament_rating === 0
-                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                    }`}
-                  >
-                    Not Recorded
-                  </button>
-                </div>
-              </div>
-
-              {/* Brood Pattern */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-text-secondary">
-                    Brood Pattern: {formData.brood_pattern_rating === 0 ? 'Not Recorded' : renderStars(formData.brood_pattern_rating)}
-                  </label>
-                  <div className="relative group">
-                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                      <div className="font-semibold mb-2">Brood Pattern Rating Guide:</div>
-                      <div className="space-y-1">
-                        <div><strong>⭐ (1):</strong> Poor - Many empty cells, spotty pattern</div>
-                        <div><strong>⭐⭐ (2):</strong> Fair - Some gaps, irregular pattern</div>
-                        <div><strong>⭐⭐⭐ (3):</strong> Good - Mostly solid with few gaps</div>
-                        <div><strong>⭐⭐⭐⭐ (4):</strong> Very Good - Solid pattern, minimal gaps</div>
-                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Solid, compact brood pattern</div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                        A good brood pattern indicates a healthy, productive queen laying eggs consistently.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setFormData({...formData, brood_pattern_rating: rating})}
-                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                        formData.brood_pattern_rating === rating
-                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                      }`}
-                    >
-                      {rating}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, brood_pattern_rating: 0})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                      formData.brood_pattern_rating === 0
-                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                    }`}
-                  >
-                    Not Recorded
-                  </button>
-                </div>
-              </div>
-
-              {/* Swarming Tendency */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-text-secondary">
-                    Swarming Tendency: {formData.swarming_tendency === 0 ? 'Not Recorded' : renderStars(formData.swarming_tendency)}
-                  </label>
-                  <div className="relative group">
-                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                      <div className="font-semibold mb-2">Swarming Tendency Rating Guide:</div>
-                      <div className="space-y-1">
-                        <div><strong>⭐ (1):</strong> Very Low - Rarely swarms, stable colony</div>
-                        <div><strong>⭐⭐ (2):</strong> Low - Occasional signs, manageable</div>
-                        <div><strong>⭐⭐⭐ (3):</strong> Moderate - Average swarming behavior</div>
-                        <div><strong>⭐⭐⭐⭐ (4):</strong> High - Frequent queen cells, needs attention</div>
-                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very High - Strong swarm preparations evident</div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                        Monitor swarming tendency to prevent losing half your colony.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setFormData({...formData, swarming_tendency: rating})}
-                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                        formData.swarming_tendency === rating
-                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                      }`}
-                    >
-                      {rating}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, swarming_tendency: 0})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                      formData.swarming_tendency === 0
-                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                    }`}
-                  >
-                    Not Recorded
-                  </button>
-                </div>
-              </div>
-
-              {/* Calmness */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <label className="block text-sm font-medium text-text-secondary">
-                    Calmness: {formData.calmness === 0 ? 'Not Recorded' : renderStars(formData.calmness)}
-                  </label>
-                  <div className="relative group">
-                    <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                      <div className="font-semibold mb-2">Calmness Rating Guide:</div>
-                      <div className="space-y-1">
-                        <div><strong>⭐ (1):</strong> Very Nervous - Runs on comb, easily agitated</div>
-                        <div><strong>⭐⭐ (2):</strong> Nervous - Some running, fairly reactive</div>
-                        <div><strong>⭐⭐⭐ (3):</strong> Average - Normal bee behavior</div>
-                        <div><strong>⭐⭐⭐⭐ (4):</strong> Calm - Stay on comb, minimal disturbance</div>
-                        <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Very Calm - Hardly notice inspection, very gentle</div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                        Calm bees make inspections easier and safer for both bees and beekeeper.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setFormData({...formData, calmness: rating})}
-                      className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                        formData.calmness === rating
-                          ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                      }`}
-                    >
-                      {rating}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setFormData({...formData, calmness: 0})}
-                    className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                      formData.calmness === 0
-                        ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                        : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                    }`}
-                  >
-                    Not Recorded
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Given/Taken Section - Collapsible */}
-            <div className="md:col-span-2 rounded-lg border border-border">
-              <button
-                type="button"
-                onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
-              >
-                <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
-                {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </button>
-
-              {givenTakenExpanded && (
-                <div className="p-2 sm:p-4 pt-0 space-y-3 sm:space-y-4">
-                  {/* Frames-Foundation */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
-                      <span className="hidden sm:inline">Frames-Foundation</span>
-                      <span className="sm:hidden">Foundation</span>
-                    </label>
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, frames_foundation: formData.frames_foundation - 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Minus size={16} className="sm:hidden" />
-                        <Minus size={20} className="hidden sm:block" />
-                      </button>
-                      <input
-                        type="number"
-                        value={formData.frames_foundation}
-                        onChange={(e) => setFormData({...formData, frames_foundation: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, frames_foundation: formData.frames_foundation + 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Plus size={16} className="sm:hidden" />
-                        <Plus size={20} className="hidden sm:block" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Brood-Frames */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
-                      <span className="hidden sm:inline">Brood-Frames</span>
-                      <span className="sm:hidden">Brood</span>
-                    </label>
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, frames_brood: formData.frames_brood - 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Minus size={16} className="sm:hidden" />
-                        <Minus size={20} className="hidden sm:block" />
-                      </button>
-                      <input
-                        type="number"
-                        value={formData.frames_brood}
-                        onChange={(e) => setFormData({...formData, frames_brood: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, frames_brood: formData.frames_brood + 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Plus size={16} className="sm:hidden" />
-                        <Plus size={20} className="hidden sm:block" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Drawn-Frames */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
-                      <span className="hidden sm:inline">Drawn-Frames</span>
-                      <span className="sm:hidden">Drawn</span>
-                    </label>
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, frames_drawn: formData.frames_drawn - 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Minus size={16} className="sm:hidden" />
-                        <Minus size={20} className="hidden sm:block" />
-                      </button>
-                      <input
-                        type="number"
-                        value={formData.frames_drawn}
-                        onChange={(e) => setFormData({...formData, frames_drawn: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, frames_drawn: formData.frames_drawn + 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Plus size={16} className="sm:hidden" />
-                        <Plus size={20} className="hidden sm:block" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Honey Supers */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
-                      <span className="hidden sm:inline">Honey Supers</span>
-                      <span className="sm:hidden">Supers</span>
-                    </label>
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, honey_supers: formData.honey_supers - 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Minus size={16} className="sm:hidden" />
-                        <Minus size={20} className="hidden sm:block" />
-                      </button>
-                      <input
-                        type="number"
-                        value={formData.honey_supers}
-                        onChange={(e) => setFormData({...formData, honey_supers: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, honey_supers: formData.honey_supers + 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Plus size={16} className="sm:hidden" />
-                        <Plus size={20} className="hidden sm:block" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Drone-Frames */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
-                      <span className="hidden sm:inline">Drone-Frames</span>
-                      <span className="sm:hidden">Drone</span>
-                    </label>
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, drone_frames: formData.drone_frames - 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Minus size={16} className="sm:hidden" />
-                        <Minus size={20} className="hidden sm:block" />
-                      </button>
-                      <input
-                        type="number"
-                        value={formData.drone_frames}
-                        onChange={(e) => setFormData({...formData, drone_frames: parseInt(e.target.value) || 0})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, drone_frames: formData.drone_frames + 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Plus size={16} className="sm:hidden" />
-                        <Plus size={20} className="hidden sm:block" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Store-Frames */}
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-text-secondary mb-1 sm:mb-2">
-                      <span className="hidden sm:inline">Store-Frames</span>
-                      <span className="sm:hidden">Store</span>
-                    </label>
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, store_frames: Math.max(0, formData.store_frames - 1)})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Minus size={16} className="sm:hidden" />
-                        <Minus size={20} className="hidden sm:block" />
-                      </button>
-                      <input
-                        type="number"
-                        value={formData.store_frames}
-                        onChange={(e) => setFormData({...formData, store_frames: Math.max(0, parseInt(e.target.value) || 0)})}
-                        className="flex-1 text-center px-1 sm:px-3 py-2 min-h-[40px] sm:min-h-[48px] border-2 border-border rounded-lg font-semibold text-sm sm:text-lg w-0"
-                        min="0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, store_frames: formData.store_frames + 1})}
-                        className="min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 font-bold text-xl transition-all touch-manipulation flex items-center justify-center flex-shrink-0"
-                      >
-                        <Plus size={16} className="sm:hidden" />
-                        <Plus size={20} className="hidden sm:block" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Drones Section - Collapsible */}
-            <div className="md:col-span-2 rounded-lg border border-border">
-              <button
-                type="button"
-                onClick={() => setDronesExpanded(!dronesExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
-              >
-                <h4 className="text-sm font-semibold text-foreground">Drones</h4>
-                {dronesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </button>
-
-              {dronesExpanded && (
-                <div className="p-4 pt-0 space-y-6">
-                  {/* Drones present slider with Not recorded option */}
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-3">
-                      Drones present
-                    </label>
-                    <div className="px-2 mb-4">
-                      <input
-                        type="range"
-                        min="-1"
-                        max="3"
-                        value={formData.drones_present}
-                        onChange={(e) => setFormData({...formData, drones_present: parseInt(e.target.value)})}
-                        className="w-full h-2 bg-surface dark:bg-surface-elevated rounded-lg appearance-none cursor-pointer accent-amber-600"
-                      />
-                      <div className="flex justify-between text-xs text-text-tertiary mt-2">
-                        <span>Not recorded</span>
-                        <span>Low</span>
-                        <span>Medium</span>
-                        <span>High</span>
-                        <span>Extreme</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Drone brood present YES/NO buttons with null state */}
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-3">
-                      Drone brood present
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, drone_brood_present: true})}
-                        className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
-                          formData.drone_brood_present === true
-                            ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-300'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        <span className="text-xl">✓</span>
-                        <span>YES</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, drone_brood_present: false})}
-                        className={`min-h-[48px] rounded-lg font-semibold transition-all touch-manipulation flex items-center justify-center gap-2 ${
-                          formData.drone_brood_present === false
-                            ? 'bg-red-600 text-white shadow-lg ring-2 ring-red-300'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        <span className="text-xl">✕</span>
-                        <span>NO</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, drone_brood_present: null})}
-                        className={`min-h-[48px] rounded-lg font-medium text-xs transition-all touch-manipulation ${
-                          formData.drone_brood_present === null
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Hygienic Behaviour Section - Collapsible */}
-            <div className="md:col-span-2 rounded-lg border border-border">
-              <button
-                type="button"
-                onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
-              >
-                <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
-                {hygienicBehaviourExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </button>
-
-              {hygienicBehaviourExpanded && (
-                <div className="p-4 pt-0 space-y-6">
-                  {/* Recapping */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        Recapping: {formData.recapping === 0 ? 'Not Recorded' : renderStars(formData.recapping)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">Recapping Rating Guide:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Very Low - Rarely uncap and remove diseased brood</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Occasionally remove diseased brood</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Average hygienic behavior</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good at detecting and removing diseased brood</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Rapidly detect and remove diseased brood</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            Bees that recap cells may be identifying and removing diseased or parasitized brood.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, recapping: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.recapping === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, recapping: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.recapping === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* VSH (Varroa Sensitive Hygiene) */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        VSH (Varroa Sensitive Hygiene): {formData.vsh === 0 ? 'Not Recorded' : renderStars(formData.vsh)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">VSH Rating Guide:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Very Low - No VSH behavior observed</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Minimal detection of varroa-infested brood</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Some ability to detect infested brood</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good at identifying and removing infested brood</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Highly sensitive to varroa presence in brood</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            VSH bees can detect and remove brood infested with reproducing varroa mites.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, vsh: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.vsh === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, vsh: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.vsh === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* SMR (Suppressed Mite Reproduction) */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        SMR (Suppressed Mite Reproduction): {formData.smr === 0 ? 'Not Recorded' : renderStars(formData.smr)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">SMR Rating Guide:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Very Low - Varroa reproduce freely</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Little suppression of mite reproduction</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Some suppression observed</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Good suppression of mite reproduction</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Excellent - Strong suppression, fewer viable offspring</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            SMR trait limits varroa mite reproduction in capped brood cells.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, smr: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.smr === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, smr: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.smr === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Disease Section - Collapsible */}
-            <div className="md:col-span-2 rounded-lg border border-border">
-              <button
-                type="button"
-                onClick={() => setDiseaseExpanded(!diseaseExpanded)}
-                className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
-              >
-                <h4 className="text-sm font-semibold text-foreground">Disease</h4>
-                {diseaseExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </button>
-
-              {diseaseExpanded && (
-                <div className="p-4 pt-0 space-y-6">
-                  {/* American Foulbrood (AFB) */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        American Foulbrood (AFB): {formData.afb_disease === 0 ? 'Not Recorded' : renderStars(formData.afb_disease)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">AFB Severity Rating:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Minimal - Very few signs, easily treated</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Some affected cells, manageable</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable infection, requires intervention</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Significant infection, urgent action needed</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive infection, colony at risk</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            AFB is a highly contagious bacterial disease that requires immediate reporting and treatment.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, afb_disease: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.afb_disease === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, afb_disease: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.afb_disease === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* European Foulbrood (EFB) */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        European Foulbrood (EFB): {formData.efb_disease === 0 ? 'Not Recorded' : renderStars(formData.efb_disease)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">EFB Severity Rating:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Minimal - Few affected larvae, colony strong</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Some dead larvae, manageable</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable infection, intervention needed</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many dead larvae, serious concern</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive infection, colony struggling</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            EFB affects young larvae and can weaken the colony significantly.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, efb_disease: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.efb_disease === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, efb_disease: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.efb_disease === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Chalkbrood */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        Chalkbrood: {formData.chalkbrood_disease === 0 ? 'Not Recorded' : renderStars(formData.chalkbrood_disease)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">Chalkbrood Severity Rating:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Minimal - Occasional mummified larvae</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Few mummies, not spreading</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Regular mummies, some impact</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many mummies, colony weakened</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive mummies, serious concern</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            Chalkbrood is a fungal disease that creates hard, chalk-like mummies.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, chalkbrood_disease: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.chalkbrood_disease === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, chalkbrood_disease: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.chalkbrood_disease === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Nosemosis */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        Nosemosis: {formData.nosemosis_disease === 0 ? 'Not Recorded' : renderStars(formData.nosemosis_disease)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">Nosemosis Severity Rating:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Minimal - Light spotting, minor dysentery</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Some spotting visible, manageable</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable spotting, intervention needed</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Heavy spotting, colony weakened</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive spotting, serious health issue</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            Nosemosis is caused by microsporidian parasites affecting bee digestion.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, nosemosis_disease: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.nosemosis_disease === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, nosemosis_disease: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.nosemosis_disease === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Deformed Wing Virus (DWV) */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        Deformed Wing Virus (DWV): {formData.dwv_disease === 0 ? 'Not Recorded' : renderStars(formData.dwv_disease)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">DWV Severity Rating:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Minimal - Rare deformed bees observed</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Few deformed bees, limited spread</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Regular deformed bees, concern</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many deformed bees, varroa issues</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive deformities, urgent intervention</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            DWV often indicates varroa mite issues. Bees have shrunken, deformed wings.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, dwv_disease: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.dwv_disease === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, dwv_disease: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.dwv_disease === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* IAPV & CBPV */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm font-medium text-text-secondary">
-                        IAPV & CBPV: {formData.iapv_cbpv_disease === 0 ? 'Not Recorded' : renderStars(formData.iapv_cbpv_disease)}
-                      </label>
-                      <div className="relative group">
-                        <HelpCircle size={16} className="text-text-tertiary cursor-help" />
-                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-80 p-3 bg-surface dark:bg-surface-elevated text-white text-xs rounded-lg shadow-lg z-10">
-                          <div className="font-semibold mb-2">IAPV & CBPV Severity Rating:</div>
-                          <div className="space-y-1">
-                            <div><strong>⭐ (1):</strong> Minimal - Few trembling/hairless bees</div>
-                            <div><strong>⭐⭐ (2):</strong> Low - Some affected bees, limited spread</div>
-                            <div><strong>⭐⭐⭐ (3):</strong> Moderate - Notable symptoms, monitoring needed</div>
-                            <div><strong>⭐⭐⭐⭐ (4):</strong> High - Many affected bees, colony weakened</div>
-                            <div><strong>⭐⭐⭐⭐⭐ (5):</strong> Severe - Extensive symptoms, serious concern</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-border text-text-secondary">
-                            IAPV causes paralysis; CBPV causes trembling and hairless appearance.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <button
-                          key={rating}
-                          type="button"
-                          onClick={() => setFormData({...formData, iapv_cbpv_disease: rating})}
-                          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
-                            formData.iapv_cbpv_disease === rating
-                              ? 'bg-teal-600 text-white shadow-lg ring-2 ring-teal-300'
-                              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                          }`}
-                        >
-                          {rating}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setFormData({...formData, iapv_cbpv_disease: 0})}
-                        className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
-                          formData.iapv_cbpv_disease === 0
-                            ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-                            : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
-                        }`}
-                      >
-                        Not Recorded
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                rows={4}
-                placeholder="General observations, actions taken, tasks for next inspection..."
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-              />
-            </div>
-
-            {userHasActiveSubscription && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-text-secondary mb-2">Inspection Photo (optional)</label>
-                <div className="flex items-start gap-3">
-                  {imagePreview ? (
-                    <div className="relative w-20 h-20 flex-shrink-0 group">
-                      <div
-                        className="relative w-full h-full cursor-pointer"
-                        onDoubleClick={() => {
-                          setModalImageUrl(imagePreview)
-                          setImageModalOpen(true)
-                        }}
-                        title="Double-click to enlarge"
-                      >
-                        <Image
-                          src={imagePreview}
-                          alt="Preview"
-                          fill
-                          className="object-cover rounded-lg border-2 border-border shadow-sm"
-                          sizes="80px"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
-                          <Camera size={16} className="text-white" />
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
-                        title="Remove image"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : null}
-                  <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all p-4">
-                    <div className="flex flex-col items-center justify-center">
-                      <Camera size={24} className="text-text-tertiary mb-1" />
-                      <p className="text-xs text-text-tertiary text-center">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-                </div>
-              </div>
+              </form>
             )}
-
-            <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
-              <button
-                type="submit"
-                disabled={uploadingImage || fetchingWeather}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 active:bg-forest-800 dark:active:bg-emerald-800 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
-              >
-                {uploadingImage ? 'Uploading Image...' : fetchingWeather ? 'Fetching Weather...' : editingInspection ? 'Update' : 'Save'} Inspection
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {showForm && formType === 'varroa_treatment' && (
-        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold">
-                {editingTreatment ? 'Edit Varroa Treatment' : 'Record New Varroa Treatment'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowIpmTips(true)}
-                className="text-amber-600 hover:text-amber-700 transition-colors"
-                title="View IPM Tips"
-              >
-                <HelpCircle size={20} />
-              </button>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button
-                type="submit"
-                form="treatment-form"
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 transition-all touch-manipulation font-medium"
-              >
-                {editingTreatment ? 'Update' : 'Save'} Treatment
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingTreatment(null)
-                  setSelectedHiveHasHoneySupers(false)
-                }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
+        )}
 
-          <form id="treatment-form" onSubmit={handleTreatmentSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-              <select
-                value={formApiaryId}
-                onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-              >
-                <option value="">All Apiaries</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>
-                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
-                  </option>
-                ))}
-              </select>
+        {/* Records List */}
+        <div className="space-y-4">
+          {filteredRecords.length === 0 ? (
+            <div className="text-center py-12 text-text-secondary">
+              <p>No records found matching your filters.</p>
             </div>
+          ) : (
+            filteredRecords.map(record => {
+              switch (record.record_type) {
+                case 'inspection':
+                  return (
+                    <InspectionCard
+                      key={`inspection-${record.id}`}
+                      inspection={record}
+                      userId={userId}
+                      sharedHiveIds={sharedHiveIds}
+                      userHasActiveSubscription={userHasActiveSubscription}
+                      hives={hives}
+                      onEdit={handleInspectionEdit}
+                      onDelete={handleInspectionDelete}
+                      onImageClick={handleImageClick}
+                    />
+                  )
+                case 'varroa_check':
+                  return (
+                    <VarroaCheckCard
+                      key={`check-${record.id}`}
+                      check={record}
+                      userId={userId}
+                      sharedHiveIds={sharedHiveIds}
+                      userHasActiveSubscription={userHasActiveSubscription}
+                      onEdit={handleCheckEdit}
+                      onDelete={handleCheckDelete}
+                      onImageClick={handleImageClick}
+                    />
+                  )
+                case 'varroa_treatment':
+                  return (
+                    <TreatmentCard
+                      key={`treatment-${record.id}`}
+                      treatment={record}
+                      userId={userId}
+                      sharedHiveIds={sharedHiveIds}
+                      onEdit={handleTreatmentEdit}
+                      onDelete={handleTreatmentDelete}
+                    />
+                  )
+                case 'feeding':
+                  return (
+                    <FeedingCard
+                      key={`feeding-${record.id}`}
+                      feeding={record}
+                      userId={userId}
+                      sharedHiveIds={sharedHiveIds}
+                      onEdit={handleFeedingEdit}
+                      onDelete={handleFeedingDelete}
+                    />
+                  )
+                case 'harvest':
+                  return (
+                    <HarvestCard
+                      key={`harvest-${record.id}`}
+                      harvest={record}
+                      userId={userId}
+                      sharedHiveIds={sharedHiveIds}
+                      onEdit={handleHarvestEdit}
+                      onDelete={handleHarvestDelete}
+                    />
+                  )
+                case 'archive':
+                  return (
+                    <ArchiveCard
+                      key={`archive-${record.id}`}
+                      archiveRecord={record}
+                    />
+                  )
+                default:
+                  return null
+              }
+            })
+          )}
+        </div>
 
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
-              <select
-                value={editingTreatment?.hive_id || ''}
-                onChange={async (e) => {
-                  const hiveId = e.target.value
-                  if (!editingTreatment) return
+        {/* New Record FAB */}
+        <NewRecordDropdown
+          onSelectType={handleNewRecord}
+        />
 
-                  setEditingTreatment({...editingTreatment, hive_id: hiveId})
-
-                  // Check if selected hive has honey supers
-                  if (hiveId) {
-                    const selectedHive = hives.find(h => h.id === hiveId)
-                    const honeySupers = selectedHive?.configuration?.honey_supers || 0
-                    setSelectedHiveHasHoneySupers(honeySupers > 0)
-                  } else {
-                    setSelectedHiveHasHoneySupers(false)
-                  }
-
-                  // Fetch weather data for the selected hive
-                  if (hiveId) {
-                    setFetchingWeather(true)
-                    try {
-                      const selectedHive = hives.find(h => h.id === hiveId)
-                      if (selectedHive?.apiary_id) {
-                        const { data: apiaryData } = await supabase
-                          .from('apiaries')
-                          .select('eircode, is_uk_ni')
-                          .eq('id', selectedHive.apiary_id)
-                          .single()
-
-                        if (apiaryData?.eircode) {
-                          const weatherData = await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
-                          if (weatherData) {
-                            setEditingTreatment(prev => prev ? {
-                              ...prev,
-                              temperature: weatherData.temp,
-                              weather_conditions: `${weatherData.condition}, ${weatherData.humidity}% humidity, ${weatherData.wind_speed} km/h wind`
-                            } : null)
-                          }
-                        }
-                      }
-                    } catch {
-                    } finally {
-                      setFetchingWeather(false)
-                    }
-                  }
-                }}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">Select hive</option>
-                {hives
-                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
-                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
-                  .map((h) => (
-                    <option key={h.id} value={h.id}>{h.hive_number}</option>
-                  ))}
-              </select>
-              {selectedHiveHasHoneySupers && (
-                <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-600 rounded-md">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
-                    <span className="text-lg">⚠️</span>
-                    <span>
-                      <strong>Warning:</strong> This hive has honey supers installed. Please ensure the treatment product is safe for use with honey supers and check the withdrawal period before harvesting honey.
-                    </span>
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Treatment Date *</label>
-              <input
-                type="date"
-                value={editingTreatment?.treatment_date || ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, treatment_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Treatment Product *</label>
-              <div className="relative group">
-                <select
-                  value={
-                    otherTreatmentType
-                      ? 'Other'
-                      : editingTreatment?.treatment_type || ''
-                  }
-                  onChange={(e) => {
-                    if (e.target.value === 'Other') {
-                      // Switch to manual entry mode
-                      setIsOtherTreatment(true)
-                      setOtherTreatmentType(editingTreatment?.treatment_type || '')
-                      if (editingTreatment) {
-                        setEditingTreatment({
-                          ...editingTreatment,
-                          treatment_type: ''
-                        })
-                      }
-                    } else {
-                      // Set treatment_type to the selected product name
-                      setIsOtherTreatment(false)
-                      if (editingTreatment) {
-                        setEditingTreatment({
-                          ...editingTreatment,
-                          treatment_type: e.target.value
-                        })
-                      }
-                      setOtherTreatmentType('')
-                    }
-                  }}
-                  className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                  required
+        {/* IPM Tips Modal */}
+        {showIpmTips && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-surface rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">IPM Tips for Varroa Control</h3>
+                <button
+                  onClick={() => setShowIpmTips(false)}
+                  className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
                 >
-                  <option value="">Select treatment product</option>
-                  {treatmentProducts.map((product) => (
-                    <option key={product.id} value={product.product_name}>
-                      {product.product_name} - {product.active_ingredients || 'No active ingredient listed'}
-                    </option>
-                  ))}
-                  <option value="Other">Other (specify below)</option>
-                </select>
-
-                {/* Product details tooltip - shown on hover when a product is selected */}
-                {editingTreatment?.treatment_type && !isOtherTreatment && treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type) && (
-                  <div className="absolute z-10 invisible group-hover:visible w-full sm:w-96 bg-surface dark:bg-surface-elevated border-2 border-blue-500 dark:border-blue-400 rounded-lg shadow-xl p-4 mt-1 left-0 sm:left-auto sm:right-0">
-                    {(() => {
-                      const selectedProduct = treatmentProducts.find(p => p.product_name === editingTreatment.treatment_type)
-                      if (!selectedProduct) return null
-                      return (
-                        <>
-                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <h4 className="font-semibold text-foreground">{selectedProduct.product_name}</h4>
-                          </div>
-                          <div className="space-y-2 text-sm">
-                            {selectedProduct.active_ingredients && (
-                              <div>
-                                <span className="font-medium text-text-secondary">Active Ingredients:</span>
-                                <span className="text-text-tertiary ml-2">{selectedProduct.active_ingredients}</span>
-                              </div>
-                            )}
-                            {selectedProduct.application_method && (
-                              <div>
-                                <span className="font-medium text-text-secondary">Application Method:</span>
-                                <span className="text-text-tertiary ml-2">{selectedProduct.application_method}</span>
-                              </div>
-                            )}
-                            {selectedProduct.treatment_duration && (
-                              <div>
-                                <span className="font-medium text-text-secondary">Duration:</span>
-                                <span className="text-text-tertiary ml-2">{selectedProduct.treatment_duration}</span>
-                              </div>
-                            )}
-                            {selectedProduct.temperature_range && (
-                              <div>
-                                <span className="font-medium text-text-secondary">Temperature:</span>
-                                <span className="text-text-tertiary ml-2">{selectedProduct.temperature_range}</span>
-                              </div>
-                            )}
-                            {selectedProduct.honey_flow_restrictions && (
-                              <div>
-                                <span className="font-medium text-text-secondary">Honey Flow:</span>
-                                <span className="text-text-tertiary ml-2">{selectedProduct.honey_flow_restrictions}</span>
-                              </div>
-                            )}
-                            {selectedProduct.withdrawal_period_days !== null && (
-                              <div>
-                                <span className="font-medium text-text-secondary">Withdrawal:</span>
-                                <span className="text-text-tertiary ml-2">{selectedProduct.withdrawal_period_days} days</span>
-                              </div>
-                            )}
-                            {selectedProduct.notes && (
-                              <div className="pt-2 border-t border-border">
-                                <span className="font-medium text-text-secondary block mb-1">Notes:</span>
-                                <span className="text-text-tertiary text-xs">{selectedProduct.notes}</span>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </div>
-                )}
+                  <X size={20} />
+                </button>
               </div>
-            </div>
-
-            {/* Show manual input if "Other" is selected */}
-            {isOtherTreatment && (
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Specify Treatment Product *
-                </label>
-                <input
-                  type="text"
-                  value={otherTreatmentType}
-                  onChange={(e) => {
-                    setOtherTreatmentType(e.target.value)
-                    if (editingTreatment) {
-                      setEditingTreatment({
-                        ...editingTreatment,
-                        treatment_type: e.target.value
-                      })
-                    }
-                  }}
-                  className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                  placeholder="Enter custom treatment product name"
-                  required
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Dosage *</label>
-              <input
-                type="text"
-                value={editingTreatment?.dosage || ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, dosage: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="e.g., 5ml per hive"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                Temperature (°C)
-                {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={editingTreatment?.temperature ?? ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, temperature: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
-                disabled={fetchingWeather}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                Weather Conditions
-                {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
-              </label>
-              <input
-                type="text"
-                value={editingTreatment?.weather_conditions || ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, weather_conditions: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
-                disabled={fetchingWeather}
-              />
-              {editingTreatment?.hive_id && !fetchingWeather && (
-                <p className="text-xs text-text-tertiary mt-1">
-                  Weather data auto-populated based on hive location. You can edit if needed.
+              <div className="space-y-4 text-sm text-text-secondary">
+                <p><strong>Integrated Pest Management (IPM)</strong> combines multiple strategies:</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Drone Comb Trapping:</strong> Insert drone foundation frames, allow bees to build and queen to lay, then remove and freeze before drones emerge.</li>
+                  <li><strong>Brood Breaks:</strong> Cage the queen or create splits to interrupt the mite reproduction cycle.</li>
+                  <li><strong>Screened Bottom Boards:</strong> Allow mites to fall through and away from the colony.</li>
+                  <li><strong>Powdered Sugar Dusting:</strong> Encourages grooming behavior.</li>
+                  <li><strong>Regular Monitoring:</strong> Check mite levels every 4-6 weeks during the active season.</li>
+                </ul>
+                <p className="text-amber-600 dark:text-amber-400 font-medium">
+                  Note: Always follow treatment product instructions and respect withdrawal periods before harvesting honey.
                 </p>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-              <textarea
-                value={editingTreatment?.notes || ''}
-                onChange={(e) => setEditingTreatment(editingTreatment ? {...editingTreatment, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                rows={4}
-                placeholder="Optional notes about the treatment"
-              />
-            </div>
-          </form>
-        </div>
-      )}
-
-      {showForm && formType === 'varroa_check' && (
-        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h3 className="text-xl font-semibold">
-              {editingCheck ? 'Edit Varroa Check' : 'Record New Varroa Check'}
-            </h3>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button
-                type="submit"
-                form="check-form"
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 transition-all touch-manipulation font-medium"
-              >
-                {editingCheck ? 'Update' : 'Save'} Check
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingCheck(null)
-                }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
-              >
-                Cancel
-              </button>
+              </div>
             </div>
           </div>
-          <form id="check-form" onSubmit={handleCheckSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-              <select
-                value={formApiaryId}
-                onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-              >
-                <option value="">All Apiaries</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>
-                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+        )}
 
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
-              <select
-                value={editingCheck?.hive_id || ''}
-                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">Select hive</option>
-                {hives
-                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
-                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
-                  .map((h) => (
-                    <option key={h.id} value={h.id}>{h.hive_number}</option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Check Date & Time *</label>
-              <input
-                type="datetime-local"
-                value={editingCheck?.check_date || ''}
-                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, check_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Method *</label>
-              <select
-                value={editingCheck?.method && checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : 'Other'}
-                onChange={(e) => {
-                  if (e.target.value === 'Other') {
-                    setOtherCheckMethod(editingCheck?.method && !checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : '')
-                  } else {
-                    setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)
-                    setOtherCheckMethod('')
-                  }
-                }}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">Select method</option>
-                {checkMethodOptions.map((method) => (
-                  <option key={method} value={method}>{method}</option>
-                ))}
-                <option value="Other">Other (specify below)</option>
-              </select>
-              {(editingCheck?.method && !checkMethodOptions.includes(editingCheck.method) || otherCheckMethod) && (
-                <input
-                  type="text"
-                  value={otherCheckMethod || (editingCheck?.method && !checkMethodOptions.includes(editingCheck.method) ? editingCheck.method : '')}
-                  onChange={(e) => {
-                    setOtherCheckMethod(e.target.value)
-                    setEditingCheck(editingCheck ? {...editingCheck, method: e.target.value} : null)
-                  }}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
-                  placeholder="Specify other method"
-                  required
-                />
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Total Mite Drop' : 'Mites Count'}
-              </label>
-              <input
-                type="number"
-                value={editingCheck?.mites_count ?? ''}
-                onChange={(e) => {
-                  const mitesCount = e.target.value ? parseInt(e.target.value) : null
-                  const sampleSize = editingCheck?.sample_size ?? null
-                  const method = editingCheck?.method
-                  const checkDate = editingCheck?.check_date || new Date().toISOString().split('T')[0]
-                  let infestationRate = null
-                  let actionThreshold = false
-
-                  if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
-                    // Check if this is a daily mite drop method
-                    if (method === 'Natural Mite Drop' || method === 'Screening Board') {
-                      // Daily Mite Drop = Total Mites / Number of Days
-                      infestationRate = parseFloat((mitesCount / sampleSize).toFixed(2))
-                      // Auto-check action threshold if daily mite drop >= 5
-                      if (infestationRate >= 5) {
-                        actionThreshold = true
-                      }
-                    } else {
-                      // Standard Infestation Rate = (Mites / Sample Size) * 100
-                      infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
-
-                      // Determine season based on check date
-                      const month = new Date(checkDate).getMonth() + 1 // 1-12
-                      const isSpring = month >= 3 && month <= 5 // March-May
-                      const isMidLate = month >= 6 && month <= 10 // June-October
-
-                      // Apply treatment thresholds based on season
-                      if (isSpring && infestationRate >= 1) {
-                        actionThreshold = true
-                      } else if (isMidLate && infestationRate >= 3) {
-                        actionThreshold = true
-                      }
-                    }
-                  }
-
-                  setEditingCheck(editingCheck ? {
-                    ...editingCheck,
-                    mites_count: mitesCount,
-                    infestation_rate: infestationRate,
-                    action_threshold_reached: actionThreshold
-                  } : null)
-                }}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Days' : 'Sample Size'}
-              </label>
-              <input
-                type="number"
-                value={editingCheck?.sample_size ?? ''}
-                onChange={(e) => {
-                  const sampleSize = e.target.value ? parseInt(e.target.value) : null
-                  const mitesCount = editingCheck?.mites_count ?? null
-                  const method = editingCheck?.method
-                  const checkDate = editingCheck?.check_date || new Date().toISOString().split('T')[0]
-                  let infestationRate = null
-                  let actionThreshold = false
-
-                  if (mitesCount !== null && sampleSize !== null && sampleSize > 0) {
-                    // Check if this is a daily mite drop method
-                    if (method === 'Natural Mite Drop' || method === 'Screening Board') {
-                      // Daily Mite Drop = Total Mites / Number of Days
-                      infestationRate = parseFloat((mitesCount / sampleSize).toFixed(2))
-                      // Auto-check action threshold if daily mite drop >= 5
-                      if (infestationRate >= 5) {
-                        actionThreshold = true
-                      }
-                    } else {
-                      // Standard Infestation Rate = (Mites / Sample Size) * 100
-                      infestationRate = parseFloat(((mitesCount / sampleSize) * 100).toFixed(2))
-
-                      // Determine season based on check date
-                      const month = new Date(checkDate).getMonth() + 1 // 1-12
-                      const isSpring = month >= 3 && month <= 5 // March-May
-                      const isMidLate = month >= 6 && month <= 10 // June-October
-
-                      // Apply treatment thresholds based on season
-                      if (isSpring && infestationRate >= 1) {
-                        actionThreshold = true
-                      } else if (isMidLate && infestationRate >= 3) {
-                        actionThreshold = true
-                      }
-                    }
-                  }
-
-                  setEditingCheck(editingCheck ? {
-                    ...editingCheck,
-                    sample_size: sampleSize,
-                    infestation_rate: infestationRate,
-                    action_threshold_reached: actionThreshold
-                  } : null)
-                }}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
-                {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
-                {editingCheck?.mites_count !== null && editingCheck?.mites_count !== undefined &&
-                 editingCheck?.sample_size !== null && editingCheck?.sample_size !== undefined &&
-                 editingCheck.sample_size > 0 && (
-                  <span className="ml-2 text-xs text-green-600 font-normal">(Auto-calculated)</span>
-                )}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={editingCheck?.infestation_rate ?? ''}
-                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, infestation_rate: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Optional (or auto-calculated)"
-              />
-              {/* Season-based interpretation guidance */}
-              {editingCheck?.infestation_rate !== null && editingCheck?.infestation_rate !== undefined &&
-               !(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') && (
-                <div className="mt-2 text-xs">
-                  {(() => {
-                    const rate = editingCheck.infestation_rate
-                    const checkDate = editingCheck?.check_date || new Date().toISOString().split('T')[0]
-                    const month = new Date(checkDate).getMonth() + 1
-                    const isSpring = month >= 3 && month <= 5
-                    const isMidLate = month >= 6 && month <= 10
-
-                    if (rate < 1) {
-                      return <span className="text-green-600">✓ Usually safe, but monitor.</span>
-                    } else if (isSpring && rate >= 1) {
-                      return <span className="text-orange-600 font-semibold">⚠ Spring: Treat (≥1%)</span>
-                    } else if (isMidLate && rate >= 3) {
-                      return <span className="text-red-600 font-semibold">⚠ Mid/Late Season: Treat immediately (≥3%)</span>
-                    } else if (isMidLate && rate >= 1) {
-                      return <span className="text-yellow-600">⚠ Monitor closely - approaching treatment threshold</span>
-                    } else if (rate >= 1) {
-                      return <span className="text-yellow-600">⚠ Monitor closely</span>
-                    }
-                    return null
-                  })()}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editingCheck?.action_threshold_reached || false}
-                  onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, action_threshold_reached: e.target.checked} : null)}
-                  className="h-5 w-5 rounded border-border text-orange-600"
-                />
-                <span className="text-sm font-medium text-text-secondary">
-                  Action Threshold Reached
-                  {(editingCheck?.method === 'Natural Mite Drop' || editingCheck?.method === 'Screening Board') ? (
-                    <span className="ml-2 text-xs text-text-tertiary font-normal">(Auto-checked if ≥ 5 mites/day)</span>
-                  ) : (
-                    <span className="ml-2 text-xs text-text-tertiary font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
-                  )}
-                </span>
-              </label>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-              <textarea
-                value={editingCheck?.notes || ''}
-                onChange={(e) => setEditingCheck(editingCheck ? {...editingCheck, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                rows={4}
-                placeholder="Optional notes about the check"
-              />
-            </div>
-
-            {userHasActiveSubscription && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-text-secondary mb-2">Photo (optional)</label>
-                <div className="flex items-start gap-3">
-                  {(checkImagePreview || editingCheck?.image_url) ? (
-                    <div className="relative w-20 h-20 flex-shrink-0 group">
-                      <div
-                        className="relative w-full h-full cursor-pointer"
-                        onDoubleClick={() => {
-                          setModalImageUrl(checkImagePreview || editingCheck?.image_url || null)
-                          setImageModalOpen(true)
-                        }}
-                        title="Double-click to enlarge"
-                      >
-                        <Image
-                          src={checkImagePreview || editingCheck?.image_url || ''}
-                          alt="Preview"
-                          fill
-                          className="object-cover rounded-lg border-2 border-border shadow-sm"
-                          sizes="80px"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
-                          <Camera size={16} className="text-white" />
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveCheckImage}
-                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
-                        title="Remove image"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : null}
-                  <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all p-4">
-                    <div className="flex flex-col items-center justify-center">
-                      <Camera size={24} className="text-text-tertiary mb-1" />
-                      <p className="text-xs text-text-tertiary text-center">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleCheckImageChange}
-                    />
-                  </label>
-                </div>
-              </div>
-            )}
-          </form>
-          <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full sm:w-auto sm:justify-end">
-            <button
-              type="submit"
-              form="check-form"
-              disabled={uploadingCheckImage}
-              className="px-6 py-3 sm:py-2 min-h-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 disabled:bg-orange-300 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
-            >
-              {uploadingCheckImage ? 'Uploading...' : editingCheck ? 'Update' : 'Save'} Check
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowForm(false)
-                setEditingCheck(null)
-              }}
-              className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showForm && formType === 'feeding' && (
-        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h3 className="text-xl font-semibold">
-              {editingFeeding ? 'Edit Feeding' : 'Record New Feeding'}
-            </h3>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        {/* Image Modal */}
+        {imageModalOpen && modalImageUrl && (
+          <div
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setImageModalOpen(false)}
+          >
+            <div className="relative max-w-4xl w-full max-h-[90vh]">
               <button
-                type="submit"
-                form="feeding-form"
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-all touch-manipulation font-medium"
-              >
-                {editingFeeding ? 'Update' : 'Save'} Feeding
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingFeeding(null)
-                  setIsOtherFeedType(false)
-                  setOtherFeedType('')
-                }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          <form id="feeding-form" onSubmit={handleFeedingSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-              <select
-                value={formApiaryId}
-                onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-              >
-                <option value="">All Apiaries</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>
-                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
-              <select
-                value={editingFeeding?.hive_id || ''}
-                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">Select hive</option>
-                {hives
-                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
-                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
-                  .map((h) => (
-                    <option key={h.id} value={h.id}>{h.hive_number}</option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Feed Date *</label>
-              <input
-                type="date"
-                value={editingFeeding?.feed_date || ''}
-                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, feed_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Feed Type *</label>
-              <select
-                value={editingFeeding?.feed_type || ''}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setEditingFeeding(editingFeeding ? {...editingFeeding, feed_type: value} : null)
-                  setIsOtherFeedType(value === 'Other')
-                  if (value !== 'Other') {
-                    setOtherFeedType('')
-                  }
-                }}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">Select feed type</option>
-                {feedTypeOptions.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-              {isOtherFeedType && (
-                <input
-                  type="text"
-                  value={otherFeedType}
-                  onChange={(e) => setOtherFeedType(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
-                  placeholder="Enter custom feed type"
-                  required
-                />
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Quantity</label>
-              <input
-                type="number"
-                step="0.1"
-                value={editingFeeding?.quantity ?? ''}
-                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, quantity: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Unit *</label>
-              <select
-                value={editingFeeding?.unit || 'L'}
-                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, unit: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="L">Liters (L)</option>
-                <option value="kg">Kilograms (kg)</option>
-                <option value="g">Grams (g)</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-              <textarea
-                value={editingFeeding?.notes || ''}
-                onChange={(e) => setEditingFeeding(editingFeeding ? {...editingFeeding, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                rows={4}
-                placeholder="Optional notes about the feeding"
-              />
-            </div>
-          </form>
-        </div>
-      )}
-
-      {showForm && formType === 'harvest' && (
-        <div ref={formRef} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h3 className="text-xl font-semibold">
-              {editingHarvest ? 'Edit Harvest' : 'Record New Harvest'}
-            </h3>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button
-                type="submit"
-                form="harvest-form"
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 active:bg-yellow-800 transition-all touch-manipulation font-medium"
-              >
-                {editingHarvest ? 'Update' : 'Save'} Harvest
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingHarvest(null)
-                }}
-                className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          <form id="harvest-form" onSubmit={handleHarvestSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-              <select
-                value={formApiaryId}
-                onChange={(e) => setFormApiaryId(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-              >
-                <option value="">All Apiaries</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>
-                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
-              <select
-                value={editingHarvest?.hive_id || ''}
-                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, hive_id: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="">Select hive</option>
-                {hives
-                  .filter(h => !h.archived_at) // Only show active (non-archived) hives
-                  .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
-                  .map((h) => (
-                    <option key={h.id} value={h.id}>{h.hive_number}</option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Harvest Date *</label>
-              <input
-                type="date"
-                value={editingHarvest?.harvest_date || ''}
-                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, harvest_date: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Honey Weight</label>
-              <input
-                type="number"
-                step="0.1"
-                value={editingHarvest?.honey_weight ?? ''}
-                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, honey_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Wax Weight</label>
-              <input
-                type="number"
-                step="0.1"
-                value={editingHarvest?.wax_weight ?? ''}
-                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, wax_weight: e.target.value ? parseFloat(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Unit *</label>
-              <select
-                value={editingHarvest?.unit || 'kg'}
-                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, unit: e.target.value} : null)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                required
-              >
-                <option value="kg">Kilograms (kg)</option>
-                <option value="lb">Pounds (lb)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Frames Harvested</label>
-              <input
-                type="number"
-                value={editingHarvest?.frames_harvested ?? ''}
-                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, frames_harvested: e.target.value ? parseInt(e.target.value) : null} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-              <textarea
-                value={editingHarvest?.notes || ''}
-                onChange={(e) => setEditingHarvest(editingHarvest ? {...editingHarvest, notes: e.target.value} : null)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                rows={4}
-                placeholder="Optional notes about the harvest"
-              />
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {filteredRecords.map((record) => {
-          // Render different card types based on record_type
-          if (record.record_type === 'inspection') {
-            const inspection = record
-            return (
-          <div key={`inspection-${inspection.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 md:p-6 border-l-4 border-blue-500">
-            <div className="flex justify-between items-start mb-3 md:mb-4 gap-2 md:gap-4">
-              <div className="flex items-start gap-3 flex-1">
-                {/* Icon Badge */}
-                <div className="w-12 h-12 flex-shrink-0 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
-                  <Search size={24} className="text-blue-600 dark:text-blue-400" />
-                </div>
-                {userHasActiveSubscription && inspection.image_url && (
-                  <div
-                    className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
-                    onDoubleClick={() => {
-                      setModalImageUrl(inspection.image_url)
-                      setImageModalOpen(true)
-                    }}
-                    title="Double-click to enlarge"
-                  >
-                    <Image
-                      src={inspection.image_url}
-                      alt="Inspection"
-                      fill
-                      className="object-cover rounded-lg border-2 border-border shadow-sm"
-                      sizes="64px"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
-                      <Camera size={20} className="text-white" />
-                    </div>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base md:text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
-                  <p className="text-xs md:text-sm text-text-tertiary">
-                    {inspection.inspection_date}
-                    {inspection.inspection_time && ` at ${inspection.inspection_time}`}
-                  </p>
-                  {inspection.profiles && inspection.user_id !== userId && sharedHiveIds.includes(inspection.hive_id) && (
-                    <p className="text-xs text-text-tertiary mt-1">
-                      Recorded by: <span className="font-medium text-text-secondary">
-                        {(inspection.profiles.first_name && inspection.profiles.last_name)
-                          ? `${inspection.profiles.first_name} ${inspection.profiles.last_name}`
-                          : inspection.profiles.email}
-                      </span>
-                    </p>
-                  )}
-                  {inspection.weight && (
-                    <p className="text-sm text-text-tertiary font-medium mt-1">
-                      Weight: {inspection.weight} kg
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <button
-                  onClick={() => handleEdit(inspection)}
-                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation"
-                  aria-label="Edit inspection"
-                >
-                  <Edit2 size={20} />
-                </button>
-                <button
-                  onClick={() => handleDelete(inspection.id)}
-                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation"
-                  aria-label="Delete inspection"
-                >
-                  <Trash2 size={20} />
-                </button>
-              </div>
-            </div>
-
-            {/* Queen & Brood Section - Table Format */}
-            <div className="mb-3 overflow-hidden rounded border border-border">
-              <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
-                <h4 className="text-sm font-semibold text-foreground">Queen & Brood</h4>
-              </div>
-              <div className="p-2">
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary">Queen:</span>
-                    <span className="text-base">{inspection.queen_seen ? '✅' : '❌'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary">Eggs:</span>
-                    <span className="text-base">{inspection.eggs_present ? '✅' : '❌'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary">Brood:</span>
-                    <span className="font-bold text-purple-600">{inspection.brood_frames ?? '-'}</span>
-                  </div>
-                  {hives.find(h => h.id === inspection.hive_id)?.configuration?.right_sized_broodbox && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-text-secondary">Right-Sized:</span>
-                      <span className="font-bold text-amber-600">{inspection.right_sized_frames ?? '-'}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Queen Cells Section - Only show if any cells were found */}
-            {(inspection.queen_cups || inspection.swarm_cells || inspection.supercedure_cells || inspection.emergency_cells) && (
-              <div className="mb-3 overflow-hidden rounded border border-border">
-                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
-                  <h4 className="text-sm font-semibold text-foreground">Queen Cells</h4>
-                </div>
-                <div className="px-3 py-2">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    {inspection.queen_cups && (
-                      <span>
-                        <span className="text-text-secondary">Queen Cups:</span> <span className="font-medium text-foreground">{inspection.queen_cups_number || 0}</span>
-                        {inspection.queen_cups_removed_all !== null && (
-                          <span className="text-text-tertiary"> ({inspection.queen_cups_removed_all ? 'All removed' : 'Some remain'})</span>
-                        )}
-                      </span>
-                    )}
-                    {inspection.swarm_cells && (
-                      <span>
-                        <span className="text-text-secondary">Swarm Cells:</span> <span className="font-medium text-foreground">{inspection.swarm_cells_number || 0}</span>
-                        {inspection.swarm_cells_removed_all !== null && (
-                          <span className="text-text-tertiary"> ({inspection.swarm_cells_removed_all ? 'All removed' : 'Some remain'})</span>
-                        )}
-                      </span>
-                    )}
-                    {inspection.supercedure_cells && (
-                      <span>
-                        <span className="text-text-secondary">Supercedure Cells:</span> <span className="font-medium text-foreground">{inspection.supercedure_cells_number || 0}</span>
-                        {inspection.supercedure_cells_removed_all !== null && (
-                          <span className="text-text-tertiary"> ({inspection.supercedure_cells_removed_all ? 'All removed' : 'Some remain'})</span>
-                        )}
-                      </span>
-                    )}
-                    {inspection.emergency_cells && (
-                      <span>
-                        <span className="text-text-secondary">Emergency Cells:</span> <span className="font-medium text-foreground">{inspection.emergency_cells_number || 0}</span>
-                        {inspection.emergency_cells_removed_all !== null && (
-                          <span className="text-text-tertiary"> ({inspection.emergency_cells_removed_all ? 'All removed' : 'Some remain'})</span>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Drones Section Display - Only show if any value is recorded */}
-            {((inspection.drones_present !== -1 && inspection.drones_present !== null) || inspection.drone_brood_present !== null) && (
-            <div className="mb-3 overflow-hidden rounded border border-border">
-              <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
-                <h4 className="text-sm font-semibold text-foreground">Drones</h4>
-              </div>
-              <div className="p-2">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {inspection.drones_present !== -1 && inspection.drones_present !== null && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-text-secondary">Level:</span>
-                      <span className="font-semibold text-amber-600">
-                        {inspection.drones_present === 0 && 'Low'}
-                        {inspection.drones_present === 1 && 'Medium'}
-                        {inspection.drones_present === 2 && 'High'}
-                        {inspection.drones_present === 3 && 'Extreme'}
-                      </span>
-                    </div>
-                  )}
-                  {inspection.drone_brood_present !== null && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-text-secondary">Brood:</span>
-                      <span className="text-base">{inspection.drone_brood_present ? '✅' : '❌'}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            )}
-
-            {/* Behaviour Section - Table Format */}
-            {(inspection.population_strength > 0 || inspection.temperament_rating > 0 ||
-              inspection.brood_pattern_rating > 0 || inspection.swarming_tendency > 0 ||
-              inspection.calmness > 0) && (
-            <div className="mb-3 overflow-hidden rounded border border-border">
-              <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
-                <h4 className="text-sm font-semibold text-foreground">Behaviour</h4>
-              </div>
-              <div className="p-2">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-x-3 gap-y-1.5 text-sm">
-                  {inspection.population_strength > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary whitespace-nowrap">Population:</span>
-                    <span>{renderStars(inspection.population_strength)}</span>
-                  </div>
-                  )}
-                  {inspection.temperament_rating > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary whitespace-nowrap">Temperament:</span>
-                    <span>{renderStars(inspection.temperament_rating)}</span>
-                  </div>
-                  )}
-                  {inspection.brood_pattern_rating > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary whitespace-nowrap">Brood Pattern:</span>
-                    <span>{renderStars(inspection.brood_pattern_rating)}</span>
-                  </div>
-                  )}
-                  {inspection.swarming_tendency > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary whitespace-nowrap">Swarming:</span>
-                    <span>{renderStars(inspection.swarming_tendency)}</span>
-                  </div>
-                  )}
-                  {inspection.calmness > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary whitespace-nowrap">Calmness:</span>
-                    <span>{renderStars(inspection.calmness)}</span>
-                  </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            )}
-
-            {/* Given/Taken Section - Compact inline */}
-            {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
-              inspection.honey_supers > 0 || inspection.drone_frames > 0 || inspection.store_frames > 0) && (
-              <div className="mb-3 overflow-hidden rounded border border-border">
-                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
-                  <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
-                </div>
-                <div className="px-3 py-1.5">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    {inspection.frames_foundation > 0 && (
-                      <span><span className="text-text-secondary">Foundation:</span> <span className="font-bold text-orange-600">{inspection.frames_foundation}</span></span>
-                    )}
-                    {inspection.frames_brood > 0 && (
-                      <span><span className="text-text-secondary">Brood:</span> <span className="font-bold text-orange-600">{inspection.frames_brood}</span></span>
-                    )}
-                    {inspection.frames_drawn > 0 && (
-                      <span><span className="text-text-secondary">Drawn:</span> <span className="font-bold text-orange-600">{inspection.frames_drawn}</span></span>
-                    )}
-                    {inspection.honey_supers > 0 && (
-                      <span><span className="text-text-secondary">Supers:</span> <span className="font-bold text-orange-600">{inspection.honey_supers}</span></span>
-                    )}
-                    {inspection.drone_frames > 0 && (
-                      <span><span className="text-text-secondary">Drone:</span> <span className="font-bold text-orange-600">{inspection.drone_frames}</span></span>
-                    )}
-                    {inspection.store_frames > 0 && (
-                      <span><span className="text-text-secondary">Store:</span> <span className="font-bold text-orange-600">{inspection.store_frames}</span></span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Hygienic Behaviour Section - Table Format */}
-            {((inspection.recapping !== 3 && inspection.recapping !== 0) ||
-              (inspection.vsh !== 3 && inspection.vsh !== 0) ||
-              (inspection.smr !== 3 && inspection.smr !== 0)) && (
-              <div className="mb-3 overflow-hidden rounded border border-border">
-                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
-                  <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
-                </div>
-                <div className="p-2">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 gap-y-1.5 text-sm">
-                    {inspection.recapping !== 3 && inspection.recapping !== 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-text-secondary">Recapping:</span>
-                        <span>{renderStars(inspection.recapping)}</span>
-                      </div>
-                    )}
-                    {inspection.vsh !== 3 && inspection.vsh !== 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-text-secondary">VSH:</span>
-                        <span>{renderStars(inspection.vsh)}</span>
-                      </div>
-                    )}
-                    {inspection.smr !== 3 && inspection.smr !== 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-text-secondary">SMR:</span>
-                        <span>{renderStars(inspection.smr)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {(inspection.weather_temp !== null || inspection.weather_condition) && (
-              <div className="mb-4 p-3 rounded border border-border hidden md:block">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🌤️</span>
-                  <span className="text-sm font-medium text-foreground">Weather Conditions</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm ml-7">
-                  {inspection.weather_temp !== null && (
-                    <div>
-                      <span className="font-medium text-text-secondary">Temperature:</span> {inspection.weather_temp}°C
-                    </div>
-                  )}
-                  {inspection.weather_condition && (
-                    <div>
-                      <span className="font-medium text-text-secondary">Condition:</span> {inspection.weather_condition}
-                    </div>
-                  )}
-                  {inspection.weather_humidity !== null && (
-                    <div>
-                      <span className="font-medium text-text-secondary">Humidity:</span> {inspection.weather_humidity}%
-                    </div>
-                  )}
-                  {inspection.weather_wind_speed !== null && (
-                    <div>
-                      <span className="font-medium text-text-secondary">Wind:</span> {inspection.weather_wind_speed} km/h
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Disease Section - Compact inline */}
-            {(inspection.afb_disease > 0 || inspection.efb_disease > 0 || inspection.chalkbrood_disease > 0 ||
-              inspection.nosemosis_disease > 0 || inspection.dwv_disease > 0 || inspection.iapv_cbpv_disease > 0) && (
-              <div className="mb-3 overflow-hidden rounded border border-border">
-                <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
-                  <h4 className="text-sm font-semibold text-foreground">Disease</h4>
-                </div>
-                <div className="bg-surface dark:bg-surface px-3 py-1.5">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    {inspection.afb_disease > 0 && (
-                      <span><span className="text-text-secondary">AFB:</span> {renderStars(inspection.afb_disease)}</span>
-                    )}
-                    {inspection.efb_disease > 0 && (
-                      <span><span className="text-text-secondary">EFB:</span> {renderStars(inspection.efb_disease)}</span>
-                    )}
-                    {inspection.chalkbrood_disease > 0 && (
-                      <span><span className="text-text-secondary">Chalkbrood:</span> {renderStars(inspection.chalkbrood_disease)}</span>
-                    )}
-                    {inspection.nosemosis_disease > 0 && (
-                      <span><span className="text-text-secondary">Nosemosis:</span> {renderStars(inspection.nosemosis_disease)}</span>
-                    )}
-                    {inspection.dwv_disease > 0 && (
-                      <span><span className="text-text-secondary">DWV:</span> {renderStars(inspection.dwv_disease)}</span>
-                    )}
-                    {inspection.iapv_cbpv_disease > 0 && (
-                      <span><span className="text-text-secondary">IAPV & CBPV:</span> {renderStars(inspection.iapv_cbpv_disease)}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {inspection.notes && (
-              <div className="p-3 rounded border border-border">
-                <span className="text-sm font-medium text-text-secondary">Notes: </span>
-                <span className="text-sm text-text-tertiary">{inspection.notes}</span>
-              </div>
-            )}
-          </div>
-            )
-          } else if (record.record_type === 'varroa_treatment') {
-            const treatment = record
-            return (
-              <div key={`treatment-${treatment.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 border-l-4 border-red-500">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-start gap-2 flex-1">
-                    {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-red-100 dark:bg-red-900/40 rounded-lg flex items-center justify-center">
-                      <Syringe size={20} className="text-red-600 dark:text-red-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 text-xs font-medium rounded">Varroa Treatment</span>
-                        <h3 className="text-base font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
-                      </div>
-                    <p className="text-xs text-text-tertiary">
-                      {new Date(treatment.treatment_date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                      {' at '}
-                      {new Date(treatment.treatment_date).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
-                    </p>
-                    {treatment.profiles && treatment.user_id !== userId && sharedHiveIds.includes(treatment.hive_id) && (
-                      <p className="text-xs text-text-tertiary mt-0.5">
-                        Recorded by: <span className="font-medium text-text-secondary">
-                          {(treatment.profiles.first_name && treatment.profiles.last_name)
-                            ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
-                            : treatment.profiles.email}
-                        </span>
-                      </p>
-                    )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        setEditingTreatment(treatment)
-                        setFormType('varroa_treatment')
-                        // Check if the hive has honey supers
-                        const selectedHive = hives.find(h => h.id === treatment.hive_id)
-                        const honeySupers = selectedHive?.configuration?.honey_supers || 0
-                        setSelectedHiveHasHoneySupers(honeySupers > 0)
-                        // Set otherTreatmentType if the treatment type is not in the products list
-                        if (treatment.treatment_type && !treatmentProducts.some(p => p.product_name === treatment.treatment_type)) {
-                          setOtherTreatmentType(treatment.treatment_type)
-                          setIsOtherTreatment(true)
-                        } else {
-                          setOtherTreatmentType('')
-                          setIsOtherTreatment(false)
-                        }
-                        setShowForm(true)
-                        // Scroll to the top where the form is
-                        setTimeout(() => {
-                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                        }, 100)
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Edit treatment"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!userId) return
-                        if (confirm('Are you sure you want to delete this treatment record?')) {
-                          const { error } = await supabase
-                            .from('varroa_treatments')
-                            .delete()
-                            .eq('id', treatment.id)
-                            .eq('user_id', userId)
-                          if (!error) fetchVarroaTreatments()
-                        }
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Delete treatment"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details Section - Compact inline */}
-                <div className="rounded px-3 py-2 border border-border">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    <span>
-                      <span className="text-text-tertiary">Product:</span> <span className="font-medium text-foreground">{treatment.treatment_type}</span>
-                    </span>
-                    <span>
-                      <span className="text-text-tertiary">Dosage:</span> <span className="font-medium text-foreground">{treatment.dosage}</span>
-                    </span>
-                    {treatment.temperature && (
-                      <span>
-                        <span className="text-text-tertiary">Temp:</span> <span className="font-medium text-foreground">{treatment.temperature}°C</span>
-                      </span>
-                    )}
-                    {treatment.weather_conditions && (
-                      <span>
-                        <span className="text-text-tertiary">Weather:</span> <span className="font-medium text-foreground">{treatment.weather_conditions}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {treatment.notes && (
-                  <div className="px-3 py-2 bg-surface/50 dark:bg-surface-elevated rounded border border-border">
-                    <span className="text-xs text-text-tertiary">Notes:</span> <span className="text-sm text-text-secondary">{treatment.notes}</span>
-                  </div>
-                )}
-              </div>
-            )
-          } else if (record.record_type === 'varroa_check') {
-            const check = record
-            return (
-              <div key={`check-${check.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 border-l-4 border-orange-500">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-start gap-2 flex-1">
-                    {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center">
-                      <Bug size={20} className="text-orange-600 dark:text-orange-400" />
-                    </div>
-                    {userHasActiveSubscription && check.image_url && (
-                      <div
-                        className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
-                        onDoubleClick={() => {
-                          setModalImageUrl(check.image_url)
-                          setImageModalOpen(true)
-                        }}
-                        title="Double-click to enlarge"
-                      >
-                        <Image
-                          src={check.image_url}
-                          alt="Varroa Check"
-                          fill
-                          className="object-cover rounded-lg border-2 border-border shadow-sm"
-                          sizes="64px"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
-                          <Camera size={20} className="text-white" />
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 text-xs font-medium rounded">Varroa Check</span>
-                        <h3 className="text-base font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
-                      </div>
-                    <p className="text-xs text-text-tertiary">
-                      {new Date(check.check_date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                      {' at '}
-                      {new Date(check.check_date).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
-                    </p>
-                    {check.profiles && check.user_id !== userId && sharedHiveIds.includes(check.hive_id) && (
-                      <p className="text-xs text-text-tertiary mt-0.5">
-                        Recorded by: <span className="font-medium text-text-secondary">
-                          {(check.profiles.first_name && check.profiles.last_name)
-                            ? `${check.profiles.first_name} ${check.profiles.last_name}`
-                            : check.profiles.email}
-                        </span>
-                      </p>
-                    )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        setEditingCheck({
-                          ...check,
-                          check_date: check.check_date.replace(' ', 'T').slice(0, 16)
-                        })
-                        setCheckImageFile(null)
-                        setCheckImagePreview(null)
-                        setFormType('varroa_check')
-                        setShowForm(true)
-                        // Scroll to the top where the form is
-                        setTimeout(() => {
-                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                        }, 100)
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Edit check"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!userId) return
-                        if (confirm('Are you sure you want to delete this check record?')) {
-                          const { error } = await supabase
-                            .from('varroa_checks')
-                            .delete()
-                            .eq('id', check.id)
-                            .eq('user_id', userId)
-                          if (!error) fetchVarroaChecks()
-                        }
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Delete check"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details Section - Compact inline */}
-                <div className="rounded px-3 py-2 border border-border">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    <span>
-                      <span className="text-text-tertiary">Method:</span> <span className="font-medium text-foreground">{check.method}</span>
-                    </span>
-                    {check.mites_count !== null && (
-                      <span>
-                        <span className="text-text-tertiary">
-                          {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Total Mite Drop:' : 'Mites Count:'}
-                        </span> <span className="font-medium text-foreground">{check.mites_count}</span>
-                      </span>
-                    )}
-                    {check.sample_size !== null && (
-                      <span>
-                        <span className="text-text-tertiary">
-                          {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Days:' : 'Sample Size:'}
-                        </span> <span className="font-medium text-foreground">{check.sample_size}</span>
-                      </span>
-                    )}
-                    {check.infestation_rate !== null && (
-                      <span>
-                        <span className="text-text-tertiary">
-                          {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board') ? 'Daily Mite Drop:' : 'Infestation Rate:'}
-                        </span> <span className={`font-bold ${check.infestation_rate > 3 ? 'text-red-600' : 'text-green-600'}`}>
-                          {(check.method === 'Natural Mite Drop' || check.method === 'Screening Board')
-                            ? check.infestation_rate
-                            : `${check.infestation_rate}%`}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1.5 pt-1.5 border-t border-orange-200">
-                    <span className="text-text-tertiary text-sm">Action Threshold: </span>
-                    <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-600' : 'text-green-600'}`}>
-                      {check.action_threshold_reached ? '⚠️ Reached - Treatment Needed' : '✓ Not Reached'}
-                    </span>
-                  </div>
-                </div>
-
-                {check.notes && (
-                  <div className="px-3 py-2 bg-surface/50 dark:bg-surface-elevated rounded border border-border">
-                    <span className="text-xs text-text-tertiary">Notes:</span> <span className="text-sm text-text-secondary">{check.notes}</span>
-                  </div>
-                )}
-              </div>
-            )
-          } else if (record.record_type === 'feeding') {
-            const feeding = record
-            return (
-              <div key={`feeding-${feeding.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 border-l-4 border-yellow-500">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-start gap-2 flex-1">
-                    {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg flex items-center justify-center">
-                      <Wheat size={20} className="text-yellow-700 dark:text-yellow-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 text-xs font-medium rounded">Feeding</span>
-                        <h3 className="text-base font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
-                      </div>
-                    <p className="text-xs text-text-tertiary">
-                      {new Date(feeding.feed_date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                      {' at '}
-                      {new Date(feeding.feed_date).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
-                    </p>
-                    {feeding.profiles && feeding.user_id !== userId && sharedHiveIds.includes(feeding.hive_id) && (
-                      <p className="text-xs text-text-tertiary mt-0.5">
-                        Recorded by: <span className="font-medium text-text-secondary">
-                          {(feeding.profiles.first_name && feeding.profiles.last_name)
-                            ? `${feeding.profiles.first_name} ${feeding.profiles.last_name}`
-                            : feeding.profiles.email}
-                        </span>
-                      </p>
-                    )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        // Check if feed_type is in dropdown options or is a custom value
-                        const isInDropdown = feedTypeOptions.includes(feeding.feed_type)
-                        if (!isInDropdown && feeding.feed_type) {
-                          // Custom feed type - set to "Other" and store actual value
-                          setIsOtherFeedType(true)
-                          setOtherFeedType(feeding.feed_type)
-                          setEditingFeeding({...feeding, feed_type: 'Other'})
-                        } else {
-                          setIsOtherFeedType(false)
-                          setOtherFeedType('')
-                          setEditingFeeding(feeding)
-                        }
-                        setFormType('feeding')
-                        setShowForm(true)
-                        // Scroll to the top where the form is
-                        setTimeout(() => {
-                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                        }, 100)
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Edit feeding"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!userId) return
-                        if (confirm('Are you sure you want to delete this feeding record?')) {
-                          const { error} = await supabase
-                            .from('feedings')
-                            .delete()
-                            .eq('id', feeding.id)
-                            .eq('user_id', userId)
-                          if (!error) fetchFeedings()
-                        }
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Delete feeding"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details Section - Compact inline */}
-                <div className="rounded px-3 py-2 border border-border">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    <span>
-                      <span className="text-text-tertiary">Type:</span> <span className="font-medium text-foreground">{feeding.feed_type}</span>
-                    </span>
-                    {feeding.quantity !== null && (
-                      <span>
-                        <span className="text-text-tertiary">Quantity:</span> <span className="font-medium text-foreground">{feeding.quantity} {feeding.unit}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {feeding.notes && (
-                  <div className="px-3 py-2 bg-surface/50 dark:bg-surface-elevated rounded border border-border">
-                    <span className="text-xs text-text-tertiary">Notes:</span> <span className="text-sm text-text-secondary">{feeding.notes}</span>
-                  </div>
-                )}
-              </div>
-            )
-          } else if (record.record_type === 'harvest') {
-            const harvest = record
-            return (
-              <div key={`harvest-${harvest.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 border-l-4 border-amber-500">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-start gap-2 flex-1">
-                    {/* Icon Badge */}
-                    <div className="w-10 h-10 flex-shrink-0 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center">
-                      <Droplet size={20} className="text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 text-xs font-medium rounded">Harvest</span>
-                        <h3 className="text-base font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
-                      </div>
-                    <p className="text-xs text-text-tertiary">
-                      {new Date(harvest.harvest_date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                      {' at '}
-                      {new Date(harvest.harvest_date).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
-                    </p>
-                    {harvest.profiles && harvest.user_id !== userId && sharedHiveIds.includes(harvest.hive_id) && (
-                      <p className="text-xs text-text-tertiary mt-0.5">
-                        Recorded by: <span className="font-medium text-text-secondary">
-                          {(harvest.profiles.first_name && harvest.profiles.last_name)
-                            ? `${harvest.profiles.first_name} ${harvest.profiles.last_name}`
-                            : harvest.profiles.email}
-                        </span>
-                      </p>
-                    )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        setEditingHarvest(harvest)
-                        setFormType('harvest')
-                        setShowForm(true)
-                        // Scroll to the top where the form is
-                        setTimeout(() => {
-                          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                        }, 100)
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Edit harvest"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (!userId) return
-                        if (confirm('Are you sure you want to delete this harvest record?')) {
-                          const { error } = await supabase
-                            .from('harvests')
-                            .delete()
-                            .eq('id', harvest.id)
-                            .eq('user_id', userId)
-                          if (!error) fetchHarvests()
-                        }
-                      }}
-                      className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
-                      aria-label="Delete harvest"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details Section - Compact inline */}
-                <div className="rounded px-3 py-2 border border-border">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    {harvest.honey_weight !== null && (
-                      <span>
-                        <span className="text-text-tertiary">Honey:</span> <span className="font-medium text-foreground">{harvest.honey_weight} {harvest.unit}</span>
-                      </span>
-                    )}
-                    {harvest.wax_weight !== null && (
-                      <span>
-                        <span className="text-text-tertiary">Wax:</span> <span className="font-medium text-foreground">{harvest.wax_weight} {harvest.unit}</span>
-                      </span>
-                    )}
-                    {harvest.frames_harvested !== null && (
-                      <span>
-                        <span className="text-text-tertiary">Frames:</span> <span className="font-medium text-foreground">{harvest.frames_harvested}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {harvest.notes && (
-                  <div className="px-3 py-2 bg-surface/50 dark:bg-surface-elevated rounded border border-border">
-                    <span className="text-xs text-text-tertiary">Notes:</span> <span className="text-sm text-text-secondary">{harvest.notes}</span>
-                  </div>
-                )}
-              </div>
-            )
-          } else if (record.record_type === 'archive') {
-            const archiveRecord = record
-            return (
-              <div key={`archive-${archiveRecord.id}`} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-sage-500 dark:border-slate-500">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-start gap-3 flex-1">
-                    {/* Icon Badge */}
-                    <div className="w-12 h-12 flex-shrink-0 bg-sage-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                      <Archive size={24} className="text-text-tertiary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold">Hive Archived: {archiveRecord.hive_number}</h3>
-                      <p className="text-sm text-text-tertiary">
-                        {new Date(archiveRecord.archived_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {archiveRecord.archive_reason_value && (
-                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border mb-3">
-                    <span className="text-xs text-text-tertiary mb-1 block">Reason</span>
-                    <span className="text-sm font-medium text-foreground">{archiveRecord.archive_reason_value}</span>
-                  </div>
-                )}
-
-                {archiveRecord.archive_notes && (
-                  <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border">
-                    <span className="text-xs text-text-tertiary mb-1 block">Additional Notes</span>
-                    <span className="text-sm text-text-secondary">{archiveRecord.archive_notes}</span>
-                  </div>
-                )}
-              </div>
-            )
-          }
-          return null
-        })}
-      </div>
-
-      {filteredRecords.length === 0 && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-12 text-center text-text-tertiary">
-          {filterHiveId
-            ? `No records found for this hive. Select "All Hives" or record a new activity.`
-            : recordTypeFilter !== 'all'
-              ? `No ${recordTypeFilter.replace('_', ' ')} records found. Try changing the filters or record a new activity.`
-              : 'No records found. Start tracking your hive activities!'}
-        </div>
-      )}
-
-      {/* Image Modal */}
-      {imageModalOpen && modalImageUrl && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
-          onClick={() => {
-            setImageModalOpen(false)
-            setModalImageUrl(null)
-          }}
-        >
-          <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
-            <button
-              onClick={() => {
-                setImageModalOpen(false)
-                setModalImageUrl(null)
-              }}
-              className="absolute top-4 right-4 z-10 bg-surface dark:bg-surface-elevated rounded-full p-2 hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors shadow-lg"
-              aria-label="Close modal"
-            >
-              <X size={24} className="text-text-secondary" />
-            </button>
-            <div className="relative w-full h-full flex items-center justify-center">
-              <Image
-                src={modalImageUrl}
-                alt="Inspection photo full size"
-                fill
-                className="object-contain"
-                sizes="(max-width: 1280px) 100vw, 1280px"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* IPM Tips Modal */}
-      {showIpmTips && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-surface dark:bg-surface-elevated border-b border-border px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-foreground">
-                Integrated Pest Management (IPM) Tips for Varroa Control
-              </h3>
-              <button
-                onClick={() => setShowIpmTips(false)}
-                className="text-text-tertiary hover:text-text-tertiary transition-colors"
-                title="Close"
+                onClick={() => setImageModalOpen(false)}
+                className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+                aria-label="Close image"
               >
                 <X size={24} />
               </button>
-            </div>
-            <div className="px-6 py-4">
-              <ul className="space-y-3">
-                <li className="flex gap-3">
-                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-text-secondary">
-                    <strong>Rotate treatments annually</strong> to prevent resistance development.
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-text-secondary">
-                    <strong>Monitor mite levels regularly</strong> using sugar shake or alcohol wash.
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-text-secondary">
-                    <strong>Apply treatments according to label instructions</strong> and seasonal timing.
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-text-secondary">
-                    <strong>Ensure adequate colony ventilation</strong> during treatment.
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-text-secondary">
-                    <strong>Avoid treating during honey flow</strong> unless product is approved for use.
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-text-secondary">
-                    <strong>Combine chemical treatments with biotechnical methods</strong> (e.g., drone brood removal).
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="text-amber-600 font-bold flex-shrink-0">•</span>
-                  <span className="text-text-secondary">
-                    <strong>Maintain strong, healthy colonies</strong> through good nutrition and disease management.
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <div className="sticky bottom-0 bg-slate-800/50 px-6 py-4 border-t border-border">
-              <button
-                onClick={() => setShowIpmTips(false)}
-                className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
-              >
-                Close
-              </button>
+              <Image
+                src={modalImageUrl}
+                alt="Record image"
+                width={1200}
+                height={800}
+                className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
