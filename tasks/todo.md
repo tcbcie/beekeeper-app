@@ -301,3 +301,66 @@ The refactored page maintains all original functionality while being much more m
 - Total new component/hook code: ~3,500 lines (distributed across 20+ files)
 
 The code is now modular and each piece can be tested, modified, or reused independently.
+
+---
+
+# Varroa Treatment Time & 24-Hour Format - COMPLETE
+
+## Summary
+
+Added treatment time recording for varroa treatments and standardized all timestamps to 24-hour format.
+
+## Completed Tasks
+
+- [x] Add `treatment_time` column to `varroa_treatments` database table
+- [x] Add `treatment_time` field to `VarroaTreatment` TypeScript interface
+- [x] Update `VarroaTreatmentForm` to include time input field
+- [x] Update `TreatmentCard` to display time in 24-hour format
+- [x] Update `page.tsx` treatment submit handler to save `treatment_time`
+- [x] Fix `VarroaCheckCard` to use 24-hour format (en-GB locale)
+- [x] Simplify `HarvestCard` date display (DATE only, no fake time)
+- [x] Simplify `FeedingCard` date display (DATE only, no fake time)
+- [x] Fix `ArchiveCard` to use 24-hour format (en-GB locale)
+- [x] Build and test
+
+## Review
+
+### Database Changes
+
+**Migration applied:**
+- Added `treatment_time TIME` column to `varroa_treatments` table
+
+### Files Modified
+
+**Types:**
+- `src/types/records.ts` - Added `treatment_time: string | null` to `VarroaTreatment` interface
+
+**Forms:**
+- `src/components/records/forms/VarroaTreatmentForm.tsx` - Added time input field with default current time
+
+**Cards (24-hour format fixes):**
+- `src/components/records/cards/TreatmentCard.tsx` - Simplified to show date + treatment_time
+- `src/components/records/cards/VarroaCheckCard.tsx` - Changed to en-GB locale with hour12: false
+- `src/components/records/cards/ArchiveCard.tsx` - Changed to en-GB locale with hour12: false
+- `src/components/records/cards/HarvestCard.tsx` - Simplified to just show date (no fake time from DATE field)
+- `src/components/records/cards/FeedingCard.tsx` - Simplified to just show date (no fake time from DATE field)
+
+**Page:**
+- `src/app/dashboard/records/page.tsx` - Added `treatment_time` to submit data and new treatment initialization
+
+### Time Display Format
+
+| Record Type | Has Time? | Display Format |
+|-------------|-----------|----------------|
+| Inspection | Yes (`inspection_time`) | `YYYY-MM-DD at HH:MM` (24-hour) |
+| Varroa Treatment | Yes (`treatment_time`) | `YYYY-MM-DD at HH:MM` (24-hour) |
+| Varroa Check | Yes (timestamp) | `Day, DD Mon YYYY at HH:MM` (24-hour) |
+| Archive | Yes (timestamp) | `DD Month YYYY at HH:MM` (24-hour) |
+| Harvest | No (date only) | `YYYY-MM-DD` |
+| Feeding | No (date only) | `YYYY-MM-DD` |
+
+### Build Verification
+
+```
+npm run build - ✓ Successful
+```

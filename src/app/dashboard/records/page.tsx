@@ -179,6 +179,7 @@ export default function RecordsPage() {
         id: '',
         hive_id: presetHiveId || '',
         treatment_date: currentDate,
+        treatment_time: new Date().toTimeString().slice(0, 5),
         treatment_type: '',
         dosage: '',
         temperature: null,
@@ -464,6 +465,7 @@ export default function RecordsPage() {
       const submitData = {
         hive_id: treatment.hive_id,
         treatment_date: treatment.treatment_date,
+        treatment_time: treatment.treatment_time || null,
         treatment_type: isOther ? otherType : treatment.treatment_type,
         dosage: treatment.dosage,
         temperature: treatment.temperature,
@@ -857,6 +859,7 @@ export default function RecordsPage() {
             </button>
             <h1 className="text-2xl font-bold text-foreground">Records</h1>
           </div>
+          <NewRecordDropdown onSelectType={handleNewRecord} />
         </div>
 
         {/* Filters */}
@@ -1106,11 +1109,6 @@ export default function RecordsPage() {
             })
           )}
         </div>
-
-        {/* New Record FAB */}
-        <NewRecordDropdown
-          onSelectType={handleNewRecord}
-        />
 
         {/* IPM Tips Modal */}
         {showIpmTips && (

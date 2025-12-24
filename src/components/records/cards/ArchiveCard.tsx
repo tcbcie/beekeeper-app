@@ -19,12 +19,16 @@ export default function ArchiveCard({ archiveRecord }: ArchiveCardProps) {
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold">Hive Archived: {archiveRecord.hive_number}</h3>
             <p className="text-sm text-text-tertiary">
-              {new Date(archiveRecord.archived_at).toLocaleDateString('en-US', {
+              {new Date(archiveRecord.archived_at).toLocaleDateString('en-GB', {
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric',
+                day: 'numeric'
+              })}
+              {' at '}
+              {new Date(archiveRecord.archived_at).toLocaleTimeString('en-GB', {
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                hour12: false
               })}
             </p>
           </div>

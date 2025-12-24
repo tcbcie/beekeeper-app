@@ -35,18 +35,8 @@ export default function TreatmentCard({
               <h3 className="text-base font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
             </div>
             <p className="text-xs text-text-tertiary">
-              {new Date(treatment.treatment_date).toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
-              {' at '}
-              {new Date(treatment.treatment_date).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              })}
+              {treatment.treatment_date}
+              {treatment.treatment_time && ` at ${treatment.treatment_time}`}
             </p>
             {treatment.profiles && treatment.user_id !== userId && sharedHiveIds.includes(treatment.hive_id) && (
               <p className="text-xs text-text-tertiary mt-0.5">

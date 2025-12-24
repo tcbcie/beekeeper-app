@@ -35,18 +35,7 @@ export default function HarvestCard({
               <h3 className="text-base font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
             </div>
             <p className="text-xs text-text-tertiary">
-              {new Date(harvest.harvest_date).toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
-              {' at '}
-              {new Date(harvest.harvest_date).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              })}
+              {harvest.harvest_date}
             </p>
             {harvest.profiles && harvest.user_id !== userId && sharedHiveIds.includes(harvest.hive_id) && (
               <p className="text-xs text-text-tertiary mt-0.5">

@@ -62,17 +62,17 @@ export default function VarroaCheckCard({
               <h3 className="text-base font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
             </div>
             <p className="text-xs text-text-tertiary">
-              {new Date(check.check_date).toLocaleDateString('en-US', {
+              {new Date(check.check_date).toLocaleDateString('en-GB', {
                 weekday: 'short',
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
               })}
               {' at '}
-              {new Date(check.check_date).toLocaleTimeString('en-US', {
-                hour: 'numeric',
+              {new Date(check.check_date).toLocaleTimeString('en-GB', {
+                hour: '2-digit',
                 minute: '2-digit',
-                hour12: true
+                hour12: false
               })}
             </p>
             {check.profiles && check.user_id !== userId && sharedHiveIds.includes(check.hive_id) && (

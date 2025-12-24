@@ -30,6 +30,7 @@ export default function VarroaTreatmentForm({
     hive_id: '',
     user_id: '',
     treatment_date: new Date().toISOString().split('T')[0],
+    treatment_time: new Date().toTimeString().slice(0, 5),
     treatment_type: '',
     dosage: '',
     temperature: null,
@@ -197,6 +198,16 @@ export default function VarroaTreatmentForm({
             onChange={(e) => setFormData(prev => ({ ...prev, treatment_date: e.target.value }))}
             className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Treatment Time</label>
+          <input
+            type="time"
+            value={formData.treatment_time || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, treatment_time: e.target.value }))}
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
           />
         </div>
 
