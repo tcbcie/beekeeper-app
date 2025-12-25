@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+
+// Helper to compare string arrays (avoids unnecessary state updates)
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const sortedA = [...a].sort()
+  const sortedB = [...b].sort()
+  return sortedA.every((val, i) => val === sortedB[i])
+}
 import type {
   Inspection,
   VarroaTreatment,
@@ -153,11 +161,21 @@ export function useRecordsData(): UseRecordsDataReturn {
   const [loading, setLoading] = useState(true)
   const [isTeamMember, setIsTeamMember] = useState(false)
   const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
+  const sharedHiveIdsRef = useRef<string[]>([])
+  const fetchInProgressRef = useRef(false)
+
+  // Only update sharedHiveIds if the array actually changed
+  const updateSharedHiveIds = useCallback((newIds: string[]) => {
+    if (!arraysEqual(sharedHiveIdsRef.current, newIds)) {
+      sharedHiveIdsRef.current = newIds
+      setSharedHiveIds(newIds)
+    }
+  }, [])
 
   const fetchInspections = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
     const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
 
-    setSharedHiveIds(allTeamHiveIds)
+    updateSharedHiveIds(allTeamHiveIds)
 
     let query = supabase
       .from('inspections')
@@ -221,11 +239,11 @@ export function useRecordsData(): UseRecordsDataReturn {
 
     if (data) setInspections(data as Inspection[])
     setLoading(false)
-  }, [])
+  }, [updateSharedHiveIds])
 
   const fetchVarroaTreatments = useCallback(async (userId: string) => {
     const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
-    setSharedHiveIds(allTeamHiveIds)
+    updateSharedHiveIds(allTeamHiveIds)
 
     const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
     if (allAccessibleHiveIds.length === 0) {
@@ -241,11 +259,11 @@ export function useRecordsData(): UseRecordsDataReturn {
       .limit(500)
 
     if (data) setVarroaTreatments(data as VarroaTreatment[])
-  }, [])
+  }, [updateSharedHiveIds])
 
   const fetchVarroaChecks = useCallback(async (userId: string) => {
     const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
-    setSharedHiveIds(allTeamHiveIds)
+    updateSharedHiveIds(allTeamHiveIds)
 
     const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
     if (allAccessibleHiveIds.length === 0) {
@@ -261,11 +279,11 @@ export function useRecordsData(): UseRecordsDataReturn {
       .limit(500)
 
     if (data) setVarroaChecks(data as VarroaCheck[])
-  }, [])
+  }, [updateSharedHiveIds])
 
   const fetchFeedings = useCallback(async (userId: string) => {
     const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
-    setSharedHiveIds(allTeamHiveIds)
+    updateSharedHiveIds(allTeamHiveIds)
 
     const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
     if (allAccessibleHiveIds.length === 0) {
@@ -281,11 +299,11 @@ export function useRecordsData(): UseRecordsDataReturn {
       .limit(500)
 
     if (data) setFeedings(data as Feeding[])
-  }, [])
+  }, [updateSharedHiveIds])
 
   const fetchHarvests = useCallback(async (userId: string) => {
     const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
-    setSharedHiveIds(allTeamHiveIds)
+    updateSharedHiveIds(allTeamHiveIds)
 
     const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
     if (allAccessibleHiveIds.length === 0) {
@@ -301,7 +319,7 @@ export function useRecordsData(): UseRecordsDataReturn {
       .limit(500)
 
     if (data) setHarvests(data as Harvest[])
-  }, [])
+  }, [updateSharedHiveIds])
 
   const fetchArchiveRecords = useCallback(async (userId: string) => {
     const { data, error } = await supabase
@@ -453,8 +471,8 @@ export function useRecordsData(): UseRecordsDataReturn {
           setCheckMethodOptions(values.map(v => v.value))
         }
       }
-    } catch {
-      // Silently handle error
+    } catch (error) {
+      console.error('Failed to fetch check methods:', error)
     }
   }, [])
 
@@ -478,8 +496,8 @@ export function useRecordsData(): UseRecordsDataReturn {
           setFeedTypeOptions(values.map(v => v.value))
         }
       }
-    } catch {
-      // Silently handle error
+    } catch (error) {
+      console.error('Failed to fetch feed types:', error)
     }
   }, [])
 
@@ -493,8 +511,8 @@ export function useRecordsData(): UseRecordsDataReturn {
       if (data) {
         setTreatmentProducts(data)
       }
-    } catch {
-      // Silently handle error
+    } catch (error) {
+      console.error('Failed to fetch treatment products:', error)
     }
   }, [])
 
@@ -518,8 +536,8 @@ export function useRecordsData(): UseRecordsDataReturn {
           setArchiveReasons(values)
         }
       }
-    } catch {
-      // Silently handle error
+    } catch (error) {
+      console.error('Failed to fetch archive reasons:', error)
     }
   }, [])
 
@@ -543,8 +561,8 @@ export function useRecordsData(): UseRecordsDataReturn {
           setApplicationMethods(values)
         }
       }
-    } catch {
-      // Silently handle error
+    } catch (error) {
+      console.error('Failed to fetch application methods:', error)
     }
   }, [])
 
@@ -559,19 +577,29 @@ export function useRecordsData(): UseRecordsDataReturn {
   }, [fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts, fetchArchiveReasons, fetchApplicationMethods])
 
   const fetchAllData = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
+    // Prevent duplicate concurrent requests
+    if (fetchInProgressRef.current) {
+      return
+    }
+    fetchInProgressRef.current = true
+
     setLoading(true)
-    await Promise.all([
-      fetchInspections(userId, ownershipFilter),
-      fetchVarroaTreatments(userId),
-      fetchVarroaChecks(userId),
-      fetchFeedings(userId),
-      fetchHarvests(userId),
-      fetchArchiveRecords(userId),
-      fetchHives(userId),
-      fetchApiaries(userId),
-      fetchAllOptions()
-    ])
-    setLoading(false)
+    try {
+      await Promise.all([
+        fetchInspections(userId, ownershipFilter),
+        fetchVarroaTreatments(userId),
+        fetchVarroaChecks(userId),
+        fetchFeedings(userId),
+        fetchHarvests(userId),
+        fetchArchiveRecords(userId),
+        fetchHives(userId),
+        fetchApiaries(userId),
+        fetchAllOptions()
+      ])
+    } finally {
+      fetchInProgressRef.current = false
+      setLoading(false)
+    }
   }, [
     fetchInspections,
     fetchVarroaTreatments,

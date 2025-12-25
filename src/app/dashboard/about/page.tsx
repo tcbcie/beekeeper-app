@@ -314,7 +314,7 @@ function AboutPageContent() {
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
             <p className="text-text-secondary">
-              <strong>Current Version:</strong> 1.5.1 (December 2025)
+              <strong>Current Version:</strong> 1.5.2 (December 2025)
             </p>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Credits</h3>
@@ -414,10 +414,10 @@ function AboutPageContent() {
             </div>
 
             <div className="border-l-4 border-amber-500 pl-4">
-              <h3 className="text-lg font-semibold text-foreground">Right-Sized Broodbox Feature</h3>
+              <h3 className="text-lg font-semibold text-foreground">Right-Sized Brood Area Feature</h3>
               <p className="text-sm text-text-tertiary mb-2">October 2025</p>
               <p className="text-text-secondary">
-                Track right-sized broodbox configurations for your hives with frame count monitoring
+                Track right-sized brood area configurations for your hives with frame count monitoring
                 during inspections.
               </p>
             </div>

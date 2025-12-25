@@ -324,7 +324,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
             )}
             {hive.configuration?.right_sized_broodbox && (
               <div className="flex justify-between">
-                <span className="text-text-tertiary">Right-Sized Broodbox:</span>
+                <span className="text-text-tertiary">Right-Sized Brood Area:</span>
                 <span className="font-medium text-text-primary">
                   {(() => {
                     const lastInspectionWithFrames = inspections.find(i => i.right_sized_frames !== null && i.right_sized_frames > 0)

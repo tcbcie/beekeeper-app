@@ -59,7 +59,7 @@ function formatConfigurationChanges(config: HiveConfiguration): string[] {
   }
 
   if (config.right_sized_broodbox) {
-    changes.push('Right-sized broodbox: Yes')
+    changes.push('Right-Sized Brood Area: Yes')
   }
 
   if (config.frame_orientation) {
@@ -168,12 +168,12 @@ describe('Hive Configuration Formatting', () => {
       expect(changes).toContain('Varroa floor: Open')
     })
 
-    it('should format right-sized broodbox', () => {
+    it('should format right-sized brood area', () => {
       const config: HiveConfiguration = {
         right_sized_broodbox: true
       }
       const changes = formatConfigurationChanges(config)
-      expect(changes).toContain('Right-sized broodbox: Yes')
+      expect(changes).toContain('Right-Sized Brood Area: Yes')
     })
 
     it('should format warm way frame orientation', () => {
@@ -215,7 +215,7 @@ describe('Hive Configuration Formatting', () => {
       expect(changes).toContain('Feeder: Top Feeder')
       expect(changes).toContain('Entrance reducer: Yes')
       expect(changes).toContain('Varroa floor: Open')
-      expect(changes).toContain('Right-sized broodbox: Yes')
+      expect(changes).toContain('Right-Sized Brood Area: Yes')
       expect(changes).toContain('Frame orientation: Warm way')
     })
 

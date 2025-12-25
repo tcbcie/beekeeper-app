@@ -1525,7 +1525,7 @@ export default function HivesPage() {
                         : 'bg-surface dark:bg-surface-elevated text-text-primary border border-border hover:bg-surface-elevated dark:hover:bg-slate-600'
                     }`}
                   >
-                    {formData.configuration.right_sized_broodbox ? '✓' : '○'} Right-Sized Broodbox
+                    {formData.configuration.right_sized_broodbox ? '✓' : '○'} Right-Sized Brood Area
                   </button>
                 </div>
 

@@ -10,6 +10,7 @@ import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import { useToast } from '@/components/ui/Toast'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 interface UserProfile {
   id: string
@@ -1204,8 +1205,8 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-foreground">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
       </div>
     )
   }

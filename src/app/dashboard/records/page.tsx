@@ -384,7 +384,11 @@ export default function RecordsPage() {
       let imageUrl = formData.image_url
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile, 'inspections')
-        if (uploadedUrl) imageUrl = uploadedUrl
+        if (!uploadedUrl) {
+          // Upload failed - error already shown via toast in uploadImage
+          return
+        }
+        imageUrl = uploadedUrl
       }
 
       setFetchingWeather(true)
@@ -529,7 +533,11 @@ export default function RecordsPage() {
       let imageUrl = check.image_url
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile, 'varroa-checks')
-        if (uploadedUrl) imageUrl = uploadedUrl
+        if (!uploadedUrl) {
+          // Upload failed - error already shown via toast in uploadImage
+          return
+        }
+        imageUrl = uploadedUrl
       }
 
       const submitData = {

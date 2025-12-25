@@ -53,11 +53,9 @@ export default function InstallPrompt() {
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       // Show our custom install banner
       setShowBanner(true)
-      console.log('beforeinstallprompt event captured')
     }
 
     const handleAppInstalled = () => {
-      console.log('PWA was installed')
       setIsInstalled(true)
       setShowBanner(false)
       setDeferredPrompt(null)
@@ -75,7 +73,6 @@ export default function InstallPrompt() {
 
   const handleInstallClick = useCallback(async () => {
     if (!deferredPrompt) {
-      console.log('No deferred prompt available')
       return
     }
 
@@ -84,7 +81,6 @@ export default function InstallPrompt() {
 
     // Wait for the user's response
     const { outcome } = await deferredPrompt.userChoice
-    console.log(`User ${outcome} the install prompt`)
 
     if (outcome === 'accepted') {
       setIsInstalled(true)
