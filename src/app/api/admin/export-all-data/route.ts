@@ -75,13 +75,14 @@ export async function POST(request: NextRequest) {
         'dropdown_categories',
         'dropdown_values',
         'feedings',
+        'frame_standards',
         'gdd_records',
         'harvests',
         'hive_configuration_history',
         'hives',
         'inspections',
-        'knowledge_sources',
         'knowledge_base',
+        'knowledge_sources',
         'profiles',
         'push_subscriptions',
         'queens',
@@ -95,9 +96,11 @@ export async function POST(request: NextRequest) {
         'team_invitations',
         'team_members',
         'teams',
+        'terminology',
+        'tool_suggestions',
         'varroa_checks',
-        'varroa_treatments',
-        'varroa_treatment_products'
+        'varroa_treatment_products',
+        'varroa_treatments'
       ]
     } else {
       tables = tablesData.map((t: { table_name: string }) => t.table_name)
