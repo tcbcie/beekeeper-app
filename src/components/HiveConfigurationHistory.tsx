@@ -172,7 +172,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
       feeder_type: 'Feeder type',
       entrance_reducer: 'Entrance reducer',
       varroa_mesh_floor: 'Varroa floor',
-      right_sized_broodbox: 'Right-sized broodbox',
+      right_sized_broodbox: 'Right-Sized Brood Area',
       frame_orientation: 'Frame orientation'
     }
     return labels[key] || key

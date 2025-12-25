@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { HelpCircle } from 'lucide-react'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
 
@@ -48,6 +48,13 @@ export default function VarroaTreatmentForm({
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
+  // Track mounted state to prevent state updates after unmount
+  const isMountedRef = useRef(true)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => { isMountedRef.current = false }
+  }, [])
+
   // Update form data when treatment prop changes
   useEffect(() => {
     if (treatment) {
@@ -83,7 +90,8 @@ export default function VarroaTreatmentForm({
       setFetchingWeather(true)
       try {
         const weatherData = await onFetchWeather(hiveId)
-        if (weatherData) {
+        // Only update state if component is still mounted
+        if (isMountedRef.current && weatherData) {
           setFormData(prev => ({
             ...prev,
             temperature: weatherData.temp,
@@ -91,13 +99,34 @@ export default function VarroaTreatmentForm({
           }))
         }
       } finally {
-        setFetchingWeather(false)
+        if (isMountedRef.current) {
+          setFetchingWeather(false)
+        }
       }
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate required fields
+    if (!formData.hive_id) {
+      alert('Please select a hive')
+      return
+    }
+    if (!formData.treatment_date) {
+      alert('Please enter a treatment date')
+      return
+    }
+    if (!formData.treatment_type && !otherTreatmentType) {
+      alert('Please select or specify a treatment product')
+      return
+    }
+    if (!formData.dosage?.trim()) {
+      alert('Please enter the dosage')
+      return
+    }
+
     setSubmitting(true)
     try {
       await onSubmit(formData, isOtherTreatment, otherTreatmentType)

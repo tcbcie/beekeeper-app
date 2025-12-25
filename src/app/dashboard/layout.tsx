@@ -10,6 +10,7 @@ import MobileDrawer from '@/components/MobileDrawer'
 import OfflineIndicator from '@/components/OfflineIndicator'
 import UpdateNotification from '@/components/UpdateNotification'
 import ChatButton from '@/components/chat/ChatButton'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
 
@@ -107,7 +108,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <div className="flex gap-4 md:gap-6">
           <Sidebar />
-          <main className="flex-1 w-full min-w-0">{children}</main>
+          <main className="flex-1 w-full min-w-0">
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </main>
         </div>
       </div>
       <ChatButton />

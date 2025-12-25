@@ -6,6 +6,7 @@ import { Wrench, Droplet, Cookie, Thermometer, Cloud, Grid3X3 } from 'lucide-rea
 import GDDTracker from '@/components/tools/GDDTracker'
 import VarroaWeather from '@/components/tools/VarroaWeather'
 import FrameCellCalculator from '@/components/tools/FrameCellCalculator'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 export default function ToolsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -32,8 +33,8 @@ export default function ToolsPage() {
 
   if (!userId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
       </div>
     )
   }

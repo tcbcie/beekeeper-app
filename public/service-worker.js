@@ -1,7 +1,7 @@
 // Service Worker for Browser Push Notifications and Offline Support
 // Handles notification display, click events, and offline caching
 
-const CACHE_NAME = 'hivecraic-v1.5.1'
+const CACHE_NAME = 'hivecraic-v1.5.2'
 const OFFLINE_URLS = [
   '/',
   '/login',

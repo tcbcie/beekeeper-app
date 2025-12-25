@@ -3,6 +3,13 @@ import { createClient } from '@supabase/supabase-js'
 import DB_SCHEMA from './db-schema'
 import { tools, executeTool, getToolDescriptions } from './ai/tools'
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isValidUUID(id: string): boolean {
+  return UUID_REGEX.test(id)
+}
+
 // Create Supabase client for server-side operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -127,6 +134,11 @@ export async function searchKnowledgeBase(query: string, limit: number = 5): Pro
 
 // Generate SQL query from natural language
 export async function generateSQLQuery(query: string, userId: string): Promise<string> {
+  // Validate userId to prevent SQL injection
+  if (!isValidUUID(userId)) {
+    throw new Error('Invalid user ID format')
+  }
+
   const systemPrompt = `You are a SQL query generator for a PostgreSQL beekeeping database.
 Given a user question, generate a safe SELECT query to answer it.
 
@@ -224,6 +236,11 @@ export async function handleChatQuery(
   intent: 'sql' | 'knowledge' | 'hybrid' | 'general'
   sources?: string[]
 }> {
+  // Validate userId to prevent injection
+  if (!isValidUUID(userId)) {
+    throw new Error('Invalid user ID format')
+  }
+
   // Step 1: Classify the query
   const classification = await classifyQuery(query)
 
@@ -252,10 +269,8 @@ export async function handleChatQuery(
       const toolMatch = await matchQueryToTool(query)
 
       if (toolMatch?.toolName && tools[toolMatch.toolName]) {
-        console.log('Tool matched:', toolMatch.toolName, 'with args:', toolMatch.args)
         try {
           const toolResult = await executeTool(toolMatch.toolName, toolMatch.args, userId)
-          console.log('Tool result:', toolResult)
           if (typeof toolResult === 'string') {
             context = toolResult
           } else {
@@ -270,10 +285,8 @@ export async function handleChatQuery(
       // Fall back to SQL generation if no tool matched or tool failed
       if (!context) {
         const sql = await generateSQLQuery(query, userId)
-        console.log('Generated SQL:', sql)
         if (sql && sql !== 'CANNOT_QUERY') {
           const result = await executeQuery(sql)
-          console.log('Query result:', result)
           const hadResults = !!(result.data && Array.isArray(result.data) && result.data.length > 0)
 
           // Log this SQL fallback for developer insights (helps identify needed tools)
