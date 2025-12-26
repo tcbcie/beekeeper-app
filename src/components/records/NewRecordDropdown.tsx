@@ -33,11 +33,12 @@ export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownPro
     <div className="relative dropdown-container" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="px-4 py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 font-medium flex items-center gap-2 justify-center touch-manipulation w-full sm:w-auto"
+        className="px-3 sm:px-4 py-2 min-h-[44px] bg-forest-600 text-white rounded-lg hover:bg-forest-700 active:bg-forest-800 font-medium flex items-center gap-1.5 sm:gap-2 justify-center touch-manipulation whitespace-nowrap"
       >
         <Plus size={18} />
-        New Record
-        <ChevronDown size={18} />
+        <span className="hidden sm:inline">New Record</span>
+        <span className="sm:hidden">New</span>
+        <ChevronDown size={16} />
       </button>
 
       {showDropdown && (

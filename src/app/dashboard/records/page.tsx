@@ -859,18 +859,20 @@ export default function RecordsPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => router.push('/dashboard')}
-              className="p-2 rounded-lg hover:bg-surface-elevated transition-colors"
+              className="p-2 rounded-lg hover:bg-surface-elevated transition-colors flex-shrink-0"
               aria-label="Back to dashboard"
             >
               <Home size={24} />
             </button>
-            <h1 className="text-2xl font-bold text-foreground">Records</h1>
+            <h1 className="text-2xl font-bold text-foreground truncate">Records</h1>
           </div>
-          <NewRecordDropdown onSelectType={handleNewRecord} />
+          <div className="flex-shrink-0">
+            <NewRecordDropdown onSelectType={handleNewRecord} />
+          </div>
         </div>
 
         {/* Filters */}
