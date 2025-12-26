@@ -100,7 +100,16 @@ export default function InspectionForm({
   // Render star rating component
   const renderStarRating = useCallback((value: number, onChange: (val: number) => void, label: string) => (
     <div>
-      <label className="block text-sm font-medium text-text-secondary mb-2">{label}</label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-sm font-medium text-text-secondary">{label}</label>
+        <button
+          type="button"
+          onClick={() => onChange(0)}
+          className="text-xs text-text-tertiary hover:text-red-600 dark:hover:text-red-400 transition-colors"
+        >
+          Clear
+        </button>
+      </div>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
@@ -116,13 +125,6 @@ export default function InspectionForm({
             ★
           </button>
         ))}
-        <button
-          type="button"
-          onClick={() => onChange(0)}
-          className="min-h-[40px] px-3 rounded-lg text-sm bg-surface dark:bg-surface-elevated border border-border hover:bg-sage-200 dark:hover:bg-slate-600"
-        >
-          Clear
-        </button>
       </div>
     </div>
   ), [])
