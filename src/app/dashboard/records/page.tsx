@@ -169,7 +169,18 @@ export default function RecordsPage() {
     setEditingFeeding(null)
     setEditingHarvest(null)
 
-    if (type === 'archive') {
+    if (type === 'inspection') {
+      // For new inspections, set a minimal editingInspection with just the hive_id
+      // so getInspectionFormData() returns data with the preset hive
+      if (presetHiveId) {
+        setEditingInspection({
+          id: '',
+          hive_id: presetHiveId,
+          inspection_date: currentDate,
+          inspection_time: new Date().toTimeString().slice(0, 5)
+        } as Inspection)
+      }
+    } else if (type === 'archive') {
       setArchiveData({
         hive_id: presetHiveId || '',
         archive_reason_id: '',
@@ -807,11 +818,11 @@ export default function RecordsPage() {
       drone_brood_present: editingInspection.drone_brood_present ?? null,
       brood_frames: editingInspection.brood_frames,
       right_sized_frames: editingInspection.right_sized_frames,
-      brood_pattern_rating: editingInspection.brood_pattern_rating ?? 3,
-      temperament_rating: editingInspection.temperament_rating ?? 3,
-      population_strength: editingInspection.population_strength ?? 3,
-      swarming_tendency: editingInspection.swarming_tendency ?? 3,
-      calmness: editingInspection.calmness ?? 3,
+      brood_pattern_rating: editingInspection.brood_pattern_rating ?? 0,
+      temperament_rating: editingInspection.temperament_rating ?? 0,
+      population_strength: editingInspection.population_strength ?? 0,
+      swarming_tendency: editingInspection.swarming_tendency ?? 0,
+      calmness: editingInspection.calmness ?? 0,
       frames_foundation: editingInspection.frames_foundation ?? 0,
       frames_brood: editingInspection.frames_brood ?? 0,
       frames_drawn: editingInspection.frames_drawn ?? 0,
