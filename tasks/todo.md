@@ -319,3 +319,189 @@ After investigating the remaining High Priority items:
 - `npm run build` passed successfully
 - No TypeScript or linting errors
 
+---
+
+# Queen Lineage Tracking System
+
+## Overview
+Add a system to track and record queen lineage for breeding purposes. The database already has `mother_id` and `father_id` fields - this plan exposes them in the UI and adds lineage visualization.
+
+## User Preferences
+- **Ancestry depth:** 3 generations (great-grandparents)
+- **Batch linking:** Yes, add `batch_id` column to queens table
+- **Display:** Expandable section in queen form
+
+---
+
+## Library Evaluation for Tree Visualization
+
+### Option 1: family-chart (RECOMMENDED)
+- **GitHub:** [donatso/family-chart](https://github.com/donatso/family-chart)
+- **Stars:** 605 | **License:** MIT
+- **Last Updated:** November 2024 (actively maintained)
+- **Size:** ~15kb gzipped (D3-based)
+- **Pros:**
+  - TypeScript support with complete type definitions
+  - Framework agnostic (works with React, Vue, vanilla JS)
+  - Interactive zoom, pan, and navigation
+  - Customizable styling (colors, fonts, layout)
+  - Visual builder tool for configuration
+  - Designed specifically for family trees
+- **Cons:**
+  - Adds D3 as a dependency
+  - More features than we may need
+
+### Option 2: react-d3-tree
+- **npm:** [react-d3-tree](https://www.npmjs.com/package/react-d3-tree)
+- **GitHub:** [bkrem/react-d3-tree](https://github.com/bkrem/react-d3-tree)
+- **Version:** 3.6.6 | **Last Published:** ~10 months ago
+- **Pros:**
+  - Popular (48 projects using it)
+  - Good documentation
+  - Collapsible nodes, custom rendering
+- **Cons:**
+  - Uncertain React 19 compatibility
+  - Generic tree (not family-tree specific)
+  - Last update 10 months ago
+
+### Option 3: react-family-tree (NOT RECOMMENDED)
+- **npm:** [react-family-tree](https://www.npmjs.com/package/react-family-tree)
+- **GitHub:** [SanichKotikov/react-family-tree](https://github.com/SanichKotikov/react-family-tree)
+- **Version:** 3.2.0 | **Last Published:** 3 years ago
+- **Cons:**
+  - **STALE** - not updated in 3 years
+  - Likely incompatible with React 19
+  - Limited maintenance
+
+### Option 4: CSS-Only (Simple Alternative)
+- **Pros:**
+  - Zero dependencies
+  - Full control over styling
+  - Matches existing TailwindCSS patterns
+  - No React version concerns
+  - Lightweight
+- **Cons:**
+  - Manual layout calculations
+  - No built-in zoom/pan
+  - More initial development work
+
+### Decision: CSS-based approach
+**Selected:** CSS-based tree visualization - Simpler, no external dependencies, better React 19 compatibility
+
+---
+
+## Implementation Plan
+
+### Phase 1: Database Migration
+- [x] Add `batch_id` column to queens table
+
+```sql
+ALTER TABLE queens
+ADD COLUMN batch_id UUID REFERENCES rearing_batches(id);
+```
+
+### Phase 2: Update Queen Form with Parent Selection
+**File:** `src/app/dashboard/queens/page.tsx`
+
+- [x] Add `mother_id`, `father_id`, `batch_id` to `FormData` interface
+- [x] Add `mother_id`, `father_id`, `batch_id`, `mother`, `father`, `batch` to `Queen` interface
+- [x] Fetch available queens for parent dropdowns
+- [x] Fetch available batches for batch dropdown
+- [x] Add "Lineage" section to form with:
+  - Mother Queen dropdown (optional)
+  - Father Queen dropdown (optional)
+  - Source Batch dropdown (optional)
+- [x] Update `handleSubmit` to include new fields
+- [x] Update `handleEdit` to populate new fields
+- [x] Update `resetForm` to clear new fields
+
+### Phase 3: Update Queens Query
+**File:** `src/app/dashboard/queens/page.tsx`
+
+- [x] Update `fetchQueens` to join mother, father, batch data:
+```typescript
+.select(`
+  *,
+  mother:queens!queens_mother_id_fkey(id, queen_number, marking_color),
+  father:queens!queens_father_id_fkey(id, queen_number, marking_color),
+  batch:rearing_batches(id, batch_name)
+`)
+```
+
+### Phase 4: Add Mother Column to Table
+**File:** `src/app/dashboard/queens/page.tsx`
+
+- [x] Add "Mother" column header to table
+- [x] Display mother queen_number in each row
+
+### Phase 5: Create Lineage Visualization Component
+**File:** `src/components/QueenLineageTree.tsx` (NEW)
+
+- [x] Create QueenLineageTree component with props:
+  - `queenId: string`
+  - `expanded: boolean`
+  - `onToggle: () => void`
+- [x] Implement recursive ancestor fetching (3 generations)
+- [x] Implement descendant fetching (children)
+- [x] Render family tree with:
+  - Queen number
+  - Marking color badge
+  - Status indicator
+
+### Phase 6: Integrate Lineage Section
+**File:** `src/app/dashboard/queens/page.tsx`
+
+- [x] Add expandable "View Lineage" section below form when editing
+- [x] Toggle button to show/hide tree
+- [x] Display QueenLineageTree component
+
+### Phase 7: Add Sibling Display
+**File:** `src/components/QueenLineageTree.tsx`
+
+- [x] Query queens with same `mother_id`
+- [x] Display siblings section in tree view
+
+---
+
+## Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/dashboard/queens/page.tsx` | Added parent/batch dropdowns, mother column, lineage section |
+| `src/components/QueenLineageTree.tsx` | NEW - CSS-based lineage visualization component |
+| Database migration | Added `batch_id` column to queens table |
+
+---
+
+## Review Section - Completed December 29, 2025
+
+### Changes Made
+
+1. **Database Migration**
+   - Added `batch_id` column to queens table linking queens to their source rearing batch
+
+2. **Queens Page Updates** (`src/app/dashboard/queens/page.tsx`)
+   - Updated `Queen` and `FormData` interfaces with lineage fields
+   - Added fetchBatches function to load available batches
+   - Updated fetchQueens query to join mother, father, and batch data
+   - Added three new dropdowns to form: Mother Queen, Father Queen, Source Batch
+   - Updated handleSubmit to convert empty strings to null for UUID fields
+   - Added "Mother" column to the queens table
+   - Added QueenLineageTree component when editing a queen
+
+3. **New Component** (`src/components/QueenLineageTree.tsx`)
+   - Created CSS-based lineage visualization (no external dependencies)
+   - Shows 3 generations of ancestry (great-grandparents, grandparents, parents)
+   - Shows daughters of the current queen
+   - Shows siblings (queens from same mother)
+   - Color-coded queen cards matching marking colors
+   - Expandable/collapsible section
+
+### Testing Notes
+- Build passes with no TypeScript errors
+- Queens page size increased from 8.08kB to 9.53kB (minimal impact)
+- Lineage tree loads data on expansion (lazy loading)
+
+### Known Issues
+- None identified during implementation
+

@@ -1,0 +1,10 @@
+{
+  "chunkSize": 1000,
+  "chunkOverlap": 200,
+  "embeddingModel": "text-embedding-3-small",
+  "minTextLength": 100,
+  "batchSize": 25,
+  "charBatchSize": 50000,
+  "ocrProviderPreference": "gemini",
+  "translationProviderPreference": "gemini"
+}

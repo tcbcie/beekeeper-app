@@ -7,6 +7,7 @@ import { getCurrentUserId } from '@/lib/auth'
 import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import QueenLineageTree from '@/components/QueenLineageTree'
 
 interface Queen {
   id: string
@@ -22,6 +23,23 @@ interface Queen {
   performance_notes: string
   mated_at_eircode: string
   created_at?: string
+  mother_id?: string
+  father_id?: string
+  batch_id?: string
+  mother?: {
+    id: string
+    queen_number: string
+    marking_color: string
+  } | null
+  father?: {
+    id: string
+    queen_number: string
+    marking_color: string
+  } | null
+  batch?: {
+    id: string
+    batch_name: string
+  } | null
   hives?: {
     id: string
     hive_number: string
@@ -42,6 +60,14 @@ interface FormData {
   status: string
   performance_notes: string
   mated_at_eircode: string
+  mother_id: string
+  father_id: string
+  batch_id: string
+}
+
+interface Batch {
+  id: string
+  batch_name: string
 }
 
 // Calculate queen marking color based on birth year
@@ -119,6 +145,8 @@ export default function QueensPage() {
   const [isTeamMember, setIsTeamMember] = useState(false)
   const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
   const [sourceOptions, setSourceOptions] = useState<string[]>([])
+  const [batches, setBatches] = useState<Batch[]>([])
+  const [showLineage, setShowLineage] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     queen_number: '',
     birth_date: '',
@@ -130,6 +158,9 @@ export default function QueensPage() {
     status: 'active',
     performance_notes: '',
     mated_at_eircode: '',
+    mother_id: '',
+    father_id: '',
+    batch_id: '',
   })
 
   const fetchQueens = useCallback(async (userIdParam?: string) => {
@@ -172,9 +203,13 @@ export default function QueensPage() {
     }
 
     // Fetch my queens + queens from users who share apiaries with me
+    // Note: Self-referencing joins (mother/father) are handled separately due to Supabase limitations
     let queensQuery = supabase
       .from('queens')
-      .select('*')
+      .select(`
+        *,
+        batch:rearing_batches!queens_batch_id_fkey(id, batch_name)
+      `)
 
     if (sharedUserIds.length > 0) {
       queensQuery = queensQuery.or(`user_id.eq.${currentUserId},user_id.in.(${sharedUserIds.join(',')})`)
@@ -191,8 +226,11 @@ export default function QueensPage() {
       return
     }
 
-    // Then enrich with hive and apiary data
+    // Then enrich with hive, mother, and father data
     if (queensData && queensData.length > 0) {
+      // Create a map of all queens for quick lookup of mother/father
+      const queensMap = new Map(queensData.map(q => [q.id, q]))
+
       const enrichedQueens = await Promise.all(
         queensData.map(async (queen) => {
           if (!queen.id) return queen
@@ -215,9 +253,51 @@ export default function QueensPage() {
             console.error(`Error fetching hive for queen ${queen.queen_number}:`, hiveError)
           }
 
+          // Get mother from map or fetch if not in current results
+          let mother = null
+          if (queen.mother_id) {
+            const motherFromMap = queensMap.get(queen.mother_id)
+            if (motherFromMap) {
+              mother = {
+                id: motherFromMap.id,
+                queen_number: motherFromMap.queen_number,
+                marking_color: motherFromMap.marking_color,
+              }
+            } else {
+              const { data: motherData } = await supabase
+                .from('queens')
+                .select('id, queen_number, marking_color')
+                .eq('id', queen.mother_id)
+                .maybeSingle()
+              mother = motherData
+            }
+          }
+
+          // Get father from map or fetch if not in current results
+          let father = null
+          if (queen.father_id) {
+            const fatherFromMap = queensMap.get(queen.father_id)
+            if (fatherFromMap) {
+              father = {
+                id: fatherFromMap.id,
+                queen_number: fatherFromMap.queen_number,
+                marking_color: fatherFromMap.marking_color,
+              }
+            } else {
+              const { data: fatherData } = await supabase
+                .from('queens')
+                .select('id, queen_number, marking_color')
+                .eq('id', queen.father_id)
+                .maybeSingle()
+              father = fatherData
+            }
+          }
+
           return {
             ...queen,
-            hives: hiveData || undefined
+            hives: hiveData || undefined,
+            mother,
+            father,
           }
         })
       )
@@ -285,6 +365,21 @@ export default function QueensPage() {
     }
   }, [])
 
+  const fetchBatches = useCallback(async (userIdParam?: string) => {
+    const currentUserId = userIdParam || userId
+    if (!currentUserId) return
+
+    const { data, error } = await supabase
+      .from('rearing_batches')
+      .select('id, batch_name')
+      .eq('user_id', currentUserId)
+      .order('created_at', { ascending: false })
+
+    if (!error && data) {
+      setBatches(data)
+    }
+  }, [userId])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -296,9 +391,10 @@ export default function QueensPage() {
       fetchQueens(id)
       fetchSubspeciesOptions()
       fetchSourceOptions()
+      fetchBatches(id)
     }
     initUser()
-  }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions])
+  }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions, fetchBatches])
 
   // Scroll to highlighted queen when data loads
   useEffect(() => {
@@ -326,17 +422,25 @@ export default function QueensPage() {
     e.preventDefault()
     if (!userId) return
 
+    // Convert empty strings to null for optional UUID fields
+    const dataToSubmit = {
+      ...formData,
+      mother_id: formData.mother_id || null,
+      father_id: formData.father_id || null,
+      batch_id: formData.batch_id || null,
+    }
+
     try {
       if (editingQueen) {
         const { error } = await supabase
           .from('queens')
-          .update(formData)
+          .update(dataToSubmit)
           .eq('id', editingQueen.id)
           .eq('user_id', userId)
 
         if (error) throw error
       } else {
-        const { error } = await supabase.from('queens').insert([{ ...formData, user_id: userId }])
+        const { error } = await supabase.from('queens').insert([{ ...dataToSubmit, user_id: userId }])
         if (error) throw error
       }
 
@@ -362,6 +466,9 @@ export default function QueensPage() {
       status: queen.status,
       performance_notes: queen.performance_notes,
       mated_at_eircode: queen.mated_at_eircode || '',
+      mother_id: queen.mother_id || '',
+      father_id: queen.father_id || '',
+      batch_id: queen.batch_id || '',
     })
     setShowForm(true)
   }
@@ -377,6 +484,7 @@ export default function QueensPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingQueen(null)
+    setShowLineage(false)
     setFormData({
       queen_number: '',
       birth_date: '',
@@ -388,6 +496,9 @@ export default function QueensPage() {
       status: 'active',
       performance_notes: '',
       mated_at_eircode: '',
+      mother_id: '',
+      father_id: '',
+      batch_id: '',
     })
   }
 
@@ -556,6 +667,58 @@ export default function QueensPage() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Mother Queen</label>
+              <select
+                value={formData.mother_id}
+                onChange={(e) => setFormData({ ...formData, mother_id: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+              >
+                <option value="">Select mother queen (optional)</option>
+                {queens
+                  .filter((q) => q.id !== editingQueen?.id)
+                  .map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.queen_number} {q.marking_color ? `(${q.marking_color})` : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Father Queen</label>
+              <select
+                value={formData.father_id}
+                onChange={(e) => setFormData({ ...formData, father_id: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+              >
+                <option value="">Select father queen (optional)</option>
+                {queens
+                  .filter((q) => q.id !== editingQueen?.id)
+                  .map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.queen_number} {q.marking_color ? `(${q.marking_color})` : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Source Batch</label>
+              <select
+                value={formData.batch_id}
+                onChange={(e) => setFormData({ ...formData, batch_id: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+              >
+                <option value="">Select source batch (optional)</option>
+                {batches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.batch_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 Mated at (Eircode)
               </label>
@@ -628,6 +791,15 @@ export default function QueensPage() {
               </button>
             </div>
           </form>
+
+          {/* Lineage Tree - only show when editing an existing queen */}
+          {editingQueen && (
+            <QueenLineageTree
+              queenId={editingQueen.id}
+              expanded={showLineage}
+              onToggle={() => setShowLineage(!showLineage)}
+            />
+          )}
         </div>
       )}
 
@@ -668,6 +840,9 @@ export default function QueensPage() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
                   Queen Number
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
+                  Mother
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
                   Age
@@ -715,6 +890,15 @@ export default function QueensPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-foreground">
                     {queen.queen_number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
+                    {queen.mother ? (
+                      <span className="text-forest-600 dark:text-forest-400 font-medium">
+                        {queen.mother.queen_number}
+                      </span>
+                    ) : (
+                      'N/A'
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-text-primary font-medium">
                     {calculateQueenAge(queen.birth_date)}
