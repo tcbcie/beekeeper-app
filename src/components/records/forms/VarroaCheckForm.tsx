@@ -60,7 +60,13 @@ export default function VarroaCheckForm({
   // Update form data when check prop changes
   useEffect(() => {
     if (check) {
-      setFormData(check)
+      // Ensure date format is compatible with datetime-local input (YYYY-MM-DDTHH:mm)
+      const formattedCheck = {
+        ...check,
+        check_date: check.check_date.slice(0, 16)
+      }
+      setFormData(formattedCheck)
+      
       // Find apiary for selected hive
       const hive = hives.find(h => h.id === check.hive_id)
       if (hive?.apiary_id) {

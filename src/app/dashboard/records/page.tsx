@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
+import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import {
   RecordFiltersBar,
   NewRecordDropdown,
@@ -1166,30 +1167,11 @@ export default function RecordsPage() {
         )}
 
         {/* Image Modal */}
-        {imageModalOpen && modalImageUrl && (
-          <div
-            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-            onClick={() => setImageModalOpen(false)}
-          >
-            <div className="relative max-w-4xl w-full max-h-[90vh]">
-              <button
-                onClick={() => setImageModalOpen(false)}
-                className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
-                aria-label="Close image"
-              >
-                <X size={24} />
-              </button>
-              <Image
-                src={modalImageUrl}
-                alt="Record image"
-                width={1200}
-                height={800}
-                className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          </div>
-        )}
+        <ImageZoomModal
+          isOpen={imageModalOpen}
+          imageUrl={modalImageUrl}
+          onClose={() => setImageModalOpen(false)}
+        />
       </div>
     </div>
   )
