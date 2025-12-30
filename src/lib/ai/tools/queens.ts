@@ -30,7 +30,7 @@ export const getQueenInventory: Tool = {
 
     let query = supabase
       .from('queens')
-      .select('queen_number, status, marking_color, breed, source, introduction_date, hives(hive_number, apiaries(name))')
+      .select('queen_number, status, marking_color, subspecies, source, birth_date, hives(hive_number, apiaries(name))')
       .eq('user_id', userId)
       .order('queen_number')
 
@@ -49,10 +49,10 @@ export const getQueenInventory: Tool = {
         queenNumber: q.queen_number,
         status: q.status || 'Unknown',
         color: q.marking_color || 'Unknown',
-        breed: q.breed || 'Unknown',
+        subspecies: q.subspecies || 'Unknown',
         source: q.source || 'Unknown',
-        introduced: q.introduction_date ? formatDate(q.introduction_date) : 'Unknown',
-        ageMonths: q.introduction_date ? Math.floor((daysSince(q.introduction_date) || 0) / 30) : null,
+        birthDate: q.birth_date ? formatDate(q.birth_date) : 'Unknown',
+        ageMonths: q.birth_date ? Math.floor((daysSince(q.birth_date) || 0) / 30) : null,
         currentHive: hiveInfo.hive_number,
         apiary: hiveInfo.apiary_name
       }
@@ -70,7 +70,7 @@ export const getActiveBatches: Tool = {
 
     const { data, error } = await supabase
       .from('rearing_batches')
-      .select('batch_name, status, graft_date, expected_hatch_date, expected_mating_date, expected_laying_date, cells_grafted, cells_accepted, queens_mated, queens_laying, notes')
+      .select('batch_name, status, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, notes')
       .eq('user_id', userId)
       .in('status', ['Active', 'In Progress', 'Grafted', 'Cells Capped', 'Virgins', 'Mating'])
       .order('graft_date', { ascending: false })
@@ -83,16 +83,12 @@ export const getActiveBatches: Tool = {
       status: b.status,
       graftDate: formatDate(b.graft_date),
       daysSinceGraft: daysSince(b.graft_date),
-      expectedHatch: b.expected_hatch_date ? formatDate(b.expected_hatch_date) : 'N/A',
-      daysToHatch: daysUntil(b.expected_hatch_date),
-      expectedMating: b.expected_mating_date ? formatDate(b.expected_mating_date) : 'N/A',
-      daysToMating: daysUntil(b.expected_mating_date),
-      expectedLaying: b.expected_laying_date ? formatDate(b.expected_laying_date) : 'N/A',
-      daysToLaying: daysUntil(b.expected_laying_date),
-      cellsGrafted: b.cells_grafted ?? 0,
-      cellsAccepted: b.cells_accepted ?? 0,
+      emergenceDate: b.emergence_date ? formatDate(b.emergence_date) : 'N/A',
+      daysToEmergence: daysUntil(b.emergence_date),
+      cellCount: b.cell_count ?? 0,
+      graftsAccepted: b.grafts_accepted ?? 0,
+      queensHatched: b.queens_hatched ?? 0,
       queensMated: b.queens_mated ?? 0,
-      queensLaying: b.queens_laying ?? 0,
       notes: b.notes?.substring(0, 100) || 'None'
     }))
   }
@@ -130,24 +126,20 @@ export const getBatchDetails: Tool = {
     return {
       batchName: data.batch_name,
       status: data.status,
-      motherQueen: data.mother_queen || 'Unknown',
+      motherQueenId: data.mother_queen_id || 'Unknown',
       graftDate: formatDate(data.graft_date),
       daysSinceGraft: daysSince(data.graft_date),
       timeline: {
-        expectedHatch: data.expected_hatch_date ? formatDate(data.expected_hatch_date) : 'N/A',
-        daysToHatch: daysUntil(data.expected_hatch_date),
-        expectedMating: data.expected_mating_date ? formatDate(data.expected_mating_date) : 'N/A',
-        daysToMating: daysUntil(data.expected_mating_date),
-        expectedLaying: data.expected_laying_date ? formatDate(data.expected_laying_date) : 'N/A',
-        daysToLaying: daysUntil(data.expected_laying_date)
+        emergenceDate: data.emergence_date ? formatDate(data.emergence_date) : 'N/A',
+        daysToEmergence: daysUntil(data.emergence_date),
+        acceptanceCheckDate: data.acceptance_check_date ? formatDate(data.acceptance_check_date) : 'N/A'
       },
       progress: {
-        cellsGrafted: data.cells_grafted ?? 0,
-        cellsAccepted: data.cells_accepted ?? 0,
-        acceptanceRate: data.cells_grafted ? `${((data.cells_accepted || 0) / data.cells_grafted * 100).toFixed(0)}%` : 'N/A',
+        cellCount: data.cell_count ?? 0,
+        graftsAccepted: data.grafts_accepted ?? 0,
+        acceptanceRate: data.cell_count ? `${((data.grafts_accepted || 0) / data.cell_count * 100).toFixed(0)}%` : 'N/A',
         queensHatched: data.queens_hatched ?? 0,
-        queensMated: data.queens_mated ?? 0,
-        queensLaying: data.queens_laying ?? 0
+        queensMated: data.queens_mated ?? 0
       },
       queensProduced: queens?.map(q => {
         const h = q.hives as { hive_number?: string } | null
@@ -176,7 +168,7 @@ export const getUpcomingBatchEvents: Tool = {
 
     const { data, error } = await supabase
       .from('rearing_batches')
-      .select('batch_name, status, expected_hatch_date, expected_mating_date, expected_laying_date')
+      .select('batch_name, status, emergence_date, acceptance_check_date, first_option_to_cage_date, second_option_to_cage_date')
       .eq('user_id', userId)
       .in('status', ['Active', 'In Progress', 'Grafted', 'Cells Capped', 'Virgins', 'Mating'])
 
@@ -191,9 +183,10 @@ export const getUpcomingBatchEvents: Tool = {
 
     for (const batch of data) {
       const events = [
-        { type: 'Expected Hatch', date: batch.expected_hatch_date },
-        { type: 'Expected Mating', date: batch.expected_mating_date },
-        { type: 'Expected Laying', date: batch.expected_laying_date }
+        { type: 'Emergence', date: batch.emergence_date },
+        { type: 'Acceptance Check', date: batch.acceptance_check_date },
+        { type: 'First Cage Option', date: batch.first_option_to_cage_date },
+        { type: 'Second Cage Option', date: batch.second_option_to_cage_date }
       ]
 
       for (const event of events) {

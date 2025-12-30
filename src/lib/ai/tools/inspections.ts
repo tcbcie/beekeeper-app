@@ -102,15 +102,14 @@ export const getLastInspection: Tool = {
       date: formatDate(data.inspection_date),
       daysAgo: daysSince(data.inspection_date),
       temperament: data.temperament_rating || 'Not recorded',
-      layingPattern: data.laying_pattern || 'Not recorded',
+      broodPattern: data.brood_pattern_rating || 'Not recorded',
       queenSeen: data.queen_seen ? 'Yes' : 'No',
-      queenCells: data.queen_cells ? 'Yes' : 'No',
+      queenCups: data.queen_cups ? 'Yes' : 'No',
       swarmCells: data.swarm_cells ? 'Yes' : 'No',
       broodFrames: data.brood_frames,
-      honeyFrames: data.honey_frames,
-      pollenFrames: data.pollen_frames,
+      honeySupers: data.honey_supers,
       population: data.population_strength,
-      diseasesSigns: data.diseases_signs || 'None',
+      diseaseIssues: data.disease_issues || 'None',
       notes: data.notes || 'None'
     }
   }
@@ -135,7 +134,7 @@ export const getInspectionHistory: Tool = {
 
     const { data, error } = await supabase
       .from('inspections')
-      .select('inspection_date, temperament_rating, laying_pattern, queen_seen, brood_frames, honey_frames, population_strength, notes')
+      .select('inspection_date, temperament_rating, brood_pattern_rating, queen_seen, brood_frames, honey_supers, population_strength, notes')
       .eq('hive_id', hive.id)
       .order('inspection_date', { ascending: false })
       .limit(args.limit || 10)
@@ -149,10 +148,10 @@ export const getInspectionHistory: Tool = {
       inspections: data.map(i => ({
         date: formatDate(i.inspection_date),
         temperament: i.temperament_rating || 'N/A',
-        laying: i.laying_pattern || 'N/A',
+        broodPattern: i.brood_pattern_rating || 'N/A',
         queenSeen: i.queen_seen ? 'Yes' : 'No',
-        brood: i.brood_frames,
-        honey: i.honey_frames,
+        broodFrames: i.brood_frames,
+        honeySupers: i.honey_supers,
         population: i.population_strength || 'N/A',
         notes: i.notes ? i.notes.substring(0, 100) : 'None'
       }))

@@ -35,12 +35,12 @@ export const getUpcomingTasks: Tool = {
 
     const { data, error } = await supabase
       .from('tasks_events')
-      .select('title, description, due_date, priority, status, task_type, hives(hive_number, apiaries(name))')
+      .select('title, description, start_date, priority, completed, category, hives(hive_number, apiaries(name))')
       .eq('user_id', userId)
-      .neq('status', 'Completed')
-      .gte('due_date', today.toISOString().split('T')[0])
-      .lte('due_date', cutoff.toISOString().split('T')[0])
-      .order('due_date', { ascending: true })
+      .eq('completed', false)
+      .gte('start_date', today.toISOString().split('T')[0])
+      .lte('start_date', cutoff.toISOString().split('T')[0])
+      .order('start_date', { ascending: true })
 
     if (error) return `Error fetching tasks: ${error.message}`
     if (!data?.length) return `No tasks due in the next ${lookAhead} days.`
@@ -53,11 +53,11 @@ export const getUpcomingTasks: Tool = {
         return {
           title: t.title,
           description: t.description?.substring(0, 100) || 'None',
-          dueDate: formatDate(t.due_date),
-          daysUntil: daysUntil(t.due_date),
+          startDate: formatDate(t.start_date),
+          daysUntil: daysUntil(t.start_date),
           priority: t.priority || 'Normal',
-          status: t.status || 'Pending',
-          type: t.task_type || 'General',
+          completed: t.completed ? 'Yes' : 'No',
+          category: t.category || 'General',
           hive: hiveInfo.hive_number,
           apiary: hiveInfo.apiary_name
         }
@@ -77,11 +77,11 @@ export const getOverdueTasks: Tool = {
 
     const { data, error } = await supabase
       .from('tasks_events')
-      .select('title, description, due_date, priority, status, task_type, hives(hive_number, apiaries(name))')
+      .select('title, description, start_date, priority, completed, category, hives(hive_number, apiaries(name))')
       .eq('user_id', userId)
-      .neq('status', 'Completed')
-      .lt('due_date', today)
-      .order('due_date', { ascending: true })
+      .eq('completed', false)
+      .lt('start_date', today)
+      .order('start_date', { ascending: true })
 
     if (error) return `Error fetching tasks: ${error.message}`
     if (!data?.length) return 'No overdue tasks.'
@@ -93,11 +93,11 @@ export const getOverdueTasks: Tool = {
         return {
           title: t.title,
           description: t.description?.substring(0, 100) || 'None',
-          dueDate: formatDate(t.due_date),
-          daysOverdue: daysSince(t.due_date),
+          startDate: formatDate(t.start_date),
+          daysOverdue: daysSince(t.start_date),
           priority: t.priority || 'Normal',
-          status: t.status || 'Pending',
-          type: t.task_type || 'General',
+          completed: t.completed ? 'Yes' : 'No',
+          category: t.category || 'General',
           hive: hiveInfo.hive_number,
           apiary: hiveInfo.apiary_name
         }
@@ -125,12 +125,12 @@ export const getTasksForHive: Tool = {
 
     let query = supabase
       .from('tasks_events')
-      .select('title, description, due_date, priority, status, task_type, created_at')
+      .select('title, description, start_date, priority, completed, category, created_at')
       .eq('hive_id', hive.id)
-      .order('due_date', { ascending: true })
+      .order('start_date', { ascending: true })
 
     if (!args.includeCompleted) {
-      query = query.neq('status', 'Completed')
+      query = query.eq('completed', false)
     }
 
     const { data, error } = await query
@@ -138,21 +138,21 @@ export const getTasksForHive: Tool = {
     if (error) return `Error fetching tasks: ${error.message}`
     if (!data?.length) return `No tasks found for hive "${hive.hive_number}".`
 
-    const pending = data.filter(t => t.status !== 'Completed')
-    const completed = data.filter(t => t.status === 'Completed')
+    const pending = data.filter(t => !t.completed)
+    const completedTasks = data.filter(t => t.completed)
 
     return {
       hive: hive.hive_number,
       apiary: hive.apiary_name,
       pendingCount: pending.length,
-      completedCount: completed.length,
+      completedCount: completedTasks.length,
       tasks: data.map(t => ({
         title: t.title,
         description: t.description?.substring(0, 100) || 'None',
-        dueDate: t.due_date ? formatDate(t.due_date) : 'No due date',
+        startDate: t.start_date ? formatDate(t.start_date) : 'No date',
         priority: t.priority || 'Normal',
-        status: t.status || 'Pending',
-        type: t.task_type || 'General'
+        completed: t.completed ? 'Yes' : 'No',
+        category: t.category || 'General'
       }))
     }
   }
