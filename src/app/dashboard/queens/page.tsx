@@ -503,15 +503,52 @@ export default function QueensPage() {
   }
 
   const exportCSV = () => {
+    // Helper to escape CSV values containing commas or quotes
+    const escapeCSV = (value: string | null | undefined): string => {
+      if (value === null || value === undefined) return ''
+      const str = String(value)
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`
+      }
+      return str
+    }
+
     const csv = [
-      ['Queen Number', 'Age', 'Color', 'Hive', 'Apiary', 'Status'],
+      [
+        'Queen Number',
+        'Birth Date',
+        'Age',
+        'Marking Color',
+        'Source',
+        'Subspecies',
+        'Lineage',
+        'Mother',
+        'Father',
+        'Source Batch',
+        'Hive',
+        'Apiary',
+        'Mated At (Eircode)',
+        'Queen Clipped',
+        'Status',
+        'Performance Notes',
+      ],
       ...filteredQueens.map((q) => [
-        q.queen_number,
-        calculateQueenAge(q.birth_date),
-        q.marking_color,
-        q.hives?.hive_number || 'N/A',
-        q.hives?.apiaries?.name || 'N/A',
-        q.status,
+        escapeCSV(q.queen_number),
+        escapeCSV(q.birth_date),
+        escapeCSV(calculateQueenAge(q.birth_date)),
+        escapeCSV(q.marking_color),
+        escapeCSV(q.source),
+        escapeCSV(q.subspecies),
+        escapeCSV(q.lineage),
+        escapeCSV(q.mother?.queen_number || ''),
+        escapeCSV(q.father?.queen_number || ''),
+        escapeCSV(q.batch?.batch_name || ''),
+        escapeCSV(q.hives?.hive_number || ''),
+        escapeCSV(q.hives?.apiaries?.name || ''),
+        escapeCSV(q.mated_at_eircode),
+        q.queen_clipped ? 'Yes' : 'No',
+        escapeCSV(q.status),
+        escapeCSV(q.performance_notes),
       ]),
     ]
       .map((row) => row.join(','))
