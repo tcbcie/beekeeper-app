@@ -410,7 +410,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, title, description, image_url, site_name, published_date, author, is_published } = body as {
+    const { id, title, description, image_url, site_name, published_date, author, is_published, remove_from_kb } = body as {
       id: string
       title?: string
       description?: string | null
@@ -419,10 +419,44 @@ export async function PATCH(request: NextRequest) {
       published_date?: string | null
       author?: string | null
       is_published?: boolean
+      remove_from_kb?: boolean
     }
 
     if (!id) {
       return NextResponse.json({ error: 'Article ID is required' }, { status: 400 })
+    }
+
+    const supabase = getSupabaseAdmin()
+
+    // Handle remove from knowledge base
+    if (remove_from_kb) {
+      const { data: article } = await supabase
+        .from('news_articles')
+        .select('kb_source_id, title')
+        .eq('id', id)
+        .single()
+
+      if (!article) {
+        return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+      }
+
+      if (article.kb_source_id) {
+        // Delete knowledge source (cascades to knowledge_base entries)
+        await supabase
+          .from('knowledge_sources')
+          .delete()
+          .eq('id', article.kb_source_id)
+
+        // Clear kb_source_id on article
+        await supabase
+          .from('news_articles')
+          .update({ kb_source_id: null, updated_at: new Date().toISOString() })
+          .eq('id', id)
+
+        return NextResponse.json({ success: true, kb_removed: true, title: article.title })
+      }
+
+      return NextResponse.json({ success: true, kb_removed: false, message: 'Article was not in knowledge base' })
     }
 
     const updates: Record<string, unknown> = {
@@ -437,7 +471,7 @@ export async function PATCH(request: NextRequest) {
     if (author !== undefined) updates.author = author
     if (is_published !== undefined) updates.is_published = is_published
 
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await supabase
       .from('news_articles')
       .update(updates)
       .eq('id', id)
