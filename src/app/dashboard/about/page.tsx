@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon, Globe } from 'lucide-react'
+import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon, Globe, ExternalLink, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ChangelogDisplay from '@/components/ChangelogDisplay'
 import { useToast } from '@/components/ui/Toast'
@@ -34,12 +34,30 @@ interface AppStatistics {
   sharedApiaries: number
 }
 
+interface NewsArticle {
+  id: string
+  url: string
+  title: string
+  description: string | null
+  image_url: string | null
+  site_name: string | null
+  published_date: string | null
+  author: string | null
+  created_at: string
+}
+
 function AboutPageContent() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState<'about' | 'news' | 'changes' | 'disclaimer' | 'privacy' | 'support'>('about')
   const [mounted, setMounted] = useState(false)
   const [statistics, setStatistics] = useState<AppStatistics | null>(null)
+
+  // News articles state
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([])
+  const [newsLoading, setNewsLoading] = useState(false)
+  const [showAllNews, setShowAllNews] = useState(false)
+  const [newsSearch, setNewsSearch] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const toast = useToast()
@@ -107,6 +125,25 @@ function AboutPageContent() {
     }
   }, [])
 
+  const fetchNewsArticles = useCallback(async () => {
+    setNewsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('news_articles')
+        .select('id, url, title, description, image_url, site_name, published_date, author, created_at')
+        .eq('is_published', true)
+        .order('published_date', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setNewsArticles(data || [])
+    } catch (error) {
+      console.error('Error fetching news articles:', error)
+    } finally {
+      setNewsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     const initUser = async () => {
       const id = await getCurrentUserId()
@@ -117,6 +154,7 @@ function AboutPageContent() {
       setUserId(id)
       fetchTickets(id)
       fetchStatistics()
+      fetchNewsArticles()
       setLoading(false)
     }
     initUser()
@@ -382,46 +420,116 @@ function AboutPageContent() {
       {/* News Section */}
       {activeSection === 'news' && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 space-y-6">
-          <h2 className="text-2xl font-bold text-foreground mb-4">Latest News</h2>
-
-          <div className="space-y-6">
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="text-lg font-semibold text-foreground">HiveCraic Launch</h3>
-              <p className="text-sm text-text-tertiary mb-2">October 2025</p>
-              <p className="text-text-secondary">
-                We&apos;re excited to announce the official launch of HiveCraic! Our comprehensive
-                beekeeping management platform is now available to help beekeepers manage their operations
-                more efficiently.
-              </p>
-            </div>
-
-            <div className="border-l-4 border-green-500 pl-4">
-              <h3 className="text-lg font-semibold text-foreground">QueenCraft Feature Added</h3>
-              <p className="text-sm text-text-tertiary mb-2">October 2025</p>
-              <p className="text-text-secondary">
-                New queen rearing management feature with Planning and Selection sections to help you
-                track your queen breeding programs.
-              </p>
-            </div>
-
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h3 className="text-lg font-semibold text-foreground">Multi-User Support</h3>
-              <p className="text-sm text-text-tertiary mb-2">October 2025</p>
-              <p className="text-text-secondary">
-                Role-based access control with Admin and User roles enables collaborative beekeeping
-                management for clubs and associations.
-              </p>
-            </div>
-
-            <div className="border-l-4 border-amber-500 pl-4">
-              <h3 className="text-lg font-semibold text-foreground">Right-Sized Brood Area Feature</h3>
-              <p className="text-sm text-text-tertiary mb-2">October 2025</p>
-              <p className="text-text-secondary">
-                Track right-sized brood area configurations for your hives with frame count monitoring
-                during inspections.
-              </p>
-            </div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">Latest News</h2>
+            {newsArticles.length > 5 && (
+              <button
+                onClick={() => setShowAllNews(!showAllNews)}
+                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                {showAllNews ? (
+                  <>Show Less <ChevronUp size={16} /></>
+                ) : (
+                  <>View All ({newsArticles.length}) <ChevronDown size={16} /></>
+                )}
+              </button>
+            )}
           </div>
+
+          {/* Search (only when showing all) */}
+          {showAllNews && newsArticles.length > 5 && (
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <input
+                type="text"
+                value={newsSearch}
+                onChange={(e) => setNewsSearch(e.target.value)}
+                placeholder="Search articles..."
+                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-surface-elevated focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          )}
+
+          {newsLoading ? (
+            <div className="py-8 text-center">
+              <LoadingSpinner size="md" />
+            </div>
+          ) : newsArticles.length === 0 ? (
+            <div className="py-8 text-center text-text-tertiary">
+              <Newspaper size={48} className="mx-auto mb-4 opacity-50" />
+              <p>No news articles yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(() => {
+                const filtered = newsSearch
+                  ? newsArticles.filter(a =>
+                      a.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
+                      a.description?.toLowerCase().includes(newsSearch.toLowerCase())
+                    )
+                  : newsArticles
+                const displayed = showAllNews ? filtered : filtered.slice(0, 5)
+
+                return displayed.map((article, index) => {
+                  const borderColors = ['border-blue-500', 'border-green-500', 'border-purple-500', 'border-amber-500', 'border-teal-500']
+                  const borderColor = borderColors[index % borderColors.length]
+
+                  return (
+                    <div key={article.id} className="flex gap-4 group">
+                      {/* Image thumbnail */}
+                      {article.image_url && (
+                        <div className="w-24 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-sage-100 dark:bg-slate-800">
+                          <img
+                            src={article.image_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      )}
+                      {/* Content */}
+                      <div className={`flex-1 border-l-4 ${borderColor} pl-4`}>
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-lg font-semibold text-foreground hover:text-blue-600 flex items-center gap-2 group-hover:underline"
+                        >
+                          {article.title}
+                          <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                        <p className="text-sm text-text-tertiary mb-1">
+                          {article.site_name || new URL(article.url).hostname}
+                          {' • '}
+                          {article.published_date
+                            ? new Date(article.published_date).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : new Date(article.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
+                          }
+                          {article.author && ` • ${article.author}`}
+                        </p>
+                        {article.description && (
+                          <p className="text-text-secondary line-clamp-2">
+                            {article.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+
+              {showAllNews && newsSearch && newsArticles.filter(a =>
+                a.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
+                a.description?.toLowerCase().includes(newsSearch.toLowerCase())
+              ).length === 0 && (
+                <div className="py-4 text-center text-text-tertiary">
+                  No articles match your search.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
