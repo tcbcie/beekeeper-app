@@ -162,7 +162,7 @@ export const getHivesNeedingFeeding: Tool = {
 
     const { data, error } = await supabase
       .from('inspections')
-      .select('inspection_date, honey_frames, honey_stores, notes, hives(hive_number, apiaries(name))')
+      .select('inspection_date, honey_supers, honey_stores, notes, hives(hive_number, apiaries(name))')
       .in('hive_id', hiveIds)
       .gte('inspection_date', cutoffDate.toISOString().split('T')[0])
       .order('inspection_date', { ascending: false })
@@ -175,7 +175,7 @@ export const getHivesNeedingFeeding: Tool = {
       hive: string
       apiary: string
       date: string
-      honeyFrames: number | null
+      honeySupers: number | null
       honeyStores: string | null
       notes: string
     }> = []
@@ -187,20 +187,20 @@ export const getHivesNeedingFeeding: Tool = {
 
       if (seenHives.has(info.hive_number)) continue
 
-      const honeyFrames = inspection.honey_frames
+      const honeySupers = inspection.honey_supers
       const honeyStores = inspection.honey_stores?.toLowerCase() || ''
       const notes = inspection.notes?.toLowerCase() || ''
 
-      const isLowFrames = honeyFrames !== null && honeyFrames <= 2
+      const isLowSupers = honeySupers !== null && honeySupers <= 1
       const isLowStores = lowStoresKeywords.some(kw => honeyStores.includes(kw) || notes.includes(kw))
 
-      if (isLowFrames || isLowStores) {
+      if (isLowSupers || isLowStores) {
         seenHives.add(info.hive_number)
         needsFeeding.push({
           hive: info.hive_number,
           apiary: info.apiary_name,
           date: formatDate(inspection.inspection_date),
-          honeyFrames: inspection.honey_frames,
+          honeySupers: inspection.honey_supers,
           honeyStores: inspection.honey_stores || 'N/A',
           notes: inspection.notes?.substring(0, 100) || 'None'
         })
