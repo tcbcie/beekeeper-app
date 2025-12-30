@@ -23,11 +23,11 @@ export async function getAccessibleApiaryIds(userId: string): Promise<string[]> 
     .select('id')
     .eq('user_id', userId)
 
-  // Get team-shared apiaries
+  // Get team-shared apiaries (via teams -> team_members)
   const { data: teamApiaries } = await supabase
     .from('team_apiaries')
-    .select('apiary_id, team_members!inner(user_id)')
-    .eq('team_members.user_id', userId)
+    .select('apiary_id, teams!inner(team_members!inner(user_id))')
+    .eq('teams.team_members.user_id', userId)
 
   const ownIds = ownApiaries?.map(a => a.id) || []
   const teamIds = teamApiaries?.map(a => a.apiary_id) || []
