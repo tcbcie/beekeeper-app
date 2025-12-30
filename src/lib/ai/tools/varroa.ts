@@ -385,3 +385,78 @@ export const getTreatmentCounts: Tool = {
     return hiveCounts.slice(0, limit)
   }
 }
+
+// Get all hives with their last treatment date (sorted by most recent)
+export const getLastTreatmentDates: Tool = {
+  name: 'getLastTreatmentDates',
+  description: 'Get all hives with their most recent varroa treatment date, sorted by most recently treated first. Use this when asked "which hives were last treated" or "when was each hive treated".',
+  parameters: z.object({
+    limit: z.number().optional().describe('Maximum number of hives to return (default 20)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { limit?: number }
+    const supabase = getSupabase()
+    const apiaryIds = await getAccessibleApiaryIds(userId)
+
+    if (apiaryIds.length === 0) {
+      return 'No apiaries found.'
+    }
+
+    const limit = args.limit || 20
+
+    const { data: hives, error } = await supabase
+      .from('hives')
+      .select('id, hive_number, apiaries(name)')
+      .in('apiary_id', apiaryIds)
+      .is('archived_at', null)
+
+    if (error) return `Error fetching hives: ${error.message}`
+    if (!hives?.length) return 'No active hives found.'
+
+    const hiveResults: Array<{
+      hive: string
+      apiary: string
+      lastTreatmentDate: string | null
+      lastTreatmentType: string | null
+      daysSinceTreatment: number | null
+      sortDate: number
+    }> = []
+
+    for (const hive of hives) {
+      const { data: lastTreatment } = await supabase
+        .from('varroa_treatments')
+        .select('treatment_date, treatment_type')
+        .eq('hive_id', hive.id)
+        .order('treatment_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      hiveResults.push({
+        hive: hive.hive_number,
+        apiary: getApiaryName(hive.apiaries),
+        lastTreatmentDate: lastTreatment?.treatment_date ? formatDate(lastTreatment.treatment_date) : null,
+        lastTreatmentType: lastTreatment?.treatment_type || null,
+        daysSinceTreatment: lastTreatment?.treatment_date ? daysSince(lastTreatment.treatment_date) : null,
+        sortDate: lastTreatment?.treatment_date ? new Date(lastTreatment.treatment_date).getTime() : 0
+      })
+    }
+
+    // Sort by treatment date descending (most recent first), untreated at the end
+    hiveResults.sort((a, b) => b.sortDate - a.sortDate)
+
+    // Split into treated and untreated
+    const treated = hiveResults.filter(h => h.lastTreatmentDate !== null)
+    const untreated = hiveResults.filter(h => h.lastTreatmentDate === null)
+
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      treatedHives: treated.slice(0, limit).map(({ sortDate: _sortDate, ...rest }) => rest),
+      untreatedHives: untreated.map(h => ({ hive: h.hive, apiary: h.apiary })),
+      summary: {
+        totalHives: hives.length,
+        treatedCount: treated.length,
+        untreatedCount: untreated.length
+      }
+    }
+  }
+}

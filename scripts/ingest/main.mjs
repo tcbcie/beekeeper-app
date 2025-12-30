@@ -166,11 +166,17 @@ async function processFile(filePath, supabase, services, options = {}) {
   console.log(`  Created source: ${sourceId}`) 
 
   let successCount = 0
+  console.log(`  Generating embeddings for ${chunks.length} chunks...`)
   for (let i = 0; i < chunks.length; i++) {
       try {
           const chunk = chunks[i]
+          if (i === 0) process.stdout.write(`  Embedding chunk 1/${chunks.length}...`)
+
+          // Small delay between requests to avoid rate limits
+          if (i > 0) await new Promise(r => setTimeout(r, 200))
+
           const embedding = await database.generateEmbedding(chunk, openai, CONFIG.embeddingModel)
-          
+
           const error = await database.insertChunk(supabase, chunk, embedding, {
             source: name,
             author: author || undefined,
@@ -185,17 +191,18 @@ async function processFile(filePath, supabase, services, options = {}) {
           }, sourceId)
 
           if (error) {
-              console.log(`  Warning: Failed to insert chunk ${i + 1}: ${error.message}`) 
+              console.log(`\n  Warning: Failed to insert chunk ${i + 1}: ${error.message}`)
           } else {
               successCount++
           }
 
-          if ((i + 1) % 10 === 0) process.stdout.write(`  Embedding progress: ${i + 1}/${chunks.length}\r`)
+          process.stdout.write(`\r  Embedding progress: ${i + 1}/${chunks.length}`)
 
       } catch (err) {
-           console.log(`  Warning: Error processing chunk ${i + 1}: ${err.message}`) 
+           console.log(`\n  Warning: Error processing chunk ${i + 1}: ${err.message}`)
       }
   }
+  console.log() // newline after progress
 
   await database.updateSourceChunksCount(supabase, sourceId, successCount, { processed_by: processedBy, was_translated: wasTranslated, original_language: detectedLanguage })
   console.log(`  Completed: ${successCount}/${chunks.length} chunks stored`) 

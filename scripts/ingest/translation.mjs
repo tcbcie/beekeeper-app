@@ -38,7 +38,7 @@ export async function translateToEnglish(text, sourceLanguage, openai) {
       messages: [
         {
           role: 'system',
-          content: `You are a professional translator. Translate the following text from ${sourceLanguage} to English. Preserve all technical beekeeping terminology. Maintain paragraph structure. Output ONLY the translation, nothing else.`
+          content: `You are a professional translator. Translate the following text from ${sourceLanguage} to British English. Preserve all technical beekeeping terminology. Maintain paragraph structure. Output ONLY the translation, nothing else.`
         },
         {
           role: 'user',
@@ -58,7 +58,7 @@ export async function translateToEnglish(text, sourceLanguage, openai) {
 
 // Translate chunks in batches using OpenAI
 export async function translateChunks(chunks, sourceLanguage, openai) {
-  console.log(`  Translating ${chunks.length} chunks from ${sourceLanguage} to English...`)
+  console.log(`  Translating ${chunks.length} chunks from ${sourceLanguage} to British English...`)
   const translatedChunks = []
 
   for (let i = 0; i < chunks.length; i++) {
@@ -80,13 +80,13 @@ export async function translateFullText(text, sourceLanguage, geminiModel, charB
     throw new Error('Gemini not configured')
   }
 
-  console.log(`  ⚡ Translating full text with Gemini (${sourceLanguage} -> en)...`)
+  console.log(`  ⚡ Translating full text with Gemini (${sourceLanguage} -> en-GB)...`)
 
   if (text.length <= charBatchSize) {
     // Single pass for shorter texts
     const prompt = `You are a professional translator specializing in beekeeping literature.
 
-Translate the following text from ${sourceLanguage} to English.
+Translate the following text from ${sourceLanguage} to British English.
 - Preserve all technical beekeeping terminology
 - Maintain paragraph structure
 - Output ONLY the translation, nothing else.
@@ -123,7 +123,7 @@ ${text}`
 
     const prompt = `You are a professional translator specializing in beekeeping literature.
 
-Translate this text from ${sourceLanguage} to English.
+Translate this text from ${sourceLanguage} to British English.
 - Preserve all technical beekeeping terminology
 - Maintain paragraph structure
 - Output ONLY the translation, nothing else.

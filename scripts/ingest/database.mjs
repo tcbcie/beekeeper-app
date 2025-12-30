@@ -4,14 +4,47 @@ export function initializeDatabase(supabaseUrl, supabaseKey) {
   return createClient(supabaseUrl, supabaseKey)
 }
 
-// Generate embedding for text
+// Helper for delay
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+// Generate embedding for text with retry logic
 export async function generateEmbedding(text, openai, model = 'text-embedding-3-small') {
-  const response = await openai.embeddings.create({
-    model: model,
-    input: text,
-    dimensions: 1536
-  })
-  return response.data[0].embedding
+  // Clean text: remove null bytes and other problematic characters
+  const cleanText = text.replace(/\x00/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ').trim()
+
+  if (!cleanText || cleanText.length === 0) {
+    throw new Error('Empty text after cleaning')
+  }
+
+  const maxRetries = 3
+  let lastError = null
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await openai.embeddings.create({
+        model: model,
+        input: cleanText,
+        dimensions: 1536
+      })
+      return response.data[0].embedding
+    } catch (err) {
+      lastError = err
+      const isRetryable = err.status === 429 || err.status === 500 || err.status === 503 ||
+                          err.message?.includes('400') || err.message?.includes('500')
+
+      if (isRetryable && attempt < maxRetries) {
+        const delay = attempt * 2000 // 2s, 4s, 6s
+        process.stdout.write(` (retry ${attempt}/${maxRetries} in ${delay/1000}s)`)
+        await sleep(delay)
+      } else {
+        break
+      }
+    }
+  }
+
+  // All retries failed
+  const preview = cleanText.substring(0, 100).replace(/\n/g, ' ')
+  throw new Error(`Embedding failed (${cleanText.length} chars, preview: "${preview}..."): ${lastError.message}`)
 }
 
 // Check if source already exists by hash
