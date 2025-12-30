@@ -130,7 +130,7 @@ export const getHiveTimeline: Tool = {
     const [inspections, varroaChecks, treatments, feedings, harvests] = await Promise.all([
       supabase.from('inspections').select('id, inspection_date, temperament_rating, laying_pattern, notes').eq('hive_id', hive.id).order('inspection_date', { ascending: false }).limit(limit),
       supabase.from('varroa_checks').select('id, check_date, mites_count, method, infestation_rate').eq('hive_id', hive.id).order('check_date', { ascending: false }).limit(limit),
-      supabase.from('varroa_treatments').select('id, treatment_date, treatment_type, product_used').eq('hive_id', hive.id).order('treatment_date', { ascending: false }).limit(limit),
+      supabase.from('varroa_treatments').select('id, treatment_date, treatment_type').eq('hive_id', hive.id).order('treatment_date', { ascending: false }).limit(limit),
       supabase.from('feedings').select('id, feed_date, feed_type, quantity, unit').eq('hive_id', hive.id).order('feed_date', { ascending: false }).limit(limit),
       supabase.from('harvests').select('id, harvest_date, honey_weight, notes').eq('hive_id', hive.id).order('harvest_date', { ascending: false }).limit(limit)
     ])
@@ -157,7 +157,7 @@ export const getHiveTimeline: Tool = {
       timeline.push({
         date: t.treatment_date,
         type: 'Treatment',
-        details: `${t.treatment_type}: ${t.product_used || 'Unknown product'}`
+        details: t.treatment_type || 'Unknown treatment'
       })
     })
 
