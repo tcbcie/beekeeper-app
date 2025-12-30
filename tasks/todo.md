@@ -505,3 +505,116 @@ ADD COLUMN batch_id UUID REFERENCES rearing_batches(id);
 ### Known Issues
 - None identified during implementation
 
+---
+
+## Session 4: AI Tool Update - December 30, 2025
+
+### Task
+Write an AI tool to query queen lineage with the existing AI implementation.
+
+### Changes Made
+
+**File:** `src/lib/ai/tools/queens.ts`
+
+Updated the `getQueenLineage` tool to provide comprehensive lineage data:
+
+1. **Enhanced Description** - Updated to reflect 3-generation ancestry capability
+
+2. **Extended Ancestry Fetching** (lines 263-272)
+   - Added fetching for grandmother and grandfather (mother's parents)
+   - Added fetching for great-grandmother and great-grandfather (grandmother's parents)
+   - Uses recursive pattern to build full 3-generation tree
+
+3. **Added Source Batch Information** (lines 294-302)
+   - Fetches associated rearing batch if queen has `batch_id`
+   - Returns batch name, graft date, and status
+
+4. **Improved Response Structure** (lines 317-357)
+   - Organized ancestry into clear hierarchy: mother, father, grandmother, grandfather, great-grandparents
+   - Added `daughterCount` and `siblingCount` fields for quick reference
+   - Includes current hive and apiary location
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+- Queens page size: 9.84kB
+
+### Example Tool Response Structure
+```json
+{
+  "queen": { "number": "Q-2024-001", "status": "Active", "color": "Yellow", ... },
+  "ancestry": {
+    "mother": { "number": "Q-2023-005", "status": "Retired", ... },
+    "father": { "number": "Q-2023-008", ... },
+    "grandmother": { "number": "Q-2022-002", ... },
+    "grandfather": { "number": "Q-2022-004", ... },
+    "greatGrandmother": { "number": "Q-2021-001", ... },
+    "greatGrandfather": null
+  },
+  "sourceBatch": { "name": "Summer2024", "graftDate": "Jun 15, 2024", "status": "Completed" },
+  "daughters": [{ "number": "Q-2024-010", ... }],
+  "daughterCount": 5,
+  "siblings": [{ "number": "Q-2024-002", ... }],
+  "siblingCount": 3
+}
+```
+
+---
+
+# Task: Remove News Article from Knowledge Base
+
+## Overview
+Add a backend option to remove a news article from the knowledge base without deleting the article itself.
+
+## Current State
+- News articles can be added with automatic KB ingestion
+- Deleting an article also removes its KB entries
+- No way to remove just the KB content while keeping the article metadata
+
+## Plan
+
+### Todo
+- [x] Add `remove_from_kb` action to PATCH endpoint in `/api/admin/news-articles/route.ts`
+- [x] Add "Remove from KB" button in NewsArticlesManager component
+
+## Implementation Details
+
+### API Change (route.ts)
+Handle `remove_from_kb: true` in PATCH request:
+1. Get the article's `kb_source_id`
+2. Delete the knowledge_sources record (cascades to knowledge_base entries)
+3. Update the article to set `kb_source_id = null`
+
+### UI Change (NewsArticlesManager.tsx)
+Add button next to KB badge:
+1. Show "Remove from KB" button when `kb_source_id` exists
+2. Confirm with user before removing
+3. Call PATCH with `remove_from_kb: true`
+4. Refresh articles list
+
+## Review - Completed December 30, 2025
+
+### Changes Made
+
+1. **API Route** (`src/app/api/admin/news-articles/route.ts`)
+   - Added `remove_from_kb` parameter to PATCH endpoint type definition
+   - Added handling for `remove_from_kb: true`:
+     - Fetches article's `kb_source_id`
+     - Deletes from `knowledge_sources` (cascades to `knowledge_base` entries)
+     - Sets `kb_source_id = null` on the article
+     - Returns success response with `kb_removed` status
+
+2. **UI Component** (`src/components/admin/NewsArticlesManager.tsx`)
+   - Added `removingKbId` state for loading indicator
+   - Added `handleRemoveFromKB` function with confirmation dialog
+   - Converted KB badge from `<span>` to `<button>` with:
+     - Hover effect (green → red) to indicate removal action
+     - Loading spinner during removal
+     - `DatabaseZap` icon instead of `Database`
+     - Tooltip: "Remove from Knowledge Base"
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+- Removed unused `Database` import
+

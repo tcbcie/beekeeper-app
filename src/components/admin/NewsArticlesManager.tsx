@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, Loader2, Link, Pencil, X, Check, ExternalLink, Search, Eye, EyeOff, Database } from 'lucide-react'
+import { Plus, Trash2, Loader2, Link, Pencil, X, Check, ExternalLink, Search, Eye, EyeOff, DatabaseZap } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 interface NewsArticle {
@@ -33,6 +33,7 @@ export default function NewsArticlesManager() {
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [removingKbId, setRemovingKbId] = useState<string | null>(null)
   const toast = useToast()
 
   const fetchArticles = useCallback(async () => {
@@ -213,6 +214,43 @@ export default function NewsArticlesManager() {
       toast.error('Failed to delete article')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleRemoveFromKB = async (article: NewsArticle) => {
+    if (!confirm(`Remove "${article.title}" from the Knowledge Base? The article will remain in your news list.`)) {
+      return
+    }
+
+    setRemovingKbId(article.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const response = await fetch('/api/admin/news-articles', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: article.id,
+          remove_from_kb: true
+        })
+      })
+
+      if (response.ok) {
+        toast.success('Removed from Knowledge Base')
+        fetchArticles()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to remove from Knowledge Base')
+      }
+    } catch (error) {
+      console.error('Error removing from KB:', error)
+      toast.error('Failed to remove from Knowledge Base')
+    } finally {
+      setRemovingKbId(null)
     }
   }
 
@@ -415,10 +453,19 @@ export default function NewsArticlesManager() {
                       {/* Actions */}
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {article.kb_source_id && (
-                          <span className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded flex items-center gap-1">
-                            <Database size={12} />
+                          <button
+                            onClick={() => handleRemoveFromKB(article)}
+                            disabled={removingKbId === article.id}
+                            className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded flex items-center gap-1 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                            title="Remove from Knowledge Base"
+                          >
+                            {removingKbId === article.id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <DatabaseZap size={12} />
+                            )}
                             KB
-                          </span>
+                          </button>
                         )}
                         <button
                           onClick={() => handleTogglePublished(article)}
