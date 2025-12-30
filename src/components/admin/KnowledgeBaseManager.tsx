@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink, Search, ArrowUpDown, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 type InputMode = 'text' | 'pdf' | 'url'
@@ -45,6 +45,8 @@ export default function KnowledgeBaseManager() {
   const [yearFilter, setYearFilter] = useState<string>('')
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 15
   const fileInputRef = useRef<HTMLInputElement>(null)
   const risInputRef = useRef<HTMLInputElement>(null)
   const toast = useToast()
@@ -421,6 +423,13 @@ export default function KnowledgeBaseManager() {
       return 0
     })
 
+  // Pagination
+  const totalPages = Math.ceil(filteredSources.length / itemsPerPage)
+  const paginatedSources = filteredSources.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
@@ -693,15 +702,24 @@ export default function KnowledgeBaseManager() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
               placeholder="Search by name or author..."
-              className="w-full pl-9 pr-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm"
+              className="w-full pl-9 pr-9 py-2 border border-border rounded-lg bg-surface text-foreground text-sm"
             />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(''); setCurrentPage(1) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-foreground"
+                title="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
           {availableYears.length > 0 && (
             <select
               value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
+              onChange={(e) => { setYearFilter(e.target.value); setCurrentPage(1) }}
               className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[120px]"
             >
               <option value="">All Years</option>
@@ -716,10 +734,10 @@ export default function KnowledgeBaseManager() {
                 {filteredSources.length} of {sources.length}
               </span>
               <button
-                onClick={() => { setSearchQuery(''); setYearFilter('') }}
+                onClick={() => { setSearchQuery(''); setYearFilter(''); setCurrentPage(1) }}
                 className="text-xs text-forest-600 hover:underline"
               >
-                Clear
+                Clear all
               </button>
             </div>
           )}
@@ -775,7 +793,7 @@ export default function KnowledgeBaseManager() {
               </tr>
             </thead>
             <tbody>
-              {filteredSources.map((source) => (
+              {paginatedSources.map((source) => (
                 <tr key={source.id} className="border-b border-border hover:bg-surface-secondary/50">
                   {editingId === source.id ? (
                     <>
@@ -915,13 +933,13 @@ export default function KnowledgeBaseManager() {
                   )}
                 </tr>
               ))}
-              {filteredSources.length === 0 && (searchQuery || yearFilter) && (
+              {paginatedSources.length === 0 && (searchQuery || yearFilter) && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p>No sources match your filters</p>
                     <button
-                      onClick={() => { setSearchQuery(''); setYearFilter('') }}
+                      onClick={() => { setSearchQuery(''); setYearFilter(''); setCurrentPage(1) }}
                       className="text-sm text-forest-600 hover:underline mt-1"
                     >
                       Clear filters
@@ -931,6 +949,36 @@ export default function KnowledgeBaseManager() {
               )}
             </tbody>
           </table>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+              <span className="text-sm text-text-tertiary">
+                Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredSources.length)} of {filteredSources.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Previous page"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm text-foreground px-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Next page"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
