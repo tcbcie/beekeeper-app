@@ -206,7 +206,7 @@ export const getTreatmentHistory: Tool = {
 
     const { data, error } = await supabase
       .from('varroa_treatments')
-      .select('treatment_date, treatment_type, product_used, dosage, end_date, notes')
+      .select('treatment_date, treatment_type, dosage, notes')
       .eq('hive_id', hive.id)
       .order('treatment_date', { ascending: false })
       .limit(args.limit || 10)
@@ -218,10 +218,8 @@ export const getTreatmentHistory: Tool = {
       hive: hive.hive_number,
       apiary: hive.apiary_name,
       treatments: data.map(t => ({
-        startDate: formatDate(t.treatment_date),
-        endDate: t.end_date ? formatDate(t.end_date) : 'Ongoing',
+        date: formatDate(t.treatment_date),
         type: t.treatment_type || 'Unknown',
-        product: t.product_used || 'Unknown',
         dosage: t.dosage || 'N/A',
         notes: t.notes?.substring(0, 50) || 'None'
       }))
@@ -277,18 +275,16 @@ export const getHivesNeedingTreatment: Tool = {
 
       const { data: lastTreatment } = await supabase
         .from('varroa_treatments')
-        .select('treatment_date, treatment_type, end_date')
+        .select('treatment_date, treatment_type')
         .eq('hive_id', hive.id)
         .order('treatment_date', { ascending: false })
         .limit(1)
         .single()
 
       const treatmentDate = lastTreatment?.treatment_date
-      const endDate = lastTreatment?.end_date
-      const isOngoing = endDate && new Date(endDate) > new Date()
       const isRecent = treatmentDate && new Date(treatmentDate) > treatmentCutoff
 
-      if (!isOngoing && !isRecent) {
+      if (!isRecent) {
         needingTreatment.push({
           hive: hive.hive_number,
           apiary: getApiaryName(hive.apiaries),
