@@ -618,3 +618,43 @@ Add button next to KB badge:
 - No TypeScript errors
 - Removed unused `Database` import
 
+---
+
+## Session 5: AI Tool Schema Alignment - December 30, 2025
+
+### Problem
+AI assistant was unable to access user records (e.g., "Was my hive 26-DA ever treated?") because many AI tool queries were using column names that don't exist in the database schema.
+
+### Root Cause
+The AI tools were written with assumed column names that didn't match the actual Supabase schema. This caused silent query failures.
+
+### Commits
+1. `45e50e6` - Initial fix for varroa.ts (removed `product_used`, `end_date`)
+2. `5cca3cf` - Comprehensive schema alignment across all 6 tool files
+
+### Files Fixed
+
+| File | Invalid Columns | Corrected To |
+|------|-----------------|--------------|
+| `hives.ts` | `laying_pattern` | `brood_pattern_rating` |
+| `inspections.ts` | `laying_pattern`, `queen_cells`, `honey_frames`, `pollen_frames`, `diseases_signs` | `brood_pattern_rating`, `queen_cups`, `honey_supers`, (removed), `disease_issues` |
+| `feeding.ts` | `honey_frames` | `honey_supers` |
+| `queens.ts` | `breed`, `introduction_date`, `expected_hatch_date`, `cells_grafted`, `cells_accepted` | `subspecies`, `birth_date`, `emergence_date`, `cell_count`, `grafts_accepted` |
+| `tasks.ts` | `due_date`, `status`, `task_type` | `start_date`, `completed`, `category` |
+| `analysis.ts` | `laying_pattern`, `honey_frames` | `brood_pattern_rating`, `honey_supers` |
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+- 78 insertions, 86 deletions across 6 files
+
+### Impact
+All AI tools now use correct database column names, enabling the assistant to query:
+- Hive records and details
+- Inspection history
+- Varroa treatments
+- Feeding records
+- Queen inventory and lineage
+- Task management
+- Analysis and comparisons
+
