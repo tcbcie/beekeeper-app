@@ -223,10 +223,10 @@ export const getUpcomingBatchEvents: Tool = {
   }
 }
 
-// Get queen lineage
+// Get queen lineage - comprehensive 3-generation ancestry
 export const getQueenLineage: Tool = {
   name: 'getQueenLineage',
-  description: 'Get mother and daughter queens for a specific queen',
+  description: 'Get full lineage for a queen including 3 generations of ancestors (parents, grandparents, great-grandparents), daughters, siblings, and source batch',
   parameters: z.object({
     queenNumber: z.string().describe('Queen number or identifier')
   }),
@@ -239,56 +239,121 @@ export const getQueenLineage: Tool = {
       return `Queen "${args.queenNumber}" not found.`
     }
 
+    // Helper to fetch a queen by ID
+    const fetchQueen = async (id: string | null) => {
+      if (!id) return null
+      const { data } = await supabase
+        .from('queens')
+        .select('id, queen_number, status, marking_color, subspecies, mother_id, father_id')
+        .eq('id', id)
+        .maybeSingle()
+      return data
+    }
+
+    // Fetch the main queen with all details
     const { data: queenData, error } = await supabase
       .from('queens')
-      .select('queen_number, status, breed, marking_color, introduction_date, mother_id, hives(hive_number, apiaries(name))')
+      .select('id, queen_number, status, subspecies, marking_color, birth_date, lineage, mother_id, father_id, batch_id, hives(hive_number, apiaries(name))')
       .eq('id', queen.id)
       .single()
 
     if (error || !queenData) return `Error fetching queen: ${error?.message || 'Not found'}`
 
-    let mother = null
-    if (queenData.mother_id) {
-      const { data: motherData } = await supabase
-        .from('queens')
-        .select('queen_number, status, breed')
-        .eq('id', queenData.mother_id)
-        .single()
-      mother = motherData
-    }
+    // Fetch 3 generations of ancestors
+    const mother = await fetchQueen(queenData.mother_id)
+    const father = await fetchQueen(queenData.father_id)
 
+    // Grandparents (mother's parents)
+    const grandmother = mother ? await fetchQueen(mother.mother_id) : null
+    const grandfather = mother ? await fetchQueen(mother.father_id) : null
+
+    // Great-grandparents (grandmother's parents)
+    const greatGrandmother = grandmother ? await fetchQueen(grandmother.mother_id) : null
+    const greatGrandfather = grandmother ? await fetchQueen(grandmother.father_id) : null
+
+    // Fetch daughters (queens where mother_id = this queen)
     const { data: daughters } = await supabase
       .from('queens')
-      .select('queen_number, status, breed, hives(hive_number)')
+      .select('queen_number, status, marking_color, hives(hive_number)')
       .eq('mother_id', queen.id)
-      .eq('user_id', userId)
+      .order('birth_date', { ascending: false })
+
+    // Fetch siblings (same mother, excluding self)
+    let siblings: { queen_number: string; status: string; marking_color: string }[] = []
+    if (queenData.mother_id) {
+      const { data: siblingsData } = await supabase
+        .from('queens')
+        .select('queen_number, status, marking_color')
+        .eq('mother_id', queenData.mother_id)
+        .neq('id', queen.id)
+        .limit(10)
+      siblings = siblingsData || []
+    }
+
+    // Fetch source batch if exists
+    let sourceBatch = null
+    if (queenData.batch_id) {
+      const { data: batchData } = await supabase
+        .from('rearing_batches')
+        .select('batch_name, graft_date, status')
+        .eq('id', queenData.batch_id)
+        .maybeSingle()
+      sourceBatch = batchData
+    }
 
     const hiveInfo = getHiveInfo(queenData.hives)
+
+    // Format queen info helper
+    const formatQueenInfo = (q: { queen_number: string; status: string; marking_color: string; subspecies?: string } | null) => {
+      if (!q) return null
+      return {
+        number: q.queen_number,
+        status: q.status || 'Unknown',
+        color: q.marking_color || 'Unknown',
+        subspecies: q.subspecies || 'Unknown'
+      }
+    }
 
     return {
       queen: {
         number: queenData.queen_number,
-        status: queenData.status,
-        breed: queenData.breed || 'Unknown',
+        status: queenData.status || 'Unknown',
         color: queenData.marking_color || 'Unknown',
-        introduced: queenData.introduction_date ? formatDate(queenData.introduction_date) : 'Unknown',
+        subspecies: queenData.subspecies || 'Unknown',
+        birthDate: queenData.birth_date ? formatDate(queenData.birth_date) : 'Unknown',
+        lineage: queenData.lineage || 'Not recorded',
         currentHive: hiveInfo.hive_number,
         apiary: hiveInfo.apiary_name
       },
-      mother: mother ? {
-        number: mother.queen_number,
-        status: mother.status,
-        breed: mother.breed || 'Unknown'
+      ancestry: {
+        mother: formatQueenInfo(mother),
+        father: formatQueenInfo(father),
+        grandmother: formatQueenInfo(grandmother),
+        grandfather: formatQueenInfo(grandfather),
+        greatGrandmother: formatQueenInfo(greatGrandmother),
+        greatGrandfather: formatQueenInfo(greatGrandfather)
+      },
+      sourceBatch: sourceBatch ? {
+        name: sourceBatch.batch_name,
+        graftDate: sourceBatch.graft_date ? formatDate(sourceBatch.graft_date) : 'Unknown',
+        status: sourceBatch.status
       } : null,
       daughters: daughters?.map(d => {
         const h = d.hives as { hive_number?: string } | null
         return {
           number: d.queen_number,
-          status: d.status,
-          breed: d.breed || 'Unknown',
+          status: d.status || 'Unknown',
+          color: d.marking_color || 'Unknown',
           currentHive: h?.hive_number || 'None'
         }
-      }) || []
+      }) || [],
+      daughterCount: daughters?.length || 0,
+      siblings: siblings.map(s => ({
+        number: s.queen_number,
+        status: s.status || 'Unknown',
+        color: s.marking_color || 'Unknown'
+      })),
+      siblingCount: siblings.length
     }
   }
 }
