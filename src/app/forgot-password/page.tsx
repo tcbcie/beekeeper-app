@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -36,7 +37,10 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-yellow-100 p-4">
       <div className="max-w-md w-full bg-surface dark:bg-surface rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-forest-600 dark:text-amber-600 mb-2">🐝 HiveCraic</h1>
+          <h1 className="text-3xl font-bold text-forest-600 dark:text-amber-600 mb-2 flex items-center justify-center gap-2">
+            <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="w-10 h-10" />
+            HiveCraic
+          </h1>
           <h2 className="text-xl font-semibold text-text-secondary">Reset Password</h2>
           <p className="text-text-secondary mt-2">
             Enter your email address and we&apos;ll send you instructions to reset your password.
