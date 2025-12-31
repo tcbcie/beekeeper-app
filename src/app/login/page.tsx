@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import Image from 'next/image'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -172,7 +173,10 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-sage-50 dark:bg-slate-950 px-4">
       <div className="max-w-md w-full space-y-8 p-8 bg-surface dark:bg-slate-900 rounded-xl shadow-2xl border border-border">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-forest-600 dark:text-emerald-400">🐝 HiveCraic</h2>
+          <h2 className="text-3xl font-bold text-forest-600 dark:text-emerald-400 flex items-center justify-center gap-2">
+            <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="w-10 h-10" />
+            HiveCraic
+          </h2>
           <p className="mt-2 text-sm text-text-secondary">Crafted with honeyed hearts by tcbc.ie,</p>
           <p className="text-sm text-text-secondary">alongside the buzzing minds of</p>
           <p className="text-sm text-text-secondary">Tribes Beekeepers Association and Tribes QRBG!</p>
@@ -283,7 +287,10 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-sage-50 dark:bg-slate-950">
         <div className="text-center">
-          <div className="text-3xl font-bold text-forest-600 dark:text-emerald-400">🐝 HiveCraic</div>
+          <div className="text-3xl font-bold text-forest-600 dark:text-emerald-400 flex items-center justify-center gap-2">
+            <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="w-10 h-10" />
+            HiveCraic
+          </div>
           <p className="mt-4 text-text-secondary">Loading...</p>
         </div>
       </div>
