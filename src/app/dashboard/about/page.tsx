@@ -348,6 +348,8 @@ function AboutPageContent() {
               <li>Installable mobile application (PWA)</li>
               <li>AI Assistant (Mel) with access to your hive data and inspection records</li>
               <li>AI-powered beekeeping knowledge base with literature-sourced answers</li>
+              <li>Community Map - view shared apiary locations and connect with nearby beekeepers</li>
+              <li>Beekeeping Tools - frame cell calculator, GDD tracker, and other useful utilities</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
