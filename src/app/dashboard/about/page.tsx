@@ -354,7 +354,7 @@ function AboutPageContent() {
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
             <p className="text-text-secondary">
-              <strong>Current Version:</strong> 1.5.5 (December 2025)
+              <strong>Current Version:</strong> 1.5.6 (December 2025)
             </p>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Credits</h3>
@@ -477,10 +477,11 @@ function AboutPageContent() {
                   const borderColor = borderColors[index % borderColors.length]
 
                   return (
-                    <div key={article.id} className="flex gap-4 group">
+                    <div key={article.id} className="flex gap-3 sm:gap-4 group overflow-hidden">
                       {/* Image thumbnail */}
                       {article.image_url && (
-                        <div className="w-24 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-sage-100 dark:bg-slate-800">
+                        <div className="w-16 h-16 sm:w-24 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden bg-sage-100 dark:bg-slate-800">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={article.image_url}
                             alt=""
@@ -492,27 +493,26 @@ function AboutPageContent() {
                         </div>
                       )}
                       {/* Content */}
-                      <div className={`flex-1 border-l-4 ${borderColor} pl-4`}>
+                      <div className={`flex-1 min-w-0 border-l-4 ${borderColor} pl-3 sm:pl-4`}>
                         <a
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-lg font-semibold text-foreground hover:text-blue-600 flex items-center gap-2 group-hover:underline"
+                          className="text-base sm:text-lg font-semibold text-foreground hover:text-blue-600 flex items-start gap-2 group-hover:underline"
                         >
-                          {article.title}
-                          <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <span className="line-clamp-2">{article.title}</span>
+                          <ExternalLink size={14} className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </a>
-                        <p className="text-sm text-text-tertiary mb-1">
+                        <p className="text-xs sm:text-sm text-text-tertiary mb-1 truncate">
                           {article.site_name || new URL(article.url).hostname}
                           {' • '}
                           {article.published_date
                             ? new Date(article.published_date).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
                             : new Date(article.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
                           }
-                          {article.author && ` • ${article.author}`}
                         </p>
                         {article.description && (
-                          <p className="text-text-secondary line-clamp-2">
+                          <p className="text-sm text-text-secondary line-clamp-2 hidden sm:block">
                             {article.description}
                           </p>
                         )}
