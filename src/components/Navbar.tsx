@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 
 interface NavbarProps {
@@ -106,8 +107,9 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-xl sm:text-2xl font-bold text-forest-600 dark:text-forest-400 whitespace-nowrap">
-              🐝 HiveCraic
+            <h1 className="text-xl sm:text-2xl font-bold text-forest-600 dark:text-forest-400 whitespace-nowrap flex items-center gap-2">
+              <Image src="/logo.png" alt="HiveCraic" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
+              HiveCraic
             </h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
