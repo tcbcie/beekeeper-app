@@ -658,3 +658,114 @@ All AI tools now use correct database column names, enabling the assistant to qu
 - Task management
 - Analysis and comparisons
 
+---
+
+## Session 6: Colony Tracking Tools - December 30, 2025
+
+### Task
+Implement colony tracking tools for the AI assistant to query the `colonies` and `colony_movements` tables, which were previously inaccessible.
+
+### Background
+A comprehensive tool evaluation identified that while 30 AI tools existed across 8 categories, the `colonies` and `colony_movements` tables had no tool access. Colonies track bee populations that persist across hive equipment changes (splits, combines, re-hiving).
+
+### New File Created
+**`src/lib/ai/tools/colonies.ts`** - 7 new tools for colony tracking:
+
+| Tool | Description |
+|------|-------------|
+| `getColonyOverview` | List all colonies with status, current location, and origin |
+| `getColonyDetails` | Full details including parents, children, and movement count |
+| `getColonyHistory` | Movement history showing all hives the colony has lived in |
+| `getColonyLineage` | Family tree with ancestors (3 gen), siblings, and descendants |
+| `getColonyInHive` | Find which colony is currently in a specific hive |
+| `getDeceasedColonies` | Dead/lost colonies with reasons and lifespan |
+| `getColonyStats` | Statistics summary by status and origin type |
+
+### Technical Notes
+
+**Supabase Self-Referencing Joins:**
+The `colonies` table has self-referencing relationships (`parent_colony_id`, `secondary_parent_colony_id`). Supabase returns these as arrays, not objects. All 4 locations were fixed with this pattern:
+
+```typescript
+const parentRaw = data.parent as unknown
+const parent = Array.isArray(parentRaw)
+  ? parentRaw[0] as ParentType | undefined
+  : parentRaw as ParentType | null
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/lib/ai/tools/colonies.ts` | NEW - 554 lines, 7 colony tools |
+| `src/lib/ai/tools/index.ts` | Added colonyTools import and registration |
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+- Commit: `164d53e`
+
+### AI Capabilities Added
+The AI assistant can now answer questions like:
+- "Show me all my active colonies"
+- "Which colony is in hive 26-DA?"
+- "What's the lineage of colony C-001?"
+- "How many times has colony C-003 moved?"
+- "Why did my colonies die last year?"
+- "How many colonies originated from splits?"
+
+---
+
+## Session 7: Semantic News Search - December 31, 2025
+
+### Task
+Implement AI-powered semantic search for news articles using vector embeddings, allowing users to search news by meaning rather than exact keyword matches.
+
+### Implementation
+
+#### 1. Database Migration
+Created RPC function `search_news_articles` that:
+- Accepts embedding vector, match threshold, and result count
+- Uses CTE with ROW_NUMBER to get best matching chunk per article
+- Joins with news_articles for full metadata
+- Returns similarity scores and matched content
+
+#### 2. Backend API (`src/lib/rag.ts`)
+Added new exports:
+- `NewsSearchResult` interface - typed result structure
+- `searchNewsArticles()` function - generates embedding and calls RPC
+
+#### 3. API Endpoint (`src/app/api/news/search/route.ts`)
+New GET endpoint:
+- Accepts `q` (query) and `limit` parameters
+- Requires minimum 3 characters
+- Returns semantic search results as JSON
+
+#### 4. Frontend UI (`src/app/dashboard/about/page.tsx`)
+Updated News section with:
+- `semanticResults` state for AI search results
+- `semanticSearching` state for loading indicator
+- `searchTimeoutRef` for debounced API calls (300ms delay)
+- Sparkles icon indicates when AI search is active
+- "AI Search" badge shows when query >= 3 characters
+- Falls back to client-side filtering for shorter queries
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| Database | `search_news_articles` RPC function |
+| `src/lib/rag.ts` | Added NewsSearchResult interface and searchNewsArticles function |
+| `src/app/api/news/search/route.ts` | NEW - API endpoint for semantic search |
+| `src/app/dashboard/about/page.tsx` | Added semantic search UI with debounced API calls |
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+- About page size: 14.8kB
+
+### User Experience
+- Type 1-2 characters: Fast client-side filtering
+- Type 3+ characters: AI-powered semantic search with Sparkles indicator
+- Debounced to avoid excessive API calls while typing
+
