@@ -132,6 +132,40 @@ export async function searchKnowledgeBase(query: string, limit: number = 5): Pro
   }))
 }
 
+// News article search result type
+export interface NewsSearchResult {
+  article_id: string
+  title: string
+  description: string | null
+  url: string
+  image_url: string | null
+  site_name: string | null
+  published_date: string | null
+  author: string | null
+  created_at: string
+  similarity: number
+  matched_content: string
+}
+
+// Search news articles using vector similarity (semantic search)
+export async function searchNewsArticles(query: string, limit: number = 10): Promise<NewsSearchResult[]> {
+  const supabase = getServerSupabase()
+  const embedding = await generateEmbedding(query)
+
+  const { data, error } = await supabase.rpc('search_news_articles', {
+    query_embedding: embedding,
+    match_threshold: 0.5,
+    match_count: limit
+  })
+
+  if (error) {
+    console.error('News search error:', error)
+    return []
+  }
+
+  return data || []
+}
+
 // Generate SQL query from natural language
 export async function generateSQLQuery(query: string, userId: string): Promise<string> {
   // Validate userId to prevent SQL injection

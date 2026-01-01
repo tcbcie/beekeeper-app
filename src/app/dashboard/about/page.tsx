@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon, Globe, ExternalLink, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon, Globe, ExternalLink, Search, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ChangelogDisplay from '@/components/ChangelogDisplay'
 import { useToast } from '@/components/ui/Toast'
@@ -58,6 +58,9 @@ function AboutPageContent() {
   const [newsLoading, setNewsLoading] = useState(false)
   const [showAllNews, setShowAllNews] = useState(false)
   const [newsSearch, setNewsSearch] = useState('')
+  const [semanticResults, setSemanticResults] = useState<NewsArticle[]>([])
+  const [semanticSearching, setSemanticSearching] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const toast = useToast()
@@ -143,6 +146,56 @@ function AboutPageContent() {
       setNewsLoading(false)
     }
   }, [])
+
+  // Debounced semantic search effect
+  useEffect(() => {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    // Only search if query is >= 3 characters
+    if (newsSearch.trim().length < 3) {
+      setSemanticResults([])
+      setSemanticSearching(false)
+      return
+    }
+
+    setSemanticSearching(true)
+
+    // Debounce the API call by 300ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/news/search?q=${encodeURIComponent(newsSearch.trim())}&limit=20`)
+        if (response.ok) {
+          const data = await response.json()
+          // Map semantic results to NewsArticle format
+          const mapped = data.results.map((r: { article_id: string; title: string; description: string | null; url: string; image_url: string | null; site_name: string | null; published_date: string | null; author: string | null; created_at: string }) => ({
+            id: r.article_id,
+            title: r.title,
+            description: r.description,
+            url: r.url,
+            image_url: r.image_url,
+            site_name: r.site_name,
+            published_date: r.published_date,
+            author: r.author,
+            created_at: r.created_at
+          }))
+          setSemanticResults(mapped)
+        }
+      } catch (error) {
+        console.error('Semantic search error:', error)
+      } finally {
+        setSemanticSearching(false)
+      }
+    }, 300)
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [newsSearch])
 
   useEffect(() => {
     const initUser = async () => {
@@ -441,14 +494,25 @@ function AboutPageContent() {
           {/* Search (only when showing all) */}
           {showAllNews && newsArticles.length > 5 && (
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              {semanticSearching ? (
+                <Sparkles size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500 animate-pulse" />
+              ) : newsSearch.trim().length >= 3 ? (
+                <Sparkles size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-500" />
+              ) : (
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              )}
               <input
                 type="text"
                 value={newsSearch}
                 onChange={(e) => setNewsSearch(e.target.value)}
-                placeholder="Search articles..."
+                placeholder="Search articles (AI-powered with 3+ characters)..."
                 className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-surface-elevated focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              {newsSearch.trim().length >= 3 && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-amber-600 dark:text-amber-400">
+                  AI Search
+                </span>
+              )}
             </div>
           )}
 
@@ -464,12 +528,16 @@ function AboutPageContent() {
           ) : (
             <div className="space-y-4">
               {(() => {
-                const filtered = newsSearch
-                  ? newsArticles.filter(a =>
-                      a.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
-                      a.description?.toLowerCase().includes(newsSearch.toLowerCase())
-                    )
-                  : newsArticles
+                // Use semantic results when query >= 3 chars, otherwise client-side filter
+                const useSemanticSearch = newsSearch.trim().length >= 3
+                const filtered = useSemanticSearch
+                  ? semanticResults
+                  : newsSearch
+                    ? newsArticles.filter(a =>
+                        a.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
+                        a.description?.toLowerCase().includes(newsSearch.toLowerCase())
+                      )
+                    : newsArticles
                 const displayed = showAllNews ? filtered : filtered.slice(0, 5)
 
                 return displayed.map((article, index) => {
@@ -522,13 +590,21 @@ function AboutPageContent() {
                 })
               })()}
 
-              {showAllNews && newsSearch && newsArticles.filter(a =>
-                a.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
-                a.description?.toLowerCase().includes(newsSearch.toLowerCase())
-              ).length === 0 && (
-                <div className="py-4 text-center text-text-tertiary">
-                  No articles match your search.
-                </div>
+              {showAllNews && newsSearch && (
+                newsSearch.trim().length >= 3
+                  ? semanticResults.length === 0 && !semanticSearching && (
+                      <div className="py-4 text-center text-text-tertiary">
+                        No articles match your semantic search.
+                      </div>
+                    )
+                  : newsArticles.filter(a =>
+                      a.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
+                      a.description?.toLowerCase().includes(newsSearch.toLowerCase())
+                    ).length === 0 && (
+                      <div className="py-4 text-center text-text-tertiary">
+                        No articles match your search.
+                      </div>
+                    )
               )}
             </div>
           )}
