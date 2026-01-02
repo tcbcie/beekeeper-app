@@ -1,7 +1,7 @@
 'use client'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info, Calendar, Users } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info, Calendar, Users, TreeDeciduous } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 
@@ -36,14 +36,21 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     { href: '/dashboard/about', label: 'About', icon: Info },
   ]
 
+  const powerUserNavItems = [
+    { href: '/dashboard/wild-colonies', label: 'Wild Colonies', icon: TreeDeciduous },
+  ]
+
   const adminNavItems = [
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ]
 
-  // Only show Settings menu item for admins
-  const navItems = userRole === 'Admin'
-    ? [...baseNavItems, ...adminNavItems]
-    : baseNavItems
+  // Build nav items based on role
+  const isPowerUser = userRole === 'Power User' || userRole === 'Admin'
+  const navItems = [
+    ...baseNavItems,
+    ...(isPowerUser ? powerUserNavItems : []),
+    ...(userRole === 'Admin' ? adminNavItems : [])
+  ]
 
   // Close drawer when route changes (only if drawer is open)
   useEffect(() => {

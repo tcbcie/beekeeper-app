@@ -13,15 +13,24 @@ export function getSupabase(): SupabaseClient {
   return supabaseInstance
 }
 
+// Get list of apiary IDs owned by user only (excludes shared)
+export async function getOwnApiaryIds(userId: string): Promise<string[]> {
+  const supabase = getSupabase()
+
+  const { data: ownApiaries } = await supabase
+    .from('apiaries')
+    .select('id')
+    .eq('user_id', userId)
+
+  return ownApiaries?.map(a => a.id) || []
+}
+
 // Get list of apiary IDs accessible to user (own + team-shared)
 export async function getAccessibleApiaryIds(userId: string): Promise<string[]> {
   const supabase = getSupabase()
 
   // Get user's own apiaries
-  const { data: ownApiaries } = await supabase
-    .from('apiaries')
-    .select('id')
-    .eq('user_id', userId)
+  const ownIds = await getOwnApiaryIds(userId)
 
   // Get team-shared apiaries (via teams -> team_members)
   const { data: teamApiaries } = await supabase
@@ -29,7 +38,6 @@ export async function getAccessibleApiaryIds(userId: string): Promise<string[]> 
     .select('apiary_id, teams!inner(team_members!inner(user_id))')
     .eq('teams.team_members.user_id', userId)
 
-  const ownIds = ownApiaries?.map(a => a.id) || []
   const teamIds = teamApiaries?.map(a => a.apiary_id) || []
 
   return [...new Set([...ownIds, ...teamIds])]

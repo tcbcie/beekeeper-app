@@ -43,7 +43,7 @@ export async function isAuthenticated(): Promise<boolean> {
 /**
  * User role type definition
  */
-export type UserRole = 'User' | 'Admin'
+export type UserRole = 'User' | 'Power User' | 'Admin'
 
 /**
  * User profile interface
@@ -112,6 +112,15 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 export async function isAdmin(): Promise<boolean> {
   const role = await getUserRole()
   return role === 'Admin'
+}
+
+/**
+ * Check if the current user is a Power User or Admin
+ * @returns true if user is Power User or Admin, false otherwise
+ */
+export async function isPowerUserOrAdmin(): Promise<boolean> {
+  const role = await getUserRole()
+  return role === 'Power User' || role === 'Admin'
 }
 
 /**

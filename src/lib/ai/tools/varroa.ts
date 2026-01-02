@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, findHiveByName, formatDate, daysSince } from './utils'
+import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, daysSince } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -14,11 +14,16 @@ function getApiaryName(apiaries: unknown): string {
 // Get latest varroa counts for all hives (sorted by highest infestation rate)
 export const getLatestVarroaCounts: Tool = {
   name: 'getLatestVarroaCounts',
-  description: 'Get the most recent mite count for each hive, sorted by highest infestation rate. Use this to find which hive has the highest varroa load.',
-  parameters: z.object({}),
-  execute: async (_args: unknown, userId: string) => {
+  description: 'Get the most recent mite count for each hive, sorted by highest infestation rate. Use this to find which hive has the highest varroa load. By default shows only your own hives.',
+  parameters: z.object({
+    includeShared: z.boolean().optional().describe('Include shared/team hives (default false)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const apiaryIds = args.includeShared
+      ? await getAccessibleApiaryIds(userId)
+      : await getOwnApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
@@ -122,14 +127,17 @@ export const getVarroaTrend: Tool = {
 // Get hives above varroa threshold
 export const getHivesAboveThreshold: Tool = {
   name: 'getHivesAboveThreshold',
-  description: 'Get hives with mite counts above a specific treatment threshold percentage (e.g. above 3%). Only use when user asks about hives exceeding a threshold.',
+  description: 'Get hives with mite counts above a specific treatment threshold percentage (e.g. above 3%). Only use when user asks about hives exceeding a threshold. By default shows only your own hives.',
   parameters: z.object({
-    threshold: z.number().optional().describe('Infestation rate threshold percentage (default 3)')
+    threshold: z.number().optional().describe('Infestation rate threshold percentage (default 3)'),
+    includeShared: z.boolean().optional().describe('Include shared/team hives (default false)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
-    const args = rawArgs as { threshold?: number }
+    const args = rawArgs as { threshold?: number; includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const apiaryIds = args.includeShared
+      ? await getAccessibleApiaryIds(userId)
+      : await getOwnApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
@@ -230,15 +238,18 @@ export const getTreatmentHistory: Tool = {
 // Get hives needing treatment
 export const getHivesNeedingTreatment: Tool = {
   name: 'getHivesNeedingTreatment',
-  description: 'Get hives with high mite counts and no recent treatment',
+  description: 'Get hives with high mite counts and no recent treatment. By default shows only your own hives.',
   parameters: z.object({
     threshold: z.number().optional().describe('Infestation rate threshold (default 3)'),
-    treatmentDays: z.number().optional().describe('Days since last treatment to consider (default 30)')
+    treatmentDays: z.number().optional().describe('Days since last treatment to consider (default 30)'),
+    includeShared: z.boolean().optional().describe('Include shared/team hives (default false)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
-    const args = rawArgs as { threshold?: number; treatmentDays?: number }
+    const args = rawArgs as { threshold?: number; treatmentDays?: number; includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const apiaryIds = args.includeShared
+      ? await getAccessibleApiaryIds(userId)
+      : await getOwnApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
@@ -318,14 +329,17 @@ export const getHivesNeedingTreatment: Tool = {
 // Get treatment counts per hive
 export const getTreatmentCounts: Tool = {
   name: 'getTreatmentCounts',
-  description: 'Get the number of varroa treatments per hive, sorted by most treatments first. Use this to find which hive has the most treatment records.',
+  description: 'Get the number of varroa treatments per hive, sorted by most treatments first. Use this to find which hive has the most treatment records. By default shows only your own hives.',
   parameters: z.object({
-    limit: z.number().optional().describe('Maximum number of hives to return (default 10)')
+    limit: z.number().optional().describe('Maximum number of hives to return (default 10)'),
+    includeShared: z.boolean().optional().describe('Include shared/team hives (default false)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
-    const args = rawArgs as { limit?: number }
+    const args = rawArgs as { limit?: number; includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const apiaryIds = args.includeShared
+      ? await getAccessibleApiaryIds(userId)
+      : await getOwnApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
@@ -389,14 +403,17 @@ export const getTreatmentCounts: Tool = {
 // Get all hives with their last treatment date (sorted by most recent)
 export const getLastTreatmentDates: Tool = {
   name: 'getLastTreatmentDates',
-  description: 'Get all hives with their most recent varroa treatment date, sorted by most recently treated first. Use this when asked "which hives were last treated" or "when was each hive treated".',
+  description: 'Get all hives with their most recent varroa treatment date, sorted by most recently treated first. Use this when asked "which hives were last treated" or "when was each hive treated". By default shows only your own hives.',
   parameters: z.object({
-    limit: z.number().optional().describe('Maximum number of hives to return (default 20)')
+    limit: z.number().optional().describe('Maximum number of hives to return (default 20)'),
+    includeShared: z.boolean().optional().describe('Include shared/team hives (default false)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
-    const args = rawArgs as { limit?: number }
+    const args = rawArgs as { limit?: number; includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const apiaryIds = args.includeShared
+      ? await getAccessibleApiaryIds(userId)
+      : await getOwnApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
