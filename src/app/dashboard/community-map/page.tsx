@@ -8,7 +8,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Flame, Calendar, TreeDeciduous } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { obfuscateCoordinates, roundCoordinate } from '@/lib/location-obfuscation'
+// Server-side obfuscation now used - coordinates pre-obfuscated in database views
 
 interface SharedApiary {
   id: string
@@ -143,26 +143,15 @@ export default function CommunityMapPage() {
         return
       }
 
-      // Fetch shared apiaries (excluding user's own) with hive count
+      // Fetch shared apiaries (excluding user's own) from obfuscated view
+      // Coordinates are already obfuscated server-side for privacy
       const { data: sharedData, error: sharedError } = await supabase
-        .from('apiaries')
-        .select('id, city, latitude, longitude, created_at, hives(count)')
-        .eq('share_location', true)
+        .from('shared_apiaries_obfuscated')
+        .select('id, city, latitude, longitude, created_at, hive_count')
         .neq('user_id', id)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
 
       if (!sharedError && sharedData) {
-        // Transform the data to extract hive count from nested structure
-        const transformedData = sharedData.map((apiary: Record<string, unknown>) => ({
-          id: apiary.id as string,
-          city: apiary.city as string | null,
-          latitude: apiary.latitude as number,
-          longitude: apiary.longitude as number,
-          created_at: apiary.created_at as string,
-          hive_count: (apiary.hives as Array<{ count: number }>)?.[0]?.count || 0
-        }))
-        setSharedApiaries(transformedData)
+        setSharedApiaries(sharedData)
       }
 
       // Fetch user's own apiaries with coordinates
@@ -182,8 +171,10 @@ export default function CommunityMapPage() {
       setIsPowerUser(powerUser)
 
       if (powerUser) {
+        // Fetch wild colonies from obfuscated view
+        // Coordinates are already obfuscated server-side for privacy
         const { data: wildData, error: wildError } = await supabase
-          .from('wild_colonies')
+          .from('wild_colonies_obfuscated')
           .select('id, latitude, longitude, status, nesting_type, observation_date')
 
         if (!wildError && wildData) {
@@ -305,21 +296,14 @@ export default function CommunityMapPage() {
       })
     }
 
-    // Prepare obfuscated shared apiary coordinates
-    const obfuscatedShared = filteredSharedApiaries.map(apiary => {
-      const obfuscated = obfuscateCoordinates(apiary.latitude, apiary.longitude, apiary.id, 5)
-      return {
-        ...apiary,
-        latitude: roundCoordinate(obfuscated.latitude, 2),
-        longitude: roundCoordinate(obfuscated.longitude, 2)
-      }
-    })
+    // Shared apiaries already have obfuscated coordinates from server-side view
+    // No client-side obfuscation needed - coordinates never leave server unobfuscated
 
     // Add flight radius circles for shared apiaries (purple)
-    if (showSharedApiaries && obfuscatedShared.length > 0 && flightRadius > 0 && !showHeatMap) {
+    if (showSharedApiaries && filteredSharedApiaries.length > 0 && flightRadius > 0 && !showHeatMap) {
       map.current.addSource('shared-flight-radius', {
         type: 'geojson',
-        data: createMultiCircleGeoJSON(obfuscatedShared, flightRadius)
+        data: createMultiCircleGeoJSON(filteredSharedApiaries, flightRadius)
       })
       map.current.addLayer({
         id: 'shared-flight-radius-fill',
@@ -351,7 +335,7 @@ export default function CommunityMapPage() {
           properties: { type: 'user', name: a.name, city: a.city },
           geometry: { type: 'Point' as const, coordinates: [a.longitude, a.latitude] }
         })) : []),
-        ...(showSharedApiaries ? obfuscatedShared.map(a => ({
+        ...(showSharedApiaries ? filteredSharedApiaries.map(a => ({
           type: 'Feature' as const,
           properties: { type: 'shared', city: a.city },
           geometry: { type: 'Point' as const, coordinates: [a.longitude, a.latitude] }
@@ -436,11 +420,10 @@ export default function CommunityMapPage() {
         })
       }
 
-      // Add markers for shared apiaries with obfuscated coordinates (purple)
+      // Add markers for shared apiaries (purple) - coordinates already obfuscated server-side
       if (showSharedApiaries) {
-        obfuscatedShared.forEach((apiary, index) => {
+        filteredSharedApiaries.forEach((apiary) => {
           if (!map.current) return
-          const originalApiary = filteredSharedApiaries[index]
 
           // Calculate distance to nearest user apiary
           const distance = calculateNearestDistance(apiary.latitude, apiary.longitude)
@@ -458,8 +441,8 @@ export default function CommunityMapPage() {
           }).setHTML(`
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #a78bfa;">Shared Apiary</div>
-              ${originalApiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${originalApiary.city}</div>` : ''}
-              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${originalApiary.hive_count} ${originalApiary.hive_count === 1 ? 'hive' : 'hives'}</div>
+              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${apiary.city}</div>` : ''}
+              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
               <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
               ${distanceText}
             </div>
@@ -475,23 +458,13 @@ export default function CommunityMapPage() {
       }
 
       // Add markers for wild colonies (amber/orange) - Power Users only
+      // Coordinates already obfuscated server-side
       if (isPowerUser && showWildColonies && wildColonies.length > 0) {
-        // Obfuscate wild colony locations
-        const obfuscatedWild = wildColonies.map(colony => {
-          const obfuscated = obfuscateCoordinates(colony.latitude, colony.longitude, colony.id, 5)
-          return {
-            ...colony,
-            latitude: roundCoordinate(obfuscated.latitude, 2),
-            longitude: roundCoordinate(obfuscated.longitude, 2)
-          }
-        })
-
-        obfuscatedWild.forEach((colony, index) => {
+        wildColonies.forEach((colony) => {
           if (!map.current) return
-          const originalColony = wildColonies[index]
 
-          const nestingLabel = originalColony.nesting_type
-            ? originalColony.nesting_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+          const nestingLabel = colony.nesting_type
+            ? colony.nesting_type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
             : 'Unknown'
 
           const el = document.createElement('div')
@@ -507,7 +480,7 @@ export default function CommunityMapPage() {
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #f59e0b;">Wild Colony</div>
               <div style="font-size: 12px; opacity: 0.7;">${nestingLabel}</div>
-              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Status: ${originalColony.status}</div>
+              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Status: ${colony.status}</div>
               <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
             </div>
           `)
@@ -524,7 +497,7 @@ export default function CommunityMapPage() {
 
     // Fit bounds to include visible apiaries (only on first load)
     const visibleUserApiaries = showUserApiaries ? filteredUserApiaries : []
-    const visibleSharedApiaries = showSharedApiaries ? obfuscatedShared : []
+    const visibleSharedApiaries = showSharedApiaries ? filteredSharedApiaries : []
     const allVisible = [...visibleUserApiaries, ...visibleSharedApiaries]
 
     if (allVisible.length > 0 && !markers.current.some(m => m.getPopup()?.isOpen())) {

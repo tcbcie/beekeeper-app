@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         'inspections',
         'knowledge_base',
         'knowledge_sources',
+        'news_articles',
         'profiles',
         'push_subscriptions',
         'queens',
@@ -100,7 +101,8 @@ export async function POST(request: NextRequest) {
         'tool_suggestions',
         'varroa_checks',
         'varroa_treatment_products',
-        'varroa_treatments'
+        'varroa_treatments',
+        'wild_colonies'
       ]
     } else {
       tables = tablesData.map((t: { table_name: string }) => t.table_name)
