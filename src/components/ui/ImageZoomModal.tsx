@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { X, ZoomIn, ZoomOut, Maximize, Minimize } from 'lucide-react'
-import Image from 'next/image'
+import { useEffect, useState } from 'react'
+import { X, ZoomIn, ZoomOut } from 'lucide-react'
 
 interface ImageZoomModalProps {
   isOpen: boolean

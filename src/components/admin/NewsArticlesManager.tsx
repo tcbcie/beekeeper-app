@@ -425,6 +425,7 @@ export default function NewsArticlesManager() {
                   {/* Image */}
                   {article.image_url && (
                     <div className="w-32 h-24 flex-shrink-0 bg-sage-100 dark:bg-slate-800">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={article.image_url}
                         alt=""
