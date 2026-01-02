@@ -470,7 +470,15 @@ export default function CommunityMapPage() {
           const el = document.createElement('div')
           el.className = 'wild-colony-marker'
           el.style.cursor = 'pointer'
-          el.innerHTML = `<div style="background-color: #f59e0b; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`
+          // Tree/hollow icon to distinguish from managed apiaries
+          el.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; background-color: #f59e0b; width: 26px; height: 26px; border-radius: 6px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22v-7"></path>
+              <path d="M12 8V2"></path>
+              <path d="M12 8c-3 0-6 2-6 5s3 4 6 4 6-1 6-4-3-5-6-5z"></path>
+              <circle cx="12" cy="5" r="3"></circle>
+            </svg>
+          </div>`
 
           const popup = new mapboxgl.Popup({
             offset: 15,
@@ -563,7 +571,7 @@ export default function CommunityMapPage() {
       <div ref={mapContainer} className={`w-full ${isFullscreen ? 'h-full' : 'h-[500px] md:h-[600px]'}`} />
 
       {/* Top-left controls: Map Style + Terrain */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2">
+      <div className="absolute top-4 left-4 flex flex-col gap-2 max-w-[200px]">
         {/* Map Style Toggle */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex">
           <button
@@ -650,10 +658,9 @@ export default function CommunityMapPage() {
 
         {/* Heat map info tooltip when active */}
         {showHeatMap && (
-          <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg shadow-lg border border-orange-200 dark:border-orange-800 p-2">
-            <p className="text-xs text-orange-800 dark:text-orange-200">
-              <strong>Heat Map:</strong> Warmer colors (red/orange) show areas with more apiaries.
-              Useful for identifying potential drone congregation areas.
+          <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg shadow-lg border border-orange-200 dark:border-orange-800 p-2 max-w-[200px]">
+            <p className="text-xs text-orange-800 dark:text-orange-200 break-words">
+              <strong>Heat Map:</strong> Warmer colors (red/orange) show areas with more apiaries. Useful for identifying potential drone congregation areas.
             </p>
           </div>
         )}
@@ -783,7 +790,9 @@ export default function CommunityMapPage() {
           </div>
           {isPowerUser && (
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow"></div>
+              <div className="w-5 h-5 rounded-md bg-amber-500 border-2 border-white shadow flex items-center justify-center">
+                <TreeDeciduous size={12} className="text-white" />
+              </div>
               <span className="text-text-secondary">Wild colony (~5km accuracy)</span>
             </div>
           )}
