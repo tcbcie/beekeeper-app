@@ -51,6 +51,7 @@ export default function SubmitColonyPage() {
   const [submitted, setSubmitted] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [showMapPicker, setShowMapPicker] = useState(false)
+  const [shareContactDetails, setShareContactDetails] = useState(false)
 
   const {
     imagePreview,
@@ -117,6 +118,29 @@ export default function SubmitColonyPage() {
         }
       }
 
+      // Fetch user profile data if sharing is enabled
+      let contactData = {
+        contact_name: null as string | null,
+        contact_email: null as string | null,
+        contact_phone: null as string | null
+      }
+
+      if (shareContactDetails) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, mobile_number')
+          .eq('id', userId)
+          .single()
+
+        if (profile) {
+          contactData = {
+            contact_name: profile.full_name,
+            contact_email: profile.email,
+            contact_phone: profile.mobile_number
+          }
+        }
+      }
+
       const dataToSave = {
         user_id: userId,
         latitude: parseFloat(formData.latitude),
@@ -128,6 +152,8 @@ export default function SubmitColonyPage() {
         entrance_description: formData.entrance_description || null,
         notes: formData.notes || null,
         image_url: imageUrl,
+        share_contact_details: shareContactDetails,
+        ...contactData
       }
 
       const { error } = await supabase
@@ -150,6 +176,7 @@ export default function SubmitColonyPage() {
     setSubmitted(false)
     setShowMapPicker(false)
     resetImage()
+    setShareContactDetails(false)
     setFormData({
       latitude: '',
       longitude: '',
@@ -320,6 +347,22 @@ export default function SubmitColonyPage() {
               placeholder="Additional observations, bee activity, etc..."
               className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
             />
+          </div>
+
+          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+            <input
+              type="checkbox"
+              id="shareContactDetails"
+              checked={shareContactDetails}
+              onChange={(e) => setShareContactDetails(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+            />
+            <label htmlFor="shareContactDetails" className="text-sm text-text-secondary cursor-pointer select-none">
+              <strong>Allow to share personal details?</strong>
+              <p className="text-xs text-text-tertiary mt-0.5">
+                If checked, your name, email, and mobile number (from your profile) will be visible to administrators for review queries.
+              </p>
+            </label>
           </div>
 
           {/* Image Upload */}
