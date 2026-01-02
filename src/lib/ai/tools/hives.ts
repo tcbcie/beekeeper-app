@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, findHiveByName, formatDate } from './utils'
+import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -14,11 +14,16 @@ function getApiaryName(apiaries: unknown): string {
 // Get apiary statistics
 export const getApiaryStats: Tool = {
   name: 'getApiaryStats',
-  description: 'Get statistics about apiaries and hives: count of apiaries, hives per apiary, total active/archived hives',
-  parameters: z.object({}),
-  execute: async (_args: unknown, userId: string) => {
+  description: 'Get statistics about apiaries and hives: count of apiaries, hives per apiary, total active/archived hives. By default shows only your own apiaries.',
+  parameters: z.object({
+    includeShared: z.boolean().optional().describe('Include shared/team apiaries (default false)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const apiaryIds = args.includeShared
+      ? await getAccessibleApiaryIds(userId)
+      : await getOwnApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
@@ -60,14 +65,17 @@ export const getApiaryStats: Tool = {
 // Get hive overview
 export const getHiveOverview: Tool = {
   name: 'getHiveOverview',
-  description: 'Get a list of all hives with their apiary, status, and queen info',
+  description: 'Get a list of all hives with their apiary, status, and queen info. By default shows only your own hives.',
   parameters: z.object({
-    includeArchived: z.boolean().optional().describe('Include archived hives')
+    includeArchived: z.boolean().optional().describe('Include archived hives'),
+    includeShared: z.boolean().optional().describe('Include shared/team hives (default false)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
-    const args = rawArgs as { includeArchived?: boolean }
+    const args = rawArgs as { includeArchived?: boolean; includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const apiaryIds = args.includeShared
+      ? await getAccessibleApiaryIds(userId)
+      : await getOwnApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'

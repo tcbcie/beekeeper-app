@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users, TreeDeciduous } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import VersionDisplay from './VersionDisplay'
 
@@ -32,14 +32,21 @@ export default function Sidebar() {
     { href: '/dashboard/about', label: 'About', icon: Info },
   ]
 
+  const powerUserNavItems = [
+    { href: '/dashboard/wild-colonies', label: 'Wild Colonies', icon: TreeDeciduous },
+  ]
+
   const adminNavItems = [
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ]
 
-  // Only show Settings menu item for admins
-  const navItems = userRole === 'Admin'
-    ? [...baseNavItems, ...adminNavItems]
-    : baseNavItems
+  // Build nav items based on role
+  const isPowerUser = userRole === 'Power User' || userRole === 'Admin'
+  const navItems = [
+    ...baseNavItems,
+    ...(isPowerUser ? powerUserNavItems : []),
+    ...(userRole === 'Admin' ? adminNavItems : [])
+  ]
 
   return (
     <aside className="hidden md:block w-64 bg-surface dark:bg-surface rounded-xl shadow-lg p-4 h-fit border border-border">

@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId } from '@/lib/auth'
+import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Flame, Calendar } from 'lucide-react'
+import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Flame, Calendar, TreeDeciduous } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { obfuscateCoordinates, roundCoordinate } from '@/lib/location-obfuscation'
@@ -26,6 +26,15 @@ interface UserApiary {
   latitude: number
   longitude: number
   created_at: string
+}
+
+interface WildColony {
+  id: string
+  latitude: number
+  longitude: number
+  status: string
+  nesting_type: string | null
+  observation_date: string
 }
 
 // Default center (Ireland)
@@ -117,6 +126,9 @@ export default function CommunityMapPage() {
   const [flightRadius, setFlightRadius] = useState(3) // Default 3km
   const [showHeatMap, setShowHeatMap] = useState(false)
   const [timeFilter, setTimeFilter] = useState(0) // Days, 0 = all time
+  const [wildColonies, setWildColonies] = useState<WildColony[]>([])
+  const [showWildColonies, setShowWildColonies] = useState(true)
+  const [isPowerUser, setIsPowerUser] = useState(false)
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
@@ -163,6 +175,20 @@ export default function CommunityMapPage() {
 
       if (!userError && userData) {
         setUserApiaries(userData)
+      }
+
+      // Check if user is Power User/Admin and fetch wild colonies
+      const powerUser = await isPowerUserOrAdmin()
+      setIsPowerUser(powerUser)
+
+      if (powerUser) {
+        const { data: wildData, error: wildError } = await supabase
+          .from('wild_colonies')
+          .select('id, latitude, longitude, status, nesting_type, observation_date')
+
+        if (!wildError && wildData) {
+          setWildColonies(wildData)
+        }
       }
 
       setLoading(false)
@@ -447,6 +473,53 @@ export default function CommunityMapPage() {
           markers.current.push(marker)
         })
       }
+
+      // Add markers for wild colonies (amber/orange) - Power Users only
+      if (isPowerUser && showWildColonies && wildColonies.length > 0) {
+        // Obfuscate wild colony locations
+        const obfuscatedWild = wildColonies.map(colony => {
+          const obfuscated = obfuscateCoordinates(colony.latitude, colony.longitude, colony.id, 5)
+          return {
+            ...colony,
+            latitude: roundCoordinate(obfuscated.latitude, 2),
+            longitude: roundCoordinate(obfuscated.longitude, 2)
+          }
+        })
+
+        obfuscatedWild.forEach((colony, index) => {
+          if (!map.current) return
+          const originalColony = wildColonies[index]
+
+          const nestingLabel = originalColony.nesting_type
+            ? originalColony.nesting_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+            : 'Unknown'
+
+          const el = document.createElement('div')
+          el.className = 'wild-colony-marker'
+          el.style.cursor = 'pointer'
+          el.innerHTML = `<div style="background-color: #f59e0b; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`
+
+          const popup = new mapboxgl.Popup({
+            offset: 15,
+            closeButton: false,
+            closeOnClick: true,
+          }).setHTML(`
+            <div style="padding: 4px 8px;">
+              <div style="font-weight: 600; color: #f59e0b;">Wild Colony</div>
+              <div style="font-size: 12px; opacity: 0.7;">${nestingLabel}</div>
+              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Status: ${originalColony.status}</div>
+              <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
+            </div>
+          `)
+
+          const marker = new mapboxgl.Marker({ element: el })
+            .setLngLat([colony.longitude, colony.latitude])
+            .setPopup(popup)
+            .addTo(map.current)
+
+          markers.current.push(marker)
+        })
+      }
     }
 
     // Fit bounds to include visible apiaries (only on first load)
@@ -461,7 +534,7 @@ export default function CommunityMapPage() {
       })
       // Only fit bounds initially, not on every filter change
     }
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, showHeatMap, timeFilter, calculateNearestDistance])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, showHeatMap, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -580,6 +653,17 @@ export default function CommunityMapPage() {
             {showSharedApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
             <span>Shared apiaries</span>
           </button>
+          {isPowerUser && (
+            <button
+              type="button"
+              onClick={() => setShowWildColonies(prev => !prev)}
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showWildColonies ? 'text-amber-600' : 'text-text-tertiary'}`}
+            >
+              {showWildColonies ? <Eye size={12} /> : <EyeOff size={12} />}
+              <TreeDeciduous size={12} />
+              <span>Wild colonies</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setShowHeatMap(prev => !prev)}
@@ -633,6 +717,13 @@ export default function CommunityMapPage() {
               <span className="font-medium text-foreground">{sharedApiaries.length}</span>
               <span className="text-text-secondary hidden sm:inline">shared</span>
             </div>
+            {isPowerUser && wildColonies.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-amber-500 border border-white"></div>
+                <span className="font-medium text-foreground">{wildColonies.length}</span>
+                <span className="text-text-secondary hidden sm:inline">wild</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -717,6 +808,12 @@ export default function CommunityMapPage() {
             <div className="w-4 h-4 rounded-full bg-purple-500 opacity-80 border-2 border-white shadow"></div>
             <span className="text-text-secondary">Shared apiary (~5km accuracy)</span>
           </div>
+          {isPowerUser && (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow"></div>
+              <span className="text-text-secondary">Wild colony (~5km accuracy)</span>
+            </div>
+          )}
           {flightRadius > 0 && (
             <>
               <div className="flex items-center gap-2">
