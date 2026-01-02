@@ -548,3 +548,65 @@ export const getColonyStats: Tool = {
     }
   }
 }
+
+// Search for wild/feral colonies
+export const searchWildColonies: Tool = {
+  name: 'searchWildColonies',
+  description: 'Search for wild or feral bee colonies. Can filter by status (observed, confirmed, etc.) or nesting type (tree_cavity, building, etc.). Returns recent observations.',
+  parameters: z.object({
+    status: z.enum(['observed', 'confirmed', 'lost', 'removed', 'relocated', 'unknown']).optional().describe('Filter by colony status'),
+    nestingType: z.enum(['tree_cavity', 'wall_cavity', 'ground', 'building', 'rock_crevice', 'other']).optional().describe('Filter by nesting type'),
+    limit: z.number().optional().describe('Maximum number of results (default 5)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as {
+      status?: string
+      nestingType?: string
+      limit?: number
+    }
+    const supabase = getSupabase()
+
+    // Check if user is Power User or Admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (!profile || (profile.role !== 'Power User' && profile.role !== 'Admin')) {
+      return 'Access denied. You must be a Power User or Administrator to view wild colony data.'
+    }
+
+    let query = supabase
+      .from('wild_colonies')
+      .select('id, status, nesting_type, estimated_size, observation_date, entrance_description, notes, latitude, longitude')
+      .order('observation_date', { ascending: false })
+      .limit(args.limit || 5)
+
+    if (args.status) {
+      query = query.eq('status', args.status)
+    }
+
+    if (args.nestingType) {
+      query = query.eq('nesting_type', args.nestingType)
+    }
+
+    const { data, error } = await query
+
+    if (error) return `Error searching wild colonies: ${error.message}`
+    if (!data?.length) return 'No wild colonies found matching those criteria.'
+
+    return {
+      count: data.length,
+      colonies: data.map(c => ({
+        status: c.status,
+        nestingType: c.nesting_type,
+        size: c.estimated_size,
+        date: formatDate(c.observation_date),
+        location: `${c.latitude.toFixed(3)}, ${c.longitude.toFixed(3)}`,
+        description: c.entrance_description,
+        notes: c.notes
+      }))
+    }
+  }
+}
