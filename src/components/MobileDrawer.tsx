@@ -1,7 +1,7 @@
 'use client'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info, Calendar, Users, TreeDeciduous } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info, Calendar, Users, TreeDeciduous, Send } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 
@@ -29,6 +29,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     { href: '/dashboard/records', label: 'Records', icon: ClipboardList },
     { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar },
     { href: '/dashboard/community-map', label: 'Community Map', icon: Users },
+    { href: '/dashboard/submit-colony', label: 'Report Wild Colony', icon: Send },
     { href: '/dashboard/queens', label: 'Queens', icon: Crown },
     { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },

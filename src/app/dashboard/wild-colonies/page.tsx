@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -28,6 +28,7 @@ interface WildColony {
   notes: string | null
   image_url: string | null
   created_at: string
+  reviewed_by: string | null
 }
 
 interface FormData {
@@ -48,6 +49,7 @@ const STATUS_OPTIONS = [
   { value: 'removed', label: 'Removed' },
   { value: 'relocated', label: 'Relocated' },
   { value: 'unknown', label: 'Unknown' },
+  { value: 'pending_review', label: 'Pending Review' },
 ]
 
 const NESTING_TYPE_OPTIONS = [
@@ -72,6 +74,8 @@ export default function WildColoniesPage() {
   const toast = useToast()
   const router = useRouter()
   const [colonies, setColonies] = useState<WildColony[]>([])
+  const [pendingColonies, setPendingColonies] = useState<WildColony[]>([])
+  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all')
   const [showForm, setShowForm] = useState(false)
   const [editingColony, setEditingColony] = useState<WildColony | null>(null)
   const [loading, setLoading] = useState(true)
@@ -116,9 +120,11 @@ export default function WildColoniesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
+    // Fetch confirmed/observed colonies (exclude pending)
     const { data, error } = await supabase
       .from('wild_colonies')
       .select('*')
+      .neq('status', 'pending_review')
       .order('observation_date', { ascending: false })
 
     if (error) {
@@ -127,6 +133,18 @@ export default function WildColoniesPage() {
     }
 
     if (data) setColonies(data)
+
+    // Fetch pending colonies for review
+    const { data: pendingData, error: pendingError } = await supabase
+      .from('wild_colonies')
+      .select('*')
+      .eq('status', 'pending_review')
+      .order('created_at', { ascending: false })
+
+    if (!pendingError && pendingData) {
+      setPendingColonies(pendingData)
+    }
+
     setLoading(false)
   }, [userId])
 
@@ -240,6 +258,38 @@ export default function WildColoniesPage() {
       if (!error) {
         toast.success('Colony deleted')
         fetchColonies()
+      }
+    }
+  }
+
+  const handleApprove = async (id: string) => {
+    if (!userId) return
+    const { error } = await supabase
+      .from('wild_colonies')
+      .update({ status: 'confirmed', reviewed_by: userId })
+      .eq('id', id)
+
+    if (!error) {
+      toast.success('Colony approved and confirmed')
+      fetchColonies()
+    } else {
+      toast.error('Failed to approve colony')
+    }
+  }
+
+  const handleReject = async (id: string) => {
+    if (!userId) return
+    if (confirm('Reject and delete this submission?')) {
+      const { error } = await supabase
+        .from('wild_colonies')
+        .delete()
+        .eq('id', id)
+
+      if (!error) {
+        toast.success('Submission rejected')
+        fetchColonies()
+      } else {
+        toast.error('Failed to reject submission')
       }
     }
   }
@@ -497,6 +547,115 @@ export default function WildColoniesPage() {
         </div>
       )}
 
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-border">
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'all'
+              ? 'text-amber-600 border-b-2 border-amber-600'
+              : 'text-text-secondary hover:text-foreground'
+          }`}
+        >
+          All Colonies ({colonies.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={`px-4 py-2 font-medium transition-colors flex items-center gap-2 ${
+            activeTab === 'pending'
+              ? 'text-amber-600 border-b-2 border-amber-600'
+              : 'text-text-secondary hover:text-foreground'
+          }`}
+        >
+          <Clock size={16} />
+          Pending Review ({pendingColonies.length})
+        </button>
+      </div>
+
+      {/* Pending Review Tab */}
+      {activeTab === 'pending' && (
+        <div className="space-y-4">
+          {pendingColonies.length === 0 ? (
+            <div className="bg-surface dark:bg-surface rounded-lg shadow p-8 text-center text-text-secondary border border-border">
+              <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
+              <p>No submissions pending review.</p>
+            </div>
+          ) : (
+            pendingColonies.map((colony) => (
+              <div key={colony.id} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-amber-200 dark:border-amber-800">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                        Pending Review
+                      </span>
+                      <span className="text-sm text-text-secondary">
+                        {formatDate(colony.observation_date)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-text-secondary">
+                      <MapPin size={14} className="inline mr-1" />
+                      {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
+                    </p>
+                    {colony.nesting_type && (
+                      <p className="text-sm text-text-secondary mt-1">
+                        <TreeDeciduous size={14} className="inline mr-1" />
+                        {getNestingTypeLabel(colony.nesting_type)}
+                      </p>
+                    )}
+                    {colony.estimated_size && (
+                      <p className="text-sm text-text-secondary mt-1">
+                        Size: {getSizeLabel(colony.estimated_size)}
+                      </p>
+                    )}
+                  </div>
+                  {colony.image_url && (
+                    <Image
+                      src={colony.image_url}
+                      alt="Colony"
+                      width={80}
+                      height={80}
+                      className="w-20 h-20 object-cover rounded-lg border border-border"
+                    />
+                  )}
+                </div>
+
+                {colony.entrance_description && (
+                  <p className="text-sm text-text-secondary mb-2">
+                    <strong>Entrance:</strong> {colony.entrance_description}
+                  </p>
+                )}
+
+                {colony.notes && (
+                  <div className="mb-4 p-3 bg-sage-50 dark:bg-slate-800/50 rounded text-sm text-text-primary border border-sage-200 dark:border-slate-700">
+                    {colony.notes}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApprove(colony.id)}
+                    className="flex-1 px-4 py-2 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50 font-medium flex items-center justify-center gap-2 border border-green-300 dark:border-green-800 min-h-[48px]"
+                  >
+                    <CheckCircle size={16} />
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleReject(colony.id)}
+                    className="flex-1 px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 border border-red-300 dark:border-red-800 min-h-[48px]"
+                  >
+                    <XCircle size={16} />
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* All Colonies Tab */}
+      {activeTab === 'all' && (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {colonies.map((colony) => (
           <div key={colony.id} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border">
@@ -575,8 +734,9 @@ export default function WildColoniesPage() {
           </div>
         ))}
       </div>
+      )}
 
-      {colonies.length === 0 && (
+      {activeTab === 'all' && colonies.length === 0 && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow p-12 text-center text-text-secondary border border-border">
           <TreeDeciduous size={48} className="mx-auto mb-4 text-amber-500" />
           <p>No wild colonies recorded yet.</p>
