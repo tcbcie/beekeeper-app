@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList, User } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -15,6 +15,12 @@ const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker')
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import WildColonyInspectionPanel from '@/components/wild-colonies/WildColonyInspectionPanel'
+
+interface WildColonyProfile {
+  first_name: string | null
+  last_name: string | null
+  full_name: string | null
+}
 
 interface WildColony {
   id: string
@@ -35,6 +41,7 @@ interface WildColony {
   contact_phone: string | null
   share_contact_details: boolean
   inspection_count?: number
+  profiles?: WildColonyProfile
 }
 
 interface FormData {
@@ -127,10 +134,14 @@ export default function WildColoniesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch confirmed/observed colonies (exclude pending) with inspection counts
+    // Fetch confirmed/observed colonies (exclude pending) with inspection counts and user profiles
     const { data, error } = await supabase
       .from('wild_colonies')
-      .select('*, wild_colony_inspections(count)')
+      .select(`
+        *,
+        wild_colony_inspections(count),
+        profiles:user_id (first_name, last_name, full_name)
+      `)
       .neq('status', 'pending_review')
       .order('observation_date', { ascending: false })
 
@@ -351,6 +362,14 @@ export default function WildColoniesPage() {
   const getSizeLabel = (value: string | null) => {
     const option = SIZE_OPTIONS.find(o => o.value === value)
     return option?.label || value || 'Not specified'
+  }
+
+  const getUserDisplayName = (colony: WildColony) => {
+    if (!colony.profiles) return null
+    const { full_name, first_name, last_name } = colony.profiles
+    if (full_name) return full_name
+    if (first_name || last_name) return `${first_name || ''} ${last_name || ''}`.trim()
+    return null
   }
 
   const toggleExpanded = (colonyId: string) => {
@@ -719,6 +738,7 @@ export default function WildColoniesPage() {
                   <th className="px-4 py-3 w-24">Actions</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Inspections</th>
+                  <th className="px-4 py-3">Submitted By</th>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Location</th>
                   <th className="px-4 py-3">Type</th>
@@ -792,6 +812,16 @@ export default function WildColoniesPage() {
                           <span className="text-text-tertiary text-sm">-</span>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">
+                        {getUserDisplayName(colony) ? (
+                          <span className="flex items-center gap-1">
+                            <User size={14} className="text-text-tertiary" />
+                            {getUserDisplayName(colony)}
+                          </span>
+                        ) : (
+                          <span className="text-text-tertiary">-</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
                         {formatDate(colony.observation_date)}
                       </td>
@@ -835,7 +865,7 @@ export default function WildColoniesPage() {
                     {/* Expanded Inspection Panel */}
                     {expandedColonyId === colony.id && userId && (
                       <tr>
-                        <td colSpan={10} className="p-0">
+                        <td colSpan={11} className="p-0">
                           <WildColonyInspectionPanel
                             colonyId={colony.id}
                             userId={userId}
