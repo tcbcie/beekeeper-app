@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -34,6 +34,7 @@ interface WildColony {
   contact_email: string | null
   contact_phone: string | null
   share_contact_details: boolean
+  inspection_count?: number
 }
 
 interface FormData {
@@ -126,10 +127,10 @@ export default function WildColoniesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch confirmed/observed colonies (exclude pending)
+    // Fetch confirmed/observed colonies (exclude pending) with inspection counts
     const { data, error } = await supabase
       .from('wild_colonies')
-      .select('*')
+      .select('*, wild_colony_inspections(count)')
       .neq('status', 'pending_review')
       .order('observation_date', { ascending: false })
 
@@ -138,7 +139,15 @@ export default function WildColoniesPage() {
       return
     }
 
-    if (data) setColonies(data)
+    if (data) {
+      // Transform data to include inspection_count
+      const coloniesWithCounts = data.map((colony: WildColony & { wild_colony_inspections: { count: number }[] }) => ({
+        ...colony,
+        inspection_count: colony.wild_colony_inspections?.[0]?.count || 0,
+        wild_colony_inspections: undefined
+      }))
+      setColonies(coloniesWithCounts)
+    }
 
     // Fetch pending colonies for review
     const { data: pendingData, error: pendingError } = await supabase
@@ -709,6 +718,7 @@ export default function WildColoniesPage() {
                   <th className="px-2 py-3 w-10"></th>
                   <th className="px-4 py-3 w-24">Actions</th>
                   <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Inspections</th>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Location</th>
                   <th className="px-4 py-3">Type</th>
@@ -772,6 +782,16 @@ export default function WildColoniesPage() {
                           {getStatusLabel(colony.status)}
                         </span>
                       </td>
+                      <td className="px-4 py-3">
+                        {colony.inspection_count && colony.inspection_count > 0 ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                            <ClipboardList size={12} />
+                            {colony.inspection_count}
+                          </span>
+                        ) : (
+                          <span className="text-text-tertiary text-sm">-</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
                         {formatDate(colony.observation_date)}
                       </td>
@@ -815,7 +835,7 @@ export default function WildColoniesPage() {
                     {/* Expanded Inspection Panel */}
                     {expandedColonyId === colony.id && userId && (
                       <tr>
-                        <td colSpan={9} className="p-0">
+                        <td colSpan={10} className="p-0">
                           <WildColonyInspectionPanel
                             colonyId={colony.id}
                             userId={userId}
