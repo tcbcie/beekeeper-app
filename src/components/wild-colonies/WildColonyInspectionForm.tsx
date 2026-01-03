@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { X, Star, ChevronDown, ChevronUp, Camera } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Star, ChevronDown, ChevronUp, Camera, Cloud, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import {
   WildColonyInspectionFormData,
@@ -19,6 +19,17 @@ interface WildColonyInspectionFormProps {
   onSubmit: (data: WildColonyInspectionFormData, imageUrl: string | null) => Promise<void>
   onCancel: () => void
   isEditing?: boolean
+  colonyLatitude?: number
+  colonyLongitude?: number
+}
+
+// Weather code mapping from Open-Meteo
+const WEATHER_CODE_MAP: { [key: number]: string } = {
+  0: 'sunny', 1: 'sunny', 2: 'partly_cloudy', 3: 'overcast',
+  45: 'cloudy', 48: 'cloudy', 51: 'light_rain', 53: 'light_rain',
+  55: 'rain', 61: 'light_rain', 63: 'rain', 65: 'rain',
+  71: 'cloudy', 73: 'cloudy', 75: 'cloudy', 80: 'light_rain',
+  81: 'rain', 82: 'rain', 95: 'rain', 96: 'rain'
 }
 
 // Star rating input component
@@ -96,7 +107,9 @@ export default function WildColonyInspectionForm({
   initialImageUrl,
   onSubmit,
   onCancel,
-  isEditing = false
+  isEditing = false,
+  colonyLatitude,
+  colonyLongitude
 }: WildColonyInspectionFormProps) {
   const toast = useToast()
   const [formData, setFormData] = useState<WildColonyInspectionFormData>({
@@ -104,13 +117,47 @@ export default function WildColonyInspectionForm({
     ...initialData
   })
   const [submitting, setSubmitting] = useState(false)
+  const [fetchingWeather, setFetchingWeather] = useState(false)
 
   // Collapsible section states
   const [showObservations, setShowObservations] = useState(false)
   const [showBehavior, setShowBehavior] = useState(false)
   const [showHealth, setShowHealth] = useState(false)
   const [showStatus, setShowStatus] = useState(false)
-  const [showWeather, setShowWeather] = useState(false)
+  const [showWeather, setShowWeather] = useState(true) // Open by default to show auto-fetched weather
+
+  // Auto-fetch weather when form loads (for new inspections only)
+  useEffect(() => {
+    const fetchWeather = async () => {
+      if (isEditing || !colonyLatitude || !colonyLongitude) return
+      if (formData.weather_temp !== null) return // Already has weather data
+
+      setFetchingWeather(true)
+      try {
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${colonyLatitude}&longitude=${colonyLongitude}&current=temperature_2m,weather_code&timezone=Europe/Dublin`
+        )
+        const data = await response.json()
+
+        if (data.current) {
+          const temp = Math.round(data.current.temperature_2m)
+          const condition = WEATHER_CODE_MAP[data.current.weather_code] || ''
+
+          setFormData(prev => ({
+            ...prev,
+            weather_temp: temp,
+            weather_condition: condition
+          }))
+        }
+      } catch (error) {
+        console.error('Failed to fetch weather:', error)
+      } finally {
+        setFetchingWeather(false)
+      }
+    }
+
+    fetchWeather()
+  }, [colonyLatitude, colonyLongitude, isEditing, formData.weather_temp])
 
   const {
     imagePreview,
@@ -355,37 +402,52 @@ export default function WildColonyInspectionForm({
 
       {/* Collapsible: Weather */}
       <CollapsibleSection
-        title="Weather Conditions"
+        title={fetchingWeather ? "Weather Conditions (loading...)" : "Weather Conditions"}
         isOpen={showWeather}
         onToggle={() => setShowWeather(!showWeather)}
       >
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
-              Temperature (°C)
-            </label>
-            <input
-              type="number"
-              value={formData.weather_temp || ''}
-              onChange={(e) => updateField('weather_temp', e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
-            />
+        {fetchingWeather ? (
+          <div className="flex items-center gap-2 text-text-secondary">
+            <Loader2 size={16} className="animate-spin" />
+            <span className="text-sm">Fetching current weather from colony location...</span>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
-              Conditions
-            </label>
-            <select
-              value={formData.weather_condition}
-              onChange={(e) => updateField('weather_condition', e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
-            >
-              {WEATHER_CONDITIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        ) : (
+          <>
+            {!isEditing && formData.weather_temp !== null && (
+              <div className="flex items-center gap-2 mb-3 text-sm text-green-600 dark:text-green-400">
+                <Cloud size={16} />
+                <span>Weather auto-populated from colony coordinates</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">
+                  Temperature (°C)
+                </label>
+                <input
+                  type="number"
+                  value={formData.weather_temp || ''}
+                  onChange={(e) => updateField('weather_temp', e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">
+                  Conditions
+                </label>
+                <select
+                  value={formData.weather_condition}
+                  onChange={(e) => updateField('weather_condition', e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+                >
+                  {WEATHER_CONDITIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </>
+        )}
       </CollapsibleSection>
 
       {/* Notes - Always visible */}

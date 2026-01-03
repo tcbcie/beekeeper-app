@@ -12,9 +12,11 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 interface WildColonyInspectionPanelProps {
   colonyId: string
   userId: string
+  colonyLatitude?: number
+  colonyLongitude?: number
 }
 
-export default function WildColonyInspectionPanel({ colonyId, userId }: WildColonyInspectionPanelProps) {
+export default function WildColonyInspectionPanel({ colonyId, userId, colonyLatitude, colonyLongitude }: WildColonyInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<WildColonyInspection[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,7 +26,10 @@ export default function WildColonyInspectionPanel({ colonyId, userId }: WildColo
   const fetchInspections = useCallback(async () => {
     const { data, error } = await supabase
       .from('wild_colony_inspections')
-      .select('*')
+      .select(`
+        *,
+        profiles:user_id (first_name, last_name, full_name)
+      `)
       .eq('wild_colony_id', colonyId)
       .order('inspection_date', { ascending: false })
 
@@ -179,6 +184,8 @@ export default function WildColonyInspectionPanel({ colonyId, userId }: WildColo
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             isEditing={!!editingInspection}
+            colonyLatitude={colonyLatitude}
+            colonyLongitude={colonyLongitude}
           />
         </div>
       )}
