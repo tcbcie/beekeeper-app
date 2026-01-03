@@ -26,10 +26,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
   const fetchInspections = useCallback(async () => {
     const { data, error } = await supabase
       .from('wild_colony_inspections')
-      .select(`
-        *,
-        profiles:user_id (first_name, last_name, full_name)
-      `)
+      .select('*')
       .eq('wild_colony_id', colonyId)
       .order('inspection_date', { ascending: false })
 
