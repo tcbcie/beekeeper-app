@@ -1,0 +1,458 @@
+'use client'
+
+import { useState } from 'react'
+import { X, Star, ChevronDown, ChevronUp, Camera } from 'lucide-react'
+import Image from 'next/image'
+import {
+  WildColonyInspectionFormData,
+  getDefaultInspectionFormData,
+  POPULATION_ESTIMATES,
+  COLONY_STATUS_OPTIONS,
+  WEATHER_CONDITIONS
+} from '@/types/wild-colonies'
+import { useImageUpload } from '@/hooks/useImageUpload'
+import { useToast } from '@/components/ui/Toast'
+
+interface WildColonyInspectionFormProps {
+  initialData?: Partial<WildColonyInspectionFormData>
+  initialImageUrl?: string | null
+  onSubmit: (data: WildColonyInspectionFormData, imageUrl: string | null) => Promise<void>
+  onCancel: () => void
+  isEditing?: boolean
+}
+
+// Star rating input component
+const StarRatingInput = ({
+  value,
+  onChange,
+  label,
+  max = 5
+}: {
+  value: number
+  onChange: (val: number) => void
+  label: string
+  max?: number
+}) => {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
+      <div className="flex items-center gap-1">
+        {Array.from({ length: max }).map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onChange(value === i + 1 ? 0 : i + 1)}
+            className="p-0.5 hover:scale-110 transition-transform"
+          >
+            <Star
+              size={20}
+              className={i < value ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'}
+            />
+          </button>
+        ))}
+        {value > 0 && (
+          <button
+            type="button"
+            onClick={() => onChange(0)}
+            className="ml-2 text-xs text-text-tertiary hover:text-red-500"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Collapsible section component
+const CollapsibleSection = ({
+  title,
+  isOpen,
+  onToggle,
+  children
+}: {
+  title: string
+  isOpen: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) => {
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full px-4 py-3 flex items-center justify-between bg-sage-50 dark:bg-slate-800/50 hover:bg-sage-100 dark:hover:bg-slate-800 transition-colors"
+      >
+        <span className="font-medium text-text-primary">{title}</span>
+        {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+      {isOpen && <div className="p-4 space-y-4">{children}</div>}
+    </div>
+  )
+}
+
+export default function WildColonyInspectionForm({
+  initialData,
+  initialImageUrl,
+  onSubmit,
+  onCancel,
+  isEditing = false
+}: WildColonyInspectionFormProps) {
+  const toast = useToast()
+  const [formData, setFormData] = useState<WildColonyInspectionFormData>({
+    ...getDefaultInspectionFormData(),
+    ...initialData
+  })
+  const [submitting, setSubmitting] = useState(false)
+
+  // Collapsible section states
+  const [showObservations, setShowObservations] = useState(false)
+  const [showBehavior, setShowBehavior] = useState(false)
+  const [showHealth, setShowHealth] = useState(false)
+  const [showStatus, setShowStatus] = useState(false)
+  const [showWeather, setShowWeather] = useState(false)
+
+  const {
+    imagePreview,
+    uploading,
+    handleImageChange,
+    handleRemoveImage,
+    uploadImage,
+    reset: resetImage,
+    setPreviewFromUrl,
+    imageFile
+  } = useImageUpload({
+    folder: 'wild-colony-inspections',
+    onError: (msg) => toast.error(msg)
+  })
+
+  // Set initial image preview if editing
+  useState(() => {
+    if (initialImageUrl) {
+      setPreviewFromUrl(initialImageUrl)
+    }
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+
+    try {
+      let imageUrl: string | null = initialImageUrl || null
+
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile)
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl
+        }
+      } else if (!imagePreview && initialImageUrl) {
+        // Image was removed
+        imageUrl = null
+      }
+
+      await onSubmit(formData, imageUrl)
+      resetImage()
+    } catch (error) {
+      console.error('Error submitting inspection:', error)
+      toast.error('Failed to save inspection')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const updateField = <K extends keyof WildColonyInspectionFormData>(
+    field: K,
+    value: WildColonyInspectionFormData[K]
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Date and Time - Always visible */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">
+            Inspection Date *
+          </label>
+          <input
+            type="date"
+            value={formData.inspection_date}
+            onChange={(e) => updateField('inspection_date', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">
+            Time
+          </label>
+          <input
+            type="time"
+            value={formData.inspection_time}
+            onChange={(e) => updateField('inspection_time', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+          />
+        </div>
+      </div>
+
+      {/* Main Observations - Always visible */}
+      <div className="grid grid-cols-2 gap-4">
+        <StarRatingInput
+          label="Activity Level"
+          value={formData.activity_level}
+          onChange={(val) => updateField('activity_level', val)}
+        />
+        <StarRatingInput
+          label="Forager Traffic"
+          value={formData.forager_traffic}
+          onChange={(val) => updateField('forager_traffic', val)}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-text-secondary mb-1">
+          Population Estimate
+        </label>
+        <select
+          value={formData.population_estimate}
+          onChange={(e) => updateField('population_estimate', e.target.value)}
+          className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+        >
+          {POPULATION_ESTIMATES.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Collapsible: Observations */}
+      <CollapsibleSection
+        title="Observations"
+        isOpen={showObservations}
+        onToggle={() => setShowObservations(!showObservations)}
+      >
+        <div className="grid grid-cols-3 gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.pollen_observed}
+              onChange={(e) => updateField('pollen_observed', e.target.checked)}
+              className="w-4 h-4 rounded border-border text-amber-600 focus:ring-amber-500"
+            />
+            <span className="text-sm text-text-primary">Pollen observed</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.drones_observed}
+              onChange={(e) => updateField('drones_observed', e.target.checked)}
+              className="w-4 h-4 rounded border-border text-amber-600 focus:ring-amber-500"
+            />
+            <span className="text-sm text-text-primary">Drones observed</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.orientation_flights}
+              onChange={(e) => updateField('orientation_flights', e.target.checked)}
+              className="w-4 h-4 rounded border-border text-amber-600 focus:ring-amber-500"
+            />
+            <span className="text-sm text-text-primary">Orientation flights</span>
+          </label>
+        </div>
+      </CollapsibleSection>
+
+      {/* Collapsible: Behavior */}
+      <CollapsibleSection
+        title="Behavior"
+        isOpen={showBehavior}
+        onToggle={() => setShowBehavior(!showBehavior)}
+      >
+        <StarRatingInput
+          label="Temperament (1=calm, 5=aggressive)"
+          value={formData.temperament}
+          onChange={(val) => updateField('temperament', val)}
+        />
+        <label className="flex items-center gap-2 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            checked={formData.robbing_activity}
+            onChange={(e) => updateField('robbing_activity', e.target.checked)}
+            className="w-4 h-4 rounded border-border text-amber-600 focus:ring-amber-500"
+          />
+          <span className="text-sm text-text-primary">Robbing activity observed</span>
+        </label>
+      </CollapsibleSection>
+
+      {/* Collapsible: Health Signs */}
+      <CollapsibleSection
+        title="Health Signs"
+        isOpen={showHealth}
+        onToggle={() => setShowHealth(!showHealth)}
+      >
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.dead_bees_observed}
+            onChange={(e) => updateField('dead_bees_observed', e.target.checked)}
+            className="w-4 h-4 rounded border-border text-red-600 focus:ring-red-500"
+          />
+          <span className="text-sm text-text-primary">Dead bees observed</span>
+        </label>
+        {formData.dead_bees_observed && (
+          <div className="ml-6">
+            <label className="block text-sm text-text-secondary mb-1">Approximate count</label>
+            <input
+              type="number"
+              value={formData.dead_bees_count || ''}
+              onChange={(e) => updateField('dead_bees_count', e.target.value ? parseInt(e.target.value) : null)}
+              className="w-32 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-red-500"
+              min="0"
+            />
+          </div>
+        )}
+        <label className="flex items-center gap-2 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            checked={formData.deformed_wings_observed}
+            onChange={(e) => updateField('deformed_wings_observed', e.target.checked)}
+            className="w-4 h-4 rounded border-border text-red-600 focus:ring-red-500"
+          />
+          <span className="text-sm text-text-primary">Deformed wing virus signs</span>
+        </label>
+      </CollapsibleSection>
+
+      {/* Collapsible: Status */}
+      <CollapsibleSection
+        title="Colony Status"
+        isOpen={showStatus}
+        onToggle={() => setShowStatus(!showStatus)}
+      >
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">
+            Status
+          </label>
+          <select
+            value={formData.colony_status}
+            onChange={(e) => updateField('colony_status', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+          >
+            {COLONY_STATUS_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            checked={formData.swarm_activity_observed}
+            onChange={(e) => updateField('swarm_activity_observed', e.target.checked)}
+            className="w-4 h-4 rounded border-border text-pink-600 focus:ring-pink-500"
+          />
+          <span className="text-sm text-text-primary">Swarm activity observed</span>
+        </label>
+      </CollapsibleSection>
+
+      {/* Collapsible: Weather */}
+      <CollapsibleSection
+        title="Weather Conditions"
+        isOpen={showWeather}
+        onToggle={() => setShowWeather(!showWeather)}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Temperature (°C)
+            </label>
+            <input
+              type="number"
+              value={formData.weather_temp || ''}
+              onChange={(e) => updateField('weather_temp', e.target.value ? parseInt(e.target.value) : null)}
+              className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Conditions
+            </label>
+            <select
+              value={formData.weather_condition}
+              onChange={(e) => updateField('weather_condition', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
+            >
+              {WEATHER_CONDITIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Notes - Always visible */}
+      <div>
+        <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
+        <textarea
+          value={formData.notes}
+          onChange={(e) => updateField('notes', e.target.value)}
+          rows={3}
+          placeholder="Additional observations..."
+          className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500"
+        />
+      </div>
+
+      {/* Image Upload */}
+      <div>
+        <label className="block text-sm font-medium text-text-secondary mb-2">Photo</label>
+        <div className="flex items-start gap-4">
+          {imagePreview ? (
+            <div className="relative">
+              <Image
+                src={imagePreview}
+                alt="Preview"
+                width={120}
+                height={120}
+                className="w-30 h-30 object-cover rounded-lg border border-border"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
+              <Camera size={24} className="text-text-tertiary mb-1" />
+              <span className="text-xs text-text-tertiary">Add photo</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={submitting || uploading}
+          className="px-6 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium min-h-[44px] disabled:opacity-50"
+        >
+          {submitting || uploading ? 'Saving...' : isEditing ? 'Update' : 'Save'} Inspection
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-medium min-h-[44px]"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
