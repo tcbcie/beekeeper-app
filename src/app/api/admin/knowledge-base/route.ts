@@ -43,17 +43,24 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
   const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
   if (authError || !user) {
-    return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
+    console.error('Auth error:', authError?.message, 'User:', user?.id)
+    return NextResponse.json({ error: 'Invalid authentication', details: authError?.message }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
+  if (profileError) {
+    console.error('Profile fetch error:', profileError.message, 'User ID:', user.id)
+    return NextResponse.json({ error: 'Failed to fetch profile', details: profileError.message }, { status: 500 })
+  }
+
   if (!profile || profile.role !== 'Admin') {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    console.error('Admin check failed. User:', user.id, 'Email:', user.email, 'Role:', profile?.role)
+    return NextResponse.json({ error: 'Admin access required', role: profile?.role }, { status: 403 })
   }
 
   return { userId: user.id }

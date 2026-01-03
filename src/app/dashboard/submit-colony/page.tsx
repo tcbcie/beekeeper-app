@@ -197,7 +197,7 @@ export default function SubmitColonyPage() {
           <CheckCircle size={64} className="mx-auto mb-4 text-green-500" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Submission Received!</h2>
           <p className="text-text-secondary mb-6">
-            Thank you for reporting this wild colony sighting. A Power User will review your submission soon.
+            Thank you for reporting this wild colony sighting. A member of the team will review your submission soon.
           </p>
           <div className="flex gap-4 justify-center">
             <button
@@ -227,7 +227,7 @@ export default function SubmitColonyPage() {
 
       <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
         <p className="text-sm text-amber-800 dark:text-amber-200">
-          Spotted a wild or feral bee colony? Submit the details below and a Power User will review your sighting.
+          Spotted a wild or feral bee colony? Submit the details below and a member of the team will review your sighting.
           Your submission helps track wild bee populations in the community!
         </p>
       </div>
