@@ -1,8 +1,8 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -14,6 +14,7 @@ const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker')
 })
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
+import WildColonyInspectionPanel from '@/components/wild-colonies/WildColonyInspectionPanel'
 
 interface WildColony {
   id: string
@@ -86,6 +87,7 @@ export default function WildColoniesPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [hasAccess, setHasAccess] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
+  const [expandedColonyId, setExpandedColonyId] = useState<string | null>(null)
 
   const {
     imagePreview,
@@ -340,6 +342,10 @@ export default function WildColoniesPage() {
   const getSizeLabel = (value: string | null) => {
     const option = SIZE_OPTIONS.find(o => o.value === value)
     return option?.label || value || 'Not specified'
+  }
+
+  const toggleExpanded = (colonyId: string) => {
+    setExpandedColonyId(prev => prev === colonyId ? null : colonyId)
   }
 
   if (loading) return <LoadingSpinner text="Loading wild colonies..." />
@@ -700,6 +706,7 @@ export default function WildColoniesPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-sage-50 dark:bg-slate-800/50 border-b border-border text-xs uppercase text-text-secondary font-semibold">
+                  <th className="px-2 py-3 w-10"></th>
                   <th className="px-4 py-3 w-24">Actions</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Date</th>
@@ -712,81 +719,111 @@ export default function WildColoniesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {colonies.map((colony) => (
-                  <tr key={colony.id} className="hover:bg-sage-50 dark:hover:bg-slate-800/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        {colony.user_id === userId ? (
-                          <>
-                            <button
-                              onClick={() => handleEdit(colony)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                              title="Edit"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(colony.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-xs text-text-tertiary italic">Read-only</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center gap-1.5 ${
-                        colony.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                        colony.status === 'observed' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
-                        colony.status === 'lost' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-                      }`}>
-                        {getStatusLabel(colony.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
-                      {formatDate(colony.observation_date)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-secondary whitespace-nowrap">
-                      <a 
-                        href={`https://www.google.com/maps/search/?api=1&query=${colony.latitude},${colony.longitude}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="hover:text-blue-600 flex items-center gap-1"
-                      >
-                        <MapPin size={14} />
-                        {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
-                      </a>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-primary">
-                      {getNestingTypeLabel(colony.nesting_type)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-primary">
-                      {getSizeLabel(colony.estimated_size)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-secondary max-w-xs truncate" title={colony.entrance_description || ''}>
-                      {colony.entrance_description || '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {colony.image_url ? (
-                        <div className="relative group">
-                          <Image
-                            src={colony.image_url}
-                            alt="Colony"
-                            width={40}
-                            height={40}
-                            className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
-                            onClick={() => window.open(colony.image_url!, '_blank')}
-                          />
+                  <React.Fragment key={colony.id}>
+                    <tr
+                      className={`hover:bg-sage-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer ${
+                        expandedColonyId === colony.id ? 'bg-sage-50 dark:bg-slate-800/30' : ''
+                      }`}
+                      onClick={() => toggleExpanded(colony.id)}
+                    >
+                      <td className="px-2 py-3">
+                        <button
+                          className="p-1 text-text-secondary hover:text-foreground transition-colors"
+                          title={expandedColonyId === colony.id ? 'Collapse' : 'Expand inspections'}
+                        >
+                          {expandedColonyId === colony.id ? (
+                            <ChevronUp size={18} />
+                          ) : (
+                            <ChevronDown size={18} />
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-2">
+                          {colony.user_id === userId ? (
+                            <>
+                              <button
+                                onClick={() => handleEdit(colony)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(colony.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-text-tertiary italic">Read-only</span>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-text-tertiary">-</span>
-                      )}
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center gap-1.5 ${
+                          colony.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                          colony.status === 'observed' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
+                          colony.status === 'lost' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                        }`}>
+                          {getStatusLabel(colony.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
+                        {formatDate(colony.observation_date)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${colony.latitude},${colony.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-600 flex items-center gap-1"
+                        >
+                          <MapPin size={14} />
+                          {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
+                        </a>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-primary">
+                        {getNestingTypeLabel(colony.nesting_type)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-primary">
+                        {getSizeLabel(colony.estimated_size)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary max-w-xs truncate" title={colony.entrance_description || ''}>
+                        {colony.entrance_description || '-'}
+                      </td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        {colony.image_url ? (
+                          <div className="relative group">
+                            <Image
+                              src={colony.image_url}
+                              alt="Colony"
+                              width={40}
+                              height={40}
+                              className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+                              onClick={() => window.open(colony.image_url!, '_blank')}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-text-tertiary">-</span>
+                        )}
+                      </td>
+                    </tr>
+                    {/* Expanded Inspection Panel */}
+                    {expandedColonyId === colony.id && userId && (
+                      <tr>
+                        <td colSpan={9} className="p-0">
+                          <WildColonyInspectionPanel
+                            colonyId={colony.id}
+                            userId={userId}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
