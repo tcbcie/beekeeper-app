@@ -16,12 +16,6 @@ import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import WildColonyInspectionPanel from '@/components/wild-colonies/WildColonyInspectionPanel'
 
-interface WildColonyProfile {
-  first_name: string | null
-  last_name: string | null
-  full_name: string | null
-}
-
 interface WildColony {
   id: string
   user_id: string
@@ -41,7 +35,6 @@ interface WildColony {
   contact_phone: string | null
   share_contact_details: boolean
   inspection_count?: number
-  profiles?: WildColonyProfile
 }
 
 interface FormData {
@@ -134,13 +127,12 @@ export default function WildColoniesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch confirmed/observed colonies (exclude pending) with inspection counts and user profiles
+    // Fetch confirmed/observed colonies (exclude pending) with inspection counts
     const { data, error } = await supabase
       .from('wild_colonies')
       .select(`
         *,
-        wild_colony_inspections(count),
-        profiles:user_id (first_name, last_name, full_name)
+        wild_colony_inspections(count)
       `)
       .neq('status', 'pending_review')
       .order('observation_date', { ascending: false })
@@ -365,11 +357,7 @@ export default function WildColoniesPage() {
   }
 
   const getUserDisplayName = (colony: WildColony) => {
-    if (!colony.profiles) return null
-    const { full_name, first_name, last_name } = colony.profiles
-    if (full_name) return full_name
-    if (first_name || last_name) return `${first_name || ''} ${last_name || ''}`.trim()
-    return null
+    return colony.contact_name || colony.contact_email || null
   }
 
   const toggleExpanded = (colonyId: string) => {
