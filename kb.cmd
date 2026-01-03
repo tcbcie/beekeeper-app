@@ -1,0 +1,1 @@
+node scripts/ingest-documents.mjs "G:\My Drive\_Rico\Bees\KB"
