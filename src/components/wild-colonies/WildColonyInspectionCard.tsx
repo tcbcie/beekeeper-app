@@ -1,6 +1,6 @@
 'use client'
 
-import { Edit2, Trash2, Star, Calendar, Clock, Thermometer, Bug, Users } from 'lucide-react'
+import { Edit2, Trash2, Star, Calendar, Clock, Thermometer, Bug, Users, User } from 'lucide-react'
 import Image from 'next/image'
 import { WildColonyInspection, getPopulationLabel, getColonyStatusLabel, getWeatherLabel } from '@/types/wild-colonies'
 
@@ -44,6 +44,24 @@ export default function WildColonyInspectionCard({
   const formatTime = (timeStr: string | null) => {
     if (!timeStr) return null
     return timeStr.slice(0, 5)
+  }
+
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('en-IE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getUserDisplayName = () => {
+    if (!inspection.profiles) return null
+    const { full_name, first_name, last_name } = inspection.profiles
+    if (full_name) return full_name
+    if (first_name || last_name) return `${first_name || ''} ${last_name || ''}`.trim()
+    return null
   }
 
   return (
@@ -181,6 +199,22 @@ export default function WildColonyInspectionCard({
               {inspection.notes}
             </div>
           )}
+
+          {/* Record Info: Created by and timestamp */}
+          <div className="mt-3 pt-2 border-t border-border/50 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-tertiary">
+            {getUserDisplayName() && (
+              <div className="flex items-center gap-1">
+                <User size={12} />
+                <span>Recorded by {getUserDisplayName()}</span>
+              </div>
+            )}
+            {inspection.created_at && (
+              <div className="flex items-center gap-1">
+                <Clock size={12} />
+                <span>Created {formatDateTime(inspection.created_at)}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Side: Photo + Actions */}

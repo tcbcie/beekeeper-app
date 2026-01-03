@@ -1,11 +1,20 @@
 // Types for wild colony inspections
 
+export interface WildColonyInspectionProfile {
+  first_name: string | null
+  last_name: string | null
+  full_name: string | null
+}
+
 export interface WildColonyInspection {
   id: string
   wild_colony_id: string
   user_id: string
   inspection_date: string
   inspection_time: string | null
+
+  // User profile (joined)
+  profiles?: WildColonyInspectionProfile
 
   // Observable Signs
   activity_level: number
