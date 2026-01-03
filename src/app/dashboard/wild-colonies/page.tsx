@@ -392,9 +392,17 @@ export default function WildColoniesPage() {
 
       {showForm && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-border">
-          <h3 className="text-xl font-semibold mb-4 text-foreground">
-            {editingColony ? 'Edit Wild Colony' : 'Add Wild Colony'}
-          </h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold text-foreground">
+              {editingColony ? 'Edit Wild Colony' : 'Add Wild Colony'}
+            </h3>
+            {editingColony && getUserDisplayName(editingColony) && (
+              <p className="text-sm text-text-secondary mt-1 flex items-center gap-1">
+                <User size={14} />
+                Submitted by: {getUserDisplayName(editingColony)}
+              </p>
+            )}
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Map Location Picker */}
             <div className="bg-sage-50 dark:bg-slate-800/50 p-4 rounded-lg border border-sage-200 dark:border-slate-700">
