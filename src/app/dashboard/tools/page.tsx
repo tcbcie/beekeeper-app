@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Thermometer, Cloud, Grid3X3 } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Thermometer, Cloud, Grid3X3, Send } from 'lucide-react'
+import Link from 'next/link'
 import GDDTracker from '@/components/tools/GDDTracker'
 import VarroaWeather from '@/components/tools/VarroaWeather'
 import FrameCellCalculator from '@/components/tools/FrameCellCalculator'
@@ -136,6 +137,26 @@ export default function ToolsPage() {
       <p className="text-text-secondary">
         Helpful tools and utilities for managing your beekeeping operations.
       </p>
+
+      {/* Report Wild Colony Link */}
+      <Link
+        href="/dashboard/submit-colony"
+        className="block bg-amber-50 dark:bg-amber-900/20 rounded-lg shadow p-4 border border-amber-200 dark:border-amber-800 hover:shadow-md hover:border-amber-400 dark:hover:border-amber-600 transition-all"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/50">
+            <Send size={24} className="text-amber-700 dark:text-amber-300" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100">
+              Report Wild Colony
+            </h3>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Help track wild and feral bee colonies in your area
+            </p>
+          </div>
+        </div>
+      </Link>
 
       {/* Varroa Weather Tool - Full Width */}
       {activeTool === 'varroa' && (

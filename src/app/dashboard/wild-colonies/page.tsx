@@ -86,7 +86,6 @@ export default function WildColoniesPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [hasAccess, setHasAccess] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
-  const [shareContactDetails, setShareContactDetails] = useState(false)
 
   const {
     imagePreview,
@@ -195,29 +194,6 @@ export default function WildColoniesPage() {
         imageUrl = null
       }
 
-      // Fetch user profile data if sharing is enabled
-      let contactData = {
-        contact_name: null as string | null,
-        contact_email: null as string | null,
-        contact_phone: null as string | null
-      }
-
-      if (shareContactDetails) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email, mobile_number')
-          .eq('id', userId)
-          .single()
-
-        if (profile) {
-          contactData = {
-            contact_name: profile.full_name,
-            contact_email: profile.email,
-            contact_phone: profile.mobile_number
-          }
-        }
-      }
-
       const dataToSave = {
         latitude: parseFloat(formData.latitude),
         longitude: parseFloat(formData.longitude),
@@ -228,8 +204,10 @@ export default function WildColoniesPage() {
         entrance_description: formData.entrance_description || null,
         notes: formData.notes || null,
         image_url: imageUrl,
-        share_contact_details: shareContactDetails,
-        ...contactData
+        share_contact_details: false,
+        contact_name: null,
+        contact_email: null,
+        contact_phone: null
       }
 
       if (editingColony) {
@@ -270,7 +248,6 @@ export default function WildColoniesPage() {
       entrance_description: colony.entrance_description || '',
       notes: colony.notes || '',
     })
-    setShareContactDetails(colony.share_contact_details || false)
     if (colony.image_url) {
       setPreviewFromUrl(colony.image_url)
     }
@@ -330,7 +307,6 @@ export default function WildColoniesPage() {
     setEditingColony(null)
     setShowMapPicker(false)
     resetImage()
-    setShareContactDetails(false)
     setFormData({
       latitude: '',
       longitude: '',
@@ -527,22 +503,6 @@ export default function WildColoniesPage() {
               />
             </div>
 
-            <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-              <input
-                type="checkbox"
-                id="shareContactDetails"
-                checked={shareContactDetails}
-                onChange={(e) => setShareContactDetails(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-              />
-              <label htmlFor="shareContactDetails" className="text-sm text-text-secondary cursor-pointer select-none">
-                <strong>Allow to share personal details?</strong>
-                <p className="text-xs text-text-tertiary mt-0.5">
-                  If checked, your name, email, and mobile number (from your profile) will be visible to administrators for review queries.
-                </p>
-              </label>
-            </div>
-
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">Photo</label>
@@ -622,84 +582,115 @@ export default function WildColoniesPage() {
 
       {/* Pending Review Tab */}
       {activeTab === 'pending' && (
-        <div className="space-y-4">
+        <>
           {pendingColonies.length === 0 ? (
             <div className="bg-surface dark:bg-surface rounded-lg shadow p-8 text-center text-text-secondary border border-border">
               <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
               <p>No submissions pending review.</p>
             </div>
           ) : (
-            pendingColonies.map((colony) => (
-              <div key={colony.id} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-amber-200 dark:border-amber-800">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                        Pending Review
-                      </span>
-                      <span className="text-sm text-text-secondary">
-                        {formatDate(colony.observation_date)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-text-secondary">
-                      <MapPin size={14} className="inline mr-1" />
-                      {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
-                    </p>
-                    {colony.nesting_type && (
-                      <p className="text-sm text-text-secondary mt-1">
-                        <TreeDeciduous size={14} className="inline mr-1" />
-                        {getNestingTypeLabel(colony.nesting_type)}
-                      </p>
-                    )}
-                    {colony.estimated_size && (
-                      <p className="text-sm text-text-secondary mt-1">
-                        Size: {getSizeLabel(colony.estimated_size)}
-                      </p>
-                    )}
-                  </div>
-                  {colony.image_url && (
-                    <Image
-                      src={colony.image_url}
-                      alt="Colony"
-                      width={80}
-                      height={80}
-                      className="w-20 h-20 object-cover rounded-lg border border-border"
-                    />
-                  )}
-                </div>
-
-                {colony.entrance_description && (
-                  <p className="text-sm text-text-secondary mb-2">
-                    <strong>Entrance:</strong> {colony.entrance_description}
-                  </p>
-                )}
-
-                {colony.notes && (
-                  <div className="mb-4 p-3 bg-sage-50 dark:bg-slate-800/50 rounded text-sm text-text-primary border border-sage-200 dark:border-slate-700">
-                    {colony.notes}
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleApprove(colony.id)}
-                    className="flex-1 px-4 py-2 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50 font-medium flex items-center justify-center gap-2 border border-green-300 dark:border-green-800 min-h-[48px]"
-                  >
-                    <CheckCircle size={16} />
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleReject(colony.id)}
-                    className="flex-1 px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 border border-red-300 dark:border-red-800 min-h-[48px]"
-                  >
-                    <XCircle size={16} />
-                    Reject
-                  </button>
-                </div>
+            <div className="bg-surface dark:bg-surface rounded-lg shadow border border-amber-200 dark:border-amber-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-xs uppercase text-text-secondary font-semibold">
+                      <th className="px-4 py-3 w-28">Actions</th>
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Location</th>
+                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">Size</th>
+                      <th className="px-4 py-3">Contact</th>
+                      <th className="px-4 py-3">Description</th>
+                      <th className="px-4 py-3">Photo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100 dark:divide-amber-900/30">
+                    {pendingColonies.map((colony) => (
+                      <tr key={colony.id} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleApprove(colony.id)}
+                              className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                              title="Approve"
+                            >
+                              <CheckCircle size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleReject(colony.id)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              title="Reject"
+                            >
+                              <XCircle size={18} />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
+                          {formatDate(colony.observation_date)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-secondary whitespace-nowrap">
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${colony.latitude},${colony.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-blue-600 flex items-center gap-1"
+                          >
+                            <MapPin size={14} />
+                            {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
+                          </a>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-primary">
+                          {getNestingTypeLabel(colony.nesting_type)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-primary">
+                          {getSizeLabel(colony.estimated_size)}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {colony.share_contact_details && (colony.contact_name || colony.contact_email || colony.contact_phone) ? (
+                            <div className="text-xs space-y-0.5">
+                              {colony.contact_name && (
+                                <p className="text-text-primary">{colony.contact_name}</p>
+                              )}
+                              {colony.contact_email && (
+                                <a href={`mailto:${colony.contact_email}`} className="text-blue-600 hover:underline block truncate max-w-[150px]" title={colony.contact_email}>
+                                  {colony.contact_email}
+                                </a>
+                              )}
+                              {colony.contact_phone && (
+                                <a href={`tel:${colony.contact_phone}`} className="text-blue-600 hover:underline block">
+                                  {colony.contact_phone}
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-text-tertiary">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-secondary max-w-xs truncate" title={colony.entrance_description || colony.notes || ''}>
+                          {colony.entrance_description || colony.notes || '-'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {colony.image_url ? (
+                            <Image
+                              src={colony.image_url}
+                              alt="Colony"
+                              width={40}
+                              height={40}
+                              className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+                              onClick={() => window.open(colony.image_url!, '_blank')}
+                            />
+                          ) : (
+                            <span className="text-text-tertiary">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* All Colonies Tab */}
