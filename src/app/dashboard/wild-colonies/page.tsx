@@ -28,6 +28,7 @@ interface WildColony {
   entrance_description: string | null
   notes: string | null
   image_url: string | null
+  image_url_location: string | null
   created_at: string
   updated_at: string | null
   reviewed_by: string | null
@@ -53,6 +54,7 @@ interface FormData {
 const STATUS_OPTIONS = [
   { value: 'observed', label: 'Observed' },
   { value: 'confirmed', label: 'Confirmed' },
+  { value: 'unconfirmed', label: 'Unconfirmed' },
   { value: 'lost', label: 'Lost' },
   { value: 'removed', label: 'Removed' },
   { value: 'relocated', label: 'Relocated' },
@@ -92,15 +94,31 @@ export default function WildColoniesPage() {
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [expandedColonyId, setExpandedColonyId] = useState<string | null>(null)
 
+  // Location Aid photo upload
   const {
-    imagePreview,
-    uploading,
-    handleImageChange,
-    handleRemoveImage,
-    uploadImage,
-    reset: resetImage,
-    setPreviewFromUrl,
-    imageFile
+    imagePreview: locationImagePreview,
+    uploading: locationUploading,
+    handleImageChange: handleLocationImageChange,
+    handleRemoveImage: handleRemoveLocationImage,
+    uploadImage: uploadLocationImage,
+    reset: resetLocationImage,
+    setPreviewFromUrl: setLocationPreviewFromUrl,
+    imageFile: locationImageFile
+  } = useImageUpload({
+    folder: 'wild-colonies',
+    onError: (msg) => toast.error(msg)
+  })
+
+  // Colony photo upload
+  const {
+    imagePreview: colonyImagePreview,
+    uploading: colonyUploading,
+    handleImageChange: handleColonyImageChange,
+    handleRemoveImage: handleRemoveColonyImage,
+    uploadImage: uploadColonyImage,
+    reset: resetColonyImage,
+    setPreviewFromUrl: setColonyPreviewFromUrl,
+    imageFile: colonyImageFile
   } = useImageUpload({
     folder: 'wild-colonies',
     onError: (msg) => toast.error(msg)
@@ -189,7 +207,7 @@ export default function WildColoniesPage() {
     initUser()
   }, [router, fetchColonies])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, overrideStatus?: string) => {
     e.preventDefault()
     if (!userId) return
 
@@ -199,31 +217,44 @@ export default function WildColoniesPage() {
     }
 
     try {
-      let imageUrl = editingColony?.image_url || null
-
-      if (imageFile) {
-        const uploadedUrl = await uploadImage(imageFile)
+      // Handle location image
+      let locationImageUrl = editingColony?.image_url_location || null
+      if (locationImageFile) {
+        const uploadedUrl = await uploadLocationImage(locationImageFile)
         if (uploadedUrl) {
-          imageUrl = uploadedUrl
+          locationImageUrl = uploadedUrl
         }
-      } else if (!imagePreview && editingColony?.image_url) {
-        imageUrl = null
+      } else if (!locationImagePreview && editingColony?.image_url_location) {
+        locationImageUrl = null
+      }
+
+      // Handle colony image
+      let colonyImageUrl = editingColony?.image_url || null
+      if (colonyImageFile) {
+        const uploadedUrl = await uploadColonyImage(colonyImageFile)
+        if (uploadedUrl) {
+          colonyImageUrl = uploadedUrl
+        }
+      } else if (!colonyImagePreview && editingColony?.image_url) {
+        colonyImageUrl = null
       }
 
       const dataToSave = {
         latitude: parseFloat(formData.latitude),
         longitude: parseFloat(formData.longitude),
-        status: formData.status,
+        status: overrideStatus || formData.status,
         nesting_type: formData.nesting_type || null,
         estimated_size: formData.estimated_size || null,
         observation_date: formData.observation_date,
         entrance_description: formData.entrance_description || null,
         notes: formData.notes || null,
-        image_url: imageUrl,
-        share_contact_details: false,
-        contact_name: null,
-        contact_email: null,
-        contact_phone: null
+        image_url: colonyImageUrl,
+        image_url_location: locationImageUrl,
+        share_contact_details: editingColony?.share_contact_details || false,
+        contact_name: editingColony?.contact_name || null,
+        contact_email: editingColony?.contact_email || null,
+        contact_phone: editingColony?.contact_phone || null,
+        reviewed_by: overrideStatus ? userId : editingColony?.reviewed_by || null
       }
 
       if (editingColony) {
@@ -233,7 +264,14 @@ export default function WildColoniesPage() {
           .eq('id', editingColony.id)
 
         if (error) throw error
-        toast.success('Colony updated successfully')
+
+        if (overrideStatus === 'confirmed') {
+          toast.success('Colony confirmed')
+        } else if (overrideStatus === 'unconfirmed') {
+          toast.success('Colony marked as unconfirmed')
+        } else {
+          toast.success('Colony updated successfully')
+        }
       } else {
         const { error } = await supabase
           .from('wild_colonies')
@@ -263,8 +301,11 @@ export default function WildColoniesPage() {
       entrance_description: colony.entrance_description || '',
       notes: colony.notes || '',
     })
+    if (colony.image_url_location) {
+      setLocationPreviewFromUrl(colony.image_url_location)
+    }
     if (colony.image_url) {
-      setPreviewFromUrl(colony.image_url)
+      setColonyPreviewFromUrl(colony.image_url)
     }
     setShowForm(true)
   }
@@ -320,7 +361,8 @@ export default function WildColoniesPage() {
     setShowForm(false)
     setEditingColony(null)
     setShowMapPicker(false)
-    resetImage()
+    resetLocationImage()
+    resetColonyImage()
     setFormData({
       latitude: '',
       longitude: '',
@@ -541,53 +583,122 @@ export default function WildColoniesPage() {
               />
             </div>
 
-            {/* Image Upload */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Photo</label>
-              <div className="flex items-start gap-4">
-                {imagePreview ? (
-                  <div className="relative">
-                    <Image
-                      src={imagePreview}
-                      alt="Colony preview"
-                      width={120}
-                      height={120}
-                      className="w-30 h-30 object-cover rounded-lg border border-border"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
-                    <Camera size={24} className="text-text-tertiary mb-1" />
-                    <span className="text-xs text-text-tertiary">Add photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </label>
-                )}
+            {/* Photo Uploads */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Location Aid Photo */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Location Aid Photo</label>
+                <p className="text-xs text-text-tertiary mb-2">A photo to help find the location</p>
+                <div className="flex items-start">
+                  {locationImagePreview ? (
+                    <div className="relative">
+                      <Image
+                        src={locationImagePreview}
+                        alt="Location preview"
+                        width={120}
+                        height={120}
+                        className="w-30 h-30 object-cover rounded-lg border border-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLocationImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
+                      <Camera size={24} className="text-text-tertiary mb-1" />
+                      <span className="text-xs text-text-tertiary text-center">Location</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLocationImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Colony Photo */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Colony Photo</label>
+                <p className="text-xs text-text-tertiary mb-2">A photo of the colony entrance or bees</p>
+                <div className="flex items-start">
+                  {colonyImagePreview ? (
+                    <div className="relative">
+                      <Image
+                        src={colonyImagePreview}
+                        alt="Colony preview"
+                        width={120}
+                        height={120}
+                        className="w-30 h-30 object-cover rounded-lg border border-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveColonyImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
+                      <Camera size={24} className="text-text-tertiary mb-1" />
+                      <span className="text-xs text-text-tertiary text-center">Colony</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleColonyImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={uploading}
-                className="px-6 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 min-h-[48px] disabled:opacity-50"
-              >
-                {uploading ? 'Uploading...' : editingColony ? 'Update' : 'Add'} Colony
-              </button>
-              <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[48px]">
-                Cancel
-              </button>
+            <div className="flex flex-wrap gap-3">
+              {editingColony?.status === 'pending_review' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => handleSubmit(e, 'confirmed')}
+                    disabled={locationUploading || colonyUploading}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 min-h-[48px] disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <CheckCircle size={18} />
+                    {locationUploading || colonyUploading ? 'Uploading...' : 'Confirm'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleSubmit(e, 'unconfirmed')}
+                    disabled={locationUploading || colonyUploading}
+                    className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 min-h-[48px] disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <XCircle size={18} />
+                    {locationUploading || colonyUploading ? 'Uploading...' : 'Un-confirm'}
+                  </button>
+                  <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[48px]">
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    disabled={locationUploading || colonyUploading}
+                    className="px-6 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 min-h-[48px] disabled:opacity-50"
+                  >
+                    {locationUploading || colonyUploading ? 'Uploading...' : editingColony ? 'Update' : 'Add'} Colony
+                  </button>
+                  <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[48px]">
+                    Cancel
+                  </button>
+                </>
+              )}
             </div>
           </form>
         </div>
@@ -632,14 +743,15 @@ export default function WildColoniesPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-xs uppercase text-text-secondary font-semibold">
-                      <th className="px-4 py-3 w-28">Actions</th>
+                      <th className="px-4 py-3 w-32">Actions</th>
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Location</th>
                       <th className="px-4 py-3">Type</th>
                       <th className="px-4 py-3">Size</th>
                       <th className="px-4 py-3">Contact</th>
                       <th className="px-4 py-3">Description</th>
-                      <th className="px-4 py-3">Photo</th>
+                      <th className="px-4 py-3">Location Photo</th>
+                      <th className="px-4 py-3">Colony Photo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100 dark:divide-amber-900/30">
@@ -648,16 +760,23 @@ export default function WildColoniesPage() {
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
                             <button
+                              onClick={() => handleEdit(colony)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                              title="Edit & Review"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
                               onClick={() => handleApprove(colony.id)}
                               className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                              title="Approve"
+                              title="Quick Approve"
                             >
                               <CheckCircle size={18} />
                             </button>
                             <button
                               onClick={() => handleReject(colony.id)}
                               className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title="Reject"
+                              title="Reject & Delete"
                             >
                               <XCircle size={18} />
                             </button>
@@ -708,6 +827,20 @@ export default function WildColoniesPage() {
                           {colony.entrance_description || colony.notes || '-'}
                         </td>
                         <td className="px-4 py-3">
+                          {colony.image_url_location ? (
+                            <Image
+                              src={colony.image_url_location}
+                              alt="Location"
+                              width={40}
+                              height={40}
+                              className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+                              onClick={() => window.open(colony.image_url_location!, '_blank')}
+                            />
+                          ) : (
+                            <span className="text-text-tertiary">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
                           {colony.image_url ? (
                             <Image
                               src={colony.image_url}
@@ -748,7 +881,8 @@ export default function WildColoniesPage() {
                   <th className="px-4 py-3">Type</th>
                   <th className="px-4 py-3">Size</th>
                   <th className="px-4 py-3">Description</th>
-                  <th className="px-4 py-3">Photo</th>
+                  <th className="px-4 py-3">Location Photo</th>
+                  <th className="px-4 py-3">Colony Photo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -794,6 +928,7 @@ export default function WildColoniesPage() {
                         <span className={`px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center gap-1.5 ${
                           colony.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
                           colony.status === 'observed' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
+                          colony.status === 'unconfirmed' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
                           colony.status === 'lost' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
                           'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
                         }`}>
@@ -844,17 +979,29 @@ export default function WildColoniesPage() {
                         {colony.entrance_description || '-'}
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        {colony.image_url_location ? (
+                          <Image
+                            src={colony.image_url_location}
+                            alt="Location"
+                            width={40}
+                            height={40}
+                            className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+                            onClick={() => window.open(colony.image_url_location!, '_blank')}
+                          />
+                        ) : (
+                          <span className="text-text-tertiary">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         {colony.image_url ? (
-                          <div className="relative group">
-                            <Image
-                              src={colony.image_url}
-                              alt="Colony"
-                              width={40}
-                              height={40}
-                              className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
-                              onClick={() => window.open(colony.image_url!, '_blank')}
-                            />
-                          </div>
+                          <Image
+                            src={colony.image_url}
+                            alt="Colony"
+                            width={40}
+                            height={40}
+                            className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+                            onClick={() => window.open(colony.image_url!, '_blank')}
+                          />
                         ) : (
                           <span className="text-text-tertiary">-</span>
                         )}
@@ -863,7 +1010,7 @@ export default function WildColoniesPage() {
                     {/* Expanded Inspection Panel */}
                     {expandedColonyId === colony.id && userId && (
                       <tr>
-                        <td colSpan={11} className="p-0">
+                        <td colSpan={12} className="p-0">
                           <WildColonyInspectionPanel
                             colonyId={colony.id}
                             userId={userId}
