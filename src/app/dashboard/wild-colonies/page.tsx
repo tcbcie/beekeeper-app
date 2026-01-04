@@ -274,9 +274,25 @@ export default function WildColoniesPage() {
           toast.success('Colony updated successfully')
         }
       } else {
+        // Fetch user profile for contact details when creating new record
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, mobile_number')
+          .eq('id', userId)
+          .single()
+
+        const newRecordData = {
+          ...dataToSave,
+          user_id: userId,
+          share_contact_details: true,
+          contact_name: profile?.full_name || null,
+          contact_email: profile?.email || null,
+          contact_phone: profile?.mobile_number || null
+        }
+
         const { error } = await supabase
           .from('wild_colonies')
-          .insert([{ ...dataToSave, user_id: userId }])
+          .insert([newRecordData])
 
         if (error) throw error
         toast.success('Colony added successfully')
