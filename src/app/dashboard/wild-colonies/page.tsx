@@ -29,11 +29,13 @@ interface WildColony {
   notes: string | null
   image_url: string | null
   created_at: string
+  updated_at: string | null
   reviewed_by: string | null
   contact_name: string | null
   contact_email: string | null
   contact_phone: string | null
   share_contact_details: boolean
+  last_edited_by: string | null
   inspection_count?: number
 }
 
@@ -227,9 +229,8 @@ export default function WildColoniesPage() {
       if (editingColony) {
         const { error } = await supabase
           .from('wild_colonies')
-          .update(dataToSave)
+          .update({ ...dataToSave, last_edited_by: userId })
           .eq('id', editingColony.id)
-          .eq('user_id', userId)
 
         if (error) throw error
         toast.success('Colony updated successfully')
@@ -275,7 +276,6 @@ export default function WildColoniesPage() {
         .from('wild_colonies')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId)
 
       if (!error) {
         toast.success('Colony deleted')
@@ -396,11 +396,19 @@ export default function WildColoniesPage() {
             <h3 className="text-xl font-semibold text-foreground">
               {editingColony ? 'Edit Wild Colony' : 'Add Wild Colony'}
             </h3>
-            {editingColony && getUserDisplayName(editingColony) && (
-              <p className="text-sm text-text-secondary mt-1 flex items-center gap-1">
-                <User size={14} />
-                Submitted by: {getUserDisplayName(editingColony)}
-              </p>
+            {editingColony && (
+              <div className="text-sm text-text-secondary mt-2 space-y-1">
+                {getUserDisplayName(editingColony) && (
+                  <p className="flex items-center gap-1">
+                    <User size={14} />
+                    Submitted by: {getUserDisplayName(editingColony)}
+                  </p>
+                )}
+                <p>Created: {formatDate(editingColony.created_at)}</p>
+                {editingColony.updated_at && editingColony.updated_at !== editingColony.created_at && (
+                  <p>Last edited: {formatDate(editingColony.updated_at)}</p>
+                )}
+              </div>
             )}
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -766,26 +774,20 @@ export default function WildColoniesPage() {
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-2">
-                          {colony.user_id === userId ? (
-                            <>
-                              <button
-                                onClick={() => handleEdit(colony)}
-                                className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                                title="Edit"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(colony.id)}
-                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                title="Delete"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-text-tertiary italic">Read-only</span>
-                          )}
+                          <button
+                            onClick={() => handleEdit(colony)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(colony.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </td>
                       <td className="px-4 py-3">
