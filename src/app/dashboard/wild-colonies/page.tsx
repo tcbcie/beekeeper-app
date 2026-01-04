@@ -633,7 +633,7 @@ export default function WildColoniesPage() {
                     className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 min-h-[48px] disabled:opacity-50 flex items-center gap-2"
                   >
                     <XCircle size={18} />
-                    {locationUploading || colonyUploading ? 'Uploading...' : 'Un-confirm'}
+                    {locationUploading || colonyUploading ? 'Uploading...' : 'Unconfirmed'}
                   </button>
                   <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[48px]">
                     Cancel
