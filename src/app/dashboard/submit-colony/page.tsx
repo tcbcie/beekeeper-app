@@ -51,16 +51,30 @@ export default function SubmitColonyPage() {
   const [submitted, setSubmitted] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [showMapPicker, setShowMapPicker] = useState(false)
-  const [shareContactDetails, setShareContactDetails] = useState(false)
 
+  // Location Aid photo upload
   const {
-    imagePreview,
-    uploading,
-    handleImageChange,
-    handleRemoveImage,
-    uploadImage,
-    reset: resetImage,
-    imageFile
+    imagePreview: locationImagePreview,
+    uploading: locationUploading,
+    handleImageChange: handleLocationImageChange,
+    handleRemoveImage: handleRemoveLocationImage,
+    uploadImage: uploadLocationImage,
+    reset: resetLocationImage,
+    imageFile: locationImageFile
+  } = useImageUpload({
+    folder: 'wild-colonies',
+    onError: (msg) => toast.error(msg)
+  })
+
+  // Colony photo upload
+  const {
+    imagePreview: colonyImagePreview,
+    uploading: colonyUploading,
+    handleImageChange: handleColonyImageChange,
+    handleRemoveImage: handleRemoveColonyImage,
+    uploadImage: uploadColonyImage,
+    reset: resetColonyImage,
+    imageFile: colonyImageFile
   } = useImageUpload({
     folder: 'wild-colonies',
     onError: (msg) => toast.error(msg)
@@ -109,36 +123,36 @@ export default function SubmitColonyPage() {
     setSubmitting(true)
 
     try {
-      let imageUrl = null
+      let locationImageUrl = null
+      let colonyImageUrl = null
 
-      if (imageFile) {
-        const uploadedUrl = await uploadImage(imageFile)
+      // Upload location aid photo
+      if (locationImageFile) {
+        const uploadedUrl = await uploadLocationImage(locationImageFile)
         if (uploadedUrl) {
-          imageUrl = uploadedUrl
+          locationImageUrl = uploadedUrl
         }
       }
 
-      // Fetch user profile data if sharing is enabled
-      let contactData = {
-        contact_name: null as string | null,
-        contact_email: null as string | null,
-        contact_phone: null as string | null
+      // Upload colony photo
+      if (colonyImageFile) {
+        const uploadedUrl = await uploadColonyImage(colonyImageFile)
+        if (uploadedUrl) {
+          colonyImageUrl = uploadedUrl
+        }
       }
 
-      if (shareContactDetails) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, email, mobile_number')
-          .eq('id', userId)
-          .single()
+      // Always fetch user profile data (email is required)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email, mobile_number')
+        .eq('id', userId)
+        .single()
 
-        if (profile) {
-          contactData = {
-            contact_name: profile.full_name,
-            contact_email: profile.email,
-            contact_phone: profile.mobile_number
-          }
-        }
+      const contactData = {
+        contact_name: profile?.full_name || null,
+        contact_email: profile?.email || null,
+        contact_phone: profile?.mobile_number || null
       }
 
       const dataToSave = {
@@ -151,8 +165,9 @@ export default function SubmitColonyPage() {
         observation_date: formData.observation_date,
         entrance_description: formData.entrance_description || null,
         notes: formData.notes || null,
-        image_url: imageUrl,
-        share_contact_details: shareContactDetails,
+        image_url: colonyImageUrl,
+        image_url_location: locationImageUrl,
+        share_contact_details: true,
         ...contactData
       }
 
@@ -175,8 +190,8 @@ export default function SubmitColonyPage() {
   const resetForm = () => {
     setSubmitted(false)
     setShowMapPicker(false)
-    resetImage()
-    setShareContactDetails(false)
+    resetLocationImage()
+    resetColonyImage()
     setFormData({
       latitude: '',
       longitude: '',
@@ -349,65 +364,100 @@ export default function SubmitColonyPage() {
             />
           </div>
 
-          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-            <input
-              type="checkbox"
-              id="shareContactDetails"
-              checked={shareContactDetails}
-              onChange={(e) => setShareContactDetails(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-            />
-            <label htmlFor="shareContactDetails" className="text-sm text-text-secondary cursor-pointer select-none">
-              <strong>Allow to share personal details?</strong>
-              <p className="text-xs text-text-tertiary mt-0.5">
-                If checked, your name, email, and mobile number (from your profile) will be visible to administrators for review queries.
-              </p>
-            </label>
+          {/* Contact Info Notice */}
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+            <p className="text-sm text-text-secondary">
+              <strong>Contact Information</strong>
+            </p>
+            <p className="text-xs text-text-tertiary mt-0.5">
+              Your email address (and name/phone if available in your profile) will be shared with reviewers so they can contact you about this sighting.
+            </p>
           </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Photo (optional)</label>
-            <div className="flex items-start gap-4">
-              {imagePreview ? (
-                <div className="relative">
-                  <Image
-                    src={imagePreview}
-                    alt="Colony preview"
-                    width={120}
-                    height={120}
-                    className="w-30 h-30 object-cover rounded-lg border border-border"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
-                  <Camera size={24} className="text-text-tertiary mb-1" />
-                  <span className="text-xs text-text-tertiary">Add photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </label>
-              )}
+          {/* Photo Uploads */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Location Aid Photo */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Location Aid Photo (optional)</label>
+              <p className="text-xs text-text-tertiary mb-2">A photo to help find the location (landmark, building, etc.)</p>
+              <div className="flex items-start">
+                {locationImagePreview ? (
+                  <div className="relative">
+                    <Image
+                      src={locationImagePreview}
+                      alt="Location preview"
+                      width={120}
+                      height={120}
+                      className="w-30 h-30 object-cover rounded-lg border border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveLocationImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
+                    <Camera size={24} className="text-text-tertiary mb-1" />
+                    <span className="text-xs text-text-tertiary text-center">Location</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLocationImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Colony Photo */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Colony Photo (optional)</label>
+              <p className="text-xs text-text-tertiary mb-2">A photo of the colony entrance or bee activity</p>
+              <div className="flex items-start">
+                {colonyImagePreview ? (
+                  <div className="relative">
+                    <Image
+                      src={colonyImagePreview}
+                      alt="Colony preview"
+                      width={120}
+                      height={120}
+                      className="w-30 h-30 object-cover rounded-lg border border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveColonyImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
+                    <Camera size={24} className="text-text-tertiary mb-1" />
+                    <span className="text-xs text-text-tertiary text-center">Colony</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleColonyImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={submitting || uploading}
+              disabled={submitting || locationUploading || colonyUploading}
               className="flex-1 px-6 py-3 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium min-h-[48px] disabled:opacity-50"
             >
-              {submitting || uploading ? 'Submitting...' : 'Submit Sighting'}
+              {submitting || locationUploading || colonyUploading ? 'Submitting...' : 'Submit Sighting'}
             </button>
           </div>
         </form>
