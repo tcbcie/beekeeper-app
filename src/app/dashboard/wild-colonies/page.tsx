@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList, User } from 'lucide-react'
+import { Plus, Edit2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList, User, Filter } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -93,6 +93,7 @@ export default function WildColoniesPage() {
   const [hasAccess, setHasAccess] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [expandedColonyId, setExpandedColonyId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>('')
 
   // Location Aid photo upload
   const {
@@ -308,53 +309,6 @@ export default function WildColoniesPage() {
       setColonyPreviewFromUrl(colony.image_url)
     }
     setShowForm(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!userId) return
-    if (confirm('Delete this wild colony record?')) {
-      const { error } = await supabase
-        .from('wild_colonies')
-        .delete()
-        .eq('id', id)
-
-      if (!error) {
-        toast.success('Colony deleted')
-        fetchColonies()
-      }
-    }
-  }
-
-  const handleApprove = async (id: string) => {
-    if (!userId) return
-    const { error } = await supabase
-      .from('wild_colonies')
-      .update({ status: 'confirmed', reviewed_by: userId })
-      .eq('id', id)
-
-    if (!error) {
-      toast.success('Colony approved and confirmed')
-      fetchColonies()
-    } else {
-      toast.error('Failed to approve colony')
-    }
-  }
-
-  const handleReject = async (id: string) => {
-    if (!userId) return
-    if (confirm('Reject and delete this submission?')) {
-      const { error } = await supabase
-        .from('wild_colonies')
-        .delete()
-        .eq('id', id)
-
-      if (!error) {
-        toast.success('Submission rejected')
-        fetchColonies()
-      } else {
-        toast.error('Failed to reject submission')
-      }
-    }
   }
 
   const resetForm = () => {
@@ -743,7 +697,7 @@ export default function WildColoniesPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-xs uppercase text-text-secondary font-semibold">
-                      <th className="px-4 py-3 w-32">Actions</th>
+                      <th className="px-4 py-3 w-16">Actions</th>
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Location</th>
                       <th className="px-4 py-3">Type</th>
@@ -758,29 +712,13 @@ export default function WildColoniesPage() {
                     {pendingColonies.map((colony) => (
                       <tr key={colony.id} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
                         <td className="px-4 py-3">
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleEdit(colony)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                              title="Edit & Review"
-                            >
-                              <Edit2 size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleApprove(colony.id)}
-                              className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                              title="Quick Approve"
-                            >
-                              <CheckCircle size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleReject(colony.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title="Reject & Delete"
-                            >
-                              <XCircle size={18} />
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleEdit(colony)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                            title="Edit & Review"
+                          >
+                            <Edit2 size={18} />
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
                           {formatDate(colony.observation_date)}
@@ -866,7 +804,34 @@ export default function WildColoniesPage() {
 
       {/* All Colonies Tab */}
       {activeTab === 'all' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border overflow-hidden">
+        <>
+          {/* Status Filter */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-text-secondary" />
+              <label className="text-sm font-medium text-text-secondary">Status:</label>
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-1.5 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+            >
+              <option value="">All Statuses</option>
+              {STATUS_OPTIONS.filter(opt => opt.value !== 'pending_review').map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {statusFilter && (
+              <button
+                onClick={() => setStatusFilter('')}
+                className="text-xs text-text-secondary hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -886,7 +851,7 @@ export default function WildColoniesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {colonies.map((colony) => (
+                {colonies.filter(c => !statusFilter || c.status === statusFilter).map((colony) => (
                   <React.Fragment key={colony.id}>
                     <tr
                       className={`hover:bg-sage-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer ${
@@ -907,22 +872,13 @@ export default function WildColoniesPage() {
                         </button>
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(colony)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(colony.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleEdit(colony)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 size={16} />
+                        </button>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center gap-1.5 ${
@@ -1025,7 +981,8 @@ export default function WildColoniesPage() {
               </tbody>
             </table>
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       {activeTab === 'all' && colonies.length === 0 && (
