@@ -769,3 +769,98 @@ Updated News section with:
 - Type 3+ characters: AI-powered semantic search with Sparkles indicator
 - Debounced to avoid excessive API calls while typing
 
+---
+
+## Session 8: BEEP Hive Scale Integration - January 5, 2026
+
+### Task
+Integrate BEEP API (api.beep.nl) to allow users to connect hive scales and display sensor data (weight, temperature, humidity, battery) on hive detail pages.
+
+### Implementation Summary
+
+#### 1. Database Migration (`add_beep_integration_columns`)
+Added columns for BEEP integration:
+- `profiles.beep_api_token` - Encrypted token storage
+- `profiles.beep_connected_at` - Connection timestamp
+- `hives.beep_device_id` - Assigned device ID
+- `hives.beep_device_name` - Device display name
+
+#### 2. BEEP API Library (`src/lib/beep-api.ts`) - NEW
+Created client library with TypeScript interfaces:
+- `BeepDevice` - Device metadata type
+- `BeepSensorReading` - Sensor data type with weight, temp, humidity, battery
+- `beepLogin()` - Authenticate and get API token
+- `beepGetDevices()` - Fetch user's devices
+- `beepGetLastValues()` - Get latest sensor readings
+- `beepGetMeasurements()` - Historical data (for future use)
+
+#### 3. API Routes - Server-Side Proxy
+Created 4 API endpoints to securely proxy BEEP API calls:
+- `POST /api/beep/connect` - Authenticate with BEEP, store token
+- `GET /api/beep/devices` - Fetch user's devices with assignment info
+- `GET /api/beep/data?deviceId=X` - Get latest sensor data
+- `POST /api/beep/disconnect` - Clear token and device assignments
+
+#### 4. Profile Page Integration (`src/app/dashboard/profile/page.tsx`)
+Added BEEP integration section with:
+- Login form for BEEP credentials
+- Connected state showing device count
+- Disconnect button
+
+#### 5. Scale Selection Modal (`src/components/hive/ScaleSelectionModal.tsx`) - NEW
+Modal component for assigning devices to hives:
+- Lists available BEEP devices
+- Shows current assignment status
+- Option to remove assigned device
+- Warning for devices assigned elsewhere
+
+#### 6. Sensor Display Component (`src/components/hive/ScaleSensorDisplay.tsx`) - NEW
+Real-time sensor data display:
+- Weight (kg) with amber styling
+- Temperature (°C) with blue styling
+- Humidity (%) with cyan styling
+- Battery level (%) with green/red based on level
+- Auto-refresh every 5 minutes
+- Manual refresh button
+
+#### 7. Hive Detail Page (`src/app/dashboard/hives/[id]/page.tsx`)
+Added Scale Data Card:
+- Displays when user has BEEP connected
+- Shows "Connect Scale" button for unassigned hives
+- Shows sensor readings for assigned hives
+- Scale selection modal integration
+
+#### 8. Type Updates (`src/types/hive.ts`)
+Added to Hive interface:
+- `beep_device_id?: string | null`
+- `beep_device_name?: string | null`
+
+### Files Created/Modified
+
+| File | Status | Description |
+|------|--------|-------------|
+| Database migration | NEW | BEEP columns for profiles and hives |
+| `src/lib/beep-api.ts` | NEW | BEEP API client library |
+| `src/app/api/beep/connect/route.ts` | NEW | Connect endpoint |
+| `src/app/api/beep/devices/route.ts` | NEW | Devices endpoint |
+| `src/app/api/beep/data/route.ts` | NEW | Sensor data endpoint |
+| `src/app/api/beep/disconnect/route.ts` | NEW | Disconnect endpoint |
+| `src/app/dashboard/profile/page.tsx` | MODIFIED | Added integration section |
+| `src/components/hive/ScaleSelectionModal.tsx` | NEW | Device picker modal |
+| `src/components/hive/ScaleSensorDisplay.tsx` | NEW | Sensor display component |
+| `src/app/dashboard/hives/[id]/page.tsx` | MODIFIED | Added scale section |
+| `src/types/hive.ts` | MODIFIED | Added BEEP device fields |
+
+### Security Considerations
+- BEEP API token stored server-side in database (protected by RLS)
+- All BEEP API calls go through server-side proxy
+- Token never exposed to client-side JavaScript
+- Auth verification on all API endpoints
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+- All 4 BEEP API routes compiled
+
+---
+

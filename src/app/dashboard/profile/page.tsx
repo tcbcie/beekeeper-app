@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Mail, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2, Palette } from 'lucide-react'
+import { User, Mail, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2, Palette, Scale, Link2, Unlink } from 'lucide-react'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
@@ -170,6 +170,15 @@ export default function ProfilePage() {
   const [passwordError, setPasswordError] = useState('')
   const [subscriptionRefreshKey, setSubscriptionRefreshKey] = useState(0)
 
+  // BEEP Integration state
+  const [beepConnected, setBeepConnected] = useState(false)
+  const [beepConnectedAt, setBeepConnectedAt] = useState<string | null>(null)
+  const [beepDeviceCount, setBeepDeviceCount] = useState(0)
+  const [beepEmail, setBeepEmail] = useState('')
+  const [beepPassword, setBeepPassword] = useState('')
+  const [connectingBeep, setConnectingBeep] = useState(false)
+  const [disconnectingBeep, setDisconnectingBeep] = useState(false)
+
   const fetchSubscriptionStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc('get_subscription_status')
@@ -225,11 +234,98 @@ export default function ProfilePage() {
           enable_event_email_reminders: data.enable_event_email_reminders !== undefined ? data.enable_event_email_reminders : true,
           task_reminder_frequency: data.task_reminder_frequency || 'daily',
         })
+        // Check BEEP connection status
+        if (data.beep_api_token) {
+          setBeepConnected(true)
+          setBeepConnectedAt(data.beep_connected_at)
+        } else {
+          setBeepConnected(false)
+          setBeepConnectedAt(null)
+        }
       }
     } catch (error) {
       console.error('Error fetching user profile:', error)
     }
   }, [userId])
+
+  const fetchBeepDeviceCount = useCallback(async () => {
+    if (!beepConnected) return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const response = await fetch('/api/beep/devices', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setBeepDeviceCount(data.devices?.length || 0)
+      }
+    } catch (error) {
+      console.error('Error fetching BEEP devices:', error)
+    }
+  }, [beepConnected])
+
+  const handleConnectBeep = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!beepEmail || !beepPassword) return
+
+    setConnectingBeep(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      const response = await fetch('/api/beep/connect', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: beepEmail, password: beepPassword }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Connection failed')
+
+      setBeepConnected(true)
+      setBeepConnectedAt(new Date().toISOString())
+      setBeepEmail('')
+      setBeepPassword('')
+      toast.success('BEEP account connected successfully!')
+      fetchBeepDeviceCount()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Connection failed'
+      toast.error(message)
+    } finally {
+      setConnectingBeep(false)
+    }
+  }
+
+  const handleDisconnectBeep = async () => {
+    if (!confirm('Disconnect your BEEP account? This will remove all scale assignments from your hives.')) return
+
+    setDisconnectingBeep(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      const response = await fetch('/api/beep/disconnect', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      })
+
+      if (!response.ok) throw new Error('Disconnect failed')
+
+      setBeepConnected(false)
+      setBeepConnectedAt(null)
+      setBeepDeviceCount(0)
+      toast.success('BEEP account disconnected')
+    } catch {
+      toast.error('Failed to disconnect BEEP account')
+    } finally {
+      setDisconnectingBeep(false)
+    }
+  }
 
   const updateUserProfile = async () => {
     if (!userId) return
@@ -1203,6 +1299,13 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
+  // Fetch BEEP device count when connected
+  useEffect(() => {
+    if (beepConnected) {
+      fetchBeepDeviceCount()
+    }
+  }, [beepConnected, fetchBeepDeviceCount])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1468,6 +1571,84 @@ export default function ProfilePage() {
           Choose your preferred theme. Light mode is optimized for outdoor field work, while dark mode is ideal for evening planning.
         </p>
         <ThemeSwitcher />
+      </div>
+
+      {/* BEEP Hive Scale Integration */}
+      <div className="bg-surface dark:bg-surface border border-border rounded-lg shadow p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Scale size={24} className="text-amber-600" />
+          <h2 className="text-xl font-semibold text-foreground">Hive Scale Integration (BEEP)</h2>
+        </div>
+
+        <p className="text-sm text-text-secondary mb-4">
+          Connect your BEEP account to display hive scale data (weight, temperature, humidity) on your hive pages.
+          Visit <a href="https://app.beep.nl" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">app.beep.nl</a> to create an account.
+        </p>
+
+        {beepConnected ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <Link2 size={20} className="text-green-600" />
+              <div className="flex-1">
+                <p className="font-medium text-green-800 dark:text-green-200">BEEP Account Connected</p>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  {beepDeviceCount} device{beepDeviceCount !== 1 ? 's' : ''} available
+                  {beepConnectedAt && (
+                    <span className="ml-2 text-green-600 dark:text-green-400">
+                      (connected {new Date(beepConnectedAt).toLocaleDateString()})
+                    </span>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={handleDisconnectBeep}
+                disabled={disconnectingBeep}
+                className="px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-2 disabled:opacity-50"
+              >
+                <Unlink size={16} />
+                {disconnectingBeep ? 'Disconnecting...' : 'Disconnect'}
+              </button>
+            </div>
+            <p className="text-sm text-text-tertiary">
+              To assign a scale to a hive, go to the hive detail page and click &quot;Connect Scale&quot;.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleConnectBeep} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">BEEP Email</label>
+                <input
+                  type="email"
+                  value={beepEmail}
+                  onChange={(e) => setBeepEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">BEEP Password</label>
+                <input
+                  type="password"
+                  value={beepPassword}
+                  onChange={(e) => setBeepPassword(e.target.value)}
+                  placeholder="Your BEEP password"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  required
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={connectingBeep || !beepEmail || !beepPassword}
+              className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-2 disabled:opacity-50"
+            >
+              <Link2 size={16} />
+              {connectingBeep ? 'Connecting...' : 'Connect BEEP Account'}
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Subscription Management */}

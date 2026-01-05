@@ -36,6 +36,8 @@ export interface Hive {
   user_id: string
   is_shared?: boolean
   shared_with_team?: string
+  beep_device_id?: string | null
+  beep_device_name?: string | null
   archive_reason_value?: {
     value?: string
   }
