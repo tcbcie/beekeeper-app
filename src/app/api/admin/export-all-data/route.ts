@@ -102,7 +102,8 @@ export async function POST(request: NextRequest) {
         'varroa_checks',
         'varroa_treatment_products',
         'varroa_treatments',
-        'wild_colonies'
+        'wild_colonies',
+        'wild_colony_inspections'
       ]
     } else {
       tables = tablesData.map((t: { table_name: string }) => t.table_name)
