@@ -1504,7 +1504,9 @@ export default function SettingsPage() {
           'team_members',
           'teams',
           'varroa_checks',
-          'varroa_treatments'
+          'varroa_treatments',
+          'wild_colonies',
+          'wild_colony_inspections'
         ]
 
         let sqlContent = `-- =====================================================\n`

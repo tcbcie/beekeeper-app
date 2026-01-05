@@ -37,6 +37,7 @@ interface WildColony {
   contact_phone: string | null
   share_contact_details: boolean
   last_edited_by: string | null
+  last_edited_at: string | null
   inspection_count?: number
 }
 
@@ -94,6 +95,7 @@ export default function WildColoniesPage() {
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [expandedColonyId, setExpandedColonyId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [lastEditorName, setLastEditorName] = useState<string | null>(null)
 
   // Location Aid photo upload
   const {
@@ -261,7 +263,7 @@ export default function WildColoniesPage() {
       if (editingColony) {
         const { error } = await supabase
           .from('wild_colonies')
-          .update({ ...dataToSave, last_edited_by: userId })
+          .update({ ...dataToSave, last_edited_by: userId, last_edited_at: new Date().toISOString() })
           .eq('id', editingColony.id)
 
         if (error) throw error
@@ -306,7 +308,7 @@ export default function WildColoniesPage() {
     }
   }
 
-  const handleEdit = (colony: WildColony) => {
+  const handleEdit = async (colony: WildColony) => {
     setEditingColony(colony)
     setFormData({
       latitude: colony.latitude.toString(),
@@ -324,6 +326,17 @@ export default function WildColoniesPage() {
     if (colony.image_url) {
       setColonyPreviewFromUrl(colony.image_url)
     }
+    // Fetch last editor's name if exists
+    if (colony.last_edited_by) {
+      const { data: editorProfile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', colony.last_edited_by)
+        .single()
+      setLastEditorName(editorProfile?.full_name || editorProfile?.email || null)
+    } else {
+      setLastEditorName(null)
+    }
     setShowForm(true)
   }
 
@@ -333,6 +346,7 @@ export default function WildColoniesPage() {
     setShowMapPicker(false)
     resetLocationImage()
     resetColonyImage()
+    setLastEditorName(null)
     setFormData({
       latitude: '',
       longitude: '',
@@ -417,8 +431,8 @@ export default function WildColoniesPage() {
                   </p>
                 )}
                 <p>Created: {formatDate(editingColony.created_at)}</p>
-                {editingColony.updated_at && editingColony.updated_at !== editingColony.created_at && (
-                  <p>Last edited: {formatDate(editingColony.updated_at)}</p>
+                {editingColony.last_edited_at && (
+                  <p>Last edited: {formatDate(editingColony.last_edited_at)}{lastEditorName && ` by ${lastEditorName}`}</p>
                 )}
               </div>
             )}
