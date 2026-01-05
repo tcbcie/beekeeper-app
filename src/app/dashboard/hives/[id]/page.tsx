@@ -9,6 +9,7 @@ import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
 import { RecordSection } from '@/components/hive/RecordSection'
 import ScaleSensorDisplay from '@/components/hive/ScaleSensorDisplay'
 import ScaleSelectionModal from '@/components/hive/ScaleSelectionModal'
+import ScaleHistoryChart from '@/components/hive/ScaleHistoryChart'
 import { useHiveDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
@@ -169,10 +170,18 @@ export default function HiveDetailPage() {
           </div>
 
           {hive.beep_device_id ? (
-            <ScaleSensorDisplay
-              deviceId={hive.beep_device_id}
-              deviceName={hive.beep_device_name || undefined}
-            />
+            <div className="space-y-6">
+              <ScaleSensorDisplay
+                deviceId={hive.beep_device_id}
+                deviceName={hive.beep_device_name || undefined}
+              />
+              <div className="border-t border-border pt-4">
+                <ScaleHistoryChart
+                  deviceId={hive.beep_device_id}
+                  deviceName={hive.beep_device_name || undefined}
+                />
+              </div>
+            </div>
           ) : (
             <div className="text-center py-6">
               <Scale size={32} className="mx-auto mb-2 text-text-tertiary" />

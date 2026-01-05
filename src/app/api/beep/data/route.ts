@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get device ID from query params
+    // Get device ID and period from query params
     const { searchParams } = new URL(request.url)
     const deviceId = searchParams.get('deviceId')
-    const includeHistory = searchParams.get('history') === 'true'
+    const period = searchParams.get('period') // 'hour' | 'day' | 'week' | 'month' | 'year'
 
     if (!deviceId) {
       return NextResponse.json({ error: 'Device ID required' }, { status: 400 })
@@ -47,16 +47,43 @@ export async function GET(request: NextRequest) {
     const lastValues = await beepGetLastValues(profile.beep_api_token, deviceId)
 
     let history = null
-    if (includeHistory) {
-      // Fetch last 7 days of data
-      const endDate = new Date().toISOString()
-      const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      history = await beepGetMeasurements(profile.beep_api_token, deviceId, startDate, endDate)
+    if (period) {
+      // Calculate date range based on period
+      const now = new Date()
+      let startDate: Date
+
+      switch (period) {
+        case 'hour':
+          startDate = new Date(now.getTime() - 60 * 60 * 1000)
+          break
+        case 'day':
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+          break
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          break
+        case 'month':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+          break
+        case 'year':
+          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+          break
+        default:
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000) // Default to day
+      }
+
+      history = await beepGetMeasurements(
+        profile.beep_api_token,
+        deviceId,
+        startDate.toISOString(),
+        now.toISOString()
+      )
     }
 
     return NextResponse.json({
       lastValues,
       history,
+      period,
     })
   } catch (error) {
     console.error('BEEP data error:', error)

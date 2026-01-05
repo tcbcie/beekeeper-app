@@ -864,3 +864,54 @@ Added to Hive interface:
 
 ---
 
+## Session 9: BEEP Sensor Historical Charts - January 5, 2026
+
+### Task
+Add graphical visualization of BEEP sensor data with time period filtering (hour, day, week, month, year).
+
+### Implementation Summary
+
+#### 1. Dependencies Installed
+- `chart.js` - Core charting library
+- `react-chartjs-2` - React wrapper for Chart.js
+- `chartjs-adapter-date-fns` - Time scale adapter
+
+#### 2. API Route Updated (`src/app/api/beep/data/route.ts`)
+Added `period` parameter to fetch different time ranges:
+- `hour` - Last 1 hour of data
+- `day` - Last 24 hours
+- `week` - Last 7 days
+- `month` - Last 30 days
+- `year` - Last 365 days
+
+#### 3. Chart Component Created (`src/components/hive/ScaleHistoryChart.tsx`)
+Features:
+- Line chart with dual Y-axes (weight in kg, temperature in °C)
+- Time period selector buttons (Hour, Day, Week, Month, Year)
+- Responsive design with dark mode support
+- Loading state with spinner
+- Error handling with retry button
+- Empty state message
+- Refresh button
+
+#### 4. Hive Detail Page Updated (`src/app/dashboard/hives/[id]/page.tsx`)
+- Added import for ScaleHistoryChart
+- Chart displays below ScaleSensorDisplay in Scale Data Card
+- Only shows when hive has BEEP device connected
+
+### Files Created/Modified
+
+| File | Action | Description |
+|------|--------|-------------|
+| `package.json` | MODIFIED | Added chart.js, react-chartjs-2, chartjs-adapter-date-fns |
+| `src/app/api/beep/data/route.ts` | MODIFIED | Added period parameter for flexible date ranges |
+| `src/components/hive/ScaleHistoryChart.tsx` | NEW | Chart component with time filters |
+| `src/app/dashboard/hives/[id]/page.tsx` | MODIFIED | Integrated chart below sensor display |
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+- Hive detail page size: 91.1 kB (includes Chart.js bundle)
+
+---
+
