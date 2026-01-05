@@ -1,13 +1,16 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
 import { RecordSection } from '@/components/hive/RecordSection'
+import ScaleSensorDisplay from '@/components/hive/ScaleSensorDisplay'
+import ScaleSelectionModal from '@/components/hive/ScaleSelectionModal'
 import { useHiveDetail } from '@/hooks'
+import { supabase } from '@/lib/supabase'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
 
 export default function HiveDetailPage() {
@@ -30,6 +33,48 @@ export default function HiveDetailPage() {
     handleCompleteTask,
     handleUnarchive,
   } = useHiveDetail(hiveId)
+
+  // Scale selection state
+  const [showScaleModal, setShowScaleModal] = useState(false)
+  const [beepConnected, setBeepConnected] = useState(false)
+
+  // Check if user has BEEP connected
+  const checkBeepConnection = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('beep_api_token')
+        .eq('id', session.user.id)
+        .single()
+
+      setBeepConnected(!!profile?.beep_api_token)
+    } catch (error) {
+      console.error('Error checking BEEP connection:', error)
+    }
+  }, [])
+
+  const handleDeviceSelect = useCallback(async (deviceId: string | null, deviceName: string | null) => {
+    const { error } = await supabase
+      .from('hives')
+      .update({
+        beep_device_id: deviceId,
+        beep_device_name: deviceName,
+      })
+      .eq('id', hiveId)
+
+    if (error) throw error
+
+    // Refresh hive data
+    const id = await getCurrentUserId()
+    if (id) fetchHiveData(id)
+  }, [hiveId, fetchHiveData])
+
+  useEffect(() => {
+    checkBeepConnection()
+  }, [checkBeepConnection])
 
   useEffect(() => {
     const initAuth = async () => {
@@ -104,6 +149,58 @@ export default function HiveDetailPage() {
         hiveId={hiveId}
         onCompleteTask={handleCompleteTask}
       />
+
+      {/* Scale Data Card */}
+      {beepConnected && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <Scale size={20} className="text-amber-600" />
+              Hive Scale
+            </h2>
+            {isOwner && (
+              <button
+                onClick={() => setShowScaleModal(true)}
+                className="px-3 py-1.5 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 font-medium"
+              >
+                {hive.beep_device_id ? 'Change Scale' : 'Connect Scale'}
+              </button>
+            )}
+          </div>
+
+          {hive.beep_device_id ? (
+            <ScaleSensorDisplay
+              deviceId={hive.beep_device_id}
+              deviceName={hive.beep_device_name || undefined}
+            />
+          ) : (
+            <div className="text-center py-6">
+              <Scale size={32} className="mx-auto mb-2 text-text-tertiary" />
+              <p className="text-text-secondary">No scale connected to this hive</p>
+              {isOwner && (
+                <button
+                  onClick={() => setShowScaleModal(true)}
+                  className="mt-3 text-sm text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  Connect a scale from your BEEP account
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Scale Selection Modal */}
+      {hive && (
+        <ScaleSelectionModal
+          isOpen={showScaleModal}
+          onClose={() => setShowScaleModal(false)}
+          hiveId={hiveId}
+          hiveNumber={hive.hive_number}
+          currentDeviceId={hive.beep_device_id || null}
+          onDeviceSelect={handleDeviceSelect}
+        />
+      )}
 
       {/* Configuration History - Separate Card */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
