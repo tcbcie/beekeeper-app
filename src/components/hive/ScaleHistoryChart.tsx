@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { RefreshCw, AlertCircle } from 'lucide-react'
+import { RefreshCw, AlertCircle, Calendar } from 'lucide-react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,7 +30,7 @@ ChartJS.register(
   TimeScale
 )
 
-type Period = 'hour' | 'day' | 'week' | 'month' | 'year'
+type Period = 'hour' | 'day' | 'week' | 'month' | 'year' | 'custom'
 
 interface ScaleHistoryChartProps {
   deviceId: string
@@ -44,13 +44,27 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: 'week', label: 'Week' },
   { value: 'month', label: 'Month' },
   { value: 'year', label: 'Year' },
+  { value: 'custom', label: 'Custom' },
 ]
+
+// Get date string in YYYY-MM-DD format for input[type="date"]
+const formatDateForInput = (date: Date): string => {
+  return date.toISOString().split('T')[0]
+}
 
 export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: ScaleHistoryChartProps) {
   const [period, setPeriod] = useState<Period>('day')
   const [history, setHistory] = useState<BeepSensorReading[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Custom date range state
+  const [customStartDate, setCustomStartDate] = useState<string>(() => {
+    const date = new Date()
+    date.setDate(date.getDate() - 7) // Default to 7 days ago
+    return formatDateForInput(date)
+  })
+  const [customEndDate, setCustomEndDate] = useState<string>(() => formatDateForInput(new Date()))
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -63,9 +77,13 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         return
       }
 
-      const url = hiveId
-        ? `/api/beep/data?deviceId=${deviceId}&period=${period}&hiveId=${hiveId}`
-        : `/api/beep/data?deviceId=${deviceId}&period=${period}`
+      let url = `/api/beep/data?deviceId=${deviceId}&period=${period}`
+      if (hiveId) {
+        url += `&hiveId=${hiveId}`
+      }
+      if (period === 'custom') {
+        url += `&startDate=${customStartDate}&endDate=${customEndDate}`
+      }
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       })
@@ -82,7 +100,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
     } finally {
       setLoading(false)
     }
-  }, [deviceId, period, hiveId])
+  }, [deviceId, period, hiveId, customStartDate, customEndDate])
 
   useEffect(() => {
     fetchHistory()
@@ -103,7 +121,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         backgroundColor: 'rgba(217, 119, 6, 0.1)',
         yAxisID: 'y',
         tension: 0.3,
-        pointRadius: period === 'hour' || period === 'day' ? 2 : 0,
+        pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
       },
       {
         label: 'Temperature (°C)',
@@ -112,9 +130,25 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         backgroundColor: 'rgba(37, 99, 235, 0.1)',
         yAxisID: 'y1',
         tension: 0.3,
-        pointRadius: period === 'hour' || period === 'day' ? 2 : 0,
+        pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
       },
     ],
+  }
+
+  // Determine time unit for custom range based on date span
+  const getTimeUnit = (): 'minute' | 'hour' | 'day' | 'month' => {
+    if (period === 'custom') {
+      const start = new Date(customStartDate)
+      const end = new Date(customEndDate)
+      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      if (diffDays <= 1) return 'hour'
+      if (diffDays <= 14) return 'day'
+      return 'month'
+    }
+    if (period === 'hour') return 'minute'
+    if (period === 'day') return 'hour'
+    if (period === 'week' || period === 'month') return 'day'
+    return 'month'
   }
 
   const chartOptions: ChartOptions<'line'> = {
@@ -144,7 +178,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
       x: {
         type: 'time',
         time: {
-          unit: period === 'hour' ? 'minute' : period === 'day' ? 'hour' : period === 'week' ? 'day' : period === 'month' ? 'day' : 'month',
+          unit: getTimeUnit(),
           displayFormats: {
             minute: 'HH:mm',
             hour: 'HH:mm',
@@ -228,6 +262,26 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
           </button>
         ))}
       </div>
+
+      {/* Custom date range picker */}
+      {period === 'custom' && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Calendar size={16} className="text-text-tertiary" />
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => setCustomStartDate(e.target.value)}
+            className="px-2 py-1 text-sm rounded-lg border border-sage-200 dark:border-slate-600 bg-background text-foreground"
+          />
+          <span className="text-text-tertiary">to</span>
+          <input
+            type="date"
+            value={customEndDate}
+            onChange={(e) => setCustomEndDate(e.target.value)}
+            className="px-2 py-1 text-sm rounded-lg border border-sage-200 dark:border-slate-600 bg-background text-foreground"
+          />
+        </div>
+      )}
 
       {/* Chart container */}
       <div className="h-64 relative">
