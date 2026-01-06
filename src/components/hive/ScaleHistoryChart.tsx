@@ -35,6 +35,7 @@ type Period = 'hour' | 'day' | 'week' | 'month' | 'year'
 interface ScaleHistoryChartProps {
   deviceId: string
   deviceName?: string
+  hiveId?: string
 }
 
 const PERIODS: { value: Period; label: string }[] = [
@@ -45,7 +46,7 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: 'year', label: 'Year' },
 ]
 
-export default function ScaleHistoryChart({ deviceId, deviceName }: ScaleHistoryChartProps) {
+export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: ScaleHistoryChartProps) {
   const [period, setPeriod] = useState<Period>('day')
   const [history, setHistory] = useState<BeepSensorReading[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +63,10 @@ export default function ScaleHistoryChart({ deviceId, deviceName }: ScaleHistory
         return
       }
 
-      const response = await fetch(`/api/beep/data?deviceId=${deviceId}&period=${period}`, {
+      const url = hiveId
+        ? `/api/beep/data?deviceId=${deviceId}&period=${period}&hiveId=${hiveId}`
+        : `/api/beep/data?deviceId=${deviceId}&period=${period}`
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       })
 
@@ -78,7 +82,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName }: ScaleHistory
     } finally {
       setLoading(false)
     }
-  }, [deviceId, period])
+  }, [deviceId, period, hiveId])
 
   useEffect(() => {
     fetchHistory()

@@ -7,9 +7,10 @@ import type { BeepSensorReading } from '@/lib/beep-api'
 interface ScaleSensorDisplayProps {
   deviceId: string
   deviceName?: string
+  hiveId?: string
 }
 
-export default function ScaleSensorDisplay({ deviceId, deviceName }: ScaleSensorDisplayProps) {
+export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: ScaleSensorDisplayProps) {
   const [sensorData, setSensorData] = useState<BeepSensorReading | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +25,10 @@ export default function ScaleSensorDisplay({ deviceId, deviceName }: ScaleSensor
         return
       }
 
-      const response = await fetch(`/api/beep/data?deviceId=${deviceId}`, {
+      const url = hiveId
+        ? `/api/beep/data?deviceId=${deviceId}&hiveId=${hiveId}`
+        : `/api/beep/data?deviceId=${deviceId}`
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       })
 
@@ -41,7 +45,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName }: ScaleSensor
     } finally {
       setLoading(false)
     }
-  }, [deviceId])
+  }, [deviceId, hiveId])
 
   useEffect(() => {
     fetchSensorData()
