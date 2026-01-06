@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore } from 'lucide-react'
+import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore, Scale } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -92,6 +92,7 @@ interface Hive {
     type: string
   } | null
   active_tasks_count?: number
+  beep_device_id?: string | null
 }
 
 interface FormData {
@@ -1606,7 +1607,14 @@ export default function HivesPage() {
 
             <div className="flex justify-between items-start mb-3">
               <div className="flex flex-col gap-1">
-                <h3 className="text-xl font-bold text-foreground">{hive.hive_number}</h3>
+                <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  {hive.hive_number}
+                  {hive.beep_device_id && (
+                    <span title="Scale connected">
+                      <Scale size={18} className="text-amber-600" />
+                    </span>
+                  )}
+                </h3>
                 {hive.is_shared && hive.team_name && (
                   <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
                     <span>👥</span>
