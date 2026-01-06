@@ -23,28 +23,61 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get device ID and period from query params
+    // Get device ID, hive ID, and period from query params
     const { searchParams } = new URL(request.url)
     const deviceId = searchParams.get('deviceId')
+    const hiveId = searchParams.get('hiveId')
     const period = searchParams.get('period') // 'hour' | 'day' | 'week' | 'month' | 'year'
 
     if (!deviceId) {
       return NextResponse.json({ error: 'Device ID required' }, { status: 400 })
     }
 
-    // Get BEEP API token from user's profile
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('beep_api_token')
-      .eq('id', user.id)
-      .single()
+    let beepApiToken: string | null = null
 
-    if (profileError || !profile?.beep_api_token) {
+    if (hiveId) {
+      // For shared hives: get the BEEP token from the hive owner
+      const { data: hive, error: hiveError } = await supabaseAdmin
+        .from('hives')
+        .select('user_id, beep_device_id, is_shared')
+        .eq('id', hiveId)
+        .single()
+
+      if (hiveError || !hive) {
+        return NextResponse.json({ error: 'Hive not found' }, { status: 404 })
+      }
+
+      // Verify user has access (is owner or hive is shared)
+      const isOwner = hive.user_id === user.id
+      if (!isOwner && !hive.is_shared) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      }
+
+      // Get BEEP token from hive owner's profile
+      const { data: ownerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('beep_api_token')
+        .eq('id', hive.user_id)
+        .single()
+
+      beepApiToken = ownerProfile?.beep_api_token || null
+    } else {
+      // Fallback: use current user's token (for owner viewing their own hive)
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('beep_api_token')
+        .eq('id', user.id)
+        .single()
+
+      beepApiToken = profile?.beep_api_token || null
+    }
+
+    if (!beepApiToken) {
       return NextResponse.json({ error: 'BEEP not connected' }, { status: 400 })
     }
 
     // Fetch latest sensor values
-    const lastValues = await beepGetLastValues(profile.beep_api_token, deviceId)
+    const lastValues = await beepGetLastValues(beepApiToken, deviceId)
 
     let history = null
     if (period) {
@@ -73,7 +106,7 @@ export async function GET(request: NextRequest) {
       }
 
       history = await beepGetMeasurements(
-        profile.beep_api_token,
+        beepApiToken,
         deviceId,
         startDate.toISOString(),
         now.toISOString()

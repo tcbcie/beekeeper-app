@@ -151,15 +151,15 @@ export default function HiveDetailPage() {
         onCompleteTask={handleCompleteTask}
       />
 
-      {/* Scale Data Card */}
-      {beepConnected && (
+      {/* Scale Data Card - Show if hive has device OR owner can connect one */}
+      {(hive.beep_device_id || (beepConnected && isOwner)) && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
               <Scale size={20} className="text-amber-600" />
               Hive Scale
             </h2>
-            {isOwner && (
+            {isOwner && beepConnected && (
               <button
                 onClick={() => setShowScaleModal(true)}
                 className="px-3 py-1.5 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 font-medium"
@@ -174,11 +174,13 @@ export default function HiveDetailPage() {
               <ScaleSensorDisplay
                 deviceId={hive.beep_device_id}
                 deviceName={hive.beep_device_name || undefined}
+                hiveId={hiveId}
               />
               <div className="border-t border-border pt-4">
                 <ScaleHistoryChart
                   deviceId={hive.beep_device_id}
                   deviceName={hive.beep_device_name || undefined}
+                  hiveId={hiveId}
                 />
               </div>
             </div>
