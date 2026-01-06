@@ -23,11 +23,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get device ID, hive ID, and period from query params
+    // Get device ID, hive ID, period, and custom dates from query params
     const { searchParams } = new URL(request.url)
     const deviceId = searchParams.get('deviceId')
     const hiveId = searchParams.get('hiveId')
-    const period = searchParams.get('period') // 'hour' | 'day' | 'week' | 'month' | 'year'
+    const period = searchParams.get('period') // 'hour' | 'day' | 'week' | 'month' | 'year' | 'custom'
+    const customStart = searchParams.get('startDate')
+    const customEnd = searchParams.get('endDate')
 
     if (!deviceId) {
       return NextResponse.json({ error: 'Device ID required' }, { status: 400 })
@@ -80,36 +82,45 @@ export async function GET(request: NextRequest) {
     const lastValues = await beepGetLastValues(beepApiToken, deviceId)
 
     let history = null
-    if (period) {
-      // Calculate date range based on period
+    if (period || (customStart && customEnd)) {
       const now = new Date()
       let startDate: Date
+      let endDate: Date = now
 
-      switch (period) {
-        case 'hour':
-          startDate = new Date(now.getTime() - 60 * 60 * 1000)
-          break
-        case 'day':
-          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-          break
-        case 'week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-          break
-        case 'month':
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-          break
-        case 'year':
-          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
-          break
-        default:
-          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000) // Default to day
+      if (period === 'custom' && customStart && customEnd) {
+        // Use custom date range
+        startDate = new Date(customStart)
+        endDate = new Date(customEnd)
+        // Set end date to end of day
+        endDate.setHours(23, 59, 59, 999)
+      } else {
+        // Calculate date range based on period
+        switch (period) {
+          case 'hour':
+            startDate = new Date(now.getTime() - 60 * 60 * 1000)
+            break
+          case 'day':
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+            break
+          case 'week':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            break
+          case 'month':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+            break
+          case 'year':
+            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+            break
+          default:
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000) // Default to day
+        }
       }
 
       history = await beepGetMeasurements(
         beepApiToken,
         deviceId,
         startDate.toISOString(),
-        now.toISOString()
+        endDate.toISOString()
       )
     }
 

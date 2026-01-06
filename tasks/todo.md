@@ -915,3 +915,39 @@ Features:
 
 ---
 
+## Session 10: Custom Date Range for Scale Charts - January 6, 2026
+
+### Task
+Add a custom date picker to the scale history charts so users can select their own date range in addition to the preset periods (hour, day, week, month, year).
+
+### Implementation Summary
+
+#### 1. API Route Updated (`src/app/api/beep/data/route.ts`)
+Added support for custom date range:
+- Added `startDate` and `endDate` query parameters
+- When `period === 'custom'`, uses provided dates instead of calculating range
+- End date set to end of day (23:59:59.999) to include full day
+
+#### 2. Chart Component Updated (`src/components/hive/ScaleHistoryChart.tsx`)
+Added custom date picker:
+- Added `'custom'` to Period type
+- Added `customStartDate` and `customEndDate` state (defaults to last 7 days)
+- Added `formatDateForInput()` helper for date input format
+- Added `getTimeUnit()` function for dynamic time axis based on date span
+- Added "Custom" button to period selector
+- Added date picker UI with Calendar icon that appears when Custom is selected
+- Added date inputs to fetchHistory dependencies
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/api/beep/data/route.ts` | Added custom date range support |
+| `src/components/hive/ScaleHistoryChart.tsx` | Added custom period with date picker UI |
+
+### Build Verification
+- `npm run build` passed successfully
+- No TypeScript errors
+
+---
+
