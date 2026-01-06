@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       // For shared hives: get the BEEP token from the hive owner
       const { data: hive, error: hiveError } = await supabaseAdmin
         .from('hives')
-        .select('user_id, beep_device_id, is_shared')
+        .select('user_id, beep_device_id, apiary_id')
         .eq('id', hiveId)
         .single()
 
@@ -49,10 +49,20 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Hive not found' }, { status: 404 })
       }
 
-      // Verify user has access (is owner or hive is shared)
+      // Verify user has access (is owner or has team access via apiary)
       const isOwner = hive.user_id === user.id
-      if (!isOwner && !hive.is_shared) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      if (!isOwner) {
+        // Check if user has team access to this hive's apiary
+        const { data: teamAccess } = await supabaseAdmin
+          .from('team_apiaries')
+          .select('id, teams!inner(team_members!inner(user_id))')
+          .eq('apiary_id', hive.apiary_id)
+          .eq('teams.team_members.user_id', user.id)
+          .limit(1)
+
+        if (!teamAccess || teamAccess.length === 0) {
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        }
       }
 
       // Get BEEP token from hive owner's profile
