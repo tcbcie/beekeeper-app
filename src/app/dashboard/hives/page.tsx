@@ -93,6 +93,7 @@ interface Hive {
   } | null
   active_tasks_count?: number
   beep_device_id?: string | null
+  wolf_scale_id?: string | null
 }
 
 interface FormData {
@@ -1610,8 +1611,13 @@ export default function HivesPage() {
                 <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
                   {hive.hive_number}
                   {hive.beep_device_id && (
-                    <span title="Scale connected">
+                    <span title="BEEP scale connected">
                       <Scale size={18} className="text-amber-600" />
+                    </span>
+                  )}
+                  {hive.wolf_scale_id && (
+                    <span title="Wolf Waagen scale connected">
+                      <Scale size={18} className="text-blue-600" />
                     </span>
                   )}
                 </h3>

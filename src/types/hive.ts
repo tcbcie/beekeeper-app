@@ -38,6 +38,8 @@ export interface Hive {
   shared_with_team?: string
   beep_device_id?: string | null
   beep_device_name?: string | null
+  wolf_scale_id?: string | null
+  wolf_scale_name?: string | null
   archive_reason_value?: {
     value?: string
   }
