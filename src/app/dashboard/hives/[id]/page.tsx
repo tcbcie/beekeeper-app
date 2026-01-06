@@ -10,6 +10,9 @@ import { RecordSection } from '@/components/hive/RecordSection'
 import ScaleSensorDisplay from '@/components/hive/ScaleSensorDisplay'
 import ScaleSelectionModal from '@/components/hive/ScaleSelectionModal'
 import ScaleHistoryChart from '@/components/hive/ScaleHistoryChart'
+import WolfSensorDisplay from '@/components/hive/WolfSensorDisplay'
+import WolfScaleSelectionModal from '@/components/hive/WolfScaleSelectionModal'
+import WolfHistoryChart from '@/components/hive/WolfHistoryChart'
 import { useHiveDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
@@ -38,6 +41,8 @@ export default function HiveDetailPage() {
   // Scale selection state
   const [showScaleModal, setShowScaleModal] = useState(false)
   const [beepConnected, setBeepConnected] = useState(false)
+  const [showWolfModal, setShowWolfModal] = useState(false)
+  const [wolfConnected, setWolfConnected] = useState(false)
 
   // Check if user has BEEP connected
   const checkBeepConnection = useCallback(async () => {
@@ -57,6 +62,24 @@ export default function HiveDetailPage() {
     }
   }, [])
 
+  // Check if user has Wolf Waagen connected
+  const checkWolfConnection = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('wolf_api_token')
+        .eq('id', session.user.id)
+        .single()
+
+      setWolfConnected(!!profile?.wolf_api_token)
+    } catch (error) {
+      console.error('Error checking Wolf Waagen connection:', error)
+    }
+  }, [])
+
   const handleDeviceSelect = useCallback(async (deviceId: string | null, deviceName: string | null) => {
     const { error } = await supabase
       .from('hives')
@@ -73,9 +96,26 @@ export default function HiveDetailPage() {
     if (id) fetchHiveData(id)
   }, [hiveId, fetchHiveData])
 
+  const handleWolfScaleSelect = useCallback(async (scaleId: string | null, scaleName: string | null) => {
+    const { error } = await supabase
+      .from('hives')
+      .update({
+        wolf_scale_id: scaleId,
+        wolf_scale_name: scaleName,
+      })
+      .eq('id', hiveId)
+
+    if (error) throw error
+
+    // Refresh hive data
+    const id = await getCurrentUserId()
+    if (id) fetchHiveData(id)
+  }, [hiveId, fetchHiveData])
+
   useEffect(() => {
     checkBeepConnection()
-  }, [checkBeepConnection])
+    checkWolfConnection()
+  }, [checkBeepConnection, checkWolfConnection])
 
   useEffect(() => {
     const initAuth = async () => {
@@ -210,6 +250,68 @@ export default function HiveDetailPage() {
           hiveNumber={hive.hive_number}
           currentDeviceId={hive.beep_device_id || null}
           onDeviceSelect={handleDeviceSelect}
+        />
+      )}
+
+      {/* Wolf Waagen Scale Data Card - Show if hive has Wolf scale OR owner can connect one */}
+      {(hive.wolf_scale_id || (wolfConnected && isOwner)) && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <Scale size={20} className="text-blue-600" />
+              Wolf Waagen Scale
+            </h2>
+            {isOwner && wolfConnected && (
+              <button
+                onClick={() => setShowWolfModal(true)}
+                className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium"
+              >
+                {hive.wolf_scale_id ? 'Change Scale' : 'Connect Scale'}
+              </button>
+            )}
+          </div>
+
+          {hive.wolf_scale_id ? (
+            <div className="space-y-6">
+              <WolfSensorDisplay
+                scaleId={hive.wolf_scale_id}
+                scaleName={hive.wolf_scale_name || undefined}
+                hiveId={hiveId}
+              />
+              <div className="border-t border-border pt-4">
+                <WolfHistoryChart
+                  scaleId={hive.wolf_scale_id}
+                  scaleName={hive.wolf_scale_name || undefined}
+                  hiveId={hiveId}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <Scale size={32} className="mx-auto mb-2 text-text-tertiary" />
+              <p className="text-text-secondary">No Wolf Waagen scale connected to this hive</p>
+              {isOwner && (
+                <button
+                  onClick={() => setShowWolfModal(true)}
+                  className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Connect a scale from your Wolf Waagen account
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Wolf Scale Selection Modal */}
+      {hive && (
+        <WolfScaleSelectionModal
+          isOpen={showWolfModal}
+          onClose={() => setShowWolfModal(false)}
+          hiveId={hiveId}
+          hiveNumber={hive.hive_number}
+          currentScaleId={hive.wolf_scale_id || null}
+          onScaleSelect={handleWolfScaleSelect}
         />
       )}
 
