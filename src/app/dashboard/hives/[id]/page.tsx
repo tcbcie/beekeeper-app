@@ -81,11 +81,14 @@ export default function HiveDetailPage() {
   }, [])
 
   const handleDeviceSelect = useCallback(async (deviceId: string | null, deviceName: string | null) => {
+    // Clear Wolf scale when assigning BEEP scale (only one scale per hive)
     const { error } = await supabase
       .from('hives')
       .update({
         beep_device_id: deviceId,
         beep_device_name: deviceName,
+        wolf_scale_id: deviceId ? null : undefined,
+        wolf_scale_name: deviceId ? null : undefined,
       })
       .eq('id', hiveId)
 
@@ -97,11 +100,14 @@ export default function HiveDetailPage() {
   }, [hiveId, fetchHiveData])
 
   const handleWolfScaleSelect = useCallback(async (scaleId: string | null, scaleName: string | null) => {
+    // Clear BEEP scale when assigning Wolf scale (only one scale per hive)
     const { error } = await supabase
       .from('hives')
       .update({
         wolf_scale_id: scaleId,
         wolf_scale_name: scaleName,
+        beep_device_id: scaleId ? null : undefined,
+        beep_device_name: scaleId ? null : undefined,
       })
       .eq('id', hiveId)
 
@@ -191,20 +197,26 @@ export default function HiveDetailPage() {
         onCompleteTask={handleCompleteTask}
       />
 
-      {/* Scale Data Card - Show if hive has device OR owner can connect one */}
-      {(hive.beep_device_id || (beepConnected && isOwner)) && (
+      {/* Hive Scale Card - Show if hive has any scale OR owner can connect one */}
+      {(hive.beep_device_id || hive.wolf_scale_id || ((beepConnected || wolfConnected) && isOwner)) && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <Scale size={20} className="text-amber-600" />
+              <Scale size={20} className={hive.wolf_scale_id ? 'text-blue-600' : 'text-amber-600'} />
               Hive Scale
+              {hive.beep_device_id && <span className="text-xs text-amber-600 font-normal">(BEEP)</span>}
+              {hive.wolf_scale_id && <span className="text-xs text-blue-600 font-normal">(Wolf Waagen)</span>}
             </h2>
-            {isOwner && beepConnected && (
+            {isOwner && (hive.beep_device_id || hive.wolf_scale_id) && (
               <button
-                onClick={() => setShowScaleModal(true)}
-                className="px-3 py-1.5 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 font-medium"
+                onClick={() => hive.wolf_scale_id ? setShowWolfModal(true) : setShowScaleModal(true)}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium ${
+                  hive.wolf_scale_id
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                    : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+                }`}
               >
-                {hive.beep_device_id ? 'Change Scale' : 'Connect Scale'}
+                Change Scale
               </button>
             )}
           </div>
@@ -224,54 +236,7 @@ export default function HiveDetailPage() {
                 />
               </div>
             </div>
-          ) : (
-            <div className="text-center py-6">
-              <Scale size={32} className="mx-auto mb-2 text-text-tertiary" />
-              <p className="text-text-secondary">No scale connected to this hive</p>
-              {isOwner && (
-                <button
-                  onClick={() => setShowScaleModal(true)}
-                  className="mt-3 text-sm text-amber-600 hover:text-amber-700 font-medium"
-                >
-                  Connect a scale from your BEEP account
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Scale Selection Modal */}
-      {hive && (
-        <ScaleSelectionModal
-          isOpen={showScaleModal}
-          onClose={() => setShowScaleModal(false)}
-          hiveId={hiveId}
-          hiveNumber={hive.hive_number}
-          currentDeviceId={hive.beep_device_id || null}
-          onDeviceSelect={handleDeviceSelect}
-        />
-      )}
-
-      {/* Wolf Waagen Scale Data Card - Show if hive has Wolf scale OR owner can connect one */}
-      {(hive.wolf_scale_id || (wolfConnected && isOwner)) && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <Scale size={20} className="text-blue-600" />
-              Wolf Waagen Scale
-            </h2>
-            {isOwner && wolfConnected && (
-              <button
-                onClick={() => setShowWolfModal(true)}
-                className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium"
-              >
-                {hive.wolf_scale_id ? 'Change Scale' : 'Connect Scale'}
-              </button>
-            )}
-          </div>
-
-          {hive.wolf_scale_id ? (
+          ) : hive.wolf_scale_id ? (
             <div className="space-y-6">
               <WolfSensorDisplay
                 scaleId={hive.wolf_scale_id}
@@ -289,21 +254,43 @@ export default function HiveDetailPage() {
           ) : (
             <div className="text-center py-6">
               <Scale size={32} className="mx-auto mb-2 text-text-tertiary" />
-              <p className="text-text-secondary">No Wolf Waagen scale connected to this hive</p>
+              <p className="text-text-secondary">No scale connected to this hive</p>
               {isOwner && (
-                <button
-                  onClick={() => setShowWolfModal(true)}
-                  className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Connect a scale from your Wolf Waagen account
-                </button>
+                <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                  {beepConnected && (
+                    <button
+                      onClick={() => setShowScaleModal(true)}
+                      className="px-4 py-2 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 font-medium"
+                    >
+                      Connect BEEP Scale
+                    </button>
+                  )}
+                  {wolfConnected && (
+                    <button
+                      onClick={() => setShowWolfModal(true)}
+                      className="px-4 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium"
+                    >
+                      Connect Wolf Scale
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* Wolf Scale Selection Modal */}
+      {/* Scale Selection Modals */}
+      {hive && (
+        <ScaleSelectionModal
+          isOpen={showScaleModal}
+          onClose={() => setShowScaleModal(false)}
+          hiveId={hiveId}
+          hiveNumber={hive.hive_number}
+          currentDeviceId={hive.beep_device_id || null}
+          onDeviceSelect={handleDeviceSelect}
+        />
+      )}
       {hive && (
         <WolfScaleSelectionModal
           isOpen={showWolfModal}
