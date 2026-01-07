@@ -27,7 +27,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
   const fetchInspections = useCallback(async () => {
     const { data, error } = await supabase
       .from('wild_colony_inspections')
-      .select('*, profiles:user_id(first_name, last_name, full_name)')
+      .select('*')
       .eq('wild_colony_id', colonyId)
       .order('inspection_date', { ascending: false })
 
@@ -35,21 +35,35 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
       console.error('Error fetching inspections:', error)
       toast.error('Failed to load inspections')
     } else {
-      // Fetch last editor profiles separately for records that have been edited
-      const inspectionsWithEditors = await Promise.all(
+      // Fetch creator and editor profiles separately (no FK relationship exists)
+      const inspectionsWithProfiles = await Promise.all(
         (data || []).map(async (inspection) => {
+          let result = { ...inspection }
+
+          // Fetch creator profile
+          if (inspection.user_id) {
+            const { data: creatorProfile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, full_name')
+              .eq('id', inspection.user_id)
+              .single()
+            result.profiles = creatorProfile
+          }
+
+          // Fetch editor profile if edited
           if (inspection.last_edited_by) {
             const { data: editorProfile } = await supabase
               .from('profiles')
               .select('first_name, last_name, full_name')
               .eq('id', inspection.last_edited_by)
               .single()
-            return { ...inspection, last_editor: editorProfile }
+            result.last_editor = editorProfile
           }
-          return inspection
+
+          return result
         })
       )
-      setInspections(inspectionsWithEditors)
+      setInspections(inspectionsWithProfiles)
     }
     setLoading(false)
   }, [colonyId, toast])
