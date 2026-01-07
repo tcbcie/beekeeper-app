@@ -134,7 +134,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
   return (
     <div className="p-6 bg-sage-50 dark:bg-slate-800/30 border-t border-border">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-4 mb-4">
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <ClipboardList size={20} className="text-amber-600" />
           Inspections ({inspections.length})
