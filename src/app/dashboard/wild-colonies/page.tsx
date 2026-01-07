@@ -1016,6 +1016,7 @@ export default function WildColoniesPage() {
                             userId={userId}
                             colonyLatitude={colony.latitude}
                             colonyLongitude={colony.longitude}
+                            onInspectionChange={fetchColonies}
                           />
                         </td>
                       </tr>
