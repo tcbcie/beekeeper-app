@@ -38,7 +38,8 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
       // Fetch creator and editor profiles separately (no FK relationship exists)
       const inspectionsWithProfiles = await Promise.all(
         (data || []).map(async (inspection) => {
-          const result: Record<string, unknown> = { ...inspection }
+          let profiles = null
+          let last_editor = null
 
           // Fetch creator profile
           if (inspection.user_id) {
@@ -47,7 +48,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
               .select('first_name, last_name, full_name')
               .eq('id', inspection.user_id)
               .single()
-            result.profiles = creatorProfile
+            profiles = creatorProfile
           }
 
           // Fetch editor profile if edited
@@ -57,10 +58,10 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
               .select('first_name, last_name, full_name')
               .eq('id', inspection.last_edited_by)
               .single()
-            result.last_editor = editorProfile
+            last_editor = editorProfile
           }
 
-          return result
+          return { ...inspection, profiles, last_editor } as WildColonyInspection
         })
       )
       setInspections(inspectionsWithProfiles)
