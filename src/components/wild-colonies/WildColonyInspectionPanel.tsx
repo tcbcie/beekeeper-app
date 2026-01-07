@@ -170,7 +170,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
   }
 
   return (
-    <div className="p-6 bg-sage-50 dark:bg-slate-800/30 border-t border-border">
+    <div className="p-4 md:p-6 bg-sage-50 dark:bg-slate-800/30 border-t border-border max-w-4xl">
       {/* Header */}
       <div className="flex items-center flex-wrap gap-3 mb-4">
         {!showForm && (
@@ -233,7 +233,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
           <p className="text-sm mt-1">Click &quot;Add Inspection&quot; to record your first observation.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {inspections.map((inspection) => (
             <WildColonyInspectionCard
               key={inspection.id}
