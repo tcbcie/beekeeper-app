@@ -15,9 +15,10 @@ interface WildColonyInspectionPanelProps {
   colonyLatitude?: number
   colonyLongitude?: number
   onInspectionChange?: () => void
+  canEditAll?: boolean
 }
 
-export default function WildColonyInspectionPanel({ colonyId, userId, colonyLatitude, colonyLongitude, onInspectionChange }: WildColonyInspectionPanelProps) {
+export default function WildColonyInspectionPanel({ colonyId, userId, colonyLatitude, colonyLongitude, onInspectionChange, canEditAll = false }: WildColonyInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<WildColonyInspection[]>([])
   const [loading, setLoading] = useState(true)
@@ -237,7 +238,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
             <WildColonyInspectionCard
               key={inspection.id}
               inspection={inspection}
-              isOwner={inspection.user_id === userId}
+              isOwner={canEditAll || inspection.user_id === userId}
               onEdit={() => handleEdit(inspection)}
               onDelete={() => handleDelete(inspection.id)}
               onImageClick={(url) => window.open(url, '_blank')}
