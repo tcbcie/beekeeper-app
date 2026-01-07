@@ -45,7 +45,7 @@ export async function classifyQuery(query: string): Promise<{
   const systemPrompt = `You are a query classifier for a beekeeping app. Classify user queries into one of these categories:
 
 1. "sql" - Questions about the user's OWN data that can be answered by querying their database.
-   KEY SIGNALS: "my", "I have", "which hive", "which colony", "my varroa", "highest", "lowest", "most", "least", "how many", "when did I", "show me", "list my"
+   KEY SIGNALS: "my", "I have", "which hive", "which colony", "my varroa", "highest", "lowest", "most", "least", "how many", "when did I", "show me", "list my", "harvest", "yield", "honey production", "in 2024", "in 2025", "this year", "last year"
    Examples:
    - "How many hives do I have?"
    - "When was my last inspection?"
@@ -54,6 +54,8 @@ export async function classifyQuery(query: string): Promise<{
    - "Which hive needs treatment?"
    - "What's my average honey harvest?"
    - "List my apiaries"
+   - "Which colony had the highest honey yield in 2025?"
+   - "How much honey did I harvest this year?"
 
 2. "knowledge" - General beekeeping education/reference questions NOT about their specific data.
    KEY SIGNALS: "how do I", "what is", "why do bees", "best practices", "should I", "how to"

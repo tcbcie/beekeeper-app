@@ -60,7 +60,7 @@ export const getFeedingHistory: Tool = {
 // Get harvest summary
 export const getHarvestSummary: Tool = {
   name: 'getHarvestSummary',
-  description: 'Get total honey harvested per hive, apiary, or for a specific year',
+  description: 'Get honey harvest data including totals per hive/apiary, highest yield, best producing colony, harvest records for a year. Use for questions about honey production, yields, and harvests.',
   parameters: z.object({
     year: z.number().optional().describe('Filter by year (default current year)')
   }),
