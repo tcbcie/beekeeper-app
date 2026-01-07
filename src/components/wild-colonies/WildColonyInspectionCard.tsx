@@ -73,8 +73,8 @@ export default function WildColonyInspectionCard({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-border p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start gap-3">
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-border p-3 md:p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-2 md:gap-3">
         {/* Left Side: Actions */}
         {isOwner && (
           <div className="flex flex-col gap-1 shrink-0">
@@ -98,7 +98,7 @@ export default function WildColonyInspectionCard({
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center flex-wrap gap-2 mb-2">
             <div className="flex items-center gap-1.5 text-sm text-text-secondary">
               <Calendar size={14} />
               <span className="font-medium">{formatDate(inspection.inspection_date)}</span>
@@ -125,7 +125,7 @@ export default function WildColonyInspectionCard({
           </div>
 
           {/* Observations Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
             {/* Activity Level */}
             {inspection.activity_level > 0 && (
               <div>
@@ -169,7 +169,7 @@ export default function WildColonyInspectionCard({
           </div>
 
           {/* Boolean Indicators */}
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {inspection.pollen_observed && (
               <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
                 Pollen
@@ -199,7 +199,7 @@ export default function WildColonyInspectionCard({
 
           {/* Health Indicators */}
           {(inspection.dead_bees_observed || inspection.deformed_wings_observed) && (
-            <div className="flex items-center gap-3 mt-3 text-sm">
+            <div className="flex items-center gap-2 mt-2 text-sm">
               <Bug size={14} className="text-red-500" />
               {inspection.dead_bees_observed && (
                 <span className="text-red-600 dark:text-red-400">
@@ -223,13 +223,13 @@ export default function WildColonyInspectionCard({
 
           {/* Notes */}
           {inspection.notes && (
-            <div className="mt-3 p-2 bg-sage-50 dark:bg-slate-700/50 rounded text-sm text-text-secondary">
+            <div className="mt-2 p-2 bg-sage-50 dark:bg-slate-700/50 rounded text-sm text-text-secondary">
               {inspection.notes}
             </div>
           )}
 
           {/* Record Info: Created by and last edited */}
-          <div className="mt-3 pt-2 border-t border-border/50 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-tertiary">
+          <div className="mt-2 pt-2 border-t border-border/50 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
             {getUserDisplayName() && (
               <div className="flex items-center gap-1">
                 <User size={12} />
