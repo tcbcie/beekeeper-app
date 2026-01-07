@@ -14,9 +14,10 @@ interface WildColonyInspectionPanelProps {
   userId: string
   colonyLatitude?: number
   colonyLongitude?: number
+  onInspectionChange?: () => void
 }
 
-export default function WildColonyInspectionPanel({ colonyId, userId, colonyLatitude, colonyLongitude }: WildColonyInspectionPanelProps) {
+export default function WildColonyInspectionPanel({ colonyId, userId, colonyLatitude, colonyLongitude, onInspectionChange }: WildColonyInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<WildColonyInspection[]>([])
   const [loading, setLoading] = useState(true)
@@ -94,6 +95,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
     setShowForm(false)
     setEditingInspection(null)
     fetchInspections()
+    onInspectionChange?.()
   }
 
   const handleEdit = (inspection: WildColonyInspection) => {
@@ -115,6 +117,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
     } else {
       toast.success('Inspection deleted')
       fetchInspections()
+      onInspectionChange?.()
     }
   }
 
