@@ -170,7 +170,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
   }
 
   return (
-    <div className="p-4 md:p-6 bg-sage-50 dark:bg-slate-800/30 border-t border-border max-w-4xl">
+    <div className="p-4 md:p-6 bg-sage-50 dark:bg-slate-800/30 border-t border-border">
       {/* Header */}
       <div className="flex items-center flex-wrap gap-3 mb-4">
         {!showForm && (

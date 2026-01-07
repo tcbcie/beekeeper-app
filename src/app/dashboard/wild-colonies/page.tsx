@@ -880,18 +880,18 @@ export default function WildColoniesPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-sage-50 dark:bg-slate-800/50 border-b border-border text-xs uppercase text-text-secondary font-semibold">
-                  <th className="px-2 py-3 w-10"></th>
-                  <th className="px-4 py-3 w-24">Actions</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Inspections</th>
-                  <th className="px-4 py-3">Submitted By</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Location</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Size</th>
-                  <th className="px-4 py-3">Description</th>
-                  <th className="px-4 py-3">Location Photo</th>
-                  <th className="px-4 py-3">Colony Photo</th>
+                  <th className="px-1 py-2 w-8"></th>
+                  <th className="px-2 py-2">Actions</th>
+                  <th className="px-2 py-2">Status</th>
+                  <th className="px-2 py-2">Inspections</th>
+                  <th className="px-2 py-2">Submitted By</th>
+                  <th className="px-2 py-2">Date</th>
+                  <th className="px-2 py-2">Location</th>
+                  <th className="px-2 py-2">Type</th>
+                  <th className="px-2 py-2">Size</th>
+                  <th className="px-2 py-2">Description</th>
+                  <th className="px-2 py-2">Loc Photo</th>
+                  <th className="px-2 py-2">Colony Photo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -903,28 +903,28 @@ export default function WildColoniesPage() {
                       }`}
                       onClick={() => toggleExpanded(colony.id)}
                     >
-                      <td className="px-2 py-3">
+                      <td className="px-1 py-2">
                         <button
-                          className="p-1 text-text-secondary hover:text-foreground transition-colors"
+                          className="p-0.5 text-text-secondary hover:text-foreground transition-colors"
                           title={expandedColonyId === colony.id ? 'Collapse' : 'Expand inspections'}
                         >
                           {expandedColonyId === colony.id ? (
-                            <ChevronUp size={18} />
+                            <ChevronUp size={16} />
                           ) : (
-                            <ChevronDown size={18} />
+                            <ChevronDown size={16} />
                           )}
                         </button>
                       </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleEdit(colony)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                          className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                           title="Edit"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={14} />
                         </button>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-2">
                         <span className={`px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center gap-1.5 ${
                           colony.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
                           colony.status === 'observed' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
@@ -935,75 +935,75 @@ export default function WildColoniesPage() {
                           {getStatusLabel(colony.status)}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 py-2">
                         {colony.inspection_count && colony.inspection_count > 0 ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                            <ClipboardList size={12} />
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                            <ClipboardList size={10} />
                             {colony.inspection_count}
                           </span>
                         ) : (
-                          <span className="text-text-tertiary text-sm">-</span>
+                          <span className="text-text-tertiary text-xs">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-secondary">
+                      <td className="px-2 py-2 text-xs text-text-secondary">
                         {getUserDisplayName(colony) ? (
                           <span className="flex items-center gap-1">
-                            <User size={14} className="text-text-tertiary" />
+                            <User size={12} className="text-text-tertiary" />
                             {getUserDisplayName(colony)}
                           </span>
                         ) : (
                           <span className="text-text-tertiary">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
+                      <td className="px-2 py-2 text-xs text-text-primary whitespace-nowrap">
                         {formatDate(colony.observation_date)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-secondary whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-2 text-xs text-text-secondary whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${colony.latitude},${colony.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="hover:text-blue-600 flex items-center gap-1"
                         >
-                          <MapPin size={14} />
+                          <MapPin size={12} />
                           {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
                         </a>
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-primary">
+                      <td className="px-2 py-2 text-xs text-text-primary">
                         {getNestingTypeLabel(colony.nesting_type)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-primary">
+                      <td className="px-2 py-2 text-xs text-text-primary">
                         {getSizeLabel(colony.estimated_size)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-secondary max-w-xs truncate" title={colony.entrance_description || ''}>
+                      <td className="px-2 py-2 text-xs text-text-secondary max-w-[120px] truncate" title={colony.entrance_description || ''}>
                         {colony.entrance_description || '-'}
                       </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
                         {colony.image_url_location ? (
                           <Image
                             src={colony.image_url_location}
                             alt="Location"
-                            width={40}
-                            height={40}
-                            className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 object-cover rounded border border-border cursor-pointer"
                             onClick={() => window.open(colony.image_url_location!, '_blank')}
                           />
                         ) : (
-                          <span className="text-text-tertiary">-</span>
+                          <span className="text-text-tertiary text-xs">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
                         {colony.image_url ? (
                           <Image
                             src={colony.image_url}
                             alt="Colony"
-                            width={40}
-                            height={40}
-                            className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 object-cover rounded border border-border cursor-pointer"
                             onClick={() => window.open(colony.image_url!, '_blank')}
                           />
                         ) : (
-                          <span className="text-text-tertiary">-</span>
+                          <span className="text-text-tertiary text-xs">-</span>
                         )}
                       </td>
                     </tr>
