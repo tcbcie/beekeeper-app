@@ -951,3 +951,47 @@ Added custom date picker:
 
 ---
 
+## Session 11: Wild Colony Inspection Creator/Editor Tracking - January 7, 2026
+
+### Task
+Track and display who created and last edited wild colony inspection records.
+
+### Implementation Summary
+
+#### 1. Database Migration (`add_last_edited_by_to_wild_colony_inspections`)
+Added columns to `wild_colony_inspections` table:
+- `last_edited_by` (UUID) - References profiles.id
+- `last_edited_at` (TIMESTAMPTZ) - Timestamp of last edit
+
+#### 2. TypeScript Types Updated (`src/types/wild-colonies.ts`)
+Added to `WildColonyInspection` interface:
+- `last_edited_by: string | null`
+- `last_edited_at: string | null`
+- `last_editor?: WildColonyInspectionProfile`
+
+#### 3. Panel Component Updated (`src/components/wild-colonies/WildColonyInspectionPanel.tsx`)
+- Updated `fetchInspections` to join creator profile and fetch last editor profile separately
+- Updated `handleSubmit`:
+  - When editing: sets `last_edited_by` and `last_edited_at`
+  - When creating: sets `user_id` (original creator)
+
+#### 4. Card Component Updated (`src/components/wild-colonies/WildColonyInspectionCard.tsx`)
+- Added `getEditorDisplayName()` helper function
+- Updated Record Info section to display "Edited by [name] on [date]" when applicable
+- Uses Edit2 icon to distinguish from creation info
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| Database migration | Added `last_edited_by` and `last_edited_at` columns |
+| `src/types/wild-colonies.ts` | Added editor tracking fields to interface |
+| `src/components/wild-colonies/WildColonyInspectionPanel.tsx` | Fetch editor profiles, track edits in handleSubmit |
+| `src/components/wild-colonies/WildColonyInspectionCard.tsx` | Display editor info in Record Info section |
+
+### Build Verification
+- `npm run build` passed (test file errors are pre-existing)
+- No TypeScript errors in source files
+
+---
+

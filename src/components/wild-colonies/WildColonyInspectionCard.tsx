@@ -64,6 +64,14 @@ export default function WildColonyInspectionCard({
     return null
   }
 
+  const getEditorDisplayName = () => {
+    if (!inspection.last_editor) return null
+    const { full_name, first_name, last_name } = inspection.last_editor
+    if (full_name) return full_name
+    if (first_name || last_name) return `${first_name || ''} ${last_name || ''}`.trim()
+    return null
+  }
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-border p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start gap-4">
@@ -200,7 +208,7 @@ export default function WildColonyInspectionCard({
             </div>
           )}
 
-          {/* Record Info: Created by and timestamp */}
+          {/* Record Info: Created by and last edited */}
           <div className="mt-3 pt-2 border-t border-border/50 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-tertiary">
             {getUserDisplayName() && (
               <div className="flex items-center gap-1">
@@ -208,10 +216,10 @@ export default function WildColonyInspectionCard({
                 <span>Recorded by {getUserDisplayName()}</span>
               </div>
             )}
-            {inspection.created_at && (
+            {inspection.last_edited_at && getEditorDisplayName() && (
               <div className="flex items-center gap-1">
-                <Clock size={12} />
-                <span>Created {formatDateTime(inspection.created_at)}</span>
+                <Edit2 size={12} />
+                <span>Edited by {getEditorDisplayName()} on {formatDateTime(inspection.last_edited_at)}</span>
               </div>
             )}
           </div>
