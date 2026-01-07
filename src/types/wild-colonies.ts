@@ -13,8 +13,13 @@ export interface WildColonyInspection {
   inspection_date: string
   inspection_time: string | null
 
-  // User profile (joined)
+  // User profile (joined) - creator
   profiles?: WildColonyInspectionProfile
+
+  // Last editor tracking
+  last_edited_by: string | null
+  last_edited_at: string | null
+  last_editor?: WildColonyInspectionProfile
 
   // Observable Signs
   activity_level: number

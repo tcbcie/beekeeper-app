@@ -27,7 +27,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
   const fetchInspections = useCallback(async () => {
     const { data, error } = await supabase
       .from('wild_colony_inspections')
-      .select('*')
+      .select('*, profiles:user_id(first_name, last_name, full_name)')
       .eq('wild_colony_id', colonyId)
       .order('inspection_date', { ascending: false })
 
@@ -35,7 +35,21 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
       console.error('Error fetching inspections:', error)
       toast.error('Failed to load inspections')
     } else {
-      setInspections(data || [])
+      // Fetch last editor profiles separately for records that have been edited
+      const inspectionsWithEditors = await Promise.all(
+        (data || []).map(async (inspection) => {
+          if (inspection.last_edited_by) {
+            const { data: editorProfile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, full_name')
+              .eq('id', inspection.last_edited_by)
+              .single()
+            return { ...inspection, last_editor: editorProfile }
+          }
+          return inspection
+        })
+      )
+      setInspections(inspectionsWithEditors)
     }
     setLoading(false)
   }, [colonyId, toast])
@@ -45,9 +59,8 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
   }, [fetchInspections])
 
   const handleSubmit = async (formData: WildColonyInspectionFormData, imageUrl: string | null) => {
-    const dataToSave = {
+    const baseData = {
       wild_colony_id: colonyId,
-      user_id: userId,
       inspection_date: formData.inspection_date,
       inspection_time: formData.inspection_time || null,
       activity_level: formData.activity_level,
@@ -70,9 +83,14 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
     }
 
     if (editingInspection) {
+      // When editing, track who edited and when (preserve original creator)
       const { error } = await supabase
         .from('wild_colony_inspections')
-        .update(dataToSave)
+        .update({
+          ...baseData,
+          last_edited_by: userId,
+          last_edited_at: new Date().toISOString(),
+        })
         .eq('id', editingInspection.id)
 
       if (error) {
@@ -81,9 +99,10 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
       }
       toast.success('Inspection updated')
     } else {
+      // When creating, set the creator (user_id)
       const { error } = await supabase
         .from('wild_colony_inspections')
-        .insert([dataToSave])
+        .insert([{ ...baseData, user_id: userId }])
 
       if (error) {
         console.error('Error creating inspection:', error)
