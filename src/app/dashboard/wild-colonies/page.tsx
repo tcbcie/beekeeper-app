@@ -94,7 +94,7 @@ export default function WildColoniesPage() {
   const [hasAccess, setHasAccess] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [expandedColonyId, setExpandedColonyId] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [lastEditorName, setLastEditorName] = useState<string | null>(null)
 
   // Location Aid photo upload
@@ -836,27 +836,41 @@ export default function WildColoniesPage() {
       {activeTab === 'all' && (
         <>
           {/* Status Filter */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Filter size={16} className="text-text-secondary" />
               <label className="text-sm font-medium text-text-secondary">Status:</label>
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-1.5 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-            >
-              <option value="">All Statuses</option>
-              {STATUS_OPTIONS.filter(opt => opt.value !== 'pending_review').map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            {statusFilter && (
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.filter(opt => opt.value !== 'pending_review').map(opt => {
+                const isSelected = statusFilter.includes(opt.value)
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setStatusFilter(prev =>
+                        isSelected
+                          ? prev.filter(s => s !== opt.value)
+                          : [...prev, opt.value]
+                      )
+                    }}
+                    className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                      isSelected
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-surface border-border text-text-secondary hover:border-amber-500'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+            {statusFilter.length > 0 && (
               <button
-                onClick={() => setStatusFilter('')}
+                onClick={() => setStatusFilter([])}
                 className="text-xs text-text-secondary hover:text-foreground"
               >
-                Clear
+                Clear all
               </button>
             )}
           </div>
@@ -881,7 +895,7 @@ export default function WildColoniesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {colonies.filter(c => !statusFilter || c.status === statusFilter).map((colony) => (
+                {colonies.filter(c => statusFilter.length === 0 || statusFilter.includes(c.status)).map((colony) => (
                   <React.Fragment key={colony.id}>
                     <tr
                       className={`hover:bg-sage-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer ${
