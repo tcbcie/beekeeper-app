@@ -1496,6 +1496,7 @@ export default function SettingsPage() {
           'harvests',
           'hives',
           'inspections',
+          'profiles',
           'queens',
           'rearing_batches',
           'tasks_events',
