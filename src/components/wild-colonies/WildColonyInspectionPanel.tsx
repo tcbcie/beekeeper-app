@@ -38,7 +38,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
       // Fetch creator and editor profiles separately (no FK relationship exists)
       const inspectionsWithProfiles = await Promise.all(
         (data || []).map(async (inspection) => {
-          let result = { ...inspection }
+          const result: Record<string, unknown> = { ...inspection }
 
           // Fetch creator profile
           if (inspection.user_id) {
