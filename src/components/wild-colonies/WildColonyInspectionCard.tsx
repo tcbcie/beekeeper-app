@@ -74,7 +74,27 @@ export default function WildColonyInspectionCard({
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg border border-border p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start gap-4">
+      <div className="flex items-start gap-3">
+        {/* Left Side: Actions */}
+        {isOwner && (
+          <div className="flex flex-col gap-1 shrink-0">
+            <button
+              onClick={onEdit}
+              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+              title="Edit"
+            >
+              <Edit2 size={16} />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+              title="Delete"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
@@ -225,30 +245,9 @@ export default function WildColonyInspectionCard({
           </div>
         </div>
 
-        {/* Right Side: Photo + Actions */}
-        <div className="flex flex-col items-end gap-2">
-          {/* Actions */}
-          {isOwner && (
-            <div className="flex gap-1">
-              <button
-                onClick={onEdit}
-                className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                title="Edit"
-              >
-                <Edit2 size={16} />
-              </button>
-              <button
-                onClick={onDelete}
-                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                title="Delete"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          )}
-
-          {/* Photo */}
-          {inspection.image_url && (
+        {/* Right Side: Photo */}
+        {inspection.image_url && (
+          <div className="shrink-0">
             <Image
               src={inspection.image_url}
               alt="Inspection"
@@ -257,8 +256,8 @@ export default function WildColonyInspectionCard({
               className="w-16 h-16 object-cover rounded border border-border cursor-pointer"
               onClick={() => onImageClick?.(inspection.image_url!)}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
