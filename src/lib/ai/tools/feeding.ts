@@ -67,10 +67,10 @@ export const getHarvestSummary: Tool = {
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { year?: number }
     const supabase = getSupabase()
-    const apiaryIds = await getAccessibleApiaryIds(userId)
+    const hiveIds = await getAccessibleHiveIds(userId)
 
-    if (apiaryIds.length === 0) {
-      return 'No apiaries found.'
+    if (hiveIds.length === 0) {
+      return 'No hives found.'
     }
 
     const year = args.year || new Date().getFullYear()
@@ -80,21 +80,18 @@ export const getHarvestSummary: Tool = {
     const { data: harvests, error } = await supabase
       .from('harvests')
       .select('harvest_date, honey_weight, frames_harvested, hives(hive_number, apiaries(name))')
+      .in('hive_id', hiveIds)
       .gte('harvest_date', startDate)
       .lte('harvest_date', endDate)
       .order('harvest_date', { ascending: false })
 
     if (error) return `Error fetching harvests: ${error.message}`
 
-    // Filter to accessible hives only
-    const accessibleHarvests = harvests?.filter(h => {
-      const info = getHiveInfo(h.hives)
-      return info.apiary_name !== 'Unknown'
-    }) || []
-
-    if (accessibleHarvests.length === 0) {
+    if (!harvests?.length) {
       return `No harvests recorded for ${year}.`
     }
+
+    const accessibleHarvests = harvests
 
     const hiveStats: Record<string, { apiary: string; total: number; count: number }> = {}
     const apiaryStats: Record<string, { total: number; count: number }> = {}
