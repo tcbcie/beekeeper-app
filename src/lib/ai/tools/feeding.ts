@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate } from './utils'
+import { getSupabase, getAccessibleHiveIds, findHiveByName, formatDate } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
