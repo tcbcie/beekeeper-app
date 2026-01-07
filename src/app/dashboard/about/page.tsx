@@ -402,6 +402,7 @@ function AboutPageContent() {
               <li>AI Assistant (Mel) with access to your hive data and inspection records</li>
               <li>AI-powered beekeeping knowledge base with literature-sourced answers</li>
               <li>Community Map - view shared apiary locations and connect with nearby beekeepers</li>
+              <li>Wild Colony Tracking - record and monitor feral bee colonies with inspection logging</li>
               <li>Beekeeping Tools - frame cell calculator, GDD tracker, and other useful utilities</li>
             </ul>
 
