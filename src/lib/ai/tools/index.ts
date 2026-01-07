@@ -21,6 +21,7 @@ import * as taskTools from './tasks'
 import * as analysisTools from './analysis'
 import * as knowledgeTools from './knowledge'
 import * as colonyTools from './colonies'
+import * as scaleTools from './scales'
 
 // Combine all tools into registry
 export const tools: Record<string, Tool> = {
@@ -42,6 +43,8 @@ export const tools: Record<string, Tool> = {
   ...knowledgeTools,
   // Colony tools
   ...colonyTools,
+  // Scale tools (BEEP and Wolf Waagen)
+  ...scaleTools,
 }
 
 // Get tool by name
@@ -82,4 +85,4 @@ export async function executeTool(
   }
 }
 
-export { hiveTools, inspectionTools, varroaTools, feedingTools, queenTools, taskTools, analysisTools, knowledgeTools, colonyTools }
+export { hiveTools, inspectionTools, varroaTools, feedingTools, queenTools, taskTools, analysisTools, knowledgeTools, colonyTools, scaleTools }
