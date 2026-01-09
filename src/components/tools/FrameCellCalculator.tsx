@@ -29,7 +29,7 @@ export default function FrameCellCalculator() {
   const [selectedStandardId, setSelectedStandardId] = useState<string>('custom')
   const [width, setWidth] = useState<number>(335)
   const [height, setHeight] = useState<number>(195)
-  const [cellSize, setCellSize] = useState<number>(5.1)
+  const [cellSize, setCellSize] = useState<number>(5.4)
   const [sides, setSides] = useState<number>(2)
 
   // Fetch frame standards from database
@@ -156,21 +156,21 @@ export default function FrameCellCalculator() {
           <input
             type="number"
             value={cellSize}
-            onChange={(e) => setCellSize(Math.max(0.1, parseFloat(e.target.value) || 5.1))}
+            onChange={(e) => setCellSize(Math.max(0.1, parseFloat(e.target.value) || 5.4))}
             className="w-32 px-4 py-2 border border-border rounded-lg bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
             min="0.1"
             step="0.1"
           />
           <div className="flex gap-2">
             <button
-              onClick={() => setCellSize(5.1)}
+              onClick={() => setCellSize(5.4)}
               className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
-                cellSize === 5.1
+                cellSize === 5.4
                   ? 'bg-forest-600 text-white border-forest-600'
                   : 'border-border text-text-secondary hover:bg-muted'
               }`}
             >
-              5.1mm (Standard)
+              5.4mm (Standard)
             </button>
             <button
               onClick={() => setCellSize(4.9)}
@@ -185,7 +185,7 @@ export default function FrameCellCalculator() {
           </div>
         </div>
         <p className="text-xs text-text-tertiary mt-1">
-          Standard worker cells are ~5.1mm, small cell foundation is ~4.9mm, drone cells are ~6.9mm
+          Standard worker cells are ~5.4mm, small cell foundation is ~4.9mm, drone cells are ~6.9mm
         </p>
       </div>
 
