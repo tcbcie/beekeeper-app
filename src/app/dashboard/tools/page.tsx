@@ -2,11 +2,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Thermometer, Cloud, Grid3X3, Send } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Thermometer, Cloud, Grid3X3, Send, Camera } from 'lucide-react'
 import Link from 'next/link'
 import GDDTracker from '@/components/tools/GDDTracker'
 import VarroaWeather from '@/components/tools/VarroaWeather'
 import FrameCellCalculator from '@/components/tools/FrameCellCalculator'
+import DiagnosisUploader from '@/components/tools/DiagnosisUploader'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 export default function ToolsPage() {
@@ -124,6 +125,13 @@ export default function ToolsPage() {
       description: 'Calculate approximate cell count for different frame sizes',
       status: 'Available',
       onClick: () => setActiveTool(activeTool === 'cells' ? null : 'cells')
+    },
+    {
+      icon: Camera,
+      title: 'Diagnosis Image Upload',
+      description: 'Upload images for disease, pest, or hive issue diagnosis',
+      status: 'Available',
+      onClick: () => setActiveTool(activeTool === 'diagnosis' ? null : 'diagnosis')
     }
   ]
 
@@ -178,7 +186,7 @@ export default function ToolsPage() {
             <div
               onClick={tool.onClick}
               className={`bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow cursor-pointer hover:border-forest-300 dark:hover:border-forest-700 ${
-                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') || (activeTool === 'gdd' && tool.title === 'GDD Tracking') || (activeTool === 'varroa' && tool.title === 'Evaluate Varroa Treatment') || (activeTool === 'cells' && tool.title === 'Frame Cell Counter') ? 'border-forest-500 dark:border-forest-500' : ''
+                (activeTool === 'feeding' && tool.title === 'Feeding Calculator') || (activeTool === 'fondant' && tool.title === 'Making Fondant') || (activeTool === 'gdd' && tool.title === 'GDD Tracking') || (activeTool === 'varroa' && tool.title === 'Evaluate Varroa Treatment') || (activeTool === 'cells' && tool.title === 'Frame Cell Counter') || (activeTool === 'diagnosis' && tool.title === 'Diagnosis Image Upload') ? 'border-forest-500 dark:border-forest-500' : ''
               }`}
             >
               <div className="flex items-start gap-4">
@@ -403,6 +411,13 @@ export default function ToolsPage() {
             {tool.title === 'Frame Cell Counter' && activeTool === 'cells' && (
               <div className="mt-4 bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
                 <FrameCellCalculator />
+              </div>
+            )}
+
+            {/* Diagnosis Image Upload Tool */}
+            {tool.title === 'Diagnosis Image Upload' && activeTool === 'diagnosis' && (
+              <div className="mt-4 bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-forest-300 dark:border-forest-700">
+                <DiagnosisUploader userId={userId} />
               </div>
             )}
           </div>
