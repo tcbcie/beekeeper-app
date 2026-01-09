@@ -2,11 +2,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
-import { FlaskConical, TreeDeciduous } from 'lucide-react'
+import { FlaskConical, TreeDeciduous, Camera } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import WildColoniesTab from '@/components/research/WildColoniesTab'
+import DiagnosisImagesTab from '@/components/research/DiagnosisImagesTab'
 
-type ResearchSection = 'wild-colonies'
+type ResearchSection = 'wild-colonies' | 'diagnosis-images'
 
 export default function ResearchPage() {
   const router = useRouter()
@@ -18,7 +19,7 @@ export default function ResearchPage() {
 
   useEffect(() => {
     const section = searchParams.get('section')
-    if (section && ['wild-colonies'].includes(section)) {
+    if (section && ['wild-colonies', 'diagnosis-images'].includes(section)) {
       setActiveSection(section as ResearchSection)
     }
   }, [searchParams])
@@ -56,6 +57,7 @@ export default function ResearchPage() {
 
   const sections = [
     { id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous },
+    { id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera },
   ]
 
   return (
@@ -93,6 +95,11 @@ export default function ResearchPage() {
       {/* Wild Colonies Section */}
       {activeSection === 'wild-colonies' && userId && (
         <WildColoniesTab userId={userId} />
+      )}
+
+      {/* Diagnosis Images Section */}
+      {activeSection === 'diagnosis-images' && userId && (
+        <DiagnosisImagesTab userId={userId} />
       )}
     </div>
   )
