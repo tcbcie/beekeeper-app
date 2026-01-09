@@ -1,9 +1,7 @@
 'use client'
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { Plus, Edit2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList, User, Filter } from 'lucide-react'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import Image from 'next/image'
@@ -13,8 +11,11 @@ const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker')
   loading: () => <div className="h-[300px] bg-sage-100 dark:bg-slate-800 rounded-lg animate-pulse flex items-center justify-center text-text-tertiary">Loading map...</div>
 })
 import { useToast } from '@/components/ui/Toast'
-import { useRouter } from 'next/navigation'
 import WildColonyInspectionPanel from '@/components/wild-colonies/WildColonyInspectionPanel'
+
+interface WildColoniesTabProps {
+  userId: string
+}
 
 interface WildColony {
   id: string
@@ -81,17 +82,14 @@ const SIZE_OPTIONS = [
   { value: 'unknown', label: 'Unknown' },
 ]
 
-export default function WildColoniesPage() {
+export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
   const toast = useToast()
-  const router = useRouter()
   const [colonies, setColonies] = useState<WildColony[]>([])
   const [pendingColonies, setPendingColonies] = useState<WildColony[]>([])
   const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all')
   const [showForm, setShowForm] = useState(false)
   const [editingColony, setEditingColony] = useState<WildColony | null>(null)
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [hasAccess, setHasAccess] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
   const [expandedColonyId, setExpandedColonyId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string[]>([])
@@ -146,10 +144,7 @@ export default function WildColoniesPage() {
     }))
   }
 
-  const fetchColonies = useCallback(async (userIdParam?: string) => {
-    const currentUserId = userIdParam || userId
-    if (!currentUserId) return
-
+  const fetchColonies = useCallback(async () => {
     // Fetch confirmed/observed colonies (exclude pending) with inspection counts
     const { data, error } = await supabase
       .from('wild_colonies')
@@ -187,32 +182,14 @@ export default function WildColoniesPage() {
     }
 
     setLoading(false)
-  }, [userId])
+  }, [])
 
   useEffect(() => {
-    const initUser = async () => {
-      const id = await getCurrentUserId()
-      if (!id) {
-        router.push('/login')
-        return
-      }
-
-      const access = await isPowerUserOrAdmin()
-      if (!access) {
-        router.push('/dashboard')
-        return
-      }
-
-      setHasAccess(true)
-      setUserId(id)
-      fetchColonies(id)
-    }
-    initUser()
-  }, [router, fetchColonies])
+    fetchColonies()
+  }, [fetchColonies])
 
   const handleSubmit = async (e: React.FormEvent, overrideStatus?: string) => {
     e.preventDefault()
-    if (!userId) return
 
     if (!formData.latitude || !formData.longitude) {
       toast.error('Please select a location on the map')
@@ -390,12 +367,10 @@ export default function WildColoniesPage() {
     setExpandedColonyId(prev => prev === colonyId ? null : colonyId)
   }
 
-  if (loading) return <LoadingSpinner text="Loading wild colonies..." />
-
-  if (!hasAccess) {
+  if (loading) {
     return (
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-12 text-center text-text-secondary border border-border">
-        Access restricted to Power Users and Administrators.
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
       </div>
     )
   }
@@ -403,10 +378,10 @@ export default function WildColoniesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-          <TreeDeciduous className="text-amber-600" />
-          Wild Colonies
-        </h1>
+        <div className="flex items-center gap-2">
+          <TreeDeciduous className="text-amber-600" size={24} />
+          <h2 className="text-xl font-semibold text-foreground">Wild Colonies</h2>
+        </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium flex items-center gap-2 min-h-[48px]"
@@ -1008,7 +983,7 @@ export default function WildColoniesPage() {
                       </td>
                     </tr>
                     {/* Expanded Inspection Panel */}
-                    {expandedColonyId === colony.id && userId && (
+                    {expandedColonyId === colony.id && (
                       <tr>
                         <td colSpan={12} className="p-0">
                           <WildColonyInspectionPanel

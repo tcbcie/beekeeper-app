@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users, TreeDeciduous, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users, FlaskConical, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import VersionDisplay from './VersionDisplay'
 
@@ -48,7 +48,7 @@ export default function Sidebar() {
   ]
 
   const powerUserNavItems = [
-    { href: '/dashboard/wild-colonies', label: 'Wild Colonies', icon: TreeDeciduous },
+    { href: '/dashboard/research', label: 'Research', icon: FlaskConical },
   ]
 
   const adminNavItems = [
