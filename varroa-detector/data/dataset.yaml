@@ -1,0 +1,12 @@
+# YOLOv8 Dataset Configuration
+# Used by ultralytics for training
+
+path: .                     # Dataset root directory
+train: train/images         # Train images relative to path
+val: val/images             # Validation images relative to path
+test: test/images           # Test images (optional)
+
+# Classes
+nc: 1                       # Number of classes
+names:
+  0: varroa_mite

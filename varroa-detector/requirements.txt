@@ -1,0 +1,28 @@
+# Varroa Mite Detector - Dependencies
+
+# ML Framework
+ultralytics>=8.0.0      # YOLOv8
+
+# Image Processing
+opencv-python>=4.8.0
+Pillow>=10.0.0
+
+# API Server
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6  # File uploads
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Utilities
+pyyaml>=6.0
+tqdm>=4.65.0
+
+# Development
+pytest>=7.4.0
+httpx>=0.24.0           # Async testing
+
+# Optional: Annotation (install separately)
+# label-studio>=1.9.0
