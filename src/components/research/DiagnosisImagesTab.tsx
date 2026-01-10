@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye } from 'lucide-react'
+import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
@@ -43,6 +43,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
   const [loadingComments, setLoadingComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const fetchImages = useCallback(async () => {
     setLoading(true)
@@ -248,13 +249,32 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
           <Camera size={24} className="text-forest-600 dark:text-forest-400" />
           Diagnosis Images
         </h2>
-        <button
-          onClick={fetchImages}
-          className="p-2 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex items-center border border-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-forest-600 text-white' : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800'}`}
+              title="Grid view"
+            >
+              <LayoutGrid size={18} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-forest-600 text-white' : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800'}`}
+              title="List view"
+            >
+              <List size={18} />
+            </button>
+          </div>
+          <button
+            onClick={fetchImages}
+            className="p-2 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw size={20} />
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -271,14 +291,14 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
             Upload images for diagnosis from the Tools section.
           </p>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
+        /* Grid View */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {images.map((image) => (
             <div
               key={image.id}
               className="bg-surface rounded-lg shadow border border-border overflow-hidden hover:shadow-md transition-shadow"
             >
-              {/* Image */}
               <div
                 className="relative aspect-video cursor-pointer"
                 onClick={() => setSelectedImage(image)}
@@ -291,22 +311,17 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
               </div>
-
-              {/* Details */}
               <div className="p-3 space-y-2">
                 <div className="flex items-center gap-2 text-xs text-text-secondary">
                   <Tag size={14} />
                   <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
                 </div>
-
                 <p className="text-sm text-foreground line-clamp-2">{image.description}</p>
-
                 <div className="flex items-center justify-between pt-2 border-t border-border">
                   <div className="flex items-center gap-1 text-xs text-text-tertiary">
                     <Calendar size={12} />
                     {formatDate(image.created_at)}
                   </div>
-
                   <div className="flex items-center gap-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); setSelectedImage(image); }}
@@ -331,6 +346,65 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
                       <Trash2 size={16} />
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* List View */
+        <div className="space-y-2">
+          {images.map((image) => (
+            <div
+              key={image.id}
+              className="bg-surface rounded-lg shadow border border-border overflow-hidden hover:shadow-md transition-shadow flex"
+            >
+              <div
+                className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 cursor-pointer"
+                onClick={() => setSelectedImage(image)}
+              >
+                <Image
+                  src={image.image_url}
+                  alt={image.description}
+                  fill
+                  className="object-cover"
+                  sizes="128px"
+                />
+              </div>
+              <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-text-secondary">
+                    <Tag size={14} />
+                    <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
+                    <span className="text-text-tertiary">•</span>
+                    <Calendar size={12} />
+                    <span>{formatDate(image.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-foreground line-clamp-2">{image.description}</p>
+                </div>
+                <div className="flex items-center gap-1 mt-2">
+                  <button
+                    onClick={() => setSelectedImage(image)}
+                    className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
+                    title="View image"
+                  >
+                    <Eye size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDownload(image)}
+                    className="p-1.5 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded transition-colors"
+                    title="Download image"
+                  >
+                    <Download size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(image)}
+                    disabled={deleting === image.id}
+                    className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
+                    title="Delete image"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             </div>
