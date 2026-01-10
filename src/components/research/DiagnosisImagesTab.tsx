@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User } from 'lucide-react'
+import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
@@ -309,6 +309,13 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
 
                   <div className="flex items-center gap-1">
                     <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedImage(image); }}
+                      className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
+                      title="View image"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
                       onClick={(e) => { e.stopPropagation(); handleDownload(image); }}
                       className="p-1.5 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded transition-colors"
                       title="Download image"
@@ -316,7 +323,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
                       <Download size={16} />
                     </button>
                     <button
-                      onClick={() => handleDelete(image)}
+                      onClick={(e) => { e.stopPropagation(); handleDelete(image); }}
                       disabled={deleting === image.id}
                       className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
                       title="Delete image"
