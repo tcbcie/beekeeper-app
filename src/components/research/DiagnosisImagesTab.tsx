@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List } from 'lucide-react'
+import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List, X, ZoomIn, ZoomOut } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
@@ -35,21 +35,21 @@ const DIAGNOSIS_TYPE_LABELS: Record<string, string> = {
 
 export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) {
   const [images, setImages] = useState<DiagnosisImage[]>([])
+  const [allComments, setAllComments] = useState<Record<string, Comment[]>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<DiagnosisImage | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
-  const [loadingComments, setLoadingComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isZoomed, setIsZoomed] = useState(false)
 
   const fetchImages = useCallback(async () => {
     setLoading(true)
     setError(null)
 
-    const { data, error: fetchError } = await supabase
+    const { data: imagesData, error: fetchError } = await supabase
       .from('diagnosis_images')
       .select('*')
       .order('created_at', { ascending: false })
@@ -57,55 +57,54 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
     if (fetchError) {
       console.error('Failed to fetch diagnosis images:', fetchError)
       setError('Failed to load images')
-    } else {
-      setImages(data || [])
+      setLoading(false)
+      return
+    }
+
+    setImages(imagesData || [])
+
+    // Fetch all comments for all images
+    if (imagesData && imagesData.length > 0) {
+      const imageIds = imagesData.map(img => img.id)
+      const { data: commentsData } = await supabase
+        .from('diagnosis_image_comments')
+        .select('*')
+        .in('diagnosis_image_id', imageIds)
+        .order('created_at', { ascending: true })
+
+      if (commentsData && commentsData.length > 0) {
+        // Fetch user names for comments
+        const userIds = [...new Set(commentsData.map(c => c.user_id))]
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds)
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || [])
+
+        // Group comments by image
+        const commentsByImage: Record<string, Comment[]> = {}
+        commentsData.forEach(c => {
+          if (!commentsByImage[c.diagnosis_image_id]) {
+            commentsByImage[c.diagnosis_image_id] = []
+          }
+          commentsByImage[c.diagnosis_image_id].push({
+            ...c,
+            user_name: profileMap.get(c.user_id) || 'Unknown User'
+          })
+        })
+        setAllComments(commentsByImage)
+      } else {
+        setAllComments({})
+      }
     }
 
     setLoading(false)
   }, [])
 
-  const fetchComments = useCallback(async (imageId: string) => {
-    setLoadingComments(true)
-
-    const { data, error: fetchError } = await supabase
-      .from('diagnosis_image_comments')
-      .select('*')
-      .eq('diagnosis_image_id', imageId)
-      .order('created_at', { ascending: true })
-
-    if (fetchError) {
-      console.error('Failed to fetch comments:', fetchError)
-    } else if (data) {
-      // Fetch user names for comments
-      const userIds = [...new Set(data.map(c => c.user_id))]
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds)
-
-      const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || [])
-
-      setComments(data.map(c => ({
-        ...c,
-        user_name: profileMap.get(c.user_id) || 'Unknown User'
-      })))
-    }
-
-    setLoadingComments(false)
-  }, [])
-
   useEffect(() => {
     fetchImages()
   }, [fetchImages])
-
-  useEffect(() => {
-    if (selectedImage) {
-      fetchComments(selectedImage.id)
-    } else {
-      setComments([])
-      setNewComment('')
-    }
-  }, [selectedImage, fetchComments])
 
   const handleDelete = async (image: DiagnosisImage) => {
     if (!confirm('Are you sure you want to delete this image?')) return
@@ -113,14 +112,12 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
     setDeleting(image.id)
 
     try {
-      // Extract file path from URL for storage deletion
       const urlParts = image.image_url.split('/inspection-images/')
       if (urlParts[1]) {
         const filePath = urlParts[1]
         await supabase.storage.from('inspection-images').remove([filePath])
       }
 
-      // Delete database record (comments cascade automatically)
       const { error: deleteError } = await supabase
         .from('diagnosis_images')
         .delete()
@@ -129,6 +126,11 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
       if (deleteError) throw deleteError
 
       setImages(prev => prev.filter(img => img.id !== image.id))
+      setAllComments(prev => {
+        const updated = { ...prev }
+        delete updated[image.id]
+        return updated
+      })
       if (selectedImage?.id === image.id) setSelectedImage(null)
     } catch (err) {
       console.error('Failed to delete image:', err)
@@ -156,17 +158,21 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
 
       if (insertError) throw insertError
 
-      // Get current user's name
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', userId)
         .single()
 
-      setComments(prev => [...prev, {
+      const newCommentData: Comment = {
         ...data,
         user_name: profile?.full_name || 'You'
-      }])
+      }
+
+      setAllComments(prev => ({
+        ...prev,
+        [selectedImage.id]: [...(prev[selectedImage.id] || []), newCommentData]
+      }))
       setNewComment('')
     } catch (err) {
       console.error('Failed to add comment:', err)
@@ -176,7 +182,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
     }
   }
 
-  const handleDeleteComment = async (commentId: string) => {
+  const handleDeleteComment = async (commentId: string, imageId: string) => {
     try {
       const { error: deleteError } = await supabase
         .from('diagnosis_image_comments')
@@ -185,7 +191,10 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
 
       if (deleteError) throw deleteError
 
-      setComments(prev => prev.filter(c => c.id !== commentId))
+      setAllComments(prev => ({
+        ...prev,
+        [imageId]: (prev[imageId] || []).filter(c => c.id !== commentId)
+      }))
     } catch (err) {
       console.error('Failed to delete comment:', err)
     }
@@ -232,6 +241,8 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
     })
   }
 
+  const getImageComments = (imageId: string) => allComments[imageId] || []
+
   if (loading) {
     return (
       <div className="bg-surface rounded-lg shadow border border-border p-8 text-center">
@@ -250,7 +261,6 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
           Diagnosis Images
         </h2>
         <div className="flex items-center gap-2">
-          {/* View Toggle */}
           <div className="flex items-center border border-border rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
@@ -294,242 +304,302 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
       ) : viewMode === 'grid' ? (
         /* Grid View */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {images.map((image) => (
-            <div
-              key={image.id}
-              className="bg-surface rounded-lg shadow border border-border overflow-hidden hover:shadow-md transition-shadow"
-            >
+          {images.map((image) => {
+            const imageComments = getImageComments(image.id)
+            return (
               <div
-                className="relative aspect-video cursor-pointer"
-                onClick={() => setSelectedImage(image)}
+                key={image.id}
+                className="bg-surface rounded-lg shadow border border-border overflow-hidden hover:shadow-md transition-shadow"
               >
-                <Image
-                  src={image.image_url}
-                  alt={image.description}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                />
-              </div>
-              <div className="p-3 space-y-2">
-                <div className="flex items-center gap-2 text-xs text-text-secondary">
-                  <Tag size={14} />
-                  <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
+                <div
+                  className="relative aspect-video cursor-pointer"
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <Image
+                    src={image.image_url}
+                    alt={image.description}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
                 </div>
-                <p className="text-sm text-foreground line-clamp-2">{image.description}</p>
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <div className="flex items-center gap-1 text-xs text-text-tertiary">
-                    <Calendar size={12} />
-                    {formatDate(image.created_at)}
+                <div className="p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-text-secondary">
+                    <Tag size={14} />
+                    <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedImage(image); }}
-                      className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
-                      title="View image"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDownload(image); }}
-                      className="p-1.5 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded transition-colors"
-                      title="Download image"
-                    >
-                      <Download size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(image); }}
-                      disabled={deleting === image.id}
-                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
-                      title="Delete image"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                  <p className="text-sm text-foreground line-clamp-2">{image.description}</p>
+
+                  {/* Comments Preview */}
+                  {imageComments.length > 0 && (
+                    <div className="bg-sage-50 dark:bg-slate-800 rounded p-2 space-y-1">
+                      <div className="flex items-center gap-1 text-xs text-text-secondary">
+                        <MessageSquare size={12} />
+                        <span>{imageComments.length} comment{imageComments.length !== 1 ? 's' : ''}</span>
+                      </div>
+                      {imageComments.slice(-2).map((comment) => (
+                        <div key={comment.id} className="text-xs">
+                          <span className="font-medium text-text-secondary">{comment.user_name}:</span>
+                          <span className="text-foreground ml-1 line-clamp-1">{comment.comment}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <div className="flex items-center gap-1 text-xs text-text-tertiary">
+                      <Calendar size={12} />
+                      {formatDate(image.created_at)}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedImage(image); }}
+                        className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
+                        title="View image"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDownload(image); }}
+                        className="p-1.5 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded transition-colors"
+                        title="Download image"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(image); }}
+                        disabled={deleting === image.id}
+                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
+                        title="Delete image"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         /* List View */
         <div className="space-y-2">
-          {images.map((image) => (
-            <div
-              key={image.id}
-              className="bg-surface rounded-lg shadow border border-border overflow-hidden hover:shadow-md transition-shadow flex"
-            >
+          {images.map((image) => {
+            const imageComments = getImageComments(image.id)
+            return (
               <div
-                className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 cursor-pointer"
-                onClick={() => setSelectedImage(image)}
+                key={image.id}
+                className="bg-surface rounded-lg shadow border border-border overflow-hidden hover:shadow-md transition-shadow"
               >
-                <Image
-                  src={image.image_url}
-                  alt={image.description}
-                  fill
-                  className="object-cover"
-                  sizes="128px"
-                />
-              </div>
-              <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-text-secondary">
-                    <Tag size={14} />
-                    <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
-                    <span className="text-text-tertiary">•</span>
-                    <Calendar size={12} />
-                    <span>{formatDate(image.created_at)}</span>
-                  </div>
-                  <p className="text-sm text-foreground line-clamp-2">{image.description}</p>
-                </div>
-                <div className="flex items-center gap-1 mt-2">
-                  <button
+                <div className="flex">
+                  <div
+                    className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 cursor-pointer"
                     onClick={() => setSelectedImage(image)}
-                    className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
-                    title="View image"
                   >
-                    <Eye size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDownload(image)}
-                    className="p-1.5 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded transition-colors"
-                    title="Download image"
-                  >
-                    <Download size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(image)}
-                    disabled={deleting === image.id}
-                    className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
-                    title="Delete image"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                    <Image
+                      src={image.image_url}
+                      alt={image.description}
+                      fill
+                      className="object-cover"
+                      sizes="128px"
+                    />
+                  </div>
+                  <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs text-text-secondary">
+                        <Tag size={14} />
+                        <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
+                        <span className="text-text-tertiary">•</span>
+                        <Calendar size={12} />
+                        <span>{formatDate(image.created_at)}</span>
+                      </div>
+                      <p className="text-sm text-foreground line-clamp-1">{image.description}</p>
+                    </div>
+                    <div className="flex items-center gap-1 mt-2">
+                      <button
+                        onClick={() => setSelectedImage(image)}
+                        className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
+                        title="View image"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDownload(image)}
+                        className="p-1.5 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded transition-colors"
+                        title="Download image"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(image)}
+                        disabled={deleting === image.id}
+                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
+                        title="Delete image"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
+                {/* Comments shown below in list view */}
+                {imageComments.length > 0 && (
+                  <div className="border-t border-border px-3 py-2 bg-sage-50 dark:bg-slate-800">
+                    <div className="flex items-center gap-1 text-xs text-text-secondary mb-1">
+                      <MessageSquare size={12} />
+                      <span>{imageComments.length} comment{imageComments.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {imageComments.map((comment) => (
+                        <div key={comment.id} className="text-xs flex items-start gap-1">
+                          <span className="font-medium text-text-secondary whitespace-nowrap">{comment.user_name}:</span>
+                          <span className="text-foreground">{comment.comment}</span>
+                          <span className="text-text-tertiary whitespace-nowrap ml-auto">({formatDate(comment.created_at)})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       {/* Image Modal with Comments */}
       {selectedImage && (
         <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          onClick={() => { setSelectedImage(null); setIsZoomed(false); }}
         >
           <div
-            className="bg-surface rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            className={`bg-surface rounded-lg shadow-xl flex flex-col ${isZoomed ? 'max-w-[95vw] max-h-[95vh]' : 'max-w-4xl w-full max-h-[90vh] m-4'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative aspect-video flex-shrink-0">
+            {/* Modal Header with Close Button */}
+            <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
+              <div className="flex items-center gap-2 text-sm">
+                <Tag size={16} className="text-forest-600 dark:text-forest-400" />
+                <span className="font-medium text-foreground">
+                  {DIAGNOSIS_TYPE_LABELS[selectedImage.diagnosis_type] || selectedImage.diagnosis_type}
+                </span>
+                <span className="text-text-tertiary">•</span>
+                <span className="text-text-secondary">{formatDate(selectedImage.created_at)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsZoomed(!isZoomed)}
+                  className="p-2 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  title={isZoomed ? "Zoom out" : "Zoom in"}
+                >
+                  {isZoomed ? <ZoomOut size={20} /> : <ZoomIn size={20} />}
+                </button>
+                <button
+                  onClick={() => handleDownload(selectedImage)}
+                  className="p-2 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  title="Download"
+                >
+                  <Download size={20} />
+                </button>
+                <button
+                  onClick={() => { setSelectedImage(null); setIsZoomed(false); }}
+                  className="p-2 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  title="Close"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Image */}
+            <div
+              className={`relative flex-shrink-0 bg-black ${isZoomed ? 'flex-1 min-h-0' : 'aspect-video'}`}
+              onClick={() => setIsZoomed(!isZoomed)}
+              style={{ cursor: isZoomed ? 'zoom-out' : 'zoom-in' }}
+            >
               <Image
                 src={selectedImage.image_url}
                 alt={selectedImage.description}
                 fill
-                className="object-contain bg-black"
+                className={`${isZoomed ? 'object-contain' : 'object-contain'}`}
                 sizes="(max-width: 768px) 100vw, 896px"
+                priority
               />
             </div>
 
-            <div className="p-4 space-y-3 overflow-y-auto">
-              {/* Image Info */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Tag size={16} className="text-forest-600 dark:text-forest-400" />
-                  <span className="font-medium text-foreground">
-                    {DIAGNOSIS_TYPE_LABELS[selectedImage.diagnosis_type] || selectedImage.diagnosis_type}
-                  </span>
-                  <span className="text-text-tertiary">•</span>
-                  <span className="text-text-secondary">{formatDate(selectedImage.created_at)}</span>
-                </div>
-                <button
-                  onClick={() => handleDownload(selectedImage)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded-lg transition-colors"
-                >
-                  <Download size={16} />
-                  Save
-                </button>
-              </div>
+            {/* Content Area */}
+            {!isZoomed && (
+              <div className="p-4 space-y-3 overflow-y-auto flex-shrink-0 max-h-[40vh]">
+                <p className="text-foreground">{selectedImage.description}</p>
 
-              <p className="text-foreground">{selectedImage.description}</p>
+                {/* Comments Section */}
+                <div className="border-t border-border pt-3 space-y-3">
+                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <MessageSquare size={16} />
+                    Comments ({getImageComments(selectedImage.id).length})
+                  </h4>
 
-              {/* Comments Section */}
-              <div className="border-t border-border pt-3 space-y-3">
-                <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <MessageSquare size={16} />
-                  Comments ({comments.length})
-                </h4>
-
-                {/* Comments List */}
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {loadingComments ? (
-                    <p className="text-sm text-text-tertiary">Loading comments...</p>
-                  ) : comments.length === 0 ? (
-                    <p className="text-sm text-text-tertiary">No comments yet.</p>
-                  ) : (
-                    comments.map((comment) => (
-                      <div key={comment.id} className="bg-sage-50 dark:bg-slate-800 rounded-lg p-2 text-sm">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-1 text-xs text-text-secondary">
-                            <User size={12} />
-                            <span className="font-medium">{comment.user_name}</span>
-                            <span className="text-text-tertiary">•</span>
-                            <span>{formatDateTime(comment.created_at)}</span>
+                  {/* Comments List */}
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {getImageComments(selectedImage.id).length === 0 ? (
+                      <p className="text-sm text-text-tertiary">No comments yet.</p>
+                    ) : (
+                      getImageComments(selectedImage.id).map((comment) => (
+                        <div key={comment.id} className="bg-sage-50 dark:bg-slate-800 rounded-lg p-2 text-sm">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1 text-xs text-text-secondary">
+                              <User size={12} />
+                              <span className="font-medium">{comment.user_name}</span>
+                              <span className="text-text-tertiary">•</span>
+                              <span>{formatDateTime(comment.created_at)}</span>
+                            </div>
+                            {comment.user_id === userId && (
+                              <button
+                                onClick={() => handleDeleteComment(comment.id, selectedImage.id)}
+                                className="text-red-500 hover:text-red-700 p-0.5"
+                                title="Delete comment"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
                           </div>
-                          {comment.user_id === userId && (
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
-                              className="text-red-500 hover:text-red-700 p-0.5"
-                              title="Delete comment"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          )}
+                          <p className="text-foreground">{comment.comment}</p>
                         </div>
-                        <p className="text-foreground">{comment.comment}</p>
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add Comment */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
+                      placeholder="Add a comment..."
+                      className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground"
+                    />
+                    <button
+                      onClick={handleAddComment}
+                      disabled={submittingComment || !newComment.trim()}
+                      className="px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Add Comment */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
-                    placeholder="Add a comment..."
-                    className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground"
-                  />
+                {/* Delete Button */}
+                <div className="flex justify-end pt-2 border-t border-border">
                   <button
-                    onClick={handleAddComment}
-                    disabled={submittingComment || !newComment.trim()}
-                    className="px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    onClick={() => handleDelete(selectedImage)}
+                    disabled={deleting === selectedImage.id}
+                    className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors disabled:opacity-50"
                   >
-                    <Send size={16} />
+                    Delete Image
                   </button>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <button
-                  onClick={() => handleDelete(selectedImage)}
-                  disabled={deleting === selectedImage.id}
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="px-4 py-2 bg-sage-100 dark:bg-slate-800 text-foreground rounded-lg hover:bg-sage-200 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
