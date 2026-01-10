@@ -50,12 +50,21 @@ export default function AboutPage() {
       <p>
         HiveCraic is built with modern web technologies to ensure a fast, reliable, and secure experience:
       </p>
+      <h3>Web Platform</h3>
       <ul>
         <li><strong>Next.js &amp; React</strong> - For a responsive, app-like experience</li>
         <li><strong>TypeScript</strong> - For code reliability and maintainability</li>
         <li><strong>Tailwind CSS</strong> - For a clean, modern interface</li>
         <li><strong>Supabase</strong> - For secure data storage and authentication</li>
         <li><strong>Progressive Web App (PWA)</strong> - Install on any device</li>
+      </ul>
+      <h3>AI &amp; Machine Learning</h3>
+      <ul>
+        <li><strong>AI Assistant (Mel)</strong> - Powered by Claude (Anthropic) for intelligent beekeeping advice with access to your hive data</li>
+        <li><strong>Knowledge Base RAG</strong> - Retrieval-Augmented Generation using beekeeping literature for accurate, sourced answers</li>
+        <li><strong>Varroa Mite Detection</strong> - Computer vision model using YOLOv8 for automated mite counting from images</li>
+        <li><strong>Diagnosis Image Analysis</strong> - Collaborative image collection for training future AI-powered disease and pest diagnosis</li>
+        <li><strong>Label Studio</strong> - Data annotation pipeline for continuous model improvement</li>
       </ul>
 
       <h2>Version</h2>
