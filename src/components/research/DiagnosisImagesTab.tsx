@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List, X, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import ImageZoomModal from '@/components/ui/ImageZoomModal'
 
 interface DiagnosisImage {
   id: string
@@ -43,7 +44,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [isZoomed, setIsZoomed] = useState(false)
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null)
 
   const fetchImages = useCallback(async () => {
     setLoading(true)
@@ -469,10 +470,10 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
       {selectedImage && (
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
-          onClick={() => { setSelectedImage(null); setIsZoomed(false); }}
+          onClick={() => setSelectedImage(null)}
         >
           <div
-            className={`bg-surface rounded-lg shadow-xl flex flex-col ${isZoomed ? 'max-w-[95vw] max-h-[95vh]' : 'max-w-4xl w-full max-h-[90vh] m-4'}`}
+            className="bg-surface rounded-lg shadow-xl flex flex-col max-w-4xl w-full max-h-[90vh] m-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header with Close Button */}
@@ -487,11 +488,11 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsZoomed(!isZoomed)}
+                  onClick={() => setZoomImageUrl(selectedImage.image_url)}
                   className="p-2 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                  title={isZoomed ? "Zoom out" : "Zoom in"}
+                  title="Zoom image"
                 >
-                  {isZoomed ? <ZoomOut size={20} /> : <ZoomIn size={20} />}
+                  <ZoomIn size={20} />
                 </button>
                 <button
                   onClick={() => handleDownload(selectedImage)}
@@ -501,7 +502,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
                   <Download size={20} />
                 </button>
                 <button
-                  onClick={() => { setSelectedImage(null); setIsZoomed(false); }}
+                  onClick={() => setSelectedImage(null)}
                   className="p-2 text-text-secondary hover:text-foreground hover:bg-sage-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                   title="Close"
                 >
@@ -510,99 +511,103 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
               </div>
             </div>
 
-            {/* Image */}
+            {/* Image - click to zoom */}
             <div
-              className={`relative flex-shrink-0 bg-black ${isZoomed ? 'flex-1 min-h-0' : 'aspect-video'}`}
-              onClick={() => setIsZoomed(!isZoomed)}
-              style={{ cursor: isZoomed ? 'zoom-out' : 'zoom-in' }}
+              className="relative aspect-video flex-shrink-0 bg-black cursor-pointer"
+              onClick={() => setZoomImageUrl(selectedImage.image_url)}
             >
               <Image
                 src={selectedImage.image_url}
                 alt={selectedImage.description}
                 fill
-                className={`${isZoomed ? 'object-contain' : 'object-contain'}`}
+                className="object-contain"
                 sizes="(max-width: 768px) 100vw, 896px"
                 priority
               />
             </div>
 
             {/* Content Area */}
-            {!isZoomed && (
-              <div className="p-4 space-y-3 overflow-y-auto flex-shrink-0 max-h-[40vh]">
-                <p className="text-foreground">{selectedImage.description}</p>
+            <div className="p-4 space-y-3 overflow-y-auto flex-shrink-0 max-h-[40vh]">
+              <p className="text-foreground">{selectedImage.description}</p>
 
-                {/* Comments Section */}
-                <div className="border-t border-border pt-3 space-y-3">
-                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <MessageSquare size={16} />
-                    Comments ({getImageComments(selectedImage.id).length})
-                  </h4>
+              {/* Comments Section */}
+              <div className="border-t border-border pt-3 space-y-3">
+                <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <MessageSquare size={16} />
+                  Comments ({getImageComments(selectedImage.id).length})
+                </h4>
 
-                  {/* Comments List */}
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {getImageComments(selectedImage.id).length === 0 ? (
-                      <p className="text-sm text-text-tertiary">No comments yet.</p>
-                    ) : (
-                      getImageComments(selectedImage.id).map((comment) => (
-                        <div key={comment.id} className="bg-sage-50 dark:bg-slate-800 rounded-lg p-2 text-sm">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-1 text-xs text-text-secondary">
-                              <User size={12} />
-                              <span className="font-medium">{comment.user_name}</span>
-                              <span className="text-text-tertiary">•</span>
-                              <span>{formatDateTime(comment.created_at)}</span>
-                            </div>
-                            {comment.user_id === userId && (
-                              <button
-                                onClick={() => handleDeleteComment(comment.id, selectedImage.id)}
-                                className="text-red-500 hover:text-red-700 p-0.5"
-                                title="Delete comment"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            )}
+                {/* Comments List */}
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {getImageComments(selectedImage.id).length === 0 ? (
+                    <p className="text-sm text-text-tertiary">No comments yet.</p>
+                  ) : (
+                    getImageComments(selectedImage.id).map((comment) => (
+                      <div key={comment.id} className="bg-sage-50 dark:bg-slate-800 rounded-lg p-2 text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1 text-xs text-text-secondary">
+                            <User size={12} />
+                            <span className="font-medium">{comment.user_name}</span>
+                            <span className="text-text-tertiary">•</span>
+                            <span>{formatDateTime(comment.created_at)}</span>
                           </div>
-                          <p className="text-foreground">{comment.comment}</p>
+                          {comment.user_id === userId && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id, selectedImage.id)}
+                              className="text-red-500 hover:text-red-700 p-0.5"
+                              title="Delete comment"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
                         </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Add Comment */}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
-                      placeholder="Add a comment..."
-                      className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground"
-                    />
-                    <button
-                      onClick={handleAddComment}
-                      disabled={submittingComment || !newComment.trim()}
-                      className="px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Send size={16} />
-                    </button>
-                  </div>
+                        <p className="text-foreground">{comment.comment}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
-                {/* Delete Button */}
-                <div className="flex justify-end pt-2 border-t border-border">
+                {/* Add Comment */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
+                    placeholder="Add a comment..."
+                    className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground"
+                  />
                   <button
-                    onClick={() => handleDelete(selectedImage)}
-                    disabled={deleting === selectedImage.id}
-                    className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors disabled:opacity-50"
+                    onClick={handleAddComment}
+                    disabled={submittingComment || !newComment.trim()}
+                    className="px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    Delete Image
+                    <Send size={16} />
                   </button>
                 </div>
               </div>
-            )}
+
+              {/* Delete Button */}
+              <div className="flex justify-end pt-2 border-t border-border">
+                <button
+                  onClick={() => handleDelete(selectedImage)}
+                  disabled={deleting === selectedImage.id}
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Delete Image
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Image Zoom Modal */}
+      <ImageZoomModal
+        isOpen={!!zoomImageUrl}
+        imageUrl={zoomImageUrl}
+        onClose={() => setZoomImageUrl(null)}
+      />
     </div>
   )
 }
