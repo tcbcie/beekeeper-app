@@ -61,8 +61,15 @@ export default function AboutPage() {
       <h3>AI &amp; Machine Learning</h3>
       <ul>
         <li><strong>AI Assistant (Mel)</strong> - Powered by Claude (Anthropic) for intelligent beekeeping advice with access to your hive data</li>
-        <li><strong>Knowledge Base RAG</strong> - Retrieval-Augmented Generation using beekeeping literature for accurate, sourced answers</li>
-        <li><strong>Varroa Mite Detection</strong> - Computer vision model using YOLOv8 for automated mite counting from images</li>
+        <li><strong>Knowledge Base RAG</strong> - Retrieval-Augmented Generation pipeline:
+          <ul>
+            <li>OpenAI text-embedding-3-small for vector embeddings (1536 dimensions)</li>
+            <li>Supabase pgvector for semantic similarity search</li>
+            <li>GPT-4o Vision &amp; Gemini 2.0 Flash for PDF OCR</li>
+            <li>Multi-language support with automatic translation</li>
+          </ul>
+        </li>
+        <li><strong>Varroa Mite Detection</strong> - YOLOv8 computer vision for automated mite counting with FastAPI backend</li>
         <li><strong>Diagnosis Image Analysis</strong> - Collaborative image collection for training future AI-powered disease and pest diagnosis</li>
         <li><strong>Label Studio</strong> - Data annotation pipeline for continuous model improvement</li>
       </ul>
