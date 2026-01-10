@@ -60,7 +60,7 @@ export default function AboutPage() {
       </ul>
       <h3>AI &amp; Machine Learning</h3>
       <ul>
-        <li><strong>AI Assistant (Mel)</strong> - Powered by Claude (Anthropic) for intelligent beekeeping advice with access to your hive data</li>
+        <li><strong>AI Assistant (Mel)</strong> - Powered by GPT-4o-mini (OpenAI) for intelligent beekeeping advice with access to your hive data</li>
         <li><strong>Knowledge Base RAG</strong> - Retrieval-Augmented Generation pipeline:
           <ul>
             <li>OpenAI text-embedding-3-small for vector embeddings (1536 dimensions)</li>
