@@ -418,10 +418,17 @@ function AboutPageContent() {
             </p>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Technology</h3>
-            <p className="text-text-secondary leading-relaxed">
+            <p className="text-text-secondary leading-relaxed mb-3">
               Built with modern web technologies including Next.js, React, TypeScript, Tailwind CSS,
               and Supabase for secure data storage and authentication.
             </p>
+            <p className="text-text-secondary leading-relaxed font-semibold">AI &amp; Machine Learning:</p>
+            <ul className="list-disc list-inside text-text-secondary space-y-1 ml-4">
+              <li>AI Assistant (Mel) - Powered by GPT-4o-mini (OpenAI)</li>
+              <li>Knowledge Base RAG - OpenAI embeddings with pgvector semantic search</li>
+              <li>Varroa Mite Detection - YOLOv8 computer vision</li>
+              <li>PDF OCR - GPT-4o Vision &amp; Gemini 2.0 Flash</li>
+            </ul>
 
             <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">App Statistics</h3>
             {statistics ? (
