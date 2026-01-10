@@ -222,9 +222,12 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
       </form>
 
       {/* Info Note */}
-      <div className="mt-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+      <div className="mt-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
         <p className="text-xs text-blue-700 dark:text-blue-300">
           Upload clear, well-lit photos for better diagnosis. Include multiple angles if needed.
+        </p>
+        <p className="text-xs text-blue-700 dark:text-blue-300">
+          Your submission is anonymous. We are looking for high-quality images to help train an AI model that will provide automated diagnosis in the future.
         </p>
       </div>
     </div>
