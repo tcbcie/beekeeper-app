@@ -40,9 +40,9 @@ export const getMatingNucs: Tool = {
     if (!data?.length) return 'No mating nucs found.'
 
     return data.map(nuc => {
-      const graft = nuc.batch_grafts as { cell_number: number; status: string } | null
-      const batch = nuc.rearing_batches as { batch_name: string } | null
-      const queen = nuc.queens as { queen_number: string } | null
+      const graft = nuc.batch_grafts as unknown as { cell_number: number; status: string } | null
+      const batch = nuc.rearing_batches as unknown as { batch_name: string } | null
+      const queen = nuc.queens as unknown as { queen_number: string } | null
       const inspections = nuc.mating_nuc_inspections as { count: number }[] | null
 
       return {
@@ -123,9 +123,9 @@ export const getNucDetails: Tool = {
       .eq('nuc_id', nuc.id)
       .order('inspection_date', { ascending: false })
 
-    const graft = nuc.batch_grafts as { cell_number: number; status: string } | null
-    const batch = nuc.rearing_batches as { batch_name: string } | null
-    const queen = nuc.queens as { queen_number: string } | null
+    const graft = nuc.batch_grafts as unknown as { cell_number: number; status: string } | null
+    const batch = nuc.rearing_batches as unknown as { batch_name: string } | null
+    const queen = nuc.queens as unknown as { queen_number: string } | null
 
     return {
       nucNumber: nuc.nuc_number,
@@ -176,8 +176,8 @@ export const getNucsReadyForHarvest: Tool = {
     if (!data?.length) return 'No laying queens ready for harvest.'
 
     return data.map(nuc => {
-      const batch = nuc.rearing_batches as { batch_name: string } | null
-      const queen = nuc.queens as { queen_number: string } | null
+      const batch = nuc.rearing_batches as unknown as { batch_name: string } | null
+      const queen = nuc.queens as unknown as { queen_number: string } | null
 
       return {
         nucNumber: nuc.nuc_number,
