@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function PublicLayout({
   children,
@@ -11,9 +12,7 @@ export default function PublicLayout({
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-amber-200 dark:border-slate-700 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-amber-300/50 transition-shadow">
-              <span className="text-2xl">🐝</span>
-            </div>
+            <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="w-10 h-10" />
             <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 dark:from-amber-400 dark:to-amber-600 bg-clip-text text-transparent">
               HiveCraic
             </span>
@@ -47,9 +46,7 @@ export default function PublicLayout({
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">🐝</span>
-                </div>
+                <Image src="/logo.png" alt="HiveCraic" width={32} height={32} className="w-8 h-8" />
                 <span className="text-lg font-bold text-white">HiveCraic</span>
               </div>
               <p className="text-slate-400 text-sm">
