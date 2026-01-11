@@ -20,11 +20,18 @@ interface Graft {
   notes: string | null
 }
 
+interface Queen {
+  id: string
+  queen_number: string
+  status: string
+}
+
 interface MatingNuc {
   id: string
   nuc_number: string
   graft_id: string | null
   batch_id: string | null
+  queen_id: string | null
   mating_location: string | null
   status: string
   setup_date: string
@@ -39,6 +46,9 @@ interface MatingNuc {
   } | null
   rearing_batches?: {
     batch_name: string
+  } | null
+  queens?: {
+    queen_number: string
   } | null
   mating_nuc_inspections?: { count: number }[]
 }
@@ -73,6 +83,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   const [nucs, setNucs] = useState<MatingNuc[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
   const [grafts, setGrafts] = useState<Graft[]>([])
+  const [queens, setQueens] = useState<Queen[]>([])
   const [filteredGrafts, setFilteredGrafts] = useState<Graft[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -84,6 +95,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
     nuc_number: '',
     batch_id: '',
     graft_id: '',
+    queen_id: '',
     mating_location: '',
     status: 'setup',
     notes: '',
@@ -92,7 +104,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   const fetchNucs = useCallback(async () => {
     const { data, error } = await supabase
       .from('mating_nucs')
-      .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name), mating_nuc_inspections(count)')
+      .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name), queens(queen_number), mating_nuc_inspections(count)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -124,11 +136,23 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
     if (data) setGrafts(data)
   }, [userId])
 
+  const fetchQueens = useCallback(async () => {
+    const { data } = await supabase
+      .from('queens')
+      .select('id, queen_number, status')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('queen_number')
+
+    if (data) setQueens(data)
+  }, [userId])
+
   useEffect(() => {
     fetchNucs()
     fetchBatches()
     fetchGrafts()
-  }, [fetchNucs, fetchBatches, fetchGrafts])
+    fetchQueens()
+  }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens])
 
   // Filter grafts by selected batch
   useEffect(() => {
@@ -145,6 +169,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
       nuc_number: '',
       batch_id: '',
       graft_id: '',
+      queen_id: '',
       mating_location: '',
       status: 'setup',
       notes: '',
@@ -159,6 +184,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
       nuc_number: nuc.nuc_number,
       batch_id: nuc.batch_id || '',
       graft_id: nuc.graft_id || '',
+      queen_id: nuc.queen_id || '',
       mating_location: nuc.mating_location || '',
       status: nuc.status,
       notes: nuc.notes || '',
@@ -173,6 +199,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
       nuc_number: formData.nuc_number,
       batch_id: formData.batch_id || null,
       graft_id: formData.graft_id || null,
+      queen_id: formData.queen_id || null,
       mating_location: formData.mating_location || null,
       status: formData.status,
       notes: formData.notes || null,
@@ -295,6 +322,22 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Grafted from</label>
+              <select
+                value={formData.queen_id}
+                onChange={(e) => setFormData({ ...formData, queen_id: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+              >
+                <option value="">Select queen (optional)</option>
+                {queens.map(q => (
+                  <option key={q.id} value={q.id}>
+                    {q.queen_number}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {formData.batch_id && (
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">Cell/Graft</label>
@@ -407,6 +450,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
                           Batch: {nuc.rearing_batches.batch_name}
                           {nuc.batch_grafts && ` - Cell #${nuc.batch_grafts.cell_number}`}
                         </span>
+                      )}
+                      {nuc.queens && (
+                        <span>Grafted from: {nuc.queens.queen_number}</span>
                       )}
                       {nuc.mating_location && (
                         <span className="flex items-center gap-1">
