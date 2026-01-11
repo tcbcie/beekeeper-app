@@ -9,6 +9,8 @@ import { useToast } from '@/components/ui/Toast'
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner'
 import NotificationStatusCard from '@/components/NotificationStatusCard'
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
+import MatingNucsTab from '@/components/batches/MatingNucsTab'
+import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
 
 interface Queen {
   id: string
@@ -150,7 +152,7 @@ export default function BatchesPage() {
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'planning' | 'selection'>('planning')
+  const [activeTab, setActiveTab] = useState<'planning' | 'nucs' | 'selection'>('planning')
 
   // Selection tab states
   const [selectedApiary, setSelectedApiary] = useState<string>('all')
@@ -717,6 +719,16 @@ export default function BatchesPage() {
               Planning
             </button>
             <button
+              onClick={() => setActiveTab('nucs')}
+              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'nucs'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border'
+              }`}
+            >
+              Mating Nucs
+            </button>
+            <button
               onClick={() => setActiveTab('selection')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'selection'
@@ -1120,6 +1132,17 @@ export default function BatchesPage() {
               </div>
             </div>
 
+            {/* Individual Grafts Section - Only show when editing existing batch */}
+            {editingBatch && userId && (
+              <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                <BatchGraftsSection
+                  batchId={editingBatch.id}
+                  userId={userId}
+                  cellCount={formData.cell_count ? parseInt(formData.cell_count) : null}
+                />
+              </div>
+            )}
+
             <div className="md:col-span-2 flex gap-3">
               <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 {editingBatch ? 'Update' : 'Create'} Batch
@@ -1238,6 +1261,11 @@ export default function BatchesPage() {
         )}
           </div>
         </>
+      )}
+
+      {/* Mating Nucs Tab Content */}
+      {activeTab === 'nucs' && userId && (
+        <MatingNucsTab userId={userId} />
       )}
 
       {/* Selection Tab Content */}
