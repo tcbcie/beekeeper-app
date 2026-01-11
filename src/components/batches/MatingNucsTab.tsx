@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit2, Trash2, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Edit2, Archive, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import NucInspectionPanel from './NucInspectionPanel'
 
@@ -40,6 +40,7 @@ interface MatingNuc {
   mating_confirmed_at: string | null
   notes: string | null
   updated_at: string
+  retired_at: string | null
   batch_grafts?: {
     cell_number: number
     status: string
@@ -89,6 +90,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingNuc, setEditingNuc] = useState<MatingNuc | null>(null)
   const [expandedNucId, setExpandedNucId] = useState<string | null>(null)
+  const [showRetired, setShowRetired] = useState(false)
+  const [historyNucNumber, setHistoryNucNumber] = useState<string | null>(null)
+  const [historyData, setHistoryData] = useState<MatingNuc[]>([])
 
   // Form state
   const [formData, setFormData] = useState({
@@ -102,11 +106,19 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   })
 
   const fetchNucs = useCallback(async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('mating_nucs')
       .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name), queens(queen_number), mating_nuc_inspections(count)')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+
+    // Filter by retired status
+    if (showRetired) {
+      query = query.not('retired_at', 'is', null)
+    } else {
+      query = query.is('retired_at', null)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching nucs:', error)
@@ -114,7 +126,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
       setNucs(data)
     }
     setLoading(false)
-  }, [userId])
+  }, [userId, showRetired])
 
   const fetchBatches = useCallback(async () => {
     const { data } = await supabase
@@ -195,6 +207,20 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate: check no active nuc with same number exists
+    const { data: existing } = await supabase
+      .from('mating_nucs')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('nuc_number', formData.nuc_number)
+      .is('retired_at', null)
+      .maybeSingle()
+
+    if (existing && existing.id !== editingNuc?.id) {
+      toast.error(`Nuc "${formData.nuc_number}" is already active. Retire it first to reuse this number.`)
+      return
+    }
+
     const nucData = {
       nuc_number: formData.nuc_number,
       batch_id: formData.batch_id || null,
@@ -242,21 +268,38 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this mating nuc?')) return
+  const handleRetire = async (id: string) => {
+    if (!confirm('Retire this nuc? It will be archived but history preserved.')) return
 
     try {
       const { error } = await supabase
         .from('mating_nucs')
-        .delete()
+        .update({ retired_at: new Date().toISOString() })
         .eq('id', id)
 
       if (error) throw error
-      toast.success('Mating nuc deleted')
+      toast.success('Nuc retired')
       fetchNucs()
     } catch (error) {
-      console.error('Error deleting nuc:', error)
-      toast.error('Failed to delete mating nuc')
+      console.error('Error retiring nuc:', error)
+      toast.error('Failed to retire mating nuc')
+    }
+  }
+
+  const fetchHistory = async (nucNumber: string) => {
+    const { data, error } = await supabase
+      .from('mating_nucs')
+      .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name), queens(queen_number), mating_nuc_inspections(count)')
+      .eq('user_id', userId)
+      .eq('nuc_number', nucNumber)
+      .order('setup_date', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching history:', error)
+      toast.error('Failed to load history')
+    } else {
+      setHistoryData(data || [])
+      setHistoryNucNumber(nucNumber)
     }
   }
 
@@ -276,15 +319,28 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <h2 className="text-xl font-semibold text-foreground">Mating Nucs</h2>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 flex items-center gap-2"
-        >
-          {showForm ? <X size={16} /> : <Plus size={16} />}
-          {showForm ? 'Cancel' : 'New Nuc'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowRetired(!showRetired)}
+            className={`px-3 py-2 rounded-lg flex items-center gap-2 text-sm ${
+              showRetired
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+            }`}
+          >
+            {showRetired ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showRetired ? 'Hide Retired' : 'Show Retired'}
+          </button>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 flex items-center gap-2"
+          >
+            {showForm ? <X size={16} /> : <Plus size={16} />}
+            {showForm ? 'Cancel' : 'New Nuc'}
+          </button>
+        </div>
       </div>
 
       {/* Create/Edit Form */}
@@ -471,19 +527,28 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
                   {/* Action Buttons */}
                   <div className="flex gap-1 shrink-0">
                     <button
+                      onClick={() => fetchHistory(nuc.nuc_number)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                      title="View History"
+                    >
+                      <History size={18} />
+                    </button>
+                    <button
                       onClick={() => handleEdit(nuc)}
                       className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
                       title="Edit"
                     >
                       <Edit2 size={18} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(nuc.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {!nuc.retired_at && (
+                      <button
+                        onClick={() => handleRetire(nuc.id)}
+                        className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                        title="Retire"
+                      >
+                        <Archive size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -499,6 +564,63 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* History Modal */}
+      {historyNucNumber && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-border flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-foreground">
+                History for Nuc {historyNucNumber}
+              </h3>
+              <button
+                onClick={() => setHistoryNucNumber(null)}
+                className="p-2 text-text-secondary hover:text-foreground rounded"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {historyData.length === 0 ? (
+                <p className="text-text-secondary text-center py-4">No history found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {historyData.map((nuc, index) => (
+                    <div
+                      key={nuc.id}
+                      className={`p-3 rounded-lg border ${
+                        nuc.retired_at
+                          ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
+                          : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-foreground">
+                          Cycle {historyData.length - index}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(nuc.status)}`}>
+                          {NUC_STATUSES.find(s => s.value === nuc.status)?.label}
+                        </span>
+                      </div>
+                      <div className="text-sm text-text-secondary space-y-1">
+                        <div>Setup: {formatDateIrish(nuc.setup_date)}</div>
+                        {nuc.retired_at && <div>Retired: {formatDateIrish(nuc.retired_at)}</div>}
+                        {nuc.rearing_batches && (
+                          <div>Batch: {nuc.rearing_batches.batch_name}</div>
+                        )}
+                        {nuc.queens && (
+                          <div>Grafted from: {nuc.queens.queen_number}</div>
+                        )}
+                        <div>Inspections: {nuc.mating_nuc_inspections?.[0]?.count || 0}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
