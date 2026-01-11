@@ -1489,6 +1489,7 @@ export default function SettingsPage() {
         // Regular user: export only their own data
         const tables = [
           'apiaries',
+          'batch_grafts',
           'colonies',
           'colony_movements',
           'feedings',
@@ -1496,6 +1497,8 @@ export default function SettingsPage() {
           'harvests',
           'hives',
           'inspections',
+          'mating_nuc_inspections',
+          'mating_nucs',
           'profiles',
           'queens',
           'rearing_batches',
