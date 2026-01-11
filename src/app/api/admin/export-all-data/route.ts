@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
       // Fallback: comprehensive list of all known tables
       tables = [
         'apiaries',
+        'batch_grafts',
         'beekeeping_associations',
         'changelog',
         'colonies',
@@ -83,6 +84,8 @@ export async function POST(request: NextRequest) {
         'inspections',
         'knowledge_base',
         'knowledge_sources',
+        'mating_nuc_inspections',
+        'mating_nucs',
         'news_articles',
         'profiles',
         'push_subscriptions',
