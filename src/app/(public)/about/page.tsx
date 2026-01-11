@@ -1,113 +1,219 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'About - HiveCraic',
   description: 'About HiveCraic - A comprehensive beekeeping management application',
 }
 
+const features = [
+  {
+    icon: '🏠',
+    title: 'Apiary Management',
+    description: 'Track all your bee yards and hives in one place with detailed records.',
+  },
+  {
+    icon: '👑',
+    title: 'Queen Tracking',
+    description: 'Monitor queen age, lineage, performance, and breeding records.',
+  },
+  {
+    icon: '📋',
+    title: 'Inspection Logging',
+    description: 'Record detailed inspections with automatic weather data integration.',
+  },
+  {
+    icon: '🔬',
+    title: 'Varroa Monitoring',
+    description: 'Track mite counts, treatment schedules, and colony health.',
+  },
+  {
+    icon: '🐣',
+    title: 'Queen Rearing',
+    description: 'Manage breeding batches with timeline tracking and mating nucs.',
+  },
+  {
+    icon: '🤖',
+    title: 'AI Assistant',
+    description: 'Get intelligent help from Mel with access to your hive data.',
+  },
+  {
+    icon: '📚',
+    title: 'Knowledge Base',
+    description: 'AI-powered answers sourced from beekeeping literature.',
+  },
+  {
+    icon: '📱',
+    title: 'Mobile App',
+    description: 'Install as a PWA on your phone for easy field access.',
+  },
+]
+
+const techStack = [
+  { name: 'Next.js & React', description: 'Fast, modern web experience' },
+  { name: 'TypeScript', description: 'Reliable, maintainable code' },
+  { name: 'Supabase', description: 'Secure cloud database' },
+  { name: 'OpenAI GPT-4', description: 'AI-powered assistance' },
+  { name: 'YOLOv8', description: 'Varroa mite detection' },
+  { name: 'PWA', description: 'Works offline on any device' },
+]
+
 export default function AboutPage() {
   return (
-    <div className="prose prose-slate dark:prose-invert max-w-none">
-      <h1>About HiveCraic</h1>
+    <div>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800" />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
 
-      <div className="bg-amber-50 dark:bg-amber-950/30 border-l-4 border-amber-500 p-4 mb-6 not-prose">
-        <p className="font-semibold text-amber-900 dark:text-amber-300">Comprehensive Beekeeping Management</p>
-        <p className="text-amber-800 dark:text-amber-400 mt-2">
-          HiveCraic is a modern beekeeping management application designed to help beekeepers
-          of all experience levels track and manage their apiaries, hives, queens, and beekeeping activities.
-        </p>
-      </div>
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-700 dark:text-amber-300 text-sm font-medium mb-6">
+              <span>🍯</span>
+              <span>Modern Beekeeping Management</span>
+            </div>
 
-      <h2>What is HiveCraic?</h2>
-      <p>
-        HiveCraic is a comprehensive beekeeping management application designed to help beekeepers
-        of all experience levels track and manage their apiaries, hives, queens, and beekeeping activities.
-        Whether you&apos;re a hobbyist with a few hives or managing a large commercial operation,
-        HiveCraic provides the tools you need to stay organized and make informed decisions.
-      </p>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6">
+              Welcome to{' '}
+              <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+                HiveCraic
+              </span>
+            </h1>
 
-      <h2>Features</h2>
-      <ul>
-        <li><strong>Complete Apiary and Hive Management</strong> - Track all your bee yards and hives in one place</li>
-        <li><strong>Apiaries Team Management</strong> - Collaborate with other beekeepers on shared apiaries</li>
-        <li><strong>Queen Tracking</strong> - Monitor queen age, lineage, and performance records</li>
-        <li><strong>Detailed Inspection Logging</strong> - Record inspections with automatic weather data</li>
-        <li><strong>Varroa Mite Monitoring</strong> - Track mite counts and treatment schedules</li>
-        <li><strong>Queen Rearing Batch Management</strong> - Manage queen rearing operations with batch tracking</li>
-        <li><strong>Harvest and Feeding Records</strong> - Log honey harvests and feeding activities</li>
-        <li><strong>Multi-user Support</strong> - Role-based access control for teams</li>
-        <li><strong>Email Notifications</strong> - Get reminders for tasks, events, and batch milestones</li>
-        <li><strong>Data Export</strong> - Export your data for backup or analysis</li>
-        <li><strong>Mobile App (PWA)</strong> - Install on your phone for easy field access</li>
-        <li><strong>AI Assistant (Mel)</strong> - Get intelligent help with access to your hive data</li>
-        <li><strong>Knowledge Base</strong> - AI-powered answers sourced from beekeeping literature</li>
-        <li><strong>Community Map</strong> - View shared apiary locations and connect with nearby beekeepers</li>
-        <li><strong>Wild Colony Tracking</strong> - Record and monitor feral bee colonies</li>
-        <li><strong>Beekeeping Tools</strong> - Useful calculators and utilities for daily beekeeping tasks</li>
-      </ul>
+            <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto mb-10">
+              A comprehensive beekeeping management application designed to help beekeepers
+              of all experience levels track and manage their apiaries, hives, queens, and beekeeping activities.
+            </p>
 
-      <h2>Technology</h2>
-      <p>
-        HiveCraic is built with modern web technologies to ensure a fast, reliable, and secure experience:
-      </p>
-      <h3>Web Platform</h3>
-      <ul>
-        <li><strong>Next.js &amp; React</strong> - For a responsive, app-like experience</li>
-        <li><strong>TypeScript</strong> - For code reliability and maintainability</li>
-        <li><strong>Tailwind CSS</strong> - For a clean, modern interface</li>
-        <li><strong>Supabase</strong> - For secure data storage and authentication</li>
-        <li><strong>Progressive Web App (PWA)</strong> - Install on any device</li>
-      </ul>
-      <h3>AI &amp; Machine Learning</h3>
-      <ul>
-        <li><strong>AI Assistant (Mel)</strong> - Powered by GPT-4o-mini (OpenAI) for intelligent beekeeping advice with access to your hive data</li>
-        <li><strong>Knowledge Base RAG</strong> - Retrieval-Augmented Generation pipeline:
-          <ul>
-            <li>OpenAI text-embedding-3-small for vector embeddings (1536 dimensions)</li>
-            <li>Supabase pgvector for semantic similarity search</li>
-            <li>GPT-4o Vision &amp; Gemini 2.0 Flash for PDF OCR</li>
-            <li>Multi-language support with automatic translation</li>
-          </ul>
-        </li>
-        <li><strong>Varroa Mite Detection</strong> - YOLOv8 computer vision for automated mite counting with FastAPI backend</li>
-        <li><strong>Diagnosis Image Analysis</strong> - Collaborative image collection for training future AI-powered disease and pest diagnosis</li>
-        <li><strong>Label Studio</strong> - Data annotation pipeline for continuous model improvement</li>
-      </ul>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/login"
+                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full hover:from-amber-600 hover:to-amber-700 transition-all font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 text-lg"
+              >
+                Get Started Free
+              </Link>
+              <Link
+                href="#features"
+                className="px-8 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-semibold border border-slate-200 dark:border-slate-700 text-lg"
+              >
+                Learn More
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <h2>Version</h2>
-      <p>
-        <strong>Current Version:</strong> 1.5.9 (January 2026)
-      </p>
+      {/* Features Section */}
+      <section id="features" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+            Everything You Need
+          </h2>
+          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            Powerful features to help you manage your beekeeping operation efficiently.
+          </p>
+        </div>
 
-      <h2>Credits</h2>
-      <p>
-        Crafted with honeyed hearts by <strong>tcbc.ie</strong>, alongside the buzzing minds of
-        <strong> Tribes Beekeepers Association</strong> and <strong>Tribes QRBG</strong>.
-      </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                {feature.icon}
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                {feature.title}
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <h2>Get Started</h2>
-      <p>
-        Ready to take your beekeeping to the next level? Create an account and start managing
-        your hives with HiveCraic today.
-      </p>
-      <div className="not-prose mt-4">
-        <a
-          href="/login"
-          className="inline-block px-6 py-3 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 transition-colors"
-        >
-          Sign Up or Log In
-        </a>
-      </div>
+      {/* Technology Section */}
+      <section className="bg-slate-50 dark:bg-slate-800/50 py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+              Built with Modern Technology
+            </h2>
+            <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              Fast, reliable, and secure experience powered by cutting-edge tech.
+            </p>
+          </div>
 
-      <h2>Contact</h2>
-      <p>
-        Have questions or feedback? We&apos;d love to hear from you.
-      </p>
-      <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg mt-2 not-prose border border-gray-200 dark:border-slate-700">
-        <p className="font-semibold text-gray-900 dark:text-gray-100">HiveCraic Support</p>
-        <p className="text-gray-700 dark:text-gray-300">Email: support@tcbc.ie</p>
-        <p className="text-gray-700 dark:text-gray-300">Website: tcbc.ie</p>
-      </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {techStack.map((tech, index) => (
+              <div
+                key={index}
+                className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-center"
+              >
+                <p className="font-semibold text-slate-900 dark:text-white text-sm mb-1">
+                  {tech.name}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {tech.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Credits Section */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 sm:p-12 text-center text-white">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+            Crafted with Honeyed Hearts
+          </h2>
+          <p className="text-amber-100 text-lg mb-6 max-w-2xl mx-auto">
+            Built by <strong>tcbc.ie</strong>, alongside the buzzing minds of{' '}
+            <strong>Tribes Beekeepers Association</strong> and <strong>Tribes QRBG</strong>.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/login"
+              className="px-8 py-3 bg-white text-amber-600 rounded-full hover:bg-amber-50 transition-all font-semibold"
+            >
+              Start Managing Your Hives
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+            Questions or Feedback?
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">
+            We&apos;d love to hear from you. Reach out anytime.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a
+              href="mailto:support@tcbc.ie"
+              className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
+            >
+              <span>📧</span>
+              <span>support@tcbc.ie</span>
+            </a>
+            <a
+              href="https://tcbc.ie"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
+            >
+              <span>🌐</span>
+              <span>tcbc.ie</span>
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

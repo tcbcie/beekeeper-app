@@ -1,172 +1,197 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Notice - HiveCraic',
-  description: 'Privacy notice for HiveCraic beekeeping management application',
+  title: 'Privacy Policy - HiveCraic',
+  description: 'Privacy policy for HiveCraic beekeeping management application',
 }
+
+const sections = [
+  {
+    icon: '📊',
+    title: 'Information We Collect',
+    items: [
+      { label: 'Account Information', desc: 'Email address, password (encrypted), and user profile data' },
+      { label: 'Beekeeping Data', desc: 'All data you enter about your apiaries, hives, queens, inspections, and related activities' },
+      { label: 'Usage Data', desc: 'Activity timestamps for online user tracking (visible to administrators)' },
+      { label: 'Subscription Info', desc: 'Subscription status, payment dates, and tier information' },
+    ],
+  },
+  {
+    icon: '🎯',
+    title: 'How We Use Your Information',
+    items: [
+      { label: 'Service Provision', desc: 'Providing and maintaining the HiveCraic service' },
+      { label: 'Authentication', desc: 'Authenticating your access to the application' },
+      { label: 'Data Management', desc: 'Storing and managing your beekeeping records' },
+      { label: 'Collaboration', desc: 'Enabling multi-user collaboration features' },
+      { label: 'Billing', desc: 'Processing subscription payments and managing billing' },
+    ],
+  },
+  {
+    icon: '🔒',
+    title: 'Data Storage & Security',
+    items: [
+      { label: 'Encryption', desc: 'All passwords are encrypted using industry-standard hashing' },
+      { label: 'Secure Transfer', desc: 'Data is transmitted over secure HTTPS connections' },
+      { label: 'Row-Level Security', desc: 'Policies ensure users can only access their own data' },
+      { label: 'Backups', desc: 'Database backups are maintained for disaster recovery' },
+    ],
+  },
+  {
+    icon: '🤝',
+    title: 'Data Sharing',
+    items: [
+      { label: 'No Selling', desc: 'We do not sell, trade, or share your personal information' },
+      { label: 'Consent Only', desc: 'Data shared only with your explicit consent' },
+      { label: 'Legal Requirements', desc: 'When required by law or legal process' },
+      { label: 'Safety', desc: 'To protect rights, property, or safety of users' },
+    ],
+  },
+  {
+    icon: '💳',
+    title: 'Payment Processing',
+    items: [
+      { label: 'Stripe', desc: 'Payments processed securely through PCI-compliant Stripe' },
+      { label: 'No Card Storage', desc: 'We do not store or have access to your full credit card details' },
+      { label: 'Encrypted', desc: 'Payment information is encrypted and processed directly by Stripe' },
+    ],
+  },
+  {
+    icon: '⚖️',
+    title: 'Your Rights',
+    items: [
+      { label: 'Access', desc: 'Access your personal data stored in HiveCraic' },
+      { label: 'Export', desc: 'Export your data using the database export feature' },
+      { label: 'Correction', desc: 'Request correction of inaccurate data' },
+      { label: 'Deletion', desc: 'Delete your account and associated data' },
+      { label: 'Withdraw Consent', desc: 'Withdraw consent for data processing' },
+    ],
+  },
+]
 
 export default function PrivacyPage() {
   return (
-    <div className="prose prose-slate dark:prose-invert max-w-none">
-      <h1>Privacy Notice</h1>
-
-      <div className="bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500 p-4 mb-6 not-prose">
-        <p className="font-semibold text-blue-900 dark:text-blue-300">Your Privacy Matters</p>
-        <p className="text-blue-800 dark:text-blue-400 mt-2">
-          This privacy notice explains how HiveCraic collects, uses, and protects your personal information.
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+      {/* Header */}
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
+          <span>🔐</span>
+          <span>Your Privacy Matters</span>
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+          Privacy Policy
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400">
+          Last Updated: January 2026
         </p>
       </div>
 
-      <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated: December 2025</p>
-
-      <h2>Information We Collect</h2>
-      <p>
-        HiveCraic collects and stores the following types of information:
-      </p>
-      <ul>
-        <li><strong>Account Information:</strong> Email address, password (encrypted), and user profile data</li>
-        <li><strong>Beekeeping Data:</strong> All data you enter about your apiaries, hives, queens, inspections, and related activities</li>
-        <li><strong>Usage Data:</strong> Activity timestamps for online user tracking (visible to administrators)</li>
-        <li><strong>Subscription Information:</strong> Subscription status, payment dates, and subscription tier information</li>
-      </ul>
-
-      <h2>How We Use Your Information</h2>
-      <p>
-        Your information is used solely for:
-      </p>
-      <ul>
-        <li>Providing and maintaining the HiveCraic service</li>
-        <li>Authenticating your access to the application</li>
-        <li>Storing and managing your beekeeping records</li>
-        <li>Enabling multi-user collaboration features</li>
-        <li>Displaying user activity statistics to administrators</li>
-        <li>Processing subscription payments and managing billing</li>
-        <li>Providing access to subscription-based features</li>
-      </ul>
-
-      <h2>Data Storage and Security</h2>
-      <p>
-        Your data is stored securely using Supabase, a secure cloud database platform:
-      </p>
-      <ul>
-        <li>All passwords are encrypted using industry-standard hashing</li>
-        <li>Data is transmitted over secure HTTPS connections</li>
-        <li>Row-level security policies ensure users can only access their own data</li>
-        <li>Database backups are maintained for disaster recovery</li>
-      </ul>
-
-      <h2>Data Sharing</h2>
-      <p>
-        HiveCraic does not sell, trade, or share your personal information with third parties except:
-      </p>
-      <ul>
-        <li>With your explicit consent</li>
-        <li>When required by law or legal process</li>
-        <li>To protect the rights, property, or safety of HiveCraic, its users, or the public</li>
-      </ul>
-
-      <h2>Multi-User Access</h2>
-      <p>
-        In multi-user environments:
-      </p>
-      <ul>
-        <li>Users can only see and access their own beekeeping data</li>
-        <li>Administrators can view system-wide statistics (total users, hives, apiaries)</li>
-        <li>Administrators can see which users are currently active</li>
-        <li>Administrators cannot access individual user&apos;s detailed beekeeping records</li>
-      </ul>
-
-      <h2>Third-Party Services</h2>
-      <p>
-        HiveCraic integrates with the following third-party services:
-      </p>
-      <ul>
-        <li><strong>Supabase:</strong> Database and authentication services</li>
-        <li><strong>Stripe:</strong> Payment processing for subscriptions</li>
-        <li><strong>Weather Services:</strong> Weather data for inspection logging</li>
-      </ul>
-      <p>
-        These services have their own privacy policies and terms of service.
-      </p>
-
-      <h2>Payment Processing</h2>
-      <p>
-        Subscription payments are processed securely through Stripe, a PCI-compliant payment processor:
-      </p>
-      <ul>
-        <li>HiveCraic does not store or have access to your full credit card details</li>
-        <li>Payment information is encrypted and processed directly by Stripe</li>
-        <li>We only store subscription status and payment confirmation details</li>
-        <li>Stripe may collect billing address and payment method information according to their privacy policy</li>
-        <li>You can manage your payment methods and billing information through your profile settings</li>
-      </ul>
-      <p>
-        For more information about how Stripe handles your payment data, please visit{' '}
-        <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-700">
-          Stripe&apos;s Privacy Policy
-        </a>.
-      </p>
-
-      <h2>Your Rights</h2>
-      <p>
-        You have the right to:
-      </p>
-      <ul>
-        <li>Access your personal data stored in HiveCraic</li>
-        <li>Export your data using the database export feature</li>
-        <li>Request correction of inaccurate data</li>
-        <li>Delete your account and associated data</li>
-        <li>Withdraw consent for data processing</li>
-      </ul>
-
-      <h2>Data Retention</h2>
-      <p>
-        Your data is retained as long as your account is active. If you delete your account,
-        all associated data will be permanently removed from our systems within 30 days.
-      </p>
-
-      <h2>Cookies and Tracking</h2>
-      <p>
-        HiveCraic uses essential cookies for:
-      </p>
-      <ul>
-        <li>Maintaining your logged-in session</li>
-        <li>Remembering your preferences</li>
-      </ul>
-      <p>
-        We do not use tracking cookies or analytics for advertising purposes.
-      </p>
-
-      <h2>Children&apos;s Privacy</h2>
-      <p>
-        HiveCraic is not intended for use by individuals under the age of 16. We do not knowingly
-        collect personal information from children under 16.
-      </p>
-
-      <h2>Changes to Privacy Notice</h2>
-      <p>
-        We may update this privacy notice from time to time. We will notify users of any material
-        changes by updating the &quot;Last Updated&quot; date and, where appropriate, providing
-        additional notice.
-      </p>
-
-      <h2>Contact Information</h2>
-      <p>
-        If you have questions or concerns about this privacy notice or how your data is handled,
-        please contact us at:
-      </p>
-      <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg mt-2 not-prose border border-gray-200 dark:border-slate-700">
-        <p className="font-semibold text-gray-900 dark:text-gray-100">HiveCraic Support</p>
-        <p className="text-gray-700 dark:text-gray-300">Email: support@tcbc.ie</p>
-        <p className="text-gray-700 dark:text-gray-300">Website: tcbc.ie</p>
+      {/* Introduction */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 sm:p-8 mb-8 border border-blue-100 dark:border-blue-800">
+        <p className="text-slate-700 dark:text-slate-300 text-lg">
+          This privacy policy explains how HiveCraic collects, uses, and protects your personal information.
+          We are committed to ensuring your data is handled securely and transparently.
+        </p>
       </div>
 
-      <h2>GDPR Compliance</h2>
-      <p>
-        For users in the European Union, HiveCraic is committed to compliance with the General
-        Data Protection Regulation (GDPR). You have additional rights under GDPR including the
-        right to data portability and the right to lodge a complaint with a supervisory authority.
-      </p>
+      {/* Sections */}
+      <div className="space-y-8">
+        {sections.map((section, index) => (
+          <div
+            key={index}
+            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+          >
+            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3">
+                <span className="text-2xl">{section.icon}</span>
+                {section.title}
+              </h2>
+            </div>
+            <div className="p-6">
+              <ul className="space-y-4">
+                {section.items.map((item, itemIndex) => (
+                  <li key={itemIndex} className="flex gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-medium text-slate-900 dark:text-white">{item.label}:</span>{' '}
+                      <span className="text-slate-600 dark:text-slate-400">{item.desc}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Additional Sections */}
+      <div className="mt-8 space-y-6">
+        {/* Multi-User Access */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
+            <span className="text-2xl">👥</span>
+            Multi-User Access
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            In multi-user environments, users can only see and access their own beekeeping data.
+            Administrators can view system-wide statistics but cannot access individual user&apos;s detailed records.
+          </p>
+        </div>
+
+        {/* Cookies */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
+            <span className="text-2xl">🍪</span>
+            Cookies & Tracking
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            HiveCraic uses essential cookies for maintaining your logged-in session and remembering your preferences.
+            We do not use tracking cookies or analytics for advertising purposes.
+          </p>
+        </div>
+
+        {/* Data Retention */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
+            <span className="text-2xl">📅</span>
+            Data Retention
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            Your data is retained as long as your account is active. If you delete your account,
+            all associated data will be permanently removed from our systems within 30 days.
+          </p>
+        </div>
+
+        {/* GDPR */}
+        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-800">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
+            <span className="text-2xl">🇪🇺</span>
+            GDPR Compliance
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            For users in the European Union, HiveCraic is committed to compliance with the General
+            Data Protection Regulation (GDPR). You have additional rights including data portability
+            and the right to lodge a complaint with a supervisory authority.
+          </p>
+        </div>
+      </div>
+
+      {/* Contact */}
+      <div className="mt-12 bg-slate-900 dark:bg-slate-800 rounded-2xl p-8 text-center">
+        <h2 className="text-xl font-semibold text-white mb-4">
+          Questions About Your Privacy?
+        </h2>
+        <p className="text-slate-400 mb-6">
+          If you have questions or concerns about this privacy policy, please contact us.
+        </p>
+        <a
+          href="mailto:support@tcbc.ie"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors font-medium"
+        >
+          <span>📧</span>
+          <span>support@tcbc.ie</span>
+        </a>
+      </div>
     </div>
   )
 }
