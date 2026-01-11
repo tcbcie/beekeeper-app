@@ -5,31 +5,36 @@ import { getSupabase, formatDate, daysSince } from './utils'
 // Get all mating nucs with status summary
 export const getMatingNucs: Tool = {
   name: 'getMatingNucs',
-  description: 'Get list of all mating nucs with their status, queen info, and inspection counts',
+  description: 'Get list of active mating nucs with their status, queen info, and inspection counts (excludes retired nucs)',
   parameters: z.object({
-    status: z.enum(['all', 'active', 'laying', 'failed']).optional().describe('Filter by status (default all)')
+    status: z.enum(['all', 'active', 'laying', 'failed']).optional().describe('Filter by status (default all active)'),
+    includeRetired: z.boolean().optional().describe('Include retired nucs (default false)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
-    const args = rawArgs as { status?: string }
+    const args = rawArgs as { status?: string; includeRetired?: boolean }
     const supabase = getSupabase()
 
     let query = supabase
       .from('mating_nucs')
       .select(`
-        nuc_number, status, setup_date, mating_location, updated_at,
+        nuc_number, status, setup_date, mating_location, updated_at, retired_at,
         batch_grafts(cell_number, status),
         rearing_batches(batch_name),
         queens(queen_number),
         mating_nuc_inspections(count)
       `)
       .eq('user_id', userId)
-      .order('setup_date', { ascending: false })
+
+    // Only show active (non-retired) nucs by default
+    if (!args.includeRetired) {
+      query = query.is('retired_at', null)
+    }
 
     if (args.status && args.status !== 'all') {
       query = query.eq('status', args.status)
     }
 
-    const { data, error } = await query
+    const { data, error } = await query.order('setup_date', { ascending: false })
 
     if (error) return `Error fetching mating nucs: ${error.message}`
     if (!data?.length) return 'No mating nucs found.'
@@ -58,7 +63,7 @@ export const getMatingNucs: Tool = {
 // Get mating nuc status summary
 export const getMatingNucSummary: Tool = {
   name: 'getMatingNucSummary',
-  description: 'Get summary counts of mating nucs by status',
+  description: 'Get summary counts of active mating nucs by status (excludes retired)',
   parameters: z.object({}),
   execute: async (_args: unknown, userId: string) => {
     const supabase = getSupabase()
@@ -67,6 +72,7 @@ export const getMatingNucSummary: Tool = {
       .from('mating_nucs')
       .select('status')
       .eq('user_id', userId)
+      .is('retired_at', null)
 
     if (error) return `Error fetching mating nucs: ${error.message}`
     if (!data?.length) return 'No mating nucs found.'
@@ -149,7 +155,7 @@ export const getNucDetails: Tool = {
 // Get nucs ready for queen introduction/harvest
 export const getNucsReadyForHarvest: Tool = {
   name: 'getNucsReadyForHarvest',
-  description: 'Get mating nucs where queens are confirmed laying and ready for harvest/introduction',
+  description: 'Get active mating nucs where queens are confirmed laying and ready for harvest/introduction',
   parameters: z.object({}),
   execute: async (_args: unknown, userId: string) => {
     const supabase = getSupabase()
@@ -163,6 +169,7 @@ export const getNucsReadyForHarvest: Tool = {
       `)
       .eq('user_id', userId)
       .eq('status', 'laying')
+      .is('retired_at', null)
       .order('updated_at', { ascending: true })
 
     if (error) return `Error fetching nucs: ${error.message}`
@@ -188,7 +195,7 @@ export const getNucsReadyForHarvest: Tool = {
 // Get nucs needing inspection
 export const getNucsNeedingInspection: Tool = {
   name: 'getNucsNeedingInspection',
-  description: 'Get mating nucs that have not been inspected recently',
+  description: 'Get active mating nucs that have not been inspected recently',
   parameters: z.object({
     days: z.number().optional().describe('Days since last inspection to consider overdue (default 7)')
   }),
@@ -197,12 +204,13 @@ export const getNucsNeedingInspection: Tool = {
     const cutoffDays = args.days || 7
     const supabase = getSupabase()
 
-    // Get all active nucs (not failed, not laying)
+    // Get all active nucs (not failed, not laying, not retired)
     const { data: nucs, error } = await supabase
       .from('mating_nucs')
       .select('id, nuc_number, status, setup_date, mating_location')
       .eq('user_id', userId)
       .in('status', ['pending', 'virgin', 'mating'])
+      .is('retired_at', null)
       .order('setup_date')
 
     if (error) return `Error fetching nucs: ${error.message}`
