@@ -31,6 +31,7 @@ interface MatingNuc {
   queen_emerged_at: string | null
   mating_confirmed_at: string | null
   notes: string | null
+  updated_at: string
   batch_grafts?: {
     cell_number: number
     status: string
@@ -38,6 +39,7 @@ interface MatingNuc {
   rearing_batches?: {
     batch_name: string
   } | null
+  mating_nuc_inspections?: { count: number }[]
 }
 
 interface NucInspection {
@@ -118,7 +120,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   const fetchNucs = useCallback(async () => {
     const { data, error } = await supabase
       .from('mating_nucs')
-      .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name)')
+      .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name), mating_nuc_inspections(count)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -516,9 +518,17 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
                     <MapPin size={14} /> {nuc.mating_location}
                   </p>
                 )}
-                <p className="text-xs text-text-tertiary flex items-center gap-1">
-                  <Calendar size={12} /> Setup: {formatDateIrish(nuc.setup_date)}
-                </p>
+                <div className="flex justify-between text-xs text-text-tertiary">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={12} /> Setup: {formatDateIrish(nuc.setup_date)}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1">
+                      <ClipboardList size={12} /> {nuc.mating_nuc_inspections?.[0]?.count || 0}
+                    </span>
+                    <span>Updated: {formatDateIrish(nuc.updated_at)}</span>
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -533,7 +543,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
                   <th className="px-4 py-3 text-left text-sm font-medium text-text-secondary">Cell</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-text-secondary">Location</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-text-secondary">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-text-secondary">Setup Date</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-secondary">Inspections</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-secondary">Last Updated</th>
                   <th className="px-4 py-3 text-right text-sm font-medium text-text-secondary">Actions</th>
                 </tr>
               </thead>
@@ -553,7 +564,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
                         {NUC_STATUSES.find(s => s.value === nuc.status)?.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-text-secondary">{formatDateIrish(nuc.setup_date)}</td>
+                    <td className="px-4 py-3 text-text-secondary">
+                      {nuc.mating_nuc_inspections?.[0]?.count || 0}
+                    </td>
+                    <td className="px-4 py-3 text-text-secondary text-sm">
+                      {formatDateIrish(nuc.updated_at)}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <button
