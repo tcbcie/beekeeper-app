@@ -29,17 +29,17 @@ GET /user/scale
 ```json
 {
   "success": true,
-  "execution_time": "8.91 ms",
-  "data": [
+  "scales": [
     {
-      "scale": "XVF25AA",
-      "serial_number": "41M012345",
-      "hardware_key": "API41",
-      "latest_transmission_timestamp": "2024-06-15 13:00:00"
+      "scale_id": "R4JLXN",
+      "serial_number": "42M03446",
+      "hardware_key": "API42",
+      "latest_transmission_timestamp": "2026-01-14T14:58:16.000000Z"
     }
   ]
 }
 ```
+*Note: Response uses `scales` array (not `data`) and `scale_id` field (not `scale`)*
 
 #### 2. Export Historical Data
 ```
@@ -93,7 +93,7 @@ POST /user/scale/export
 
 ## Implementation Plan
 
-### Phase 1: Database Schema
+### Phase 1: Database Schema ✅ COMPLETED
 
 **Migration**: `add_wolf_waagen_integration_columns`
 
@@ -113,9 +113,9 @@ ADD COLUMN wolf_scale_name TEXT;
 
 ---
 
-### Phase 2: API Client Library
+### Phase 2: API Client Library ✅ COMPLETED
 
-**File**: `src/lib/wolf-waagen-api.ts` (NEW)
+**File**: `src/lib/wolf-waagen-api.ts`
 
 ```typescript
 const WOLF_API_BASE = 'https://new.app.wolf-waagen.de/api/v1'
@@ -174,7 +174,7 @@ export async function wolfGetMeasurements(
 
 ---
 
-### Phase 3: API Routes
+### Phase 3: API Routes ✅ COMPLETED
 
 **Directory**: `src/app/api/wolf-waagen/`
 
@@ -237,10 +237,10 @@ export async function wolfGetMeasurements(
 
 ---
 
-### Phase 4: UI Components
+### Phase 4: UI Components ✅ COMPLETED
 
 #### 4.1 Scale Sensor Display
-**File**: `src/components/hive/WolfSensorDisplay.tsx` (NEW)
+**File**: `src/components/hive/WolfSensorDisplay.tsx`
 
 Displays real-time Wolf Waagen sensor data:
 - Weight (kg) - amber styling
@@ -252,7 +252,7 @@ Displays real-time Wolf Waagen sensor data:
 *Note: Wolf Waagen doesn't report battery voltage*
 
 #### 4.2 Scale History Chart
-**File**: `src/components/hive/WolfHistoryChart.tsx` (NEW)
+**File**: `src/components/hive/WolfHistoryChart.tsx`
 
 Chart.js line chart with:
 - Period selector (Hour, Day, Week, Month, Year, Custom)
@@ -261,7 +261,7 @@ Chart.js line chart with:
 - Custom date range picker
 
 #### 4.3 Scale Selection Modal
-**File**: `src/components/hive/WolfScaleSelectionModal.tsx` (NEW)
+**File**: `src/components/hive/WolfScaleSelectionModal.tsx`
 
 Modal for selecting Wolf Waagen scale:
 - List available scales from API
@@ -271,11 +271,11 @@ Modal for selecting Wolf Waagen scale:
 
 ---
 
-### Phase 5: Profile Page Integration
+### Phase 5: Profile Page Integration ✅ COMPLETED
 
 **File**: `src/app/dashboard/profile/page.tsx`
 
-Add Wolf Waagen section:
+Added Wolf Waagen section:
 
 ```tsx
 {/* Wolf Waagen Integration */}
@@ -307,11 +307,11 @@ Add Wolf Waagen section:
 
 ---
 
-### Phase 6: Hive Detail Page Integration
+### Phase 6: Hive Detail Page Integration ✅ COMPLETED
 
 **File**: `src/app/dashboard/hives/[id]/page.tsx`
 
-Update scale section to support Wolf Waagen:
+Updated scale section to support both BEEP and Wolf Waagen:
 
 ```tsx
 {/* Wolf Waagen Scale Data */}
@@ -332,11 +332,11 @@ Update scale section to support Wolf Waagen:
 
 ---
 
-### Phase 7: Hives List Page
+### Phase 7: Hives List Page ✅ COMPLETED
 
 **File**: `src/app/dashboard/hives/page.tsx`
 
-Add Wolf scale icon to hive cards:
+Added Wolf scale icon to hive cards:
 
 ```tsx
 {hive.wolf_scale_id && (
@@ -350,23 +350,25 @@ Add Wolf scale icon to hive cards:
 
 ---
 
-## Files to Create/Modify
+## Files Created/Modified
 
-| File | Action | Description |
+| File | Status | Description |
 |------|--------|-------------|
-| Database migration | NEW | Add wolf columns to profiles and hives |
-| `src/lib/wolf-waagen-api.ts` | NEW | Wolf Waagen API client library |
-| `src/app/api/wolf-waagen/connect/route.ts` | NEW | Connect endpoint |
-| `src/app/api/wolf-waagen/disconnect/route.ts` | NEW | Disconnect endpoint |
-| `src/app/api/wolf-waagen/scales/route.ts` | NEW | List scales endpoint |
-| `src/app/api/wolf-waagen/data/route.ts` | NEW | Sensor data endpoint |
-| `src/components/hive/WolfSensorDisplay.tsx` | NEW | Real-time display component |
-| `src/components/hive/WolfHistoryChart.tsx` | NEW | Historical chart component |
-| `src/components/hive/WolfScaleSelectionModal.tsx` | NEW | Scale picker modal |
-| `src/app/dashboard/profile/page.tsx` | MODIFY | Add Wolf connection UI |
-| `src/app/dashboard/hives/[id]/page.tsx` | MODIFY | Add Wolf scale section |
-| `src/app/dashboard/hives/page.tsx` | MODIFY | Add Wolf scale icon |
-| `src/types/hive.ts` | MODIFY | Add Wolf fields to Hive interface |
+| Database migration | ✅ DONE | Added wolf columns to profiles and hives |
+| `src/lib/wolf-waagen-api.ts` | ✅ DONE | Wolf Waagen API client library (223 lines) |
+| `src/app/api/wolf-waagen/connect/route.ts` | ✅ DONE | Connect endpoint - validates token, stores in profile |
+| `src/app/api/wolf-waagen/disconnect/route.ts` | ✅ DONE | Disconnect endpoint - clears token and assignments |
+| `src/app/api/wolf-waagen/scales/route.ts` | ✅ DONE | List scales with hive assignment info |
+| `src/app/api/wolf-waagen/data/route.ts` | ✅ DONE | Sensor data with period filtering + custom dates |
+| `src/components/hive/WolfSensorDisplay.tsx` | ✅ DONE | Real-time display (202 lines) |
+| `src/components/hive/WolfHistoryChart.tsx` | ✅ DONE | Historical chart with Chart.js (316 lines) |
+| `src/components/hive/WolfScaleSelectionModal.tsx` | ✅ DONE | Scale picker modal (221 lines) |
+| `src/app/dashboard/profile/page.tsx` | ✅ DONE | Added Wolf connection UI section |
+| `src/app/dashboard/hives/[id]/page.tsx` | ✅ DONE | Added Wolf scale section with mutual exclusion |
+| `src/app/dashboard/hives/page.tsx` | ✅ DONE | Added blue scale icon for Wolf hives |
+| `src/types/hive.ts` | ✅ DONE | Added wolf_scale_id, wolf_scale_name fields |
+| `src/lib/ai/tools/scales.ts` | ✅ DONE | AI tools for scale data queries (373 lines) |
+| `src/lib/ai/tools/index.ts` | ✅ DONE | Registered scale tools |
 
 ---
 
@@ -389,19 +391,19 @@ function parseWolfValue(value: string | undefined): number | undefined {
 
 ## Testing Checklist
 
-- [ ] Wolf API token validation on connect
-- [ ] Scale list fetches correctly
-- [ ] Scale assignment to hive works
-- [ ] Real-time data displays properly
-- [ ] Historical chart renders with data
-- [ ] Time period filters work
-- [ ] Custom date range works
-- [ ] Shared hive access works for team members
-- [ ] Disconnect clears all assignments
-- [ ] Error states handled gracefully
-- [ ] Loading states display
-- [ ] Dark mode styling correct
-- [ ] Mobile responsive
+- [x] Wolf API token validation on connect
+- [x] Scale list fetches correctly
+- [x] Scale assignment to hive works
+- [x] Real-time data displays properly
+- [x] Historical chart renders with data
+- [x] Time period filters work
+- [x] Custom date range works
+- [x] Shared hive access works for team members
+- [x] Disconnect clears all assignments
+- [x] Error states handled gracefully
+- [x] Loading states display
+- [x] Dark mode styling correct
+- [x] Mobile responsive
 
 ---
 
@@ -417,12 +419,70 @@ function parseWolfValue(value: string | undefined): number | undefined {
 
 ## Implementation Order
 
-1. **Database migration** - Add columns
-2. **API client library** - Core Wolf API functions
-3. **API routes** - Server-side endpoints
-4. **Profile page** - Connection UI
-5. **Display components** - Sensor display + chart
-6. **Selection modal** - Scale picker
-7. **Hive detail integration** - Wire up components
-8. **Hives list** - Scale icon indicator
-9. **Testing** - Verify all functionality
+1. ✅ **Database migration** - Add columns
+2. ✅ **API client library** - Core Wolf API functions
+3. ✅ **API routes** - Server-side endpoints
+4. ✅ **Profile page** - Connection UI
+5. ✅ **Display components** - Sensor display + chart
+6. ✅ **Selection modal** - Scale picker
+7. ✅ **Hive detail integration** - Wire up components
+8. ✅ **Hives list** - Scale icon indicator
+9. ✅ **AI Tools** - Scale data query tools
+10. ✅ **Testing** - Verify all functionality
+
+---
+
+## Review Summary - January 14, 2026
+
+### Implementation Complete ✅
+
+All phases of the Wolf Waagen integration have been successfully implemented.
+
+### Key Implementation Details
+
+#### API Client Library (`src/lib/wolf-waagen-api.ts`)
+- **Types**: `WolfScale`, `WolfSensorReading`, `WolfParsedReading`
+- **Functions**:
+  - `wolfGetScales()` - Fetch user's scales
+  - `wolfGetMeasurements()` - Fetch historical data with resolution
+  - `wolfGetLastValues()` - Get latest reading (uses 24h export window)
+- **Helper**: `parseWolfValue()` for parsing "23.550 [kg]" → 23.550
+
+#### API Routes
+- **connect**: Validates token via `wolfGetScales()`, stores in profile
+- **disconnect**: Clears token from profile, clears `wolf_scale_id` from all user hives
+- **scales**: Returns scales enriched with hive assignment info
+- **data**: Supports period filtering (hour/day/week/month/year/custom) and team access
+
+#### UI Components
+- **WolfSensorDisplay**: Shows weight, daily yield (±), temperature, brood temp, humidity
+- **WolfHistoryChart**: Chart.js dual-axis chart with time period selector and custom date range
+- **WolfScaleSelectionModal**: Scale picker with assignment status and remove option
+
+#### Hive Integration
+- Profile page: API token input form, connected state display
+- Hive detail: Sensor display + chart when connected, connect button for owners
+- Hives list: Blue scale icon distinguishes Wolf from BEEP (amber)
+- **Mutual exclusion**: Only one scale type per hive (Wolf clears BEEP, and vice versa)
+
+#### AI Tools (`src/lib/ai/tools/scales.ts`)
+- `getScaleData` - Current readings for a hive (works with both BEEP and Wolf)
+- `getScaleHistory` - Historical data with summary stats
+- `getHivesWithScales` - List all hives with connected scales
+
+### Differences from BEEP Integration
+
+| Aspect | BEEP | Wolf Waagen |
+|--------|------|-------------|
+| Auth | Email/password → token | Direct API token |
+| Last values | Dedicated endpoint | Export last 24h |
+| Data format | Numeric | Strings with units (parsed) |
+| Icon color | Amber | Blue |
+| Extra sensors | Audio, bee count, battery | Rain, wind, brood temp |
+
+### Code Quality
+- TypeScript strict typing throughout
+- Consistent error handling with user-friendly messages
+- Loading states and empty state handling
+- Dark mode support
+- Mobile responsive design

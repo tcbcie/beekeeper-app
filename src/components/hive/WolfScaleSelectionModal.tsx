@@ -70,8 +70,8 @@ export default function WolfScaleSelectionModal({
   }, [isOpen, fetchScales])
 
   const handleSelect = async (scale: EnrichedScale | null) => {
-    const scaleId = scale?.scale || null
-    const scaleName = scale ? `${scale.serial_number} (${scale.scale})` : null
+    const scaleId = scale?.scale_id || null
+    const scaleName = scale ? `${scale.serial_number} (${scale.scale_id})` : null
 
     setSelecting(scaleId)
     try {
@@ -158,12 +158,12 @@ export default function WolfScaleSelectionModal({
 
               {/* Scale list */}
               {scales.map(scale => {
-                const isCurrentScale = scale.scale === currentScaleId
+                const isCurrentScale = scale.scale_id === currentScaleId
                 const isAssignedElsewhere = scale.assigned_to && scale.assigned_to.hiveId !== hiveId
 
                 return (
                   <button
-                    key={scale.scale}
+                    key={scale.scale_id}
                     onClick={() => handleSelect(scale)}
                     disabled={selecting !== null}
                     className={`w-full p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-50 ${
@@ -178,7 +178,7 @@ export default function WolfScaleSelectionModal({
                         <div>
                           <p className="font-medium text-foreground">{scale.serial_number}</p>
                           <p className="text-sm text-text-tertiary">
-                            ID: {scale.scale} | {scale.hardware_key}
+                            ID: {scale.scale_id} | {scale.hardware_key}
                           </p>
                           <p className="text-xs text-text-tertiary">
                             {scale.latest_transmission_timestamp
@@ -197,7 +197,7 @@ export default function WolfScaleSelectionModal({
                       {isCurrentScale && (
                         <Check size={20} className="text-blue-600" />
                       )}
-                      {selecting === scale.scale && (
+                      {selecting === scale.scale_id && (
                         <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
                       )}
                     </div>

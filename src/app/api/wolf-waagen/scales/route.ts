@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     // Enrich scales with assignment info
     const enrichedScales = scales.map(scale => ({
       ...scale,
-      assigned_to: assignmentMap.get(scale.scale) || null,
+      assigned_to: assignmentMap.get(scale.scale_id) || null,
     }))
 
     return NextResponse.json({

@@ -18,25 +18,26 @@ const WOLF_API_BASE = 'https://new.app.wolf-waagen.de/api/v1'
  * Wolf Waagen scale device information
  */
 export interface WolfScale {
-  scale: string                              // Scale ID (e.g., "XVF25AA")
-  serial_number: string                      // Serial number (e.g., "41M012345")
-  hardware_key: string                       // Hardware key (e.g., "API41")
+  scale_id: string                           // Scale ID (e.g., "R4JLXN")
+  serial_number: string                      // Serial number (e.g., "42M03446")
+  hardware_key: string                       // Hardware key (e.g., "API42")
   latest_transmission_timestamp: string | null  // Last data transmission
 }
 
 /**
- * Raw sensor reading from Wolf Waagen API (values are strings with units)
+ * Raw sensor reading from Wolf Waagen API
+ * Values can be either strings with units ("23.550 [kg]") or direct numbers (23.550)
  */
 export interface WolfSensorReading {
   time: string
-  weight?: string           // "23.550 [kg]"
-  yield?: string            // "0.050 [kg]" - daily weight change
-  temperature?: string      // "10.0 [°C]"
-  brood?: string            // "10.0 [°C]" - brood nest temperature
-  humidity?: string         // "50.0 [%]"
-  rain?: string             // "0.005 [mm]"
-  wind_speed?: string       // "10 [km/h]"
-  wind_direction?: string   // "90 [°]"
+  weight?: string | number           // "23.550 [kg]" or 23.550
+  yield?: string | number            // "0.050 [kg]" - daily weight change
+  temperature?: string | number      // "10.0 [°C]"
+  brood?: string | number            // "10.0 [°C]" - brood nest temperature
+  humidity?: string | number         // "50.0 [%]"
+  rain?: string | number             // "0.005 [mm]"
+  wind_speed?: string | number       // "10 [km/h]"
+  wind_direction?: string | number   // "90 [°]"
 }
 
 /**
@@ -70,13 +71,26 @@ interface WolfApiResponse<T> {
 // ============================================================================
 
 /**
- * Parse Wolf Waagen value string to number
- * Examples: "23.550 [kg]" → 23.550, "10.0 [°C]" → 10.0
+ * Parse Wolf Waagen value to number
+ * Handles both formats:
+ * - String with units: "23.550 [kg]" → 23.550
+ * - Direct number: 23.550 → 23.550
  */
-function parseWolfValue(value: string | undefined): number | undefined {
-  if (!value) return undefined
-  const match = value.match(/^([\d.-]+)/)
-  return match ? parseFloat(match[1]) : undefined
+function parseWolfValue(value: string | number | undefined | null): number | undefined {
+  if (value === undefined || value === null) return undefined
+
+  // If already a number, return directly
+  if (typeof value === 'number') {
+    return isNaN(value) ? undefined : value
+  }
+
+  // If string, parse out the numeric part
+  if (typeof value === 'string') {
+    const match = value.match(/^([\d.-]+)/)
+    return match ? parseFloat(match[1]) : undefined
+  }
+
+  return undefined
 }
 
 /**
@@ -126,13 +140,19 @@ export async function wolfGetScales(apiToken: string): Promise<WolfScale[]> {
     throw new Error(`Wolf Waagen API error: ${response.status}`)
   }
 
-  const data: WolfApiResponse<WolfScale[]> = await response.json()
+  const data = await response.json()
 
-  if (!data.success) {
+  // Handle different response structures
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  if (!data.success && data.success !== undefined) {
     throw new Error(data.message || 'Failed to fetch scales')
   }
 
-  return data.data || []
+  // API returns scales in 'scales' field
+  return data.scales || []
 }
 
 /**
