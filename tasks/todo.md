@@ -995,3 +995,50 @@ Added to `WildColonyInspection` interface:
 
 ---
 
+## Session 12: Wolf Waagen Integration Review - January 14, 2026
+
+### Task
+Review and document the completed Wolf Waagen hive scale integration.
+
+### Implementation Summary
+
+The Wolf Waagen integration has been fully implemented, following the same architectural patterns as the BEEP integration but with Wolf-specific adaptations.
+
+#### Files Created
+
+| File | Lines | Description |
+|------|-------|-------------|
+| `src/lib/wolf-waagen-api.ts` | 223 | API client with types and functions |
+| `src/app/api/wolf-waagen/connect/route.ts` | 68 | Token validation and storage |
+| `src/app/api/wolf-waagen/disconnect/route.ts` | 63 | Clear token and hive assignments |
+| `src/app/api/wolf-waagen/scales/route.ts` | 79 | List scales with assignment info |
+| `src/app/api/wolf-waagen/data/route.ts` | 152 | Sensor data with period filtering |
+| `src/components/hive/WolfSensorDisplay.tsx` | 202 | Real-time sensor display |
+| `src/components/hive/WolfHistoryChart.tsx` | 316 | Chart.js historical chart |
+| `src/components/hive/WolfScaleSelectionModal.tsx` | 221 | Scale picker modal |
+| `src/lib/ai/tools/scales.ts` | 373 | AI tools for scale queries |
+
+#### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/dashboard/profile/page.tsx` | Added Wolf Waagen connection section |
+| `src/app/dashboard/hives/[id]/page.tsx` | Added Wolf sensor/chart display |
+| `src/app/dashboard/hives/page.tsx` | Added blue scale icon |
+| `src/types/hive.ts` | Added wolf_scale_id, wolf_scale_name |
+| `src/lib/ai/tools/index.ts` | Registered scale tools |
+
+#### Key Features
+
+1. **API Client**: Handles Wolf's unique API format (strings with units like "23.550 [kg]")
+2. **Mutual Exclusion**: Only one scale type per hive (Wolf or BEEP, not both)
+3. **Team Access**: Shared hives can view scale data from owner's Wolf account
+4. **AI Tools**: Three tools for querying scale data via chat assistant
+5. **Visual Distinction**: Blue icons for Wolf, amber for BEEP
+
+### Documentation Updated
+
+- `docs/features/wolf-waagen.md` - Marked all phases complete, added review summary
+
+---
+
