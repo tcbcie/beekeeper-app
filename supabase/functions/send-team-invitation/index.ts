@@ -86,20 +86,21 @@ serve(async (req) => {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 
-  <div style="background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">🐝 HiveCraic</h1>
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="48" height="48" style="width: 48px; height: 48px; margin-bottom: 10px;" />
+    <h1 style="color: white; margin: 0; font-size: 28px;">HiveCraic</h1>
   </div>
 
   <div style="background: white; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
 
-    <h2 style="color: #9333ea; margin-top: 0;">You've Been Invited to Join a Team!</h2>
+    <h2 style="color: #d97706; margin-top: 0;">You've Been Invited to Join a Team!</h2>
 
     <p style="font-size: 16px; margin-bottom: 20px;">
       Hello! <strong>${inviterName || inviterEmail}</strong> has invited you to join the team
-      <strong style="color: #9333ea;">${teamName}</strong> on HiveCraic.
+      <strong style="color: #d97706;">${teamName}</strong> on HiveCraic.
     </p>
 
-    <div style="background: #f9fafb; border-left: 4px solid #9333ea; padding: 15px; margin: 25px 0;">
+    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 25px 0;">
       <p style="margin: 0; font-size: 14px; color: #6b7280;">
         <strong>Team:</strong> ${teamName}<br>
         <strong>Invited by:</strong> ${inviterName || inviterEmail}<br>
@@ -150,7 +151,7 @@ serve(async (req) => {
       You received this email because ${inviterName || inviterEmail} invited you to join their team on HiveCraic.
     </p>
     <p style="margin: 5px 0;">
-      <a href="${appUrl}" style="color: #9333ea; text-decoration: none;">HiveCraic</a> -
+      <a href="${appUrl}" style="color: #f59e0b; text-decoration: none;">HiveCraic</a> -
       Manage your hives, track inspections, and collaborate with your team.
     </p>
   </div>

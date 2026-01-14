@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { AlertCircle, CheckCircle, Mail } from 'lucide-react'
+import Image from 'next/image'
 
 function ReactivateForm() {
   const searchParams = useSearchParams()
@@ -55,7 +56,10 @@ function ReactivateForm() {
       <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-amber-900 mb-2">HiveCraic</h1>
+          <h1 className="text-4xl font-bold text-amber-900 mb-2 flex items-center justify-center gap-2">
+            <Image src="/logo.png" alt="HiveCraic" width={48} height={48} className="w-12 h-12" />
+            HiveCraic
+          </h1>
           <p className="text-text-secondary">Account Reactivation</p>
         </div>
 

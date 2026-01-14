@@ -113,21 +113,22 @@ serve(async (req) => {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 
-  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">🐝 HiveCraic</h1>
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="48" height="48" style="width: 48px; height: 48px; margin-bottom: 10px;" />
+    <h1 style="color: white; margin: 0; font-size: 28px;">HiveCraic</h1>
     <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">New User Registration</p>
   </div>
 
   <div style="background: white; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
 
-    <h2 style="color: #10b981; margin-top: 0;">A New Beekeeper Has Joined!</h2>
+    <h2 style="color: #d97706; margin-top: 0;">A New Beekeeper Has Joined!</h2>
 
     <p style="font-size: 16px; margin-bottom: 20px;">
       Great news! A new user has signed up for HiveCraic.
     </p>
 
-    <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 25px 0;">
-      <p style="margin: 0; font-size: 14px; color: #166534;">
+    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 25px 0;">
+      <p style="margin: 0; font-size: 14px; color: #92400e;">
         <strong>Name:</strong> ${userName}<br>
         <strong>Email:</strong> ${newUser.email}<br>
         <strong>Signed Up:</strong> ${formattedDate}
@@ -135,7 +136,7 @@ serve(async (req) => {
     </div>
 
     <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
-      You can view and manage users in the <a href="https://www.hivecraic.com/dashboard/admin" style="color: #10b981; text-decoration: none;">Admin Dashboard</a>.
+      You can view and manage users in the <a href="https://www.hivecraic.com/dashboard/admin" style="color: #f59e0b; text-decoration: none;">Admin Dashboard</a>.
     </p>
 
   </div>
@@ -145,7 +146,7 @@ serve(async (req) => {
       This is an automated notification from HiveCraic.
     </p>
     <p style="margin: 5px 0;">
-      <a href="https://www.hivecraic.com" style="color: #10b981; text-decoration: none;">HiveCraic</a> -
+      <a href="https://www.hivecraic.com" style="color: #f59e0b; text-decoration: none;">HiveCraic</a> -
       Beekeeping Management Made Simple
     </p>
   </div>

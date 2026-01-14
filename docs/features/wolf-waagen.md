@@ -486,3 +486,73 @@ All phases of the Wolf Waagen integration have been successfully implemented.
 - Loading states and empty state handling
 - Dark mode support
 - Mobile responsive design
+
+---
+
+## Bug Fixes - January 14, 2026
+
+### Fix 1: API Response Structure Mismatch
+
+**Issue**: Wolf Waagen API returned different field names than documented.
+
+**Changes Made**:
+- `WolfScale.scale` → `WolfScale.scale_id` (API returns `scale_id` not `scale`)
+- Response field `data` → `scales` (API returns `scales` array not `data`)
+
+**Files Updated**:
+- `src/lib/wolf-waagen-api.ts` - Updated interface and response parsing
+- `src/components/hive/WolfScaleSelectionModal.tsx` - Updated all `scale.scale` → `scale.scale_id`
+- `src/app/api/wolf-waagen/scales/route.ts` - Updated assignment map lookup
+
+### Fix 2: Numeric Value Parsing Error
+
+**Issue**: `parseWolfValue()` crashed with `value.match is not a function` because API returns numeric values directly, not just strings.
+
+**Root Cause**: Expected `"23.550 [kg]"` but received `23.550` (number).
+
+**Solution**: Updated `parseWolfValue()` to handle both formats:
+```typescript
+function parseWolfValue(value: string | number | undefined | null): number | undefined {
+  if (value === undefined || value === null) return undefined
+
+  // If already a number, return directly
+  if (typeof value === 'number') {
+    return isNaN(value) ? undefined : value
+  }
+
+  // If string, parse out the numeric part
+  if (typeof value === 'string') {
+    const match = value.match(/^([\d.-]+)/)
+    return match ? parseFloat(match[1]) : undefined
+  }
+
+  return undefined
+}
+```
+
+**Files Updated**:
+- `src/lib/wolf-waagen-api.ts` - Updated `parseWolfValue()` function and `WolfSensorReading` interface
+
+### Actual API Response Format
+
+Confirmed response from Wolf Waagen API:
+```json
+{
+  "success": true,
+  "scales": [
+    {
+      "scale_id": "R4JLXN",
+      "serial_number": "42M03446",
+      "hardware_key": "API42",
+      "latest_transmission_timestamp": "2026-01-14T14:58:16.000000Z"
+    }
+  ]
+}
+```
+
+**Key Differences from Initial Documentation**:
+| Expected | Actual |
+|----------|--------|
+| `data` array | `scales` array |
+| `scale` field | `scale_id` field |
+| String values only | Both string and numeric values |

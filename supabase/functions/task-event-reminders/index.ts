@@ -255,8 +255,10 @@ function generateEmailHTML(userName: string, reminders: ReminderItem[], frequenc
       <title>${digestTitle} Task & Event Reminders</title>
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #374151; max-width: 700px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-        <h1 style="margin: 0; color: #1f2937; font-size: 24px;">🐝 ${digestTitle} Task & Event Reminders</h1>
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+        <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="40" height="40" style="width: 40px; height: 40px; margin-bottom: 8px;" />
+        <h1 style="margin: 0; color: white; font-size: 24px;">${digestTitle} Task & Event Reminders</h1>
+        <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">HiveCraic</p>
       </div>
 
       <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
