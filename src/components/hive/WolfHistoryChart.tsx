@@ -117,8 +117,8 @@ export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHis
       {
         label: 'Weight (kg)',
         data: history.map(reading => reading.weight_kg ?? null),
-        borderColor: 'rgb(37, 99, 235)', // blue-600
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        borderColor: 'rgb(217, 119, 6)', // amber-600
+        backgroundColor: 'rgba(217, 119, 6, 0.1)',
         yAxisID: 'y',
         tension: 0.3,
         pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
@@ -126,8 +126,8 @@ export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHis
       {
         label: 'Temperature (°C)',
         data: history.map(reading => reading.temperature_c ?? null),
-        borderColor: 'rgb(14, 165, 233)', // sky-500
-        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+        borderColor: 'rgb(37, 99, 235)', // blue-600
+        backgroundColor: 'rgba(37, 99, 235, 0.1)',
         yAxisID: 'y1',
         tension: 0.3,
         pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
@@ -201,7 +201,7 @@ export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHis
         title: {
           display: true,
           text: 'Weight (kg)',
-          color: 'rgb(37, 99, 235)',
+          color: 'rgb(217, 119, 6)', // amber-600
         },
         ticks: {
           color: isDark ? '#9ca3af' : '#374151',
@@ -217,7 +217,7 @@ export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHis
         title: {
           display: true,
           text: 'Temp (°C)',
-          color: 'rgb(14, 165, 233)',
+          color: 'rgb(37, 99, 235)', // blue-600
         },
         ticks: {
           color: isDark ? '#9ca3af' : '#374151',
