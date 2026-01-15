@@ -98,10 +98,22 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
   // Get temperature (prefer inside temp)
   const temperature = sensorData.t_i ?? sensorData.t ?? sensorData.t_0
   const humidity = sensorData.h
-  const battery = sensorData.bv
+  const rawBattery = sensorData.bv
 
   // Calculate battery percentage (typical range 3.0V - 4.2V for LiPo)
-  const batteryPercent = battery ? Math.round(Math.max(0, Math.min(100, ((battery - 3.0) / 1.2) * 100))) : null
+  // BEEP may return voltage in millivolts (e.g., 3900) or volts (e.g., 3.9)
+  // Get battery info: percentage and voltage
+  const getBatteryInfo = (bv: number | string | undefined | null): { percent: number; voltage: number } | null => {
+    if (bv === undefined || bv === null || bv === '') return null
+    const numValue = typeof bv === 'string' ? parseFloat(bv) : bv
+    if (isNaN(numValue) || numValue <= 0) return null
+    // If value > 100, assume millivolts and convert to volts
+    const voltage = numValue > 100 ? numValue / 1000 : numValue
+    // Calculate percentage: 3.0V = 0%, 4.2V = 100%
+    const percent = Math.round(((voltage - 3.0) / 1.2) * 100)
+    return { percent: Math.max(0, Math.min(100, percent)), voltage }
+  }
+  const batteryInfo = getBatteryInfo(rawBattery)
 
   return (
     <div className="space-y-3">
@@ -187,7 +199,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       )}
 
       {/* Environmental Section */}
-      {(temperature !== undefined || humidity !== undefined || batteryPercent !== null) && (
+      {(temperature !== undefined || humidity !== undefined || batteryInfo !== null) && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
           <div className="grid grid-cols-2 gap-3">
@@ -218,20 +230,21 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
             )}
 
             {/* Battery */}
-            {batteryPercent !== null && (
+            {batteryInfo !== null && (
               <div className={`p-3 rounded-lg border ${
-                batteryPercent < 20
+                batteryInfo.percent < 20
                   ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                   : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
               }`}>
                 <div className="flex items-center gap-2 mb-1">
-                  <Battery size={16} className={batteryPercent < 20 ? 'text-red-600' : 'text-green-600'} />
-                  <span className={`text-xs ${batteryPercent < 20 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
+                  <Battery size={16} className={batteryInfo.percent < 20 ? 'text-red-600' : 'text-green-600'} />
+                  <span className={`text-xs ${batteryInfo.percent < 20 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
                     Battery
                   </span>
                 </div>
-                <p className={`text-xl font-bold ${batteryPercent < 20 ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}`}>
-                  {batteryPercent} <span className="text-sm font-normal">%</span>
+                <p className={`text-xl font-bold ${batteryInfo.percent < 20 ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}`}>
+                  {batteryInfo.voltage.toFixed(1)} <span className="text-sm font-normal">V</span>
+                  <span className="text-sm font-normal ml-1">({batteryInfo.percent}%)</span>
                 </p>
               </div>
             )}
