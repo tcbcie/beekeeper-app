@@ -12,6 +12,7 @@ interface ScaleSensorDisplayProps {
 
 export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: ScaleSensorDisplayProps) {
   const [sensorData, setSensorData] = useState<BeepSensorReading | null>(null)
+  const [weightChange24h, setWeightChange24h] = useState<number | null>(null)
   const [weightChange7d, setWeightChange7d] = useState<number | null>(null)
   const [weightChange30d, setWeightChange30d] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,6 +42,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
 
       const data = await response.json()
       setSensorData(data.lastValues)
+      setWeightChange24h(data.weightChange24h ?? null)
       setWeightChange7d(data.weightChange7d ?? null)
       setWeightChange30d(data.weightChange30d ?? null)
       setLastUpdated(new Date())
@@ -140,10 +142,10 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       </div>
 
       {/* Weight Section */}
-      {(weight !== undefined || weightChange7d !== null || weightChange30d !== null) && (
+      {(weight !== undefined || weightChange24h !== null || weightChange7d !== null || weightChange30d !== null) && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Current Weight */}
             {weight !== undefined && (
               <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
@@ -153,6 +155,29 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
                     <p className="text-[10px] text-amber-600 dark:text-amber-400">Current</p>
                     <p className="text-sm font-bold text-amber-800 dark:text-amber-200 truncate">
                       {weight.toFixed(1)} kg
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 24-Hour Change */}
+            {weightChange24h !== null && (
+              <div className={`p-2 rounded border ${
+                weightChange24h >= 0
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                  : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+              }`}>
+                <div className="flex items-center gap-1.5">
+                  {weightChange24h >= 0 ? (
+                    <TrendingUp size={14} className="text-green-600 shrink-0" />
+                  ) : (
+                    <TrendingDown size={14} className="text-red-600 shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className={`text-[10px] ${weightChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>24h</p>
+                    <p className={`text-sm font-bold truncate ${weightChange24h >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                      {weightChange24h >= 0 ? '+' : ''}{weightChange24h.toFixed(2)} kg
                     </p>
                   </div>
                 </div>
