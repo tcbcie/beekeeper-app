@@ -620,6 +620,11 @@ export default function HivesPage() {
         setOwnershipFilter(savedOwnership)
       }
 
+      const savedScaleFilter = sessionStorage.getItem('hives_filter_scales')
+      if (savedScaleFilter === 'true') {
+        setScaleFilter(true)
+      }
+
       setFiltersLoaded(true)
     }
   }, [filtersLoaded, apiaries])
@@ -652,6 +657,12 @@ export default function HivesPage() {
       sessionStorage.setItem('hives_filter_ownership', ownershipFilter)
     }
   }, [ownershipFilter, filtersLoaded])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && filtersLoaded) {
+      sessionStorage.setItem('hives_filter_scales', scaleFilter.toString())
+    }
+  }, [scaleFilter, filtersLoaded])
 
   // Refetch hives when ownership or archive filter changes
   useEffect(() => {
