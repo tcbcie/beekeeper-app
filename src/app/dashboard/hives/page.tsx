@@ -1617,12 +1617,12 @@ export default function HivesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredHives.map((hive) => (
           <div key={hive.id} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border">
-            {/* Select & New Record Button - Top of Card */}
+            {/* Overview & Records Button - Top of Card */}
             <button
               onClick={() => router.push(`/dashboard/hives/${hive.id}`)}
               className="w-full px-4 py-3 mb-4 text-sm bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-semibold shadow-sm min-h-[48px]"
             >
-              Select & New Record
+              Overview & Records
             </button>
 
             <div className="flex justify-between items-start mb-3">
