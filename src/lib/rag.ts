@@ -25,16 +25,20 @@ async function matchQueryToTool(query: string): Promise<{
 } | null> {
   const toolList = getToolDescriptions()
 
+  const currentYear = new Date().getFullYear()
   const systemPrompt = `You are a tool router for a beekeeping app. Given a user query, determine if any of the available tools can answer it.
+
+Current year: ${currentYear}
 
 Available tools:
 ${toolList}
 
 RULES:
 1. If a tool matches, return JSON: {"toolName": "tool_name", "args": {}}
-2. Extract any parameters from the query (hive names, numbers, limits, etc.)
-3. If no tool matches well, return: {"toolName": null, "args": {}}
-4. Return ONLY valid JSON, nothing else`
+2. Extract ALL parameters from the query including: hive names, numbers, years, dates, limits
+3. IMPORTANT: If the user mentions a specific year (e.g. "in 2025", "for 2024"), ALWAYS include it as {"year": YYYY} in args
+4. If no tool matches well, return: {"toolName": null, "args": {}}
+5. Return ONLY valid JSON, nothing else`
 
   try {
     const response = await generateChatResponse([
