@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { wolfGetLastValues, wolfGetMeasurements } from '@/lib/wolf-waagen-api'
+import { wolfGetLastValues, wolfGetMeasurements, wolfGetBatteryVoltage } from '@/lib/wolf-waagen-api'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -88,8 +88,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Wolf Waagen not connected' }, { status: 400 })
     }
 
-    // Fetch latest sensor values
-    const lastValues = await wolfGetLastValues(wolfApiToken, scaleId)
+    // Fetch latest sensor values and battery voltage in parallel
+    const [lastValues, batteryVoltage] = await Promise.all([
+      wolfGetLastValues(wolfApiToken, scaleId),
+      wolfGetBatteryVoltage(wolfApiToken, scaleId),
+    ])
+
+    // Merge battery voltage into lastValues if available
+    if (lastValues && batteryVoltage !== null) {
+      lastValues.battery_voltage = batteryVoltage
+    }
 
     let history = null
     if (period || (customStart && customEnd)) {

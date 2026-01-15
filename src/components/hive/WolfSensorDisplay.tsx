@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, Thermometer, Droplets, RefreshCw, Clock, TrendingUp, TrendingDown, Flame } from 'lucide-react'
+import { Scale, Thermometer, Droplets, RefreshCw, Clock, TrendingUp, TrendingDown, Flame, BatteryLow, BatteryMedium, BatteryFull } from 'lucide-react'
 import type { WolfParsedReading } from '@/lib/wolf-waagen-api'
 
 interface WolfSensorDisplayProps {
@@ -94,6 +94,16 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
   const temperature = sensorData.temperature_c
   const broodTemp = sensorData.brood_temp_c
   const humidity = sensorData.humidity_percent
+  const batteryVoltage = sensorData.battery_voltage
+
+  // Battery level helper: 4.2V = full, 3.2V = empty
+  const getBatteryInfo = (voltage: number) => {
+    const percent = Math.round(((voltage - 3.2) / (4.2 - 3.2)) * 100)
+    const clampedPercent = Math.max(0, Math.min(100, percent))
+    if (clampedPercent >= 70) return { Icon: BatteryFull, color: 'green', percent: clampedPercent }
+    if (clampedPercent >= 30) return { Icon: BatteryMedium, color: 'yellow', percent: clampedPercent }
+    return { Icon: BatteryLow, color: 'red', percent: clampedPercent }
+  }
 
   return (
     <div className="space-y-3">
@@ -187,6 +197,39 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
             </p>
           </div>
         )}
+
+        {/* Battery */}
+        {batteryVoltage !== undefined && (() => {
+          const { Icon, color, percent } = getBatteryInfo(batteryVoltage)
+          return (
+            <div className={`p-3 rounded-lg border ${
+              color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+              color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
+              'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+            }`}>
+              <div className="flex items-center gap-2 mb-1">
+                <Icon size={16} className={
+                  color === 'green' ? 'text-green-600' :
+                  color === 'yellow' ? 'text-yellow-600' :
+                  'text-red-600'
+                } />
+                <span className={`text-xs ${
+                  color === 'green' ? 'text-green-700 dark:text-green-300' :
+                  color === 'yellow' ? 'text-yellow-700 dark:text-yellow-300' :
+                  'text-red-700 dark:text-red-300'
+                }`}>Battery</span>
+              </div>
+              <p className={`text-xl font-bold ${
+                color === 'green' ? 'text-green-800 dark:text-green-200' :
+                color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
+                'text-red-800 dark:text-red-200'
+              }`}>
+                {batteryVoltage.toFixed(1)} <span className="text-sm font-normal">V</span>
+                <span className="text-sm font-normal ml-1">({percent}%)</span>
+              </p>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Last updated */}

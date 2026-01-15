@@ -53,6 +53,22 @@ export interface WolfParsedReading {
   rain_mm?: number
   wind_speed_kmh?: number
   wind_direction_deg?: number
+  battery_voltage?: number
+}
+
+/**
+ * Trachtnet response data (includes battery voltage)
+ */
+interface WolfTrachtnetReading {
+  time: string
+  weight?: number
+  longitude?: number
+  latitude?: number
+  altitude?: number
+  temperature?: number
+  rain?: number
+  humidity?: number
+  battery_voltage?: number
 }
 
 /**
@@ -239,4 +255,53 @@ export async function wolfGetLastValues(
 
   // Return the most recent reading (last in array)
   return readings.length > 0 ? readings[readings.length - 1] : null
+}
+
+/**
+ * Get battery voltage from Trachtnet endpoint
+ * This endpoint returns battery_voltage which is not available in scale/export
+ *
+ * @param apiToken - Wolf Waagen API bearer token
+ * @param scaleId - Scale ID (e.g., "XVF25AA")
+ * @returns Battery voltage or null if unavailable
+ */
+export async function wolfGetBatteryVoltage(
+  apiToken: string,
+  scaleId: string
+): Promise<number | null> {
+  // Get last 24 hours of data
+  const now = new Date()
+  const yesterday = new Date(now.getTime() - (24 * 60 * 60 * 1000))
+
+  const formatDate = (d: Date) => d.toISOString().split('T')[0]
+
+  const response = await fetch(`${WOLF_API_BASE}/user/trachtnet/export`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiToken}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      scale: scaleId,
+      format: 'json',
+      time_start: formatDate(yesterday),
+      time_end: formatDate(now),
+    }),
+  })
+
+  if (!response.ok) {
+    // Don't throw - battery is optional, just return null
+    return null
+  }
+
+  const data: WolfApiResponse<WolfTrachtnetReading[]> = await response.json()
+
+  if (!data.success || !data.data || data.data.length === 0) {
+    return null
+  }
+
+  // Get the most recent reading with battery voltage
+  const lastReading = data.data[data.data.length - 1]
+  return lastReading.battery_voltage ?? null
 }
