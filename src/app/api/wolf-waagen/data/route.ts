@@ -88,15 +88,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Wolf Waagen not connected' }, { status: 400 })
     }
 
-    // Fetch latest sensor values and battery voltage in parallel
-    const [lastValues, batteryVoltage] = await Promise.all([
+    // Fetch latest sensor values, battery voltage, and historical data for weight changes
+    const now = Math.floor(Date.now() / 1000)
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60)
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60)
+
+    const [lastValues, batteryVoltage, history7d, history30d] = await Promise.all([
       wolfGetLastValues(wolfApiToken, scaleId),
       wolfGetBatteryVoltage(wolfApiToken, scaleId),
+      wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily'),
+      wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily'),
     ])
 
     // Merge battery voltage into lastValues if available
     if (lastValues && batteryVoltage !== null) {
       lastValues.battery_voltage = batteryVoltage
+    }
+
+    // Calculate 7-day and 30-day weight changes
+    let weightChange7d: number | null = null
+    let weightChange30d: number | null = null
+
+    if (history7d.length >= 2) {
+      const oldestWeight = history7d[0]?.weight_kg
+      const newestWeight = history7d[history7d.length - 1]?.weight_kg
+      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+        weightChange7d = newestWeight - oldestWeight
+      }
+    }
+
+    if (history30d.length >= 2) {
+      const oldestWeight = history30d[0]?.weight_kg
+      const newestWeight = history30d[history30d.length - 1]?.weight_kg
+      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+        weightChange30d = newestWeight - oldestWeight
+      }
     }
 
     let history = null
@@ -150,6 +176,8 @@ export async function GET(request: NextRequest) {
       lastValues,
       history,
       period,
+      weightChange7d,
+      weightChange30d,
     })
   } catch (error) {
     console.error('Wolf Waagen data error:', error)

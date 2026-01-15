@@ -10,8 +10,17 @@ interface WolfSensorDisplayProps {
   hiveId?: string
 }
 
+// Convert wind direction degrees to cardinal direction
+const getCardinalDirection = (degrees: number): string => {
+  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+  const index = Math.round(((degrees % 360) / 45)) % 8
+  return directions[index]
+}
+
 export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSensorDisplayProps) {
   const [sensorData, setSensorData] = useState<WolfParsedReading | null>(null)
+  const [weightChange7d, setWeightChange7d] = useState<number | null>(null)
+  const [weightChange30d, setWeightChange30d] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -39,6 +48,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
 
       const data = await response.json()
       setSensorData(data.lastValues)
+      setWeightChange7d(data.weightChange7d ?? null)
+      setWeightChange30d(data.weightChange30d ?? null)
       setLastUpdated(new Date())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load sensor data')
@@ -125,7 +136,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
       </div>
 
       {/* Weight Section */}
-      {(weight !== undefined || yieldKg !== undefined) && (
+      {(weight !== undefined || yieldKg !== undefined || weightChange7d !== null || weightChange30d !== null) && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
           <div className="grid grid-cols-2 gap-3">
@@ -156,11 +167,57 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                     <TrendingDown size={16} className="text-red-600" />
                   )}
                   <span className={`text-xs ${yieldKg >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-                    Daily Change
+                    24h
                   </span>
                 </div>
                 <p className={`text-xl font-bold ${yieldKg >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                   {yieldKg >= 0 ? '+' : ''}{yieldKg.toFixed(2)} <span className="text-sm font-normal">kg</span>
+                </p>
+              </div>
+            )}
+
+            {/* 7-Day Change */}
+            {weightChange7d !== null && (
+              <div className={`p-3 rounded-lg border ${
+                weightChange7d >= 0
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                  : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {weightChange7d >= 0 ? (
+                    <TrendingUp size={16} className="text-green-600" />
+                  ) : (
+                    <TrendingDown size={16} className="text-red-600" />
+                  )}
+                  <span className={`text-xs ${weightChange7d >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                    7 Days
+                  </span>
+                </div>
+                <p className={`text-xl font-bold ${weightChange7d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                  {weightChange7d >= 0 ? '+' : ''}{weightChange7d.toFixed(2)} <span className="text-sm font-normal">kg</span>
+                </p>
+              </div>
+            )}
+
+            {/* 30-Day Change */}
+            {weightChange30d !== null && (
+              <div className={`p-3 rounded-lg border ${
+                weightChange30d >= 0
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                  : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {weightChange30d >= 0 ? (
+                    <TrendingUp size={16} className="text-green-600" />
+                  ) : (
+                    <TrendingDown size={16} className="text-red-600" />
+                  )}
+                  <span className={`text-xs ${weightChange30d >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                    30 Days
+                  </span>
+                </div>
+                <p className={`text-xl font-bold ${weightChange30d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                  {weightChange30d >= 0 ? '+' : ''}{weightChange30d.toFixed(2)} <span className="text-sm font-normal">kg</span>
                 </p>
               </div>
             )}
@@ -248,7 +305,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                   <span className="text-xs text-violet-700 dark:text-violet-300">Wind Dir</span>
                 </div>
                 <p className="text-xl font-bold text-violet-800 dark:text-violet-200">
-                  {windDirection.toFixed(0)} <span className="text-sm font-normal">°</span>
+                  {getCardinalDirection(windDirection)} <span className="text-sm font-normal">({windDirection.toFixed(0)}°)</span>
                 </p>
               </div>
             )}
