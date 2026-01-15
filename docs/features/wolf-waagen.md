@@ -287,17 +287,26 @@ export async function wolfGetBatteryVoltage(
 #### 4.1 Scale Sensor Display
 **File**: `src/components/hive/WolfSensorDisplay.tsx`
 
-Displays real-time Wolf Waagen sensor data:
-- Weight (kg) - blue styling
-- Yield/Daily Change (kg) - green/red based on +/-
+Displays real-time Wolf Waagen sensor data organized into two groups:
+
+**Weight Section:**
+- Current Weight (kg) - blue styling
+- Daily Change/Yield (kg) - green/red based on +/-
+
+**Environmental Section:**
 - Temperature (°C) - sky blue styling
 - Brood Temperature (°C) - orange styling
 - Humidity (%) - cyan styling
+- Rain (mm) - indigo styling
+- Wind Speed (km/h) - slate styling
+- Wind Direction (°) - violet styling
 - Battery Voltage (V) - green/yellow/red based on level
   - ≥70% (≥3.9V): Green with full battery icon
   - 30-69% (3.5-3.9V): Yellow with medium battery icon
   - <30% (<3.5V): Red with low battery icon
   - Shows both voltage and percentage (e.g., "3.9 V (70%)")
+
+Each section only displays when data is available for that category.
 
 #### 4.2 Scale History Chart
 **File**: `src/components/hive/WolfHistoryChart.tsx`
@@ -656,3 +665,38 @@ The Trachtnet endpoint (`/user/trachtnet/export`) differs from the scale export 
 **Battery voltage may not be available for all scales.** Testing revealed that the Trachtnet endpoint does not return battery data for all Wolf Waagen scale models. The implementation is in place and will display battery voltage if the API returns it, but some scales (e.g., ApiGraph 4.0) may not report battery through this endpoint.
 
 The feature fails gracefully - if no battery data is returned, the battery card simply doesn't appear in the UI.
+
+---
+
+## Feature Update - January 15, 2026 (Weather Sensors)
+
+### Weather Sensor Display
+
+Added display support for weather sensors returned by Wolf Waagen API.
+
+#### New Sensors Displayed
+- **Rain** (mm) - Precipitation with indigo color scheme and CloudRain icon
+- **Wind Speed** (km/h) - Wind speed with slate color scheme and Wind icon
+- **Wind Direction** (°) - Wind direction in degrees with violet color scheme and Compass icon
+
+#### Display Reorganization
+
+Grouped sensor display into two logical sections:
+
+**Weight Section:**
+- Current weight
+- Daily change (yield)
+
+**Environmental Section:**
+- Temperature
+- Brood temperature
+- Humidity
+- Rain
+- Wind speed
+- Wind direction
+- Battery
+
+Each section header only displays when there's data for that category. This provides a cleaner, more organized view of sensor data.
+
+#### Files Modified
+- `src/components/hive/WolfSensorDisplay.tsx` - Added weather sensors, reorganized into grouped sections
