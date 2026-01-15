@@ -139,9 +139,9 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
         </div>
       </div>
 
-      {/* Weight Section - Compact Grid */}
+      {/* Weight Section */}
       {(weight !== undefined || weightChange7d !== null || weightChange30d !== null) && (
-        <div className="space-y-1">
+        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
           <div className="grid grid-cols-3 gap-2">
             {/* Current Weight */}
@@ -208,59 +208,66 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
         </div>
       )}
 
-      {/* Environmental Section - Compact Grid */}
-      {(temperature !== undefined || humidity !== undefined || batteryInfo !== null) && (
-        <div className="space-y-1">
+      {/* Colony Section - Brood Temperature */}
+      {temperature !== undefined && (
+        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
+              <div className="flex items-center gap-1.5">
+                <Flame size={14} className="text-orange-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-orange-600 dark:text-orange-400">Brood Temp</p>
+                  <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
+                    {temperature.toFixed(1)}°C
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Environmental Section - Humidity */}
+      {humidity !== undefined && (
+        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
           <div className="grid grid-cols-3 gap-2">
-            {/* Brood Temperature */}
-            {temperature !== undefined && (
-              <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
-                <div className="flex items-center gap-1.5">
-                  <Flame size={14} className="text-orange-600 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-orange-600 dark:text-orange-400">Brood</p>
-                    <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
-                      {temperature.toFixed(1)}°C
-                    </p>
-                  </div>
+            <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded border border-cyan-200 dark:border-cyan-800">
+              <div className="flex items-center gap-1.5">
+                <Droplets size={14} className="text-cyan-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-cyan-600 dark:text-cyan-400">Humidity</p>
+                  <p className="text-sm font-bold text-cyan-800 dark:text-cyan-200 truncate">
+                    {humidity.toFixed(0)}%
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Humidity */}
-            {humidity !== undefined && (
-              <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded border border-cyan-200 dark:border-cyan-800">
-                <div className="flex items-center gap-1.5">
-                  <Droplets size={14} className="text-cyan-600 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-cyan-600 dark:text-cyan-400">Humidity</p>
-                    <p className="text-sm font-bold text-cyan-800 dark:text-cyan-200 truncate">
-                      {humidity.toFixed(0)}%
-                    </p>
-                  </div>
+      {/* Technical Section - Battery */}
+      {batteryInfo !== null && (
+        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div className={`p-2 rounded border ${
+              batteryInfo.percent < 20
+                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+            }`}>
+              <div className="flex items-center gap-1.5">
+                <Battery size={14} className={`shrink-0 ${batteryInfo.percent < 20 ? 'text-red-600' : 'text-green-600'}`} />
+                <div className="min-w-0">
+                  <p className={`text-[10px] ${batteryInfo.percent < 20 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>Battery</p>
+                  <p className={`text-sm font-bold truncate ${batteryInfo.percent < 20 ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}`}>
+                    {batteryInfo.percent}%
+                  </p>
                 </div>
               </div>
-            )}
-
-            {/* Battery */}
-            {batteryInfo !== null && (
-              <div className={`p-2 rounded border ${
-                batteryInfo.percent < 20
-                  ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                  : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-              }`}>
-                <div className="flex items-center gap-1.5">
-                  <Battery size={14} className={`shrink-0 ${batteryInfo.percent < 20 ? 'text-red-600' : 'text-green-600'}`} />
-                  <div className="min-w-0">
-                    <p className={`text-[10px] ${batteryInfo.percent < 20 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>Battery</p>
-                    <p className={`text-sm font-bold truncate ${batteryInfo.percent < 20 ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}`}>
-                      {batteryInfo.percent}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       )}
