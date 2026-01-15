@@ -79,6 +79,42 @@ POST /user/scale/export
 
 **Time Resolution Options**: `hourly`, `daily`
 
+#### 3. Trachtnet Export (Battery Voltage)
+```
+POST /user/trachtnet/export
+```
+**Request Body:**
+```json
+{
+  "scale": "40M12345",
+  "format": "json",
+  "time_start": "2020-01-01",
+  "time_end": "2020-12-31"
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "execution_time": "8.91 ms",
+  "data": [
+    {
+      "time": "2020-01-01 00:00:00",
+      "weight": 110,
+      "longitude": 0,
+      "latitude": 0,
+      "altitude": 0,
+      "temperature": 11.4,
+      "rain": 10,
+      "humidity": 71.1,
+      "battery_voltage": 3.9
+    }
+  ]
+}
+```
+
+*Note: Trachtnet endpoint uses date strings ("YYYY-MM-DD") instead of Unix timestamps, and returns raw numeric values instead of strings with units.*
+
 ### Wolf Waagen Sensor Data
 - **weight**: Hive weight in kg
 - **yield**: Daily weight change in kg
@@ -88,6 +124,7 @@ POST /user/scale/export
 - **rain**: Precipitation in mm
 - **wind_speed**: Wind speed in km/h
 - **wind_direction**: Wind direction in degrees
+- **battery_voltage**: Battery voltage in V (from Trachtnet endpoint)
 
 ---
 
@@ -150,10 +187,11 @@ export interface WolfParsedReading {
   rain_mm?: number
   wind_speed_kmh?: number
   wind_direction_deg?: number
+  battery_voltage?: number
 }
 
 // Helper to parse "23.550 [kg]" → 23.550
-function parseWolfValue(value: string | undefined): number | undefined
+function parseWolfValue(value: string | number | undefined): number | undefined
 
 // API Functions
 export async function wolfGetScales(apiToken: string): Promise<WolfScale[]>
@@ -165,12 +203,18 @@ export async function wolfGetMeasurements(
   endTimestamp: number,
   resolution: 'hourly' | 'daily' = 'hourly'
 ): Promise<WolfParsedReading[]>
+
+export async function wolfGetBatteryVoltage(
+  apiToken: string,
+  scaleId: string
+): Promise<number | null>
 ```
 
 **Key characteristics**:
 - No login endpoint - user provides API token directly
 - No "last values" endpoint - use export with recent time range for current data
 - Values returned as strings with units - require parsing
+- Battery voltage fetched from separate Trachtnet endpoint
 
 ---
 
@@ -231,8 +275,9 @@ export async function wolfGetMeasurements(
 // 1. Verify auth and access
 // 2. Get wolf_api_token (from owner if shared hive)
 // 3. Calculate time range (Unix timestamps)
-// 4. Call wolfGetMeasurements()
-// 5. Return { lastValues, history }
+// 4. Call wolfGetMeasurements() and wolfGetBatteryVoltage() in parallel
+// 5. Merge battery voltage into lastValues
+// 6. Return { lastValues, history }
 ```
 
 ---
@@ -243,13 +288,16 @@ export async function wolfGetMeasurements(
 **File**: `src/components/hive/WolfSensorDisplay.tsx`
 
 Displays real-time Wolf Waagen sensor data:
-- Weight (kg) - amber styling
-- Temperature (°C) - blue styling
+- Weight (kg) - blue styling
+- Yield/Daily Change (kg) - green/red based on +/-
+- Temperature (°C) - sky blue styling
 - Brood Temperature (°C) - orange styling
 - Humidity (%) - cyan styling
-- Yield/Daily Change (kg) - green/red based on +/-
-
-*Note: Wolf Waagen doesn't report battery voltage*
+- Battery Voltage (V) - green/yellow/red based on level
+  - ≥70% (≥3.9V): Green with full battery icon
+  - 30-69% (3.5-3.9V): Yellow with medium battery icon
+  - <30% (<3.5V): Red with low battery icon
+  - Shows both voltage and percentage (e.g., "3.9 V (70%)")
 
 #### 4.2 Scale History Chart
 **File**: `src/components/hive/WolfHistoryChart.tsx`
@@ -478,7 +526,8 @@ All phases of the Wolf Waagen integration have been successfully implemented.
 | Last values | Dedicated endpoint | Export last 24h |
 | Data format | Numeric | Strings with units (parsed) |
 | Icon color | Amber | Blue |
-| Extra sensors | Audio, bee count, battery | Rain, wind, brood temp |
+| Battery | Single endpoint | Separate Trachtnet endpoint |
+| Extra sensors | Audio, bee count | Rain, wind, brood temp, GPS |
 
 ### Code Quality
 - TypeScript strict typing throughout
@@ -556,3 +605,47 @@ Confirmed response from Wolf Waagen API:
 | `data` array | `scales` array |
 | `scale` field | `scale_id` field |
 | String values only | Both string and numeric values |
+
+---
+
+## Feature Update - January 15, 2026
+
+### Battery Voltage Display
+
+Added battery voltage support using the Trachtnet export endpoint.
+
+#### Changes Made
+
+**1. API Client Library** (`src/lib/wolf-waagen-api.ts`)
+- Added `battery_voltage` field to `WolfParsedReading` interface
+- Added `WolfTrachtnetReading` interface for Trachtnet response
+- Added `wolfGetBatteryVoltage()` function that calls `/user/trachtnet/export`
+  - Uses date strings ("YYYY-MM-DD") instead of Unix timestamps
+  - Fetches last 24 hours of data
+  - Returns most recent battery voltage or null
+
+**2. Data Route** (`src/app/api/wolf-waagen/data/route.ts`)
+- Imports new `wolfGetBatteryVoltage` function
+- Fetches sensor data and battery voltage in parallel using `Promise.all`
+- Merges battery voltage into lastValues response
+
+**3. Sensor Display** (`src/components/hive/WolfSensorDisplay.tsx`)
+- Added battery icon imports (`BatteryLow`, `BatteryMedium`, `BatteryFull`)
+- Added `getBatteryInfo()` helper to calculate percentage from voltage
+  - 4.2V = 100% (fully charged)
+  - 3.2V = 0% (empty)
+- Added battery display card with color coding:
+  - **Green** (≥70%): Full battery icon
+  - **Yellow** (30-69%): Medium battery icon
+  - **Red** (<30%): Low battery icon
+- Shows both voltage and percentage (e.g., "3.9 V (70%)")
+
+#### Technical Notes
+
+The Trachtnet endpoint (`/user/trachtnet/export`) differs from the scale export endpoint:
+- Uses date strings instead of Unix timestamps
+- Returns raw numeric values instead of strings with units
+- Includes additional fields: GPS coordinates, battery voltage
+- Does not include brood temperature or yield
+
+Battery voltage is fetched as a supplementary call to preserve the full sensor data from the primary scale/export endpoint while adding battery monitoring capability.
