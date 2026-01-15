@@ -132,6 +132,7 @@ export default function HivesPage() {
   const [filterApiaryId, setFilterApiaryId] = useState<string>('')
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active')
+  const [scaleFilter, setScaleFilter] = useState(false)
   const [filtersLoaded, setFiltersLoaded] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
@@ -1001,10 +1002,16 @@ export default function HivesPage() {
     })
   }
 
+  // Check if any hives have scales configured
+  const hasAnyScales = hives.some(h => h.beep_device_id || h.wolf_scale_id)
+
   // Filter and sort hives based on selected apiary and position
   const filteredHives = [...hives]
     .filter(hive => {
       if (filterApiaryId && hive.apiary_id !== filterApiaryId) {
+        return false
+      }
+      if (scaleFilter && !hive.beep_device_id && !hive.wolf_scale_id) {
         return false
       }
       return true
@@ -1079,6 +1086,18 @@ export default function HivesPage() {
             <option value="archived">Archived Hives</option>
             <option value="all">All (Active + Archived)</option>
           </select>
+          {hasAnyScales && (
+            <label className="flex items-center gap-2 px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground cursor-pointer hover:border-forest-500 transition-all">
+              <input
+                type="checkbox"
+                checked={scaleFilter}
+                onChange={(e) => setScaleFilter(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
+              />
+              <Scale size={16} className="text-blue-600" />
+              <span className="text-sm whitespace-nowrap">With Scales</span>
+            </label>
+          )}
           <button
             onClick={() => setShowForm(!showForm)}
             className="px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto"
