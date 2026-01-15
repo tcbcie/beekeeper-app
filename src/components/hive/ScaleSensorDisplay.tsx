@@ -143,7 +143,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {(weight !== undefined || weightChange7d !== null || weightChange30d !== null) && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {/* Current Weight */}
             {weight !== undefined && (
               <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
@@ -212,7 +212,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {temperature !== undefined && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
               <div className="flex items-center gap-1.5">
                 <Flame size={14} className="text-orange-600 shrink-0" />
@@ -232,7 +232,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {humidity !== undefined && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded border border-cyan-200 dark:border-cyan-800">
               <div className="flex items-center gap-1.5">
                 <Droplets size={14} className="text-cyan-600 shrink-0" />
@@ -252,7 +252,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {batteryInfo !== null && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className={`p-2 rounded border ${
               batteryInfo.percent < 20
                 ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'

@@ -147,7 +147,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
       {(weight !== undefined || yieldKg !== undefined || weightChange7d !== null || weightChange30d !== null) && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Weight */}
             {weight !== undefined && (
               <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
@@ -239,7 +239,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
       {broodTemp !== undefined && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
               <div className="flex items-center gap-1.5">
                 <Flame size={14} className="text-orange-600 shrink-0" />
@@ -259,7 +259,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
       {(temperature !== undefined || humidity !== undefined || typeof rain === 'number' || typeof windSpeed === 'number' || typeof windDirection === 'number') && (
         <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Temperature */}
             {temperature !== undefined && (
               <div className="p-2 bg-sky-50 dark:bg-sky-900/20 rounded border border-sky-200 dark:border-sky-800">
@@ -344,7 +344,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
         return (
           <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
             <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className={`p-2 rounded border ${
                 color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
                 color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
