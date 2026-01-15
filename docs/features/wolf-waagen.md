@@ -291,7 +291,9 @@ Displays real-time Wolf Waagen sensor data organized into two groups:
 
 **Weight Section:**
 - Current Weight (kg) - blue styling
-- Daily Change/Yield (kg) - green/red based on +/-
+- 24h Change (kg) - green/red based on +/- (daily yield from API)
+- 7 Days Change (kg) - green/red based on +/-
+- 30 Days Change (kg) - green/red based on +/-
 
 **Environmental Section:**
 - Temperature (°C) - sky blue styling
@@ -685,7 +687,9 @@ Grouped sensor display into two logical sections:
 
 **Weight Section:**
 - Current weight
-- Daily change (yield)
+- 24h change (daily yield)
+- 7-day weight change
+- 30-day weight change
 
 **Environmental Section:**
 - Temperature
@@ -693,10 +697,34 @@ Grouped sensor display into two logical sections:
 - Humidity
 - Rain
 - Wind speed
-- Wind direction
+- Wind direction (with cardinal direction, e.g., "SE (134°)")
 - Battery
 
 Each section header only displays when there's data for that category. This provides a cleaner, more organized view of sensor data.
 
+#### Weight Change Calculations
+
+The API route fetches 7-day and 30-day historical data in parallel and calculates weight changes:
+
+```typescript
+const [lastValues, batteryVoltage, history7d, history30d] = await Promise.all([
+  wolfGetLastValues(wolfApiToken, scaleId),
+  wolfGetBatteryVoltage(wolfApiToken, scaleId),
+  wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily'),
+  wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily'),
+])
+
+// Calculate changes from oldest to newest weight
+weightChange7d = newestWeight - oldestWeight
+weightChange30d = newestWeight - oldestWeight
+```
+
+#### Cardinal Wind Direction
+
+Wind direction is now displayed as cardinal direction with degrees in parentheses:
+- Converts degrees to N, NE, E, SE, S, SW, W, NW
+- Example: `SE (134°)` instead of just `134°`
+
 #### Files Modified
-- `src/components/hive/WolfSensorDisplay.tsx` - Added weather sensors, reorganized into grouped sections
+- `src/components/hive/WolfSensorDisplay.tsx` - Added weather sensors, weight changes, cardinal direction
+- `src/app/api/wolf-waagen/data/route.ts` - Added 7-day and 30-day weight change calculations
