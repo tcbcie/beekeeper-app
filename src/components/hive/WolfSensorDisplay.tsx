@@ -199,7 +199,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
         )}
 
         {/* Battery */}
-        {batteryVoltage !== undefined && (() => {
+        {typeof batteryVoltage === 'number' && (() => {
           const { Icon, color, percent } = getBatteryInfo(batteryVoltage)
           return (
             <div className={`p-3 rounded-lg border ${
