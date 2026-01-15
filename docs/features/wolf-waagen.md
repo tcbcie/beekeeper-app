@@ -610,9 +610,9 @@ Confirmed response from Wolf Waagen API:
 
 ## Feature Update - January 15, 2026
 
-### Battery Voltage Display
+### Battery Voltage Display (Partial Implementation)
 
-Added battery voltage support using the Trachtnet export endpoint.
+Attempted to add battery voltage support using the Trachtnet export endpoint.
 
 #### Changes Made
 
@@ -620,6 +620,7 @@ Added battery voltage support using the Trachtnet export endpoint.
 - Added `battery_voltage` field to `WolfParsedReading` interface
 - Added `WolfTrachtnetReading` interface for Trachtnet response
 - Added `wolfGetBatteryVoltage()` function that calls `/user/trachtnet/export`
+  - Looks up serial number from scale_id (Trachtnet uses serial number)
   - Uses date strings ("YYYY-MM-DD") instead of Unix timestamps
   - Fetches last 24 hours of data
   - Returns most recent battery voltage or null
@@ -639,13 +640,19 @@ Added battery voltage support using the Trachtnet export endpoint.
   - **Yellow** (30-69%): Medium battery icon
   - **Red** (<30%): Low battery icon
 - Shows both voltage and percentage (e.g., "3.9 V (70%)")
+- Uses `typeof batteryVoltage === 'number'` check to prevent crashes
 
 #### Technical Notes
 
 The Trachtnet endpoint (`/user/trachtnet/export`) differs from the scale export endpoint:
+- Uses serial number instead of scale_id
 - Uses date strings instead of Unix timestamps
 - Returns raw numeric values instead of strings with units
 - Includes additional fields: GPS coordinates, battery voltage
 - Does not include brood temperature or yield
 
-Battery voltage is fetched as a supplementary call to preserve the full sensor data from the primary scale/export endpoint while adding battery monitoring capability.
+#### Known Limitation
+
+**Battery voltage may not be available for all scales.** Testing revealed that the Trachtnet endpoint does not return battery data for all Wolf Waagen scale models. The implementation is in place and will display battery voltage if the API returns it, but some scales (e.g., ApiGraph 4.0) may not report battery through this endpoint.
+
+The feature fails gracefully - if no battery data is returned, the battery card simply doesn't appear in the UI.
