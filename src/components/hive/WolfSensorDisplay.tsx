@@ -143,9 +143,9 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
         </div>
       </div>
 
-      {/* Weight Section - Compact Grid */}
+      {/* Weight Section */}
       {(weight !== undefined || yieldKg !== undefined || weightChange7d !== null || weightChange30d !== null) && (
-        <div className="space-y-1">
+        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
           <div className="grid grid-cols-4 gap-2">
             {/* Weight */}
@@ -235,11 +235,29 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
         </div>
       )}
 
-      {/* Environmental Section - Compact Grid */}
-      {(temperature !== undefined || broodTemp !== undefined || humidity !== undefined ||
-        typeof rain === 'number' || typeof windSpeed === 'number' || typeof windDirection === 'number' ||
-        typeof batteryVoltage === 'number') && (
-        <div className="space-y-1">
+      {/* Colony Section - Brood Temperature */}
+      {broodTemp !== undefined && (
+        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
+              <div className="flex items-center gap-1.5">
+                <Flame size={14} className="text-orange-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-orange-600 dark:text-orange-400">Brood Temp</p>
+                  <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
+                    {broodTemp.toFixed(1)}°C
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Environmental Section - Weather Data */}
+      {(temperature !== undefined || humidity !== undefined || typeof rain === 'number' || typeof windSpeed === 'number' || typeof windDirection === 'number') && (
+        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
           <div className="grid grid-cols-4 gap-2">
             {/* Temperature */}
@@ -251,21 +269,6 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                     <p className="text-[10px] text-sky-600 dark:text-sky-400">Temp</p>
                     <p className="text-sm font-bold text-sky-800 dark:text-sky-200 truncate">
                       {temperature.toFixed(1)}°C
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Brood Temperature */}
-            {broodTemp !== undefined && (
-              <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
-                <div className="flex items-center gap-1.5">
-                  <Flame size={14} className="text-orange-600 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-orange-600 dark:text-orange-400">Brood</p>
-                    <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
-                      {broodTemp.toFixed(1)}°C
                     </p>
                   </div>
                 </div>
@@ -331,43 +334,48 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                 </div>
               </div>
             )}
-
-            {/* Battery */}
-            {typeof batteryVoltage === 'number' && (() => {
-              const { Icon, color, percent } = getBatteryInfo(batteryVoltage)
-              return (
-                <div className={`p-2 rounded border ${
-                  color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
-                  color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
-                  'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                }`}>
-                  <div className="flex items-center gap-1.5">
-                    <Icon size={14} className={`shrink-0 ${
-                      color === 'green' ? 'text-green-600' :
-                      color === 'yellow' ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`} />
-                    <div className="min-w-0">
-                      <p className={`text-[10px] ${
-                        color === 'green' ? 'text-green-600 dark:text-green-400' :
-                        color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
-                        'text-red-600 dark:text-red-400'
-                      }`}>Battery</p>
-                      <p className={`text-sm font-bold truncate ${
-                        color === 'green' ? 'text-green-800 dark:text-green-200' :
-                        color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
-                        'text-red-800 dark:text-red-200'
-                      }`}>
-                        {percent}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
           </div>
         </div>
       )}
+
+      {/* Technical Section - Battery */}
+      {typeof batteryVoltage === 'number' && (() => {
+        const { Icon, color, percent } = getBatteryInfo(batteryVoltage)
+        return (
+          <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+            <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
+            <div className="grid grid-cols-4 gap-2">
+              <div className={`p-2 rounded border ${
+                color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+                color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
+                'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+              }`}>
+                <div className="flex items-center gap-1.5">
+                  <Icon size={14} className={`shrink-0 ${
+                    color === 'green' ? 'text-green-600' :
+                    color === 'yellow' ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`} />
+                  <div className="min-w-0">
+                    <p className={`text-[10px] ${
+                      color === 'green' ? 'text-green-600 dark:text-green-400' :
+                      color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
+                      'text-red-600 dark:text-red-400'
+                    }`}>Battery</p>
+                    <p className={`text-sm font-bold truncate ${
+                      color === 'green' ? 'text-green-800 dark:text-green-200' :
+                      color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
+                      'text-red-800 dark:text-red-200'
+                    }`}>
+                      {percent}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
