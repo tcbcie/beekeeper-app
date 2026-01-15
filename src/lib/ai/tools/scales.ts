@@ -96,7 +96,7 @@ async function fetchBeepData(
   startDate: string,
   endDate: string
 ): Promise<ScaleReading[]> {
-  const url = `https://api.beep.nl/api/sensors/measurements?id=${deviceId}&start=${startDate}&end=${endDate}&interval=hour`
+  const url = `https://api.beep.nl/api/sensors/measurements?device_id=${deviceId}&start=${startDate}&end=${endDate}`
 
   const response = await fetch(url, {
     headers: {
@@ -161,9 +161,9 @@ export const getScaleData: Tool = {
       return `Hive "${hive.hive_number}" in ${hive.apiary_name} does not have a scale connected.`
     }
 
-    // Get current readings (last hour)
+    // Get current readings (last 24 hours - scales may report infrequently)
     const now = Math.floor(Date.now() / 1000)
-    const oneHourAgo = now - 3600
+    const oneDayAgo = now - (24 * 60 * 60)
 
     try {
       if (hiveData.wolf_scale_id) {
@@ -173,7 +173,7 @@ export const getScaleData: Tool = {
           return 'Wolf Waagen account not connected. Connect it in your profile settings.'
         }
 
-        const readings = await fetchWolfData(wolfToken, hiveData.wolf_scale_id, oneHourAgo, now, 'hourly')
+        const readings = await fetchWolfData(wolfToken, hiveData.wolf_scale_id, oneDayAgo, now, 'hourly')
 
         if (readings.length === 0) {
           return `No recent data from Wolf Waagen scale for hive "${hive.hive_number}".`
@@ -200,7 +200,7 @@ export const getScaleData: Tool = {
         }
 
         const endDate = new Date().toISOString()
-        const startDate = new Date(Date.now() - 3600000).toISOString()
+        const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
         const readings = await fetchBeepData(beepToken, hiveData.beep_device_id, startDate, endDate)
 
         if (readings.length === 0) {
@@ -413,7 +413,7 @@ export const compareScaleReadings: Tool = {
     }
 
     const now = Math.floor(Date.now() / 1000)
-    const oneHourAgo = now - 3600
+    const oneDayAgo = now - (24 * 60 * 60)
     const results: Array<{
       hive: string
       apiary: string
@@ -428,7 +428,7 @@ export const compareScaleReadings: Tool = {
         if (hive.wolf_scale_id) {
           const wolfToken = await getWolfToken(userId)
           if (wolfToken) {
-            const readings = await fetchWolfData(wolfToken, hive.wolf_scale_id, oneHourAgo, now, 'hourly')
+            const readings = await fetchWolfData(wolfToken, hive.wolf_scale_id, oneDayAgo, now, 'hourly')
             if (readings.length > 0) {
               const latest = readings[readings.length - 1]
               results.push({
@@ -444,7 +444,7 @@ export const compareScaleReadings: Tool = {
           const beepToken = await getBeepToken(userId)
           if (beepToken) {
             const endDate = new Date().toISOString()
-            const startDate = new Date(Date.now() - 3600000).toISOString()
+            const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
             const readings = await fetchBeepData(beepToken, hive.beep_device_id, startDate, endDate)
             if (readings.length > 0) {
               const latest = readings[readings.length - 1]
