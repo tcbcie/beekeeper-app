@@ -34,11 +34,17 @@ async function getBeepToken(userId: string): Promise<string | null> {
   return data?.beep_api_token || null
 }
 
-// Parse Wolf Waagen value (e.g., "23.550 [kg]" -> 23.550)
-function parseWolfValue(value: string | undefined): number | undefined {
-  if (!value) return undefined
-  const match = value.match(/^([\d.-]+)/)
-  return match ? parseFloat(match[1]) : undefined
+// Parse Wolf Waagen value - handles both formats:
+// - String with units: "23.550 [kg]" -> 23.550
+// - Direct number: 23.550 -> 23.550
+function parseWolfValue(value: string | number | undefined | null): number | undefined {
+  if (value === undefined || value === null) return undefined
+  if (typeof value === 'number') return isNaN(value) ? undefined : value
+  if (typeof value === 'string') {
+    const match = value.match(/^([\d.-]+)/)
+    return match ? parseFloat(match[1]) : undefined
+  }
+  return undefined
 }
 
 // Fetch Wolf Waagen data
@@ -73,8 +79,8 @@ async function fetchWolfData(
     return []
   }
 
-  return result.data.map((reading: Record<string, string>) => ({
-    time: reading.time,
+  return result.data.map((reading: Record<string, string | number>) => ({
+    time: reading.time as string,
     weight_kg: parseWolfValue(reading.weight),
     yield_kg: parseWolfValue(reading.yield),
     temperature_c: parseWolfValue(reading.temperature),
@@ -368,5 +374,241 @@ export const getHivesWithScales: Tool = {
         scaleName: h.wolf_scale_name || h.wolf_scale_id || h.beep_device_name || h.beep_device_id
       }
     })
+  }
+}
+
+// Compare scale readings across multiple hives
+export const compareScaleReadings: Tool = {
+  name: 'compareScaleReadings',
+  description: 'Compare current scale readings (weight, temperature) across all hives with scales. Useful for identifying which hives are heaviest or lightest.',
+  parameters: z.object({}),
+  execute: async (_rawArgs: unknown, userId: string) => {
+    const supabase = getSupabase()
+
+    // Get user's apiaries
+    const { data: apiaries } = await supabase
+      .from('apiaries')
+      .select('id')
+      .eq('user_id', userId)
+
+    if (!apiaries?.length) {
+      return 'No apiaries found.'
+    }
+
+    const apiaryIds = apiaries.map(a => a.id)
+
+    const { data: hives, error } = await supabase
+      .from('hives')
+      .select(`
+        id, hive_number,
+        beep_device_id, wolf_scale_id,
+        apiaries(name)
+      `)
+      .in('apiary_id', apiaryIds)
+      .is('archived_at', null)
+      .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
+
+    if (error || !hives?.length) {
+      return 'No hives with scales found.'
+    }
+
+    const now = Math.floor(Date.now() / 1000)
+    const oneHourAgo = now - 3600
+    const results: Array<{
+      hive: string
+      apiary: string
+      weight: number | null
+      temperature: number | null
+      scaleType: string
+    }> = []
+
+    for (const hive of hives) {
+      const apiary = hive.apiaries as unknown as { name: string } | null
+      try {
+        if (hive.wolf_scale_id) {
+          const wolfToken = await getWolfToken(userId)
+          if (wolfToken) {
+            const readings = await fetchWolfData(wolfToken, hive.wolf_scale_id, oneHourAgo, now, 'hourly')
+            if (readings.length > 0) {
+              const latest = readings[readings.length - 1]
+              results.push({
+                hive: hive.hive_number,
+                apiary: apiary?.name || 'Unknown',
+                weight: latest.weight_kg || null,
+                temperature: latest.temperature_c || null,
+                scaleType: 'Wolf'
+              })
+            }
+          }
+        } else if (hive.beep_device_id) {
+          const beepToken = await getBeepToken(userId)
+          if (beepToken) {
+            const endDate = new Date().toISOString()
+            const startDate = new Date(Date.now() - 3600000).toISOString()
+            const readings = await fetchBeepData(beepToken, hive.beep_device_id, startDate, endDate)
+            if (readings.length > 0) {
+              const latest = readings[readings.length - 1]
+              results.push({
+                hive: hive.hive_number,
+                apiary: apiary?.name || 'Unknown',
+                weight: latest.weight_kg || null,
+                temperature: latest.temperature_c || null,
+                scaleType: 'BEEP'
+              })
+            }
+          }
+        }
+      } catch {
+        // Skip hives with fetch errors
+      }
+    }
+
+    if (results.length === 0) {
+      return 'Could not fetch scale data from any hives.'
+    }
+
+    // Sort by weight (heaviest first)
+    results.sort((a, b) => (b.weight || 0) - (a.weight || 0))
+
+    const heaviest = results[0]
+    const lightest = results[results.length - 1]
+
+    return {
+      hivesCompared: results.length,
+      heaviest: heaviest ? { hive: heaviest.hive, weight: `${heaviest.weight?.toFixed(1)} kg` } : null,
+      lightest: lightest ? { hive: lightest.hive, weight: `${lightest.weight?.toFixed(1)} kg` } : null,
+      readings: results.map(r => ({
+        hive: r.hive,
+        apiary: r.apiary,
+        weight: r.weight ? `${r.weight.toFixed(1)} kg` : 'N/A',
+        temperature: r.temperature ? `${r.temperature.toFixed(1)}°C` : 'N/A',
+        scaleType: r.scaleType
+      }))
+    }
+  }
+}
+
+// Check for unusual weight changes (alerts)
+export const checkScaleAlerts: Tool = {
+  name: 'checkScaleAlerts',
+  description: 'Check for unusual weight changes in hives with scales. Detects potential swarming (sudden weight loss), robbing, or rapid weight gain.',
+  parameters: z.object({
+    days: z.number().optional().describe('Number of days to analyze (default 7)')
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { days?: number }
+    const days = args.days || 7
+    const supabase = getSupabase()
+
+    // Get user's apiaries
+    const { data: apiaries } = await supabase
+      .from('apiaries')
+      .select('id')
+      .eq('user_id', userId)
+
+    if (!apiaries?.length) {
+      return 'No apiaries found.'
+    }
+
+    const apiaryIds = apiaries.map(a => a.id)
+
+    const { data: hives, error } = await supabase
+      .from('hives')
+      .select(`
+        id, hive_number,
+        beep_device_id, wolf_scale_id,
+        apiaries(name)
+      `)
+      .in('apiary_id', apiaryIds)
+      .is('archived_at', null)
+      .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
+
+    if (error || !hives?.length) {
+      return 'No hives with scales found.'
+    }
+
+    const now = Math.floor(Date.now() / 1000)
+    const startTimestamp = now - (days * 24 * 60 * 60)
+    const alerts: Array<{
+      hive: string
+      apiary: string
+      alertType: string
+      details: string
+    }> = []
+
+    for (const hive of hives) {
+      const apiary = hive.apiaries as unknown as { name: string } | null
+      try {
+        let readings: ScaleReading[] = []
+
+        if (hive.wolf_scale_id) {
+          const wolfToken = await getWolfToken(userId)
+          if (wolfToken) {
+            readings = await fetchWolfData(wolfToken, hive.wolf_scale_id, startTimestamp, now, 'daily')
+          }
+        } else if (hive.beep_device_id) {
+          const beepToken = await getBeepToken(userId)
+          if (beepToken) {
+            const endDate = new Date().toISOString()
+            const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+            readings = await fetchBeepData(beepToken, hive.beep_device_id, startDate, endDate)
+          }
+        }
+
+        if (readings.length >= 2) {
+          const weights = readings.map(r => r.weight_kg).filter((w): w is number => w !== undefined)
+          if (weights.length >= 2) {
+            // Check for sudden weight loss (potential swarm: >2kg in a day)
+            for (let i = 1; i < weights.length; i++) {
+              const dailyChange = weights[i] - weights[i - 1]
+              if (dailyChange < -2) {
+                alerts.push({
+                  hive: hive.hive_number,
+                  apiary: apiary?.name || 'Unknown',
+                  alertType: 'Sudden Weight Loss',
+                  details: `Lost ${Math.abs(dailyChange).toFixed(1)} kg - possible swarm or robbing`
+                })
+                break
+              }
+            }
+
+            // Check for rapid weight gain (>3kg over period - strong flow)
+            const totalChange = weights[weights.length - 1] - weights[0]
+            if (totalChange > 3) {
+              alerts.push({
+                hive: hive.hive_number,
+                apiary: apiary?.name || 'Unknown',
+                alertType: 'Rapid Weight Gain',
+                details: `Gained ${totalChange.toFixed(1)} kg over ${days} days - strong nectar flow`
+              })
+            }
+
+            // Check for significant decline (>2kg over period - possible issue)
+            if (totalChange < -2) {
+              alerts.push({
+                hive: hive.hive_number,
+                apiary: apiary?.name || 'Unknown',
+                alertType: 'Weight Decline',
+                details: `Lost ${Math.abs(totalChange).toFixed(1)} kg over ${days} days - may need feeding`
+              })
+            }
+          }
+        }
+      } catch {
+        // Skip hives with fetch errors
+      }
+    }
+
+    if (alerts.length === 0) {
+      return {
+        status: 'All Clear',
+        message: `No unusual weight changes detected in the last ${days} days across ${hives.length} hive(s) with scales.`
+      }
+    }
+
+    return {
+      alertCount: alerts.length,
+      alerts
+    }
   }
 }
