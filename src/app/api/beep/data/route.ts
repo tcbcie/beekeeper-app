@@ -90,19 +90,30 @@ export async function GET(request: NextRequest) {
 
     // Calculate date ranges for weight changes
     const now = new Date()
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
     // Fetch latest sensor values and historical data for weight changes in parallel
-    const [lastValues, history7d, history30d] = await Promise.all([
+    const [lastValues, history24h, history7d, history30d] = await Promise.all([
       beepGetLastValues(beepApiToken, deviceId),
+      beepGetMeasurements(beepApiToken, deviceId, oneDayAgo.toISOString(), now.toISOString()),
       beepGetMeasurements(beepApiToken, deviceId, sevenDaysAgo.toISOString(), now.toISOString()),
       beepGetMeasurements(beepApiToken, deviceId, thirtyDaysAgo.toISOString(), now.toISOString()),
     ])
 
-    // Calculate 7-day and 30-day weight changes
+    // Calculate 24h, 7-day and 30-day weight changes
+    let weightChange24h: number | null = null
     let weightChange7d: number | null = null
     let weightChange30d: number | null = null
+
+    if (history24h && history24h.length >= 2) {
+      const oldestWeight = history24h[0]?.weight_kg_corrected ?? history24h[0]?.weight_kg
+      const newestWeight = history24h[history24h.length - 1]?.weight_kg_corrected ?? history24h[history24h.length - 1]?.weight_kg
+      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+        weightChange24h = newestWeight - oldestWeight
+      }
+    }
 
     if (history7d && history7d.length >= 2) {
       const oldestWeight = history7d[0]?.weight_kg_corrected ?? history7d[0]?.weight_kg
@@ -167,6 +178,7 @@ export async function GET(request: NextRequest) {
       lastValues,
       history,
       period,
+      weightChange24h,
       weightChange7d,
       weightChange30d,
     })
