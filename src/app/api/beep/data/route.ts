@@ -88,8 +88,37 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'BEEP not connected' }, { status: 400 })
     }
 
-    // Fetch latest sensor values
-    const lastValues = await beepGetLastValues(beepApiToken, deviceId)
+    // Calculate date ranges for weight changes
+    const now = new Date()
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+    // Fetch latest sensor values and historical data for weight changes in parallel
+    const [lastValues, history7d, history30d] = await Promise.all([
+      beepGetLastValues(beepApiToken, deviceId),
+      beepGetMeasurements(beepApiToken, deviceId, sevenDaysAgo.toISOString(), now.toISOString()),
+      beepGetMeasurements(beepApiToken, deviceId, thirtyDaysAgo.toISOString(), now.toISOString()),
+    ])
+
+    // Calculate 7-day and 30-day weight changes
+    let weightChange7d: number | null = null
+    let weightChange30d: number | null = null
+
+    if (history7d && history7d.length >= 2) {
+      const oldestWeight = history7d[0]?.weight_kg_corrected ?? history7d[0]?.weight_kg
+      const newestWeight = history7d[history7d.length - 1]?.weight_kg_corrected ?? history7d[history7d.length - 1]?.weight_kg
+      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+        weightChange7d = newestWeight - oldestWeight
+      }
+    }
+
+    if (history30d && history30d.length >= 2) {
+      const oldestWeight = history30d[0]?.weight_kg_corrected ?? history30d[0]?.weight_kg
+      const newestWeight = history30d[history30d.length - 1]?.weight_kg_corrected ?? history30d[history30d.length - 1]?.weight_kg
+      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+        weightChange30d = newestWeight - oldestWeight
+      }
+    }
 
     let history = null
     if (period || (customStart && customEnd)) {
@@ -138,6 +167,8 @@ export async function GET(request: NextRequest) {
       lastValues,
       history,
       period,
+      weightChange7d,
+      weightChange30d,
     })
   } catch (error) {
     console.error('BEEP data error:', error)
