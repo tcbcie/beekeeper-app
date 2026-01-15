@@ -120,193 +120,215 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Header with scale name and refresh */}
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-text-secondary">
           {scaleName || `Scale ${scaleId}`}
         </p>
-        <button
-          onClick={fetchSensorData}
-          className="p-1 text-text-tertiary hover:text-foreground rounded"
-          title="Refresh data"
-        >
-          <RefreshCw size={14} />
-        </button>
+        <div className="flex items-center gap-2">
+          {lastUpdated && (
+            <span className="text-xs text-text-tertiary flex items-center gap-1">
+              <Clock size={10} />
+              {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+          <button
+            onClick={fetchSensorData}
+            className="p-1 text-text-tertiary hover:text-foreground rounded"
+            title="Refresh data"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
       </div>
 
-      {/* Weight Section */}
+      {/* Weight Section - Compact Grid */}
       {(weight !== undefined || yieldKg !== undefined || weightChange7d !== null || weightChange30d !== null) && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             {/* Weight */}
             {weight !== undefined && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <Scale size={16} className="text-blue-600" />
-                  <span className="text-xs text-blue-700 dark:text-blue-300">Current</span>
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-1.5">
+                  <Scale size={14} className="text-blue-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-blue-600 dark:text-blue-400">Current</p>
+                    <p className="text-sm font-bold text-blue-800 dark:text-blue-200 truncate">
+                      {weight.toFixed(1)} kg
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-blue-800 dark:text-blue-200">
-                  {weight.toFixed(1)} <span className="text-sm font-normal">kg</span>
-                </p>
               </div>
             )}
 
             {/* Daily Yield/Change */}
             {yieldKg !== undefined && (
-              <div className={`p-3 rounded-lg border ${
+              <div className={`p-2 rounded border ${
                 yieldKg >= 0
                   ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                   : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
               }`}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-1.5">
                   {yieldKg >= 0 ? (
-                    <TrendingUp size={16} className="text-green-600" />
+                    <TrendingUp size={14} className="text-green-600 shrink-0" />
                   ) : (
-                    <TrendingDown size={16} className="text-red-600" />
+                    <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
-                  <span className={`text-xs ${yieldKg >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-                    24h
-                  </span>
+                  <div className="min-w-0">
+                    <p className={`text-[10px] ${yieldKg >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>24h</p>
+                    <p className={`text-sm font-bold truncate ${yieldKg >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                      {yieldKg >= 0 ? '+' : ''}{yieldKg.toFixed(2)} kg
+                    </p>
+                  </div>
                 </div>
-                <p className={`text-xl font-bold ${yieldKg >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
-                  {yieldKg >= 0 ? '+' : ''}{yieldKg.toFixed(2)} <span className="text-sm font-normal">kg</span>
-                </p>
               </div>
             )}
 
             {/* 7-Day Change */}
             {weightChange7d !== null && (
-              <div className={`p-3 rounded-lg border ${
+              <div className={`p-2 rounded border ${
                 weightChange7d >= 0
                   ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                   : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
               }`}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-1.5">
                   {weightChange7d >= 0 ? (
-                    <TrendingUp size={16} className="text-green-600" />
+                    <TrendingUp size={14} className="text-green-600 shrink-0" />
                   ) : (
-                    <TrendingDown size={16} className="text-red-600" />
+                    <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
-                  <span className={`text-xs ${weightChange7d >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-                    7 Days
-                  </span>
+                  <div className="min-w-0">
+                    <p className={`text-[10px] ${weightChange7d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>7d</p>
+                    <p className={`text-sm font-bold truncate ${weightChange7d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                      {weightChange7d >= 0 ? '+' : ''}{weightChange7d.toFixed(2)} kg
+                    </p>
+                  </div>
                 </div>
-                <p className={`text-xl font-bold ${weightChange7d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
-                  {weightChange7d >= 0 ? '+' : ''}{weightChange7d.toFixed(2)} <span className="text-sm font-normal">kg</span>
-                </p>
               </div>
             )}
 
             {/* 30-Day Change */}
             {weightChange30d !== null && (
-              <div className={`p-3 rounded-lg border ${
+              <div className={`p-2 rounded border ${
                 weightChange30d >= 0
                   ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                   : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
               }`}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-1.5">
                   {weightChange30d >= 0 ? (
-                    <TrendingUp size={16} className="text-green-600" />
+                    <TrendingUp size={14} className="text-green-600 shrink-0" />
                   ) : (
-                    <TrendingDown size={16} className="text-red-600" />
+                    <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
-                  <span className={`text-xs ${weightChange30d >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-                    30 Days
-                  </span>
+                  <div className="min-w-0">
+                    <p className={`text-[10px] ${weightChange30d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>30d</p>
+                    <p className={`text-sm font-bold truncate ${weightChange30d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                      {weightChange30d >= 0 ? '+' : ''}{weightChange30d.toFixed(2)} kg
+                    </p>
+                  </div>
                 </div>
-                <p className={`text-xl font-bold ${weightChange30d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
-                  {weightChange30d >= 0 ? '+' : ''}{weightChange30d.toFixed(2)} <span className="text-sm font-normal">kg</span>
-                </p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Environmental Section */}
+      {/* Environmental Section - Compact Grid */}
       {(temperature !== undefined || broodTemp !== undefined || humidity !== undefined ||
         typeof rain === 'number' || typeof windSpeed === 'number' || typeof windDirection === 'number' ||
         typeof batteryVoltage === 'number') && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             {/* Temperature */}
             {temperature !== undefined && (
-              <div className="p-3 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-200 dark:border-sky-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <Thermometer size={16} className="text-sky-600" />
-                  <span className="text-xs text-sky-700 dark:text-sky-300">Temperature</span>
+              <div className="p-2 bg-sky-50 dark:bg-sky-900/20 rounded border border-sky-200 dark:border-sky-800">
+                <div className="flex items-center gap-1.5">
+                  <Thermometer size={14} className="text-sky-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-sky-600 dark:text-sky-400">Temp</p>
+                    <p className="text-sm font-bold text-sky-800 dark:text-sky-200 truncate">
+                      {temperature.toFixed(1)}°C
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-sky-800 dark:text-sky-200">
-                  {temperature.toFixed(1)} <span className="text-sm font-normal">°C</span>
-                </p>
               </div>
             )}
 
             {/* Brood Temperature */}
             {broodTemp !== undefined && (
-              <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <Flame size={16} className="text-orange-600" />
-                  <span className="text-xs text-orange-700 dark:text-orange-300">Brood Temp</span>
+              <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
+                <div className="flex items-center gap-1.5">
+                  <Flame size={14} className="text-orange-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-orange-600 dark:text-orange-400">Brood</p>
+                    <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
+                      {broodTemp.toFixed(1)}°C
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-orange-800 dark:text-orange-200">
-                  {broodTemp.toFixed(1)} <span className="text-sm font-normal">°C</span>
-                </p>
               </div>
             )}
 
             {/* Humidity */}
             {humidity !== undefined && (
-              <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <Droplets size={16} className="text-cyan-600" />
-                  <span className="text-xs text-cyan-700 dark:text-cyan-300">Humidity</span>
+              <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded border border-cyan-200 dark:border-cyan-800">
+                <div className="flex items-center gap-1.5">
+                  <Droplets size={14} className="text-cyan-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-cyan-600 dark:text-cyan-400">Humidity</p>
+                    <p className="text-sm font-bold text-cyan-800 dark:text-cyan-200 truncate">
+                      {humidity.toFixed(0)}%
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-cyan-800 dark:text-cyan-200">
-                  {humidity.toFixed(0)} <span className="text-sm font-normal">%</span>
-                </p>
               </div>
             )}
 
             {/* Rain */}
             {typeof rain === 'number' && (
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <CloudRain size={16} className="text-indigo-600" />
-                  <span className="text-xs text-indigo-700 dark:text-indigo-300">Rain</span>
+              <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded border border-indigo-200 dark:border-indigo-800">
+                <div className="flex items-center gap-1.5">
+                  <CloudRain size={14} className="text-indigo-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400">Rain</p>
+                    <p className="text-sm font-bold text-indigo-800 dark:text-indigo-200 truncate">
+                      {rain.toFixed(1)} mm
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-indigo-800 dark:text-indigo-200">
-                  {rain.toFixed(2)} <span className="text-sm font-normal">mm</span>
-                </p>
               </div>
             )}
 
             {/* Wind Speed */}
             {typeof windSpeed === 'number' && (
-              <div className="p-3 bg-slate-50 dark:bg-slate-900/20 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center gap-2 mb-1">
-                  <Wind size={16} className="text-slate-600" />
-                  <span className="text-xs text-slate-700 dark:text-slate-300">Wind Speed</span>
+              <div className="p-2 bg-slate-50 dark:bg-slate-900/20 rounded border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-1.5">
+                  <Wind size={14} className="text-slate-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400">Wind</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+                      {windSpeed.toFixed(0)} km/h
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                  {windSpeed.toFixed(0)} <span className="text-sm font-normal">km/h</span>
-                </p>
               </div>
             )}
 
             {/* Wind Direction */}
             {typeof windDirection === 'number' && (
-              <div className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
-                <div className="flex items-center gap-2 mb-1">
-                  <Compass size={16} className="text-violet-600" />
-                  <span className="text-xs text-violet-700 dark:text-violet-300">Wind Dir</span>
+              <div className="p-2 bg-violet-50 dark:bg-violet-900/20 rounded border border-violet-200 dark:border-violet-800">
+                <div className="flex items-center gap-1.5">
+                  <Compass size={14} className="text-violet-600 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-violet-600 dark:text-violet-400">Direction</p>
+                    <p className="text-sm font-bold text-violet-800 dark:text-violet-200 truncate">
+                      {getCardinalDirection(windDirection)}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-violet-800 dark:text-violet-200">
-                  {getCardinalDirection(windDirection)} <span className="text-sm font-normal">({windDirection.toFixed(0)}°)</span>
-                </p>
               </div>
             )}
 
@@ -314,43 +336,36 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
             {typeof batteryVoltage === 'number' && (() => {
               const { Icon, color, percent } = getBatteryInfo(batteryVoltage)
               return (
-                <div className={`p-3 rounded-lg border ${
+                <div className={`p-2 rounded border ${
                   color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
                   color === 'yellow' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
                   'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                 }`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Icon size={16} className={
+                  <div className="flex items-center gap-1.5">
+                    <Icon size={14} className={`shrink-0 ${
                       color === 'green' ? 'text-green-600' :
                       color === 'yellow' ? 'text-yellow-600' :
                       'text-red-600'
-                    } />
-                    <span className={`text-xs ${
-                      color === 'green' ? 'text-green-700 dark:text-green-300' :
-                      color === 'yellow' ? 'text-yellow-700 dark:text-yellow-300' :
-                      'text-red-700 dark:text-red-300'
-                    }`}>Battery</span>
+                    }`} />
+                    <div className="min-w-0">
+                      <p className={`text-[10px] ${
+                        color === 'green' ? 'text-green-600 dark:text-green-400' :
+                        color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-red-600 dark:text-red-400'
+                      }`}>Battery</p>
+                      <p className={`text-sm font-bold truncate ${
+                        color === 'green' ? 'text-green-800 dark:text-green-200' :
+                        color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
+                        'text-red-800 dark:text-red-200'
+                      }`}>
+                        {percent}%
+                      </p>
+                    </div>
                   </div>
-                  <p className={`text-xl font-bold ${
-                    color === 'green' ? 'text-green-800 dark:text-green-200' :
-                    color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
-                    'text-red-800 dark:text-red-200'
-                  }`}>
-                    {batteryVoltage.toFixed(1)} <span className="text-sm font-normal">V</span>
-                    <span className="text-sm font-normal ml-1">({percent}%)</span>
-                  </p>
                 </div>
               )
             })()}
           </div>
-        </div>
-      )}
-
-      {/* Last updated */}
-      {lastUpdated && (
-        <div className="flex items-center gap-1 text-xs text-text-tertiary">
-          <Clock size={12} />
-          Updated {lastUpdated.toLocaleTimeString()}
         </div>
       )}
     </div>
