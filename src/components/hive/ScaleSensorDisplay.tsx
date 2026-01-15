@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, Thermometer, Droplets, Battery, RefreshCw, Clock, TrendingUp, TrendingDown } from 'lucide-react'
+import { Scale, Flame, Droplets, Battery, RefreshCw, Clock, TrendingUp, TrendingDown } from 'lucide-react'
 import type { BeepSensorReading } from '@/lib/beep-api'
 
 interface ScaleSensorDisplayProps {
@@ -100,17 +100,17 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
   const humidity = sensorData.h
   const rawBattery = sensorData.bv
 
-  // Calculate battery percentage (typical range 3.0V - 4.2V for LiPo)
+  // Calculate battery percentage
+  // BEEP devices may use different battery types, using wider range 2.5V-4.2V
   // BEEP may return voltage in millivolts (e.g., 3900) or volts (e.g., 3.9)
-  // Get battery info: percentage and voltage
   const getBatteryInfo = (bv: number | string | undefined | null): { percent: number; voltage: number } | null => {
     if (bv === undefined || bv === null || bv === '') return null
     const numValue = typeof bv === 'string' ? parseFloat(bv) : bv
     if (isNaN(numValue) || numValue <= 0) return null
     // If value > 100, assume millivolts and convert to volts
     const voltage = numValue > 100 ? numValue / 1000 : numValue
-    // Calculate percentage: 3.0V = 0%, 4.2V = 100%
-    const percent = Math.round(((voltage - 3.0) / 1.2) * 100)
+    // Calculate percentage: 2.5V = 0%, 4.2V = 100% (wider range for different battery types)
+    const percent = Math.round(((voltage - 2.5) / 1.7) * 100)
     return { percent: Math.max(0, Math.min(100, percent)), voltage }
   }
   const batteryInfo = getBatteryInfo(rawBattery)
@@ -203,14 +203,14 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
         <div className="space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
           <div className="grid grid-cols-2 gap-3">
-            {/* Temperature */}
+            {/* Brood Temperature */}
             {temperature !== undefined && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                 <div className="flex items-center gap-2 mb-1">
-                  <Thermometer size={16} className="text-blue-600" />
-                  <span className="text-xs text-blue-700 dark:text-blue-300">Temperature</span>
+                  <Flame size={16} className="text-orange-600" />
+                  <span className="text-xs text-orange-700 dark:text-orange-300">Brood Temp</span>
                 </div>
-                <p className="text-xl font-bold text-blue-800 dark:text-blue-200">
+                <p className="text-xl font-bold text-orange-800 dark:text-orange-200">
                   {temperature.toFixed(1)} <span className="text-sm font-normal">°C</span>
                 </p>
               </div>
