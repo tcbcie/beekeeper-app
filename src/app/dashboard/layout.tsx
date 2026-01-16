@@ -11,6 +11,7 @@ import OfflineIndicator from '@/components/OfflineIndicator'
 import UpdateNotification from '@/components/UpdateNotification'
 import ChatButton from '@/components/chat/ChatButton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import ImpersonationBanner from '@/components/ImpersonationBanner'
 import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
 
@@ -95,6 +96,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
+      <ImpersonationBanner />
       <OfflineIndicator />
       <UpdateNotification />
       <Navbar

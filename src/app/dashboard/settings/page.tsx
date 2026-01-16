@@ -11,6 +11,7 @@ import TerminologyTable from '@/components/settings/TerminologyTable'
 import FrameStandardsManager from '@/components/settings/FrameStandardsManager'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toast'
+import { setImpersonationData } from '@/components/ImpersonationBanner'
 
 interface DropdownCategory {
   id: string
@@ -189,6 +190,7 @@ export default function SettingsPage() {
   const [accountStatusFilter, setAccountStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
   const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'none'>('all')
   const [restoringUserId, setRestoringUserId] = useState<string | null>(null)
+  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null)
   const [showSubscriptionHistory, setShowSubscriptionHistory] = useState(false)
   const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistoryRecord[]>([])
   const [, setLoadingHistory] = useState(false)
@@ -667,6 +669,76 @@ export default function SettingsPage() {
       toast.error('Failed to restore user account.')
     } finally {
       setRestoringUserId(null)
+    }
+  }
+
+  const handleImpersonateUser = async (targetUserId: string, targetUserEmail: string) => {
+    if (targetUserId === userId) {
+      toast.warning('You cannot impersonate yourself.')
+      return
+    }
+
+    if (!confirm(`Are you sure you want to impersonate ${targetUserEmail}?\n\nYou will be logged in as this user.`)) {
+      return
+    }
+
+    setImpersonatingUserId(targetUserId)
+
+    try {
+      // Get current session to store for restoration
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session?.access_token || !session?.refresh_token) {
+        toast.error('Session not found. Please log in again.')
+        return
+      }
+
+      // Call impersonation API
+      const response = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ targetUserId })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to impersonate user')
+      }
+
+      // Store original session before switching
+      setImpersonationData({
+        originalSession: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        },
+        targetUserEmail: result.email,
+        targetDisplayName: result.displayName,
+        startedAt: new Date().toISOString()
+      })
+
+      // Sign in as target user using the token hash
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: result.tokenHash,
+        type: 'magiclink'
+      })
+
+      if (verifyError) {
+        throw verifyError
+      }
+
+      toast.success(`Now impersonating ${result.displayName}`)
+      // Use full page reload so the ImpersonationBanner re-reads from localStorage
+      window.location.href = '/dashboard'
+
+    } catch (error) {
+      console.error('Error impersonating user:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to impersonate user')
+    } finally {
+      setImpersonatingUserId(null)
     }
   }
 
@@ -2999,6 +3071,18 @@ export default function SettingsPage() {
                                     <option value="Power User">Power User</option>
                                     <option value="Admin">Admin</option>
                                   </select>
+
+                                  {/* Impersonate Button - Only for non-Admin users */}
+                                  {user.role !== 'Admin' && !showDeletedUsers && (
+                                    <button
+                                      onClick={() => handleImpersonateUser(user.id, user.email || 'Unknown')}
+                                      disabled={impersonatingUserId === user.id}
+                                      className="px-2 py-0.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs disabled:opacity-50"
+                                      title="Impersonate this user"
+                                    >
+                                      {impersonatingUserId === user.id ? '...' : 'Imp'}
+                                    </button>
+                                  )}
 
                                   {showDeletedUsers ? (
                                     <>
