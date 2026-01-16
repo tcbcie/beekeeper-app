@@ -103,31 +103,31 @@ export async function GET(request: NextRequest) {
     ])
 
     // Calculate 24h, 7-day and 30-day weight changes
+    // Compare oldest reading in period to current weight from lastValues
     let weightChange24h: number | null = null
     let weightChange7d: number | null = null
     let weightChange30d: number | null = null
 
-    if (history24h && history24h.length >= 2) {
+    const currentWeight = lastValues?.weight_kg_corrected ?? lastValues?.weight_kg
+
+    if (history24h && history24h.length >= 1 && typeof currentWeight === 'number') {
       const oldestWeight = history24h[0]?.weight_kg_corrected ?? history24h[0]?.weight_kg
-      const newestWeight = history24h[history24h.length - 1]?.weight_kg_corrected ?? history24h[history24h.length - 1]?.weight_kg
-      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
-        weightChange24h = newestWeight - oldestWeight
+      if (typeof oldestWeight === 'number') {
+        weightChange24h = currentWeight - oldestWeight
       }
     }
 
-    if (history7d && history7d.length >= 2) {
+    if (history7d && history7d.length >= 1 && typeof currentWeight === 'number') {
       const oldestWeight = history7d[0]?.weight_kg_corrected ?? history7d[0]?.weight_kg
-      const newestWeight = history7d[history7d.length - 1]?.weight_kg_corrected ?? history7d[history7d.length - 1]?.weight_kg
-      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
-        weightChange7d = newestWeight - oldestWeight
+      if (typeof oldestWeight === 'number') {
+        weightChange7d = currentWeight - oldestWeight
       }
     }
 
-    if (history30d && history30d.length >= 2) {
+    if (history30d && history30d.length >= 1 && typeof currentWeight === 'number') {
       const oldestWeight = history30d[0]?.weight_kg_corrected ?? history30d[0]?.weight_kg
-      const newestWeight = history30d[history30d.length - 1]?.weight_kg_corrected ?? history30d[history30d.length - 1]?.weight_kg
-      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
-        weightChange30d = newestWeight - oldestWeight
+      if (typeof oldestWeight === 'number') {
+        weightChange30d = currentWeight - oldestWeight
       }
     }
 
