@@ -21,21 +21,22 @@ Copy these templates into **Supabase Dashboard** → **Project Settings** → **
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
+          <!-- Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 32px 40px; border-radius: 12px 12px 0 0; text-align: center;">
-              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="48" height="48" style="display: inline-block; vertical-align: middle;">
-              <span style="color: #ffffff; font-size: 24px; font-weight: 700; margin-left: 12px; vertical-align: middle;">HiveCraic</span>
+            <td style="padding: 40px 40px 24px; text-align: center;">
+              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="64" height="64">
             </td>
           </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600;">Welcome to HiveCraic!</h1>
-              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6;">Thanks for signing up. Please confirm your email address to get started with managing your apiaries.</p>
-              <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=signup&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Confirm Email</a>
-              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=signup&redirect_to={{ .RedirectTo }}</p>
+            <td style="padding: 0 40px 40px;">
+              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600; text-align: center;">Welcome to HiveCraic!</h1>
+              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">Thanks for signing up. Please confirm your email address to get started with managing your apiaries.</p>
+              <div style="text-align: center;">
+                <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=signup&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Confirm Email</a>
+              </div>
+              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5; text-align: center;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px; text-align: center;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=signup&redirect_to={{ .RedirectTo }}</p>
             </td>
           </tr>
           <!-- Footer -->
@@ -71,22 +72,23 @@ Copy these templates into **Supabase Dashboard** → **Project Settings** → **
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
+          <!-- Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 32px 40px; border-radius: 12px 12px 0 0; text-align: center;">
-              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="48" height="48" style="display: inline-block; vertical-align: middle;">
-              <span style="color: #ffffff; font-size: 24px; font-weight: 700; margin-left: 12px; vertical-align: middle;">HiveCraic</span>
+            <td style="padding: 40px 40px 24px; text-align: center;">
+              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="64" height="64">
             </td>
           </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600;">Reset Your Password</h1>
-              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6;">We received a request to reset your password. Click the button below to choose a new password.</p>
-              <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Reset Password</a>
-              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5;">If you didn't request this, you can safely ignore this email.</p>
-              <p style="margin: 16px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}</p>
+            <td style="padding: 0 40px 40px;">
+              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600; text-align: center;">Reset Your Password</h1>
+              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">We received a request to reset your password. Click the button below to choose a new password.</p>
+              <div style="text-align: center;">
+                <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Reset Password</a>
+              </div>
+              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5; text-align: center;">If you didn't request this, you can safely ignore this email.</p>
+              <p style="margin: 16px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5; text-align: center;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px; text-align: center;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}</p>
             </td>
           </tr>
           <!-- Footer -->
@@ -122,22 +124,23 @@ Copy these templates into **Supabase Dashboard** → **Project Settings** → **
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
+          <!-- Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 32px 40px; border-radius: 12px 12px 0 0; text-align: center;">
-              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="48" height="48" style="display: inline-block; vertical-align: middle;">
-              <span style="color: #ffffff; font-size: 24px; font-weight: 700; margin-left: 12px; vertical-align: middle;">HiveCraic</span>
+            <td style="padding: 40px 40px 24px; text-align: center;">
+              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="64" height="64">
             </td>
           </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600;">Sign In to HiveCraic</h1>
-              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6;">Click the button below to sign in to your account. This link will expire in 24 hours.</p>
-              <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=magiclink&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Sign In</a>
-              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5;">If you didn't request this link, you can safely ignore this email.</p>
-              <p style="margin: 16px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=magiclink&redirect_to={{ .RedirectTo }}</p>
+            <td style="padding: 0 40px 40px;">
+              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600; text-align: center;">Sign In to HiveCraic</h1>
+              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">Click the button below to sign in to your account. This link will expire in 24 hours.</p>
+              <div style="text-align: center;">
+                <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=magiclink&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Sign In</a>
+              </div>
+              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5; text-align: center;">If you didn't request this link, you can safely ignore this email.</p>
+              <p style="margin: 16px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5; text-align: center;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px; text-align: center;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=magiclink&redirect_to={{ .RedirectTo }}</p>
             </td>
           </tr>
           <!-- Footer -->
@@ -173,22 +176,23 @@ Copy these templates into **Supabase Dashboard** → **Project Settings** → **
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
+          <!-- Logo -->
           <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 32px 40px; border-radius: 12px 12px 0 0; text-align: center;">
-              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="48" height="48" style="display: inline-block; vertical-align: middle;">
-              <span style="color: #ffffff; font-size: 24px; font-weight: 700; margin-left: 12px; vertical-align: middle;">HiveCraic</span>
+            <td style="padding: 40px 40px 24px; text-align: center;">
+              <img src="https://www.hivecraic.com/logo.png" alt="HiveCraic" width="64" height="64">
             </td>
           </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 40px;">
-              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600;">Confirm Your New Email</h1>
-              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6;">Please confirm that you want to change your email address for your HiveCraic account.</p>
-              <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=email_change&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Confirm Email Change</a>
-              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5;">If you didn't request this change, please contact support immediately.</p>
-              <p style="margin: 16px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=email_change&redirect_to={{ .RedirectTo }}</p>
+            <td style="padding: 0 40px 40px;">
+              <h1 style="margin: 0 0 16px; color: #1e293b; font-size: 22px; font-weight: 600; text-align: center;">Confirm Your New Email</h1>
+              <p style="margin: 0 0 24px; color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">Please confirm that you want to change your email address for your HiveCraic account.</p>
+              <div style="text-align: center;">
+                <a href="https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=email_change&redirect_to={{ .RedirectTo }}" style="display: inline-block; padding: 14px 32px; background-color: #f59e0b; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">Confirm Email Change</a>
+              </div>
+              <p style="margin: 32px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5; text-align: center;">If you didn't request this change, please contact support immediately.</p>
+              <p style="margin: 16px 0 0; color: #94a3b8; font-size: 14px; line-height: 1.5; text-align: center;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="margin: 8px 0 0; word-break: break-all; color: #64748b; font-size: 13px; text-align: center;">https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=email_change&redirect_to={{ .RedirectTo }}</p>
             </td>
           </tr>
           <!-- Footer -->
@@ -218,7 +222,8 @@ Copy these templates into **Supabase Dashboard** → **Project Settings** → **
 
 ## Notes
 
-- Logo is hosted at `https://www.hivecraic.com/logo.png`
-- Amber brand colors: `#f59e0b` (primary), `#d97706` (darker)
+- Logo is hosted at `https://www.hivecraic.com/logo.png` (64x64)
+- Clean design with centered logo (no header banner)
+- Amber button color: `#f59e0b`
 - All links use the custom `/auth/verify` endpoint
 - Templates are mobile-responsive
