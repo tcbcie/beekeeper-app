@@ -1764,7 +1764,7 @@ export default function ProfilePage() {
         <p className="text-sm text-text-secondary mb-4">
           Connect your Wolf Waagen ApiGraph scale to display hive data (weight, temperature, humidity) on your hive pages.
           Contact Wolf Waagen support to obtain your API token.
-          Don&apos;t have a scale? <a href="https://wolf-waagen.de" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Purchase from Wolf Waagen</a>.
+          Don&apos;t have a scale? <a href="https://wolf-waagen.de/en/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Purchase from Wolf Waagen</a>.
         </p>
 
         {wolfConnected ? (
