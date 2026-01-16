@@ -1042,3 +1042,61 @@ The Wolf Waagen integration has been fully implemented, following the same archi
 
 ---
 
+## Session 13: Branded Auth Email Verification Endpoint - January 16, 2026
+
+### Task
+Create a custom verification endpoint to allow branded URLs in Supabase auth emails instead of raw Supabase URLs.
+
+### Problem
+Supabase auth emails (confirmation, password reset) show:
+- Sender: "Supabase Auth <noreply@mail.app.supabase.io>"
+- URL: `https://tbhofdmfzwibysnnssnx.supabase.co/auth/v1/verify?token=...`
+
+### Solution
+Created `/auth/verify` route that redirects to Supabase verification endpoint, allowing email templates to use branded URLs.
+
+### Implementation
+
+#### New File: `src/app/auth/verify/route.ts`
+- Accepts `token`, `type`, and `redirect_to` parameters
+- Validates required parameters
+- Builds Supabase verification URL
+- Redirects to Supabase auth endpoint
+
+### Email Template Configuration (Supabase Dashboard)
+Update email templates at **Project Settings → Auth → Email Templates** to use:
+
+**Confirm signup:**
+```
+https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=signup&redirect_to={{ .RedirectTo }}
+```
+
+**Reset password:**
+```
+https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}
+```
+
+**Magic link:**
+```
+https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=magiclink&redirect_to={{ .RedirectTo }}
+```
+
+**Email change:**
+```
+https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type=email_change&redirect_to={{ .RedirectTo }}
+```
+
+### SMTP Configuration (Optional)
+To change sender from "Supabase Auth" to "HiveCraic":
+1. Go to **Project Settings → Auth → SMTP Settings**
+2. Enable custom SMTP
+3. Use Resend SMTP credentials (API key is stored as `RESEND_API_KEY` secret)
+
+### Files Created
+
+| File | Description |
+|------|-------------|
+| `src/app/auth/verify/route.ts` | Verification redirect endpoint |
+
+---
+
