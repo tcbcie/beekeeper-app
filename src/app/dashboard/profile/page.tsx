@@ -1685,6 +1685,7 @@ export default function ProfilePage() {
         <p className="text-sm text-text-secondary mb-4">
           Connect your BEEP account to display hive scale data (weight, temperature, humidity) on your hive pages.
           Visit <a href="https://app.beep.nl" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">app.beep.nl</a> to create an account.
+          Don&apos;t have a scale? <a href="https://beep.nl/index.php/home-english" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Purchase from BEEP</a>.
         </p>
 
         {beepConnected ? (
@@ -1763,6 +1764,7 @@ export default function ProfilePage() {
         <p className="text-sm text-text-secondary mb-4">
           Connect your Wolf Waagen ApiGraph scale to display hive data (weight, temperature, humidity) on your hive pages.
           Contact Wolf Waagen support to obtain your API token.
+          Don&apos;t have a scale? <a href="https://wolf-waagen.de" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Purchase from Wolf Waagen</a>.
         </p>
 
         {wolfConnected ? (
