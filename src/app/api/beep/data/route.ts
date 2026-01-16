@@ -181,6 +181,13 @@ export async function GET(request: NextRequest) {
       weightChange24h,
       weightChange7d,
       weightChange30d,
+      // Debug info - remove after testing
+      debug: {
+        history24hLength: history24h?.length ?? 0,
+        history7dLength: history7d?.length ?? 0,
+        currentWeight: currentWeight ?? null,
+        oldest24h: history24h?.[0]?.weight_kg_corrected ?? history24h?.[0]?.weight_kg ?? null,
+      }
     })
   } catch (error) {
     console.error('BEEP data error:', error)
