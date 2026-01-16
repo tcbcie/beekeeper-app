@@ -1100,3 +1100,44 @@ To change sender from "Supabase Auth" to "HiveCraic":
 
 ---
 
+## Session 14: User Impersonation Feature - January 16, 2026
+
+### Task
+Implement admin user impersonation to allow admins to log in as other users for debugging and support.
+
+### Requirements
+- Full session swap (admin logs in completely as target user)
+- No time limit (admin manually exits when done)
+- Admin-only feature
+
+### Implementation
+
+Used Supabase's `generateLink` API to create magic link tokens for target users, with session storage in localStorage for restoration.
+
+### Files Created
+
+| File | Description |
+|------|-------------|
+| `src/app/api/admin/impersonate/route.ts` | API endpoint that generates magic link token |
+| `src/components/ImpersonationBanner.tsx` | Red sticky banner with exit button |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/dashboard/layout.tsx` | Added ImpersonationBanner component |
+| `src/app/dashboard/settings/page.tsx` | Added impersonate handler and "Imp" button |
+
+### Key Technical Details
+
+- Uses `supabaseAdmin.auth.admin.generateLink()` to generate magic link token
+- Uses `supabase.auth.verifyOtp()` to sign in as target user
+- Stores original admin session in localStorage for restoration
+- Full page reload (`window.location.href`) ensures banner state is correct
+
+### Documentation
+
+- Created `docs/features/user-impersonation.md` with full implementation details
+
+---
+
