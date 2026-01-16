@@ -110,24 +110,30 @@ export async function GET(request: NextRequest) {
 
     const currentWeight = lastValues?.weight_kg_corrected ?? lastValues?.weight_kg
 
-    if (history24h && history24h.length >= 1 && typeof currentWeight === 'number') {
-      const oldestWeight = history24h[0]?.weight_kg_corrected ?? history24h[0]?.weight_kg
-      if (typeof oldestWeight === 'number') {
-        weightChange24h = currentWeight - oldestWeight
+    // Helper to find oldest reading with valid weight
+    const findOldestWeight = (readings: typeof history24h): number | null => {
+      if (!readings) return null
+      for (const r of readings) {
+        const w = r.weight_kg_corrected ?? r.weight_kg
+        if (typeof w === 'number') return w
       }
+      return null
     }
 
-    if (history7d && history7d.length >= 1 && typeof currentWeight === 'number') {
-      const oldestWeight = history7d[0]?.weight_kg_corrected ?? history7d[0]?.weight_kg
-      if (typeof oldestWeight === 'number') {
-        weightChange7d = currentWeight - oldestWeight
+    if (typeof currentWeight === 'number') {
+      const oldest24h = findOldestWeight(history24h)
+      if (oldest24h !== null) {
+        weightChange24h = currentWeight - oldest24h
       }
-    }
 
-    if (history30d && history30d.length >= 1 && typeof currentWeight === 'number') {
-      const oldestWeight = history30d[0]?.weight_kg_corrected ?? history30d[0]?.weight_kg
-      if (typeof oldestWeight === 'number') {
-        weightChange30d = currentWeight - oldestWeight
+      const oldest7d = findOldestWeight(history7d)
+      if (oldest7d !== null) {
+        weightChange7d = currentWeight - oldest7d
+      }
+
+      const oldest30d = findOldestWeight(history30d)
+      if (oldest30d !== null) {
+        weightChange30d = currentWeight - oldest30d
       }
     }
 
@@ -181,13 +187,6 @@ export async function GET(request: NextRequest) {
       weightChange24h,
       weightChange7d,
       weightChange30d,
-      // Debug info - remove after testing
-      debug: {
-        history24hLength: history24h?.length ?? 0,
-        history7dLength: history7d?.length ?? 0,
-        currentWeight: currentWeight ?? null,
-        oldest24h: history24h?.[0]?.weight_kg_corrected ?? history24h?.[0]?.weight_kg ?? null,
-      }
     })
   } catch (error) {
     console.error('BEEP data error:', error)
