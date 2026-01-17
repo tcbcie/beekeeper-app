@@ -90,12 +90,14 @@ export async function GET(request: NextRequest) {
 
     // Fetch latest sensor values, battery voltage, and historical data for weight changes
     const now = Math.floor(Date.now() / 1000)
+    const oneDayAgo = now - (24 * 60 * 60)
     const sevenDaysAgo = now - (7 * 24 * 60 * 60)
     const thirtyDaysAgo = now - (30 * 24 * 60 * 60)
 
-    const [lastValues, batteryVoltage, history7d, history30d] = await Promise.all([
+    const [lastValues, batteryVoltage, history24h, history7d, history30d] = await Promise.all([
       wolfGetLastValues(wolfApiToken, scaleId),
       wolfGetBatteryVoltage(wolfApiToken, scaleId),
+      wolfGetMeasurements(wolfApiToken, scaleId, oneDayAgo, now, 'hourly'),
       wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily'),
       wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily'),
     ])
@@ -105,9 +107,18 @@ export async function GET(request: NextRequest) {
       lastValues.battery_voltage = batteryVoltage
     }
 
-    // Calculate 7-day and 30-day weight changes
+    // Calculate 24h, 7-day and 30-day weight changes
+    let weightChange24h: number | null = null
     let weightChange7d: number | null = null
     let weightChange30d: number | null = null
+
+    if (history24h.length >= 2) {
+      const oldestWeight = history24h[0]?.weight_kg
+      const newestWeight = history24h[history24h.length - 1]?.weight_kg
+      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+        weightChange24h = newestWeight - oldestWeight
+      }
+    }
 
     if (history7d.length >= 2) {
       const oldestWeight = history7d[0]?.weight_kg
@@ -176,6 +187,7 @@ export async function GET(request: NextRequest) {
       lastValues,
       history,
       period,
+      weightChange24h,
       weightChange7d,
       weightChange30d,
     })
