@@ -316,6 +316,22 @@ export interface DropdownValue {
   value: string
 }
 
+// Financial record for P&L tracking
+export interface FinancialRecord {
+  id: string
+  user_id: string
+  record_type: 'income' | 'expense'
+  transaction_date: string
+  amount: number
+  category_id: string
+  description: string | null
+  notes: string | null
+  created_at?: string
+  updated_at?: string
+  // Joined data from dropdown_values
+  category?: { value: string }
+}
+
 // Options state for dynamic dropdowns
 export interface OptionsState {
   checkMethodOptions: string[]
