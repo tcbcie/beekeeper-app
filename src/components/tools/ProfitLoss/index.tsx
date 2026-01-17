@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wallet, Plus, Loader2, Info, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Wallet, Plus, Loader2, Info } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
 import FinancialRecordForm from './FinancialRecordForm'
