@@ -43,7 +43,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
         return
       }
 
-      let result: ScaleData = {
+      const result: ScaleData = {
         weight: null,
         weightChange24h: null,
         weightChange7d: null,
