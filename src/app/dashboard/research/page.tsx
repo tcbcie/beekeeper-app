@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import { FlaskConical, TreeDeciduous, Camera, Scale } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import WildColoniesTab from '@/components/research/WildColoniesTab'
@@ -16,6 +17,7 @@ export default function ResearchPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState(false)
+  const [hasScales, setHasScales] = useState(false)
   const [activeSection, setActiveSection] = useState<ResearchSection>('wild-colonies')
 
   useEffect(() => {
@@ -39,6 +41,15 @@ export default function ResearchPage() {
         return
       }
 
+      // Check if user has any hives with scales
+      const { count } = await supabase
+        .from('hives')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', id)
+        .is('archived_at', null)
+        .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
+
+      setHasScales((count ?? 0) > 0)
       setHasAccess(true)
       setUserId(id)
       setLoading(false)
@@ -59,7 +70,7 @@ export default function ResearchPage() {
   const sections = [
     { id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous },
     { id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera },
-    { id: 'scale-overview' as const, label: 'Scale Overview', icon: Scale },
+    ...(hasScales ? [{ id: 'scale-overview' as const, label: 'Scale Overview', icon: Scale }] : []),
   ]
 
   return (
