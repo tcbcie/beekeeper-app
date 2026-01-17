@@ -88,6 +88,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
           const json = await response.json()
           const lv = json.lastValues
           result.weight = lv?.weight_kg ?? null
+          result.weightChange24h = json.weightChange24h ?? null
           result.weightChange7d = json.weightChange7d ?? null
           result.weightChange30d = json.weightChange30d ?? null
           result.temperature = lv?.temperature_c ?? null
@@ -225,6 +226,12 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
             <span className={`text-xs flex items-center gap-0.5 ${data.weightChange7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {data.weightChange7d >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {data.weightChange7d >= 0 ? '+' : ''}{data.weightChange7d.toFixed(2)} 7d
+            </span>
+          )}
+          {data && data.weightChange30d !== null && (
+            <span className={`text-xs flex items-center gap-0.5 ${data.weightChange30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {data.weightChange30d >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+              {data.weightChange30d >= 0 ? '+' : ''}{data.weightChange30d.toFixed(2)} 30d
             </span>
           )}
         </div>
