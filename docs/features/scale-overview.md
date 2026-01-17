@@ -107,3 +107,20 @@ const percent = Math.round(((voltage - 2.5) / 1.7) * 100)
 - Feature is available in the Research section
 - Research section requires Power User or Admin role
 - Scale data respects existing API authorization (owner or team access)
+
+### Feature Toggle
+
+The Scale Overview tab is **hidden** for users who don't have any hives with connected scales. This check runs on page load:
+
+```typescript
+const { count } = await supabase
+  .from('hives')
+  .select('id', { count: 'exact', head: true })
+  .eq('user_id', id)
+  .is('archived_at', null)
+  .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
+
+setHasScales((count ?? 0) > 0)
+```
+
+The tab only appears in the navigation when `hasScales` is true.
