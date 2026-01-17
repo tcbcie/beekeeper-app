@@ -41,7 +41,8 @@ export default function ScaleOverviewTab({ userId }: ScaleOverviewTabProps) {
     if (error) {
       console.error('Error fetching hives with scales:', error)
     } else if (data) {
-      setHives(data as HiveWithScale[])
+      // Supabase returns apiaries as single object for many-to-one relations
+      setHives(data as unknown as HiveWithScale[])
     }
     setLoading(false)
   }, [userId])
