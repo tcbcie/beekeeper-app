@@ -2,52 +2,46 @@
 
 ## Summary
 
-Add a new "Scale Overview" tab to the Research section that displays all hives with connected scales (BEEP and Wolf Waagen) on a single page for easy comparison.
+A "Scale Overview" tab in the Research section that displays all hives with connected scales (BEEP and Wolf Waagen) on a single page for easy comparison.
 
-## Files to Create
+## Files
 
-### 1. `src/components/research/ScaleOverviewTab.tsx`
-New tab component following existing pattern from WildColoniesTab/DiagnosisImagesTab.
+### Created
+- `src/components/research/ScaleOverviewTab.tsx` - Tab container component
+- `src/components/research/HiveScaleCard.tsx` - Individual scale card component
 
-**Key features:**
-- Fetches all hives with scales (where `beep_device_id` or `wolf_scale_id` is not null)
-- Displays summary stats (total hives with scales, BEEP count, Wolf count)
+### Modified
+- `src/app/dashboard/research/page.tsx` - Added new tab to Research section
+
+## Components
+
+### ScaleOverviewTab
+Tab container that:
+- Fetches all non-archived hives with connected scales (`beep_device_id` or `wolf_scale_id` not null)
+- Displays summary stats (total count, BEEP count, Wolf count)
 - Renders responsive grid of HiveScaleCard components
-- Empty state when no scales found
-- Global refresh button
+- Provides global "Refresh All" button
+- Shows empty state when no scales found
 
-### 2. `src/components/research/HiveScaleCard.tsx`
-Compact card component for displaying a single hive's scale data.
-
-**Key features:**
-- Self-contained data fetching using existing API routes (`/api/beep/data` or `/api/wolf-waagen/data`)
-- Shows: hive name, apiary, current weight, weight changes (24h/7d/30d), temperature, humidity, battery
-- Color coding: amber border for BEEP, blue for Wolf Waagen
-- Loading skeleton, error state with retry
-- Auto-refresh every 5 minutes (matching existing components)
-- Optional click-through to hive detail page
-
-## Files to Modify
-
-### `src/app/dashboard/research/page.tsx`
-
-**Changes:**
-1. Import `ScaleOverviewTab` and `Scale` icon from lucide-react
-2. Update `ResearchSection` type to include `'scale-overview'`
-3. Add new tab to `sections` array
-4. Add conditional render for the new tab
+### HiveScaleCard
+Compact card component that:
+- Self-fetches data from existing API routes (`/api/beep/data` or `/api/wolf-waagen/data`)
+- Displays: hive number, scale name, apiary, current weight, weight changes (24h/7d/30d), temperature, humidity, battery
+- Color coded: amber border for BEEP, blue for Wolf Waagen
+- Auto-refreshes every 5 minutes
+- Includes loading skeleton, error state with retry button
+- Links to hive detail page
 
 ## UI Design
 
-### HiveScaleCard Layout (compact)
+### Card Layout
 ```
 +------------------------------------------+
-| [Scale] Hive #1        [Refresh] [Link]  |
-| Home Yard Apiary                         |
+| [Scale] Hive #1 (Scale Name)  [BEEP] [↻] [→] |
+| Apiary Name                              |
 +------------------------------------------+
-| 45.2 kg | +0.5kg 24h | +2.1kg 7d        |
-+------------------------------------------+
-| 34.5°C | 60% | Battery: 85%             |
+| 45.2 kg  +0.5kg 24h  +2.1kg 7d          |
+| 34.5°C  60%  Battery: 85%               |
 +------------------------------------------+
 ```
 
@@ -57,16 +51,17 @@ Compact card component for displaying a single hive's scale data.
 - Desktop (lg): 3 columns
 
 ### Color Scheme
-- BEEP scales: amber borders/accents
-- Wolf scales: blue borders/accents
-- Weight gain: green
-- Weight loss: red
+- BEEP scales: amber borders/accents (`border-amber-300`)
+- Wolf scales: blue borders/accents (`border-blue-300`)
+- Weight gain: green text
+- Weight loss: red text
+- Low battery (<20%): red indicator
 
-## Data Fetching
+## Data Flow
 
-### Query for hives with scales:
+### Hive Query (ScaleOverviewTab)
 ```typescript
-const { data: hives } = await supabase
+const { data } = await supabase
   .from('hives')
   .select(`
     id, hive_number,
@@ -80,38 +75,35 @@ const { data: hives } = await supabase
   .order('hive_number')
 ```
 
-## Implementation Steps
+### Scale Data Fetch (HiveScaleCard)
+- BEEP: `GET /api/beep/data?deviceId={id}&hiveId={id}`
+- Wolf: `GET /api/wolf-waagen/data?scaleId={id}&hiveId={id}`
 
-1. **Create HiveScaleCard component** - Compact card with self-contained data fetching
-2. **Create ScaleOverviewTab component** - Tab wrapper with hive query and grid layout
-3. **Update Research page** - Add imports, type, section entry, and conditional render
+## Technical Notes
 
-## Verification
+### TypeScript Type Handling
+Supabase's auto-generated types can conflict with nested relation queries. The solution uses explicit type casting:
+```typescript
+setHives(data as unknown as HiveWithScale[])
+```
 
-1. Navigate to Research section
-2. Verify "Scale Overview" tab appears
-3. Click tab and verify hives with scales are displayed
-4. Verify BEEP hives show amber styling
-5. Verify Wolf hives show blue styling
-6. Test refresh button functionality
-7. Verify mobile responsiveness
-8. Verify dark mode support
-9. Test empty state (if applicable)
+### Null Safety
+All data property accesses use explicit null checks for TypeScript compatibility:
+```typescript
+{data && data.weight !== null && (
+  <span>{data.weight.toFixed(1)} kg</span>
+)}
+```
 
----
+### Battery Calculation
+Both BEEP and Wolf scales convert voltage to percentage:
+```typescript
+// Voltage range: 2.5V (0%) to 4.2V (100%)
+const percent = Math.round(((voltage - 2.5) / 1.7) * 100)
+```
 
-## Implementation Status: COMPLETE
+## Access Control
 
-### Files Created
-- `src/components/research/HiveScaleCard.tsx` - Compact card component with self-contained data fetching
-- `src/components/research/ScaleOverviewTab.tsx` - Tab wrapper with hive query and grid layout
-
-### Files Modified
-- `src/app/dashboard/research/page.tsx` - Added Scale import, ScaleOverviewTab import, updated type, sections array, and conditional render
-
-### Implementation Summary
-- Created HiveScaleCard that fetches data from existing BEEP/Wolf APIs
-- Created ScaleOverviewTab that queries hives with scales and displays them in a responsive grid
-- Added new tab to Research page with proper routing support
-- Supports both BEEP (amber styling) and Wolf Waagen (blue styling) scales
-- Features: loading states, error handling with retry, auto-refresh every 5 minutes, link to hive detail page
+- Feature is available in the Research section
+- Research section requires Power User or Admin role
+- Scale data respects existing API authorization (owner or team access)
