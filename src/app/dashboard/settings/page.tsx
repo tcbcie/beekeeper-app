@@ -1565,6 +1565,7 @@ export default function SettingsPage() {
           'colonies',
           'colony_movements',
           'feedings',
+          'financial_records',
           'gdd_records',
           'harvests',
           'hives',

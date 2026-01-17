@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         'dropdown_categories',
         'dropdown_values',
         'feedings',
+        'financial_records',
         'frame_standards',
         'gdd_records',
         'harvests',
