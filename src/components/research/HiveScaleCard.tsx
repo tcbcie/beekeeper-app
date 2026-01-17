@@ -210,18 +210,18 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
       <div className="p-3 space-y-2">
         {/* Weight row */}
         <div className="flex items-center gap-2 flex-wrap">
-          {data?.weight !== null && (
+          {data && data.weight !== null && (
             <span className="font-bold text-lg text-foreground">
               {data.weight.toFixed(1)} kg
             </span>
           )}
-          {data?.weightChange24h !== null && (
+          {data && data.weightChange24h !== null && (
             <span className={`text-xs flex items-center gap-0.5 ${data.weightChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {data.weightChange24h >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {data.weightChange24h >= 0 ? '+' : ''}{data.weightChange24h.toFixed(2)} 24h
             </span>
           )}
-          {data?.weightChange7d !== null && (
+          {data && data.weightChange7d !== null && (
             <span className={`text-xs flex items-center gap-0.5 ${data.weightChange7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {data.weightChange7d >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {data.weightChange7d >= 0 ? '+' : ''}{data.weightChange7d.toFixed(2)} 7d
@@ -231,19 +231,19 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
 
         {/* Sensor row */}
         <div className="flex items-center gap-3 text-xs text-text-secondary">
-          {data?.temperature !== null && (
+          {data && data.temperature !== null && (
             <span className="flex items-center gap-1">
               <Flame size={12} className="text-orange-500" />
               {data.temperature.toFixed(1)}°C
             </span>
           )}
-          {data?.humidity !== null && (
+          {data && data.humidity !== null && (
             <span className="flex items-center gap-1">
               <Droplets size={12} className="text-cyan-500" />
               {data.humidity.toFixed(0)}%
             </span>
           )}
-          {data?.battery !== null && (
+          {data && data.battery !== null && (
             <span className={`flex items-center gap-1 ${data.battery < 20 ? 'text-red-500' : ''}`}>
               <Battery size={12} className={data.battery < 20 ? 'text-red-500' : 'text-green-500'} />
               {data.battery}%
