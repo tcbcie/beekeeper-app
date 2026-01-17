@@ -25,6 +25,7 @@ Completed: January 17, 2026
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
 - Time period filtering
 - Edit and delete records
+- CSV export (respects current time filter)
 - Mobile responsive design
 - Dark mode support
 
@@ -138,6 +139,15 @@ interface FinancialRecord {
 4. Category* - Dropdown (changes based on type selection)
 5. Description - Optional text input
 6. Notes - Optional textarea
+
+## Export
+
+Click the **Export** button to download filtered records as CSV:
+- Filename: `pl-records-{period}-{date}.csv`
+- Columns: Date, Type, Category, Amount (EUR), Description, Notes
+- Respects current time filter (Month/Year/All)
+
+Financial records are also included in the Settings backup export.
 
 ## Currency
 
