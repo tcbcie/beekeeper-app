@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wallet, Plus, Loader2, Info } from 'lucide-react'
+import { Wallet, Plus, Loader2, Info, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
 import FinancialRecordForm from './FinancialRecordForm'
@@ -216,6 +216,41 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
     setEditingRecord(null)
   }
 
+  // Handle export to CSV
+  const handleExport = () => {
+    if (filteredRecords.length === 0) {
+      toast.error('No records to export')
+      return
+    }
+
+    const headers = ['Date', 'Type', 'Category', 'Amount (EUR)', 'Description', 'Notes']
+    const rows = filteredRecords.map(r => [
+      r.transaction_date,
+      r.record_type,
+      r.category?.value || '',
+      r.amount.toFixed(2),
+      r.description || '',
+      r.notes || ''
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `pl-records-${timePeriod}-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    toast.success('Records exported')
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -232,16 +267,26 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           <Wallet className="w-5 h-5 text-forest-600" />
           <h3 className="font-semibold text-foreground">P&L Tracker</h3>
         </div>
-        <button
-          onClick={() => {
-            setEditingRecord(null)
-            setShowForm(true)
-          }}
-          className="flex items-center gap-2 px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
-        >
-          <Plus size={18} />
-          Add Record
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-3 py-2 border border-border text-text-secondary rounded-lg hover:bg-surface-secondary transition-colors"
+            title="Export to CSV"
+          >
+            <Download size={18} />
+            Export
+          </button>
+          <button
+            onClick={() => {
+              setEditingRecord(null)
+              setShowForm(true)
+            }}
+            className="flex items-center gap-2 px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
+          >
+            <Plus size={18} />
+            Add Record
+          </button>
+        </div>
       </div>
 
       {/* Time Period Filter */}
