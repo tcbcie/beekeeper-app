@@ -36,13 +36,13 @@ Compact card component that:
 
 ### Card Layout
 ```
-+------------------------------------------+
-| [Scale] Hive #1 (Scale Name)  [BEEP] [↻] [→] |
-| Apiary Name                              |
-+------------------------------------------+
-| 45.2 kg  +0.5kg 24h  +2.1kg 7d          |
-| 34.5°C  60%  Battery: 85%               |
-+------------------------------------------+
++------------------------------------------------+
+| [Scale] Hive #1 (Scale Name)  [BEEP] [↻] [→]   |
+| Apiary Name                                    |
++------------------------------------------------+
+| 45.2 kg  +0.5kg 24h  +2.1kg 7d  +5.3kg 30d    |
+| 34.5°C  60%  Battery: 85%                     |
++------------------------------------------------+
 ```
 
 ### Responsive Grid
@@ -101,6 +101,23 @@ Both BEEP and Wolf scales convert voltage to percentage:
 // Voltage range: 2.5V (0%) to 4.2V (100%)
 const percent = Math.round(((voltage - 2.5) / 1.7) * 100)
 ```
+
+### Weight Change Periods
+All scales display weight changes for three time periods:
+- **24h** - Change over the last 24 hours
+- **7d** - Change over the last 7 days
+- **30d** - Change over the last 30 days
+
+Both APIs calculate weight changes by comparing the oldest reading in each period to the current weight:
+
+**BEEP API** (`/api/beep/data`):
+- Fetches hourly measurements for 24h, 7d, and 30d periods
+- Compares oldest weight in each period to current `weight_kg_corrected` or `weight_kg`
+
+**Wolf Waagen API** (`/api/wolf-waagen/data`):
+- Fetches hourly measurements for 24h period
+- Fetches daily measurements for 7d and 30d periods
+- Compares oldest to newest weight in each period
 
 ## Access Control
 
