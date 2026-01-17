@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Droplets, Battery, ExternalLink } from 'lucide-react'
+import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
 interface HiveScaleCardProps {
@@ -239,8 +239,12 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
         {/* Sensor row */}
         <div className="flex items-center gap-3 text-xs text-text-secondary">
           {data && data.temperature !== null && (
-            <span className="flex items-center gap-1">
-              <Flame size={12} className="text-orange-500" />
+            <span className="flex items-center gap-1" title={isBeep ? 'Brood temperature' : 'Ambient temperature'}>
+              {isBeep ? (
+                <Flame size={12} className="text-orange-500" />
+              ) : (
+                <Thermometer size={12} className="text-blue-500" />
+              )}
               {data.temperature.toFixed(1)}°C
             </span>
           )}
