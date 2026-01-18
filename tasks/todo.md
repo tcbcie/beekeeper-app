@@ -1185,7 +1185,6 @@ Add a new tab to the Research section that displays the GDD (Growing Degree Days
    - Desktop table view with columns: Year, Apiary, Vegetation, Bloom Date, End Date, GDD, Shared
    - Mobile card view for responsive design
    - Empty state with link to Tools page for adding records
-   - Info box explaining what GDD is
    - Link to Tools > GDD Tracker for adding/editing records
 
 2. **Updated: `src/app/dashboard/research/page.tsx`**
@@ -1196,18 +1195,165 @@ Add a new tab to the Research section that displays the GDD (Growing Degree Days
    - Added GDD Data to sections array with Thermometer icon
    - Added conditional rendering for GDDDataTab
 
+#### Enhancement - Charts & Filters (January 18, 2026)
+
+Added visualization and filtering capabilities:
+
+1. **Chart/Table Toggle**
+   - Switch between Chart and Table views
+   - Default view is Chart
+
+2. **Bar Chart Visualization**
+   - Grouped bar chart comparing GDD values by vegetation type
+   - Different colors for each year (green, blue, orange, purple, pink)
+   - Y-axis: GDD values, X-axis: Vegetation types
+   - Tooltip shows GDD value on hover
+   - Helpful note: "Lower GDD = earlier bloom"
+
+3. **Filters**
+   - **Year filter**: Multi-select chips to compare multiple years
+   - **Vegetation filter**: Dropdown to filter by specific plant
+   - **Apiary filter**: Dropdown to filter by location
+   - **Reset button**: Clears all filters
+
+4. **Uses Chart.js** (already installed in project)
+
 #### Files Modified
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/research/GDDDataTab.tsx` | NEW | Read-only GDD data viewer |
+| `src/components/research/GDDDataTab.tsx` | NEW/ENHANCED | GDD data viewer with charts and filters |
 | `src/app/dashboard/research/page.tsx` | MODIFIED | Added GDD Data tab |
 
 #### Testing Notes
 - User should test the build: `npm run build`
 - Verify the GDD Data tab appears in Research section
-- Check both desktop table and mobile card views
-- Verify "Add Records" link navigates to Tools page
+- Test Chart/Table toggle
+- Test year comparison in chart (select multiple years)
+- Test vegetation and apiary filters
+- Check mobile responsiveness
+
+---
+
+## Session 16: Honey Traceability Module - January 18, 2026
+
+### Task
+Implement end-to-end honey traceability from hive to jar, compliant with EU directives. Track honey through harvest → bulk containers → batches → labels.
+
+### Overview
+- Track bulk containers that hold extracted honey from multiple harvests
+- Link harvests to containers (many-to-many)
+- Create bottling batches from containers
+- Generate EU-compliant batch codes (L-YYYY-MM-NNN)
+- Calculate origin percentages for multi-apiary batches
+
+### Todo Items
+- [x] Create 4 database migrations (bulk_containers, container_harvests, batch_runs, batch_containers)
+- [x] Add TypeScript types (`src/types/traceability.ts`)
+- [x] Add utility functions (`batch-code.ts`, `traceability-utils.ts`)
+- [x] Create traceability page with Containers tab
+- [x] Add Batches tab with batch code generation
+- [x] Add sidebar navigation link
+- [x] Create feature documentation
+
+### Database Schema
+
+**Table: bulk_containers**
+- `id` UUID PRIMARY KEY
+- `user_id` UUID NOT NULL (refs profiles)
+- `container_code` VARCHAR(50) NOT NULL
+- `container_type` VARCHAR(50) DEFAULT 'bucket'
+- `extraction_date` DATE NOT NULL
+- `total_weight_kg` NUMERIC
+- `notes` TEXT
+- RLS: Users manage own containers
+
+**Table: container_harvests** (junction)
+- `id` UUID PRIMARY KEY
+- `container_id` UUID (refs bulk_containers)
+- `harvest_id` UUID (refs harvests)
+- RLS: Via container ownership
+
+**Table: batch_runs**
+- `id` UUID PRIMARY KEY
+- `user_id` UUID NOT NULL (refs profiles)
+- `batch_code` VARCHAR(20) NOT NULL UNIQUE
+- `batch_date` DATE NOT NULL
+- `total_weight_kg` NUMERIC
+- `jar_size_ml` INTEGER
+- `jar_count` INTEGER
+- `best_before_date` DATE
+- `notes` TEXT
+- `is_public` BOOLEAN DEFAULT true
+- RLS: Users manage own batches, public can view public batches
+
+**Table: batch_containers** (junction)
+- `id` UUID PRIMARY KEY
+- `batch_id` UUID (refs batch_runs)
+- `container_id` UUID (refs bulk_containers)
+- `weight_used_kg` NUMERIC
+- RLS: Via batch ownership
+
+### Batch Code Format
+```
+L-2026-01-001
+│ │    │  │
+│ │    │  └── Sequential (001-999 per month)
+│ │    └───── Month (01-12)
+│ └────────── Year
+└──────────── "L" prefix (EU Lot requirement)
+```
+
+### Files to Create
+- `src/types/traceability.ts` - TypeScript interfaces
+- `src/lib/batch-code.ts` - Batch code generation
+- `src/lib/traceability-utils.ts` - Origin calculations
+- `src/app/dashboard/traceability/page.tsx` - Main page (2 tabs)
+- `src/components/traceability/ContainerForm.tsx` - Bulk container CRUD
+- `src/components/traceability/ContainerCard.tsx` - Container display
+- `src/components/traceability/BatchForm.tsx` - Batch creation
+- `src/components/traceability/BatchCard.tsx` - Batch display
+- `src/components/traceability/HarvestSelector.tsx` - Multi-select harvests
+- `docs/features/honey-traceability.md` - Feature documentation
+
+### Files to Modify
+- `src/components/Sidebar.tsx` - Add "Traceability" nav link
+
+### Review - Implementation Complete
+
+#### Changes Made
+
+1. **Database Migrations (4 tables)**
+   - `bulk_containers` - Stores extraction containers with RLS
+   - `container_harvests` - Junction linking containers to harvests
+   - `batch_runs` - Stores bottling batches with EU lot codes
+   - `batch_containers` - Junction linking batches to containers
+
+2. **New Files Created**
+   - `src/types/traceability.ts` - TypeScript interfaces for all entities
+   - `src/lib/batch-code.ts` - Batch code generation (L-YYYY-MM-NNN format)
+   - `src/lib/traceability-utils.ts` - Origin percentage calculations
+   - `src/app/dashboard/traceability/page.tsx` - Main page with 2 tabs
+   - `docs/features/honey-traceability.md` - Feature documentation
+
+3. **Files Modified**
+   - `src/components/Sidebar.tsx` - Added Traceability nav link with Tag icon
+
+#### Key Features Implemented
+- Create/edit/delete bulk containers
+- Link harvests to containers (with duplicate detection)
+- Auto-calculate origin percentages from linked harvests
+- Create/edit/delete bottling batches
+- Auto-generate EU-compliant batch codes (L-YYYY-MM-NNN)
+- Select source containers for batches
+- Responsive design with mobile support
+
+#### Testing Required
+User should run `npm run build` to verify no TypeScript errors, then test:
+1. Create a container and link harvests
+2. Create a batch from containers
+3. Verify batch code generates correctly
+4. Test edit and delete operations
 
 ---
 
