@@ -100,10 +100,10 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     }
   }, [records])
 
-  // Initialize selected years when data loads
+  // Initialize selected years when data loads - select ALL years by default
   useEffect(() => {
     if (years.length > 0 && selectedYears.length === 0) {
-      setSelectedYears(years.slice(0, 2)) // Select up to 2 most recent years
+      setSelectedYears([...years]) // Select all years for comparison
     }
   }, [years, selectedYears.length])
 
@@ -123,8 +123,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     const vegTypes = [...new Set(filteredRecords.map(r => r.dropdown_values?.value).filter(Boolean))] as string[]
     vegTypes.sort()
 
-    // Get years present in filtered data
-    const chartYears = [...new Set(filteredRecords.map(r => r.year))].sort()
+    // Get years present in filtered data (sort numerically)
+    const chartYears = [...new Set(filteredRecords.map(r => r.year))].sort((a, b) => a - b)
 
     const datasets = chartYears.map((year, idx) => {
       const colorIdx = idx % YEAR_COLORS.length
@@ -132,7 +132,10 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         label: String(year),
         data: vegTypes.map(veg => {
           const record = filteredRecords.find(r => r.dropdown_values?.value === veg && r.year === year)
-          return record?.gdd_value ?? null
+          // Parse gdd_value as number (comes as string from NUMERIC type)
+          return record?.gdd_value !== null && record?.gdd_value !== undefined
+            ? Number(record.gdd_value)
+            : null
         }),
         backgroundColor: YEAR_COLORS[colorIdx].bg,
         borderColor: YEAR_COLORS[colorIdx].border,
@@ -306,7 +309,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {(selectedYears.length !== years.length || selectedVegetation || selectedApiary) && (
               <button
                 onClick={() => {
-                  setSelectedYears(years.slice(0, 2))
+                  setSelectedYears([...years]) // Reset to all years
                   setSelectedVegetation('')
                   setSelectedApiary('')
                 }}
