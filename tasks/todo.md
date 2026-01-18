@@ -1355,5 +1355,12 @@ User should run `npm run build` to verify no TypeScript errors, then test:
 3. Verify batch code generates correctly
 4. Test edit and delete operations
 
+#### Build Fix
+Fixed TypeScript error caused by Supabase returning arrays for nested joins. Updated:
+- `src/app/dashboard/traceability/page.tsx` - Handle array/object for hives and apiaries
+- `src/lib/traceability-utils.ts` - Same fix for origin calculations
+
+Build: **Passed**
+
 ---
 
