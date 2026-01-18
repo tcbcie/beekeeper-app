@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { FlaskConical, TreeDeciduous, Camera, Scale } from 'lucide-react'
+import { FlaskConical, TreeDeciduous, Camera, Scale, Thermometer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import WildColoniesTab from '@/components/research/WildColoniesTab'
 import DiagnosisImagesTab from '@/components/research/DiagnosisImagesTab'
 import ScaleOverviewTab from '@/components/research/ScaleOverviewTab'
+import GDDDataTab from '@/components/research/GDDDataTab'
 
-type ResearchSection = 'wild-colonies' | 'diagnosis-images' | 'scale-overview'
+type ResearchSection = 'wild-colonies' | 'diagnosis-images' | 'scale-overview' | 'gdd-data'
 
 export default function ResearchPage() {
   const router = useRouter()
@@ -22,7 +23,7 @@ export default function ResearchPage() {
 
   useEffect(() => {
     const section = searchParams.get('section')
-    if (section && ['wild-colonies', 'diagnosis-images', 'scale-overview'].includes(section)) {
+    if (section && ['wild-colonies', 'diagnosis-images', 'scale-overview', 'gdd-data'].includes(section)) {
       setActiveSection(section as ResearchSection)
     }
   }, [searchParams])
@@ -71,6 +72,7 @@ export default function ResearchPage() {
     { id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous },
     { id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera },
     ...(hasScales ? [{ id: 'scale-overview' as const, label: 'Scale Overview', icon: Scale }] : []),
+    { id: 'gdd-data' as const, label: 'GDD Data', icon: Thermometer },
   ]
 
   return (
@@ -118,6 +120,11 @@ export default function ResearchPage() {
       {/* Scale Overview Section */}
       {activeSection === 'scale-overview' && userId && (
         <ScaleOverviewTab userId={userId} />
+      )}
+
+      {/* GDD Data Section */}
+      {activeSection === 'gdd-data' && userId && (
+        <GDDDataTab userId={userId} />
       )}
     </div>
   )

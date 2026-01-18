@@ -1141,3 +1141,73 @@ Used Supabase's `generateLink` API to create magic link tokens for target users,
 
 ---
 
+## Session 15: Add GDD Data Tab to Research Section - January 18, 2026
+
+### Task
+Add a new tab to the Research section that displays the GDD (Growing Degree Days) data collected by users.
+
+### Current State
+- GDD Tracker is in Tools page (`src/components/tools/GDDTracker.tsx`) for adding/editing records
+- Research page has 3 tabs: Wild Colonies, Diagnosis Images, Scale Overview
+- GDD records exist in database with: year, apiary, vegetation_type, start_date, end_date, gdd_value, is_shared, notes
+
+### Plan
+
+#### Todo Items
+- [ ] Create new `GDDDataTab.tsx` component in `src/components/research/`
+- [ ] Add "GDD Data" tab to Research page with Thermometer icon
+- [ ] Display GDD records in a clean read-only table format
+
+### Implementation Details
+
+1. **Create GDDDataTab component** - A simple read-only view of GDD records
+   - Fetch user's GDD records with apiary and vegetation joins
+   - Display in a table format
+   - Show: Year, Apiary, Vegetation, Bloom Date, End Date, GDD Value, Shared status
+   - Include empty state message
+   - Link to Tools page if user wants to add new records
+
+2. **Update Research page**
+   - Add 'gdd-data' to ResearchSection type
+   - Add new tab with Thermometer icon
+   - Render GDDDataTab when active
+
+### Files to Modify
+- `src/app/dashboard/research/page.tsx` - Add tab
+- `src/components/research/GDDDataTab.tsx` - New file (view only)
+
+### Review - Completed January 18, 2026
+
+#### Changes Made
+
+1. **New Component: `src/components/research/GDDDataTab.tsx`**
+   - Read-only view of GDD records
+   - Desktop table view with columns: Year, Apiary, Vegetation, Bloom Date, End Date, GDD, Shared
+   - Mobile card view for responsive design
+   - Empty state with link to Tools page for adding records
+   - Info box explaining what GDD is
+   - Link to Tools > GDD Tracker for adding/editing records
+
+2. **Updated: `src/app/dashboard/research/page.tsx`**
+   - Added Thermometer icon import
+   - Added GDDDataTab component import
+   - Added 'gdd-data' to ResearchSection type
+   - Added 'gdd-data' to URL section validation
+   - Added GDD Data to sections array with Thermometer icon
+   - Added conditional rendering for GDDDataTab
+
+#### Files Modified
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/research/GDDDataTab.tsx` | NEW | Read-only GDD data viewer |
+| `src/app/dashboard/research/page.tsx` | MODIFIED | Added GDD Data tab |
+
+#### Testing Notes
+- User should test the build: `npm run build`
+- Verify the GDD Data tab appears in Research section
+- Check both desktop table and mobile card views
+- Verify "Add Records" link navigates to Tools page
+
+---
+
