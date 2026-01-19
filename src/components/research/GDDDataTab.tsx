@@ -178,11 +178,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           weight: 'bold' as const,
         },
         color: '#374151',
-        display: (context: { dataIndex: number; dataset: { data: (number | null)[] } }) => {
-          // Only show label if value exists
-          const value = context.dataset.data[context.dataIndex]
-          return value !== null && value !== undefined
-        },
+        display: 'auto' as const,
       },
     },
     scales: {
