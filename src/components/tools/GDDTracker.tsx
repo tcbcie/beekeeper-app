@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, X } from 'lucide-react'
+import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, X, Pencil, Save } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 interface Apiary {
@@ -56,6 +56,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
   const [isShared, setIsShared] = useState(false)
   const [notes, setNotes] = useState<string>('')
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   // Fetch initial data
   const fetchData = useCallback(async () => {
@@ -152,7 +153,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     }
   }
 
-  // Save new record
+  // Save new or update existing record
   const handleSave = async () => {
     if (!selectedApiary || !selectedVegetation || !startDate) {
       toast.warning('Please select an apiary, vegetation type, and start date')
@@ -169,45 +170,70 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     try {
       const year = new Date(startDate).getFullYear()
 
-      const { data, error } = await supabase
-        .from('gdd_records')
-        .insert({
-          user_id: userId,
-          apiary_id: selectedApiary,
-          vegetation_type_id: selectedVegetation,
-          year,
-          start_date: startDate,
-          end_date: endDate || null,
-          is_shared: isShared,
-          notes: notes || null,
-        })
-        .select()
-        .single()
+      if (editingId) {
+        // Update existing record
+        const { error } = await supabase
+          .from('gdd_records')
+          .update({
+            apiary_id: selectedApiary,
+            vegetation_type_id: selectedVegetation,
+            year,
+            start_date: startDate,
+            end_date: endDate || null,
+            is_shared: isShared,
+            notes: notes || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingId)
 
-      if (error) {
-        if (error.code === '23505') {
-          toast.warning('A record already exists for this apiary, vegetation type, and year.')
-        } else {
-          throw error
+        if (error) {
+          if (error.code === '23505') {
+            toast.warning('A record already exists for this apiary, vegetation type, and year.')
+          } else {
+            throw error
+          }
+          return
         }
-        return
-      }
 
-      // Reset form
-      setSelectedApiary('')
-      setSelectedVegetation('')
-      setStartDate('')
-      setEndDate('')
-      setIsShared(false)
-      setNotes('')
-      setShowForm(false)
+        toast.success('Record updated successfully')
+        resetForm()
+        await fetchData()
 
-      // Refresh and calculate GDD if end date is set
-      await fetchData()
+        // Recalculate GDD with new date
+        await calculateGDD(editingId, startDate, apiary.latitude, apiary.longitude)
+      } else {
+        // Insert new record
+        const { data, error } = await supabase
+          .from('gdd_records')
+          .insert({
+            user_id: userId,
+            apiary_id: selectedApiary,
+            vegetation_type_id: selectedVegetation,
+            year,
+            start_date: startDate,
+            end_date: endDate || null,
+            is_shared: isShared,
+            notes: notes || null,
+          })
+          .select()
+          .single()
 
-      // Calculate GDD from Jan 1st to start date
-      if (data) {
-        await calculateGDD(data.id, startDate, apiary.latitude, apiary.longitude)
+        if (error) {
+          if (error.code === '23505') {
+            toast.warning('A record already exists for this apiary, vegetation type, and year.')
+          } else {
+            throw error
+          }
+          return
+        }
+
+        resetForm()
+        await fetchData()
+
+        // Calculate GDD from Jan 1st to start date
+        if (data) {
+          await calculateGDD(data.id, startDate, apiary.latitude, apiary.longitude)
+        }
       }
     } catch (error) {
       console.error('Error saving GDD record:', error)
@@ -249,6 +275,30 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     }
   }
 
+  // Reset form to initial state
+  const resetForm = () => {
+    setSelectedApiary('')
+    setSelectedVegetation('')
+    setStartDate('')
+    setEndDate('')
+    setIsShared(false)
+    setNotes('')
+    setShowForm(false)
+    setEditingId(null)
+  }
+
+  // Edit a record - populate form with record data
+  const handleEdit = (record: GDDRecord) => {
+    setSelectedApiary(record.apiary_id)
+    setSelectedVegetation(record.vegetation_type_id)
+    setStartDate(record.start_date)
+    setEndDate(record.end_date || '')
+    setIsShared(record.is_shared)
+    setNotes(record.notes || '')
+    setEditingId(record.id)
+    setShowForm(true)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -264,17 +314,15 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
           <Thermometer size={24} className="text-forest-600 dark:text-forest-400" />
           GDD Tracker
         </h3>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            showForm
-              ? 'bg-gray-500 hover:bg-gray-600 text-white'
-              : 'bg-forest-600 hover:bg-forest-700 text-white'
-          }`}
-        >
-          {showForm ? <X size={18} /> : <Plus size={18} />}
-          {showForm ? 'Cancel' : 'Add Record'}
-        </button>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-forest-600 hover:bg-forest-700 text-white"
+          >
+            <Plus size={18} />
+            Add Record
+          </button>
+        )}
       </div>
 
       {/* Info Box */}
@@ -288,10 +336,10 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
         </div>
       </div>
 
-      {/* Add Record Form */}
+      {/* Add/Edit Record Form */}
       {showForm && (
         <div className="bg-surface dark:bg-surface-elevated border border-border rounded-lg p-6 space-y-4">
-          <h4 className="font-semibold text-foreground">New GDD Record</h4>
+          <h4 className="font-semibold text-foreground">{editingId ? 'Edit GDD Record' : 'New GDD Record'}</h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -383,11 +431,11 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
               disabled={saving}
               className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 transition-colors"
             >
-              {saving ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-              Save Record
+              {saving ? <Loader2 size={18} className="animate-spin" /> : editingId ? <Save size={18} /> : <Plus size={18} />}
+              {editingId ? 'Update Record' : 'Save Record'}
             </button>
             <button
-              onClick={() => setShowForm(false)}
+              onClick={resetForm}
               className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors"
             >
               Cancel
@@ -461,13 +509,22 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                     </button>
                   </td>
                   <td className="p-3 text-center">
-                    <button
-                      onClick={() => handleDelete(record.id)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                      title="Delete record"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => handleEdit(record)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                        title="Edit record"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                        title="Delete record"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
