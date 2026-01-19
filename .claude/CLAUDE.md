@@ -220,3 +220,7 @@ When in planning mode and ask to implement a new feature create a plan in the do
 DO NOT TEST the BUILD yourself but rather prompt the user to test it as this is taking to much time.
 
 For commit comments, do not include - Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+
+Use a direct database connection using the MCP server rather than parsing saved sql files.
+
+For any new or exising feature create/update the documentation in docs/feature.
