@@ -173,6 +173,9 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         borderColor: isDark ? '#374151' : '#e5e7eb',
         borderWidth: 1,
       },
+      datalabels: {
+        display: false,
+      },
     },
     scales: {
       x: {
