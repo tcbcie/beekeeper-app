@@ -1561,9 +1561,13 @@ export default function SettingsPage() {
         // Regular user: export only their own data
         const tables = [
           'apiaries',
+          'batch_containers',
           'batch_grafts',
+          'batch_runs',
+          'bulk_containers',
           'colonies',
           'colony_movements',
+          'container_harvests',
           'feedings',
           'financial_records',
           'gdd_records',
