@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, X, Pencil, Save } from 'lucide-react'
+import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, Pencil, Save, ChevronUp, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 interface Apiary {
@@ -39,6 +39,9 @@ interface GDDTrackerProps {
 // Base temperature for GDD calculation (6°C - standard for Irish phenology)
 const BASE_TEMP = 6
 
+type SortColumn = 'year' | 'start_date' | 'gdd_value'
+type SortDirection = 'asc' | 'desc'
+
 export default function GDDTracker({ userId }: GDDTrackerProps) {
   const toast = useToast()
   const [apiaries, setApiaries] = useState<Apiary[]>([])
@@ -57,6 +60,10 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
   const [notes, setNotes] = useState<string>('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+
+  // Sort state
+  const [sortColumn, setSortColumn] = useState<SortColumn>('year')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   // Fetch initial data
   const fetchData = useCallback(async () => {
@@ -299,6 +306,45 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     setShowForm(true)
   }
 
+  // Handle column sort
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortColumn(column)
+      setSortDirection('desc')
+    }
+  }
+
+  // Sorted records
+  const sortedRecords = useMemo(() => {
+    return [...records].sort((a, b) => {
+      let comparison = 0
+      switch (sortColumn) {
+        case 'year':
+          comparison = a.year - b.year
+          break
+        case 'start_date':
+          comparison = new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+          break
+        case 'gdd_value':
+          const aVal = a.gdd_value ?? -1
+          const bVal = b.gdd_value ?? -1
+          comparison = aVal - bVal
+          break
+      }
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+  }, [records, sortColumn, sortDirection])
+
+  // Sort indicator component
+  const SortIndicator = ({ column }: { column: SortColumn }) => {
+    if (sortColumn !== column) return <ChevronUp size={14} className="opacity-0 group-hover:opacity-30" />
+    return sortDirection === 'asc'
+      ? <ChevronUp size={14} className="text-forest-600" />
+      : <ChevronDown size={14} className="text-forest-600" />
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -450,19 +496,52 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-sage-100 dark:bg-slate-800 border-b border-border">
-                <th className="text-left p-3 text-sm font-semibold text-foreground">Year</th>
+                <th className="text-center p-3 text-sm font-semibold text-foreground w-20">Actions</th>
+                <th
+                  className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-sage-200 dark:hover:bg-slate-700 transition-colors group"
+                  onClick={() => handleSort('year')}
+                >
+                  <span className="flex items-center gap-1">Year <SortIndicator column="year" /></span>
+                </th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Apiary</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Vegetation</th>
-                <th className="text-left p-3 text-sm font-semibold text-foreground">Bloom Date</th>
+                <th
+                  className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-sage-200 dark:hover:bg-slate-700 transition-colors group"
+                  onClick={() => handleSort('start_date')}
+                >
+                  <span className="flex items-center gap-1">Bloom Date <SortIndicator column="start_date" /></span>
+                </th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">End</th>
-                <th className="text-right p-3 text-sm font-semibold text-foreground">GDD</th>
+                <th
+                  className="text-right p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-sage-200 dark:hover:bg-slate-700 transition-colors group"
+                  onClick={() => handleSort('gdd_value')}
+                >
+                  <span className="flex items-center justify-end gap-1">GDD <SortIndicator column="gdd_value" /></span>
+                </th>
                 <th className="text-center p-3 text-sm font-semibold text-foreground">Shared</th>
-                <th className="text-center p-3 text-sm font-semibold text-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => (
+              {sortedRecords.map((record) => (
                 <tr key={record.id} className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-700/50">
+                  <td className="p-3 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => handleEdit(record)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                        title="Edit record"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                        title="Delete record"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
                   <td className="p-3 text-foreground font-medium">{record.year}</td>
                   <td className="p-3 text-foreground">{record.apiaries?.name || '-'}</td>
                   <td className="p-3 text-foreground">{record.dropdown_values?.value || '-'}</td>
@@ -507,24 +586,6 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                     >
                       <Share2 size={16} />
                     </button>
-                  </td>
-                  <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => handleEdit(record)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
-                        title="Edit record"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(record.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                        title="Delete record"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
                   </td>
                 </tr>
               ))}
