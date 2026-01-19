@@ -173,6 +173,9 @@ export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHis
         borderColor: isDark ? '#374151' : '#e5e7eb',
         borderWidth: 1,
       },
+      datalabels: {
+        display: false,
+      },
     },
     scales: {
       x: {
