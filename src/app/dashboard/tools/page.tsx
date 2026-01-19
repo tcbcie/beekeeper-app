@@ -143,19 +143,19 @@ export default function ToolsPage() {
       </Link>
 
       {/* Tab Navigation */}
-      <nav className="border-b border-border">
-        <div className="flex space-x-4 overflow-x-auto">
+      <nav className="border-b border-border pb-3">
+        <div className="flex flex-wrap gap-2">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 activeSection === section.id
-                  ? 'border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400'
-                  : 'border-transparent text-text-tertiary hover:text-text-secondary'
+                  ? 'bg-forest-600 text-white dark:bg-forest-500'
+                  : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
               }`}
             >
-              <section.icon size={18} />
+              <section.icon size={16} />
               {section.label}
             </button>
           ))}
