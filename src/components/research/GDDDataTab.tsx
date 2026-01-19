@@ -12,9 +12,10 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { Bar } from 'react-chartjs-2'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
 
 interface GDDRecord {
   id: string
@@ -166,6 +167,21 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             const value = context.parsed.y
             return `${context.dataset.label}: ${value !== null ? value + ' GDD' : 'No data'}`
           },
+        },
+      },
+      datalabels: {
+        anchor: 'end' as const,
+        align: 'top' as const,
+        formatter: (value: number | null) => value !== null ? value.toFixed(1) : '',
+        font: {
+          size: 10,
+          weight: 'bold' as const,
+        },
+        color: '#374151',
+        display: (context: { dataIndex: number; dataset: { data: (number | null)[] } }) => {
+          // Only show label if value exists
+          const value = context.dataset.data[context.dataIndex]
+          return value !== null && value !== undefined
         },
       },
     },
