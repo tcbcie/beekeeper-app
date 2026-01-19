@@ -199,10 +199,14 @@ export default function HiveDetailPage() {
 
       {/* Hive Scale Card - Show if hive has any scale OR owner can connect one */}
       {(hive.beep_device_id || hive.wolf_scale_id || ((beepConnected || wolfConnected) && isOwner)) && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <Scale size={20} className={hive.wolf_scale_id ? 'text-blue-600' : 'text-amber-600'} />
+        <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg mb-6 border border-border ${
+          hive.beep_device_id || hive.wolf_scale_id ? 'p-6' : 'p-4'
+        }`}>
+          <div className={`flex items-center justify-between ${hive.beep_device_id || hive.wolf_scale_id ? 'mb-4' : ''}`}>
+            <h2 className={`font-semibold text-foreground flex items-center gap-2 ${
+              hive.beep_device_id || hive.wolf_scale_id ? 'text-xl' : 'text-base'
+            }`}>
+              <Scale size={hive.beep_device_id || hive.wolf_scale_id ? 20 : 18} className={hive.wolf_scale_id ? 'text-blue-600' : 'text-amber-600'} />
               Hive Scale
               {hive.beep_device_id && <span className="text-xs text-amber-600 font-normal">(BEEP)</span>}
               {hive.wolf_scale_id && <span className="text-xs text-blue-600 font-normal">(Wolf Waagen)</span>}
@@ -252,25 +256,24 @@ export default function HiveDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-6">
-              <Scale size={32} className="mx-auto mb-2 text-text-tertiary" />
-              <p className="text-text-secondary">No scale connected to this hive</p>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <p className="text-sm text-text-secondary">No scale connected</p>
               {isOwner && (
-                <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="flex gap-2">
                   {beepConnected && (
                     <button
                       onClick={() => setShowScaleModal(true)}
-                      className="px-4 py-2 text-sm bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 font-medium"
+                      className="px-3 py-1.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 font-medium"
                     >
-                      Connect BEEP Scale
+                      Connect BEEP
                     </button>
                   )}
                   {wolfConnected && (
                     <button
                       onClick={() => setShowWolfModal(true)}
-                      className="px-4 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium"
+                      className="px-3 py-1.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium"
                     >
-                      Connect Wolf Scale
+                      Connect Wolf
                     </button>
                   )}
                 </div>
