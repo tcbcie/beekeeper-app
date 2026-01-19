@@ -139,7 +139,13 @@ function AboutPageContent() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setNewsArticles(data || [])
+      // Sort by published_date, falling back to created_at for articles without published_date
+      const sorted = (data || []).sort((a, b) => {
+        const dateA = new Date(a.published_date || a.created_at).getTime()
+        const dateB = new Date(b.published_date || b.created_at).getTime()
+        return dateB - dateA
+      })
+      setNewsArticles(sorted)
     } catch (error) {
       console.error('Error fetching news articles:', error)
     } finally {
