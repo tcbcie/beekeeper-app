@@ -3002,7 +3002,7 @@ export default function SettingsPage() {
                       <div key={user.id} className="bg-surface dark:bg-surface border border-border rounded hover:border-border transition-all">
                         {/* Compact Single Line */}
                         <div className="px-3 py-2">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-4 flex-wrap">
                             {/* Expand Button */}
                             <button
                               onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
@@ -3016,7 +3016,7 @@ export default function SettingsPage() {
                             </button>
 
                             {/* Email and Stats */}
-                            <div className="flex-1 min-w-0 flex items-center gap-3">
+                            <div className="min-w-0 flex items-center gap-2 flex-1 max-w-md">
                               <span className="text-sm font-medium text-foreground truncate">{user.email || 'No email'}</span>
                               {user.id === userId && (
                                 <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded flex-shrink-0">
