@@ -16,9 +16,12 @@ interface KnowledgeSource {
   published_date: string | null
   source_url: string | null
   original_filename: string | null
+  file_path: string | null
   chunks_count: number
   created_at: string
 }
+
+type SourceTypeFilter = 'all' | 'documents' | 'news'
 
 export default function KnowledgeBaseManager() {
   const [sources, setSources] = useState<KnowledgeSource[]>([])
@@ -43,6 +46,7 @@ export default function KnowledgeBaseManager() {
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('')
+  const [typeFilter, setTypeFilter] = useState<SourceTypeFilter>('all')
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [currentPage, setCurrentPage] = useState(1)
@@ -393,6 +397,10 @@ export default function KnowledgeBaseManager() {
         if (sourceYear !== yearFilter) return false
       }
 
+      // Type filter (documents have file_path, news/URLs don't)
+      if (typeFilter === 'documents' && !source.file_path) return false
+      if (typeFilter === 'news' && source.file_path) return false
+
       return true
     })
     .sort((a, b) => {
@@ -728,13 +736,22 @@ export default function KnowledgeBaseManager() {
               ))}
             </select>
           )}
-          {(searchQuery || yearFilter) && (
+          <select
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value as SourceTypeFilter); setCurrentPage(1) }}
+            className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[130px]"
+          >
+            <option value="all">All Types</option>
+            <option value="documents">Documents</option>
+            <option value="news">News/URLs</option>
+          </select>
+          {(searchQuery || yearFilter || typeFilter !== 'all') && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-text-tertiary">
                 {filteredSources.length} of {sources.length}
               </span>
               <button
-                onClick={() => { setSearchQuery(''); setYearFilter(''); setCurrentPage(1) }}
+                onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setCurrentPage(1) }}
                 className="text-xs text-forest-600 hover:underline"
               >
                 Clear all
@@ -823,63 +840,70 @@ export default function KnowledgeBaseManager() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" colSpan={4}>
                         <div className="space-y-2">
-                          <div>
-                            <label className="block text-xs text-text-tertiary mb-0.5">Display Name (for citations)</label>
-                            <input
-                              type="text"
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                              onKeyDown={handleEditKeyDown}
-                              placeholder="e.g., Nosema Disease - White (1919)"
-                              className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
-                              autoFocus
-                            />
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <label className="block text-xs text-text-tertiary mb-0.5">Display Name (for citations)</label>
+                              <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                onKeyDown={handleEditKeyDown}
+                                placeholder="e.g., Nosema Disease - White (1919)"
+                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="w-48">
+                              <label className="block text-xs text-text-tertiary mb-0.5">Author</label>
+                              <input
+                                type="text"
+                                value={editAuthor}
+                                onChange={(e) => setEditAuthor(e.target.value)}
+                                onKeyDown={handleEditKeyDown}
+                                placeholder="Author"
+                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                              />
+                            </div>
+                            <div className="w-20">
+                              <label className="block text-xs text-text-tertiary mb-0.5">Year</label>
+                              <input
+                                type="text"
+                                value={editYear}
+                                onChange={(e) => setEditYear(e.target.value)}
+                                onKeyDown={handleEditKeyDown}
+                                placeholder="Year"
+                                maxLength={4}
+                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-xs text-text-tertiary mb-0.5">Original Filename</label>
-                            <input
-                              type="text"
-                              value={editOriginalFilename}
-                              onChange={(e) => setEditOriginalFilename(e.target.value)}
-                              onKeyDown={handleEditKeyDown}
-                              placeholder="e.g., White-GF (1919) Nosema-Disease.pdf"
-                              className="w-full px-2 py-1 border border-border rounded bg-surface text-text-secondary text-sm"
-                            />
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <label className="block text-xs text-text-tertiary mb-0.5">Original Filename</label>
+                              <input
+                                type="text"
+                                value={editOriginalFilename}
+                                onChange={(e) => setEditOriginalFilename(e.target.value)}
+                                onKeyDown={handleEditKeyDown}
+                                placeholder="e.g., White-GF (1919) Nosema-Disease.pdf"
+                                className="w-full px-2 py-1 border border-border rounded bg-surface text-text-secondary text-sm"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="block text-xs text-text-tertiary mb-0.5">Source URL</label>
+                              <input
+                                type="url"
+                                value={editSourceUrl}
+                                onChange={(e) => setEditSourceUrl(e.target.value)}
+                                onKeyDown={handleEditKeyDown}
+                                placeholder="https://example.com/source"
+                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={editAuthor}
-                          onChange={(e) => setEditAuthor(e.target.value)}
-                          onKeyDown={handleEditKeyDown}
-                          placeholder="Author"
-                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={editYear}
-                          onChange={(e) => setEditYear(e.target.value)}
-                          onKeyDown={handleEditKeyDown}
-                          placeholder="Year"
-                          maxLength={4}
-                          className="w-20 px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="url"
-                          value={editSourceUrl}
-                          onChange={(e) => setEditSourceUrl(e.target.value)}
-                          onKeyDown={handleEditKeyDown}
-                          placeholder="https://..."
-                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
-                        />
                       </td>
                       <td className="px-4 py-3 text-center text-sm text-text-secondary">
                         {source.chunks_count}
@@ -933,13 +957,13 @@ export default function KnowledgeBaseManager() {
                   )}
                 </tr>
               ))}
-              {paginatedSources.length === 0 && (searchQuery || yearFilter) && (
+              {paginatedSources.length === 0 && (searchQuery || yearFilter || typeFilter !== 'all') && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p>No sources match your filters</p>
                     <button
-                      onClick={() => { setSearchQuery(''); setYearFilter(''); setCurrentPage(1) }}
+                      onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setCurrentPage(1) }}
                       className="text-sm text-forest-600 hover:underline mt-1"
                     >
                       Clear filters

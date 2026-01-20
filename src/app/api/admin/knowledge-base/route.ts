@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
   if (view === 'sources') {
     const { data, error, count } = await getSupabaseAdmin()
       .from('knowledge_sources')
-      .select('id, name, author, published_date, source_url, original_filename, chunks_count, created_at, updated_at', { count: 'exact' })
+      .select('id, name, author, published_date, source_url, original_filename, file_path, chunks_count, created_at, updated_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
