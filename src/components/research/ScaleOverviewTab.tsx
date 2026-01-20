@@ -15,7 +15,7 @@ interface HiveWithScale {
   beep_device_name: string | null
   wolf_scale_id: string | null
   wolf_scale_name: string | null
-  apiaries: { id: string; name: string } | null
+  apiaries: { id: string; name: string; latitude: number | null; longitude: number | null } | null
 }
 
 export default function ScaleOverviewTab({ userId }: ScaleOverviewTabProps) {
@@ -31,7 +31,7 @@ export default function ScaleOverviewTab({ userId }: ScaleOverviewTabProps) {
         id, hive_number,
         beep_device_id, beep_device_name,
         wolf_scale_id, wolf_scale_name,
-        apiaries(id, name)
+        apiaries(id, name, latitude, longitude)
       `)
       .eq('user_id', userId)
       .is('archived_at', null)

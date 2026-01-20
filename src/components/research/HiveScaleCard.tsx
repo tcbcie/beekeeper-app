@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink } from 'lucide-react'
+import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog } from 'lucide-react'
 import Link from 'next/link'
 
 interface HiveScaleCardProps {
@@ -12,8 +12,31 @@ interface HiveScaleCardProps {
     beep_device_name: string | null
     wolf_scale_id: string | null
     wolf_scale_name: string | null
-    apiaries: { id: string; name: string } | null
+    apiaries: { id: string; name: string; latitude: number | null; longitude: number | null } | null
   }
+}
+
+interface WeatherData {
+  temperature: number
+  humidity: number
+  weatherCode: number
+}
+
+// Get weather icon based on WMO weather code
+function getWeatherIcon(code: number) {
+  // Clear
+  if (code === 0 || code === 1) return <Sun size={12} className="text-yellow-500" />
+  // Partly cloudy
+  if (code === 2 || code === 3) return <Cloud size={12} className="text-gray-400" />
+  // Fog
+  if (code >= 45 && code <= 48) return <CloudFog size={12} className="text-gray-400" />
+  // Rain/Drizzle
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return <CloudRain size={12} className="text-blue-400" />
+  // Snow
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return <CloudSnow size={12} className="text-blue-200" />
+  // Thunderstorm
+  if (code >= 95) return <CloudRain size={12} className="text-purple-500" />
+  return <Cloud size={12} className="text-gray-400" />
 }
 
 interface ScaleData {
@@ -30,6 +53,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
   const [data, setData] = useState<ScaleData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [weather, setWeather] = useState<WeatherData | null>(null)
 
   const isBeep = !!hive.beep_device_id
   const isWolf = !!hive.wolf_scale_id
@@ -118,6 +142,39 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
     return () => clearInterval(interval)
   }, [fetchData])
 
+  // Fetch weather for apiary location
+  const apiaryLat = hive.apiaries?.latitude
+  const apiaryLon = hive.apiaries?.longitude
+
+  useEffect(() => {
+    if (!apiaryLat || !apiaryLon) return
+
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${apiaryLat}&longitude=${apiaryLon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
+        )
+        if (response.ok) {
+          const json = await response.json()
+          if (json.current) {
+            setWeather({
+              temperature: json.current.temperature_2m,
+              humidity: json.current.relative_humidity_2m,
+              weatherCode: json.current.weather_code
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch weather:', err)
+      }
+    }
+
+    fetchWeather()
+    // Refresh weather every 30 minutes
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [apiaryLat, apiaryLon])
+
   const borderColor = isBeep
     ? 'border-amber-300 dark:border-amber-700'
     : 'border-blue-300 dark:border-blue-700'
@@ -200,10 +257,23 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
         </div>
       </div>
 
-      {/* Apiary */}
+      {/* Apiary + Weather */}
       {hive.apiaries?.name && (
-        <div className="px-3 py-1 text-xs text-text-secondary border-b border-border">
-          {hive.apiaries.name}
+        <div className="px-3 py-1 text-xs text-text-secondary border-b border-border flex items-center justify-between">
+          <span>{hive.apiaries.name}</span>
+          {weather && (
+            <span className="flex items-center gap-2 text-text-tertiary">
+              {getWeatherIcon(weather.weatherCode)}
+              <span className="flex items-center gap-0.5">
+                <Thermometer size={10} className="text-orange-400" />
+                {weather.temperature.toFixed(0)}°C
+              </span>
+              <span className="flex items-center gap-0.5">
+                <Droplets size={10} className="text-cyan-400" />
+                {weather.humidity}%
+              </span>
+            </span>
+          )}
         </div>
       )}
 
