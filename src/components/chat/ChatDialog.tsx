@@ -84,7 +84,8 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
         content: data.message,
-        timestamp: new Date()
+        timestamp: new Date(),
+        sources: data.sources
       }
       setMessages(prev => [...prev, assistantMessage])
 
