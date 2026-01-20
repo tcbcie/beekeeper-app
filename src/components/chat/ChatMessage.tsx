@@ -49,6 +49,7 @@ function parseMarkdownLinks(text: string, isUser: boolean): React.ReactNode[] {
 
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user'
+  const hasSources = !isUser && message.sources && message.sources.length > 0
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -78,6 +79,18 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <p className="text-sm whitespace-pre-wrap break-words">
           {parseMarkdownLinks(message.content, isUser)}
         </p>
+        {hasSources && (
+          <div className="mt-2 pt-2 border-t border-border/50">
+            <p className="text-xs text-text-muted mb-1">Sources:</p>
+            <ul className="space-y-0.5">
+              {message.sources!.map((source, idx) => (
+                <li key={idx} className="text-xs">
+                  {parseMarkdownLinks(source, false)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <span
           className={`text-xs mt-1 block ${
             isUser ? 'text-green-200' : 'text-text-muted'

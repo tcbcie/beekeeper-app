@@ -37,13 +37,13 @@ interface GDDDataTabProps {
 
 type ViewMode = 'table' | 'chart'
 
-// Colors for different years in chart
+// Colors for different years in chart - ordered for maximum contrast between adjacent years
 const YEAR_COLORS = [
-  { bg: 'rgba(34, 197, 94, 0.7)', border: 'rgb(34, 197, 94)' },   // green
-  { bg: 'rgba(59, 130, 246, 0.7)', border: 'rgb(59, 130, 246)' }, // blue
-  { bg: 'rgba(249, 115, 22, 0.7)', border: 'rgb(249, 115, 22)' }, // orange
-  { bg: 'rgba(168, 85, 247, 0.7)', border: 'rgb(168, 85, 247)' }, // purple
-  { bg: 'rgba(236, 72, 153, 0.7)', border: 'rgb(236, 72, 153)' }, // pink
+  { bg: 'rgba(34, 197, 94, 0.8)', border: 'rgb(22, 163, 74)' },   // green
+  { bg: 'rgba(249, 115, 22, 0.8)', border: 'rgb(234, 88, 12)' },  // orange
+  { bg: 'rgba(59, 130, 246, 0.8)', border: 'rgb(37, 99, 235)' },  // blue
+  { bg: 'rgba(168, 85, 247, 0.8)', border: 'rgb(147, 51, 234)' }, // purple
+  { bg: 'rgba(236, 72, 153, 0.8)', border: 'rgb(219, 39, 119)' }, // pink
 ]
 
 export default function GDDDataTab({ userId }: GDDDataTabProps) {
