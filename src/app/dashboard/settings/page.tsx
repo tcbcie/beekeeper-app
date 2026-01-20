@@ -158,6 +158,26 @@ interface ReactivationRequest {
   admin_notes: string | null
 }
 
+// Format relative time for "last active" display
+function formatLastActive(dateString: string | null | undefined): string {
+  if (!dateString) return 'Never'
+
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`
+  return `${Math.floor(diffDays / 365)}y ago`
+}
+
 export default function SettingsPage() {
   const router = useRouter()
   const toast = useToast()
@@ -3058,6 +3078,14 @@ export default function SettingsPage() {
                                    user.subscription_status === 'expired' ? '✗' : '−'}
                                 </span>
                               )}
+
+                              {/* Last Active */}
+                              <span
+                                className="text-xs text-text-tertiary min-w-[50px] text-right"
+                                title={user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never signed in'}
+                              >
+                                {formatLastActive(user.last_sign_in_at)}
+                              </span>
                             </div>
 
                             {/* Actions */}
