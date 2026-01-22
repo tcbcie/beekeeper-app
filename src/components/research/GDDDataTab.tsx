@@ -452,7 +452,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
       {/* Legend */}
       <div className="text-xs text-text-tertiary">
-        <p>GDD calculated from January 1st to bloom date using seasonal multipliers (Jan: ×0.5, Feb: ×0.75, Mar-Dec: ×1.0).</p>
+        <p>GDD = Σ max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2) × multiplier. Seasonal multipliers: Jan ×0.5, Feb ×0.75, Mar-Dec ×1.0.</p>
       </div>
     </div>
   )
