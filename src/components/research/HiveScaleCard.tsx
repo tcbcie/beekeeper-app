@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog } from 'lucide-react'
+import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout } from 'lucide-react'
 import Link from 'next/link'
 
 interface HiveScaleCardProps {
@@ -54,6 +54,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [gddValue, setGddValue] = useState<number | null>(null)
 
   const isBeep = !!hive.beep_device_id
   const isWolf = !!hive.wolf_scale_id
@@ -173,6 +174,51 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
     // Refresh weather every 30 minutes
     const interval = setInterval(fetchWeather, 30 * 60 * 1000)
     return () => clearInterval(interval)
+  }, [apiaryLat, apiaryLon])
+
+  // Calculate GDD from January 1st to today
+  useEffect(() => {
+    if (!apiaryLat || !apiaryLon) return
+
+    const calculateGDD = async () => {
+      try {
+        const today = new Date()
+        const year = today.getFullYear()
+        const janFirst = `${year}-01-01`
+        const todayStr = today.toISOString().split('T')[0]
+
+        const response = await fetch(
+          `https://archive-api.open-meteo.com/v1/archive?latitude=${apiaryLat}&longitude=${apiaryLon}&start_date=${janFirst}&end_date=${todayStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          if (data.daily?.temperature_2m_max && data.daily?.time) {
+            // GDD with seasonal multipliers (Jan: 0.5, Feb: 0.75, Mar-Dec: 1.0)
+            let totalGDD = 0
+            for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
+              const tMax = data.daily.temperature_2m_max[i]
+              const tMin = data.daily.temperature_2m_min[i]
+              const dateStr = data.daily.time[i]
+              if (tMax !== null && tMin !== null && dateStr) {
+                const avgTemp = (tMax + tMin) / 2
+                if (avgTemp > 0) {
+                  const month = new Date(dateStr).getMonth() + 1 // 1-12
+                  let multiplier = 1.0
+                  if (month === 1) multiplier = 0.5
+                  else if (month === 2) multiplier = 0.75
+                  totalGDD += avgTemp * multiplier
+                }
+              }
+            }
+            setGddValue(Math.round(totalGDD * 10) / 10)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to calculate GDD:', err)
+      }
+    }
+
+    calculateGDD()
   }, [apiaryLat, apiaryLon])
 
   const borderColor = isBeep
@@ -328,6 +374,12 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
             <span className={`flex items-center gap-1 ${data.battery < 20 ? 'text-red-500' : ''}`}>
               <Battery size={12} className={data.battery < 20 ? 'text-red-500' : 'text-green-500'} />
               {data.battery}%
+            </span>
+          )}
+          {gddValue !== null && (
+            <span className="flex items-center gap-1" title="Growing Degree Days (Jan 1 to today)">
+              <Sprout size={12} className="text-green-500" />
+              {gddValue}
             </span>
           )}
         </div>

@@ -452,7 +452,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
       {/* Legend */}
       <div className="text-xs text-text-tertiary">
-        <p>GDD calculated from January 1st to bloom observation date. Base temperature: 6°C (Irish phenology standard).</p>
+        <p>GDD calculated from January 1st to bloom date using seasonal multipliers (Jan: ×0.5, Feb: ×0.75, Mar-Dec: ×1.0).</p>
       </div>
     </div>
   )
