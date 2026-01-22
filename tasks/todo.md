@@ -1522,6 +1522,98 @@ User should run `npm run build` and then test:
 
 ---
 
+## Session 19: Add Current GDD Reference Line to Chart - January 22, 2026
+
+### Task
+Add a horizontal dashed line to the GDD bar chart showing the current year's accumulated GDD (from January 1st to today).
+
+### Todo Items
+- [x] Install chartjs-plugin-annotation package
+- [x] Import and register annotation plugin in GDDDataTab
+- [x] Add currentGDD state and fetch user's first apiary with coordinates
+- [x] Add fetchCurrentGDD function using Open-Meteo API
+- [x] Add annotation config to chartOptions for horizontal line
+- [x] Add legend entry explaining the line
+
+### Changes Made
+
+1. **Installed chartjs-plugin-annotation**
+   - `npm i chartjs-plugin-annotation --legacy-peer-deps`
+
+2. **Updated GDDDataTab.tsx**
+   - Imported and registered `annotationPlugin` from `chartjs-plugin-annotation`
+   - Added `currentGDD` state variable
+   - Added `fetchCurrentGDD` function that:
+     - Fetches user's first apiary with coordinates
+     - Calls Open-Meteo Archive API for daily temperatures from Jan 1 to today
+     - Calculates GDD using seasonal multipliers (Jan: 0.5, Feb: 0.75, Mar-Dec: 1.0)
+   - Updated `chartOptions` to use `useMemo` with annotation config:
+     - Red dashed horizontal line at currentGDD value
+     - Label showing "Today: XXX GDD" at line end
+   - Added legend entry below chart explaining the red dashed line
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `package.json` | Added chartjs-plugin-annotation dependency |
+| `src/components/research/GDDDataTab.tsx` | Added annotation plugin, current GDD calculation, horizontal line |
+
+### Testing Required
+User should run `npm run build` and then test:
+1. Navigate to Research > GDD Data tab
+2. View the chart - should see a horizontal dashed red line
+3. Line should be labeled with "Today: XXX GDD"
+4. Line position should match the current accumulated GDD value
+5. If no apiary has coordinates, line should not appear (graceful fallback)
+
+---
+
+### Enhancement: GDD Accumulation Chart - January 22, 2026
+
+Added a new "Accumulation" chart view that shows GDD accumulation curves over 12 months, allowing year-over-year comparison.
+
+#### Changes Made
+
+1. **Added Chart Type Toggle**
+   - New toggle within Chart view: "Accumulation" and "Bloom GDD"
+   - Default view is now Accumulation
+
+2. **Added Line Chart Components**
+   - Imported `Line` from react-chartjs-2
+   - Registered `PointElement` and `LineElement` with Chart.js
+
+3. **Added Accumulation Data Fetching**
+   - `fetchAccumulationData()` function fetches weather data for multiple years
+   - Calculates cumulative GDD day-by-day using seasonal multipliers
+   - Past years are truncated to match current day-of-year for fair comparison
+
+4. **Added Year Selection**
+   - Users can select which years to compare (current + 4 previous years)
+   - Default: current year + previous year
+
+5. **Line Chart Features**
+   - Each year shown as a separate line with different colors
+   - Current year line is thicker (3px vs 2px)
+   - X-axis shows months (Jan-Dec)
+   - Y-axis shows accumulated GDD
+   - Smooth curves with tension for readability
+   - Hover shows GDD value at that point
+
+#### Files Modified
+- `src/components/research/GDDDataTab.tsx` - Major update with accumulation chart
+
+#### Testing Required
+User should run `npm run build` and then test:
+1. Navigate to Research > GDD Data tab
+2. Default view is now "Accumulation" chart
+3. Should see line chart with curves for selected years
+4. Toggle year buttons to add/remove years from comparison
+5. Switch to "Bloom GDD" to see original vegetation bar chart
+6. Verify filters only show for Bloom GDD view
+
+---
+
 ### Update: Wolf Waagen GDD Method - January 22, 2026
 
 #### Analysis Performed

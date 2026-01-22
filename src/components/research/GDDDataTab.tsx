@@ -1,21 +1,24 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table } from 'lucide-react'
+import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2 } from 'lucide-react'
 import Link from 'next/link'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
-import { Bar } from 'react-chartjs-2'
+import annotationPlugin from 'chartjs-plugin-annotation'
+import { Bar, Line } from 'react-chartjs-2'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ChartDataLabels, annotationPlugin)
 
 interface GDDRecord {
   id: string
@@ -36,6 +39,18 @@ interface GDDDataTabProps {
 }
 
 type ViewMode = 'table' | 'chart'
+type ChartType = 'vegetation' | 'accumulation'
+
+interface AccumulationDataPoint {
+  date: string
+  dayOfYear: number
+  gdd: number
+}
+
+interface YearlyAccumulation {
+  year: number
+  data: AccumulationDataPoint[]
+}
 
 // Colors for different years in chart - ordered for maximum contrast between adjacent years
 const YEAR_COLORS = [
@@ -50,11 +65,21 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const [records, setRecords] = useState<GDDRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('chart')
+  const [chartType, setChartType] = useState<ChartType>('accumulation')
+  const [currentGDD, setCurrentGDD] = useState<number | null>(null)
+  const [accumulationData, setAccumulationData] = useState<YearlyAccumulation[]>([])
+  const [accumulationLoading, setAccumulationLoading] = useState(false)
+  const [apiaryCoords, setApiaryCoords] = useState<{ latitude: number; longitude: number } | null>(null)
 
   // Filters
   const [selectedYears, setSelectedYears] = useState<number[]>([])
   const [selectedVegetation, setSelectedVegetation] = useState<string>('')
   const [selectedApiary, setSelectedApiary] = useState<string>('')
+
+  // Accumulation chart year selection (default: current year + 2 previous years)
+  const currentYear = new Date().getFullYear()
+  const availableAccumulationYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4]
+  const [selectedAccumulationYears, setSelectedAccumulationYears] = useState<number[]>([currentYear, currentYear - 1])
 
   const fetchRecords = useCallback(async () => {
     setLoading(true)
@@ -81,6 +106,152 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   useEffect(() => {
     fetchRecords()
   }, [fetchRecords])
+
+  // Fetch apiary coordinates
+  const fetchApiaryCoords = useCallback(async () => {
+    try {
+      const { data: apiaries } = await supabase
+        .from('apiaries')
+        .select('latitude, longitude')
+        .eq('user_id', userId)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .limit(1)
+
+      if (apiaries && apiaries.length > 0 && apiaries[0].latitude && apiaries[0].longitude) {
+        setApiaryCoords({ latitude: apiaries[0].latitude, longitude: apiaries[0].longitude })
+      }
+    } catch (err) {
+      console.error('Failed to fetch apiary coordinates:', err)
+    }
+  }, [userId])
+
+  useEffect(() => {
+    fetchApiaryCoords()
+  }, [fetchApiaryCoords])
+
+  // Fetch current GDD when we have coordinates
+  useEffect(() => {
+    if (!apiaryCoords) return
+
+    const fetchCurrentGDD = async () => {
+      try {
+        const { latitude, longitude } = apiaryCoords
+        const today = new Date()
+        const year = today.getFullYear()
+        const janFirst = `${year}-01-01`
+        const todayStr = today.toISOString().split('T')[0]
+
+        const response = await fetch(
+          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${janFirst}&end_date=${todayStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.daily?.temperature_2m_max && data.daily?.time) {
+            let totalGDD = 0
+            for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
+              const tMax = data.daily.temperature_2m_max[i]
+              const tMin = data.daily.temperature_2m_min[i]
+              const dateStr = data.daily.time[i]
+              if (tMax !== null && tMin !== null && dateStr) {
+                const avgTemp = (tMax + tMin) / 2
+                if (avgTemp > 0) {
+                  const month = new Date(dateStr).getMonth() + 1
+                  let multiplier = 1.0
+                  if (month === 1) multiplier = 0.5
+                  else if (month === 2) multiplier = 0.75
+                  totalGDD += avgTemp * multiplier
+                }
+              }
+            }
+            setCurrentGDD(Math.round(totalGDD * 10) / 10)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to calculate current GDD:', err)
+      }
+    }
+
+    fetchCurrentGDD()
+  }, [apiaryCoords])
+
+  // Fetch accumulation data for multiple years
+  const fetchAccumulationData = useCallback(async (yearsToFetch: number[]) => {
+    if (!apiaryCoords || yearsToFetch.length === 0) return
+
+    setAccumulationLoading(true)
+    try {
+      const { latitude, longitude } = apiaryCoords
+      const currentYear = new Date().getFullYear()
+      const todayDayOfYear = Math.floor((new Date().getTime() - new Date(currentYear, 0, 0).getTime()) / 86400000)
+
+      const results: YearlyAccumulation[] = []
+
+      for (const year of yearsToFetch) {
+        const isCurrentYear = year === currentYear
+        const startDate = `${year}-01-01`
+        const endDate = isCurrentYear
+          ? new Date().toISOString().split('T')[0]
+          : `${year}-12-31`
+
+        const response = await fetch(
+          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.daily?.temperature_2m_max && data.daily?.time) {
+            let cumulativeGDD = 0
+            const dataPoints: AccumulationDataPoint[] = []
+
+            for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
+              const tMax = data.daily.temperature_2m_max[i]
+              const tMin = data.daily.temperature_2m_min[i]
+              const dateStr = data.daily.time[i]
+
+              if (tMax !== null && tMin !== null && dateStr) {
+                const avgTemp = (tMax + tMin) / 2
+                if (avgTemp > 0) {
+                  const month = new Date(dateStr).getMonth() + 1
+                  let multiplier = 1.0
+                  if (month === 1) multiplier = 0.5
+                  else if (month === 2) multiplier = 0.75
+                  cumulativeGDD += avgTemp * multiplier
+                }
+
+                const dayOfYear = Math.floor((new Date(dateStr).getTime() - new Date(year, 0, 0).getTime()) / 86400000)
+
+                // For past years, only include up to same day as current year for fair comparison
+                if (!isCurrentYear && dayOfYear > todayDayOfYear) continue
+
+                dataPoints.push({
+                  date: dateStr,
+                  dayOfYear,
+                  gdd: Math.round(cumulativeGDD * 10) / 10,
+                })
+              }
+            }
+
+            results.push({ year, data: dataPoints })
+          }
+        }
+      }
+
+      setAccumulationData(results.sort((a, b) => a.year - b.year))
+    } catch (err) {
+      console.error('Failed to fetch accumulation data:', err)
+    } finally {
+      setAccumulationLoading(false)
+    }
+  }, [apiaryCoords])
+
+  // Fetch accumulation data when years change or chart type switches
+  useEffect(() => {
+    if (chartType === 'accumulation' && apiaryCoords && selectedAccumulationYears.length > 0) {
+      fetchAccumulationData(selectedAccumulationYears)
+    }
+  }, [chartType, apiaryCoords, selectedAccumulationYears, fetchAccumulationData])
 
   // Extract unique values for filters
   const { years, vegetationTypes, apiaries } = useMemo(() => {
@@ -150,7 +321,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     }
   }, [filteredRecords])
 
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -196,10 +367,126 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         },
       },
     },
-  }
+  }), [])
+
+  // Accumulation chart data
+  const accumulationChartData = useMemo(() => {
+    // Create labels for days of year (simplified to show months)
+    const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    // Create x-axis labels based on day of year (1-365)
+    // We'll use every 15th day for cleaner display
+    const labels: string[] = []
+    const dayNumbers: number[] = []
+    for (let day = 1; day <= 365; day += 7) {
+      const date = new Date(2024, 0, day) // Use 2024 as reference year
+      const month = date.getMonth()
+      const dayOfMonth = date.getDate()
+      labels.push(dayOfMonth === 1 || day === 1 ? monthLabels[month] : '')
+      dayNumbers.push(day)
+    }
+
+    const datasets = accumulationData.map((yearData, idx) => {
+      const colorIdx = idx % YEAR_COLORS.length
+      const isCurrentYear = yearData.year === currentYear
+
+      // Get the max day of year in this dataset
+      const maxDayInData = yearData.data.length > 0
+        ? Math.max(...yearData.data.map(d => d.dayOfYear))
+        : 0
+
+      // Map data points to chart x-axis positions
+      const chartData = dayNumbers.map(dayNum => {
+        // Don't show data beyond what we have
+        if (dayNum > maxDayInData) return null
+
+        const point = yearData.data.find(d => d.dayOfYear === dayNum)
+        if (point) return point.gdd
+
+        // Only interpolate within the data range
+        const nearest = yearData.data.reduce((prev, curr) =>
+          Math.abs(curr.dayOfYear - dayNum) < Math.abs(prev.dayOfYear - dayNum) ? curr : prev
+        , yearData.data[0])
+        return nearest?.gdd ?? null
+      })
+
+      return {
+        label: `${yearData.year}${isCurrentYear ? ' (Current)' : ''}`,
+        data: chartData,
+        borderColor: YEAR_COLORS[colorIdx].border,
+        backgroundColor: YEAR_COLORS[colorIdx].bg,
+        borderWidth: isCurrentYear ? 3 : 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.3,
+        fill: false,
+        spanGaps: false,
+      }
+    })
+
+    return {
+      labels,
+      datasets,
+    }
+  }, [accumulationData, currentYear])
+
+  const accumulationChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: 'GDD Accumulation Over Time',
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: { dataset: { label?: string }; parsed: { y: number | null } }) => {
+            const value = context.parsed.y
+            return `${context.dataset.label}: ${value !== null ? Math.round(value) + ' GDD' : 'No data'}`
+          },
+        },
+      },
+      datalabels: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Accumulated GDD',
+        },
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Month',
+        },
+        ticks: {
+          maxRotation: 0,
+        },
+      },
+    },
+  }), [])
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev =>
+      prev.includes(year)
+        ? prev.filter(y => y !== year)
+        : [...prev, year]
+    )
+  }
+
+  const toggleAccumulationYear = (year: number) => {
+    setSelectedAccumulationYears(prev =>
       prev.includes(year)
         ? prev.filter(y => y !== year)
         : [...prev, year]
@@ -258,8 +545,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         </div>
       </div>
 
-      {/* Filters */}
-      {records.length > 0 && (
+      {/* Filters - only show for vegetation chart and table views */}
+      {records.length > 0 && (viewMode === 'table' || (viewMode === 'chart' && chartType === 'vegetation')) && (
         <div className="bg-surface dark:bg-surface rounded-lg border border-border p-4">
           <div className="flex items-center gap-2 mb-3">
             <Filter size={16} className="text-text-secondary" />
@@ -335,14 +622,104 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       )}
 
       {/* Chart View */}
-      {viewMode === 'chart' && filteredRecords.length > 0 && (
+      {viewMode === 'chart' && (
         <div className="bg-surface dark:bg-surface rounded-lg border border-border p-4">
-          <div className="h-80">
-            <Bar data={chartData} options={chartOptions} />
+          {/* Chart Type Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <button
+                onClick={() => setChartType('accumulation')}
+                className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                  chartType === 'accumulation'
+                    ? 'bg-forest-600 text-white'
+                    : 'bg-surface text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <TrendingUp size={16} />
+                Accumulation
+              </button>
+              <button
+                onClick={() => setChartType('vegetation')}
+                className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                  chartType === 'vegetation'
+                    ? 'bg-forest-600 text-white'
+                    : 'bg-surface text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Flower2 size={16} />
+                Bloom GDD
+              </button>
+            </div>
+
+            {/* Year selector for accumulation chart */}
+            {chartType === 'accumulation' && apiaryCoords && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-text-secondary">Years:</span>
+                {availableAccumulationYears.map(year => (
+                  <button
+                    key={year}
+                    onClick={() => toggleAccumulationYear(year)}
+                    className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                      selectedAccumulationYears.includes(year)
+                        ? 'bg-forest-600 text-white'
+                        : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                    }`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <p className="text-xs text-text-tertiary mt-3 text-center">
-            Compare GDD values across years to see how bloom timing varies. Lower GDD = earlier bloom.
-          </p>
+
+          {/* Accumulation Chart */}
+          {chartType === 'accumulation' && (
+            <>
+              {!apiaryCoords ? (
+                <div className="h-80 flex items-center justify-center text-text-secondary">
+                  <p>No apiary with GPS coordinates found. Add coordinates to an apiary to see GDD accumulation.</p>
+                </div>
+              ) : accumulationLoading ? (
+                <div className="h-80 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-forest-600" size={32} />
+                </div>
+              ) : accumulationData.length === 0 ? (
+                <div className="h-80 flex items-center justify-center text-text-secondary">
+                  <p>Select at least one year to compare</p>
+                </div>
+              ) : (
+                <div className="h-80">
+                  <Line data={accumulationChartData} options={accumulationChartOptions} />
+                </div>
+              )}
+              <div className="mt-3 text-center">
+                <p className="text-xs text-text-tertiary">
+                  Compare how GDD accumulates throughout the year. Each line shows cumulative GDD from Jan 1.
+                  {currentGDD !== null && ` Current year: ${currentGDD} GDD as of today.`}
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Vegetation Bar Chart */}
+          {chartType === 'vegetation' && (
+            <>
+              {filteredRecords.length > 0 ? (
+                <div className="h-80">
+                  <Bar data={chartData} options={chartOptions} />
+                </div>
+              ) : (
+                <div className="h-80 flex items-center justify-center text-text-secondary">
+                  <p>No bloom GDD records found. Add records in the GDD Tracker tool.</p>
+                </div>
+              )}
+              <div className="mt-3 text-center">
+                <p className="text-xs text-text-tertiary">
+                  Compare GDD values across years to see how bloom timing varies. Lower GDD = earlier bloom.
+                </p>
+              </div>
+            </>
+          )}
         </div>
       )}
 
