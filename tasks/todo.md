@@ -1364,3 +1364,96 @@ Build: **Passed**
 
 ---
 
+## Session 17: Apiary Ownership Transfer - January 22, 2026
+
+### Task
+Allow apiary ownership to be transferred from the current owner to another user, either by the owner themselves or by an admin.
+
+### Todo Items
+
+#### Phase 1: Database
+- [x] Create RPC function `transfer_apiary_ownership` via Supabase MCP
+
+#### Phase 2: API
+- [x] Create `/api/users/list` endpoint for user selection dropdown
+
+#### Phase 3: Owner UI (Apiaries Page)
+- [x] Add transfer modal state and functions
+- [x] Add "Transfer Ownership" button in edit form
+- [x] Add transfer confirmation modal with user selection
+
+#### Phase 4: Admin UI (Settings Page)
+- [x] Add "Manage" link next to Apiaries count in user details
+- [x] Add Apiary Transfer Modal for admin
+
+#### Phase 5: Documentation
+- [x] Create `docs/features/apiary-ownership-transfer.md`
+
+### Verification Checklist
+- [ ] Owner can transfer their own apiary
+- [ ] Admin can transfer any user's apiary
+- [ ] Cannot transfer to non-existent/deleted user
+- [ ] Non-owner, non-admin cannot transfer
+
+### Review - Completed January 22, 2026
+
+#### Changes Made
+
+1. **Database Migration**
+   - Created RPC function `transfer_apiary_ownership(p_apiary_id, p_new_owner_id)`
+   - Uses `SECURITY DEFINER` to bypass RLS for the update
+   - Validates caller is owner OR admin
+   - Validates new owner exists and is not deleted
+
+2. **New API Endpoint**
+   - `src/app/api/users/list/route.ts` - Returns active users for transfer dropdown
+
+3. **Apiaries Page Updates** (`src/app/dashboard/apiaries/page.tsx`)
+   - Added state for transfer modal (`showTransferModal`, `transferTargetUser`, etc.)
+   - Added `fetchUsersForTransfer()` function
+   - Added `handleTransferOwnership()` function
+   - Added "Transfer Ownership" button in edit form (purple, with UserPlus icon)
+   - Added transfer confirmation modal with user dropdown
+
+4. **Settings Page Updates** (`src/app/dashboard/settings/page.tsx`)
+   - Added interfaces: `UserApiary`, `TransferUserOption`
+   - Added state for admin apiary transfer
+   - Added `openApiaryTransferModal()` function
+   - Added `handleAdminTransferApiary()` function
+   - Added "Manage" button next to Apiaries count in user details
+   - Added Admin Apiary Transfer Modal
+
+5. **Documentation**
+   - Created `docs/features/apiary-ownership-transfer.md`
+
+#### Files Modified
+
+| File | Changes |
+|------|---------|
+| Database (via MCP) | New RPC function `transfer_apiary_ownership` |
+| `src/app/api/users/list/route.ts` | NEW - Users list endpoint |
+| `src/app/dashboard/apiaries/page.tsx` | Transfer button, modal, handlers |
+| `src/app/dashboard/settings/page.tsx` | Admin "Manage" button and transfer modal |
+| `docs/features/apiary-ownership-transfer.md` | NEW - Feature documentation |
+
+#### Testing Required
+User should run `npm run build` to verify no TypeScript errors, then test:
+1. Edit an apiary and click "Transfer Ownership"
+2. Select a user and confirm
+3. As admin, go to User Management and click "Manage" on a user with apiaries
+4. Transfer an apiary to another user
+
+#### Bug Fixes Applied
+
+1. **Admin RLS Issue** - Admin couldn't see other users' apiaries due to RLS
+   - Created `/api/admin/user-apiaries` endpoint using service role
+   - Updated `openApiaryTransferModal()` to use new endpoint
+
+2. **Hives Not Transferred** - Hives remained with original owner
+   - Updated RPC function to also update `hives.user_id` for all hives in the apiary
+
+3. **Queens Not Transferred** - Queens assigned to hives remained with original owner
+   - Updated RPC function to also update `queens.user_id` for queens assigned to hives in the apiary
+
+---
+

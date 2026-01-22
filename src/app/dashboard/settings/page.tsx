@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon, BookOpen, BookText, Ruler, Lightbulb, Newspaper } from 'lucide-react'
+import { Plus, Edit2, Edit, Trash2, X, Save, Download, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Check, Hexagon, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, UserPlus, Loader2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager'
 import NewsArticlesManager from '@/components/admin/NewsArticlesManager'
@@ -89,6 +89,20 @@ interface RegistrationCode {
     jurisdiction: string
     county_area: string | null
   }
+}
+
+interface UserApiary {
+  id: string
+  name: string
+  city: string | null
+  hives_count?: number
+}
+
+interface TransferUserOption {
+  id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
 }
 
 interface SupportTicket {
@@ -215,6 +229,16 @@ export default function SettingsPage() {
   const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistoryRecord[]>([])
   const [, setLoadingHistory] = useState(false)
   const [subscriptionHistoryFetched, setSubscriptionHistoryFetched] = useState(false)
+
+  // Admin Apiary Transfer state
+  const [showApiaryTransferModal, setShowApiaryTransferModal] = useState(false)
+  const [selectedUserForTransfer, setSelectedUserForTransfer] = useState<UserProfile | null>(null)
+  const [userApiaries, setUserApiaries] = useState<UserApiary[]>([])
+  const [loadingApiaries, setLoadingApiaries] = useState(false)
+  const [transferTargetUsers, setTransferTargetUsers] = useState<TransferUserOption[]>([])
+  const [selectedApiaryId, setSelectedApiaryId] = useState<string>('')
+  const [selectedNewOwnerId, setSelectedNewOwnerId] = useState<string>('')
+  const [transferring, setTransferring] = useState(false)
 
   // Support Tickets state
   const [showTicketManagement, setShowTicketManagement] = useState(false)
@@ -759,6 +783,85 @@ export default function SettingsPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to impersonate user')
     } finally {
       setImpersonatingUserId(null)
+    }
+  }
+
+  // Open apiary transfer modal for a user
+  const openApiaryTransferModal = async (user: UserProfile) => {
+    setSelectedUserForTransfer(user)
+    setShowApiaryTransferModal(true)
+    setSelectedApiaryId('')
+    setSelectedNewOwnerId('')
+    setLoadingApiaries(true)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      // Fetch user's apiaries via admin endpoint (bypasses RLS)
+      const apiariesResponse = await fetch(`/api/admin/user-apiaries?userId=${user.id}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+
+      if (!apiariesResponse.ok) {
+        throw new Error('Failed to fetch apiaries')
+      }
+
+      const apiariesData = await apiariesResponse.json()
+      setUserApiaries(apiariesData.apiaries || [])
+
+      // Fetch available users for transfer
+      const response = await fetch('/api/users/list', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // Filter out the current user we're transferring FROM
+        setTransferTargetUsers(data.users.filter((u: TransferUserOption) => u.id !== user.id))
+      }
+    } catch (error) {
+      console.error('Error loading apiaries:', error)
+      toast.error('Failed to load apiaries')
+    } finally {
+      setLoadingApiaries(false)
+    }
+  }
+
+  // Handle admin apiary transfer
+  const handleAdminTransferApiary = async () => {
+    if (!selectedApiaryId || !selectedNewOwnerId || !selectedUserForTransfer) return
+
+    const apiary = userApiaries.find(a => a.id === selectedApiaryId)
+    const newOwner = transferTargetUsers.find(u => u.id === selectedNewOwnerId)
+    const newOwnerName = newOwner?.first_name && newOwner?.last_name
+      ? `${newOwner.first_name} ${newOwner.last_name}`
+      : newOwner?.email || 'the selected user'
+
+    if (!confirm(`Transfer "${apiary?.name}" to ${newOwnerName}?`)) return
+
+    setTransferring(true)
+    try {
+      const { error } = await supabase.rpc('transfer_apiary_ownership', {
+        p_apiary_id: selectedApiaryId,
+        p_new_owner_id: selectedNewOwnerId
+      })
+
+      if (error) throw error
+
+      toast.success(`Apiary transferred to ${newOwnerName}`)
+
+      // Remove transferred apiary from list
+      setUserApiaries(prev => prev.filter(a => a.id !== selectedApiaryId))
+      setSelectedApiaryId('')
+      setSelectedNewOwnerId('')
+
+      // Refresh user list to update counts
+      fetchUsers()
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Transfer failed'
+      toast.error(errorMessage)
+    } finally {
+      setTransferring(false)
     }
   }
 
@@ -3270,9 +3373,20 @@ export default function SettingsPage() {
                               {/* Apiaries Count */}
                               <div>
                                 <span className="text-text-tertiary block mb-1">Apiaries</span>
-                                <p className="text-foreground font-semibold text-lg">
-                                  {user.apiaries_count !== undefined ? user.apiaries_count : '−'}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-foreground font-semibold text-lg">
+                                    {user.apiaries_count !== undefined ? user.apiaries_count : '−'}
+                                  </p>
+                                  {user.apiaries_count !== undefined && user.apiaries_count > 0 && (
+                                    <button
+                                      onClick={() => openApiaryTransferModal(user)}
+                                      className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50 flex items-center gap-1"
+                                    >
+                                      <MapPin size={10} />
+                                      Manage
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
                               {/* Hives Count */}
@@ -4338,6 +4452,111 @@ export default function SettingsPage() {
       {activeSection === 'frame_standards' && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
           <FrameStandardsManager />
+        </div>
+      )}
+
+      {/* Admin Apiary Transfer Modal */}
+      {showApiaryTransferModal && selectedUserForTransfer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-xl max-w-lg w-full p-6 border border-border">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-foreground">
+                Manage Apiaries - {selectedUserForTransfer.first_name} {selectedUserForTransfer.last_name}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowApiaryTransferModal(false)
+                  setSelectedUserForTransfer(null)
+                }}
+                className="text-text-tertiary hover:text-foreground"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <p className="text-sm text-text-secondary mb-4">
+              Transfer apiaries owned by this user to another user.
+            </p>
+
+            {loadingApiaries ? (
+              <div className="flex items-center gap-2 text-text-tertiary py-4">
+                <Loader2 size={16} className="animate-spin" />
+                Loading apiaries...
+              </div>
+            ) : userApiaries.length === 0 ? (
+              <p className="text-text-tertiary py-4">This user has no apiaries.</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Select Apiary to Transfer
+                  </label>
+                  <select
+                    value={selectedApiaryId}
+                    onChange={(e) => setSelectedApiaryId(e.target.value)}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500"
+                  >
+                    <option value="">Select an apiary...</option>
+                    {userApiaries.map((apiary) => (
+                      <option key={apiary.id} value={apiary.id}>
+                        {apiary.name} {apiary.city ? `(${apiary.city})` : ''} - {apiary.hives_count || 0} hives
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Transfer To
+                  </label>
+                  <select
+                    value={selectedNewOwnerId}
+                    onChange={(e) => setSelectedNewOwnerId(e.target.value)}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500"
+                    disabled={!selectedApiaryId}
+                  >
+                    <option value="">Select new owner...</option>
+                    {transferTargetUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.first_name && user.last_name
+                          ? `${user.first_name} ${user.last_name} (${user.email})`
+                          : user.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-3 justify-end pt-4">
+                  <button
+                    onClick={() => {
+                      setShowApiaryTransferModal(false)
+                      setSelectedUserForTransfer(null)
+                    }}
+                    className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={handleAdminTransferApiary}
+                    disabled={!selectedApiaryId || !selectedNewOwnerId || transferring}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {transferring ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Transferring...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus size={16} />
+                        Transfer
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

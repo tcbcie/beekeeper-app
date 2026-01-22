@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 
@@ -39,6 +39,13 @@ interface FormData {
   share_location: boolean
 }
 
+interface UserOption {
+  id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+}
+
 export default function ApiariesPage() {
   const toast = useToast()
   const [apiaries, setApiaries] = useState<Apiary[]>([])
@@ -60,6 +67,13 @@ export default function ApiariesPage() {
   })
   const [geocoding, setGeocoding] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
+
+  // Transfer ownership state
+  const [showTransferModal, setShowTransferModal] = useState(false)
+  const [transferTargetUser, setTransferTargetUser] = useState<string>('')
+  const [availableUsers, setAvailableUsers] = useState<UserOption[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [transferring, setTransferring] = useState(false)
 
   // Geocode eircode/postcode to get coordinates
   const geocodeAddress = async (eircode: string, city: string, isUkNi: boolean) => {
@@ -277,6 +291,73 @@ export default function ApiariesPage() {
     })
   }
 
+  // Fetch users for transfer dropdown
+  const fetchUsersForTransfer = async () => {
+    setLoadingUsers(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const response = await fetch('/api/users/list', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Filter out current user
+        setAvailableUsers(data.users.filter((u: UserOption) => u.id !== userId))
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      toast.error('Failed to load users')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  // Handle opening transfer modal
+  const openTransferModal = () => {
+    setShowTransferModal(true)
+    setTransferTargetUser('')
+    fetchUsersForTransfer()
+  }
+
+  // Handle transfer ownership
+  const handleTransferOwnership = async () => {
+    if (!editingApiary || !transferTargetUser) return
+
+    const selectedUser = availableUsers.find(u => u.id === transferTargetUser)
+    const userName = selectedUser?.first_name && selectedUser?.last_name
+      ? `${selectedUser.first_name} ${selectedUser.last_name}`
+      : selectedUser?.email || 'this user'
+
+    if (!confirm(`Are you sure you want to transfer "${editingApiary.name}" to ${userName}?\n\nYou will lose access to this apiary and all its hives.`)) {
+      return
+    }
+
+    setTransferring(true)
+    try {
+      const { error } = await supabase.rpc('transfer_apiary_ownership', {
+        p_apiary_id: editingApiary.id,
+        p_new_owner_id: transferTargetUser
+      })
+
+      if (error) throw error
+
+      toast.success(`Apiary transferred to ${userName}`)
+      setShowTransferModal(false)
+      resetForm()
+      fetchApiaries()
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Transfer failed'
+      toast.error(errorMessage)
+    } finally {
+      setTransferring(false)
+    }
+  }
+
   if (loading) return <LoadingSpinner text="Loading apiaries..." />
 
   return (
@@ -458,15 +539,93 @@ export default function ApiariesPage() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <button type="submit" className="px-6 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 min-h-[48px]">
                 {editingApiary ? 'Update' : 'Add'} Apiary
               </button>
               <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[48px]">
                 Cancel
               </button>
+              {editingApiary && (
+                <button
+                  type="button"
+                  onClick={openTransferModal}
+                  className="px-6 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 min-h-[48px] flex items-center gap-2 border border-purple-300 dark:border-purple-800"
+                >
+                  <UserPlus size={16} />
+                  Transfer Ownership
+                </button>
+              )}
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Transfer Ownership Modal */}
+      {showTransferModal && editingApiary && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-xl max-w-md w-full p-6 border border-border">
+            <h3 className="text-xl font-semibold mb-4 text-foreground">Transfer Apiary Ownership</h3>
+
+            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                <strong>Warning:</strong> Transferring &quot;{editingApiary.name}&quot; will give the new owner full control. You will lose access to this apiary and all its hives.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Select New Owner
+              </label>
+              {loadingUsers ? (
+                <div className="flex items-center gap-2 text-text-tertiary">
+                  <Loader2 size={16} className="animate-spin" />
+                  Loading users...
+                </div>
+              ) : (
+                <select
+                  value={transferTargetUser}
+                  onChange={(e) => setTransferTargetUser(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                >
+                  <option value="">Select a user...</option>
+                  {availableUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.first_name && user.last_name
+                        ? `${user.first_name} ${user.last_name} (${user.email})`
+                        : user.email}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowTransferModal(false)}
+                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTransferOwnership}
+                disabled={!transferTargetUser || transferring}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {transferring ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Transferring...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={16} />
+                    Transfer
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
