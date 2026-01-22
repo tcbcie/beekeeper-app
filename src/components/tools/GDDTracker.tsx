@@ -36,8 +36,12 @@ interface GDDTrackerProps {
   userId: string
 }
 
-// Base temperature for GDD calculation (6°C - standard for Irish phenology)
-const BASE_TEMP = 6
+// GDD seasonal multipliers to account for reduced growth contribution in winter
+const getSeasonalMultiplier = (month: number): number => {
+  if (month === 1) return 0.5
+  if (month === 2) return 0.75
+  return 1.0
+}
 
 type SortColumn = 'year' | 'start_date' | 'gdd_value'
 type SortDirection = 'asc' | 'desc'
@@ -125,20 +129,24 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       )
       const data = await response.json()
 
-      if (!data.daily || !data.daily.temperature_2m_max) {
+      if (!data.daily || !data.daily.temperature_2m_max || !data.daily.time) {
         toast.error('Could not fetch weather data for the selected date range')
         return
       }
 
-      // Calculate GDD: sum of max(0, (Tmax + Tmin) / 2 - Tbase)
+      // GDD with seasonal multipliers (Jan: 0.5, Feb: 0.75, Mar-Dec: 1.0)
       let totalGDD = 0
       for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
         const tMax = data.daily.temperature_2m_max[i]
         const tMin = data.daily.temperature_2m_min[i]
-        if (tMax !== null && tMin !== null) {
+        const dateStr = data.daily.time[i]
+        if (tMax !== null && tMin !== null && dateStr) {
           const avgTemp = (tMax + tMin) / 2
-          const dailyGDD = Math.max(0, avgTemp - BASE_TEMP)
-          totalGDD += dailyGDD
+          if (avgTemp > 0) {
+            const month = new Date(dateStr).getMonth() + 1 // 1-12
+            const multiplier = getSeasonalMultiplier(month)
+            totalGDD += avgTemp * multiplier
+          }
         }
       }
 
@@ -601,7 +609,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
 
       {/* Legend */}
       <div className="text-xs text-text-tertiary">
-        <p>Cumulative GDD from Jan 1st to bloom start date. Base temp: {BASE_TEMP}°C. Formula: GDD = Σ max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2 - {BASE_TEMP})</p>
+        <p>Cumulative GDD from Jan 1st to bloom date using seasonal multipliers (Jan: ×0.5, Feb: ×0.75, Mar-Dec: ×1.0).</p>
       </div>
     </div>
   )

@@ -1457,3 +1457,107 @@ User should run `npm run build` to verify no TypeScript errors, then test:
 
 ---
 
+## Session 18: Add Real-Time GDD to Scale Cards - January 22, 2026
+
+### Task
+Calculate and display the current GDD (Growing Degree Days) on scale cards in real-time. GDD is calculated from January 1st to today using the Open-Meteo Archive API.
+
+### Todo Items
+- [x] Add `gddValue` state
+- [x] Add Sprout icon import
+- [x] Add `calculateGDD()` function
+- [x] Add useEffect to call calculateGDD when lat/lon available
+- [x] Display GDD in sensor row with green Sprout icon
+
+### Implementation Details
+
+**GDD Formula:**
+- Base Temperature: 6°C (Irish phenology standard)
+- Formula: `GDD = Σ max(0, (Tmax + Tmin) / 2 - 6)`
+- Period: January 1st → Today
+
+**API Call:**
+```
+https://archive-api.open-meteo.com/v1/archive?
+  latitude={lat}&longitude={lon}&
+  start_date={jan1}&end_date={today}&
+  daily=temperature_2m_max,temperature_2m_min&
+  timezone=Europe/Dublin
+```
+
+### Files Modified
+- `src/components/research/HiveScaleCard.tsx` - Added GDD calculation and display
+
+### Review - Completed January 22, 2026
+
+#### Changes Made
+
+1. **Added Sprout Icon Import**
+   - Added `Sprout` to lucide-react imports for the GDD indicator
+
+2. **Added GDD State**
+   - Added `gddValue: number | null` state variable
+
+3. **Added GDD Calculation useEffect**
+   - Triggers when apiary latitude/longitude are available
+   - Fetches daily temperature data from Open-Meteo Archive API (Jan 1 → today)
+   - Calculates cumulative GDD using formula: `max(0, (Tmax + Tmin) / 2 - 6)`
+   - Stores rounded result to 1 decimal place
+
+4. **Added GDD Display**
+   - Shows in sensor row after battery percentage
+   - Green Sprout icon with GDD value
+   - Tooltip: "Growing Degree Days (Jan 1 to today)"
+
+#### Graceful Fallbacks
+- If apiary has no GPS coordinates, GDD is not displayed (no error)
+- If API call fails, error is logged but card continues to function
+- GDD only shown when value is successfully calculated
+
+#### Testing Required
+User should run `npm run build` and then test:
+1. View Scale Overview in Research section
+2. Cards with apiaries that have GPS coordinates should show GDD
+3. Cards without GPS coordinates should not show GDD (no error)
+
+---
+
+### Update: Wolf Waagen GDD Method - January 22, 2026
+
+#### Analysis Performed
+Compared app GDD calculation with Wolf Waagen scale export data for the same location:
+- App (old method): 4.7 GDD as of Jan 22
+- Wolf Waagen: 43.8 GDD as of Jan 22
+
+#### Discovery
+Wolf Waagen uses a **seasonal multiplier system**, not a fixed base temperature:
+
+| Month | Multiplier | Formula |
+|-------|------------|---------|
+| January | 0.5 | `daily_gdd = max(0, avg_temp) × 0.5` |
+| February | 0.75 | `daily_gdd = max(0, avg_temp) × 0.75` |
+| March-December | 1.0 | `daily_gdd = max(0, avg_temp)` |
+
+Base temperature = 0°C (only negative temps excluded)
+
+#### Changes Made
+
+1. **HiveScaleCard.tsx** - Updated GDD calculation:
+   - Removed 6°C base temperature
+   - Added seasonal multipliers (Jan: 0.5, Feb: 0.75, Mar-Dec: 1.0)
+   - Base temp now 0°C (only excludes negative avg temps)
+
+2. **GDDTracker.tsx** - Updated GDD calculation:
+   - Replaced `BASE_TEMP = 6` constant with `getSeasonalMultiplier()` function
+   - Updated calculateGDD function to use Wolf method
+   - Updated legend text to describe new formula
+
+#### Files Modified
+- `src/components/research/HiveScaleCard.tsx`
+- `src/components/tools/GDDTracker.tsx`
+
+#### Expected Result
+GDD values should now closely match Wolf Waagen GTS values for the same location and date range.
+
+---
+
