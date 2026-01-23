@@ -76,6 +76,7 @@ export default function RecordsPage() {
     apiaries,
     checkMethodOptions,
     feedTypeOptions,
+    floralSourceOptions,
     treatmentProducts,
     archiveReasons,
     applicationMethods,
@@ -703,6 +704,7 @@ export default function RecordsPage() {
         wax_weight: harvest.wax_weight,
         unit: harvest.unit,
         frames_harvested: harvest.frames_harvested,
+        floral_source: harvest.floral_source,
         notes: harvest.notes || ''
       }
 
@@ -988,6 +990,7 @@ export default function RecordsPage() {
                 harvest={editingHarvest}
                 hives={hives}
                 apiaries={apiaries}
+                floralSourceOptions={floralSourceOptions}
                 onSubmit={handleHarvestSubmit}
                 onCancel={resetForm}
               />

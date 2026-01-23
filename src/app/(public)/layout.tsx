@@ -26,9 +26,9 @@ export default function PublicLayout({
             </Link>
             <Link
               href="/login"
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full hover:from-amber-600 hover:to-amber-700 transition-all text-sm font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40"
+              className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
             >
-              Sign In
+              Beekeeper Login
             </Link>
           </nav>
         </div>

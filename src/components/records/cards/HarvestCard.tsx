@@ -89,6 +89,12 @@ export default function HarvestCard({
               <span className="font-medium text-foreground">{harvest.frames_harvested}</span>
             </span>
           )}
+          {harvest.floral_source && (
+            <span>
+              <span className="text-text-tertiary">Floral:</span>{' '}
+              <span className="font-medium text-foreground">{harvest.floral_source}</span>
+            </span>
+          )}
         </div>
       </div>
 
