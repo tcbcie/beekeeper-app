@@ -306,22 +306,29 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     // Get years present in filtered data (sort numerically)
     const chartYears = [...new Set(filteredRecords.map(r => r.year))].sort((a, b) => a - b)
 
-    // Create a map of year+vegIndex -> date for the datalabels formatter
+    // Create a map of datasetIndex-vegIndex -> date for the datalabels formatter
+    // Build dates map first by iterating all records
     const dates: Record<string, string> = {}
+
+    filteredRecords.forEach(record => {
+      if (record.start_date && record.dropdown_values?.value) {
+        const yearIdx = chartYears.indexOf(Number(record.year))
+        const vegIdx = vegTypes.indexOf(record.dropdown_values.value)
+        if (yearIdx !== -1 && vegIdx !== -1) {
+          const date = new Date(record.start_date)
+          const day = date.getDate()
+          const month = date.toLocaleDateString('en-GB', { month: 'short' })
+          dates[`${yearIdx}-${vegIdx}`] = `${day} ${month}`
+        }
+      }
+    })
 
     const datasets = chartYears.map((year, idx) => {
       const colorIdx = idx % YEAR_COLORS.length
       return {
         label: String(year),
-        data: vegTypes.map((veg, vegIdx) => {
-          const record = filteredRecords.find(r => r.dropdown_values?.value === veg && r.year === year)
-          if (record?.start_date) {
-            // Format date as "D MMM" (e.g., "15 Apr")
-            const date = new Date(record.start_date)
-            const day = date.getDate()
-            const month = date.toLocaleDateString('en-GB', { month: 'short' })
-            dates[`${idx}-${vegIdx}`] = `${day} ${month}`
-          }
+        data: vegTypes.map((veg) => {
+          const record = filteredRecords.find(r => r.dropdown_values?.value === veg && Number(r.year) === year)
           // Parse gdd_value as number (comes as string from NUMERIC type)
           return record?.gdd_value !== null && record?.gdd_value !== undefined
             ? Number(record.gdd_value)
