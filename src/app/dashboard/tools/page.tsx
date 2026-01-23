@@ -108,7 +108,7 @@ export default function ToolsPage() {
     { id: 'gdd' as const, label: 'GDD', icon: Thermometer },
     { id: 'diagnosis' as const, label: 'Diagnosis', icon: Camera },
     { id: 'profitloss' as const, label: 'P&L', icon: Wallet },
-    { id: 'traceability' as const, label: 'Traceability', icon: Package },
+    { id: 'traceability' as const, label: 'Provenance', icon: Package },
   ]
 
   return (

@@ -436,7 +436,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Package size={24} className="text-forest-600 dark:text-forest-400" />
-          <h2 className="text-xl font-semibold text-foreground">Traceability</h2>
+          <h2 className="text-xl font-semibold text-foreground">Honey Provenance</h2>
         </div>
         <button
           onClick={() => activeTab === 'containers' ? setShowContainerForm(true) : setShowBatchForm(true)}
