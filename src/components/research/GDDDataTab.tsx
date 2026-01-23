@@ -290,7 +290,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   }, [records, selectedYears, selectedVegetation, selectedApiary])
 
   // Prepare chart data - group by vegetation, compare years
-  const chartData = useMemo(() => {
+  const { chartData, dateMap } = useMemo(() => {
     // Get all vegetation types in filtered records
     const vegTypes = [...new Set(filteredRecords.map(r => r.dropdown_values?.value).filter(Boolean))] as string[]
 
@@ -306,12 +306,22 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     // Get years present in filtered data (sort numerically)
     const chartYears = [...new Set(filteredRecords.map(r => r.year))].sort((a, b) => a - b)
 
+    // Create a map of year+vegIndex -> date for the datalabels formatter
+    const dates: Record<string, string> = {}
+
     const datasets = chartYears.map((year, idx) => {
       const colorIdx = idx % YEAR_COLORS.length
       return {
         label: String(year),
-        data: vegTypes.map(veg => {
+        data: vegTypes.map((veg, vegIdx) => {
           const record = filteredRecords.find(r => r.dropdown_values?.value === veg && r.year === year)
+          if (record?.start_date) {
+            // Format date as "D MMM" (e.g., "15 Apr")
+            const date = new Date(record.start_date)
+            const day = date.getDate()
+            const month = date.toLocaleDateString('en-GB', { month: 'short' })
+            dates[`${idx}-${vegIdx}`] = `${day} ${month}`
+          }
           // Parse gdd_value as number (comes as string from NUMERIC type)
           return record?.gdd_value !== null && record?.gdd_value !== undefined
             ? Number(record.gdd_value)
@@ -324,8 +334,11 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     })
 
     return {
-      labels: vegTypes,
-      datasets,
+      chartData: {
+        labels: vegTypes,
+        datasets,
+      },
+      dateMap: dates,
     }
   }, [filteredRecords])
 
@@ -351,13 +364,18 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       datalabels: {
         anchor: 'end' as const,
         align: 'top' as const,
-        formatter: (value: number | null) => value !== null ? value.toFixed(1) : '',
+        formatter: (value: number | null, context: { datasetIndex: number; dataIndex: number }) => {
+          if (value === null) return ''
+          const date = dateMap[`${context.datasetIndex}-${context.dataIndex}`]
+          return date ? `${value.toFixed(1)}\n${date}` : value.toFixed(1)
+        },
         font: {
-          size: 10,
+          size: 9,
           weight: 'bold' as const,
         },
         color: '#374151',
         display: 'auto' as const,
+        textAlign: 'center' as const,
       },
     },
     scales: {
@@ -375,7 +393,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         },
       },
     },
-  }), [])
+  }), [dateMap])
 
   // Accumulation chart data
   const accumulationChartData = useMemo(() => {
