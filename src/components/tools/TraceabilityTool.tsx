@@ -587,7 +587,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                           <span className="text-text-secondary ml-2">• {harvest.apiary_name}</span>
                         )}
                         <span className="text-text-secondary ml-2">
-                          • {harvest.honey_weight || 0} {harvest.unit}
+                          • {harvest.honey_weight || 0} {harvest.unit || 'kg'}
                         </span>
                         {harvest.already_linked && (
                           <span className="text-amber-600 ml-2">(already linked)</span>
