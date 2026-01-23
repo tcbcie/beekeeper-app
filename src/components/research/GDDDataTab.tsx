@@ -351,7 +351,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       },
       title: {
         display: true,
-        text: 'GDD Values by Vegetation Type',
+        text: 'Phenology - GDD at First Bloom',
       },
       tooltip: {
         callbacks: {
@@ -673,7 +673,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 }`}
               >
                 <Flower2 size={16} />
-                Bloom GDD
+                Phenology
               </button>
             </div>
 
