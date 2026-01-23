@@ -1727,3 +1727,44 @@ User should run `npm run build` and then test:
 
 ---
 
+### Enhancement: QR Code Generation - January 23, 2026
+
+Added in-app QR code generation for batch codes.
+
+#### Changes Made
+
+1. **Installed qrcode.react** - Lightweight QR code library
+
+2. **Updated TraceabilityTool.tsx**
+   - Added QrCode and Download icons from lucide-react
+   - Added QRCodeSVG component from qrcode.react
+   - Added `qrBatch` state to track which batch's QR to show
+   - Added `getTraceUrl()` helper to build trace URL
+   - Added `downloadQrCode()` function to export QR as PNG
+   - Added QR button to batch cards (only for public batches)
+   - Added QR modal with:
+     - Batch code display
+     - QR code (200x200px, high error correction)
+     - Full URL text
+     - Download PNG button
+
+3. **Updated documentation** (`docs/features/honey-traceability.md`)
+   - Documented QR code generation feature
+
+#### Files Modified
+
+| File | Changes |
+|------|---------|
+| `package.json` | Added qrcode.react dependency |
+| `src/components/tools/TraceabilityTool.tsx` | Added QR code modal and download |
+| `docs/features/honey-traceability.md` | Updated QR code section |
+
+#### Testing Required
+1. Go to Tools → Honey Provenance → Batches
+2. Click QR icon on a public batch
+3. Verify QR code displays correctly
+4. Click "Download PNG" - should download qr-{batch_code}.png
+5. Scan QR code with phone - should open trace page
+
+---
+

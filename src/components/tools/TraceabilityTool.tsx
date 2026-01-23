@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Package, Milk, Plus, X, Edit2, Trash2, Check } from 'lucide-react'
+import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
 import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
@@ -37,6 +38,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const [batches, setBatches] = useState<BatchRun[]>([])
   const [showBatchForm, setShowBatchForm] = useState(false)
   const [editingBatch, setEditingBatch] = useState<BatchRun | null>(null)
+  const [qrBatch, setQrBatch] = useState<BatchRun | null>(null)
   const [batchForm, setBatchForm] = useState<BatchFormData>({
     batch_date: formatDateForInput(new Date()),
     total_weight_kg: '',
@@ -428,6 +430,38 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const getContainerOrigins = (container: BulkContainer): OriginPercentage[] => {
     if (!container.harvests) return []
     return calculateOriginPercentages(container.harvests)
+  }
+
+  // Get trace URL for a batch
+  const getTraceUrl = (batchCode: string) => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.hivecraic.com'
+    return `${baseUrl}/trace/${batchCode}`
+  }
+
+  // Download QR code as PNG
+  const downloadQrCode = (batchCode: string) => {
+    const svg = document.getElementById('qr-code-svg')
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx?.drawImage(img, 0, 0)
+      const pngUrl = canvas.toDataURL('image/png')
+      const downloadLink = document.createElement('a')
+      downloadLink.href = pngUrl
+      downloadLink.download = `qr-${batchCode}.png`
+      document.body.appendChild(downloadLink)
+      downloadLink.click()
+      document.body.removeChild(downloadLink)
+    }
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
   }
 
   return (
@@ -933,6 +967,15 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     </div>
 
                     <div className="flex gap-2">
+                      {batch.is_public && (
+                        <button
+                          onClick={() => setQrBatch(batch)}
+                          className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 rounded-lg transition-colors"
+                          title="QR Code"
+                        >
+                          <QrCode size={18} />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEditBatch(batch)}
                         className="p-2 hover:bg-surface rounded-lg transition-colors"
@@ -953,6 +996,51 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               )
             })
           )}
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {qrBatch && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-elevated rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">QR Code</h3>
+              <button
+                onClick={() => setQrBatch(null)}
+                className="p-2 hover:bg-surface rounded-lg"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-text-secondary mb-4">
+                Scan to trace batch <span className="font-mono font-semibold">{qrBatch.batch_code}</span>
+              </p>
+
+              <div className="bg-white p-4 rounded-xl inline-block mb-4">
+                <QRCodeSVG
+                  id="qr-code-svg"
+                  value={getTraceUrl(qrBatch.batch_code)}
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+
+              <p className="text-xs text-text-secondary mb-4 break-all">
+                {getTraceUrl(qrBatch.batch_code)}
+              </p>
+
+              <button
+                onClick={() => downloadQrCode(qrBatch.batch_code)}
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+              >
+                <Download size={18} />
+                Download PNG
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
