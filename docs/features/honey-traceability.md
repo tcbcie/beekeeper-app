@@ -105,6 +105,9 @@ The system automatically generates the next sequential number for each month.
 | best_before_date | DATE | Best before date |
 | notes | TEXT | Optional notes |
 | is_public | BOOLEAN | Allow public lookup |
+| public_title | TEXT | Custom title for public display |
+| public_origin | TEXT | Custom origin text for public display |
+| public_story | TEXT | Custom story text for public display |
 
 **batch_containers** (junction table)
 | Column | Type | Description |
@@ -202,8 +205,9 @@ To use:
 ### January 23, 2026
 - Added `jar_weight_g` field for EU net weight compliance
 - Added `floral_source` field to harvests (database-driven dropdown from dropdown_values table)
+- Changed harvest floral source label to "Predominant Floral Source (>50%)"
 - Redesigned trace page with story-driven layout
 - Added beekeeper name display from profiles
-- Added optional map display (when share_location enabled)
+- Added optional map display using OpenStreetMap iframe embed (when share_location enabled)
 - Changed public header "Sign In" to subtle "Beekeeper Login" text link
 - Added editable public display fields (public_title, public_origin, public_story)
