@@ -162,13 +162,19 @@ The `get_public_batch_info(batch_code)` function:
 3. Calculates origin percentages based on harvest weights
 4. Returns consumer-safe JSON or NULL
 
-### QR Code Usage
+### QR Code Generation
 
-Generate QR codes pointing to `https://www.hivecraic.com/trace/{batch_code}` for your jar labels.
+Each public batch has a QR code button that opens a modal with:
+- Scannable QR code linking to the trace page
+- The full URL displayed below the code
+- **Download PNG** button to save the QR code for printing on jar labels
+
+To use:
+1. Go to **Tools → Honey Provenance → Batches**
+2. Click the QR icon on any public batch
+3. Download the PNG and add it to your jar labels
 
 ## Future Enhancements
-
-- **QR Code Generation** - Generate QR codes for jar labels in-app
 - **PDF Label Export** - Export printable labels with batch info
 - **External Honey Blending** - Track imported honey with manual country-of-origin
 - **Floral Source Tracking** - Record vegetation/nectar types
