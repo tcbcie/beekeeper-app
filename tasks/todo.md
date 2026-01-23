@@ -1727,6 +1727,100 @@ User should run `npm run build` and then test:
 
 ---
 
+## Session 21: Improve Public Honey Batch Trace Page - January 23, 2026
+
+### Task
+Transform the public trace page from "data-heavy" to "story-heavy" to build consumer trust and meet EU compliance requirements.
+
+### Todo Items
+
+#### Phase 1: Database Migrations
+- [x] 1.1 Add `jar_weight_g` column to `batch_runs` table
+- [x] 1.2 Add `floral_source` column to `harvests` table
+
+#### Phase 2: Update Database Function
+- [x] 2.1 Update `get_public_batch_info()` to return:
+  - jar_weight_g
+  - beekeeper_name (from profiles)
+  - floral_sources (aggregated from harvests)
+  - map_data (lat/lon fuzzed if share_location=true)
+
+#### Phase 3: Update Trace Page UI
+- [x] 3.1 Redesign trace page with story-driven layout
+
+#### Phase 4: Update Public Layout Header
+- [x] 4.1 Change "Sign In" from amber button to subtle text link
+
+#### Phase 5: Update TraceabilityTool Form
+- [x] 5.1 Add `jar_weight_g` input field to batch form
+- [x] 5.2 Update BatchFormData and BatchRun types
+
+#### Phase 6: Documentation
+- [x] 6.1 Update honey traceability documentation
+
+### Review - Completed January 23, 2026
+
+#### Changes Made
+
+1. **Database Migrations**
+   - Added `jar_weight_g` INTEGER column to `batch_runs` table
+   - Added `floral_source` TEXT column to `harvests` table
+
+2. **Database Function Update** (`get_public_batch_info`)
+   - Now returns `jar_weight_g` for net weight display
+   - Gets `beekeeper_name` from profiles (first_name or full_name)
+   - Aggregates unique `floral_sources` from linked harvests
+   - Includes `latitude`, `longitude`, and `show_map` for each origin (fuzzed by ±0.01°)
+
+3. **Trace Page Redesign** (`src/app/(public)/trace/[batchCode]/page.tsx`)
+   - New hero section with "Pure Irish Honey" title and origin headline
+   - Story section with beekeeper name and floral sources
+   - Optional map thumbnail when share_location is enabled (using OpenStreetMap static tiles)
+   - Net weight displayed in grams (EU compliance)
+   - Batch code de-emphasized in footer
+   - "Traced from hive to jar" verification badge
+
+4. **Public Layout Header** (`src/app/(public)/layout.tsx`)
+   - Changed "Sign In" button from prominent amber gradient to subtle text link
+   - Renamed to "Beekeeper Login" for clarity
+
+5. **TraceabilityTool Updates** (`src/components/tools/TraceabilityTool.tsx`)
+   - Added "Net Weight (g)" input field to batch form
+   - Updated form handlers and display
+
+6. **Type Updates** (`src/types/traceability.ts`)
+   - Added `jar_weight_g` to `BatchRun` interface
+   - Added `jar_weight_g` to `BatchFormData` interface
+
+7. **Documentation** (`docs/features/honey-traceability.md`)
+   - Updated with new fields and story-driven design
+   - Added changelog entry
+
+#### Files Modified
+
+| File | Action | Description |
+|------|--------|-------------|
+| Database: `batch_runs` | MIGRATION | Added jar_weight_g column |
+| Database: `harvests` | MIGRATION | Added floral_source column |
+| Database: `get_public_batch_info()` | MIGRATION | Updated to return new fields |
+| `src/app/(public)/trace/[batchCode]/page.tsx` | MODIFIED | Redesigned with story layout |
+| `src/app/(public)/layout.tsx` | MODIFIED | De-emphasized Sign In |
+| `src/components/tools/TraceabilityTool.tsx` | MODIFIED | Added jar_weight_g field |
+| `src/types/traceability.ts` | MODIFIED | Added jar_weight_g to types |
+| `docs/features/honey-traceability.md` | MODIFIED | Updated documentation |
+
+#### Testing Required
+User should run `npm run build` and then test:
+1. Create/edit a batch with Net Weight (g) field
+2. Navigate to `/trace/{batch_code}` with a valid public batch
+3. Verify story section displays beekeeper name and floral sources
+4. If apiary has share_location=true and coordinates, verify map shows
+5. Test mobile viewport responsiveness
+6. Verify dark mode styling
+7. Confirm "Beekeeper Login" is now subtle text link in header
+
+---
+
 ### Enhancement: QR Code Generation - January 23, 2026
 
 Added in-app QR code generation for batch codes.
