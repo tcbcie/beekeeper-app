@@ -122,14 +122,53 @@ The system automatically generates the next sequential number for each month.
 | File | Description |
 |------|-------------|
 | `src/app/dashboard/traceability/page.tsx` | Main page with Containers and Batches tabs |
+| `src/app/(public)/trace/[batchCode]/page.tsx` | Public consumer batch lookup page |
 | `src/types/traceability.ts` | TypeScript type definitions |
 | `src/lib/batch-code.ts` | Batch code generation utilities |
 | `src/lib/traceability-utils.ts` | Origin calculation utilities |
+| Database: `get_public_batch_info()` | RPC function for public batch lookup |
 
-## Future Enhancements (Phase 2+)
+## Public Consumer Lookup
 
-- **Public Consumer Page** - `/trace/[batchCode]` for "Meet Your Bees" lookup
-- **QR Code Generation** - Generate QR codes for jar labels
+Consumers can look up batch information by scanning a QR code or entering the batch code from their jar label.
+
+### URL Format
+
+```
+https://www.hivecraic.com/trace/L-2026-01-001
+```
+
+### Consumer View
+
+When a consumer visits the trace page, they see:
+- **Batch Code** - Prominently displayed in amber banner
+- **Bottled Date** - When the honey was jarred
+- **Best Before Date** - Expiry date
+- **Jar Size** - Size in milliliters
+- **Origin Percentages** - Where the honey came from (e.g., "60% Cork, 40% Kerry")
+
+### Privacy & Security
+
+- Only batches marked as **Public** (`is_public = true`) are visible
+- Non-existent and non-public batches show the same "Batch Not Found" message (prevents enumeration)
+- No user IDs, notes, GPS coordinates, or sensitive data is exposed
+- Database function uses `SECURITY DEFINER` to safely bypass RLS
+
+### Database Function
+
+The `get_public_batch_info(batch_code)` function:
+1. Validates the batch exists and is public
+2. Traverses the traceability chain: `batch_runs` → `batch_containers` → `bulk_containers` → `container_harvests` → `harvests` → `hives` → `apiaries`
+3. Calculates origin percentages based on harvest weights
+4. Returns consumer-safe JSON or NULL
+
+### QR Code Usage
+
+Generate QR codes pointing to `https://www.hivecraic.com/trace/{batch_code}` for your jar labels.
+
+## Future Enhancements
+
+- **QR Code Generation** - Generate QR codes for jar labels in-app
 - **PDF Label Export** - Export printable labels with batch info
 - **External Honey Blending** - Track imported honey with manual country-of-origin
 - **Floral Source Tracking** - Record vegetation/nectar types

@@ -1653,3 +1653,77 @@ GDD values should now closely match Wolf Waagen GTS values for the same location
 
 ---
 
+## Session 20: Public Consumer Honey Batch Lookup - January 23, 2026
+
+### Task
+Create a public page at `/trace/[batchCode]` where consumers can look up honey batch information by scanning a QR code or entering the batch code from their jar label.
+
+### Current State
+- `batch_runs` table has `is_public` boolean field (defaults to true)
+- `batch_code` format: L-YYYY-MM-NNN (EU-compliant)
+- Full traceability chain exists: batch_runs → batch_containers → bulk_containers → container_harvests → harvests → hives → apiaries
+- Public pages use `(public)` route group with shared layout
+- `isValidBatchCode()` function exists in `src/lib/batch-code.ts`
+
+### Todo Items
+
+#### Step 1: Database Function
+- [x] Create `get_public_batch_info(batch_code)` PostgreSQL function via Supabase MCP
+  - Returns batch info only if `is_public = true`
+  - Calculates origin percentages from linked harvests/apiaries
+  - Returns NULL for non-existent or non-public batches
+  - Uses SECURITY DEFINER to bypass RLS safely
+
+#### Step 2: Public Page
+- [x] Create `src/app/(public)/trace/[batchCode]/page.tsx`
+  - Server component for SEO
+  - Validates batch code format before querying
+  - Mobile-first, amber-themed design
+  - Shows batch info or "not found" message
+
+#### Step 3: Documentation
+- [x] Update `docs/features/honey-traceability.md` with public lookup section
+
+### Review - Completed January 23, 2026
+
+#### Changes Made
+
+1. **Database Migration** (`add_get_public_batch_info_function`)
+   - Created `get_public_batch_info(p_batch_code TEXT)` RPC function
+   - Uses `SECURITY DEFINER` to bypass RLS safely
+   - Traverses full traceability chain to calculate origin percentages
+   - Returns NULL for non-existent or non-public batches (security)
+   - Granted execute permission to `anon` and `authenticated` roles
+
+2. **Public Trace Page** (`src/app/(public)/trace/[batchCode]/page.tsx`)
+   - Server component with SEO metadata
+   - Validates batch code format before DB query
+   - Amber-themed design matching public layout
+   - Shows: batch code banner, bottled date, best before, jar size, origin percentages
+   - "Batch Not Found" state for invalid/non-public batches
+
+3. **Documentation** (`docs/features/honey-traceability.md`)
+   - Added "Public Consumer Lookup" section
+   - Documented URL format, consumer view, privacy/security
+   - Added trace page to Files table
+
+#### Files Created/Modified
+
+| File | Action | Description |
+|------|--------|-------------|
+| Database: `get_public_batch_info()` | NEW | RPC function for public lookup |
+| `src/app/(public)/trace/[batchCode]/page.tsx` | NEW | Public consumer trace page |
+| `docs/features/honey-traceability.md` | MODIFIED | Added public lookup documentation |
+
+#### Testing Required
+User should run `npm run build` and then test:
+1. Navigate to `/trace/L-2026-01-001` with a valid public batch
+2. Should display batch info with origin percentages
+3. Test invalid format (e.g., `/trace/invalid`) - shows "not found"
+4. Test non-existent code - shows "not found"
+5. Mark a batch as non-public, verify it shows "not found"
+6. Test on mobile viewport
+7. Verify dark mode styling
+
+---
+
