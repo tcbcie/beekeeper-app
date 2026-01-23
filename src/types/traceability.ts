@@ -45,10 +45,14 @@ export interface BatchRun {
   batch_date: string
   total_weight_kg: number | null
   jar_size_ml: number | null
+  jar_weight_g: number | null
   jar_count: number | null
   best_before_date: string | null
   notes: string | null
   is_public: boolean
+  public_title: string | null
+  public_origin: string | null
+  public_story: string | null
   created_at: string
   updated_at: string
   // Joined data
@@ -79,10 +83,14 @@ export interface BatchFormData {
   batch_date: string
   total_weight_kg: string
   jar_size_ml: string
+  jar_weight_g: string
   jar_count: string
   best_before_date: string
   notes: string
   is_public: boolean
+  public_title: string
+  public_origin: string
+  public_story: string
   container_ids: string[]
 }
 

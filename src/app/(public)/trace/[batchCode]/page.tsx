@@ -13,11 +13,20 @@ interface BatchInfo {
   batch_date: string
   best_before_date: string | null
   jar_size_ml: number | null
+  jar_weight_g: number | null
+  beekeeper_name: string
+  floral_sources: string[]
   origins: {
     apiary_name: string
     city: string | null
     percentage: number
+    latitude: number | null
+    longitude: number | null
+    show_map: boolean
   }[]
+  public_title: string | null
+  public_origin: string | null
+  public_story: string | null
 }
 
 interface PageProps {
@@ -58,6 +67,57 @@ function formatDate(dateStr: string): string {
   })
 }
 
+// Helper to get primary origin location for display
+function getPrimaryOrigin(origins: BatchInfo['origins']): { city: string | null; country: string } {
+  if (!origins || origins.length === 0) return { city: null, country: 'Ireland' }
+  // Get the origin with highest percentage
+  const primary = origins[0]
+  return { city: primary.city, country: 'Ireland' }
+}
+
+// Helper to build story text
+function buildStoryText(batchInfo: BatchInfo): string {
+  const parts: string[] = []
+
+  parts.push(`Harvested by ${batchInfo.beekeeper_name}`)
+
+  if (batchInfo.origins && batchInfo.origins.length > 0) {
+    const apiaryNames = batchInfo.origins.map(o => o.apiary_name).slice(0, 2)
+    if (apiaryNames.length === 1) {
+      parts.push(`from ${apiaryNames[0]}`)
+    } else if (apiaryNames.length === 2) {
+      parts.push(`from ${apiaryNames[0]} and ${apiaryNames[1]}`)
+    }
+  }
+
+  if (batchInfo.floral_sources && batchInfo.floral_sources.length > 0) {
+    const sources = batchInfo.floral_sources.slice(0, 3)
+    if (sources.length === 1) {
+      parts.push(`The bees foraged on ${sources[0].toLowerCase()}.`)
+    } else {
+      const last = sources.pop()
+      parts.push(`The bees foraged on ${sources.map(s => s.toLowerCase()).join(', ')} and ${last?.toLowerCase()}.`)
+    }
+  } else {
+    parts[parts.length - 1] += '.'
+  }
+
+  return parts.join(' ')
+}
+
+// Helper to get map origin (first with share_location=true)
+function getMapOrigin(origins: BatchInfo['origins']): { lat: number; lon: number } | null {
+  if (!origins) return null
+  const mapOrigin = origins.find(o => o.show_map && o.latitude && o.longitude)
+  if (!mapOrigin || !mapOrigin.latitude || !mapOrigin.longitude) return null
+  // Fuzz coordinates by ±0.01° for privacy
+  const fuzz = () => (Math.random() - 0.5) * 0.02
+  return {
+    lat: mapOrigin.latitude + fuzz(),
+    lon: mapOrigin.longitude + fuzz()
+  }
+}
+
 export default async function TracePage({ params }: PageProps) {
   const { batchCode } = await params
   const batchInfo = await getBatchInfo(batchCode)
@@ -95,124 +155,107 @@ export default async function TracePage({ params }: PageProps) {
     )
   }
 
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
-      {/* Header */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 mb-4">
-          <svg
-            className="w-8 h-8 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">
-          Honey Traceability
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400">
-          Traced from hive to jar
-        </p>
-      </div>
+  const primaryOrigin = getPrimaryOrigin(batchInfo.origins)
+  const storyText = batchInfo.public_story || buildStoryText(batchInfo)
+  const mapOrigin = getMapOrigin(batchInfo.origins)
 
-      {/* Batch Card */}
+  // Use custom values if set, otherwise fall back to generated
+  const displayTitle = batchInfo.public_title || 'Pure Irish Honey'
+  const displayOrigin = batchInfo.public_origin || (primaryOrigin.city
+    ? `Harvested in Co. ${primaryOrigin.city}, ${primaryOrigin.country}`
+    : `Harvested in ${primaryOrigin.country}`)
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      {/* Hero Section */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-amber-100 dark:border-slate-700 overflow-hidden">
-        {/* Batch Code Banner */}
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4">
-          <p className="text-amber-100 text-sm font-medium mb-1">Batch Code</p>
-          <p className="text-white text-2xl font-mono font-bold tracking-wider">
-            {batchInfo.batch_code}
+        {/* Hero Header */}
+        <div className="bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 px-6 py-8 text-center">
+          <div className="text-4xl mb-3">🍯</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            {displayTitle}
+          </h1>
+          <p className="text-amber-100 text-lg">
+            {displayOrigin}
           </p>
         </div>
 
-        {/* Details */}
-        <div className="p-6 space-y-6">
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Bottled
-              </p>
-              <p className="text-lg font-semibold text-slate-800 dark:text-white">
-                {formatDate(batchInfo.batch_date)}
-              </p>
+        {/* Map Thumbnail (if available) */}
+        {mapOrigin && (
+          <div className="h-32 bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
+            {/* Static map using OpenStreetMap tiles */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://staticmap.openstreetmap.de/staticmap.php?center=${mapOrigin.lat},${mapOrigin.lon}&zoom=10&size=600x150&maptype=mapnik&markers=${mapOrigin.lat},${mapOrigin.lon},lightblue`}
+              alt="Apiary location"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent dark:from-slate-800/20" />
+          </div>
+        )}
+
+        {/* Story Section */}
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-3">
+            The Story of this Jar
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+            {storyText}
+          </p>
+        </div>
+
+        {/* Details Grid */}
+        <div className="p-6 space-y-4">
+          {/* Net Weight */}
+          {batchInfo.jar_weight_g && (
+            <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-700">
+              <span className="text-slate-500 dark:text-slate-400">Net Weight</span>
+              <span className="text-lg font-semibold text-slate-800 dark:text-white">
+                {batchInfo.jar_weight_g}g
+              </span>
             </div>
-            {batchInfo.best_before_date && (
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
-                  Best Before
-                </p>
-                <p className="text-lg font-semibold text-slate-800 dark:text-white">
-                  {formatDate(batchInfo.best_before_date)}
-                </p>
-              </div>
-            )}
+          )}
+
+          {/* Bottled Date */}
+          <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-700">
+            <span className="text-slate-500 dark:text-slate-400">Bottled</span>
+            <span className="font-medium text-slate-800 dark:text-white">
+              {formatDate(batchInfo.batch_date)}
+            </span>
           </div>
 
-          {/* Jar Size */}
-          {batchInfo.jar_size_ml && (
-            <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
-                Jar Size
-              </p>
-              <p className="text-lg font-semibold text-slate-800 dark:text-white">
-                {batchInfo.jar_size_ml}ml
-              </p>
+          {/* Best Before */}
+          {batchInfo.best_before_date && (
+            <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-700">
+              <span className="text-slate-500 dark:text-slate-400">Best Before</span>
+              <span className="font-medium text-slate-800 dark:text-white">
+                {formatDate(batchInfo.best_before_date)}
+              </span>
             </div>
           )}
 
-          {/* Origins */}
-          {batchInfo.origins && batchInfo.origins.length > 0 && (
-            <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-                Origin
-              </p>
-              <div className="space-y-3">
-                {batchInfo.origins.map((origin, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-amber-50 dark:bg-slate-700/50 rounded-lg px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-amber-500" />
-                      <div>
-                        <p className="font-medium text-slate-800 dark:text-white">
-                          {origin.apiary_name}
-                        </p>
-                        {origin.city && (
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {origin.city}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
-                      {origin.percentage}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Batch Code (de-emphasized) */}
+          <div className="flex items-center justify-between py-2">
+            <span className="text-slate-500 dark:text-slate-400">Batch</span>
+            <span className="font-mono text-sm text-slate-500 dark:text-slate-400">
+              {batchInfo.batch_code}
+            </span>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-50 dark:bg-slate-900/50 px-6 py-4 border-t border-slate-100 dark:border-slate-700">
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-            This honey has been traced through our complete supply chain, from the hive where it was collected to the jar in your hands.
-          </p>
+        <div className="bg-amber-50 dark:bg-slate-900/50 px-6 py-4 border-t border-amber-100 dark:border-slate-700">
+          <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">Traced from hive to jar</span>
+          </div>
         </div>
       </div>
 
       {/* Powered by */}
-      <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-8">
+      <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-6">
         Powered by HiveCraic Traceability
       </p>
     </div>

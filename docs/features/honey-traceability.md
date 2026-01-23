@@ -40,9 +40,10 @@ Batches represent a production run of jarred honey from one or more containers.
 - **Batch Date** - Date of bottling
 - **Best Before Date** - Defaults to 2 years from batch date
 - **Jar Size (ml)** - Common sizes: 125, 250, 340, 454, 500, 750, 1000ml
+- **Net Weight (g)** - Jar net weight in grams (for EU compliance)
 - **Jar Count** - Number of jars produced
 - **Total Weight (kg)** - Optional total batch weight
-- **Public** - Whether consumers can look up this batch (future feature)
+- **Public** - Whether consumers can look up this batch
 - **Notes** - Optional notes
 - **Source Containers** - Select which containers were used
 
@@ -99,6 +100,7 @@ The system automatically generates the next sequential number for each month.
 | batch_date | DATE | Bottling date |
 | total_weight_kg | NUMERIC | Optional total weight |
 | jar_size_ml | INTEGER | Jar size in ml |
+| jar_weight_g | INTEGER | Net weight in grams |
 | jar_count | INTEGER | Number of jars |
 | best_before_date | DATE | Best before date |
 | notes | TEXT | Optional notes |
@@ -140,27 +142,43 @@ https://www.hivecraic.com/trace/L-2026-01-001
 
 ### Consumer View
 
-When a consumer visits the trace page, they see:
-- **Batch Code** - Prominently displayed in amber banner
+The trace page uses a story-driven design to build consumer trust:
+
+**Hero Section:**
+- **Title:** "Pure Irish Honey"
+- **Location:** Prominently displayed origin (e.g., "Harvested in Co. Meath, Ireland")
+- **Map:** Optional map thumbnail if beekeeper has enabled location sharing
+
+**Story Section:**
+- Personalized narrative: "Harvested by [Beekeeper Name] from [Apiary Name]. The bees foraged on [Floral Sources]."
+
+**Details Section:**
+- **Net Weight** - Displayed in grams (EU requirement)
 - **Bottled Date** - When the honey was jarred
 - **Best Before Date** - Expiry date
-- **Jar Size** - Size in milliliters
-- **Origin Percentages** - Where the honey came from (e.g., "60% Cork, 40% Kerry")
+- **Batch Code** - De-emphasized in footer (for reference only)
+
+**Footer:**
+- "Traced from hive to jar" verification badge
 
 ### Privacy & Security
 
 - Only batches marked as **Public** (`is_public = true`) are visible
 - Non-existent and non-public batches show the same "Batch Not Found" message (prevents enumeration)
-- No user IDs, notes, GPS coordinates, or sensitive data is exposed
+- No user IDs, notes, or sensitive data is exposed
+- GPS coordinates are only shown if `share_location = true` on the apiary, and are fuzzed by ±0.01° for privacy
 - Database function uses `SECURITY DEFINER` to safely bypass RLS
 
 ### Database Function
 
 The `get_public_batch_info(batch_code)` function:
 1. Validates the batch exists and is public
-2. Traverses the traceability chain: `batch_runs` → `batch_containers` → `bulk_containers` → `container_harvests` → `harvests` → `hives` → `apiaries`
-3. Calculates origin percentages based on harvest weights
-4. Returns consumer-safe JSON or NULL
+2. Gets beekeeper name from profiles (first_name or full_name)
+3. Traverses the traceability chain: `batch_runs` → `batch_containers` → `bulk_containers` → `container_harvests` → `harvests` → `hives` → `apiaries`
+4. Calculates origin percentages based on harvest weights
+5. Aggregates unique floral sources from linked harvests
+6. Includes map coordinates (fuzzed) if share_location is enabled
+7. Returns consumer-safe JSON or NULL
 
 ### QR Code Generation
 
@@ -177,5 +195,15 @@ To use:
 ## Future Enhancements
 - **PDF Label Export** - Export printable labels with batch info
 - **External Honey Blending** - Track imported honey with manual country-of-origin
-- **Floral Source Tracking** - Record vegetation/nectar types
 - **Offline Mode** - Queue harvests when offline
+
+## Changelog
+
+### January 23, 2026
+- Added `jar_weight_g` field for EU net weight compliance
+- Added `floral_source` field to harvests (database-driven dropdown from dropdown_values table)
+- Redesigned trace page with story-driven layout
+- Added beekeeper name display from profiles
+- Added optional map display (when share_location enabled)
+- Changed public header "Sign In" to subtle "Beekeeper Login" text link
+- Added editable public display fields (public_title, public_origin, public_story)

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download } from 'lucide-react'
+import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
@@ -43,12 +43,208 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     batch_date: formatDateForInput(new Date()),
     total_weight_kg: '',
     jar_size_ml: '500',
+    jar_weight_g: '',
     jar_count: '',
     best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
     notes: '',
     is_public: true,
+    public_title: '',
+    public_origin: '',
+    public_story: '',
     container_ids: []
   })
+
+  // Auto-calculate total weight when jar_weight_g and jar_count change
+  useEffect(() => {
+    const jarWeight = parseInt(batchForm.jar_weight_g)
+    const jarCount = parseInt(batchForm.jar_count)
+
+    if (jarWeight > 0 && jarCount > 0) {
+      const calculatedKg = ((jarWeight * jarCount) / 1000).toFixed(2)
+      setBatchForm(prev => ({ ...prev, total_weight_kg: calculatedKg }))
+    }
+  }, [batchForm.jar_weight_g, batchForm.jar_count])
+
+  // Public preview state
+  interface PublicPreviewData {
+    beekeeperName: string
+    origins: { name: string; city: string | null; hasLocation: boolean; percentage: number }[]
+    floralSources: string[]
+    hasAnyLocationShared: boolean
+  }
+  const [publicPreview, setPublicPreview] = useState<PublicPreviewData | null>(null)
+
+  // Fetch public preview data when containers change or when editing
+  useEffect(() => {
+    const fetchPreviewData = async () => {
+      // Use form container_ids, or fall back to editing batch's containers
+      const containerIds = batchForm.container_ids.length > 0
+        ? batchForm.container_ids
+        : editingBatch?.containers?.map(c => c.container_id) || []
+
+      if (!batchForm.is_public || containerIds.length === 0) {
+        setPublicPreview(null)
+        return
+      }
+
+      // Get beekeeper name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, full_name')
+        .eq('id', userId)
+        .single()
+
+      const beekeeperName = profile?.first_name || profile?.full_name || 'Local Beekeeper'
+
+      // Get selected containers with their harvests
+      const selectedContainers = containers.filter(c => containerIds.includes(c.id))
+
+      // Calculate origins and gather floral sources
+      const originMap = new Map<string, { city: string | null; hasLocation: boolean; weight: number }>()
+      const floralSourcesSet = new Set<string>()
+
+      for (const container of selectedContainers) {
+        if (!container.harvests) continue
+
+        for (const harvestLink of container.harvests) {
+          const harvest = harvestLink.harvest
+          if (!harvest) continue
+
+          // Get floral source
+          // Note: floral_source not in current query, would need to add - for now skip
+
+          // Get apiary info
+          const hivesRaw = harvest.hives as unknown
+          const hive = Array.isArray(hivesRaw) ? hivesRaw[0] : hivesRaw
+          const apiariesRaw = hive?.apiaries as unknown
+          const apiary = Array.isArray(apiariesRaw) ? apiariesRaw[0] : apiariesRaw
+
+          if (apiary) {
+            const key = apiary.name || 'Unknown'
+            const existing = originMap.get(key)
+            const weight = harvest.honey_weight || 0
+
+            if (existing) {
+              existing.weight += weight
+            } else {
+              // We need to check share_location - fetch it
+              originMap.set(key, {
+                city: apiary.city || null,
+                hasLocation: false, // Will update below
+                weight
+              })
+            }
+          }
+        }
+      }
+
+      // Fetch apiary share_location status
+      const apiaryNames = Array.from(originMap.keys())
+      if (apiaryNames.length > 0) {
+        const { data: apiaries } = await supabase
+          .from('apiaries')
+          .select('name, share_location, latitude, longitude')
+          .eq('user_id', userId)
+          .in('name', apiaryNames)
+
+        if (apiaries) {
+          for (const apiary of apiaries) {
+            const origin = originMap.get(apiary.name)
+            if (origin) {
+              origin.hasLocation = apiary.share_location === true && apiary.latitude != null && apiary.longitude != null
+            }
+          }
+        }
+      }
+
+      // Fetch floral sources from harvests
+      const harvestIds: string[] = []
+      for (const container of selectedContainers) {
+        if (container.harvests) {
+          for (const h of container.harvests) {
+            harvestIds.push(h.harvest_id)
+          }
+        }
+      }
+
+      if (harvestIds.length > 0) {
+        const { data: harvests } = await supabase
+          .from('harvests')
+          .select('floral_source')
+          .in('id', harvestIds)
+
+        if (harvests) {
+          for (const h of harvests) {
+            if (h.floral_source) {
+              floralSourcesSet.add(h.floral_source)
+            }
+          }
+        }
+      }
+
+      // Calculate percentages
+      const totalWeight = Array.from(originMap.values()).reduce((sum, o) => sum + o.weight, 0)
+      const origins = Array.from(originMap.entries()).map(([name, data]) => ({
+        name,
+        city: data.city,
+        hasLocation: data.hasLocation,
+        percentage: totalWeight > 0 ? Math.round((data.weight / totalWeight) * 100) : 0
+      })).sort((a, b) => b.percentage - a.percentage)
+
+      const previewData = {
+        beekeeperName,
+        origins,
+        floralSources: Array.from(floralSourcesSet),
+        hasAnyLocationShared: origins.some(o => o.hasLocation)
+      }
+
+      setPublicPreview(previewData)
+
+      // Auto-populate form fields if they're empty (don't overwrite user edits)
+      setBatchForm(prev => {
+        const updates: Partial<BatchFormData> = {}
+
+        // Auto-populate title if empty
+        if (!prev.public_title) {
+          updates.public_title = 'Pure Irish Honey'
+        }
+
+        // Auto-populate origin if empty
+        if (!prev.public_origin && origins.length > 0 && origins[0].city) {
+          updates.public_origin = `Harvested in Co. ${origins[0].city}, Ireland`
+        }
+
+        // Auto-populate story if empty
+        if (!prev.public_story) {
+          let story = `Harvested by ${beekeeperName}`
+          if (origins.length > 0) {
+            story += ` from ${origins[0].name}`
+            if (origins.length > 1) {
+              story += ` and ${origins[1].name}`
+            }
+          }
+          story += '.'
+          if (previewData.floralSources.length > 0) {
+            const sources = previewData.floralSources.slice(0, 3)
+            if (sources.length === 1) {
+              story += ` The bees foraged on ${sources[0].toLowerCase()}.`
+            } else {
+              const last = sources.pop()
+              story += ` The bees foraged on ${sources.map(s => s.toLowerCase()).join(', ')} and ${last?.toLowerCase()}.`
+            }
+          }
+          updates.public_story = story
+        }
+
+        if (Object.keys(updates).length > 0) {
+          return { ...prev, ...updates }
+        }
+        return prev
+      })
+    }
+
+    fetchPreviewData()
+  }, [batchForm.is_public, batchForm.container_ids, containers, userId, editingBatch])
 
   // Fetch containers
   const fetchContainers = useCallback(async () => {
@@ -291,10 +487,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       batch_date: formatDateForInput(new Date()),
       total_weight_kg: '',
       jar_size_ml: '500',
+      jar_weight_g: '',
       jar_count: '',
       best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
       notes: '',
       is_public: true,
+      public_title: '',
+      public_origin: '',
+      public_story: '',
       container_ids: []
     })
     setEditingBatch(null)
@@ -307,10 +507,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       batch_date: batch.batch_date,
       total_weight_kg: batch.total_weight_kg?.toString() || '',
       jar_size_ml: batch.jar_size_ml?.toString() || '500',
+      jar_weight_g: batch.jar_weight_g?.toString() || '',
       jar_count: batch.jar_count?.toString() || '',
       best_before_date: batch.best_before_date || '',
       notes: batch.notes || '',
       is_public: batch.is_public,
+      public_title: batch.public_title || '',
+      public_origin: batch.public_origin || '',
+      public_story: batch.public_story || '',
       container_ids: batch.containers?.map(c => c.container_id) || []
     })
     setShowBatchForm(true)
@@ -333,10 +537,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         batch_date: batchForm.batch_date,
         total_weight_kg: batchForm.total_weight_kg ? parseFloat(batchForm.total_weight_kg) : null,
         jar_size_ml: batchForm.jar_size_ml ? parseInt(batchForm.jar_size_ml) : null,
+        jar_weight_g: batchForm.jar_weight_g ? parseInt(batchForm.jar_weight_g) : null,
         jar_count: batchForm.jar_count ? parseInt(batchForm.jar_count) : null,
         best_before_date: batchForm.best_before_date || null,
         notes: batchForm.notes.trim() || null,
         is_public: batchForm.is_public,
+        public_title: batchForm.public_title.trim() || null,
+        public_origin: batchForm.public_origin.trim() || null,
+        public_story: batchForm.public_story.trim() || null,
         updated_at: new Date().toISOString()
       }
 
@@ -712,6 +920,18 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">
+                  Net Weight (g)
+                </label>
+                <input
+                  type="number"
+                  value={batchForm.jar_weight_g}
+                  onChange={(e) => setBatchForm(prev => ({ ...prev, jar_weight_g: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
+                  placeholder="e.g., 454"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Jar Count
                 </label>
                 <input
@@ -799,6 +1019,139 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 )}
               </div>
             </div>
+
+            {/* Public Preview Section */}
+            {batchForm.is_public && (
+              <div className="border border-amber-200 dark:border-amber-800 rounded-xl overflow-hidden bg-amber-50/50 dark:bg-amber-900/10">
+                <div className="bg-amber-100 dark:bg-amber-900/30 px-4 py-2 border-b border-amber-200 dark:border-amber-800">
+                  <h4 className="font-medium text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                    <span>🍯</span> Public Preview
+                  </h4>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    This is what consumers will see when they scan the QR code
+                  </p>
+                </div>
+
+                {batchForm.container_ids.length === 0 && (!editingBatch?.containers || editingBatch.containers.length === 0) ? (
+                  <div className="p-4 text-center text-text-secondary text-sm">
+                    Select containers to see public preview
+                  </div>
+                ) : publicPreview ? (
+                  <div className="p-4 space-y-4">
+                    {/* Editable Title */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={batchForm.public_title}
+                        onChange={(e) => setBatchForm(prev => ({ ...prev, public_title: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-center font-bold"
+                        placeholder="Pure Irish Honey"
+                      />
+                    </div>
+
+                    {/* Editable Origin */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Origin Headline</label>
+                      <input
+                        type="text"
+                        value={batchForm.public_origin}
+                        onChange={(e) => setBatchForm(prev => ({ ...prev, public_origin: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-center"
+                        placeholder="Harvested in Co. Meath, Ireland"
+                      />
+                    </div>
+
+                    {/* Map Status */}
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin size={16} className={publicPreview.hasAnyLocationShared ? 'text-green-600' : 'text-slate-400'} />
+                      {publicPreview.hasAnyLocationShared ? (
+                        <span className="text-green-700 dark:text-green-400">
+                          Map will be shown (apiary location shared)
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 flex items-center gap-1">
+                          <AlertCircle size={14} className="text-amber-500" />
+                          No map - enable &quot;Share Location&quot; on apiary to show map
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Editable Story */}
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Story</label>
+                      <textarea
+                        value={batchForm.public_story}
+                        onChange={(e) => setBatchForm(prev => ({ ...prev, public_story: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-sm"
+                        rows={3}
+                        placeholder="Harvested by [name] from [apiary]. The bees foraged on [flowers]."
+                      />
+                      {publicPreview.floralSources.length === 0 && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          Tip: Add floral source to harvests to auto-populate
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Details Preview */}
+                    <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Net Weight</span>
+                        <span className="font-medium">
+                          {batchForm.jar_weight_g ? `${batchForm.jar_weight_g}g` : <span className="text-amber-500">Not set</span>}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Bottled</span>
+                        <span className="font-medium">{new Date(batchForm.batch_date).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      </div>
+                      {batchForm.best_before_date && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Best Before</span>
+                          <span className="font-medium">{new Date(batchForm.best_before_date).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-slate-400">
+                        <span>Batch</span>
+                        <span className="font-mono text-xs">{editingBatch?.batch_code || 'L-YYYY-MM-NNN'}</span>
+                      </div>
+                    </div>
+
+                    {/* Origins */}
+                    {publicPreview.origins.length > 0 && (
+                      <div className="text-sm">
+                        <p className="text-slate-500 mb-2">Origins:</p>
+                        <div className="space-y-1">
+                          {publicPreview.origins.map((origin, i) => (
+                            <div key={i} className="flex items-center justify-between bg-white dark:bg-slate-800 rounded px-3 py-2 border border-slate-200 dark:border-slate-700">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-amber-500" />
+                                <span>{origin.name}</span>
+                                {origin.city && <span className="text-slate-400">({origin.city})</span>}
+                              </div>
+                              <span className="font-bold text-amber-600">{origin.percentage}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Badge */}
+                    <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-2 flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400 text-sm">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-medium">Traced from hive to jar</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-text-secondary text-sm">
+                    Loading preview...
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -942,6 +1295,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                           <div>
                             <span className="font-medium">Jar Size:</span>{' '}
                             {batch.jar_size_ml}ml
+                          </div>
+                        )}
+                        {batch.jar_weight_g && (
+                          <div>
+                            <span className="font-medium">Net Weight:</span>{' '}
+                            {batch.jar_weight_g}g
                           </div>
                         )}
                         {batch.jar_count && (

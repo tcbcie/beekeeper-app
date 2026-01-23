@@ -159,6 +159,7 @@ export interface Harvest {
   wax_weight: number | null
   unit: string
   frames_harvested: number | null
+  floral_source: string | null
   notes: string
   hives?: {
     hive_number: string

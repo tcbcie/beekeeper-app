@@ -38,6 +38,7 @@ interface UseRecordsDataReturn {
   // Options for dropdowns
   checkMethodOptions: string[]
   feedTypeOptions: string[]
+  floralSourceOptions: string[]
   treatmentProducts: TreatmentProduct[]
   archiveReasons: Array<{ id: string; value: string }>
   applicationMethods: DropdownValue[]
@@ -153,6 +154,7 @@ export function useRecordsData(): UseRecordsDataReturn {
   // Options state
   const [checkMethodOptions, setCheckMethodOptions] = useState<string[]>([])
   const [feedTypeOptions, setFeedTypeOptions] = useState<string[]>([])
+  const [floralSourceOptions, setFloralSourceOptions] = useState<string[]>([])
   const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
   const [archiveReasons, setArchiveReasons] = useState<Array<{ id: string; value: string }>>([])
   const [applicationMethods, setApplicationMethods] = useState<DropdownValue[]>([])
@@ -501,6 +503,31 @@ export function useRecordsData(): UseRecordsDataReturn {
     }
   }, [])
 
+  const fetchFloralSources = useCallback(async () => {
+    try {
+      const { data: category } = await supabase
+        .from('dropdown_categories')
+        .select('id')
+        .eq('category_key', 'floral_source')
+        .single()
+
+      if (category) {
+        const { data: values } = await supabase
+          .from('dropdown_values')
+          .select('value')
+          .eq('category_id', category.id)
+          .eq('is_active', true)
+          .order('display_order')
+
+        if (values) {
+          setFloralSourceOptions(values.map(v => v.value))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch floral sources:', error)
+    }
+  }, [])
+
   const fetchTreatmentProducts = useCallback(async () => {
     try {
       const { data } = await supabase
@@ -570,11 +597,12 @@ export function useRecordsData(): UseRecordsDataReturn {
     await Promise.all([
       fetchCheckMethods(),
       fetchFeedTypes(),
+      fetchFloralSources(),
       fetchTreatmentProducts(),
       fetchArchiveReasons(),
       fetchApplicationMethods()
     ])
-  }, [fetchCheckMethods, fetchFeedTypes, fetchTreatmentProducts, fetchArchiveReasons, fetchApplicationMethods])
+  }, [fetchCheckMethods, fetchFeedTypes, fetchFloralSources, fetchTreatmentProducts, fetchArchiveReasons, fetchApplicationMethods])
 
   const fetchAllData = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
     // Prevent duplicate concurrent requests
@@ -626,6 +654,7 @@ export function useRecordsData(): UseRecordsDataReturn {
     // Options
     checkMethodOptions,
     feedTypeOptions,
+    floralSourceOptions,
     treatmentProducts,
     archiveReasons,
     applicationMethods,

@@ -7,6 +7,7 @@ interface HarvestFormProps {
   harvest: Harvest | null
   hives: Hive[]
   apiaries: Apiary[]
+  floralSourceOptions: string[]
   onSubmit: (harvest: Harvest) => Promise<void>
   onCancel: () => void
 }
@@ -15,6 +16,7 @@ export default function HarvestForm({
   harvest,
   hives,
   apiaries,
+  floralSourceOptions,
   onSubmit,
   onCancel
 }: HarvestFormProps) {
@@ -27,6 +29,7 @@ export default function HarvestForm({
     wax_weight: null,
     unit: 'kg',
     frames_harvested: null,
+    floral_source: null,
     notes: ''
   })
 
@@ -176,6 +179,20 @@ export default function HarvestForm({
             className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Predominant Floral Source (&gt;50%)</label>
+          <select
+            value={formData.floral_source ?? ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, floral_source: e.target.value || null }))}
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+          >
+            <option value="">Select floral source</option>
+            {floralSourceOptions.map((source) => (
+              <option key={source} value={source}>{source}</option>
+            ))}
+          </select>
         </div>
 
         <div className="md:col-span-2">
