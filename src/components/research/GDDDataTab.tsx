@@ -381,7 +381,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           weight: 'bold' as const,
         },
         color: '#374151',
-        display: 'auto' as const,
+        display: true,
         textAlign: 'center' as const,
       },
     },
