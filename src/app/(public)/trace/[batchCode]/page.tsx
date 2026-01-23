@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { isValidBatchCode } from '@/lib/batch-code'
 import { Metadata } from 'next'
+import ApiaryAreaMapWrapper from '@/components/maps/ApiaryAreaMapWrapper'
 
 // Create a public supabase client (anon key only)
 const supabase = createClient(
@@ -181,24 +182,9 @@ export default async function TracePage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Map Thumbnail (if available) */}
+        {/* Map with 5km radius circle (if location shared) */}
         {mapOrigin && (
-          <div className="h-40 bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
-            <iframe
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapOrigin.lon - 0.08},${mapOrigin.lat - 0.04},${mapOrigin.lon + 0.08},${mapOrigin.lat + 0.04}&layer=mapnik&marker=${mapOrigin.lat},${mapOrigin.lon}`}
-              className="w-full h-full border-0"
-              title="Apiary location"
-              loading="lazy"
-            />
-            {/* Location label overlay */}
-            <div className="absolute bottom-2 left-2 bg-white/90 dark:bg-slate-800/90 px-3 py-1.5 rounded-lg shadow-md flex items-center gap-2">
-              <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Source Apiary Area</span>
-            </div>
-          </div>
+          <ApiaryAreaMapWrapper lat={mapOrigin.lat} lon={mapOrigin.lon} />
         )}
 
         {/* Story Section */}
