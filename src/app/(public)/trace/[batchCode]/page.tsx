@@ -182,15 +182,13 @@ export default async function TracePage({ params }: PageProps) {
 
         {/* Map Thumbnail (if available) */}
         {mapOrigin && (
-          <div className="h-32 bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
-            {/* Static map using OpenStreetMap tiles */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://staticmap.openstreetmap.de/staticmap.php?center=${mapOrigin.lat},${mapOrigin.lon}&zoom=10&size=600x150&maptype=mapnik&markers=${mapOrigin.lat},${mapOrigin.lon},lightblue`}
-              alt="Apiary location"
-              className="w-full h-full object-cover"
+          <div className="h-40 bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
+            <iframe
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapOrigin.lon - 0.08},${mapOrigin.lat - 0.04},${mapOrigin.lon + 0.08},${mapOrigin.lat + 0.04}&layer=mapnik&marker=${mapOrigin.lat},${mapOrigin.lon}`}
+              className="w-full h-full border-0"
+              title="Apiary location"
+              loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent dark:from-slate-800/20" />
           </div>
         )}
 
