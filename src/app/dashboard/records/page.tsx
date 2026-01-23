@@ -235,6 +235,7 @@ export default function RecordsPage() {
         wax_weight: null,
         unit: '',
         frames_harvested: null,
+        floral_source: null,
         notes: '',
         user_id: userId || ''
       })
