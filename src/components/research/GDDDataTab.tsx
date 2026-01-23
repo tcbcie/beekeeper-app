@@ -293,7 +293,15 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const chartData = useMemo(() => {
     // Get all vegetation types in filtered records
     const vegTypes = [...new Set(filteredRecords.map(r => r.dropdown_values?.value).filter(Boolean))] as string[]
-    vegTypes.sort()
+
+    // Sort vegetation types by their minimum GDD value (lowest first = earliest bloom)
+    vegTypes.sort((a, b) => {
+      const aRecords = filteredRecords.filter(r => r.dropdown_values?.value === a && r.gdd_value !== null)
+      const bRecords = filteredRecords.filter(r => r.dropdown_values?.value === b && r.gdd_value !== null)
+      const aMin = aRecords.length > 0 ? Math.min(...aRecords.map(r => Number(r.gdd_value))) : Infinity
+      const bMin = bRecords.length > 0 ? Math.min(...bRecords.map(r => Number(r.gdd_value))) : Infinity
+      return aMin - bMin
+    })
 
     // Get years present in filtered data (sort numerically)
     const chartYears = [...new Set(filteredRecords.map(r => r.year))].sort((a, b) => a - b)
