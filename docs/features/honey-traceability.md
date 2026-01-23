@@ -128,10 +128,57 @@ The system automatically generates the next sequential number for each month.
 |------|-------------|
 | `src/app/dashboard/traceability/page.tsx` | Main page with Containers and Batches tabs |
 | `src/app/(public)/trace/[batchCode]/page.tsx` | Public consumer batch lookup page |
+| `src/components/tools/TraceabilityTool.tsx` | Main traceability tool component |
 | `src/types/traceability.ts` | TypeScript type definitions |
 | `src/lib/batch-code.ts` | Batch code generation utilities |
 | `src/lib/traceability-utils.ts` | Origin calculation utilities |
+| `src/lib/story-templates.ts` | Story template definitions and placeholder logic |
 | Database: `get_public_batch_info()` | RPC function for public batch lookup |
+
+## Story Templates
+
+When creating a batch, users can choose from 4 pre-written story templates that auto-populate with batch data:
+
+### Available Templates
+
+1. **Floral Forager** (Taste & Nature Focus)
+   - Best for highlighting specific tasting notes and nectar sources
+   - Auto-fills: Season, location, apiary name, floral sources
+
+2. **The Purist** (Raw & Process Focus)
+   - Best for emphasizing quality, raw status, and health benefits
+   - Auto-fills: Beekeeper name, harvest date, location
+
+3. **The Terroir** (Location Focus)
+   - Best for locally sold honey where customers know the area
+   - Auto-fills: Location, apiary name, month
+   - User fills: Local landmark, weather condition
+
+4. **Seasonal Snapshot** (Time & Weather Focus)
+   - Best for connecting consumers to the specific moment in time
+   - Auto-fills: Batch code, season, year, floral source
+   - User fills: Weather description, color, bottling location
+
+### How to Use
+
+1. In the batch form, enable "Public" toggle
+2. Select a story template from the radio options
+3. The template populates with your batch data
+4. Edit the text to replace any `[bracketed placeholders]` with your own words
+5. Customize further as desired
+
+### Placeholders
+
+Templates use placeholders that are automatically replaced:
+- `[Season]`, `[Month]`, `[Year]` - From batch date
+- `[Location]` - County from apiary
+- `[Apiary Name]` - From linked containers
+- `[Floral Source]` - From harvest records
+- `[Beekeeper Name]` - From profile
+- `[Batch Code]` - Current batch code
+
+User-filled placeholders (remain as `[placeholder]` for you to customize):
+- `[Taste Profile]`, `[Weather Condition]`, `[Local Landmark]`, `[Color]`, `[Bottling Location]`
 
 ## Public Consumer Lookup
 
@@ -211,3 +258,5 @@ To use:
 - Added optional map display using OpenStreetMap iframe embed (when share_location enabled)
 - Changed public header "Sign In" to subtle "Beekeeper Login" text link
 - Added editable public display fields (public_title, public_origin, public_story)
+- Added 4 story templates: Floral Forager, The Purist, The Terroir, Seasonal Snapshot
+- Templates auto-populate with batch data and allow customization

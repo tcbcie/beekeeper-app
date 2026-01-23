@@ -7,6 +7,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
 import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
+import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders } from '@/lib/story-templates'
 import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, OriginPercentage } from '@/types/traceability'
 
 type TabType = 'containers' | 'batches'
@@ -39,6 +40,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const [showBatchForm, setShowBatchForm] = useState(false)
   const [editingBatch, setEditingBatch] = useState<BatchRun | null>(null)
   const [qrBatch, setQrBatch] = useState<BatchRun | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('custom')
   const [batchForm, setBatchForm] = useState<BatchFormData>({
     batch_date: formatDateForInput(new Date()),
     total_weight_kg: '',
@@ -498,10 +500,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       container_ids: []
     })
     setEditingBatch(null)
+    setSelectedTemplate('custom')
     setShowBatchForm(false)
   }
 
   const handleEditBatch = (batch: BatchRun) => {
+    setSelectedTemplate('custom')
     setEditingBatch(batch)
     setBatchForm({
       batch_date: batch.batch_date,
@@ -1077,19 +1081,68 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                       )}
                     </div>
 
-                    {/* Editable Story */}
+                    {/* Story Template Selector */}
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Story</label>
+                      <label className="block text-xs font-medium text-slate-500 mb-2">Story Template</label>
+                      <div className="space-y-1.5 mb-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="storyTemplate"
+                            value="custom"
+                            checked={selectedTemplate === 'custom'}
+                            onChange={() => setSelectedTemplate('custom')}
+                            className="text-amber-600"
+                          />
+                          <span className="text-sm">Custom</span>
+                        </label>
+                        {storyTemplates.map((template) => (
+                          <label key={template.id} className="flex items-start gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="storyTemplate"
+                              value={template.id}
+                              checked={selectedTemplate === template.id}
+                              onChange={() => {
+                                setSelectedTemplate(template.id)
+                                const populated = replacePlaceholders(template.template, {
+                                  beekeeperName: publicPreview?.beekeeperName,
+                                  floralSources: publicPreview?.floralSources,
+                                  origins: publicPreview?.origins,
+                                  batchDate: batchForm.batch_date,
+                                  batchCode: editingBatch?.batch_code
+                                })
+                                setBatchForm(prev => ({ ...prev, public_story: populated }))
+                              }}
+                              className="text-amber-600 mt-0.5"
+                            />
+                            <div>
+                              <span className="text-sm font-medium">{template.name}</span>
+                              <span className="text-xs text-slate-500 ml-1">- {template.description}</span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+
+                      <label className="block text-xs font-medium text-slate-500 mb-1">Story Text</label>
                       <textarea
                         value={batchForm.public_story}
-                        onChange={(e) => setBatchForm(prev => ({ ...prev, public_story: e.target.value }))}
+                        onChange={(e) => {
+                          setBatchForm(prev => ({ ...prev, public_story: e.target.value }))
+                          setSelectedTemplate('custom')
+                        }}
                         className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-sm"
-                        rows={3}
+                        rows={4}
                         placeholder="Harvested by [name] from [apiary]. The bees foraged on [flowers]."
                       />
-                      {publicPreview.floralSources.length === 0 && (
+                      {hasUnfilledPlaceholders(batchForm.public_story) && (
                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                          Tip: Add floral source to harvests to auto-populate
+                          Replace bracketed placeholders: {getUnfilledPlaceholders(batchForm.public_story).join(', ')}
+                        </p>
+                      )}
+                      {publicPreview.floralSources.length === 0 && !hasUnfilledPlaceholders(batchForm.public_story) && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          Tip: Add floral source to harvests to auto-populate templates
                         </p>
                       )}
                     </div>
