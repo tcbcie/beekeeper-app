@@ -100,6 +100,14 @@ export default function HarvestCard({
               <span className="font-medium text-foreground">{harvest.floral_source}</span>
             </span>
           )}
+          {harvest.moisture_content !== null && (
+            <span>
+              <span className="text-text-tertiary">Moisture:</span>{' '}
+              <span className={`font-medium ${harvest.moisture_content > 20 ? 'text-red-600' : 'text-green-600'}`}>
+                {harvest.moisture_content}%
+              </span>
+            </span>
+          )}
         </div>
       </div>
 
