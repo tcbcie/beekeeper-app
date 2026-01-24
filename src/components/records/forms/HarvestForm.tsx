@@ -183,6 +183,21 @@ export default function HarvestForm({
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Moisture Content (%)</label>
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            max="30"
+            value={formData.moisture_content ?? ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, moisture_content: e.target.value ? parseFloat(e.target.value) : null }))}
+            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            placeholder="e.g., 18.5"
+          />
+          <p className="text-xs text-text-tertiary mt-1">EU limit: 20%</p>
+        </div>
+
+        <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">Predominant Floral Source (&gt;50%)</label>
           <select
             value={formData.floral_source ?? ''}
