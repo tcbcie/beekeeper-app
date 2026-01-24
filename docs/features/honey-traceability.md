@@ -5,8 +5,8 @@ Track honey from hive to jar with EU-compliant lot numbers.
 ## Overview
 
 The Honey Traceability module enables beekeepers to:
-- Track bulk containers that hold extracted honey from multiple harvests
-- Link harvests to containers for origin tracking
+- Track bulk honey that holds extracted honey from multiple harvests
+- Link harvests to bulk honey for origin tracking
 - Create bottling batches with auto-generated EU lot codes
 - Calculate origin percentages for multi-apiary honey blends
 
@@ -16,9 +16,9 @@ Navigate to **Dashboard → Traceability** in the sidebar.
 
 ## Features
 
-### Bulk Containers
+### Bulk Honey
 
-Containers represent physical storage vessels (buckets, tanks, drums) that hold extracted honey.
+Bulk honey represents physical storage vessels (buckets, tanks, drums) that hold extracted honey before bottling.
 
 **Fields:**
 - **Container Code** - Unique identifier (e.g., "Bucket-01", "Tank-A")
@@ -26,14 +26,14 @@ Containers represent physical storage vessels (buckets, tanks, drums) that hold 
 - **Extraction Date** - When honey was extracted into this container
 - **Total Weight (kg)** - Optional weight of honey in container
 - **Notes** - Optional notes
-- **Linked Harvests** - Select which harvest records contributed to this container
+- **Linked Harvests** - Select which harvest records contributed to this bulk honey
 
 **Origin Tracking:**
 When you link harvests from different apiaries, the system automatically calculates origin percentages based on harvest weights (e.g., "60% Cork, 40% Kerry").
 
 ### Bottling Batches
 
-Batches represent a production run of jarred honey from one or more containers.
+Batches represent a production run of jarred honey from one or more bulk honey sources.
 
 **Fields:**
 - **Batch Code** - Auto-generated EU lot number (format: L-YYYY-MM-NNN)
@@ -45,7 +45,7 @@ Batches represent a production run of jarred honey from one or more containers.
 - **Total Weight (kg)** - Optional total batch weight
 - **Public** - Whether consumers can look up this batch
 - **Notes** - Optional notes
-- **Source Containers** - Select which containers were used
+- **Bulk Honey Source** - Select which bulk honey was used
 
 ## Batch Code vs Trace Code
 
@@ -82,8 +82,8 @@ A1B2C3D4
 ## Workflow
 
 1. **Record Harvests** - Use the Records page to log harvests from hives
-2. **Create Container** - Create a bulk container and link harvests to it
-3. **Create Batch** - When bottling, create a batch from one or more containers
+2. **Create Bulk Honey** - Create a bulk honey entry and link harvests to it
+3. **Create Batch** - When bottling, create a batch from one or more bulk honey sources
 4. **Label Jars** - Use the generated batch code on your jar labels
 
 ## Database Schema
@@ -137,15 +137,16 @@ A1B2C3D4
 
 ### Row Level Security
 
-- Users can only access their own containers and batches
+- Users can only access their own bulk honey and batches
 - Public batches can be viewed by anyone (for future consumer lookup feature)
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `src/app/dashboard/traceability/page.tsx` | Main page with Containers and Batches tabs |
-| `src/app/(public)/trace/[batchCode]/page.tsx` | Public consumer batch lookup page |
+| `src/app/dashboard/traceability/page.tsx` | Main page with Bulk Honey and Batches tabs |
+| `src/app/(trace)/trace/[batchCode]/page.tsx` | Public consumer batch lookup page |
+| `src/app/(trace)/layout.tsx` | Trust-focused layout for public trace page |
 | `src/components/tools/TraceabilityTool.tsx` | Main traceability tool component |
 | `src/types/traceability.ts` | TypeScript type definitions |
 | `src/lib/batch-code.ts` | Batch code generation utilities |
@@ -203,7 +204,7 @@ If you try to save a public batch with unfilled `[placeholders]` remaining, an e
 Templates use placeholders that are automatically replaced:
 - `[Season]`, `[Month]`, `[Year]` - From batch date
 - `[Location]` - County from apiary
-- `[Apiary Name]` - From linked containers
+- `[Apiary Name]` - From linked bulk honey
 - `[Floral Source]` - From harvest records
 - `[Beekeeper Name]` - From profile
 - `[Batch Code]` - Current batch code
@@ -226,10 +227,14 @@ The URL uses the `trace_code` (not the batch_code) to ensure global uniqueness.
 
 ### Consumer View
 
-The trace page uses a story-driven design to build consumer trust:
+The trace page uses a trust-focused design for consumer verification. It has its own minimal layout without HiveCraic branding - consumers scanning a QR code don't need to know about the app, they just want to verify their honey.
+
+**Header:**
+- Shield icon + "Honey Traceability" text (centered, no navigation links)
+- Clean, trust-focused branding
 
 **Hero Section:**
-- **Title:** "Pure Irish Honey"
+- **Title:** "Pure Irish Honey" (customizable)
 - **Location:** Prominently displayed origin (e.g., "Harvested in Meath, Ireland")
 - **Map:** Optional interactive map with 5km foraging radius circle (if beekeeper has enabled location sharing). Labeled "Source Apiary Foraging Area (~5km)"
 
@@ -240,10 +245,13 @@ The trace page uses a story-driven design to build consumer trust:
 - **Net Weight** - Displayed in grams (EU requirement)
 - **Bottled Date** - When the honey was jarred
 - **Best Before Date** - Expiry date
-- **Batch Code** - De-emphasized in footer (for reference only)
+- **Batch Code** - De-emphasized (for reference only)
 
-**Footer:**
+**Card Footer:**
 - "Traced from hive to jar" verification badge
+
+**Page Footer:**
+- Small "Powered by HiveCraic" credit
 
 ### Privacy & Security
 
@@ -294,12 +302,18 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 ## Changelog
 
 ### January 24, 2026
+- Renamed "Containers" to "Bulk Honey" throughout the UI for clarity
+- Redesigned public trace page with trust-focused layout (no HiveCraic branding)
+- Added shield icon + "Honey Traceability" header for consumer trust
+- Removed login links from public pages
+- Moved trace page to separate route group for isolated layout
 - Added QR code preview with clickable link on batch edit form (opens trace page in new window)
 - Added visual highlighting for story templates: auto-filled values in green, unfilled placeholders in red
 - Added save validation: blocks saving if unfilled `[placeholders]` remain with error toast
 - Added legend explaining color coding (Auto-filled / Needs input)
 - Changed map label to "Source Apiary Foraging Area (~5km)"
 - Fixed origin headline to not assume "Co." prefix (location name used as-is)
+- Fixed duplicate floral source bug when only one source exists
 
 ### January 23, 2026
 - Added `jar_weight_g` field for EU net weight compliance
