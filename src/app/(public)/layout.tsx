@@ -20,15 +20,9 @@ export default function PublicLayout({
           <nav className="flex items-center gap-4">
             <Link
               href="/about"
-              className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors hidden sm:block"
-            >
-              About
-            </Link>
-            <Link
-              href="/login"
               className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
             >
-              Beekeeper Login
+              About
             </Link>
           </nav>
         </div>
@@ -46,7 +40,7 @@ export default function PublicLayout({
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Image src="/logo.png" alt="HiveCraic" width={32} height={32} className="w-8 h-8" />
+                <Image src="/logo_trans.png" alt="HiveCraic" width={32} height={32} className="w-8 h-8" />
                 <span className="text-lg font-bold text-white">HiveCraic</span>
               </div>
               <p className="text-slate-400 text-sm">
@@ -61,11 +55,6 @@ export default function PublicLayout({
                 <li>
                   <Link href="/about" className="text-slate-400 hover:text-amber-400 transition-colors">
                     About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="text-slate-400 hover:text-amber-400 transition-colors">
-                    Sign In
                   </Link>
                 </li>
               </ul>

@@ -35,7 +35,12 @@ export default function FeedingCard({
               <h3 className="text-base font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
             </div>
             <p className="text-xs text-text-tertiary">
-              {feeding.feed_date}
+              {new Date(feeding.feed_date + 'T00:00:00').toLocaleDateString('en-GB', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
             </p>
             {feeding.profiles && feeding.user_id !== userId && sharedHiveIds.includes(feeding.hive_id) && (
               <p className="text-xs text-text-tertiary mt-0.5">
