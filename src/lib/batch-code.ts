@@ -4,42 +4,27 @@
 import { supabase } from './supabase'
 
 /**
- * Generate the next batch code for a given user and month
- * Format: L-YYYY-MM-NNN where NNN is sequential per month
+ * Generate the next batch code for a given month
+ * Format: L-YYYY-MM-NNN where NNN is sequential per month (globally unique)
+ * Uses database function to ensure uniqueness across all users
  */
-export async function generateBatchCode(userId: string, batchDate: Date): Promise<string> {
-  const year = batchDate.getFullYear()
-  const month = String(batchDate.getMonth() + 1).padStart(2, '0')
-  const prefix = `L-${year}-${month}-`
+export async function generateBatchCode(_userId: string, batchDate: Date): Promise<string> {
+  const dateStr = batchDate.toISOString().split('T')[0]
 
-  // Find the highest sequence number for this user/month
-  const { data, error } = await supabase
-    .from('batch_runs')
-    .select('batch_code')
-    .eq('user_id', userId)
-    .like('batch_code', `${prefix}%`)
-    .order('batch_code', { ascending: false })
-    .limit(1)
+  const { data, error } = await supabase.rpc('generate_unique_batch_code', {
+    p_batch_date: dateStr
+  })
 
   if (error) {
-    console.error('Error fetching batch codes:', error)
-    // Fallback to 001 if query fails
-    return `${prefix}001`
+    console.error('Error generating batch code:', error)
+    // Fallback to timestamp-based code if RPC fails
+    const year = batchDate.getFullYear()
+    const month = String(batchDate.getMonth() + 1).padStart(2, '0')
+    const fallback = String(Date.now()).slice(-3)
+    return `L-${year}-${month}-${fallback}`
   }
 
-  let nextSequence = 1
-
-  if (data && data.length > 0) {
-    // Extract the sequence number from the last batch code
-    const lastCode = data[0].batch_code
-    const lastSequence = parseInt(lastCode.split('-').pop() || '0', 10)
-    nextSequence = lastSequence + 1
-  }
-
-  // Format sequence with leading zeros (001-999)
-  const sequenceStr = String(nextSequence).padStart(3, '0')
-
-  return `${prefix}${sequenceStr}`
+  return data as string
 }
 
 /**
