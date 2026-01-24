@@ -42,6 +42,7 @@ export interface BatchRun {
   id: string
   user_id: string
   batch_code: string
+  trace_code: string
   batch_date: string
   total_weight_kg: number | null
   jar_size_ml: number | null
