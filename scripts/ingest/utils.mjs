@@ -61,3 +61,13 @@ export function splitTextIntoChunks(text, chunkSize, overlap) {
 
   return chunks
 }
+
+// Sanitize text to remove PostgreSQL-incompatible characters
+export function sanitizeText(text) {
+  if (!text) return ''
+  return text
+    .replace(/\x00/g, '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // Control chars
+    .replace(/\\u0000/g, '') // Literal null escape
+    .trim()
+}

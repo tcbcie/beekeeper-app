@@ -163,7 +163,7 @@ export default async function TracePage({ params }: PageProps) {
   // Use custom values if set, otherwise fall back to generated
   const displayTitle = batchInfo.public_title || 'Pure Irish Honey'
   const displayOrigin = batchInfo.public_origin || (primaryOrigin.city
-    ? `Harvested in Co. ${primaryOrigin.city}, ${primaryOrigin.country}`
+    ? `Harvested in ${primaryOrigin.city}, ${primaryOrigin.country}`
     : `Harvested in ${primaryOrigin.country}`)
 
   return (

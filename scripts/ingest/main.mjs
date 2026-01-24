@@ -169,7 +169,9 @@ async function processFile(filePath, supabase, services, options = {}) {
   console.log(`  Generating embeddings for ${chunks.length} chunks...`)
   for (let i = 0; i < chunks.length; i++) {
       try {
-          const chunk = chunks[i]
+          const chunk = utils.sanitizeText(chunks[i])
+          if (!chunk) continue // Skip empty chunks after sanitization
+
           if (i === 0) process.stdout.write(`  Embedding chunk 1/${chunks.length}...`)
 
           // Small delay between requests to avoid rate limits

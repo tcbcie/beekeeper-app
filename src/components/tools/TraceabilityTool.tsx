@@ -7,7 +7,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
 import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
-import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders } from '@/lib/story-templates'
+import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
 import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, OriginPercentage } from '@/types/traceability'
 
 type TabType = 'containers' | 'batches'
@@ -213,7 +213,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
         // Auto-populate origin if empty
         if (!prev.public_origin && origins.length > 0 && origins[0].city) {
-          updates.public_origin = `Harvested in Co. ${origins[0].city}, Ireland`
+          updates.public_origin = `Harvested in ${origins[0].city}, Ireland`
         }
 
         // Auto-populate story if empty
@@ -527,6 +527,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const handleBatchSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Check for unfilled placeholders in public story
+    const storyToSave = stripMarkers(batchForm.public_story)
+    if (batchForm.is_public && hasUnfilledPlaceholders(storyToSave)) {
+      const placeholders = getUnfilledPlaceholders(storyToSave)
+      toast.error(`Please fill in all placeholders: ${placeholders.join(', ')}`)
+      return
+    }
+
     try {
       let batchCode = editingBatch?.batch_code
       let traceCode = editingBatch?.trace_code
@@ -552,7 +560,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         is_public: batchForm.is_public,
         public_title: batchForm.public_title.trim() || null,
         public_origin: batchForm.public_origin.trim() || null,
-        public_story: batchForm.public_story.trim() || null,
+        public_story: stripMarkers(batchForm.public_story).trim() || null,
         updated_at: new Date().toISOString()
       }
 
@@ -888,6 +896,33 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             </button>
           </div>
 
+          {/* QR Code Preview for existing public batches */}
+          {editingBatch && editingBatch.trace_code && editingBatch.is_public && (
+            <div className="flex items-center gap-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 mb-4">
+              <div className="bg-white p-2 rounded-lg">
+                <QRCodeSVG
+                  value={getTraceUrl(editingBatch.trace_code)}
+                  size={64}
+                  level="L"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">Public Trace Link</p>
+                <a
+                  href={getTraceUrl(editingBatch.trace_code)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-amber-600 dark:text-amber-400 hover:underline break-all flex items-center gap-1"
+                >
+                  {getTraceUrl(editingBatch.trace_code)}
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleBatchSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -1071,7 +1106,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         value={batchForm.public_origin}
                         onChange={(e) => setBatchForm(prev => ({ ...prev, public_origin: e.target.value }))}
                         className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-center"
-                        placeholder="Harvested in Co. Meath, Ireland"
+                        placeholder="Harvested in Meath, Ireland"
                       />
                     </div>
 
@@ -1140,16 +1175,51 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                           setBatchForm(prev => ({ ...prev, public_story: e.target.value }))
                           setSelectedTemplate('custom')
                         }}
-                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-sm"
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-sm font-mono"
                         rows={4}
                         placeholder="Harvested by [name] from [apiary]. The bees foraged on [flowers]."
                       />
-                      {hasUnfilledPlaceholders(batchForm.public_story) && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                          Replace bracketed placeholders: {getUnfilledPlaceholders(batchForm.public_story).join(', ')}
+
+                      {/* Formatted Preview */}
+                      {batchForm.public_story && (
+                        <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-slate-500">Preview:</p>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                <span className="text-slate-500">Auto-filled</span>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                <span className="text-slate-500">Needs input</span>
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-sm leading-relaxed">
+                            {batchForm.public_story.split(/(<<[^>]+>>|\[[^\]]+\])/).map((part, i) => {
+                              if (part.startsWith('<<') && part.endsWith('>>')) {
+                                // Auto-inserted value - green bold
+                                return <span key={i} className="font-semibold text-green-600 dark:text-green-400">{part.slice(2, -2)}</span>
+                              } else if (part.startsWith('[') && part.endsWith(']')) {
+                                // Unfilled placeholder - red
+                                return <span key={i} className="font-semibold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1 rounded">{part}</span>
+                              }
+                              return part
+                            })}
+                          </p>
+                        </div>
+                      )}
+
+                      {hasUnfilledPlaceholders(stripMarkers(batchForm.public_story)) && (
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          Fill in red placeholders: {getUnfilledPlaceholders(stripMarkers(batchForm.public_story)).join(', ')}
                         </p>
                       )}
-                      {publicPreview.floralSources.length === 0 && !hasUnfilledPlaceholders(batchForm.public_story) && (
+                      {publicPreview.floralSources.length === 0 && !hasUnfilledPlaceholders(stripMarkers(batchForm.public_story)) && (
                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                           Tip: Add floral source to harvests to auto-populate templates
                         </p>
