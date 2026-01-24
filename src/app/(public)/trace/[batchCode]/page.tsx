@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { isValidBatchCode } from '@/lib/batch-code'
 import { Metadata } from 'next'
 import ApiaryAreaMapWrapper from '@/components/maps/ApiaryAreaMapWrapper'
 
@@ -31,25 +30,25 @@ interface BatchInfo {
 }
 
 interface PageProps {
-  params: Promise<{ batchCode: string }>
+  params: Promise<{ batchCode: string }> // URL param is trace_code
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { batchCode } = await params
+  const { batchCode: traceCode } = await params
   return {
-    title: `Batch ${batchCode} | HiveCraic Honey Traceability`,
-    description: `Trace the origin of honey batch ${batchCode}. From hive to jar.`,
+    title: `Honey Trace ${traceCode} | HiveCraic`,
+    description: `Trace the origin of this honey. From hive to jar.`,
   }
 }
 
-async function getBatchInfo(batchCode: string): Promise<BatchInfo | null> {
-  // Validate format first to avoid unnecessary DB calls
-  if (!isValidBatchCode(batchCode)) {
+async function getBatchInfo(traceCode: string): Promise<BatchInfo | null> {
+  // Validate trace code format (8 character alphanumeric)
+  if (!/^[A-Z0-9]{8}$/.test(traceCode.toUpperCase())) {
     return null
   }
 
   const { data, error } = await supabase.rpc('get_public_batch_info', {
-    p_batch_code: batchCode,
+    p_trace_code: traceCode.toUpperCase(),
   })
 
   if (error || !data) {
@@ -121,8 +120,8 @@ function getMapOrigin(origins: BatchInfo['origins']): { lat: number; lon: number
 }
 
 export default async function TracePage({ params }: PageProps) {
-  const { batchCode } = await params
-  const batchInfo = await getBatchInfo(batchCode)
+  const { batchCode: traceCode } = await params
+  const batchInfo = await getBatchInfo(traceCode)
 
   if (!batchInfo) {
     return (
@@ -147,10 +146,10 @@ export default async function TracePage({ params }: PageProps) {
             Batch Not Found
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mb-6">
-            We couldn&apos;t find a honey batch with this code. Please check the code on your jar label and try again.
+            We couldn&apos;t find a honey batch with this code. Please check the QR code or trace code on your jar label and try again.
           </p>
           <p className="text-sm text-slate-500 dark:text-slate-500">
-            Batch code format: L-YYYY-MM-NNN
+            Trace code format: 8 characters (e.g., A1B2C3D4)
           </p>
         </div>
       </div>

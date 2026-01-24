@@ -529,13 +529,17 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
     try {
       let batchCode = editingBatch?.batch_code
+      let traceCode = editingBatch?.trace_code
 
       if (!editingBatch) {
         // Generate new batch code
         batchCode = await generateBatchCode(userId, new Date(batchForm.batch_date))
+        // Generate unique trace code via database function
+        const { data: newTraceCode } = await supabase.rpc('generate_trace_code')
+        traceCode = newTraceCode as string
       }
 
-      const batchData = {
+      const batchData: Record<string, unknown> = {
         user_id: userId,
         batch_code: batchCode!,
         batch_date: batchForm.batch_date,
@@ -550,6 +554,11 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         public_origin: batchForm.public_origin.trim() || null,
         public_story: batchForm.public_story.trim() || null,
         updated_at: new Date().toISOString()
+      }
+
+      // Only include trace_code for new batches
+      if (!editingBatch) {
+        batchData.trace_code = traceCode
       }
 
       let batchId: string
@@ -644,10 +653,10 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     return calculateOriginPercentages(container.harvests)
   }
 
-  // Get trace URL for a batch
-  const getTraceUrl = (batchCode: string) => {
+  // Get trace URL for a batch (uses trace_code for unique public URLs)
+  const getTraceUrl = (traceCode: string) => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.hivecraic.com'
-    return `${baseUrl}/trace/${batchCode}`
+    return `${baseUrl}/trace/${traceCode}`
   }
 
   // Download QR code as PNG
@@ -1433,7 +1442,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               <div className="bg-white p-4 rounded-xl inline-block mb-4">
                 <QRCodeSVG
                   id="qr-code-svg"
-                  value={getTraceUrl(qrBatch.batch_code)}
+                  value={getTraceUrl(qrBatch.trace_code)}
                   size={200}
                   level="H"
                   includeMargin={true}
@@ -1441,11 +1450,11 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               </div>
 
               <p className="text-xs text-text-secondary mb-4 break-all">
-                {getTraceUrl(qrBatch.batch_code)}
+                {getTraceUrl(qrBatch.trace_code)}
               </p>
 
               <button
-                onClick={() => downloadQrCode(qrBatch.batch_code)}
+                onClick={() => downloadQrCode(qrBatch.trace_code)}
                 className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
               >
                 <Download size={18} />

@@ -4,27 +4,38 @@
 import { supabase } from './supabase'
 
 /**
- * Generate the next batch code for a given month
- * Format: L-YYYY-MM-NNN where NNN is sequential per month (globally unique)
- * Uses database function to ensure uniqueness across all users
+ * Generate the next batch code for a given user and month
+ * Format: L-YYYY-MM-NNN where NNN is sequential per user per month
  */
-export async function generateBatchCode(_userId: string, batchDate: Date): Promise<string> {
-  const dateStr = batchDate.toISOString().split('T')[0]
+export async function generateBatchCode(userId: string, batchDate: Date): Promise<string> {
+  const year = batchDate.getFullYear()
+  const month = String(batchDate.getMonth() + 1).padStart(2, '0')
+  const prefix = `L-${year}-${month}-`
 
-  const { data, error } = await supabase.rpc('generate_unique_batch_code', {
-    p_batch_date: dateStr
-  })
+  // Find the highest sequence number for this user/month
+  const { data, error } = await supabase
+    .from('batch_runs')
+    .select('batch_code')
+    .eq('user_id', userId)
+    .like('batch_code', `${prefix}%`)
+    .order('batch_code', { ascending: false })
+    .limit(1)
 
   if (error) {
-    console.error('Error generating batch code:', error)
-    // Fallback to timestamp-based code if RPC fails
-    const year = batchDate.getFullYear()
-    const month = String(batchDate.getMonth() + 1).padStart(2, '0')
-    const fallback = String(Date.now()).slice(-3)
-    return `L-${year}-${month}-${fallback}`
+    console.error('Error fetching batch codes:', error)
+    return `${prefix}001`
   }
 
-  return data as string
+  let nextSequence = 1
+
+  if (data && data.length > 0) {
+    const lastCode = data[0].batch_code
+    const lastSequence = parseInt(lastCode.split('-').pop() || '0', 10)
+    nextSequence = lastSequence + 1
+  }
+
+  const sequenceStr = String(nextSequence).padStart(3, '0')
+  return `${prefix}${sequenceStr}`
 }
 
 /**
