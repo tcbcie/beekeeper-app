@@ -246,10 +246,6 @@ export default async function TracePage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Powered by */}
-      <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-6">
-        Powered by HiveCraic Traceability
-      </p>
     </div>
   )
 }

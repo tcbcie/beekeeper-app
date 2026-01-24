@@ -61,8 +61,13 @@ export default function InspectionCard({
           <div className="flex-1 min-w-0">
             <h3 className="text-base md:text-lg font-bold">Hive: {inspection.hives?.hive_number || 'Unknown'}</h3>
             <p className="text-xs md:text-sm text-text-tertiary">
-              {inspection.inspection_date}
-              {inspection.inspection_time && ` at ${inspection.inspection_time}`}
+              {new Date(inspection.inspection_date + 'T00:00:00').toLocaleDateString('en-GB', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+              {inspection.inspection_time && ` at ${inspection.inspection_time.slice(0, 5)}`}
             </p>
             {inspection.profiles && inspection.user_id !== userId && sharedHiveIds.includes(inspection.hive_id) && (
               <p className="text-xs text-text-tertiary mt-1">
