@@ -1862,3 +1862,33 @@ Added in-app QR code generation for batch codes.
 
 ---
 
+## Session 22: Fix Cannot Save Inspection Bug - January 24, 2026
+
+### Problem
+When saving a new inspection, the app tried to UPDATE instead of INSERT, causing:
+```
+PATCH https://.../inspections?id=eq.&user_id=eq.xxx 400 (Bad Request)
+```
+
+### Root Cause
+In `handleNewRecord()` (line 176-183), when creating a new inspection with a preset hive, `editingInspection` was set with `id: ''` (empty string).
+
+In `handleInspectionSubmit()` (line 434), the condition `if (editingInspection)` was truthy (object exists), so it tried to UPDATE with an empty ID instead of INSERT.
+
+### Fix
+Changed condition from `if (editingInspection)` to `if (editingInspection?.id)`.
+
+Empty string `''` is falsy, so new inspections now correctly use the INSERT path.
+
+### Files Modified
+- `src/app/dashboard/records/page.tsx` (line 434) - One-line fix
+
+### Testing Required
+User should run `npm run build` and then test:
+1. Create a new inspection from the Records page
+2. Create a new inspection from a hive's detail page (with preset hive)
+3. Edit an existing inspection
+4. All three scenarios should save successfully
+
+---
+

@@ -431,7 +431,7 @@ export default function RecordsPage() {
         weather_wind_speed: weatherData?.wind_speed || null
       }
 
-      if (editingInspection) {
+      if (editingInspection?.id) {
         const { error } = await supabase
           .from('inspections')
           .update(submitData)
