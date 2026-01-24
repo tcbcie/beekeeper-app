@@ -458,16 +458,16 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         if (linkError) throw linkError
       }
 
-      toast.success(editingContainer ? 'Container updated' : 'Container created')
+      toast.success(editingContainer ? 'Bulk honey updated' : 'Bulk honey created')
       resetContainerForm()
       fetchContainers()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving container')
+      toast.error(error instanceof Error ? error.message : 'Error saving bulk honey')
     }
   }
 
   const handleDeleteContainer = async (id: string) => {
-    if (!confirm('Delete this container? Harvest links will be removed.')) return
+    if (!confirm('Delete this bulk honey? Harvest links will be removed.')) return
 
     const { error } = await supabase
       .from('bulk_containers')
@@ -475,11 +475,11 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       .eq('id', id)
 
     if (error) {
-      toast.error('Error deleting container')
+      toast.error('Error deleting bulk honey')
       return
     }
 
-    toast.success('Container deleted')
+    toast.success('Bulk honey deleted')
     fetchContainers()
   }
 
@@ -707,7 +707,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         >
           <Plus size={20} />
           <span className="hidden sm:inline">
-            {activeTab === 'containers' ? 'New Container' : 'New Batch'}
+            {activeTab === 'containers' ? 'New Bulk Honey' : 'New Batch'}
           </span>
         </button>
       </div>
@@ -723,7 +723,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           }`}
         >
           <Package size={18} />
-          <span>Containers</span>
+          <span>Bulk Honey</span>
         </button>
         <button
           onClick={() => setActiveTab('batches')}
@@ -743,7 +743,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         <div className="bg-surface-elevated rounded-xl p-4 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">
-              {editingContainer ? 'Edit Container' : 'New Container'}
+              {editingContainer ? 'Edit Bulk Honey' : 'New Bulk Honey'}
             </h3>
             <button onClick={resetContainerForm} className="p-2 hover:bg-surface rounded-lg">
               <X size={20} />
@@ -877,7 +877,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 type="submit"
                 className="flex-1 px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
               >
-                {editingContainer ? 'Update' : 'Create'} Container
+                {editingContainer ? 'Update' : 'Create'} Bulk Honey
               </button>
             </div>
           </form>
@@ -1029,12 +1029,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             {/* Container Selection */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
-                Source Containers ({batchForm.container_ids.length} selected)
+                Bulk Honey Source ({batchForm.container_ids.length} selected)
               </label>
               <div className="max-h-48 overflow-y-auto border border-border rounded-lg p-2 space-y-1">
                 {containers.length === 0 ? (
                   <p className="text-sm text-text-secondary text-center py-2">
-                    No containers available. Create containers first.
+                    No bulk honey available. Create bulk honey first.
                   </p>
                 ) : (
                   containers.map(container => (
@@ -1082,7 +1082,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
                 {batchForm.container_ids.length === 0 && (!editingBatch?.containers || editingBatch.containers.length === 0) ? (
                   <div className="p-4 text-center text-text-secondary text-sm">
-                    Select containers to see public preview
+                    Select bulk honey to see public preview
                   </div>
                 ) : publicPreview ? (
                   <div className="p-4 space-y-4">
@@ -1310,7 +1310,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           {containers.length === 0 ? (
             <div className="text-center py-12 text-text-secondary">
               <Package size={48} className="mx-auto mb-4 opacity-50" />
-              <p>No containers yet. Create one to start tracking your honey.</p>
+              <p>No bulk honey yet. Create one to start tracking your honey.</p>
             </div>
           ) : (
             containers.map(container => {
@@ -1389,7 +1389,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           {batches.length === 0 ? (
             <div className="text-center py-12 text-text-secondary">
               <Milk size={48} className="mx-auto mb-4 opacity-50" />
-              <p>No batches yet. Create containers first, then create a bottling batch.</p>
+              <p>No batches yet. Create bulk honey first, then create a bottling batch.</p>
             </div>
           ) : (
             batches.map(batch => {
@@ -1448,7 +1448,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                           </div>
                         )}
                         <div>
-                          <span className="font-medium">Containers:</span> {containerCount}
+                          <span className="font-medium">Bulk Honey:</span> {containerCount}
                         </div>
                       </div>
 
