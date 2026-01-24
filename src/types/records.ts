@@ -160,6 +160,7 @@ export interface Harvest {
   unit: string
   frames_harvested: number | null
   floral_source: string | null
+  moisture_content: number | null
   notes: string
   hives?: {
     hive_number: string

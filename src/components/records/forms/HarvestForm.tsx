@@ -30,6 +30,7 @@ export default function HarvestForm({
     unit: 'kg',
     frames_harvested: null,
     floral_source: null,
+    moisture_content: null,
     notes: ''
   })
 
