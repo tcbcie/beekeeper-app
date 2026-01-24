@@ -66,13 +66,22 @@ function formatHarvestDate(dateStr: string): string {
   })
 }
 
+// Marker for auto-inserted values: <<value>>
+// These are highlighted in preview and stripped on save
+
 export function replacePlaceholders(template: string, data: PlaceholderData): string {
   let result = template
 
+  // Helper to wrap value in markers (only if it's not a placeholder)
+  const mark = (value: string, fallback: string) => {
+    if (value === fallback || value.startsWith('[')) return value
+    return `<<${value}>>`
+  }
+
   // Parse date info
-  let season = 'summer'
-  let month = 'summer'
-  let year = new Date().getFullYear().toString()
+  let season = '[Season]'
+  let month = '[Month]'
+  let year = '[Year]'
   let harvestDate = '[Harvest Date]'
 
   if (data.batchDate) {
@@ -85,35 +94,43 @@ export function replacePlaceholders(template: string, data: PlaceholderData): st
   }
 
   // Get location from origins
-  const location = data.origins?.[0]?.city
-    ? `Co. ${data.origins[0].city}`
-    : '[Location]'
+  const location = data.origins?.[0]?.city || '[Location]'
 
   // Get apiary name
   const apiaryName = data.origins?.[0]?.name || '[Apiary Name]'
 
-  // Get floral sources
+  // Get floral sources (don't duplicate if only one source)
   const floralSource1 = data.floralSources?.[0]?.toLowerCase() || '[Floral Source 1]'
-  const floralSource2 = data.floralSources?.[1]?.toLowerCase() || data.floralSources?.[0]?.toLowerCase() || '[Floral Source 2]'
+  const floralSource2 = data.floralSources?.[1]?.toLowerCase() || '[Floral Source 2]'
   const floralSource = data.floralSources?.[0]?.toLowerCase() || '[Floral Source]'
 
-  // Replace known placeholders
-  result = result.replace(/\[Season\]/g, season)
-  result = result.replace(/\[Month\]/g, month)
-  result = result.replace(/\[Year\]/g, year)
-  result = result.replace(/\[Location\]/g, location)
-  result = result.replace(/\[Apiary Name\]/g, apiaryName)
-  result = result.replace(/\[Floral Source 1\]/g, floralSource1)
-  result = result.replace(/\[Floral Source 2\]/g, floralSource2)
-  result = result.replace(/\[Floral Source\]/g, floralSource)
-  result = result.replace(/\[Beekeeper Name\]/g, data.beekeeperName || '[Beekeeper Name]')
-  result = result.replace(/\[Harvest Date\]/g, harvestDate)
-  result = result.replace(/\[Batch Code\]/g, data.batchCode || '[Batch Code]')
+  // Replace known placeholders with marked values
+  result = result.replace(/\[Season\]/g, mark(season, '[Season]'))
+  result = result.replace(/\[Month\]/g, mark(month, '[Month]'))
+  result = result.replace(/\[Year\]/g, mark(year, '[Year]'))
+  result = result.replace(/\[Location\]/g, mark(location, '[Location]'))
+  result = result.replace(/\[Apiary Name\]/g, mark(apiaryName, '[Apiary Name]'))
+  result = result.replace(/\[Floral Source 1\]/g, mark(floralSource1, '[Floral Source 1]'))
+  result = result.replace(/\[Floral Source 2\]/g, mark(floralSource2, '[Floral Source 2]'))
+  result = result.replace(/\[Floral Source\]/g, mark(floralSource, '[Floral Source]'))
+  result = result.replace(/\[Beekeeper Name\]/g, mark(data.beekeeperName || '[Beekeeper Name]', '[Beekeeper Name]'))
+  result = result.replace(/\[Harvest Date\]/g, mark(harvestDate, '[Harvest Date]'))
+  result = result.replace(/\[Batch Code\]/g, mark(data.batchCode || '[Batch Code]', '[Batch Code]'))
 
   // These remain as placeholders for user to fill
   // [Taste Profile], [Weather Condition], [Weather Description], [Local Landmark], [Color], [Bottling Location]
 
   return result
+}
+
+// Strip <<markers>> from text for saving
+export function stripMarkers(text: string): string {
+  return text.replace(/<<([^>]+)>>/g, '$1')
+}
+
+// Check if text has auto-inserted markers
+export function hasMarkers(text: string): boolean {
+  return /<<[^>]+>>/.test(text)
 }
 
 export function hasUnfilledPlaceholders(text: string): boolean {

@@ -185,6 +185,19 @@ When creating a batch, users can choose from 4 pre-written story templates that 
 4. Edit the text to replace any `[bracketed placeholders]` with your own words
 5. Customize further as desired
 
+### Visual Highlighting
+
+The story editor shows a live preview with color-coded highlighting:
+
+- **Green (Auto-filled)** - Values automatically populated from your data (beekeeper name, location, apiary, floral sources, dates, etc.)
+- **Red (Needs input)** - Placeholders you must fill in manually (e.g., `[Taste Profile]`, `[Weather Condition]`)
+
+A legend at the top of the preview explains the colors.
+
+### Save Validation
+
+If you try to save a public batch with unfilled `[placeholders]` remaining, an error toast will appear listing the placeholders that need to be filled in. You must replace all red placeholders before saving.
+
 ### Placeholders
 
 Templates use placeholders that are automatically replaced:
@@ -217,8 +230,8 @@ The trace page uses a story-driven design to build consumer trust:
 
 **Hero Section:**
 - **Title:** "Pure Irish Honey"
-- **Location:** Prominently displayed origin (e.g., "Harvested in Co. Meath, Ireland")
-- **Map:** Optional map thumbnail if beekeeper has enabled location sharing
+- **Location:** Prominently displayed origin (e.g., "Harvested in Meath, Ireland")
+- **Map:** Optional interactive map with 5km foraging radius circle (if beekeeper has enabled location sharing). Labeled "Source Apiary Foraging Area (~5km)"
 
 **Story Section:**
 - Personalized narrative: "Harvested by [Beekeeper Name] from [Apiary Name]. The bees foraged on [Floral Sources]."
@@ -266,12 +279,27 @@ To use:
 
 **Note:** The QR code links to the unique `trace_code` URL, while your jar label can display the `batch_code` as the EU lot number.
 
+### QR Code Preview (Edit Form)
+
+When editing an existing public batch, a QR code preview is shown at the top of the form:
+- Small QR code thumbnail
+- Clickable trace URL that opens in a new window for preview
+- Allows you to quickly verify how the public page looks before saving changes
+
 ## Future Enhancements
 - **PDF Label Export** - Export printable labels with batch info
 - **External Honey Blending** - Track imported honey with manual country-of-origin
 - **Offline Mode** - Queue harvests when offline
 
 ## Changelog
+
+### January 24, 2026
+- Added QR code preview with clickable link on batch edit form (opens trace page in new window)
+- Added visual highlighting for story templates: auto-filled values in green, unfilled placeholders in red
+- Added save validation: blocks saving if unfilled `[placeholders]` remain with error toast
+- Added legend explaining color coding (Auto-filled / Needs input)
+- Changed map label to "Source Apiary Foraging Area (~5km)"
+- Fixed origin headline to not assume "Co." prefix (location name used as-is)
 
 ### January 23, 2026
 - Added `jar_weight_g` field for EU net weight compliance
