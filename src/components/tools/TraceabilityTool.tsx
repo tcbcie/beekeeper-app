@@ -44,7 +44,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const [batchForm, setBatchForm] = useState<BatchFormData>({
     batch_date: formatDateForInput(new Date()),
     total_weight_kg: '',
-    jar_size_ml: '500',
+    jar_size_ml: '500ml',
     jar_weight_g: '',
     jar_count: '',
     best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
@@ -55,6 +55,36 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     public_story: '',
     container_ids: []
   })
+
+  // Jar size options from database
+  const [jarSizeOptions, setJarSizeOptions] = useState<string[]>([])
+
+  // Fetch jar size options from database
+  const fetchJarSizes = useCallback(async () => {
+    const { data: category } = await supabase
+      .from('dropdown_categories')
+      .select('id')
+      .eq('category_key', 'jar_size')
+      .single()
+
+    if (category) {
+      const { data: values } = await supabase
+        .from('dropdown_values')
+        .select('value')
+        .eq('category_id', category.id)
+        .eq('is_active', true)
+        .order('display_order')
+
+      if (values) {
+        setJarSizeOptions(values.map(v => v.value))
+      }
+    }
+  }, [])
+
+  // Fetch jar sizes on mount
+  useEffect(() => {
+    fetchJarSizes()
+  }, [fetchJarSizes])
 
   // Auto-calculate total weight when jar_weight_g and jar_count change
   useEffect(() => {
@@ -488,7 +518,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     setBatchForm({
       batch_date: formatDateForInput(new Date()),
       total_weight_kg: '',
-      jar_size_ml: '500',
+      jar_size_ml: '500ml',
       jar_weight_g: '',
       jar_count: '',
       best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
@@ -507,10 +537,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const handleEditBatch = (batch: BatchRun) => {
     setSelectedTemplate('custom')
     setEditingBatch(batch)
+    // Find matching jar size option (e.g., 340 -> "340ml (12oz)")
+    const matchingJarSize = jarSizeOptions.find(opt => opt.startsWith(`${batch.jar_size_ml}ml`)) || '500ml'
     setBatchForm({
       batch_date: batch.batch_date,
       total_weight_kg: batch.total_weight_kg?.toString() || '',
-      jar_size_ml: batch.jar_size_ml?.toString() || '500',
+      jar_size_ml: matchingJarSize,
       jar_weight_g: batch.jar_weight_g?.toString() || '',
       jar_count: batch.jar_count?.toString() || '',
       best_before_date: batch.best_before_date || '',
@@ -552,7 +584,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         batch_code: batchCode!,
         batch_date: batchForm.batch_date,
         total_weight_kg: batchForm.total_weight_kg ? parseFloat(batchForm.total_weight_kg) : null,
-        jar_size_ml: batchForm.jar_size_ml ? parseInt(batchForm.jar_size_ml) : null,
+        jar_size_ml: batchForm.jar_size_ml ? parseInt(batchForm.jar_size_ml.match(/^\d+/)?.[0] || '0') : null,
         jar_weight_g: batchForm.jar_weight_g ? parseInt(batchForm.jar_weight_g) : null,
         jar_count: batchForm.jar_count ? parseInt(batchForm.jar_count) : null,
         best_before_date: batchForm.best_before_date || null,
@@ -957,13 +989,9 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   onChange={(e) => setBatchForm(prev => ({ ...prev, jar_size_ml: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
                 >
-                  <option value="125">125ml</option>
-                  <option value="250">250ml</option>
-                  <option value="340">340ml (12oz)</option>
-                  <option value="454">454ml (1lb)</option>
-                  <option value="500">500ml</option>
-                  <option value="750">750ml</option>
-                  <option value="1000">1000ml (1kg)</option>
+                  {(jarSizeOptions.length > 0 ? jarSizeOptions : ['500ml']).map(size => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
                 </select>
               </div>
               <div>
