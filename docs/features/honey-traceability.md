@@ -47,20 +47,37 @@ Batches represent a production run of jarred honey from one or more containers.
 - **Notes** - Optional notes
 - **Source Containers** - Select which containers were used
 
-## Batch Code Format
+## Batch Code vs Trace Code
 
-Batch codes follow EU lot number requirements:
+Each batch has two codes serving different purposes:
+
+### Batch Code (Lot Number)
+
+Your EU-compliant lot number for jar labels. Sequential per user per month.
 
 ```
 L-2026-01-001
 │ │    │  │
-│ │    │  └── Sequential number (001-999 per month)
+│ │    │  └── Sequential number (001-999 per month per user)
 │ │    └───── Month (01-12)
 │ └────────── Year
 └──────────── "L" prefix (EU Lot identifier)
 ```
 
-The system automatically generates the next sequential number for each month.
+**Note:** Different beekeepers can have the same batch code (e.g., both can have `L-2026-01-001`) since each operates independently.
+
+### Trace Code (Public URL)
+
+A globally unique 8-character alphanumeric code for public traceability URLs.
+
+```
+A1B2C3D4
+```
+
+- Automatically generated when creating a batch
+- Guaranteed unique across all users
+- Used in QR codes and public URLs
+- Cannot be duplicated
 
 ## Workflow
 
@@ -96,7 +113,8 @@ The system automatically generates the next sequential number for each month.
 |--------|------|-------------|
 | id | UUID | Primary key |
 | user_id | UUID | Owner (FK → profiles) |
-| batch_code | VARCHAR(20) | Unique lot number |
+| batch_code | VARCHAR(20) | EU lot number (per user) |
+| trace_code | VARCHAR(12) | Globally unique public trace code |
 | batch_date | DATE | Bottling date |
 | total_weight_kg | NUMERIC | Optional total weight |
 | jar_size_ml | INTEGER | Jar size in ml |
@@ -182,13 +200,16 @@ User-filled placeholders (remain as `[placeholder]` for you to customize):
 
 ## Public Consumer Lookup
 
-Consumers can look up batch information by scanning a QR code or entering the batch code from their jar label.
+Consumers can look up batch information by scanning the QR code on the jar label.
 
 ### URL Format
 
 ```
-https://www.hivecraic.com/trace/L-2026-01-001
+https://www.hivecraic.com/trace/A1B2C3D4
+                              └── trace_code (8 characters)
 ```
+
+The URL uses the `trace_code` (not the batch_code) to ensure global uniqueness.
 
 ### Consumer View
 
@@ -221,19 +242,20 @@ The trace page uses a story-driven design to build consumer trust:
 
 ### Database Function
 
-The `get_public_batch_info(batch_code)` function:
-1. Validates the batch exists and is public
-2. Gets beekeeper name from profiles (first_name or full_name)
-3. Traverses the traceability chain: `batch_runs` → `batch_containers` → `bulk_containers` → `container_harvests` → `harvests` → `hives` → `apiaries`
-4. Calculates origin percentages based on harvest weights
-5. Aggregates unique floral sources from linked harvests
-6. Includes map coordinates (fuzzed) if share_location is enabled
-7. Returns consumer-safe JSON or NULL
+The `get_public_batch_info(trace_code)` function:
+1. Looks up the batch by `trace_code` (globally unique)
+2. Validates the batch exists and is public
+3. Gets beekeeper name from profiles (first_name or full_name)
+4. Traverses the traceability chain: `batch_runs` → `batch_containers` → `bulk_containers` → `container_harvests` → `harvests` → `hives` → `apiaries`
+5. Calculates origin percentages based on harvest weights
+6. Aggregates unique floral sources from linked harvests
+7. Includes map coordinates (fuzzed) if share_location is enabled
+8. Returns consumer-safe JSON or NULL
 
 ### QR Code Generation
 
 Each public batch has a QR code button that opens a modal with:
-- Scannable QR code linking to the trace page
+- Scannable QR code linking to the trace page (uses `trace_code` in URL)
 - The full URL displayed below the code
 - **Download PNG** button to save the QR code for printing on jar labels
 
@@ -241,6 +263,8 @@ To use:
 1. Go to **Tools → Honey Provenance → Batches**
 2. Click the QR icon on any public batch
 3. Download the PNG and add it to your jar labels
+
+**Note:** The QR code links to the unique `trace_code` URL, while your jar label can display the `batch_code` as the EU lot number.
 
 ## Future Enhancements
 - **PDF Label Export** - Export printable labels with batch info
@@ -255,8 +279,11 @@ To use:
 - Changed harvest floral source label to "Predominant Floral Source (>50%)"
 - Redesigned trace page with story-driven layout
 - Added beekeeper name display from profiles
-- Added optional map display using OpenStreetMap iframe embed (when share_location enabled)
+- Added optional map display with 5km radius circle using Leaflet.js (when share_location enabled)
 - Changed public header "Sign In" to subtle "Beekeeper Login" text link
 - Added editable public display fields (public_title, public_origin, public_story)
 - Added 4 story templates: Floral Forager, The Purist, The Terroir, Seasonal Snapshot
 - Templates auto-populate with batch data and allow customization
+- Added `trace_code` for globally unique public URLs (separate from user's batch_code)
+- Batch codes remain per-user sequential; trace codes are globally unique 8-character alphanumeric
+- QR codes now link to trace_code URLs for guaranteed uniqueness
