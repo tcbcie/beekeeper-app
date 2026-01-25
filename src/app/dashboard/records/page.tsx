@@ -510,7 +510,7 @@ export default function RecordsPage() {
         if (error) throw error
       }
 
-      await fetchVarroaTreatments(userId)
+      await fetchVarroaTreatments(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
       toast.error('Error saving treatment: ' + (error instanceof Error ? error.message : 'Unknown error'))
@@ -535,7 +535,7 @@ export default function RecordsPage() {
         .eq('id', treatment.id)
         .eq('user_id', userId)
 
-      if (!error) await fetchVarroaTreatments(userId)
+      if (!error) await fetchVarroaTreatments(userId, filters.ownershipFilter)
     }
   }
 
@@ -606,7 +606,7 @@ export default function RecordsPage() {
         }
       }
 
-      await fetchVarroaChecks(userId)
+      await fetchVarroaChecks(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
       toast.error('Error saving check: ' + (error instanceof Error ? error.message : 'Unknown error'))
@@ -631,7 +631,7 @@ export default function RecordsPage() {
         .eq('id', check.id)
         .eq('user_id', userId)
 
-      if (!error) await fetchVarroaChecks(userId)
+      if (!error) await fetchVarroaChecks(userId, filters.ownershipFilter)
     }
   }
 
@@ -665,7 +665,7 @@ export default function RecordsPage() {
         if (error) throw error
       }
 
-      await fetchFeedings(userId)
+      await fetchFeedings(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
       toast.error('Error saving feeding: ' + (error instanceof Error ? error.message : 'Unknown error'))
@@ -690,7 +690,7 @@ export default function RecordsPage() {
         .eq('id', feeding.id)
         .eq('user_id', userId)
 
-      if (!error) await fetchFeedings(userId)
+      if (!error) await fetchFeedings(userId, filters.ownershipFilter)
     }
   }
 
@@ -726,7 +726,7 @@ export default function RecordsPage() {
         if (error) throw error
       }
 
-      await fetchHarvests(userId)
+      await fetchHarvests(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
       toast.error('Error saving harvest: ' + (error instanceof Error ? error.message : 'Unknown error'))
@@ -751,7 +751,7 @@ export default function RecordsPage() {
         .eq('id', harvest.id)
         .eq('user_id', userId)
 
-      if (!error) await fetchHarvests(userId)
+      if (!error) await fetchHarvests(userId, filters.ownershipFilter)
     }
   }
 
