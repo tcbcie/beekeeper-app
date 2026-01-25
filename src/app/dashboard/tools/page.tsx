@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import GDDTracker from '@/components/tools/GDDTracker'
 import VarroaWeather from '@/components/tools/VarroaWeather'
@@ -10,9 +10,10 @@ import FrameCellCalculator from '@/components/tools/FrameCellCalculator'
 import DiagnosisUploader from '@/components/tools/DiagnosisUploader'
 import ProfitLoss from '@/components/tools/ProfitLoss'
 import TraceabilityTool from '@/components/tools/TraceabilityTool'
+import PurchaseList from '@/components/tools/PurchaseList'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
-type ToolsSection = 'feeding' | 'fondant' | 'cells' | 'varroa' | 'gdd' | 'diagnosis' | 'profitloss' | 'traceability'
+type ToolsSection = 'feeding' | 'fondant' | 'cells' | 'varroa' | 'gdd' | 'diagnosis' | 'profitloss' | 'traceability' | 'purchases'
 
 export default function ToolsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -29,7 +30,7 @@ export default function ToolsPage() {
   // Sync with URL params
   useEffect(() => {
     const section = searchParams.get('section')
-    if (section && ['feeding', 'fondant', 'cells', 'varroa', 'gdd', 'diagnosis', 'profitloss', 'traceability'].includes(section)) {
+    if (section && ['feeding', 'fondant', 'cells', 'varroa', 'gdd', 'diagnosis', 'profitloss', 'traceability', 'purchases'].includes(section)) {
       setActiveSection(section as ToolsSection)
     }
   }, [searchParams])
@@ -109,6 +110,7 @@ export default function ToolsPage() {
     { id: 'diagnosis' as const, label: 'Diagnosis', icon: Camera },
     { id: 'profitloss' as const, label: 'P&L', icon: Wallet },
     { id: 'traceability' as const, label: 'Provenance', icon: Package },
+    { id: 'purchases' as const, label: 'Purchases', icon: ShoppingCart },
   ]
 
   return (
@@ -381,6 +383,13 @@ export default function ToolsPage() {
       {activeSection === 'traceability' && (
         <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
           <TraceabilityTool userId={userId} />
+        </div>
+      )}
+
+      {/* Purchases Tab */}
+      {activeSection === 'purchases' && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+          <PurchaseList userId={userId} />
         </div>
       )}
     </div>

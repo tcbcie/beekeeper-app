@@ -1892,3 +1892,54 @@ User should run `npm run build` and then test:
 
 ---
 
+## Purchase List Tool Implementation (January 25, 2026)
+
+### Overview
+Implemented a new Purchase List tool for tracking beekeeping supply purchases.
+
+### Changes Made
+
+#### Database
+- Created `purchase_items` table with RLS policy
+- Added `purchase_category` dropdown category with 10 values
+
+#### TypeScript Types
+- Added `PurchaseItem` interface to `src/types/records.ts`
+
+#### Components Created
+- `src/components/tools/PurchaseList/index.tsx` - Main component
+- `src/components/tools/PurchaseList/PurchaseItemForm.tsx` - Add/edit form
+- `src/components/tools/PurchaseList/PurchaseItemCard.tsx` - Item card display
+- `src/components/tools/PurchaseList/PurchaseSummary.tsx` - Summary statistics
+
+#### Integration
+- Added 'purchases' tab to Tools page (`src/app/dashboard/tools/page.tsx`)
+- Added ShoppingCart icon import
+
+#### Documentation
+- Created `docs/features/purchase-list.md`
+
+### Features
+- Add/edit/delete purchase items
+- Category selection (Equipment, Protective Gear, Feed Supplies, etc.)
+- Priority levels (Low, Medium, High, Urgent) with color coding
+- Status filtering (Pending, Purchased, All)
+- Mark items as purchased
+- Summary cards (pending count, urgent count, estimated total)
+- Due date tracking
+- Supplier field
+- Price estimation
+
+### Testing Required
+User should test:
+1. Navigate to Tools > Purchases tab
+2. Add a new item with all fields
+3. Edit an existing item
+4. Mark item as purchased
+5. Delete an item
+6. Filter by status
+7. Verify mobile responsiveness
+8. Test dark mode
+
+---
+

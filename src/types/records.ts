@@ -334,6 +334,28 @@ export interface FinancialRecord {
   category?: { value: string }
 }
 
+// Purchase list item
+export interface PurchaseItem {
+  id: string
+  user_id: string
+  name: string
+  quantity: number | null
+  unit: string | null
+  category_id: string | null
+  supplier: string | null
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'pending' | 'purchased' | 'cancelled'
+  estimated_price: number | null
+  actual_price: number | null
+  notes: string | null
+  due_date: string | null
+  purchased_date: string | null
+  created_at?: string
+  updated_at?: string
+  // Joined data from dropdown_values
+  category?: { value: string }
+}
+
 // Options state for dynamic dropdowns
 export interface OptionsState {
   checkMethodOptions: string[]
