@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus, Camera } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import dynamic from 'next/dynamic'
 
 // Dynamic import to avoid SSR issues with Mapbox
@@ -76,6 +77,15 @@ export default function ApiariesPage() {
   const [availableUsers, setAvailableUsers] = useState<UserOption[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [transferring, setTransferring] = useState(false)
+
+  // Image zoom modal state
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
+
+  const handleImageClick = (url: string) => {
+    setModalImageUrl(url)
+    setImageModalOpen(true)
+  }
 
   // Image upload
   const {
@@ -429,16 +439,23 @@ export default function ApiariesPage() {
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">Apiary Photo</label>
               {imagePreview ? (
-                <div className="relative inline-block">
+                <div className="relative inline-block group">
                   <img
                     src={imagePreview}
                     alt="Apiary preview"
-                    className="w-full max-w-xs h-48 object-cover rounded-lg border border-border"
+                    className="w-full max-w-xs h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => handleImageClick(imagePreview)}
+                    title="Click to enlarge"
                   />
+                  <div
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg pointer-events-none"
+                  >
+                    <Camera size={24} className="text-white" />
+                  </div>
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
                     title="Remove image"
                   >
                     <X size={16} />
@@ -771,6 +788,13 @@ export default function ApiariesPage() {
           No apiaries found. Add your first location!
         </div>
       )}
+
+      {/* Image Zoom Modal */}
+      <ImageZoomModal
+        isOpen={imageModalOpen}
+        imageUrl={modalImageUrl}
+        onClose={() => setImageModalOpen(false)}
+      />
     </div>
   )
 }
