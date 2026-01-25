@@ -638,6 +638,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const handleBatchSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Require at least one bulk honey source
+    if (batchForm.container_ids.length === 0) {
+      toast.error('Please select at least one bulk honey source')
+      return
+    }
+
     // Check for unfilled placeholders in public story
     const storyToSave = stripMarkers(batchForm.public_story)
     if (batchForm.is_public && hasUnfilledPlaceholders(storyToSave)) {
