@@ -50,10 +50,10 @@ interface UseRecordsDataReturn {
 
   // Fetch functions
   fetchInspections: (userId: string, ownershipFilter: OwnershipFilter) => Promise<void>
-  fetchVarroaTreatments: (userId: string) => Promise<void>
-  fetchVarroaChecks: (userId: string) => Promise<void>
-  fetchFeedings: (userId: string) => Promise<void>
-  fetchHarvests: (userId: string) => Promise<void>
+  fetchVarroaTreatments: (userId: string, ownershipFilter: OwnershipFilter) => Promise<void>
+  fetchVarroaChecks: (userId: string, ownershipFilter: OwnershipFilter) => Promise<void>
+  fetchFeedings: (userId: string, ownershipFilter: OwnershipFilter) => Promise<void>
+  fetchHarvests: (userId: string, ownershipFilter: OwnershipFilter) => Promise<void>
   fetchArchiveRecords: (userId: string) => Promise<void>
   fetchHives: (userId: string) => Promise<void>
   fetchApiaries: (userId: string) => Promise<void>
@@ -243,12 +243,20 @@ export function useRecordsData(): UseRecordsDataReturn {
     setLoading(false)
   }, [updateSharedHiveIds])
 
-  const fetchVarroaTreatments = useCallback(async (userId: string) => {
-    const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchVarroaTreatments = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
-    const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
-    if (allAccessibleHiveIds.length === 0) {
+    let targetHiveIds: string[]
+    if (ownershipFilter === 'my') {
+      targetHiveIds = ownHiveIds
+    } else if (ownershipFilter === 'team') {
+      targetHiveIds = teamHiveIds
+    } else {
+      targetHiveIds = [...ownHiveIds, ...teamHiveIds]
+    }
+
+    if (targetHiveIds.length === 0) {
       setVarroaTreatments([])
       return
     }
@@ -256,19 +264,27 @@ export function useRecordsData(): UseRecordsDataReturn {
     const { data } = await supabase
       .from('varroa_treatments')
       .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email), application_method:dropdown_values!varroa_treatments_application_method_id_fkey(value)')
-      .in('hive_id', allAccessibleHiveIds)
+      .in('hive_id', targetHiveIds)
       .order('treatment_date', { ascending: false })
       .limit(500)
 
     if (data) setVarroaTreatments(data as VarroaTreatment[])
   }, [updateSharedHiveIds])
 
-  const fetchVarroaChecks = useCallback(async (userId: string) => {
-    const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchVarroaChecks = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
-    const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
-    if (allAccessibleHiveIds.length === 0) {
+    let targetHiveIds: string[]
+    if (ownershipFilter === 'my') {
+      targetHiveIds = ownHiveIds
+    } else if (ownershipFilter === 'team') {
+      targetHiveIds = teamHiveIds
+    } else {
+      targetHiveIds = [...ownHiveIds, ...teamHiveIds]
+    }
+
+    if (targetHiveIds.length === 0) {
       setVarroaChecks([])
       return
     }
@@ -276,19 +292,27 @@ export function useRecordsData(): UseRecordsDataReturn {
     const { data } = await supabase
       .from('varroa_checks')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-      .in('hive_id', allAccessibleHiveIds)
+      .in('hive_id', targetHiveIds)
       .order('check_date', { ascending: false })
       .limit(500)
 
     if (data) setVarroaChecks(data as VarroaCheck[])
   }, [updateSharedHiveIds])
 
-  const fetchFeedings = useCallback(async (userId: string) => {
-    const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchFeedings = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
-    const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
-    if (allAccessibleHiveIds.length === 0) {
+    let targetHiveIds: string[]
+    if (ownershipFilter === 'my') {
+      targetHiveIds = ownHiveIds
+    } else if (ownershipFilter === 'team') {
+      targetHiveIds = teamHiveIds
+    } else {
+      targetHiveIds = [...ownHiveIds, ...teamHiveIds]
+    }
+
+    if (targetHiveIds.length === 0) {
       setFeedings([])
       return
     }
@@ -296,19 +320,27 @@ export function useRecordsData(): UseRecordsDataReturn {
     const { data } = await supabase
       .from('feedings')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-      .in('hive_id', allAccessibleHiveIds)
+      .in('hive_id', targetHiveIds)
       .order('feed_date', { ascending: false })
       .limit(500)
 
     if (data) setFeedings(data as Feeding[])
   }, [updateSharedHiveIds])
 
-  const fetchHarvests = useCallback(async (userId: string) => {
-    const { ownHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchHarvests = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
-    const allAccessibleHiveIds = [...ownHiveIds, ...allTeamHiveIds]
-    if (allAccessibleHiveIds.length === 0) {
+    let targetHiveIds: string[]
+    if (ownershipFilter === 'my') {
+      targetHiveIds = ownHiveIds
+    } else if (ownershipFilter === 'team') {
+      targetHiveIds = teamHiveIds
+    } else {
+      targetHiveIds = [...ownHiveIds, ...teamHiveIds]
+    }
+
+    if (targetHiveIds.length === 0) {
       setHarvests([])
       return
     }
@@ -316,7 +348,7 @@ export function useRecordsData(): UseRecordsDataReturn {
     const { data } = await supabase
       .from('harvests')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
-      .in('hive_id', allAccessibleHiveIds)
+      .in('hive_id', targetHiveIds)
       .order('harvest_date', { ascending: false })
       .limit(500)
 
@@ -615,10 +647,10 @@ export function useRecordsData(): UseRecordsDataReturn {
     try {
       await Promise.all([
         fetchInspections(userId, ownershipFilter),
-        fetchVarroaTreatments(userId),
-        fetchVarroaChecks(userId),
-        fetchFeedings(userId),
-        fetchHarvests(userId),
+        fetchVarroaTreatments(userId, ownershipFilter),
+        fetchVarroaChecks(userId, ownershipFilter),
+        fetchFeedings(userId, ownershipFilter),
+        fetchHarvests(userId, ownershipFilter),
         fetchArchiveRecords(userId),
         fetchHives(userId),
         fetchApiaries(userId),

@@ -4,19 +4,21 @@
 import { supabase } from './supabase'
 
 /**
- * Generate the next batch code for a given user and month
- * Format: L-YYYY-MM-NNN where NNN is sequential per user per month
+ * Generate the next batch code for a given month
+ * Format: L-YYYY-MM-NNN where NNN is sequential globally per month
+ * @param _userId - Unused, kept for API compatibility
+ * @param batchDate - Date to generate code for
  */
-export async function generateBatchCode(userId: string, batchDate: Date): Promise<string> {
+export async function generateBatchCode(_userId: string, batchDate: Date): Promise<string> {
   const year = batchDate.getFullYear()
   const month = String(batchDate.getMonth() + 1).padStart(2, '0')
   const prefix = `L-${year}-${month}-`
 
-  // Find the highest sequence number for this user/month
+  // Find the highest sequence number globally for this month
+  // Note: batch_code has a global UNIQUE constraint, so we check all users
   const { data, error } = await supabase
     .from('batch_runs')
     .select('batch_code')
-    .eq('user_id', userId)
     .like('batch_code', `${prefix}%`)
     .order('batch_code', { ascending: false })
     .limit(1)
