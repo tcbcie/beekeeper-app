@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Metadata } from 'next'
 import ApiaryAreaMapWrapper from '@/components/maps/ApiaryAreaMapWrapper'
+import FeedbackForm from '@/components/trace/FeedbackForm'
 
 // Create a public supabase client (anon key only)
 const supabase = createClient(
@@ -246,6 +247,10 @@ export default async function TracePage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Feedback Section */}
+      <div className="mt-6">
+        <FeedbackForm traceCode={traceCode} />
+      </div>
     </div>
   )
 }
