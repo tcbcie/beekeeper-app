@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus, Camera } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 
@@ -13,6 +13,7 @@ const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker')
 })
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
+import { useImageUpload } from '@/hooks/useImageUpload'
 
 interface Apiary {
   id: string
@@ -24,6 +25,7 @@ interface Apiary {
   longitude: number | null
   notes: string | null
   share_location: boolean
+  image_url: string | null
   created_at?: string
 }
 
@@ -74,6 +76,22 @@ export default function ApiariesPage() {
   const [availableUsers, setAvailableUsers] = useState<UserOption[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [transferring, setTransferring] = useState(false)
+
+  // Image upload
+  const {
+    imageFile,
+    imagePreview,
+    uploading,
+    handleImageChange,
+    handleRemoveImage,
+    uploadImage,
+    reset: resetImage,
+    setPreviewFromUrl
+  } = useImageUpload({
+    bucket: 'apiary-images',
+    folder: userId || 'unknown',
+    onError: (message) => toast.error(message)
+  })
 
   // Geocode eircode/postcode to get coordinates
   const geocodeAddress = async (eircode: string, city: string, isUkNi: boolean) => {
@@ -209,6 +227,18 @@ export default function ApiariesPage() {
     }
 
     try {
+      // Upload image if a new file was selected
+      let imageUrl: string | null = editingApiary?.image_url || null
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile)
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl
+        }
+      } else if (!imagePreview) {
+        // Image was removed
+        imageUrl = null
+      }
+
       const dataToSave = {
         name: formData.name,
         location: formData.location || null,
@@ -219,6 +249,7 @@ export default function ApiariesPage() {
         notes: formData.notes || null,
         is_uk_ni: formData.is_uk_ni,
         share_location: formData.share_location,
+        image_url: imageUrl,
       }
 
       if (editingApiary) {
@@ -258,6 +289,8 @@ export default function ApiariesPage() {
       is_uk_ni: false,
       share_location: apiary.share_location || false,
     })
+    // Load existing image
+    setPreviewFromUrl(apiary.image_url)
     setShowForm(true)
   }
 
@@ -278,6 +311,7 @@ export default function ApiariesPage() {
     setShowForm(false)
     setEditingApiary(null)
     setShowMapPicker(false)
+    resetImage()
     setFormData({
       name: '',
       location: '',
@@ -389,6 +423,48 @@ export default function ApiariesPage() {
                 className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 required
               />
+            </div>
+
+            {/* Apiary Image */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Apiary Photo</label>
+              {imagePreview ? (
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview}
+                    alt="Apiary preview"
+                    className="w-full max-w-xs h-48 object-cover rounded-lg border border-border"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                    title="Remove image"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full max-w-xs h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-forest-500 hover:bg-sage-50 dark:hover:bg-slate-800 transition-colors">
+                  <div className="flex flex-col items-center justify-center py-4">
+                    <Camera size={24} className="text-text-tertiary mb-2" />
+                    <p className="text-sm text-text-tertiary">Click to upload photo</p>
+                    <p className="text-xs text-text-tertiary mt-1">PNG, JPG up to 5MB</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              {uploading && (
+                <div className="flex items-center gap-2 mt-2 text-sm text-text-secondary">
+                  <Loader2 size={16} className="animate-spin" />
+                  Uploading...
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
