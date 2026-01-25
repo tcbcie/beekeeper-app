@@ -125,6 +125,7 @@ A1B2C3D4
 | notes | TEXT | Optional notes |
 | is_public | BOOLEAN | Allow public lookup |
 | is_creamed | BOOLEAN | Whether honey is creamed |
+| show_apiary_image | BOOLEAN | Show apiary photo on public page |
 | public_title | TEXT | Custom title for public display |
 | public_origin | TEXT | Custom origin text for public display |
 | public_story | TEXT | Custom story text for public display |
@@ -250,6 +251,7 @@ The trace page uses a trust-focused design for consumer verification. It has its
 - **Title:** "Pure Irish Honey" (customizable)
 - **Location:** Prominently displayed origin (e.g., "Harvested in Meath, Ireland")
 - **Map:** Optional interactive map with 5km foraging radius circle (if beekeeper has enabled location sharing). Labeled "Source Apiary Foraging Area (~5km)"
+- **Apiary Image:** Optional apiary photo displayed below the map (if enabled in batch settings)
 
 **Story Section:**
 - Personalized narrative: "Harvested by [Beekeeper Name] from [Apiary Name]. The bees foraged on [Floral Sources]."
@@ -342,6 +344,9 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 ## Changelog
 
 ### January 25, 2026
+- Added optional apiary image display on public trace page (shown below the map when enabled)
+- Added `show_apiary_image` field to batch_runs table
+- Batch edit form shows apiary image preview with checkbox to enable on public page
 - Added consumer feedback feature on public trace page (5-star rating + optional comment)
 - Created `batch_feedback` table and `submit_batch_feedback()` RPC function
 - Added beekeeper feedback view in Traceability tool (batch cards show rating + review count)

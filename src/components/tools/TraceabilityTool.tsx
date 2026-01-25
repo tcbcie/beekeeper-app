@@ -51,6 +51,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     notes: '',
     is_public: true,
     is_creamed: false,
+    show_apiary_image: false,
     public_title: '',
     public_origin: '',
     public_story: '',
@@ -121,6 +122,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     origins: { name: string; city: string | null; hasLocation: boolean; percentage: number }[]
     floralSources: string[]
     hasAnyLocationShared: boolean
+    apiaryImageUrl: string | null
   }
   const [publicPreview, setPublicPreview] = useState<PublicPreviewData | null>(null)
 
@@ -188,12 +190,13 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         }
       }
 
-      // Fetch apiary share_location status
+      // Fetch apiary share_location status and image
       const apiaryNames = Array.from(originMap.keys())
+      let apiaryImageUrl: string | null = null
       if (apiaryNames.length > 0) {
         const { data: apiaries } = await supabase
           .from('apiaries')
-          .select('name, share_location, latitude, longitude')
+          .select('name, share_location, latitude, longitude, image_url')
           .eq('user_id', userId)
           .in('name', apiaryNames)
 
@@ -202,6 +205,10 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             const origin = originMap.get(apiary.name)
             if (origin) {
               origin.hasLocation = apiary.share_location === true && apiary.latitude != null && apiary.longitude != null
+            }
+            // Get first apiary with an image
+            if (!apiaryImageUrl && apiary.image_url) {
+              apiaryImageUrl = apiary.image_url
             }
           }
         }
@@ -245,7 +252,8 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         beekeeperName,
         origins,
         floralSources: Array.from(floralSourcesSet),
-        hasAnyLocationShared: origins.some(o => o.hasLocation)
+        hasAnyLocationShared: origins.some(o => o.hasLocation),
+        apiaryImageUrl
       }
 
       setPublicPreview(previewData)
@@ -588,6 +596,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       notes: '',
       is_public: true,
       is_creamed: false,
+      show_apiary_image: false,
       public_title: '',
       public_origin: '',
       public_story: '',
@@ -613,6 +622,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       notes: batch.notes || '',
       is_public: batch.is_public,
       is_creamed: batch.is_creamed || false,
+      show_apiary_image: batch.show_apiary_image || false,
       public_title: batch.public_title || '',
       public_origin: batch.public_origin || '',
       public_story: batch.public_story || '',
@@ -656,6 +666,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         notes: batchForm.notes.trim() || null,
         is_public: batchForm.is_public,
         is_creamed: batchForm.is_creamed,
+        show_apiary_image: batchForm.show_apiary_image,
         public_title: batchForm.public_title.trim() || null,
         public_origin: batchForm.public_origin.trim() || null,
         public_story: stripMarkers(batchForm.public_story).trim() || null,
@@ -1230,6 +1241,33 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         </span>
                       )}
                     </div>
+
+                    {/* Apiary Image Option */}
+                    {publicPreview.apiaryImageUrl && (
+                      <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={publicPreview.apiaryImageUrl}
+                            alt="Apiary"
+                            className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-600"
+                          />
+                          <div className="flex-1">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={batchForm.show_apiary_image}
+                                onChange={(e) => setBatchForm(prev => ({ ...prev, show_apiary_image: e.target.checked }))}
+                                className="rounded text-amber-600"
+                              />
+                              <span className="text-sm font-medium">Show apiary image on public page</span>
+                            </label>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Display this image below the map on the trace page
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Story Template Selector */}
                     <div>
