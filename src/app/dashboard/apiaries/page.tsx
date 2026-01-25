@@ -5,6 +5,7 @@ import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus, Camera } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
+import Image from 'next/image'
 import dynamic from 'next/dynamic'
 
 // Dynamic import to avoid SSR issues with Mapbox
@@ -760,10 +761,13 @@ export default function ApiariesPage() {
                     onClick={() => handleImageClick(apiary.image_url!)}
                     title="Click to enlarge"
                   >
-                    <img
+                    <Image
                       src={apiary.image_url}
                       alt={apiary.name}
-                      className="w-full h-full object-cover rounded-lg border border-border shadow-sm"
+                      fill
+                      sizes="80px"
+                      className="object-cover rounded-lg border border-border shadow-sm"
+                      quality={85}
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
                       <Camera size={16} className="text-white" />

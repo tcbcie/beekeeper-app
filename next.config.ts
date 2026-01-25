@@ -16,7 +16,6 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    unoptimized: true,
   },
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
