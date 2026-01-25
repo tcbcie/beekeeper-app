@@ -51,6 +51,7 @@ export interface BatchRun {
   best_before_date: string | null
   notes: string | null
   is_public: boolean
+  is_creamed: boolean
   public_title: string | null
   public_origin: string | null
   public_story: string | null
@@ -89,6 +90,7 @@ export interface BatchFormData {
   best_before_date: string
   notes: string
   is_public: boolean
+  is_creamed: boolean
   public_title: string
   public_origin: string
   public_story: string

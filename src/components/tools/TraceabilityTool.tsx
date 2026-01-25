@@ -50,6 +50,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
     notes: '',
     is_public: true,
+    is_creamed: false,
     public_title: '',
     public_origin: '',
     public_story: '',
@@ -524,6 +525,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
       notes: '',
       is_public: true,
+      is_creamed: false,
       public_title: '',
       public_origin: '',
       public_story: '',
@@ -548,6 +550,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       best_before_date: batch.best_before_date || '',
       notes: batch.notes || '',
       is_public: batch.is_public,
+      is_creamed: batch.is_creamed || false,
       public_title: batch.public_title || '',
       public_origin: batch.public_origin || '',
       public_story: batch.public_story || '',
@@ -590,6 +593,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         best_before_date: batchForm.best_before_date || null,
         notes: batchForm.notes.trim() || null,
         is_public: batchForm.is_public,
+        is_creamed: batchForm.is_creamed,
         public_title: batchForm.public_title.trim() || null,
         public_origin: batchForm.public_origin.trim() || null,
         public_story: stripMarkers(batchForm.public_story).trim() || null,
@@ -1033,6 +1037,18 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               <div className="flex items-center gap-2 pt-6">
                 <input
                   type="checkbox"
+                  id="is_creamed"
+                  checked={batchForm.is_creamed}
+                  onChange={(e) => setBatchForm(prev => ({ ...prev, is_creamed: e.target.checked }))}
+                  className="rounded"
+                />
+                <label htmlFor="is_creamed" className="text-sm">
+                  Creamed (stirred creamy)
+                </label>
+              </div>
+              <div className="flex items-center gap-2 pt-6">
+                <input
+                  type="checkbox"
                   id="is_public"
                   checked={batchForm.is_public}
                   onChange={(e) => setBatchForm(prev => ({ ...prev, is_public: e.target.checked }))}
@@ -1433,6 +1449,11 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                       <div className="flex items-center gap-2 mb-2">
                         <Milk size={20} className="text-amber-600" />
                         <h3 className="text-lg font-semibold font-mono">{batch.batch_code}</h3>
+                        {batch.is_creamed && (
+                          <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs">
+                            Creamed
+                          </span>
+                        )}
                         {batch.is_public && (
                           <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs">
                             Public
