@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
         'mating_nucs',
         'news_articles',
         'profiles',
+        'purchase_items',
         'push_subscriptions',
         'queens',
         'reactivation_requests',
