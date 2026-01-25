@@ -726,8 +726,8 @@ export default function ApiariesPage() {
         {apiaries.map((apiary: Apiary) => {
           return (
             <div key={apiary.id} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border">
-              <div className="flex justify-between items-start mb-4">
-                <div>
+              <div className="flex justify-between items-start mb-4 gap-4">
+                <div className="flex-1 min-w-0">
                   <h3 className="text-2xl font-bold text-foreground">{apiary.name}</h3>
                   <p className="text-sm text-text-secondary mt-1">
                     {apiary.city && apiary.location ? `${apiary.city} - ${apiary.location}` :
@@ -754,6 +754,22 @@ export default function ApiariesPage() {
                     </button>
                   )}
                 </div>
+                {apiary.image_url && (
+                  <div
+                    className="relative w-20 h-20 flex-shrink-0 cursor-pointer group"
+                    onClick={() => handleImageClick(apiary.image_url!)}
+                    title="Click to enlarge"
+                  >
+                    <img
+                      src={apiary.image_url}
+                      alt={apiary.name}
+                      className="w-full h-full object-cover rounded-lg border border-border shadow-sm"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
+                      <Camera size={16} className="text-white" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {apiary.notes && (
