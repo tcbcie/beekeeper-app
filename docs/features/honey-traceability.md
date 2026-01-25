@@ -137,6 +137,15 @@ A1B2C3D4
 | container_id | UUID | FK → bulk_containers |
 | weight_used_kg | NUMERIC | Optional weight used |
 
+**batch_feedback**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| batch_id | UUID | FK → batch_runs |
+| rating | INTEGER | 1-5 star rating |
+| comment | TEXT | Optional feedback comment |
+| created_at | TIMESTAMPTZ | When submitted |
+
 ### Row Level Security
 
 - Users can only access their own bulk honey and batches
@@ -154,7 +163,9 @@ A1B2C3D4
 | `src/lib/batch-code.ts` | Batch code generation utilities |
 | `src/lib/traceability-utils.ts` | Origin calculation utilities |
 | `src/lib/story-templates.ts` | Story template definitions and placeholder logic |
+| `src/components/trace/FeedbackForm.tsx` | Consumer feedback form with star rating |
 | Database: `get_public_batch_info()` | RPC function for public batch lookup |
+| Database: `submit_batch_feedback()` | RPC function for submitting feedback |
 
 ## Story Templates
 
@@ -255,6 +266,13 @@ The trace page uses a trust-focused design for consumer verification. It has its
 **Page Footer:**
 - Small "Powered by HiveCraic" credit
 
+**Feedback Section:**
+- 5-star rating selector (required)
+- Optional comment field (max 500 chars)
+- Submit button
+- Shows thank you message after submission
+- Uses localStorage to prevent duplicate submissions
+
 ### Privacy & Security
 
 - Only batches marked as **Public** (`is_public = true`) are visible
@@ -302,6 +320,10 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 - **Offline Mode** - Queue harvests when offline
 
 ## Changelog
+
+### January 25, 2026
+- Added consumer feedback feature on public trace page (5-star rating + optional comment)
+- Created `batch_feedback` table and `submit_batch_feedback()` RPC function
 
 ### January 24, 2026
 - Added `is_creamed` field to batch_runs to track creamed (stirred creamy) honey
