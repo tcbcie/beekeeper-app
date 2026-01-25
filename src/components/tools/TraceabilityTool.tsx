@@ -67,7 +67,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     average_rating: number
   }
   interface FeedbackDetail {
-    id: string
+    feedback_id: string
     rating: number
     comment: string | null
     created_at: string
@@ -1712,7 +1712,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 </div>
               ) : (
                 feedbackDetails.map(item => (
-                  <div key={item.id} className="p-3 bg-surface rounded-lg border border-border">
+                  <div key={item.feedback_id} className="p-3 bg-surface rounded-lg border border-border">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map(star => (
