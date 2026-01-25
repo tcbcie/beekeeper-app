@@ -1703,6 +1703,7 @@ export default function SettingsPage() {
           'mating_nuc_inspections',
           'mating_nucs',
           'profiles',
+          'purchase_items',
           'push_subscriptions',
           'queens',
           'rearing_batches',
