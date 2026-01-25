@@ -43,6 +43,7 @@ Batches represent a production run of jarred honey from one or more bulk honey s
 - **Net Weight (g)** - Jar net weight in grams (for EU compliance)
 - **Jar Count** - Number of jars produced
 - **Total Weight (kg)** - Optional total batch weight
+- **Creamed** - Whether the honey has been stirred creamy
 - **Public** - Whether consumers can look up this batch
 - **Notes** - Optional notes
 - **Bulk Honey Source** - Select which bulk honey was used
@@ -123,6 +124,7 @@ A1B2C3D4
 | best_before_date | DATE | Best before date |
 | notes | TEXT | Optional notes |
 | is_public | BOOLEAN | Allow public lookup |
+| is_creamed | BOOLEAN | Whether honey is creamed |
 | public_title | TEXT | Custom title for public display |
 | public_origin | TEXT | Custom origin text for public display |
 | public_story | TEXT | Custom story text for public display |
@@ -302,6 +304,7 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 ## Changelog
 
 ### January 24, 2026
+- Added `is_creamed` field to batch_runs to track creamed (stirred creamy) honey
 - Renamed "Containers" to "Bulk Honey" throughout the UI for clarity
 - Redesigned public trace page with trust-focused layout (no HiveCraic branding)
 - Added shield icon + "Honey Traceability" header for consumer trust
