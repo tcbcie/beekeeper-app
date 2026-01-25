@@ -28,6 +28,7 @@ interface BatchInfo {
   public_title: string | null
   public_origin: string | null
   public_story: string | null
+  apiary_image_url: string | null
 }
 
 interface PageProps {
@@ -185,6 +186,17 @@ export default async function TracePage({ params }: PageProps) {
         {/* Map with 5km radius circle (if location shared) */}
         {mapOrigin && (
           <ApiaryAreaMapWrapper lat={mapOrigin.lat} lon={mapOrigin.lon} />
+        )}
+
+        {/* Apiary Image (if enabled) */}
+        {batchInfo.apiary_image_url && (
+          <div className="px-6 pt-6">
+            <img
+              src={batchInfo.apiary_image_url}
+              alt="Apiary"
+              className="w-full h-48 sm:h-64 object-cover rounded-xl border border-slate-200 dark:border-slate-700"
+            />
+          </div>
         )}
 
         {/* Story Section */}
