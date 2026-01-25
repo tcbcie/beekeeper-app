@@ -325,6 +325,10 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               apiaries(id, name, city)
             )
           )
+        ),
+        batch_usage:batch_containers(
+          weight_used_kg,
+          batch:batch_runs(batch_code, total_weight_kg)
         )
       `)
       .eq('user_id', userId)
@@ -1460,6 +1464,16 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             containers.map(container => {
               const origins = getContainerOrigins(container)
               const harvestCount = container.harvests?.length || 0
+              // Get batch usage info
+              const batchUsage = (container as { batch_usage?: { weight_used_kg: number | null; batch: { batch_code: string; total_weight_kg: number | null } | null }[] }).batch_usage || []
+              const batchCodes = batchUsage.map(b => b.batch?.batch_code).filter(Boolean)
+              // Calculate total used (use weight_used_kg if set, otherwise use batch total_weight_kg)
+              const totalUsed = batchUsage.reduce((sum, b) => {
+                if (b.weight_used_kg) return sum + b.weight_used_kg
+                if (b.batch?.total_weight_kg) return sum + b.batch.total_weight_kg
+                return sum
+              }, 0)
+              const remaining = container.total_weight_kg ? Math.max(0, container.total_weight_kg - totalUsed) : null
 
               return (
                 <div
@@ -1490,6 +1504,28 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         <div>
                           <span className="font-medium">Harvests:</span> {harvestCount}
                         </div>
+                        {batchCodes.length > 0 && (
+                          <>
+                            <div>
+                              <span className="font-medium">Used:</span>{' '}
+                              <span className="text-amber-600 dark:text-amber-400">{totalUsed} kg</span>
+                            </div>
+                            {remaining !== null && (
+                              <div>
+                                <span className="font-medium">Remaining:</span>{' '}
+                                <span className={remaining > 0 ? 'text-green-600 dark:text-green-400' : 'text-text-tertiary'}>
+                                  {remaining} kg
+                                </span>
+                              </div>
+                            )}
+                            <div className="col-span-2">
+                              <span className="font-medium">Batches:</span>{' '}
+                              <span className="text-text-secondary font-mono text-xs">
+                                {batchCodes.join(', ')}
+                              </span>
+                            </div>
+                          </>
+                        )}
                         {origins.length > 0 && (
                           <div className="col-span-2">
                             <span className="font-medium">Origins:</span>{' '}
