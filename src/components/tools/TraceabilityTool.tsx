@@ -1507,112 +1507,112 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   key={batch.id}
                   className="bg-surface-elevated rounded-xl p-4 border border-border shadow-sm"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Milk size={20} className="text-amber-600" />
-                        <h3 className="text-lg font-semibold font-mono">{batch.batch_code}</h3>
-                        {batch.is_creamed && (
-                          <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs">
-                            Creamed
-                          </span>
-                        )}
-                        {batch.is_public && (
-                          <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs">
-                            Public
-                          </span>
-                        )}
-                      </div>
+                  {/* Header row with batch code and badges */}
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <Milk size={20} className="text-amber-600 flex-shrink-0" />
+                    <h3 className="text-lg font-semibold font-mono">{batch.batch_code}</h3>
+                    {batch.is_creamed && (
+                      <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs">
+                        Creamed
+                      </span>
+                    )}
+                    {batch.is_public && (
+                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs">
+                        Public
+                      </span>
+                    )}
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-text-secondary">
-                        <div>
-                          <span className="font-medium">Bottled:</span>{' '}
-                          {new Date(batch.batch_date).toLocaleDateString()}
-                        </div>
-                        {batch.best_before_date && (
-                          <div>
-                            <span className="font-medium">Best Before:</span>{' '}
-                            {new Date(batch.best_before_date).toLocaleDateString()}
-                          </div>
-                        )}
-                        {batch.jar_size_ml && (
-                          <div>
-                            <span className="font-medium">Jar Size:</span>{' '}
-                            {batch.jar_size_ml}ml
-                          </div>
-                        )}
-                        {batch.jar_weight_g && (
-                          <div>
-                            <span className="font-medium">Net Weight:</span>{' '}
-                            {batch.jar_weight_g}g
-                          </div>
-                        )}
-                        {batch.jar_count && (
-                          <div>
-                            <span className="font-medium">Jar Count:</span>{' '}
-                            {batch.jar_count}
-                          </div>
-                        )}
-                        {batch.total_weight_kg && (
-                          <div>
-                            <span className="font-medium">Total:</span>{' '}
-                            {batch.total_weight_kg} kg
-                          </div>
-                        )}
-                        <div>
-                          <span className="font-medium">Bulk Honey:</span> {containerCount}
-                        </div>
-                        {feedback && (
-                          <div className="col-span-2 flex items-center gap-2">
-                            <span className="font-medium">Feedback:</span>
-                            <span className="flex items-center gap-1">
-                              <Star size={14} className="text-amber-500 fill-amber-500" />
-                              <span className="font-semibold text-amber-600 dark:text-amber-400">{feedback.average_rating}</span>
-                              <span className="text-text-tertiary">({feedback.feedback_count} review{feedback.feedback_count !== 1 ? 's' : ''})</span>
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {batch.notes && (
-                        <p className="mt-2 text-sm text-text-secondary">{batch.notes}</p>
-                      )}
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-text-secondary mb-3">
+                    <div>
+                      <span className="font-medium">Bottled:</span>{' '}
+                      {new Date(batch.batch_date).toLocaleDateString()}
                     </div>
-
-                    <div className="flex gap-2">
-                      {feedback && feedback.feedback_count > 0 && (
-                        <button
-                          onClick={() => fetchFeedbackDetails(batch)}
-                          className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
-                          title="View Feedback"
-                        >
-                          <MessageSquare size={18} />
-                        </button>
-                      )}
-                      {batch.is_public && (
-                        <button
-                          onClick={() => setQrBatch(batch)}
-                          className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 rounded-lg transition-colors"
-                          title="QR Code"
-                        >
-                          <QrCode size={18} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleEditBatch(batch)}
-                        className="p-2 hover:bg-surface rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBatch(batch.id)}
-                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                    {batch.best_before_date && (
+                      <div>
+                        <span className="font-medium">Best Before:</span>{' '}
+                        {new Date(batch.best_before_date).toLocaleDateString()}
+                      </div>
+                    )}
+                    {batch.jar_size_ml && (
+                      <div>
+                        <span className="font-medium">Jar Size:</span>{' '}
+                        {batch.jar_size_ml}ml
+                      </div>
+                    )}
+                    {batch.jar_weight_g && (
+                      <div>
+                        <span className="font-medium">Net Weight:</span>{' '}
+                        {batch.jar_weight_g}g
+                      </div>
+                    )}
+                    {batch.jar_count && (
+                      <div>
+                        <span className="font-medium">Jar Count:</span>{' '}
+                        {batch.jar_count}
+                      </div>
+                    )}
+                    {batch.total_weight_kg && (
+                      <div>
+                        <span className="font-medium">Total:</span>{' '}
+                        {batch.total_weight_kg} kg
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-medium">Bulk Honey:</span> {containerCount}
                     </div>
+                    {feedback && (
+                      <div className="col-span-2 flex items-center gap-2">
+                        <span className="font-medium">Feedback:</span>
+                        <span className="flex items-center gap-1">
+                          <Star size={14} className="text-amber-500 fill-amber-500" />
+                          <span className="font-semibold text-amber-600 dark:text-amber-400">{feedback.average_rating}</span>
+                          <span className="text-text-tertiary">({feedback.feedback_count} review{feedback.feedback_count !== 1 ? 's' : ''})</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {batch.notes && (
+                    <p className="mb-3 text-sm text-text-secondary">{batch.notes}</p>
+                  )}
+
+                  {/* Action buttons row */}
+                  <div className="flex gap-2 pt-2 border-t border-border">
+                    {feedback && feedback.feedback_count > 0 && (
+                      <button
+                        onClick={() => fetchFeedbackDetails(batch)}
+                        className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
+                        title="View Feedback"
+                      >
+                        <MessageSquare size={18} />
+                      </button>
+                    )}
+                    {batch.is_public && (
+                      <button
+                        onClick={() => setQrBatch(batch)}
+                        className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 rounded-lg transition-colors"
+                        title="QR Code"
+                      >
+                        <QrCode size={18} />
+                      </button>
+                    )}
+                    <div className="flex-1" />
+                    <button
+                      onClick={() => handleEditBatch(batch)}
+                      className="p-2 hover:bg-surface rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBatch(batch.id)}
+                      className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
               )
