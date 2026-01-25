@@ -273,6 +273,26 @@ The trace page uses a trust-focused design for consumer verification. It has its
 - Shows thank you message after submission
 - Uses localStorage to prevent duplicate submissions
 
+## Beekeeper Feedback View
+
+Beekeepers can view customer feedback on their batches in the Traceability tool.
+
+### Batch Card Display
+- Shows average rating (star icon + number) and review count
+- Only appears when feedback exists for that batch
+
+### Feedback Modal
+Click the feedback icon (speech bubble) on a batch card to open a modal showing:
+- Average rating summary
+- List of all reviews with:
+  - Star rating (1-5)
+  - Comment (if provided)
+  - Submission date
+
+### Database Functions
+- `get_batch_feedback_summary(user_id)` - Returns count and average for all user's batches
+- `get_batch_feedback_details(batch_id, user_id)` - Returns detailed feedback for a specific batch
+
 ### Privacy & Security
 
 - Only batches marked as **Public** (`is_public = true`) are visible
@@ -324,6 +344,9 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 ### January 25, 2026
 - Added consumer feedback feature on public trace page (5-star rating + optional comment)
 - Created `batch_feedback` table and `submit_batch_feedback()` RPC function
+- Added beekeeper feedback view in Traceability tool (batch cards show rating + review count)
+- Added feedback detail modal with full review list
+- Created `get_batch_feedback_summary()` and `get_batch_feedback_details()` RPC functions
 
 ### January 24, 2026
 - Added `is_creamed` field to batch_runs to track creamed (stirred creamy) honey

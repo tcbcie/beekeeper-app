@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle } from 'lucide-react'
+import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
@@ -59,6 +59,23 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
   // Jar size options from database
   const [jarSizeOptions, setJarSizeOptions] = useState<string[]>([])
+
+  // Feedback state
+  interface FeedbackSummary {
+    batch_id: string
+    feedback_count: number
+    average_rating: number
+  }
+  interface FeedbackDetail {
+    id: string
+    rating: number
+    comment: string | null
+    created_at: string
+  }
+  const [feedbackSummary, setFeedbackSummary] = useState<Map<string, FeedbackSummary>>(new Map())
+  const [feedbackBatch, setFeedbackBatch] = useState<BatchRun | null>(null)
+  const [feedbackDetails, setFeedbackDetails] = useState<FeedbackDetail[]>([])
+  const [loadingFeedback, setLoadingFeedback] = useState(false)
 
   // Fetch jar size options from database
   const fetchJarSizes = useCallback(async () => {
@@ -337,6 +354,50 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     setBatches(data || [])
   }, [userId])
 
+  // Fetch feedback summary for all batches
+  const fetchFeedbackSummary = useCallback(async () => {
+    const { data, error } = await supabase.rpc('get_batch_feedback_summary', {
+      p_user_id: userId
+    })
+
+    if (error) {
+      console.error('Error fetching feedback summary:', error)
+      return
+    }
+
+    const summaryMap = new Map<string, FeedbackSummary>()
+    if (data) {
+      for (const item of data) {
+        summaryMap.set(item.batch_id, {
+          batch_id: item.batch_id,
+          feedback_count: Number(item.feedback_count),
+          average_rating: Number(item.average_rating)
+        })
+      }
+    }
+    setFeedbackSummary(summaryMap)
+  }, [userId])
+
+  // Fetch detailed feedback for a specific batch
+  const fetchFeedbackDetails = async (batch: BatchRun) => {
+    setFeedbackBatch(batch)
+    setLoadingFeedback(true)
+    setFeedbackDetails([])
+
+    const { data, error } = await supabase.rpc('get_batch_feedback_details', {
+      p_batch_id: batch.id,
+      p_user_id: userId
+    })
+
+    if (error) {
+      console.error('Error fetching feedback details:', error)
+      toast.error('Failed to load feedback')
+    } else {
+      setFeedbackDetails(data || [])
+    }
+    setLoadingFeedback(false)
+  }
+
   // Fetch available harvests for container form
   const fetchAvailableHarvests = useCallback(async () => {
     // Get all harvests with hive/apiary info
@@ -401,8 +462,9 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     } else {
       fetchBatches()
       fetchContainers() // Need containers for batch form
+      fetchFeedbackSummary()
     }
-  }, [activeTab, fetchContainers, fetchBatches, fetchAvailableHarvests])
+  }, [activeTab, fetchContainers, fetchBatches, fetchAvailableHarvests, fetchFeedbackSummary])
 
   // Container form handlers
   const resetContainerForm = () => {
@@ -1438,6 +1500,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           ) : (
             batches.map(batch => {
               const containerCount = batch.containers?.length || 0
+              const feedback = feedbackSummary.get(batch.id)
 
               return (
                 <div
@@ -1499,6 +1562,16 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         <div>
                           <span className="font-medium">Bulk Honey:</span> {containerCount}
                         </div>
+                        {feedback && (
+                          <div className="col-span-2 flex items-center gap-2">
+                            <span className="font-medium">Feedback:</span>
+                            <span className="flex items-center gap-1">
+                              <Star size={14} className="text-amber-500 fill-amber-500" />
+                              <span className="font-semibold text-amber-600 dark:text-amber-400">{feedback.average_rating}</span>
+                              <span className="text-text-tertiary">({feedback.feedback_count} review{feedback.feedback_count !== 1 ? 's' : ''})</span>
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {batch.notes && (
@@ -1507,6 +1580,15 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     </div>
 
                     <div className="flex gap-2">
+                      {feedback && feedback.feedback_count > 0 && (
+                        <button
+                          onClick={() => fetchFeedbackDetails(batch)}
+                          className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
+                          title="View Feedback"
+                        >
+                          <MessageSquare size={18} />
+                        </button>
+                      )}
                       {batch.is_public && (
                         <button
                           onClick={() => setQrBatch(batch)}
@@ -1579,6 +1661,78 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 <Download size={18} />
                 Download PNG
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Modal */}
+      {feedbackBatch && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-elevated rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Customer Feedback</h3>
+                <p className="text-sm text-text-secondary font-mono">{feedbackBatch.batch_code}</p>
+              </div>
+              <button
+                onClick={() => setFeedbackBatch(null)}
+                className="p-2 hover:bg-surface rounded-lg"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Summary */}
+            {feedbackSummary.get(feedbackBatch.id) && (
+              <div className="flex items-center justify-center gap-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl mb-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Star size={24} className="text-amber-500 fill-amber-500" />
+                    <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                      {feedbackSummary.get(feedbackBatch.id)?.average_rating}
+                    </span>
+                  </div>
+                  <p className="text-sm text-text-secondary">
+                    {feedbackSummary.get(feedbackBatch.id)?.feedback_count} review{feedbackSummary.get(feedbackBatch.id)?.feedback_count !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Feedback List */}
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {loadingFeedback ? (
+                <div className="text-center py-8 text-text-secondary">
+                  Loading feedback...
+                </div>
+              ) : feedbackDetails.length === 0 ? (
+                <div className="text-center py-8 text-text-secondary">
+                  No feedback yet
+                </div>
+              ) : (
+                feedbackDetails.map(item => (
+                  <div key={item.id} className="p-3 bg-surface rounded-lg border border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            size={14}
+                            className={star <= item.rating ? 'text-amber-500 fill-amber-500' : 'text-slate-300 dark:text-slate-600'}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-text-tertiary">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {item.comment && (
+                      <p className="text-sm text-text-secondary">{item.comment}</p>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

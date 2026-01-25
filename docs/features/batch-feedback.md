@@ -94,21 +94,32 @@ Add feedback section at bottom of trace page:
 - Validation: Rating must be 1-5, comment length limited
 - Duplicate prevention: Use localStorage to track if user already submitted for this batch
 
-## Beekeeper View (Future)
+## Beekeeper View
 
-In a future update, beekeepers could view feedback in the dashboard:
-- Average rating per batch
-- List of comments
-- Filter by date/rating
+Beekeepers can view feedback in the Traceability tool (Tools → Honey Provenance → Batches):
 
-This is out of scope for initial implementation.
+### Batch Card Display
+- Shows star icon + average rating + review count
+- Only displayed when feedback exists
 
-## Files to Modify
+### Feedback Modal
+- Click feedback icon (MessageSquare) to open modal
+- Shows summary: average rating, total reviews
+- Lists all reviews with: star rating, comment, date
+- Scrollable for many reviews
+
+### Database Functions
+- `get_batch_feedback_summary(user_id)` - Returns batch_id, count, average for user's batches
+- `get_batch_feedback_details(batch_id, user_id)` - Returns full feedback list for a batch
+
+## Files Modified
 
 | File | Changes |
 |------|---------|
-| Database | New migration for batch_feedback table + RPC function |
-| `src/app/(trace)/trace/[batchCode]/page.tsx` | Add feedback form UI |
+| Database | `batch_feedback` table, `submit_batch_feedback()`, `get_batch_feedback_summary()`, `get_batch_feedback_details()` |
+| `src/app/(trace)/trace/[batchCode]/page.tsx` | Added FeedbackForm component |
+| `src/components/trace/FeedbackForm.tsx` | Consumer feedback form (stars + comment) |
+| `src/components/tools/TraceabilityTool.tsx` | Beekeeper feedback view (summary + modal) |
 
 ## Verification
 
