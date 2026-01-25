@@ -24,6 +24,7 @@ import * as colonyTools from './colonies'
 import * as scaleTools from './scales'
 import * as nucTools from './nucs'
 import * as harvestTools from './harvests'
+import * as traceabilityTools from './traceability'
 
 // Combine all tools into registry
 export const tools: Record<string, Tool> = {
@@ -51,6 +52,8 @@ export const tools: Record<string, Tool> = {
   ...nucTools,
   // Harvest tools
   ...harvestTools,
+  // Traceability tools (bulk containers + batch runs)
+  ...traceabilityTools,
 }
 
 // Get tool by name
@@ -91,4 +94,4 @@ export async function executeTool(
   }
 }
 
-export { hiveTools, inspectionTools, varroaTools, feedingTools, queenTools, taskTools, analysisTools, knowledgeTools, colonyTools, scaleTools, nucTools, harvestTools }
+export { hiveTools, inspectionTools, varroaTools, feedingTools, queenTools, taskTools, analysisTools, knowledgeTools, colonyTools, scaleTools, nucTools, harvestTools, traceabilityTools }
