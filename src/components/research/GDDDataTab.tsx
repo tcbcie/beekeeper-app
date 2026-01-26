@@ -52,6 +52,15 @@ interface YearlyAccumulation {
   data: AccumulationDataPoint[]
 }
 
+interface MonthlyTemperature {
+  month: string
+  avgTemp: number
+}
+
+interface YearlyMonthlyTemps {
+  [year: number]: MonthlyTemperature[]
+}
+
 // Colors for different years in chart - ordered for maximum contrast between adjacent years
 const YEAR_COLORS = [
   { bg: 'rgba(34, 197, 94, 0.8)', border: 'rgb(22, 163, 74)' },   // green
@@ -70,6 +79,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const [accumulationData, setAccumulationData] = useState<YearlyAccumulation[]>([])
   const [accumulationLoading, setAccumulationLoading] = useState(false)
   const [apiaryCoords, setApiaryCoords] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [monthlyTemps, setMonthlyTemps] = useState<YearlyMonthlyTemps>({})
+  const [showTemperature, setShowTemperature] = useState(true)
 
   // Filters
   const [selectedYears, setSelectedYears] = useState<number[]>([])
@@ -253,6 +264,64 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     }
   }, [chartType, apiaryCoords, selectedAccumulationYears, fetchAccumulationData])
 
+  // Fetch monthly temperatures for selected years (for phenology chart)
+  const fetchMonthlyTemps = useCallback(async (yearsToFetch: number[]) => {
+    if (!apiaryCoords || yearsToFetch.length === 0) return
+
+    try {
+      const { latitude, longitude } = apiaryCoords
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const today = new Date()
+      const currentYear = today.getFullYear()
+      const results: YearlyMonthlyTemps = {}
+
+      for (const year of yearsToFetch) {
+        const isCurrentYear = year === currentYear
+        const startDate = `${year}-01-01`
+        const endDateStr = isCurrentYear
+          ? today.toISOString().split('T')[0]
+          : `${year}-12-31`
+
+        const tempResponse = await fetch(
+          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDateStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
+        )
+
+        if (tempResponse.ok) {
+          const tempData = await tempResponse.json()
+          if (tempData.daily?.temperature_2m_max) {
+            const monthlyData: { sum: number; count: number }[] = Array(12).fill(null).map(() => ({ sum: 0, count: 0 }))
+
+            for (let i = 0; i < tempData.daily.time.length; i++) {
+              const date = new Date(tempData.daily.time[i])
+              const month = date.getMonth()
+              const avgTemp = (tempData.daily.temperature_2m_max[i] + tempData.daily.temperature_2m_min[i]) / 2
+              monthlyData[month].sum += avgTemp
+              monthlyData[month].count++
+            }
+
+            results[year] = monthlyData.map((data, idx) => ({
+              month: monthNames[idx],
+              avgTemp: data.count > 0 ? Math.round((data.sum / data.count) * 10) / 10 : 0
+            }))
+          }
+        }
+      }
+      setMonthlyTemps(results)
+    } catch (err) {
+      console.error('Failed to fetch monthly temps:', err)
+    }
+  }, [apiaryCoords])
+
+  // Fetch temps when we have coords - combine all needed years
+  useEffect(() => {
+    if (!apiaryCoords) return
+    // Combine selectedYears (for phenology) and selectedAccumulationYears (for accumulation chart)
+    const allYears = [...new Set([...selectedYears, ...selectedAccumulationYears])]
+    if (allYears.length > 0) {
+      fetchMonthlyTemps(allYears)
+    }
+  }, [apiaryCoords, selectedYears, selectedAccumulationYears, fetchMonthlyTemps])
+
   // Extract unique values for filters
   const { years, vegetationTypes, apiaries } = useMemo(() => {
     const yearsSet = new Set<number>()
@@ -395,12 +464,12 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       },
       x: {
         title: {
-          display: true,
+          display: !showTemperature, // Hide when temp chart visible (redundant)
           text: 'Vegetation Type',
         },
       },
     },
-  }), [dateMap])
+  }), [dateMap, showTemperature])
 
   // Accumulation chart data
   const accumulationChartData = useMemo(() => {
@@ -454,14 +523,49 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         tension: 0.3,
         fill: false,
         spanGaps: false,
+        yAxisID: 'y',
       }
     })
+
+    // Add monthly temperature dataset if enabled (use current year's data for accumulation chart)
+    const currentYearTemps = monthlyTemps[currentYear] || []
+    if (showTemperature && currentYearTemps.length > 0) {
+      // Map monthly temps to chart x-axis positions (middle of each month)
+      const tempData = dayNumbers.map(dayNum => {
+        const date = new Date(2024, 0, dayNum)
+        const month = date.getMonth()
+        const dayOfMonth = date.getDate()
+        // Show temperature point around mid-month (days 14-16)
+        if (dayOfMonth >= 14 && dayOfMonth <= 16) {
+          const temp = currentYearTemps[month]
+          return temp && temp.avgTemp !== 0 ? temp.avgTemp : null
+        }
+        return null
+      })
+
+      datasets.push({
+        label: 'Avg Temp (°C)',
+        data: tempData,
+        borderColor: 'rgba(239, 68, 68, 0.8)',
+        backgroundColor: 'rgba(239, 68, 68, 0.3)',
+        borderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.4,
+        fill: false,
+        spanGaps: true,
+        yAxisID: 'y1',
+      } as typeof datasets[0])
+    }
 
     return {
       labels,
       datasets,
     }
-  }, [accumulationData, currentYear])
+  }, [accumulationData, currentYear, showTemperature, monthlyTemps])
+
+  // Check if we have temperature data for any year
+  const hasMonthlyTemps = Object.keys(monthlyTemps).length > 0
 
   const accumulationChartOptions = useMemo(() => ({
     responsive: true,
@@ -480,8 +584,11 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       },
       tooltip: {
         callbacks: {
-          label: (context: { dataset: { label?: string }; parsed: { y: number | null } }) => {
+          label: (context: { dataset: { label?: string; yAxisID?: string }; parsed: { y: number | null } }) => {
             const value = context.parsed.y
+            if (context.dataset.yAxisID === 'y1') {
+              return `${context.dataset.label}: ${value !== null ? value.toFixed(1) + '°C' : 'No data'}`
+            }
             return `${context.dataset.label}: ${value !== null ? Math.round(value) + ' GDD' : 'No data'}`
           },
         },
@@ -492,10 +599,29 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     },
     scales: {
       y: {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
         beginAtZero: true,
         title: {
           display: true,
           text: 'Accumulated GDD',
+        },
+      },
+      y1: {
+        type: 'linear' as const,
+        display: showTemperature && hasMonthlyTemps,
+        position: 'right' as const,
+        title: {
+          display: true,
+          text: 'Avg Temp (°C)',
+          color: 'rgb(239, 68, 68)',
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+        ticks: {
+          color: 'rgb(239, 68, 68)',
         },
       },
       x: {
@@ -508,7 +634,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         },
       },
     },
-  }), [])
+  }), [showTemperature, hasMonthlyTemps])
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev =>
@@ -684,23 +810,53 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               </button>
             </div>
 
-            {/* Year selector for accumulation chart */}
+            {/* Temperature toggle for phenology chart */}
+            {chartType === 'vegetation' && apiaryCoords && (
+              <button
+                onClick={() => setShowTemperature(!showTemperature)}
+                className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                  showTemperature
+                    ? 'bg-red-500 text-white'
+                    : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                }`}
+                title="Toggle monthly temperature chart"
+              >
+                <Thermometer size={12} />
+                Temp
+              </button>
+            )}
+
+            {/* Year selector and temperature toggle for accumulation chart */}
             {chartType === 'accumulation' && apiaryCoords && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-text-secondary">Years:</span>
-                {availableAccumulationYears.map(year => (
-                  <button
-                    key={year}
-                    onClick={() => toggleAccumulationYear(year)}
-                    className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-                      selectedAccumulationYears.includes(year)
-                        ? 'bg-forest-600 text-white'
-                        : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
-                    }`}
-                  >
-                    {year}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-text-secondary">Years:</span>
+                  {availableAccumulationYears.map(year => (
+                    <button
+                      key={year}
+                      onClick={() => toggleAccumulationYear(year)}
+                      className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                        selectedAccumulationYears.includes(year)
+                          ? 'bg-forest-600 text-white'
+                          : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowTemperature(!showTemperature)}
+                  className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                    showTemperature
+                      ? 'bg-red-500 text-white'
+                      : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                  }`}
+                  title="Toggle average monthly temperature"
+                >
+                  <Thermometer size={12} />
+                  Temp
+                </button>
               </div>
             )}
           </div>
@@ -746,11 +902,70 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                   <p>No bloom GDD records found. Add records in the GDD Tracker tool.</p>
                 </div>
               )}
-              <div className="mt-3 text-center">
-                <p className="text-xs text-text-tertiary">
-                  Compare GDD values across years to see how bloom timing varies. Lower GDD = earlier bloom.
-                </p>
-              </div>
+              {/* Hide description when temp chart visible to save space */}
+              {!showTemperature && (
+                <div className="mt-3 text-center">
+                  <p className="text-xs text-text-tertiary">
+                    Compare GDD values across years to see how bloom timing varies. Lower GDD = earlier bloom.
+                  </p>
+                </div>
+              )}
+
+              {/* Monthly Temperature Chart */}
+              {showTemperature && hasMonthlyTemps && (
+                <div className="mt-2 pt-2 border-t border-border">
+                  <h4 className="text-xs font-medium text-foreground mb-1 flex items-center gap-1.5">
+                    <Thermometer size={14} className="text-red-500" />
+                    Avg Monthly Temps ({selectedYears.sort((a, b) => a - b).join(', ')})
+                  </h4>
+                  <div className="h-32">
+                    <Bar
+                      data={{
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        datasets: selectedYears.sort((a, b) => a - b).map((year, idx) => {
+                          const yearTemps = monthlyTemps[year] || []
+                          const colorIdx = idx % YEAR_COLORS.length
+                          return {
+                            label: String(year),
+                            data: yearTemps.map(t => t.avgTemp || null),
+                            backgroundColor: YEAR_COLORS[colorIdx].bg,
+                            borderColor: YEAR_COLORS[colorIdx].border,
+                            borderWidth: 1,
+                          }
+                        }),
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: selectedYears.length > 1,
+                            position: 'top' as const,
+                          },
+                          datalabels: {
+                            display: selectedYears.length === 1,
+                            anchor: 'end' as const,
+                            align: 'top' as const,
+                            formatter: (value: number | null) => value !== null ? `${value}°` : '',
+                            font: { size: 9 },
+                            color: '#6b7280',
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '°C' },
+                            ticks: { font: { size: 10 } },
+                          },
+                          x: {
+                            ticks: { font: { size: 10 } },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
