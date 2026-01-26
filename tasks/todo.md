@@ -1943,3 +1943,59 @@ User should test:
 
 ---
 
+## Session 23: Apiary Visit Checklist Feature - January 26, 2026
+
+### Overview
+Add a "Visit Checklist" button when filtering tasks by apiary that opens a modal with aggregated equipment and tasks for the apiary visit.
+
+### Todo Items
+- [ ] Add `ClipboardList` import from lucide-react
+- [ ] Add `showChecklist` state variable
+- [ ] Add "Visit Checklist" button (visible when apiary is selected)
+- [ ] Create `getEquipmentList()` helper function to aggregate equipment
+- [ ] Create checklist modal with equipment and tasks sections
+- [ ] Add print functionality with window.print()
+
+### Files to Modify
+- `src/app/dashboard/tasks/page.tsx` - All changes in one file
+
+### Review - Completed January 26, 2026
+
+#### Changes Made
+
+1. **Added imports** - `ClipboardList` and `Printer` icons from lucide-react
+
+2. **Added state** - `showChecklist` boolean for modal visibility
+
+3. **Added button** - "Visit Checklist" button appears in filter section when an apiary is selected
+
+4. **Added helper functions**:
+   - `getEquipmentList()` - Aggregates and deduplicates equipment from filtered tasks
+   - `getSelectedApiaryName()` - Returns the selected apiary's name
+
+5. **Added checklist modal** with:
+   - Header showing apiary name and current date
+   - Equipment section with checkboxes (amber background)
+   - Tasks section with checkboxes showing task title, hive, and description
+   - Notes section for field notes
+   - Print button using `window.print()`
+   - Print-optimized CSS classes
+
+#### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/app/dashboard/tasks/page.tsx` | Added imports, state, button, helpers, and modal |
+
+#### Testing Required
+User should run `npm run build` and then test:
+1. Filter by an apiary that has tasks with equipment_needed
+2. Click "Visit Checklist" button
+3. Verify equipment list is aggregated and deduplicated
+4. Verify tasks are listed with hive numbers
+5. Test print functionality
+6. Test mobile responsiveness
+7. Test dark mode
+
+---
+
