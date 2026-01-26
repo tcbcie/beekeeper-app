@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter } from 'lucide-react'
+import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter, ClipboardList, Printer } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -27,6 +27,7 @@ interface TaskEvent {
   reminder_enabled: boolean
   reminder_minutes_before: number
   notes: string | null
+  equipment_needed: string | null
   created_at: string
   updated_at: string
   is_team_task?: boolean
@@ -73,6 +74,7 @@ export default function TasksEventsPage() {
   const [filterHive, setFilterHive] = useState<string>('all')
   const [filterApiary, setFilterApiary] = useState<string>('all')
   const [filterOwnership, setFilterOwnership] = useState<'all' | 'my' | 'team'>('all')
+  const [showChecklist, setShowChecklist] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -91,7 +93,8 @@ export default function TasksEventsPage() {
     batch_id: '',
     reminder_enabled: false,
     reminder_minutes_before: 60,
-    notes: ''
+    notes: '',
+    equipment_needed: ''
   })
 
   // Get user ID
@@ -267,6 +270,7 @@ export default function TasksEventsPage() {
       reminder_enabled: formData.reminder_enabled,
       reminder_minutes_before: formData.reminder_minutes_before,
       notes: formData.notes || null,
+      equipment_needed: formData.equipment_needed || null,
       completed: false
     }
 
@@ -314,7 +318,8 @@ export default function TasksEventsPage() {
       batch_id: '',
       reminder_enabled: false,
       reminder_minutes_before: 60,
-      notes: ''
+      notes: '',
+      equipment_needed: ''
     })
     setEditingTask(null)
     setShowForm(false)
@@ -338,7 +343,8 @@ export default function TasksEventsPage() {
       batch_id: task.batch_id || '',
       reminder_enabled: task.reminder_enabled,
       reminder_minutes_before: task.reminder_minutes_before,
-      notes: task.notes || ''
+      notes: task.notes || '',
+      equipment_needed: task.equipment_needed || ''
     })
     setEditingTask(task)
     setShowForm(true)
@@ -433,6 +439,27 @@ export default function TasksEventsPage() {
   const getCategoryLabel = (category: string | null) => {
     if (!category) return 'General'
     return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }
+
+  // Get unique equipment items from filtered tasks
+  const getEquipmentList = () => {
+    const equipmentSet = new Set<string>()
+    filteredTasks.forEach(task => {
+      if (task.equipment_needed) {
+        // Split by comma or newline and add each item
+        task.equipment_needed.split(/[,\n]/).forEach(item => {
+          const trimmed = item.trim()
+          if (trimmed) equipmentSet.add(trimmed)
+        })
+      }
+    })
+    return Array.from(equipmentSet).sort()
+  }
+
+  // Get selected apiary name
+  const getSelectedApiaryName = () => {
+    const apiary = apiaries.find(a => a.id === filterApiary)
+    return apiary?.name || 'Unknown Apiary'
   }
 
   if (loading) {
@@ -554,6 +581,19 @@ export default function TasksEventsPage() {
             </select>
           </div>
         </div>
+
+        {/* Visit Checklist Button - shown when apiary is selected */}
+        {filterApiary !== 'all' && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <button
+              onClick={() => setShowChecklist(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
+            >
+              <ClipboardList size={18} />
+              Visit Checklist
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Task List */}
@@ -624,6 +664,13 @@ export default function TasksEventsPage() {
 
                     {task.description && (
                       <p className="text-sm text-text-tertiary mb-2">{task.description}</p>
+                    )}
+
+                    {task.equipment_needed && (
+                      <div className="text-sm text-amber-700 dark:text-amber-400 mb-2 flex items-start gap-1">
+                        <span className="font-medium">Equipment:</span>
+                        <span>{task.equipment_needed}</span>
+                      </div>
                     )}
 
                     <div className="flex items-center gap-4 text-sm text-text-secondary flex-wrap">
@@ -950,6 +997,18 @@ export default function TasksEventsPage() {
                 />
               </div>
 
+              {/* Equipment/Parts Needed */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Equipment/Parts Needed</label>
+                <textarea
+                  value={formData.equipment_needed}
+                  onChange={(e) => setFormData({ ...formData, equipment_needed: e.target.value })}
+                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
+                  rows={2}
+                  placeholder="e.g., New frames, queen excluder, smoker fuel..."
+                />
+              </div>
+
               {/* Actions */}
               <div className="flex gap-3 pt-4">
                 <button
@@ -967,6 +1026,119 @@ export default function TasksEventsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Visit Checklist Modal */}
+      {showChecklist && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 print:bg-white print:p-0">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none">
+            {/* Header */}
+            <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-white print:border-b-2 print:border-black">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">Apiary Visit Checklist</h2>
+                <p className="text-sm text-text-secondary">
+                  {getSelectedApiaryName()} - {new Date().toLocaleDateString('en-IE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowChecklist(false)}
+                className="text-text-tertiary hover:text-foreground print:hidden"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Equipment Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <span>📦</span> Equipment Needed
+                </h3>
+                {getEquipmentList().length > 0 ? (
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                    <ul className="space-y-2">
+                      {getEquipmentList().map((item, index) => (
+                        <li key={index} className="flex items-center gap-3 text-foreground">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-forest-600 border-border rounded focus:ring-forest-500 print:border-black"
+                          />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="text-text-tertiary italic">No equipment specified for these tasks</p>
+                )}
+              </div>
+
+              {/* Tasks Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <span>✅</span> Tasks to Complete
+                </h3>
+                {filteredTasks.length > 0 ? (
+                  <div className="bg-sage-50 dark:bg-slate-800 border border-border rounded-lg p-4">
+                    <ul className="space-y-3">
+                      {filteredTasks.map(task => (
+                        <li key={task.id} className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            defaultChecked={task.completed}
+                            className="w-4 h-4 mt-1 text-forest-600 border-border rounded focus:ring-forest-500 print:border-black"
+                          />
+                          <div className="flex-1">
+                            <span className={`text-foreground ${task.completed ? 'line-through text-text-tertiary' : ''}`}>
+                              {task.title}
+                            </span>
+                            {task.hive_id && (
+                              <span className="ml-2 text-xs text-text-secondary">
+                                (Hive {hives.find(h => h.id === task.hive_id)?.hive_number || 'Unknown'})
+                              </span>
+                            )}
+                            {task.description && (
+                              <p className="text-sm text-text-tertiary mt-1">{task.description}</p>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="text-text-tertiary italic">No tasks for this apiary</p>
+                )}
+              </div>
+
+              {/* Notes Section */}
+              <div className="print:block">
+                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <span>📝</span> Notes
+                </h3>
+                <div className="bg-sage-50 dark:bg-slate-800 border border-border rounded-lg p-4 min-h-[80px] print:min-h-[150px] print:border-dashed">
+                  <p className="text-text-tertiary text-sm print:hidden">Space for field notes...</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="sticky bottom-0 bg-surface-elevated dark:bg-surface-elevated border-t border-border px-6 py-4 flex gap-3 print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
+              >
+                <Printer size={18} />
+                Print Checklist
+              </button>
+              <button
+                onClick={() => setShowChecklist(false)}
+                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
