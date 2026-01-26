@@ -44,6 +44,9 @@ interface ScaleData {
   weightChange24h: number | null
   weightChange7d: number | null
   weightChange30d: number | null
+  prevWeightChange24h: number | null
+  prevWeightChange7d: number | null
+  prevWeightChange30d: number | null
   temperature: number | null
   humidity: number | null
   battery: number | null
@@ -73,6 +76,9 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
         weightChange24h: null,
         weightChange7d: null,
         weightChange30d: null,
+        prevWeightChange24h: null,
+        prevWeightChange7d: null,
+        prevWeightChange30d: null,
         temperature: null,
         humidity: null,
         battery: null
@@ -90,6 +96,9 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
           result.weightChange24h = json.weightChange24h ?? null
           result.weightChange7d = json.weightChange7d ?? null
           result.weightChange30d = json.weightChange30d ?? null
+          result.prevWeightChange24h = json.prevWeightChange24h ?? null
+          result.prevWeightChange7d = json.prevWeightChange7d ?? null
+          result.prevWeightChange30d = json.prevWeightChange30d ?? null
           result.temperature = lv?.t_i ?? lv?.t ?? lv?.t_0 ?? null
           result.humidity = lv?.h ?? null
           // Calculate battery percentage from voltage
@@ -116,6 +125,9 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
           result.weightChange24h = json.weightChange24h ?? null
           result.weightChange7d = json.weightChange7d ?? null
           result.weightChange30d = json.weightChange30d ?? null
+          result.prevWeightChange24h = json.prevWeightChange24h ?? null
+          result.prevWeightChange7d = json.prevWeightChange7d ?? null
+          result.prevWeightChange30d = json.prevWeightChange30d ?? null
           result.temperature = lv?.temperature_c ?? null
           result.humidity = lv?.humidity ?? null
           // Wolf battery voltage to percentage
@@ -336,18 +348,33 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
             <span className={`text-xs flex items-center gap-0.5 ${data.weightChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {data.weightChange24h >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {data.weightChange24h >= 0 ? '+' : ''}{data.weightChange24h.toFixed(2)} 24h
+              {data.prevWeightChange24h !== null && (
+                <span className="text-text-tertiary ml-0.5">
+                  ({data.prevWeightChange24h >= 0 ? '+' : ''}{data.prevWeightChange24h.toFixed(2)})
+                </span>
+              )}
             </span>
           )}
           {data && data.weightChange7d !== null && (
             <span className={`text-xs flex items-center gap-0.5 ${data.weightChange7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {data.weightChange7d >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {data.weightChange7d >= 0 ? '+' : ''}{data.weightChange7d.toFixed(2)} 7d
+              {data.prevWeightChange7d !== null && (
+                <span className="text-text-tertiary ml-0.5">
+                  ({data.prevWeightChange7d >= 0 ? '+' : ''}{data.prevWeightChange7d.toFixed(2)})
+                </span>
+              )}
             </span>
           )}
           {data && data.weightChange30d !== null && (
             <span className={`text-xs flex items-center gap-0.5 ${data.weightChange30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {data.weightChange30d >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {data.weightChange30d >= 0 ? '+' : ''}{data.weightChange30d.toFixed(2)} 30d
+              {data.prevWeightChange30d !== null && (
+                <span className="text-text-tertiary ml-0.5">
+                  ({data.prevWeightChange30d >= 0 ? '+' : ''}{data.prevWeightChange30d.toFixed(2)})
+                </span>
+              )}
             </span>
           )}
         </div>
