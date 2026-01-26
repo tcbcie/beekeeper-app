@@ -1999,3 +1999,73 @@ User should run `npm run build` and then test:
 
 ---
 
+## Session 24: Fix Monthly Temperature Chart - Missing 2025 Data - January 26, 2026
+
+### Problem
+The "Average Monthly Temperatures" chart under the Phenology view only shows data for 2026 (current year), but the phenology chart compares GDD data across 2025 and 2026. Users expect temperature data for all selected years.
+
+### Root Cause
+In `GDDDataTab.tsx`, the `fetchMonthlyTemps` function was correctly set up for multiple years, but:
+1. The useEffect called it with **no arguments**, so `yearsToFetch` was undefined
+2. The code checked `monthlyTemps.length > 0` but `monthlyTemps` is an object, not an array
+3. The chart rendered as if `monthlyTemps` was a flat array
+
+### Todo Items
+- [x] Change `monthlyTemps` state to hold per-year data: `Record<number, MonthlyTemperature[]>` *(already done)*
+- [x] Update `fetchMonthlyTemps` to fetch data for all `selectedYears`
+- [x] Update temperature bar chart to show grouped bars by year
+- [x] Update chart title to reflect multiple years
+- [x] Add useEffect dependency on `selectedYears`
+
+### Files Modified
+- `src/components/research/GDDDataTab.tsx`
+
+### Review - Completed January 26, 2026
+
+#### Changes Made
+
+1. **Fixed useEffect to pass selectedYears** (line 355)
+   - Changed from `fetchMonthlyTemps()` to `fetchMonthlyTemps(selectedYears)`
+   - Added `selectedYears` to dependency array
+
+2. **Fixed object vs array checks**
+   - Added `hasMonthlyTemps = Object.keys(monthlyTemps).length > 0` helper
+   - Updated accumulation chart to use `monthlyTemps[currentYear]` for temperature overlay
+   - Fixed `accumulationChartOptions` to check `hasMonthlyTemps` instead of `.length`
+
+3. **Updated phenology temperature chart to show all years**
+   - Now creates grouped bar datasets for each selected year
+   - Uses same `YEAR_COLORS` array as the main phenology chart for consistency
+   - Chart title now shows all selected years: "Average Monthly Temperatures (2025, 2026)"
+   - Shows legend when multiple years selected
+   - Increased chart height from h-32 to h-40 to accommodate grouped bars
+
+4. **CRITICAL FIX: Removed duplicate temperature fetching from `fetchAccumulationData`**
+   - The old code fetched temps in TWO places: `fetchAccumulationData` and `fetchMonthlyTemps`
+   - `fetchAccumulationData` was setting `monthlyTemps` as an ARRAY, overwriting the correct OBJECT structure
+   - Removed ~35 lines of duplicate temperature fetching code from `fetchAccumulationData`
+   - Now only `fetchMonthlyTemps` handles temperature data (as an object keyed by year)
+
+5. **Combined year sources for temperature fetching**
+   - useEffect now fetches temps for BOTH `selectedYears` (phenology) AND `selectedAccumulationYears` (accumulation chart)
+   - Uses `[...new Set([...selectedYears, ...selectedAccumulationYears])]` to deduplicate
+
+6. **Layout optimization when temperature chart is visible**
+   - Hide "Vegetation Type" x-axis title on phenology chart (redundant when temp chart below)
+   - Hide description text "Compare GDD values..." when temp chart visible (saves space)
+   - Reduced gap between charts from `mt-6 pt-4` to `mt-2 pt-2`
+   - Made temperature chart header smaller (text-xs, smaller icon)
+   - Reduced temperature chart height from h-40 to h-32
+
+#### Testing Required
+User should run `npm run build` and then test:
+1. Navigate to Research > GDD Data tab
+2. Select multiple years in the filter
+3. Switch to Phenology view
+4. Enable the temperature toggle
+5. Verify temperature chart shows grouped bars for each selected year
+6. Verify chart title shows selected years
+7. Verify layout is more compact (no "Vegetation Type" label, no description text)
+8. Switch to Accumulation view
+9. Enable temperature toggle - verify red temperature line appears
+
