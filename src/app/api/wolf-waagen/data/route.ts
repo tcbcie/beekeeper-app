@@ -88,18 +88,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Wolf Waagen not connected' }, { status: 400 })
     }
 
-    // Fetch latest sensor values, battery voltage, and historical data for weight changes
+    // Fetch latest sensor values, battery voltage, and historical data for weight changes (current and previous periods)
     const now = Math.floor(Date.now() / 1000)
     const oneDayAgo = now - (24 * 60 * 60)
+    const twoDaysAgo = now - (48 * 60 * 60)
     const sevenDaysAgo = now - (7 * 24 * 60 * 60)
+    const fourteenDaysAgo = now - (14 * 24 * 60 * 60)
     const thirtyDaysAgo = now - (30 * 24 * 60 * 60)
+    const sixtyDaysAgo = now - (60 * 24 * 60 * 60)
 
-    const [lastValues, batteryVoltage, history24h, history7d, history30d] = await Promise.all([
+    const [lastValues, batteryVoltage, history24h, historyPrev24h, history7d, historyPrev7d, history30d, historyPrev30d] = await Promise.all([
       wolfGetLastValues(wolfApiToken, scaleId),
       wolfGetBatteryVoltage(wolfApiToken, scaleId),
       wolfGetMeasurements(wolfApiToken, scaleId, oneDayAgo, now, 'hourly'),
+      wolfGetMeasurements(wolfApiToken, scaleId, twoDaysAgo, oneDayAgo, 'hourly'),
       wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily'),
+      wolfGetMeasurements(wolfApiToken, scaleId, fourteenDaysAgo, sevenDaysAgo, 'daily'),
       wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily'),
+      wolfGetMeasurements(wolfApiToken, scaleId, sixtyDaysAgo, thirtyDaysAgo, 'daily'),
     ])
 
     // Merge battery voltage into lastValues if available
@@ -107,34 +113,32 @@ export async function GET(request: NextRequest) {
       lastValues.battery_voltage = batteryVoltage
     }
 
-    // Calculate 24h, 7-day and 30-day weight changes
+    // Calculate 24h, 7-day and 30-day weight changes (current and previous periods)
     let weightChange24h: number | null = null
     let weightChange7d: number | null = null
     let weightChange30d: number | null = null
+    let prevWeightChange24h: number | null = null
+    let prevWeightChange7d: number | null = null
+    let prevWeightChange30d: number | null = null
 
-    if (history24h.length >= 2) {
-      const oldestWeight = history24h[0]?.weight_kg
-      const newestWeight = history24h[history24h.length - 1]?.weight_kg
-      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
-        weightChange24h = newestWeight - oldestWeight
+    // Helper to calculate weight change from history array
+    const calcWeightChange = (history: { weight_kg?: number }[]): number | null => {
+      if (history.length >= 2) {
+        const oldestWeight = history[0]?.weight_kg
+        const newestWeight = history[history.length - 1]?.weight_kg
+        if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+          return newestWeight - oldestWeight
+        }
       }
+      return null
     }
 
-    if (history7d.length >= 2) {
-      const oldestWeight = history7d[0]?.weight_kg
-      const newestWeight = history7d[history7d.length - 1]?.weight_kg
-      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
-        weightChange7d = newestWeight - oldestWeight
-      }
-    }
-
-    if (history30d.length >= 2) {
-      const oldestWeight = history30d[0]?.weight_kg
-      const newestWeight = history30d[history30d.length - 1]?.weight_kg
-      if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
-        weightChange30d = newestWeight - oldestWeight
-      }
-    }
+    weightChange24h = calcWeightChange(history24h)
+    weightChange7d = calcWeightChange(history7d)
+    weightChange30d = calcWeightChange(history30d)
+    prevWeightChange24h = calcWeightChange(historyPrev24h)
+    prevWeightChange7d = calcWeightChange(historyPrev7d)
+    prevWeightChange30d = calcWeightChange(historyPrev30d)
 
     let history = null
     if (period || (customStart && customEnd)) {
@@ -190,6 +194,9 @@ export async function GET(request: NextRequest) {
       weightChange24h,
       weightChange7d,
       weightChange30d,
+      prevWeightChange24h,
+      prevWeightChange7d,
+      prevWeightChange30d,
     })
   } catch (error) {
     console.error('Wolf Waagen data error:', error)

@@ -88,25 +88,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'BEEP not connected' }, { status: 400 })
     }
 
-    // Calculate date ranges for weight changes
+    // Calculate date ranges for weight changes (current and previous periods)
     const now = new Date()
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000)
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
 
     // Fetch latest sensor values and historical data for weight changes in parallel
-    const [lastValues, history24h, history7d, history30d] = await Promise.all([
+    const [lastValues, history24h, historyPrev24h, history7d, historyPrev7d, history30d, historyPrev30d] = await Promise.all([
       beepGetLastValues(beepApiToken, deviceId),
       beepGetMeasurements(beepApiToken, deviceId, oneDayAgo.toISOString(), now.toISOString()),
+      beepGetMeasurements(beepApiToken, deviceId, twoDaysAgo.toISOString(), oneDayAgo.toISOString()),
       beepGetMeasurements(beepApiToken, deviceId, sevenDaysAgo.toISOString(), now.toISOString()),
+      beepGetMeasurements(beepApiToken, deviceId, fourteenDaysAgo.toISOString(), sevenDaysAgo.toISOString()),
       beepGetMeasurements(beepApiToken, deviceId, thirtyDaysAgo.toISOString(), now.toISOString()),
+      beepGetMeasurements(beepApiToken, deviceId, sixtyDaysAgo.toISOString(), thirtyDaysAgo.toISOString()),
     ])
 
-    // Calculate 24h, 7-day and 30-day weight changes
-    // Compare oldest reading in period to current weight from lastValues
+    // Calculate 24h, 7-day and 30-day weight changes (current and previous periods)
+    // Compare oldest reading in period to newest reading in that period
     let weightChange24h: number | null = null
     let weightChange7d: number | null = null
     let weightChange30d: number | null = null
+    let prevWeightChange24h: number | null = null
+    let prevWeightChange7d: number | null = null
+    let prevWeightChange30d: number | null = null
 
     const currentWeight = lastValues?.weight_kg_corrected ?? lastValues?.weight_kg
 
@@ -115,6 +124,16 @@ export async function GET(request: NextRequest) {
       if (!readings) return null
       for (const r of readings) {
         const w = r.weight_kg_corrected ?? r.weight_kg
+        if (typeof w === 'number') return w
+      }
+      return null
+    }
+
+    // Helper to find newest reading with valid weight
+    const findNewestWeight = (readings: typeof history24h): number | null => {
+      if (!readings) return null
+      for (let i = readings.length - 1; i >= 0; i--) {
+        const w = readings[i].weight_kg_corrected ?? readings[i].weight_kg
         if (typeof w === 'number') return w
       }
       return null
@@ -135,6 +154,25 @@ export async function GET(request: NextRequest) {
       if (oldest30d !== null) {
         weightChange30d = currentWeight - oldest30d
       }
+    }
+
+    // Calculate previous period changes
+    const oldestPrev24h = findOldestWeight(historyPrev24h)
+    const newestPrev24h = findNewestWeight(historyPrev24h)
+    if (oldestPrev24h !== null && newestPrev24h !== null) {
+      prevWeightChange24h = newestPrev24h - oldestPrev24h
+    }
+
+    const oldestPrev7d = findOldestWeight(historyPrev7d)
+    const newestPrev7d = findNewestWeight(historyPrev7d)
+    if (oldestPrev7d !== null && newestPrev7d !== null) {
+      prevWeightChange7d = newestPrev7d - oldestPrev7d
+    }
+
+    const oldestPrev30d = findOldestWeight(historyPrev30d)
+    const newestPrev30d = findNewestWeight(historyPrev30d)
+    if (oldestPrev30d !== null && newestPrev30d !== null) {
+      prevWeightChange30d = newestPrev30d - oldestPrev30d
     }
 
     let history = null
@@ -187,6 +225,9 @@ export async function GET(request: NextRequest) {
       weightChange24h,
       weightChange7d,
       weightChange30d,
+      prevWeightChange24h,
+      prevWeightChange7d,
+      prevWeightChange30d,
     })
   } catch (error) {
     console.error('BEEP data error:', error)
