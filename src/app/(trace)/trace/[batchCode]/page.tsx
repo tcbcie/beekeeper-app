@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { Metadata } from 'next'
+import Image from 'next/image'
 import ApiaryAreaMapWrapper from '@/components/maps/ApiaryAreaMapWrapper'
 import FeedbackForm from '@/components/trace/FeedbackForm'
 
@@ -191,11 +192,15 @@ export default async function TracePage({ params }: PageProps) {
         {/* Apiary Image (if enabled) */}
         {batchInfo.apiary_image_url && (
           <div className="px-6 pt-6">
-            <img
-              src={batchInfo.apiary_image_url}
-              alt="Apiary"
-              className="w-full h-48 sm:h-64 object-cover rounded-xl border border-slate-200 dark:border-slate-700"
-            />
+            <div className="relative w-full h-48 sm:h-64">
+              <Image
+                src={batchInfo.apiary_image_url}
+                alt="Apiary"
+                fill
+                className="object-cover rounded-xl border border-slate-200 dark:border-slate-700"
+                unoptimized
+              />
+            </div>
           </div>
         )}
 

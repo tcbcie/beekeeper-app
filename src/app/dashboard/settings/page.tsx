@@ -1498,7 +1498,7 @@ export default function SettingsPage() {
     try {
       const { data, error } = await supabase
         .from('beekeeping_associations')
-        .select('id, name, jurisdiction, county_area')
+        .select('*')
         .eq('is_active', true)
         .order('name')
 
