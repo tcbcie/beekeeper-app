@@ -18,7 +18,7 @@ export default function ResearchPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [hasScales, setHasScales] = useState(false)
-  const [activeSection, setActiveSection] = useState<ResearchSection>('wild-colonies')
+  const [activeSection, setActiveSection] = useState<ResearchSection>('gdd-data')
 
   useEffect(() => {
     const section = searchParams.get('section')
@@ -53,10 +53,10 @@ export default function ResearchPage() {
   if (loading) return <LoadingSpinner text="Loading research..." />
 
   const sections = [
-    { id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous },
-    { id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera },
     ...(hasScales ? [{ id: 'scale-overview' as const, label: 'Scale Overview', icon: Scale }] : []),
     { id: 'gdd-data' as const, label: 'GDD Data', icon: Thermometer },
+    { id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera },
+    { id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous },
   ]
 
   return (
