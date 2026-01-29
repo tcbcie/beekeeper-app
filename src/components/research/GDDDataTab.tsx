@@ -92,7 +92,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const [currentGDD, setCurrentGDD] = useState<number | null>(null)
   const [accumulationData, setAccumulationData] = useState<YearlyAccumulation[]>([])
   const [accumulationLoading, setAccumulationLoading] = useState(false)
-  const [apiaryCoords, setApiaryCoords] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [apiaryCoordsList, setApiaryCoordsList] = useState<{ latitude: number; longitude: number }[]>([])
   const [monthlyTemps, setMonthlyTemps] = useState<YearlyMonthlyTemps>({})
   const [showTemperature, setShowTemperature] = useState(true)
 
@@ -149,20 +149,15 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     return R * c
   }
 
-  // Fetch community (shared) GDD records within 20km
+  // Fetch community (shared) GDD records within 20km of ANY user apiary
   const fetchCommunityData = useCallback(async () => {
-    console.log('fetchCommunityData called, apiaryCoords:', apiaryCoords)
-    if (!apiaryCoords) {
-      console.log('No apiary coords, returning')
+    if (apiaryCoordsList.length === 0) {
       return
     }
 
     setLoadingCommunity(true)
     try {
-      // Use RPC function to bypass RLS on apiaries table
-      console.log('Calling RPC get_shared_gdd_records...')
       const { data, error } = await supabase.rpc('get_shared_gdd_records')
-      console.log('RPC response - data:', data, 'error:', error)
 
       if (error) {
         console.error('RPC error:', error)
@@ -170,23 +165,22 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       }
 
       if (data) {
-        console.log('Total records from RPC:', data.length)
-        // Filter: exclude own records, only within 20km radius
+        // Filter: exclude own records, only within 20km of ANY user apiary
         const nearby = (data as CommunityGDDRecord[]).filter(record => {
           if (record.user_id === userId) {
-            console.log('Excluding own record:', record.id)
             return false
           }
-          const distance = calculateDistance(
-            Number(apiaryCoords.latitude),
-            Number(apiaryCoords.longitude),
-            Number(record.latitude),
-            Number(record.longitude)
-          )
-          console.log('Record distance:', distance, 'km, within 20km:', distance <= 20)
-          return distance <= 20
+          // Check if record is within 20km of ANY user apiary
+          return apiaryCoordsList.some(apiary => {
+            const distance = calculateDistance(
+              Number(apiary.latitude),
+              Number(apiary.longitude),
+              Number(record.latitude),
+              Number(record.longitude)
+            )
+            return distance <= 20
+          })
         })
-        console.log('Nearby records after filter:', nearby.length)
         setCommunityRecords(nearby)
       }
     } catch (error) {
@@ -194,16 +188,16 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     } finally {
       setLoadingCommunity(false)
     }
-  }, [userId, apiaryCoords])
+  }, [userId, apiaryCoordsList])
 
-  // Fetch community data when toggle is enabled and coords are available
+  // Fetch community data when coords are available (for indicator), regardless of toggle
   useEffect(() => {
-    if (showCommunityData && apiaryCoords) {
+    if (apiaryCoordsList.length > 0) {
       fetchCommunityData()
     }
-  }, [showCommunityData, apiaryCoords, fetchCommunityData])
+  }, [apiaryCoordsList, fetchCommunityData])
 
-  // Fetch apiary coordinates
+  // Fetch all apiary coordinates
   const fetchApiaryCoords = useCallback(async () => {
     try {
       const { data: apiaries } = await supabase
@@ -212,10 +206,12 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         .eq('user_id', userId)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
-        .limit(1)
 
-      if (apiaries && apiaries.length > 0 && apiaries[0].latitude && apiaries[0].longitude) {
-        setApiaryCoords({ latitude: apiaries[0].latitude, longitude: apiaries[0].longitude })
+      if (apiaries && apiaries.length > 0) {
+        const coords = apiaries
+          .filter(a => a.latitude && a.longitude)
+          .map(a => ({ latitude: a.latitude!, longitude: a.longitude! }))
+        setApiaryCoordsList(coords)
       }
     } catch (err) {
       console.error('Failed to fetch apiary coordinates:', err)
@@ -226,13 +222,13 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     fetchApiaryCoords()
   }, [fetchApiaryCoords])
 
-  // Fetch current GDD when we have coordinates
+  // Fetch current GDD when we have coordinates (use first apiary)
   useEffect(() => {
-    if (!apiaryCoords) return
+    if (apiaryCoordsList.length === 0) return
 
     const fetchCurrentGDD = async () => {
       try {
-        const { latitude, longitude } = apiaryCoords
+        const { latitude, longitude } = apiaryCoordsList[0]
         const today = new Date()
         const year = today.getFullYear()
         const janFirst = `${year}-01-01`
@@ -270,15 +266,15 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     }
 
     fetchCurrentGDD()
-  }, [apiaryCoords])
+  }, [apiaryCoordsList])
 
-  // Fetch accumulation data for multiple years
+  // Fetch accumulation data for multiple years (use first apiary)
   const fetchAccumulationData = useCallback(async (yearsToFetch: number[]) => {
-    if (!apiaryCoords || yearsToFetch.length === 0) return
+    if (apiaryCoordsList.length === 0 || yearsToFetch.length === 0) return
 
     setAccumulationLoading(true)
     try {
-      const { latitude, longitude } = apiaryCoords
+      const { latitude, longitude } = apiaryCoordsList[0]
       const currentYear = new Date().getFullYear()
       const todayDayOfYear = Math.floor((new Date().getTime() - new Date(currentYear, 0, 0).getTime()) / 86400000)
 
@@ -340,21 +336,21 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     } finally {
       setAccumulationLoading(false)
     }
-  }, [apiaryCoords])
+  }, [apiaryCoordsList])
 
   // Fetch accumulation data when years change or chart type switches
   useEffect(() => {
-    if (chartType === 'accumulation' && apiaryCoords && selectedAccumulationYears.length > 0) {
+    if (chartType === 'accumulation' && apiaryCoordsList.length > 0 && selectedAccumulationYears.length > 0) {
       fetchAccumulationData(selectedAccumulationYears)
     }
-  }, [chartType, apiaryCoords, selectedAccumulationYears, fetchAccumulationData])
+  }, [chartType, apiaryCoordsList, selectedAccumulationYears, fetchAccumulationData])
 
-  // Fetch monthly temperatures for selected years (for phenology chart)
+  // Fetch monthly temperatures for selected years (for phenology chart, use first apiary)
   const fetchMonthlyTemps = useCallback(async (yearsToFetch: number[]) => {
-    if (!apiaryCoords || yearsToFetch.length === 0) return
+    if (apiaryCoordsList.length === 0 || yearsToFetch.length === 0) return
 
     try {
-      const { latitude, longitude } = apiaryCoords
+      const { latitude, longitude } = apiaryCoordsList[0]
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
       const today = new Date()
       const currentYear = today.getFullYear()
@@ -395,19 +391,19 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     } catch (err) {
       console.error('Failed to fetch monthly temps:', err)
     }
-  }, [apiaryCoords])
+  }, [apiaryCoordsList])
 
   // Fetch temps when we have coords - combine all needed years
   useEffect(() => {
-    if (!apiaryCoords) return
+    if (apiaryCoordsList.length === 0) return
     // Combine selectedYears (for phenology) and selectedAccumulationYears (for accumulation chart)
     const allYears = [...new Set([...selectedYears, ...selectedAccumulationYears])]
     if (allYears.length > 0) {
       fetchMonthlyTemps(allYears)
     }
-  }, [apiaryCoords, selectedYears, selectedAccumulationYears, fetchMonthlyTemps])
+  }, [apiaryCoordsList, selectedYears, selectedAccumulationYears, fetchMonthlyTemps])
 
-  // Extract unique values for filters
+  // Extract unique values for filters (from both user and community records)
   const { years, vegetationTypes, apiaries } = useMemo(() => {
     const yearsSet = new Set<number>()
     const vegSet = new Set<string>()
@@ -419,19 +415,36 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       if (r.apiaries?.name) apiarySet.add(r.apiaries.name)
     })
 
+    // Also include community record years when available
+    if (showCommunityData) {
+      communityRecords.forEach(r => {
+        yearsSet.add(r.year)
+        if (r.vegetation_name) vegSet.add(r.vegetation_name)
+      })
+    }
+
     return {
       years: Array.from(yearsSet).sort((a, b) => b - a),
       vegetationTypes: Array.from(vegSet).sort(),
       apiaries: Array.from(apiarySet).sort(),
     }
-  }, [records])
+  }, [records, communityRecords, showCommunityData])
 
   // Initialize selected years when data loads - select ALL years by default
+  // Also update when community data adds new years and user has no records
   useEffect(() => {
     if (years.length > 0 && selectedYears.length === 0) {
       setSelectedYears([...years]) // Select all years for comparison
     }
-  }, [years, selectedYears.length])
+    // If user has no records but community data adds years, update selection
+    if (records.length === 0 && communityRecords.length > 0 && years.length > 0) {
+      setSelectedYears(prev => {
+        // Add any new years from community data
+        const newYears = years.filter(y => !prev.includes(y))
+        return newYears.length > 0 ? [...prev, ...newYears] : prev
+      })
+    }
+  }, [years, selectedYears.length, records.length, communityRecords.length])
 
   // Filter records
   const filteredRecords = useMemo(() => {
@@ -841,17 +854,24 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             Add Records
           </Link>
           {/* Community Data Toggle - always show if user has apiary with coords */}
-          {apiaryCoords && (
+          {apiaryCoordsList.length > 0 && (
             <button
               onClick={() => setShowCommunityData(!showCommunityData)}
               disabled={loadingCommunity}
-              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
+              className={`relative flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
                 showCommunityData
                   ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
               title="Show bloom data shared by nearby beekeepers (within 20km)"
             >
+              {/* Pulsing indicator when data available but toggle off */}
+              {!showCommunityData && !loadingCommunity && communityRecords.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                </span>
+              )}
               {loadingCommunity ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
@@ -868,8 +888,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         </div>
       </div>
 
-      {/* Filters - only show for vegetation chart and table views */}
-      {records.length > 0 && (viewMode === 'table' || (viewMode === 'chart' && chartType === 'vegetation')) && (
+      {/* Filters - only show for vegetation chart and table views when data exists */}
+      {(records.length > 0 || communityRecords.length > 0) && (viewMode === 'table' || (viewMode === 'chart' && chartType === 'vegetation')) && (
         <div className="bg-surface dark:bg-surface rounded-lg border border-border p-4">
           <div className="flex items-center gap-2 mb-3">
             <Filter size={16} className="text-text-secondary" />
@@ -975,7 +995,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             </div>
 
             {/* Temperature toggle for phenology chart */}
-            {chartType === 'vegetation' && apiaryCoords && (
+            {chartType === 'vegetation' && apiaryCoordsList.length > 0 && (
               <button
                 onClick={() => setShowTemperature(!showTemperature)}
                 className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
@@ -991,7 +1011,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             )}
 
             {/* Year selector and temperature toggle for accumulation chart */}
-            {chartType === 'accumulation' && apiaryCoords && (
+            {chartType === 'accumulation' && apiaryCoordsList.length > 0 && (
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs text-text-secondary">Years:</span>
@@ -1028,7 +1048,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           {/* Accumulation Chart */}
           {chartType === 'accumulation' && (
             <>
-              {!apiaryCoords ? (
+              {apiaryCoordsList.length === 0 ? (
                 <div className="h-80 flex items-center justify-center text-text-secondary">
                   <p>No apiary with GPS coordinates found. Add coordinates to an apiary to see GDD accumulation.</p>
                 </div>
@@ -1057,7 +1077,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           {/* Vegetation Bar Chart */}
           {chartType === 'vegetation' && (
             <>
-              {filteredRecords.length > 0 ? (
+              {filteredRecords.length > 0 || filteredCommunityRecords.length > 0 ? (
                 <div className="h-80">
                   <Bar data={chartData} options={chartOptions} />
                 </div>
@@ -1354,7 +1374,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 <ExternalLink size={16} />
                 Add Your First Record
               </Link>
-              {apiaryCoords && !showCommunityData && (
+              {apiaryCoordsList.length > 0 && !showCommunityData && (
                 <p className="mt-4 text-sm text-text-tertiary">
                   Click &quot;Nearby Data&quot; to see bloom records shared by beekeepers near you.
                 </p>

@@ -227,5 +227,19 @@ Add a toggle switch to show/hide community data:
 
 ---
 
+### Bug Fix: Multi-Apiary Support - January 29, 2026
+
+**Problem:** Users with multiple apiaries couldn't see community data if their first-created apiary was far from shared records, even if another apiary was within 20km.
+
+**Root Cause:** Code only used the FIRST apiary with coordinates for distance calculation.
+
+**Solution:** Changed to check distance against ALL user apiaries:
+- Renamed `apiaryCoords` to `apiaryCoordsList` (array)
+- Updated `fetchApiaryCoords()` to fetch all apiaries (removed `.limit(1)`)
+- Updated `fetchCommunityData()` to use `apiaryCoordsList.some()` - a record is "nearby" if it's within 20km of ANY user apiary
+
+---
+
 *Created: 2026-01-29*
+*Last Updated: 2026-01-29*
 *Status: Fully Implemented*
