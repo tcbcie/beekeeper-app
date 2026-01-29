@@ -149,6 +149,13 @@ interface Association {
   name: string
   jurisdiction: string
   county_area: string
+  affiliation: string | null
+  source: string | null
+  website: string | null
+  email: string | null
+  phone: string | null
+  is_active: boolean
+  comments: string | null
   created_at?: string
   updated_at?: string
 }
@@ -310,6 +317,13 @@ export default function SettingsPage() {
     name: '',
     jurisdiction: '',
     county_area: '',
+    affiliation: '',
+    source: '',
+    website: '',
+    email: '',
+    phone: '',
+    is_active: true,
+    comments: '',
   })
 
   useEffect(() => {
@@ -1342,13 +1356,27 @@ export default function SettingsPage() {
   const handleAssociationSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Convert empty strings to null for nullable fields
+    const dataToSave = {
+      name: associationFormData.name,
+      jurisdiction: associationFormData.jurisdiction,
+      county_area: associationFormData.county_area,
+      affiliation: associationFormData.affiliation || null,
+      source: associationFormData.source || null,
+      website: associationFormData.website || null,
+      email: associationFormData.email || null,
+      phone: associationFormData.phone || null,
+      is_active: associationFormData.is_active,
+      comments: associationFormData.comments || null,
+    }
+
     try {
       if (editingAssociation) {
         // Update existing association
         const { error } = await supabase
           .from('beekeeping_associations')
           .update({
-            ...associationFormData,
+            ...dataToSave,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingAssociation.id)
@@ -1359,7 +1387,7 @@ export default function SettingsPage() {
         // Create new association
         const { error } = await supabase
           .from('beekeeping_associations')
-          .insert([associationFormData])
+          .insert([dataToSave])
 
         if (error) throw error
         toast.success('Beekeeping association added successfully!')
@@ -1380,6 +1408,13 @@ export default function SettingsPage() {
       name: association.name,
       jurisdiction: association.jurisdiction,
       county_area: association.county_area,
+      affiliation: association.affiliation || '',
+      source: association.source || '',
+      website: association.website || '',
+      email: association.email || '',
+      phone: association.phone || '',
+      is_active: association.is_active,
+      comments: association.comments || '',
     })
     // Don't show the add form - we're doing inline editing in the table
   }
@@ -1412,6 +1447,13 @@ export default function SettingsPage() {
       name: '',
       jurisdiction: '',
       county_area: '',
+      affiliation: '',
+      source: '',
+      website: '',
+      email: '',
+      phone: '',
+      is_active: true,
+      comments: '',
     })
   }
 
@@ -2380,6 +2422,97 @@ export default function SettingsPage() {
                       required
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                      Affiliation
+                    </label>
+                    <input
+                      type="text"
+                      value={associationFormData.affiliation}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, affiliation: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-md"
+                      placeholder="e.g., FIBKA, IBA, UBKA"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      value={associationFormData.website}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, website: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-md"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={associationFormData.email}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-md"
+                      placeholder="contact@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={associationFormData.phone}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-md"
+                      placeholder="+353 1 234 5678"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                      Source
+                    </label>
+                    <input
+                      type="text"
+                      value={associationFormData.source}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, source: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-md"
+                      placeholder="Data source URL"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="is_active"
+                      checked={associationFormData.is_active}
+                      onChange={(e) => setAssociationFormData({ ...associationFormData, is_active: e.target.checked })}
+                      className="h-4 w-4 text-forest-600 border-border rounded"
+                    />
+                    <label htmlFor="is_active" className="text-sm font-medium text-text-secondary">
+                      Active
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                    Comments
+                  </label>
+                  <textarea
+                    value={associationFormData.comments}
+                    onChange={(e) => setAssociationFormData({ ...associationFormData, comments: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-md"
+                    placeholder="Additional notes or comments"
+                    rows={3}
+                  />
                 </div>
 
                 <div className="flex gap-3">
@@ -2443,6 +2576,27 @@ export default function SettingsPage() {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                           County/Area
                         </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                          Affiliation
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                          Website
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                          Phone
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                          Source
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                          Active
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                          Comments
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
@@ -2499,6 +2653,68 @@ export default function SettingsPage() {
                                 placeholder="County/Area"
                               />
                             </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={associationFormData.affiliation}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, affiliation: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
+                                placeholder="Affiliation"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={associationFormData.website}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, website: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
+                                placeholder="Website"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="email"
+                                value={associationFormData.email}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, email: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
+                                placeholder="Email"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={associationFormData.phone}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, phone: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
+                                placeholder="Phone"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={associationFormData.source}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, source: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-border rounded"
+                                placeholder="Source"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <input
+                                type="checkbox"
+                                checked={associationFormData.is_active}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, is_active: e.target.checked })}
+                                className="h-4 w-4 text-forest-600 border-border rounded"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <textarea
+                                value={associationFormData.comments}
+                                onChange={(e) => setAssociationFormData({ ...associationFormData, comments: e.target.value })}
+                                className="w-full px-2 py-1 text-sm border border-border rounded min-w-[150px]"
+                                placeholder="Comments"
+                                rows={2}
+                              />
+                            </td>
                           </>
                         ) : (
                           /* Display Mode */
@@ -2529,6 +2745,37 @@ export default function SettingsPage() {
                             </td>
                             <td className="px-4 py-3 text-sm text-foreground">
                               {association.county_area}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-foreground">
+                              {association.affiliation || '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-foreground">
+                              {association.website ? (
+                                <a href={association.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-[150px]">
+                                  {association.website.replace(/^https?:\/\//, '')}
+                                </a>
+                              ) : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-foreground">
+                              {association.email ? (
+                                <a href={`mailto:${association.email}`} className="text-blue-600 hover:underline">
+                                  {association.email}
+                                </a>
+                              ) : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-foreground">
+                              {association.phone || '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-foreground truncate max-w-[150px]">
+                              {association.source || '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">
+                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${association.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
+                                {association.is_active ? 'Yes' : 'No'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-foreground max-w-[200px]">
+                              {association.comments || '-'}
                             </td>
                           </>
                         )}
