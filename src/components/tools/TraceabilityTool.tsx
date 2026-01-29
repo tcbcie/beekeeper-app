@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -794,7 +795,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     const svgData = new XMLSerializer().serializeToString(svg)
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
-    const img = new Image()
+    const img = new window.Image()
 
     img.onload = () => {
       canvas.width = img.width
@@ -1256,11 +1257,15 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     {publicPreview.apiaryImageUrl && (
                       <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
                         <div className="flex items-start gap-3">
-                          <img
-                            src={publicPreview.apiaryImageUrl}
-                            alt="Apiary"
-                            className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-600"
-                          />
+                          <div className="relative w-16 h-16">
+                            <Image
+                              src={publicPreview.apiaryImageUrl}
+                              alt="Apiary"
+                              fill
+                              className="object-cover rounded-lg border border-slate-200 dark:border-slate-600"
+                              unoptimized
+                            />
+                          </div>
                           <div className="flex-1">
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input

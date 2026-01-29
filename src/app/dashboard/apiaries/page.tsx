@@ -441,13 +441,17 @@ export default function ApiariesPage() {
               <label className="block text-sm font-medium text-text-secondary mb-2">Apiary Photo</label>
               {imagePreview ? (
                 <div className="relative inline-block group">
-                  <img
-                    src={imagePreview}
-                    alt="Apiary preview"
-                    className="w-full max-w-xs h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => handleImageClick(imagePreview)}
-                    title="Click to enlarge"
-                  />
+                  <div className="relative w-full max-w-xs h-48">
+                    <Image
+                      src={imagePreview}
+                      alt="Apiary preview"
+                      fill
+                      className="object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => handleImageClick(imagePreview)}
+                      title="Click to enlarge"
+                      unoptimized
+                    />
+                  </div>
                   <div
                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg pointer-events-none"
                   >
