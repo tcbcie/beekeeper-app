@@ -818,7 +818,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             </button>
           </div>
           <Link
-            href="/dashboard/tools?tool=gdd"
+            href="/dashboard/tools?section=gdd"
             className="flex items-center gap-2 px-4 py-2 text-sm bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
           >
             <ExternalLink size={16} />
@@ -1266,7 +1266,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           <Thermometer size={48} className="mx-auto mb-3 text-text-tertiary opacity-50" />
           <p className="text-text-secondary mb-4">No GDD records yet.</p>
           <Link
-            href="/dashboard/tools?tool=gdd"
+            href="/dashboard/tools?section=gdd"
             className="inline-flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
           >
             <ExternalLink size={16} />
