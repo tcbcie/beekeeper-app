@@ -474,7 +474,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                 Share this data with nearby beekeepers
               </label>
               <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                Data will be anonymized and only shown to users within 20km of your apiary.
+                Data will be anonymised and only shown to users within 20km of your apiary.
               </p>
             </div>
           </div>
