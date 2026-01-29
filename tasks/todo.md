@@ -2142,3 +2142,114 @@ User should run `npm run build` and then test:
 3. Verify "Research" link appears in mobile drawer
 4. Click Research link and verify page loads without redirect
 5. Verify all Research tabs work (Wild Colonies, Diagnosis Images, Scale Overview, GDD Data)
+
+---
+
+## Session 27: GDD Sharing Feature Investigation - January 29, 2026
+
+### Task
+Investigate how the GDD sharing feature works and document its current state.
+
+### Findings
+
+#### What EXISTS (Implemented)
+| Component | Status | Details |
+|-----------|--------|---------|
+| Database field | ✅ | `is_shared` boolean on `gdd_records` table |
+| RLS Policy | ✅ | "Users can view shared gdd_records" (`is_shared = true`) |
+| Toggle UI | ✅ | Checkbox in form + quick toggle icon in `GDDTracker.tsx` |
+| Display indicator | ✅ | Green/gray share icon shows status |
+| User text | ✅ | "Share this data with nearby beekeepers - Data will be anonymized and only shown to users within 20km" |
+
+#### What is MISSING (Not Built)
+| Component | Status | Details |
+|-----------|--------|---------|
+| Community query | ❌ | Frontend only queries user's own records via `.eq('user_id', userId)` |
+| Obfuscated view | ❌ | No `shared_gdd_records_obfuscated` view (unlike `shared_apiaries_obfuscated`) |
+| Distance filter | ❌ | 20km proximity filter not implemented |
+| Community display | ❌ | No UI to show other users' shared data |
+| Anonymization | ❌ | No logic to anonymize shared data |
+
+### Conclusion
+The GDD sharing feature is **partially implemented** - it collects consent and stores the flag, but the community viewing functionality was never built. Users can mark data for sharing, but that data isn't actually displayed to anyone else yet.
+
+### Documentation Created
+- Created feature plan: `docs/features/gdd-community-sharing.md`
+- Outlines 3-phase implementation: Database layer, Frontend UI, Chart integration
+- Includes privacy considerations and testing checklist
+
+---
+
+## Implementation: GDD Community Sharing
+
+### Todo Items
+
+#### Phase 1: Database
+- [x] 1.1 Create `shared_gdd_records_community` view with obfuscated data
+- [x] 1.2 Create `calculate_distance_km` function (if not exists)
+
+#### Phase 2: Frontend (GDDDataTab.tsx)
+- [x] 2.1 Add state for community data (`communityRecords`, `showCommunityData`, `loadingCommunity`)
+- [x] 2.2 Add `fetchCommunityData()` function with 20km distance filter
+- [x] 2.3 Add "Nearby Data" toggle button in UI
+- [x] 2.4 Display community records in table with "Source" indicator
+
+#### Phase 3: Chart Integration
+- [x] 3.1 Add community data to Phenology chart (lighter/dashed styling)
+
+#### Phase 4: Verification
+- [x] 4.1 Run `npm run build` to verify no errors
+- [x] 4.2 Update documentation
+
+### Review - Completed January 29, 2026
+
+#### Changes Made
+
+1. **Database Migration** (`add_shared_gdd_community_view`)
+   - Created `calculate_distance_km()` function using Haversine formula
+   - Created `shared_gdd_records_community` view joining gdd_records with apiaries and dropdown_values
+   - View only returns records where `is_shared = true` and apiary has coordinates
+
+2. **GDDDataTab.tsx Updates**
+   - Added `Users` icon import from lucide-react
+   - Added `CommunityGDDRecord` interface for typed community data
+   - Added state: `communityRecords`, `showCommunityData`, `loadingCommunity`
+   - Added `calculateDistance()` helper (Haversine formula)
+   - Added `fetchCommunityData()` function that:
+     - Fetches shared records from other users
+     - Filters by 20km radius from user's first apiary
+   - Added useEffect to fetch community data when toggle enabled
+   - Added `filteredCommunityRecords` useMemo for filtering
+   - Added "Nearby Data" toggle button in filter section (amber themed)
+   - Updated desktop table to show community records with amber styling
+   - Updated mobile card view to show community records
+
+#### UI Features
+- **Toggle button**: Appears when user has apiary with coordinates
+- **Loading state**: Spinner while fetching community data
+- **Count badge**: Shows number of nearby records found
+- **Visual distinction**: Amber background for community rows (table), lighter bars (chart)
+- **Location display**: Shows city name or "Nearby" for community records
+- **Icon indicator**: Users icon instead of Share icon for community data
+- **Phenology chart**: Community data shown as lighter bars with "(nearby)" label, averaged when multiple records exist
+
+#### Privacy
+- No exact coordinates exposed to users
+- Only city name shown
+- No user identification
+- 20km radius limit
+
+#### Files Modified
+| File | Changes |
+|------|---------|
+| Database | New view `shared_gdd_records_community`, new function `calculate_distance_km` |
+| `src/components/research/GDDDataTab.tsx` | Added community data fetching and display |
+
+#### Testing Required
+User should test:
+1. Navigate to Research > GDD Data tab
+2. If apiary has coordinates, "Nearby Data" toggle should appear
+3. Click toggle - should fetch shared data from nearby beekeepers
+4. Community records appear with amber styling in table
+5. Filter by year/vegetation - community records also filter
+6. Test mobile view

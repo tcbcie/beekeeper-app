@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2 } from 'lucide-react'
+import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2, Users } from 'lucide-react'
 import Link from 'next/link'
 import {
   Chart as ChartJS,
@@ -32,6 +32,20 @@ interface GDDRecord {
   notes: string | null
   apiaries?: { name: string }
   dropdown_values?: { value: string }
+}
+
+interface CommunityGDDRecord {
+  id: string
+  vegetation_type_id: string
+  year: number
+  start_date: string
+  end_date: string | null
+  gdd_value: number | null
+  vegetation_name: string | null
+  city: string | null
+  latitude: number
+  longitude: number
+  user_id: string
 }
 
 interface GDDDataTabProps {
@@ -92,6 +106,11 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const availableAccumulationYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4]
   const [selectedAccumulationYears, setSelectedAccumulationYears] = useState<number[]>([currentYear, currentYear - 1])
 
+  // Community data
+  const [communityRecords, setCommunityRecords] = useState<CommunityGDDRecord[]>([])
+  const [showCommunityData, setShowCommunityData] = useState(false)
+  const [loadingCommunity, setLoadingCommunity] = useState(false)
+
   const fetchRecords = useCallback(async () => {
     setLoading(true)
     try {
@@ -117,6 +136,56 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   useEffect(() => {
     fetchRecords()
   }, [fetchRecords])
+
+  // Haversine distance calculation (km)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
+  // Fetch community (shared) GDD records within 20km
+  const fetchCommunityData = useCallback(async () => {
+    if (!apiaryCoords) return
+
+    setLoadingCommunity(true)
+    try {
+      const { data } = await supabase
+        .from('shared_gdd_records_community')
+        .select('*')
+        .neq('user_id', userId)
+
+      if (data) {
+        // Filter by distance (20km radius)
+        const nearby = data.filter(record => {
+          const distance = calculateDistance(
+            apiaryCoords.latitude,
+            apiaryCoords.longitude,
+            record.latitude,
+            record.longitude
+          )
+          return distance <= 20
+        })
+        setCommunityRecords(nearby)
+      }
+    } catch (error) {
+      console.error('Error fetching community GDD data:', error)
+    } finally {
+      setLoadingCommunity(false)
+    }
+  }, [userId, apiaryCoords])
+
+  // Fetch community data when toggle is enabled and coords are available
+  useEffect(() => {
+    if (showCommunityData && apiaryCoords) {
+      fetchCommunityData()
+    }
+  }, [showCommunityData, apiaryCoords, fetchCommunityData])
 
   // Fetch apiary coordinates
   const fetchApiaryCoords = useCallback(async () => {
@@ -358,22 +427,52 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     })
   }, [records, selectedYears, selectedVegetation, selectedApiary])
 
+  // Filter community records (same year/vegetation filters, no apiary filter since it's "nearby")
+  const filteredCommunityRecords = useMemo(() => {
+    if (!showCommunityData) return []
+    return communityRecords.filter(r => {
+      if (selectedYears.length > 0 && !selectedYears.includes(r.year)) return false
+      if (selectedVegetation && r.vegetation_name !== selectedVegetation) return false
+      return true
+    })
+  }, [communityRecords, showCommunityData, selectedYears, selectedVegetation])
+
   // Prepare chart data - group by vegetation, compare years
   const { chartData, dateMap } = useMemo(() => {
-    // Get all vegetation types in filtered records
-    const vegTypes = [...new Set(filteredRecords.map(r => r.dropdown_values?.value).filter(Boolean))] as string[]
+    // Get all vegetation types from user's records
+    const userVegTypes = [...new Set(filteredRecords.map(r => r.dropdown_values?.value).filter(Boolean))] as string[]
+
+    // Add community vegetation types if enabled
+    const communityVegTypes = showCommunityData
+      ? [...new Set(filteredCommunityRecords.map(r => r.vegetation_name).filter(Boolean))] as string[]
+      : []
+
+    // Combine and deduplicate
+    const vegTypes = [...new Set([...userVegTypes, ...communityVegTypes])]
 
     // Sort vegetation types by their minimum GDD value (lowest first = earliest bloom)
     vegTypes.sort((a, b) => {
-      const aRecords = filteredRecords.filter(r => r.dropdown_values?.value === a && r.gdd_value !== null)
-      const bRecords = filteredRecords.filter(r => r.dropdown_values?.value === b && r.gdd_value !== null)
-      const aMin = aRecords.length > 0 ? Math.min(...aRecords.map(r => Number(r.gdd_value))) : Infinity
-      const bMin = bRecords.length > 0 ? Math.min(...bRecords.map(r => Number(r.gdd_value))) : Infinity
+      const aUserRecords = filteredRecords.filter(r => r.dropdown_values?.value === a && r.gdd_value !== null)
+      const aCommunityRecords = filteredCommunityRecords.filter(r => r.vegetation_name === a && r.gdd_value !== null)
+      const bUserRecords = filteredRecords.filter(r => r.dropdown_values?.value === b && r.gdd_value !== null)
+      const bCommunityRecords = filteredCommunityRecords.filter(r => r.vegetation_name === b && r.gdd_value !== null)
+
+      const aAllGdd = [...aUserRecords.map(r => Number(r.gdd_value)), ...aCommunityRecords.map(r => Number(r.gdd_value))]
+      const bAllGdd = [...bUserRecords.map(r => Number(r.gdd_value)), ...bCommunityRecords.map(r => Number(r.gdd_value))]
+
+      const aMin = aAllGdd.length > 0 ? Math.min(...aAllGdd) : Infinity
+      const bMin = bAllGdd.length > 0 ? Math.min(...bAllGdd) : Infinity
       return aMin - bMin
     })
 
-    // Get years present in filtered data (sort numerically)
-    const chartYears = [...new Set(filteredRecords.map(r => r.year))].sort((a, b) => a - b)
+    // Get years from user data
+    const userYears = [...new Set(filteredRecords.map(r => r.year))]
+    // Get years from community data if enabled
+    const communityYears = showCommunityData
+      ? [...new Set(filteredCommunityRecords.map(r => r.year))]
+      : []
+    // Combine and sort
+    const chartYears = [...new Set([...userYears, ...communityYears])].sort((a, b) => a - b)
 
     // Create a map of datasetIndex-vegIndex -> date for the datalabels formatter
     // Build dates map first by iterating all records
@@ -392,7 +491,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       }
     })
 
-    const datasets = chartYears.map((year, idx) => {
+    // User's datasets
+    const userDatasets = chartYears.map((year, idx) => {
       const colorIdx = idx % YEAR_COLORS.length
       return {
         label: String(year),
@@ -409,14 +509,37 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       }
     })
 
+    // Community datasets (lighter, with pattern) - only if toggle is on
+    const communityDatasets = showCommunityData ? chartYears.map((year, idx) => {
+      const colorIdx = idx % YEAR_COLORS.length
+      // Make community bars lighter/more transparent
+      const bgColor = YEAR_COLORS[colorIdx].bg.replace('0.8', '0.3')
+      return {
+        label: `${year} (nearby)`,
+        data: vegTypes.map((veg) => {
+          // Get average GDD from community records for this veg/year
+          const communityRecs = filteredCommunityRecords.filter(
+            r => r.vegetation_name === veg && Number(r.year) === year && r.gdd_value !== null
+          )
+          if (communityRecs.length === 0) return null
+          const avg = communityRecs.reduce((sum, r) => sum + Number(r.gdd_value), 0) / communityRecs.length
+          return Math.round(avg * 10) / 10
+        }),
+        backgroundColor: bgColor,
+        borderColor: YEAR_COLORS[colorIdx].border,
+        borderWidth: 1,
+        borderDash: [5, 5],
+      }
+    }).filter(ds => ds.data.some(v => v !== null)) : [] // Only include if has data
+
     return {
       chartData: {
         labels: vegTypes,
-        datasets,
+        datasets: [...userDatasets, ...communityDatasets],
       },
       dateMap: dates,
     }
-  }, [filteredRecords])
+  }, [filteredRecords, filteredCommunityRecords, showCommunityData])
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -776,6 +899,34 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 Reset
               </button>
             )}
+
+            {/* Community Data Toggle */}
+            {apiaryCoords && (
+              <div className="ml-auto self-end">
+                <button
+                  onClick={() => setShowCommunityData(!showCommunityData)}
+                  disabled={loadingCommunity}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    showCommunityData
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                  title="Show bloom data shared by nearby beekeepers (within 20km)"
+                >
+                  {loadingCommunity ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Users size={16} />
+                  )}
+                  <span>Nearby Data</span>
+                  {showCommunityData && communityRecords.length > 0 && (
+                    <span className="px-1.5 py-0.5 text-xs bg-amber-200 dark:bg-amber-800 rounded-full">
+                      {communityRecords.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1019,6 +1170,38 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                     </td>
                   </tr>
                 ))}
+                {/* Community Records */}
+                {filteredCommunityRecords.map((record) => (
+                  <tr key={`community-${record.id}`} className="border-b border-border bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20">
+                    <td className="p-3 text-foreground font-medium">{record.year}</td>
+                    <td className="p-3 text-amber-700 dark:text-amber-400 text-sm">
+                      <span className="flex items-center gap-1">
+                        <Users size={12} />
+                        {record.city || 'Nearby'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-foreground">{record.vegetation_name || '-'}</td>
+                    <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
+                    <td className="p-3 text-text-secondary">
+                      {record.end_date ? new Date(record.end_date).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="p-3 text-right">
+                      {record.gdd_value !== null ? (
+                        <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value}</span>
+                      ) : (
+                        <span className="text-text-tertiary">-</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">
+                      <span
+                        className="inline-flex p-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                        title="Shared by nearby beekeeper"
+                      >
+                        <Users size={14} />
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -1044,6 +1227,31 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                     {record.is_shared && (
                       <Share2 size={14} className="text-green-600" />
                     )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {/* Community Records */}
+            {filteredCommunityRecords.map((record) => (
+              <div key={`community-${record.id}`} className="p-4 space-y-2 bg-amber-50/50 dark:bg-amber-900/10">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground">{record.vegetation_name || 'Unknown'}</span>
+                  <span className="text-sm text-text-secondary">{record.year}</span>
+                </div>
+                <div className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                  <Users size={12} />
+                  {record.city || 'Nearby beekeeper'}
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-text-tertiary">
+                    {new Date(record.start_date).toLocaleDateString()}
+                    {record.end_date && ` - ${new Date(record.end_date).toLocaleDateString()}`}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {record.gdd_value !== null && (
+                      <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value} GDD</span>
+                    )}
+                    <Users size={14} className="text-amber-600" />
                   </div>
                 </div>
               </div>
