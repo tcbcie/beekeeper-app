@@ -151,12 +151,18 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
   // Fetch community (shared) GDD records within 20km
   const fetchCommunityData = useCallback(async () => {
-    if (!apiaryCoords) return
+    console.log('fetchCommunityData called, apiaryCoords:', apiaryCoords)
+    if (!apiaryCoords) {
+      console.log('No apiary coords, returning')
+      return
+    }
 
     setLoadingCommunity(true)
     try {
       // Use RPC function to bypass RLS on apiaries table
+      console.log('Calling RPC get_shared_gdd_records...')
       const { data, error } = await supabase.rpc('get_shared_gdd_records')
+      console.log('RPC response - data:', data, 'error:', error)
 
       if (error) {
         console.error('RPC error:', error)
@@ -164,17 +170,23 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       }
 
       if (data) {
+        console.log('Total records from RPC:', data.length)
         // Filter: exclude own records, only within 20km radius
         const nearby = (data as CommunityGDDRecord[]).filter(record => {
-          if (record.user_id === userId) return false
+          if (record.user_id === userId) {
+            console.log('Excluding own record:', record.id)
+            return false
+          }
           const distance = calculateDistance(
             Number(apiaryCoords.latitude),
             Number(apiaryCoords.longitude),
             Number(record.latitude),
             Number(record.longitude)
           )
+          console.log('Record distance:', distance, 'km, within 20km:', distance <= 20)
           return distance <= 20
         })
+        console.log('Nearby records after filter:', nearby.length)
         setCommunityRecords(nearby)
       }
     } catch (error) {
