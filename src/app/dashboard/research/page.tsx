@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getCurrentUserId } from '@/lib/auth'
+import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { FlaskConical, TreeDeciduous, Camera, Scale, Thermometer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -18,6 +18,7 @@ export default function ResearchPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [hasScales, setHasScales] = useState(false)
+  const [isPowerUser, setIsPowerUser] = useState(false)
   const [activeSection, setActiveSection] = useState<ResearchSection>('gdd-data')
 
   useEffect(() => {
@@ -34,6 +35,10 @@ export default function ResearchPage() {
         router.push('/login')
         return
       }
+
+      // Check if user is power user or admin
+      const powerUser = await isPowerUserOrAdmin()
+      setIsPowerUser(powerUser)
 
       // Check if user has any hives with scales
       const { count } = await supabase
@@ -55,8 +60,8 @@ export default function ResearchPage() {
   const sections = [
     ...(hasScales ? [{ id: 'scale-overview' as const, label: 'Scale Overview', icon: Scale }] : []),
     { id: 'gdd-data' as const, label: 'GDD Data', icon: Thermometer },
-    { id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera },
-    { id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous },
+    ...(isPowerUser ? [{ id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera }] : []),
+    ...(isPowerUser ? [{ id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous }] : []),
   ]
 
   return (
@@ -91,13 +96,13 @@ export default function ResearchPage() {
         </div>
       </div>
 
-      {/* Wild Colonies Section */}
-      {activeSection === 'wild-colonies' && userId && (
+      {/* Wild Colonies Section (Power Users only) */}
+      {activeSection === 'wild-colonies' && userId && isPowerUser && (
         <WildColoniesTab userId={userId} />
       )}
 
-      {/* Diagnosis Images Section */}
-      {activeSection === 'diagnosis-images' && userId && (
+      {/* Diagnosis Images Section (Power Users only) */}
+      {activeSection === 'diagnosis-images' && userId && isPowerUser && (
         <DiagnosisImagesTab userId={userId} />
       )}
 
