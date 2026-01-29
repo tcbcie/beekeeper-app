@@ -32,12 +32,9 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     { href: '/dashboard/queens', label: 'Queens', icon: Crown },
     { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
+    { href: '/dashboard/research', label: 'Research', icon: FlaskConical },
     { href: '/dashboard/profile', label: 'Profile', icon: User },
     { href: '/dashboard/about', label: 'About', icon: Info },
-  ]
-
-  const powerUserNavItems = [
-    { href: '/dashboard/research', label: 'Research', icon: FlaskConical },
   ]
 
   const adminNavItems = [
@@ -45,10 +42,8 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   ]
 
   // Build nav items based on role
-  const isPowerUser = userRole === 'Power User' || userRole === 'Admin'
   const navItems = [
     ...baseNavItems,
-    ...(isPowerUser ? powerUserNavItems : []),
     ...(userRole === 'Admin' ? adminNavItems : [])
   ]
 

@@ -2069,3 +2069,76 @@ User should run `npm run build` and then test:
 8. Switch to Accumulation view
 9. Enable temperature toggle - verify red temperature line appears
 
+---
+
+## Session 25: Settings Page Modularization - January 29, 2026
+
+### Overview
+Extract 8 components from the massive settings page (4,826 lines) to improve maintainability.
+
+### Todo Items
+- [ ] 1. Create ProfileExport component (~40 lines, 1 state var)
+- [ ] 2. Create TicketManagement component (~250 lines, 5 state vars)
+- [ ] 3. Create TreatmentManagement component (~350 lines, 5 state vars)
+- [ ] 4. Create AssociationManagement component (~400 lines, 6 state vars)
+- [ ] 5. Create DropdownManagement component (~330 lines, 5 state vars)
+- [ ] 6. Create RegistrationCodeManagement component (~600 lines, 9 state vars)
+- [ ] 7. Create UserManagement component (~700 lines, 17 state vars)
+- [ ] 8. Update main settings page to use new components
+- [ ] 9. Verify build compiles without errors
+
+### Notes
+- Each component receives `userId` and `isAdmin` as props
+- State and handlers are fully encapsulated within each component
+- Existing patterns (already extracted: KnowledgeBase, News, ToolSuggestions, Terminology, FrameStandards) serve as examples
+
+---
+
+## Session 26: Make Research Section Available to All Users - January 29, 2026
+
+### Overview
+Remove the Power User restriction from the Research section, making it accessible to all authenticated users.
+
+### Current State
+- Research page is restricted via `isPowerUserOrAdmin()` check in `src/app/dashboard/research/page.tsx`
+- Research nav link is in `powerUserNavItems` array (only shown to Power Users/Admins)
+- Same restriction in mobile drawer navigation
+
+### Todo Items
+- [x] 1. Remove power user access check from Research page (`src/app/dashboard/research/page.tsx`)
+- [x] 2. Move Research nav item from `powerUserNavItems` to `baseNavItems` in Sidebar (`src/components/Sidebar.tsx`)
+- [x] 3. Move Research nav item from `powerUserNavItems` to `baseNavItems` in MobileDrawer (`src/components/MobileDrawer.tsx`)
+- [ ] 4. Verify build compiles without errors
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `src/app/dashboard/research/page.tsx` | Removed `isPowerUserOrAdmin` import, removed `hasAccess` state, removed access check and redirect, removed access denied fallback UI |
+| `src/components/Sidebar.tsx` | Moved Research to baseNavItems, removed powerUserNavItems array, simplified navItems building |
+| `src/components/MobileDrawer.tsx` | Same changes as Sidebar |
+
+### Review - Completed January 29, 2026
+
+#### Changes Made
+
+1. **Research Page** (`src/app/dashboard/research/page.tsx`)
+   - Removed `isPowerUserOrAdmin` import from `@/lib/auth`
+   - Removed `hasAccess` state variable
+   - Removed the access check that redirected non-power users to `/dashboard`
+   - Removed the "Access restricted" fallback UI
+
+2. **Sidebar** (`src/components/Sidebar.tsx`)
+   - Moved Research nav item from `powerUserNavItems` to `baseNavItems` (positioned after Tools)
+   - Removed the now-empty `powerUserNavItems` array
+   - Simplified nav building logic (removed `isPowerUser` variable and spread)
+
+3. **Mobile Drawer** (`src/components/MobileDrawer.tsx`)
+   - Same changes as Sidebar for consistency
+
+#### Testing Required
+User should run `npm run build` and then test:
+1. Log in as a regular User (not Power User or Admin)
+2. Verify "Research" link appears in sidebar
+3. Verify "Research" link appears in mobile drawer
+4. Click Research link and verify page loads without redirect
+5. Verify all Research tabs work (Wild Colonies, Diagnosis Images, Scale Overview, GDD Data)

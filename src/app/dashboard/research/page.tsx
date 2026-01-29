@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
+import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { FlaskConical, TreeDeciduous, Camera, Scale, Thermometer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -17,7 +17,6 @@ export default function ResearchPage() {
   const searchParams = useSearchParams()
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [hasAccess, setHasAccess] = useState(false)
   const [hasScales, setHasScales] = useState(false)
   const [activeSection, setActiveSection] = useState<ResearchSection>('wild-colonies')
 
@@ -36,12 +35,6 @@ export default function ResearchPage() {
         return
       }
 
-      const access = await isPowerUserOrAdmin()
-      if (!access) {
-        router.push('/dashboard')
-        return
-      }
-
       // Check if user has any hives with scales
       const { count } = await supabase
         .from('hives')
@@ -51,7 +44,6 @@ export default function ResearchPage() {
         .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
 
       setHasScales((count ?? 0) > 0)
-      setHasAccess(true)
       setUserId(id)
       setLoading(false)
     }
@@ -59,14 +51,6 @@ export default function ResearchPage() {
   }, [router])
 
   if (loading) return <LoadingSpinner text="Loading research..." />
-
-  if (!hasAccess) {
-    return (
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-12 text-center text-text-secondary border border-border">
-        Access restricted to Power Users and Administrators.
-      </div>
-    )
-  }
 
   const sections = [
     { id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous },
