@@ -2253,3 +2253,42 @@ User should test:
 4. Community records appear with amber styling in table
 5. Filter by year/vegetation - community records also filter
 6. Test mobile view
+
+---
+
+### Bug Fix: Community Data Not Loading - January 29, 2026
+
+#### Problem
+User `rico@zmarzly.me` with an apiary ~0.8km from `rico.zmarzly@gmail.com`'s apiaries couldn't see any shared GDD data when clicking "Nearby Data" toggle.
+
+#### Root Cause
+The code only used the FIRST apiary with coordinates for distance calculation:
+```typescript
+.limit(1)  // Only fetched first apiary
+```
+
+User `rico@zmarzly.me` had two apiaries:
+- "ME Apiary I" (Chamberlainstown) - **~81km away** from shared data
+- "ME Apiary II" (Cloonleenaun) - **~0.8km away** from shared data
+
+The first apiary was "ME Apiary I" (created earlier), which was too far to find any records within the 20km radius.
+
+#### Fix
+Changed to fetch ALL user apiaries with coordinates and check if any community record is within 20km of ANY user apiary:
+
+1. Changed state from single coords to array: `apiaryCoordsList` instead of `apiaryCoords`
+2. Updated `fetchApiaryCoords()` to fetch all apiaries (removed `.limit(1)`)
+3. Updated `fetchCommunityData()` to use `apiaryCoordsList.some()` for distance check
+4. Updated all references throughout the component
+
+#### Files Modified
+| File | Changes |
+|------|---------|
+| `src/components/research/GDDDataTab.tsx` | Changed from single apiary to array of apiaries for distance calculation |
+
+#### Testing Required
+User should test:
+1. Log in as `rico@zmarzly.me`
+2. Navigate to Research > GDD Data tab
+3. Click "Nearby Data" toggle
+4. Should now see shared records from `rico.zmarzly@gmail.com` (within 20km of "ME Apiary II")
