@@ -160,7 +160,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
       if (data) {
         // Filter: exclude own records, only within 20km radius
-        const nearby = data.filter(record => {
+        const nearby = (data as CommunityGDDRecord[]).filter(record => {
           if (record.user_id === userId) return false
           const distance = calculateDistance(
             apiaryCoords.latitude,
