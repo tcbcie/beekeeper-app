@@ -156,17 +156,22 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     setLoadingCommunity(true)
     try {
       // Use RPC function to bypass RLS on apiaries table
-      const { data } = await supabase.rpc('get_shared_gdd_records')
+      const { data, error } = await supabase.rpc('get_shared_gdd_records')
+
+      if (error) {
+        console.error('RPC error:', error)
+        return
+      }
 
       if (data) {
         // Filter: exclude own records, only within 20km radius
         const nearby = (data as CommunityGDDRecord[]).filter(record => {
           if (record.user_id === userId) return false
           const distance = calculateDistance(
-            apiaryCoords.latitude,
-            apiaryCoords.longitude,
-            record.latitude,
-            record.longitude
+            Number(apiaryCoords.latitude),
+            Number(apiaryCoords.longitude),
+            Number(record.latitude),
+            Number(record.longitude)
           )
           return distance <= 20
         })
