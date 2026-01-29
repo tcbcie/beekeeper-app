@@ -823,6 +823,31 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             <ExternalLink size={16} />
             Add Records
           </Link>
+          {/* Community Data Toggle - always show if user has apiary with coords */}
+          {apiaryCoords && (
+            <button
+              onClick={() => setShowCommunityData(!showCommunityData)}
+              disabled={loadingCommunity}
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
+                showCommunityData
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+              title="Show bloom data shared by nearby beekeepers (within 20km)"
+            >
+              {loadingCommunity ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Users size={16} />
+              )}
+              <span>Nearby Data</span>
+              {showCommunityData && communityRecords.length > 0 && (
+                <span className="px-1.5 py-0.5 text-xs bg-amber-200 dark:bg-amber-800 rounded-full">
+                  {communityRecords.length}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -897,34 +922,6 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               >
                 Reset
               </button>
-            )}
-
-            {/* Community Data Toggle */}
-            {apiaryCoords && (
-              <div className="ml-auto self-end">
-                <button
-                  onClick={() => setShowCommunityData(!showCommunityData)}
-                  disabled={loadingCommunity}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                    showCommunityData
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                  title="Show bloom data shared by nearby beekeepers (within 20km)"
-                >
-                  {loadingCommunity ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Users size={16} />
-                  )}
-                  <span>Nearby Data</span>
-                  {showCommunityData && communityRecords.length > 0 && (
-                    <span className="px-1.5 py-0.5 text-xs bg-amber-200 dark:bg-amber-800 rounded-full">
-                      {communityRecords.length}
-                    </span>
-                  )}
-                </button>
-              </div>
             )}
           </div>
         </div>
@@ -1259,19 +1256,95 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State - but show community data if available */}
       {records.length === 0 && (
-        <div className="text-center py-12 bg-surface dark:bg-surface rounded-lg border border-border">
-          <Thermometer size={48} className="mx-auto mb-3 text-text-tertiary opacity-50" />
-          <p className="text-text-secondary mb-4">No GDD records yet.</p>
-          <Link
-            href="/dashboard/tools?section=gdd"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
-          >
-            <ExternalLink size={16} />
-            Add Your First Record
-          </Link>
-        </div>
+        <>
+          {/* Show community data table when user has no records but community data is enabled */}
+          {showCommunityData && filteredCommunityRecords.length > 0 ? (
+            <div className="bg-surface dark:bg-surface rounded-lg border border-border overflow-hidden">
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-b border-border">
+                <p className="text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <Users size={16} />
+                  Showing {filteredCommunityRecords.length} shared records from nearby beekeepers
+                </p>
+              </div>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-sage-100 dark:bg-slate-800 border-b border-border">
+                      <th className="text-left p-3 text-sm font-semibold text-foreground">Year</th>
+                      <th className="text-left p-3 text-sm font-semibold text-foreground">Location</th>
+                      <th className="text-left p-3 text-sm font-semibold text-foreground">Vegetation</th>
+                      <th className="text-left p-3 text-sm font-semibold text-foreground">Bloom Date</th>
+                      <th className="text-right p-3 text-sm font-semibold text-foreground">GDD</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCommunityRecords.map((record) => (
+                      <tr key={record.id} className="border-b border-border bg-amber-50/50 dark:bg-amber-900/10">
+                        <td className="p-3 text-foreground font-medium">{record.year}</td>
+                        <td className="p-3 text-amber-700 dark:text-amber-400 text-sm">
+                          <span className="flex items-center gap-1">
+                            <Users size={12} />
+                            {record.city || 'Nearby'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-foreground">{record.vegetation_name || '-'}</td>
+                        <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
+                        <td className="p-3 text-right">
+                          {record.gdd_value !== null ? (
+                            <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value}</span>
+                          ) : (
+                            <span className="text-text-tertiary">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-border">
+                {filteredCommunityRecords.map((record) => (
+                  <div key={record.id} className="p-4 space-y-2 bg-amber-50/50 dark:bg-amber-900/10">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-foreground">{record.vegetation_name || 'Unknown'}</span>
+                      <span className="text-sm text-text-secondary">{record.year}</span>
+                    </div>
+                    <div className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                      <Users size={12} />
+                      {record.city || 'Nearby beekeeper'}
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-text-tertiary">{new Date(record.start_date).toLocaleDateString()}</span>
+                      {record.gdd_value !== null && (
+                        <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value} GDD</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-surface dark:bg-surface rounded-lg border border-border">
+              <Thermometer size={48} className="mx-auto mb-3 text-text-tertiary opacity-50" />
+              <p className="text-text-secondary mb-4">No GDD records yet.</p>
+              <Link
+                href="/dashboard/tools?section=gdd"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
+              >
+                <ExternalLink size={16} />
+                Add Your First Record
+              </Link>
+              {apiaryCoords && !showCommunityData && (
+                <p className="mt-4 text-sm text-text-tertiary">
+                  Click &quot;Nearby Data&quot; to see bloom records shared by beekeepers near you.
+                </p>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* No Results After Filter */}
