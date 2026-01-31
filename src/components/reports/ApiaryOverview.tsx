@@ -5,7 +5,7 @@ import { useReportsData } from '@/hooks/useReportsData'
 import { exportToCSV, printReport } from '@/lib/export-utils'
 import type { HiveOverviewRecord } from '@/types/reports'
 import ReportExportBar from './ReportExportBar'
-import ReportTable from './ReportTable'
+import ReportTable, { type Column } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface ApiaryOverviewProps {
@@ -69,7 +69,7 @@ export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
     )
   }
 
-  const columns = [
+  const columns: Column<HiveOverviewRecord>[] = [
     { key: 'hive_number', header: 'Hive' },
     {
       key: 'status',

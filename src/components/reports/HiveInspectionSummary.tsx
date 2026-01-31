@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useReportsData } from '@/hooks/useReportsData'
 import { exportToCSV, printReport } from '@/lib/export-utils'
-import type { InspectionSummaryRecord, TimePeriod, ReportFilters } from '@/types/reports'
+import type { InspectionSummaryRecord, TimePeriod, ReportFilters as ReportFiltersState } from '@/types/reports'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
-import ReportTable from './ReportTable'
+import ReportTable, { type Column } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface HiveInspectionSummaryProps {
@@ -18,7 +18,7 @@ export default function HiveInspectionSummary({ userId }: HiveInspectionSummaryP
   const [inspections, setInspections] = useState<InspectionSummaryRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 
-  const [filters, setFilters] = useState<ReportFilters>(() => {
+  const [filters, setFilters] = useState<ReportFiltersState>(() => {
     const today = new Date()
     const oneYearAgo = new Date(today)
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
@@ -112,7 +112,7 @@ export default function HiveInspectionSummary({ userId }: HiveInspectionSummaryP
     )
   }
 
-  const columns = [
+  const columns: Column<InspectionSummaryRecord>[] = [
     {
       key: 'inspection_date',
       header: 'Date',
