@@ -124,8 +124,8 @@ export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHis
         pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
       },
       {
-        label: 'Temperature (°C)',
-        data: history.map(reading => reading.temperature_c ?? null),
+        label: 'Brood Temp (°C)',
+        data: history.map(reading => reading.brood_temp_c ?? null),
         borderColor: 'rgb(37, 99, 235)', // blue-600
         backgroundColor: 'rgba(37, 99, 235, 0.1)',
         yAxisID: 'y1',
@@ -219,7 +219,7 @@ export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHis
         position: 'right',
         title: {
           display: true,
-          text: 'Temp (°C)',
+          text: 'Brood Temp (°C)',
           color: 'rgb(37, 99, 235)', // blue-600
         },
         ticks: {

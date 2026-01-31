@@ -128,7 +128,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
           result.prevWeightChange24h = json.prevWeightChange24h ?? null
           result.prevWeightChange7d = json.prevWeightChange7d ?? null
           result.prevWeightChange30d = json.prevWeightChange30d ?? null
-          result.temperature = lv?.temperature_c ?? null
+          result.temperature = lv?.brood_temp_c ?? null
           result.humidity = lv?.humidity ?? null
           // Wolf battery voltage to percentage
           if (lv?.battery_voltage) {
@@ -382,12 +382,8 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
         {/* Sensor row */}
         <div className="flex items-center gap-3 text-xs text-text-secondary">
           {data && data.temperature !== null && (
-            <span className="flex items-center gap-1" title={isBeep ? 'Brood temperature' : 'Ambient temperature'}>
-              {isBeep ? (
-                <Flame size={12} className="text-orange-500" />
-              ) : (
-                <Thermometer size={12} className="text-blue-500" />
-              )}
+            <span className="flex items-center gap-1" title="Brood temperature">
+              <Flame size={12} className="text-orange-500" />
               {data.temperature.toFixed(1)}°C
             </span>
           )}

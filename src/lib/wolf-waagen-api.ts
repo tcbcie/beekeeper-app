@@ -87,6 +87,36 @@ interface WolfApiResponse<T> {
 // ============================================================================
 
 /**
+ * Delay helper for rate limiting
+ */
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+/**
+ * Fetch with retry logic for rate limiting (429 errors)
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 3
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options)
+
+    if (response.status === 429 && attempt < maxRetries) {
+      // Rate limited - wait and retry with exponential backoff
+      const waitTime = Math.pow(2, attempt + 1) * 1000 // 2s, 4s, 8s, 16s
+      await delay(waitTime)
+      continue
+    }
+
+    return response
+  }
+
+  // Should never reach here, but return a fake 429 response if it does
+  return new Response(null, { status: 429, statusText: 'Rate limited' })
+}
+
+/**
  * Parse Wolf Waagen value to number
  * Handles both formats:
  * - String with units: "23.550 [kg]" → 23.550
@@ -138,7 +168,7 @@ function parseReading(raw: WolfSensorReading): WolfParsedReading {
  * @throws Error if API call fails
  */
 export async function wolfGetScales(apiToken: string): Promise<WolfScale[]> {
-  const response = await fetch(`${WOLF_API_BASE}/user/scale`, {
+  const response = await fetchWithRetry(`${WOLF_API_BASE}/user/scale`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
@@ -189,7 +219,7 @@ export async function wolfGetMeasurements(
   endTimestamp: number,
   resolution: 'hourly' | 'daily' = 'hourly'
 ): Promise<WolfParsedReading[]> {
-  const response = await fetch(`${WOLF_API_BASE}/user/scale/export`, {
+  const response = await fetchWithRetry(`${WOLF_API_BASE}/user/scale/export`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
@@ -286,7 +316,7 @@ export async function wolfGetBatteryVoltage(
 
     const formatDate = (d: Date) => d.toISOString().split('T')[0]
 
-    const response = await fetch(`${WOLF_API_BASE}/user/trachtnet/export`, {
+    const response = await fetchWithRetry(`${WOLF_API_BASE}/user/trachtnet/export`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiToken}`,
