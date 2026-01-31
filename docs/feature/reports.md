@@ -173,4 +173,10 @@ Print-specific CSS is included in `src/app/globals.css` with the `@media print` 
 - `.print-container` styles the main report area
 - `.print-header` preserves header styling
 - `.print-table` formats tables for paper
+- `.print-date-box` ensures date box text is visible
 - Summary cards converted to bordered boxes with dark text
+
+### TypeScript Notes
+- `ReportTable.tsx` exports a generic `Column<T>` interface for typed table columns
+- Report components import the type as `ReportFiltersState` to avoid naming conflict with the `ReportFilters` component
+- The `Column` type is also re-exported from `index.ts` for external use
