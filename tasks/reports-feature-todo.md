@@ -84,6 +84,12 @@
 - Official footer with compliance note
 - Print-optimised styles for PDF readability
 
+### TypeScript Fixes
+- Exported `Column<T>` interface from `ReportTable.tsx` for typed columns
+- Renamed `ReportFilters` type import to `ReportFiltersState` to avoid naming conflict with component
+- Updated all report components to use proper type annotations for columns arrays
+- Added eslint-disable comments for necessary `any` types in generic table component
+
 ### Architecture Notes
 - Followed existing patterns from Tools page for tab navigation
 - Followed existing patterns from useRecordsData for data fetching
