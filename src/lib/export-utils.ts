@@ -8,10 +8,11 @@
  * @param filename - Name of the file (without extension)
  * @param columns - Optional array of column names to include (defaults to all keys)
  */
-export function exportToCSV<T extends Record<string, unknown>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function exportToCSV<T extends object = any>(
   data: T[],
   filename: string,
-  columns?: Array<keyof T>
+  columns?: Array<keyof T | string>
 ): void {
   if (!data || data.length === 0) {
     console.warn('No data to export')
@@ -19,7 +20,7 @@ export function exportToCSV<T extends Record<string, unknown>>(
   }
 
   // Determine which columns to include
-  const headers = columns || (Object.keys(data[0]) as Array<keyof T>)
+  const headers = columns || Object.keys(data[0])
 
   // Create CSV header row
   const headerRow = headers.map(header => `"${String(header)}"`).join(',')
@@ -27,7 +28,8 @@ export function exportToCSV<T extends Record<string, unknown>>(
   // Create CSV data rows
   const dataRows = data.map(row =>
     headers.map(header => {
-      const value = row[header]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const value = (row as any)[header]
       // Handle null/undefined
       if (value === null || value === undefined) return '""'
       // Handle dates
