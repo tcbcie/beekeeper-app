@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useReportsData } from '@/hooks/useReportsData'
 import { exportToCSV, printReport } from '@/lib/export-utils'
-import type { HarvestRecord, TimePeriod, ReportFilters } from '@/types/reports'
+import type { HarvestRecord, TimePeriod, ReportFilters as ReportFiltersState } from '@/types/reports'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
-import ReportTable from './ReportTable'
+import ReportTable, { type Column } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface HarvestReportProps {
@@ -18,7 +18,7 @@ export default function HarvestReport({ userId }: HarvestReportProps) {
   const [harvests, setHarvests] = useState<HarvestRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 
-  const [filters, setFilters] = useState<ReportFilters>(() => {
+  const [filters, setFilters] = useState<ReportFiltersState>(() => {
     const today = new Date()
     const oneYearAgo = new Date(today)
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
@@ -97,7 +97,7 @@ export default function HarvestReport({ userId }: HarvestReportProps) {
   const totalWax = harvests.reduce((sum, h) => sum + (h.wax_weight || 0), 0)
   const totalFrames = harvests.reduce((sum, h) => sum + (h.frames_harvested || 0), 0)
 
-  const columns = [
+  const columns: Column<HarvestRecord>[] = [
     {
       key: 'harvest_date',
       header: 'Date',

@@ -2,7 +2,8 @@
 
 import { ReactNode } from 'react'
 
-interface Column<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface Column<T = any> {
   key: keyof T | string
   header: string
   render?: (row: T) => ReactNode
@@ -15,7 +16,8 @@ interface ReportTableProps<T> {
   emptyMessage?: string
 }
 
-export default function ReportTable<T extends Record<string, unknown>>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function ReportTable<T = any>({
   columns,
   data,
   emptyMessage = 'No data available'
@@ -56,7 +58,8 @@ export default function ReportTable<T extends Record<string, unknown>>({
                 >
                   {col.render
                     ? col.render(row)
-                    : String(row[col.key as keyof T] ?? '-')}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    : String((row as any)[col.key] ?? '-')}
                 </td>
               ))}
             </tr>

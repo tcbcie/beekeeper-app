@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useReportsData } from '@/hooks/useReportsData'
 import { exportToCSV, printReport } from '@/lib/export-utils'
-import type { VarroaMonitoringRecord, TimePeriod, ReportFilters } from '@/types/reports'
+import type { VarroaMonitoringRecord, TimePeriod, ReportFilters as ReportFiltersState } from '@/types/reports'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
-import ReportTable from './ReportTable'
+import ReportTable, { type Column } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface VarroaMonitoringReportProps {
@@ -18,7 +18,7 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
   const [records, setRecords] = useState<VarroaMonitoringRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 
-  const [filters, setFilters] = useState<ReportFilters>(() => {
+  const [filters, setFilters] = useState<ReportFiltersState>(() => {
     const today = new Date()
     const oneYearAgo = new Date(today)
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
@@ -102,7 +102,7 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
     : 0
   const thresholdBreaches = checks.filter(c => c.action_threshold_reached).length
 
-  const columns = [
+  const columns: Column<VarroaMonitoringRecord>[] = [
     {
       key: 'date',
       header: 'Date',
