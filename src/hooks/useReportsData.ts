@@ -111,7 +111,8 @@ export function useReportsData(): UseReportsDataReturn {
     if (!data) return []
 
     return data.map((t) => {
-      const hive = t.hives as { hive_number: string; apiary_id: string; apiaries: { name: string; eircode: string | null } | null }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const hive = t.hives as any
       return {
         treatment_date: t.treatment_date,
         hive_number: hive?.hive_number || '',
@@ -120,7 +121,8 @@ export function useReportsData(): UseReportsDataReturn {
         treatment_type: t.treatment_type,
         batch_number: t.batch_number,
         dosage: t.dosage,
-        application_method: (t.application_method as { value: string } | null)?.value || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        application_method: (t.application_method as any)?.value || null,
         notes: t.notes
       }
     })
@@ -150,7 +152,7 @@ export function useReportsData(): UseReportsDataReturn {
 
     if (checksData) {
       checksData.forEach((c) => {
-        const hive = c.hives as { hive_number: string } | null
+        const hive = c.hives as unknown as { hive_number: string } | null
         records.push({
           date: c.check_date,
           type: 'check',
@@ -179,7 +181,7 @@ export function useReportsData(): UseReportsDataReturn {
 
     if (treatmentsData) {
       treatmentsData.forEach((t) => {
-        const hive = t.hives as { hive_number: string } | null
+        const hive = t.hives as unknown as { hive_number: string } | null
         records.push({
           date: t.treatment_date,
           type: 'treatment',
@@ -307,7 +309,7 @@ export function useReportsData(): UseReportsDataReturn {
     if (!data) return []
 
     return data.map((h) => {
-      const hive = h.hives as { hive_number: string } | null
+      const hive = h.hives as unknown as { hive_number: string } | null
       return {
         harvest_date: h.harvest_date,
         hive_number: hive?.hive_number || '',
