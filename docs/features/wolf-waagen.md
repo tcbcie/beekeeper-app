@@ -728,3 +728,81 @@ Wind direction is now displayed as cardinal direction with degrees in parenthese
 #### Files Modified
 - `src/components/hive/WolfSensorDisplay.tsx` - Added weather sensors, weight changes, cardinal direction
 - `src/app/api/wolf-waagen/data/route.ts` - Added 7-day and 30-day weight change calculations
+
+---
+
+## Feature Update - January 31, 2026
+
+### Rate Limiting Fixes
+
+Added resilience to handle Wolf Waagen API rate limiting (429 errors).
+
+#### Changes to API Client (`src/lib/wolf-waagen-api.ts`)
+
+Added `fetchWithRetry()` helper function:
+- Automatically retries on 429 rate limit errors
+- Exponential backoff: 2s, 4s, 8s, 16s delays
+- Maximum 3 retries before returning the response
+
+```typescript
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 3
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, options)
+    if (response.status === 429 && attempt < maxRetries) {
+      const waitTime = Math.pow(2, attempt + 1) * 1000
+      await delay(waitTime)
+      continue
+    }
+    return response
+  }
+}
+```
+
+#### Changes to Data Route (`src/app/api/wolf-waagen/data/route.ts`)
+
+- Changed from parallel API calls to sequential calls (reduces rate limiting)
+- Each API call wrapped in try/catch - returns partial data on failure
+- Removed previous period comparisons to reduce API calls
+- Uses `yield_kg` from lastValues for 24h change (already provided by Wolf API)
+
+**Resilient data fetching:**
+- `lastValues` - returns null if fails
+- `history7d` - returns empty array if fails
+- `history30d` - returns empty array if fails
+- `batteryVoltage` - returns null if fails
+- `history` (chart) - returns empty array if fails
+
+### Brood Temperature Display
+
+Updated to show brood temperature (instead of ambient) consistently across the app.
+
+#### Scale Overview Card (`src/components/research/HiveScaleCard.tsx`)
+
+- Changed Wolf scales to display `brood_temp_c` instead of `temperature_c`
+- Now uses Flame icon (same as BEEP) instead of Thermometer icon
+- Title updated to "Brood temperature" for both scale types
+
+#### History Chart (`src/components/hive/WolfHistoryChart.tsx`)
+
+- Changed from ambient temperature to brood temperature (`brood_temp_c`)
+- Changed line colour from orange to **blue** (`rgb(37, 99, 235)`) for better contrast with amber weight line
+- Y-axis label updated to "Brood Temp (°C)" with blue colour
+
+**Chart Colour Scheme:**
+| Data | Colour | RGB |
+|------|--------|-----|
+| Weight (kg) | Amber | `rgb(217, 119, 6)` |
+| Brood Temp (°C) | Blue | `rgb(37, 99, 235)` |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/lib/wolf-waagen-api.ts` | Added `fetchWithRetry()` with exponential backoff |
+| `src/app/api/wolf-waagen/data/route.ts` | Sequential API calls, resilient error handling |
+| `src/components/research/HiveScaleCard.tsx` | Display brood temp with Flame icon |
+| `src/components/hive/WolfHistoryChart.tsx` | Brood temp line in blue colour |
