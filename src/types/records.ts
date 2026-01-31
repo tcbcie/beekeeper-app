@@ -109,6 +109,7 @@ export interface VarroaTreatment {
   weather_conditions: string
   notes: string
   application_method_id: string | null
+  batch_number?: string | null
   hives?: {
     hive_number: string
     apiary_id: string | null

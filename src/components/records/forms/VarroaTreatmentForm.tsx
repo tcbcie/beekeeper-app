@@ -35,6 +35,7 @@ export default function VarroaTreatmentForm({
     treatment_time: new Date().toTimeString().slice(0, 5),
     treatment_type: '',
     dosage: '',
+    batch_number: null,
     temperature: null,
     weather_conditions: '',
     notes: '',
@@ -356,6 +357,17 @@ export default function VarroaTreatmentForm({
             className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="e.g., 5ml per hive"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Batch Number</label>
+          <input
+            type="text"
+            value={formData.batch_number || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, batch_number: e.target.value || null }))}
+            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            placeholder="Product batch/lot number (for DAFM records)"
           />
         </div>
 
