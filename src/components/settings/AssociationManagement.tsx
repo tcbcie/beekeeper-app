@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, X, Edit2, Trash2, Save, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, X, Edit2, Trash2, Save, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 
@@ -57,6 +57,7 @@ export default function AssociationManagement() {
   const [formData, setFormData] = useState<AssociationFormData>(emptyFormData)
   const [jurisdictionFilter, setJurisdictionFilter] = useState<'all' | 'NI' | 'ROI'>('all')
   const [countyFilter, setCountyFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<'name' | 'county_area'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [currentPage, setCurrentPage] = useState(1)
@@ -197,6 +198,15 @@ export default function AssociationManagement() {
       if (countyFilter !== 'all' && association.county_area !== countyFilter) {
         return false
       }
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        const matchesSearch =
+          association.name.toLowerCase().includes(query) ||
+          association.county_area.toLowerCase().includes(query) ||
+          (association.affiliation?.toLowerCase().includes(query) ?? false) ||
+          (association.email?.toLowerCase().includes(query) ?? false)
+        if (!matchesSearch) return false
+      }
       return true
     })
     .sort((a, b) => {
@@ -246,7 +256,7 @@ export default function AssociationManagement() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-4 items-center bg-surface dark:bg-background p-4 rounded-lg">
+        <div className="flex flex-wrap gap-4 items-center bg-surface dark:bg-background p-4 rounded-lg">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-text-secondary">Jurisdiction:</label>
             <select
@@ -274,11 +284,26 @@ export default function AssociationManagement() {
             </select>
           </div>
 
-          {(jurisdictionFilter !== 'all' || countyFilter !== 'all') && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-text-secondary">Search:</label>
+            <div className="relative">
+              <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
+                placeholder="Name, email, affiliation..."
+                className="pl-8 pr-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-52"
+              />
+            </div>
+          </div>
+
+          {(jurisdictionFilter !== 'all' || countyFilter !== 'all' || searchQuery) && (
             <button
               onClick={() => {
                 setJurisdictionFilter('all')
                 setCountyFilter('all')
+                setSearchQuery('')
                 setCurrentPage(1)
               }}
               className="ml-auto px-3 py-1.5 text-sm text-text-tertiary hover:text-foreground border border-border rounded-md hover:bg-surface-elevated dark:hover:bg-surface-elevated"
