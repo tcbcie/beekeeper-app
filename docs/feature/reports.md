@@ -101,6 +101,31 @@ The Reports feature provides beekeepers with printable and exportable reports fo
 - Total frames harvested
 - Number of harvest events
 
+### 6. Archived Hives Report
+
+**Purpose:** Review hives that have been removed from active management.
+
+**Fields included:**
+- Archived date
+- Hive number
+- Apiary name
+- Archive reason
+- Notes
+
+**Summary statistics:**
+- Total archived hives
+- Breakdown by archive reason (top 4 reasons)
+
+**Filters:**
+- Apiary selection
+- Time period (filters by archive date)
+
+**Use cases:**
+- Track colony losses over time
+- Analyse patterns in hive failures
+- Review reasons for hive removals
+- Compliance and audit records
+
 ## Export Options
 
 ### CSV Export
@@ -150,7 +175,8 @@ src/
 │   ├── VarroaMonitoringReport.tsx    # Mite tracking
 │   ├── HiveInspectionSummary.tsx     # Inspection history
 │   ├── ApiaryOverview.tsx            # Apiary snapshot
-│   └── HarvestReport.tsx             # Harvest tracking
+│   ├── HarvestReport.tsx             # Harvest tracking
+│   └── ArchivedHivesReport.tsx       # Archived hives overview
 ├── components/records/forms/
 │   └── VarroaTreatmentForm.tsx       # Updated with batch_number field
 ├── hooks/

@@ -10,7 +10,8 @@ import type {
   VarroaMonitoringRecord,
   InspectionSummaryRecord,
   HiveOverviewRecord,
-  HarvestRecord
+  HarvestRecord,
+  ArchivedHiveRecord
 } from '@/types/reports'
 
 interface UseReportsDataReturn {
@@ -27,6 +28,7 @@ interface UseReportsDataReturn {
   fetchInspectionSummary: (userId: string, hiveId: string, startDate: string, endDate: string) => Promise<InspectionSummaryRecord[]>
   fetchApiaryOverview: (userId: string, apiaryId: string) => Promise<HiveOverviewRecord[]>
   fetchHarvestData: (userId: string, apiaryId: string, startDate: string, endDate: string) => Promise<HarvestRecord[]>
+  fetchArchivedHives: (userId: string, apiaryId: string, startDate: string, endDate: string) => Promise<ArchivedHiveRecord[]>
 }
 
 export function useReportsData(): UseReportsDataReturn {
@@ -322,6 +324,51 @@ export function useReportsData(): UseReportsDataReturn {
     })
   }, [])
 
+  const fetchArchivedHives = useCallback(async (
+    userId: string,
+    apiaryId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<ArchivedHiveRecord[]> => {
+    let query = supabase
+      .from('hives')
+      .select(`
+        id,
+        hive_number,
+        archived_at,
+        archive_notes,
+        apiaries!inner(name),
+        archive_reason:dropdown_values!hives_archive_reason_id_fkey(value)
+      `)
+      .eq('user_id', userId)
+      .not('archived_at', 'is', null)
+      .gte('archived_at', startDate)
+      .lte('archived_at', endDate)
+
+    if (apiaryId) {
+      query = query.eq('apiary_id', apiaryId)
+    }
+
+    const { data } = await query.order('archived_at', { ascending: false })
+
+    if (!data) return []
+
+    return data.map((h) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const apiary = h.apiaries as any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const reason = h.archive_reason as any
+      return {
+        hive_id: h.id,
+        hive_number: h.hive_number,
+        apiary_name: apiary?.name || '',
+        archived_at: h.archived_at,
+        archive_reason: reason?.value || null,
+        archive_notes: h.archive_notes
+      }
+    })
+  }, [])
+
   return {
     apiaries,
     hives,
@@ -332,6 +379,7 @@ export function useReportsData(): UseReportsDataReturn {
     fetchVarroaMonitoring,
     fetchInspectionSummary,
     fetchApiaryOverview,
-    fetchHarvestData
+    fetchHarvestData,
+    fetchArchivedHives
   }
 }
