@@ -84,17 +84,11 @@ export async function exportToImage(
   format: 'png' | 'jpeg' = 'png'
 ): Promise<void> {
   try {
-    const html2canvas = (await import('html2canvas')).default
+    const htmlToImage = await import('html-to-image')
 
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false
-    })
-
-    const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
-    const dataUrl = canvas.toDataURL(mimeType, 0.95)
+    const dataUrl = format === 'jpeg'
+      ? await htmlToImage.toJpeg(element, { quality: 0.95, backgroundColor: '#ffffff' })
+      : await htmlToImage.toPng(element, { backgroundColor: '#ffffff' })
 
     const link = document.createElement('a')
     link.download = `${filename}-${new Date().toISOString().split('T')[0]}.${format}`
