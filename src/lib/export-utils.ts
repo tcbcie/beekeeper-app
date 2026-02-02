@@ -86,9 +86,27 @@ export async function exportToImage(
   try {
     const htmlToImage = await import('html-to-image')
 
+    // Temporarily hide scrollbars
+    const style = document.createElement('style')
+    style.textContent = `
+      .export-capture, .export-capture * {
+        overflow: visible !important;
+        scrollbar-width: none !important;
+      }
+      .export-capture::-webkit-scrollbar, .export-capture *::-webkit-scrollbar {
+        display: none !important;
+      }
+    `
+    document.head.appendChild(style)
+    element.classList.add('export-capture')
+
     const dataUrl = format === 'jpeg'
       ? await htmlToImage.toJpeg(element, { quality: 0.95, backgroundColor: '#ffffff' })
       : await htmlToImage.toPng(element, { backgroundColor: '#ffffff' })
+
+    // Restore scrollbars
+    element.classList.remove('export-capture')
+    document.head.removeChild(style)
 
     const link = document.createElement('a')
     link.download = `${filename}-${new Date().toISOString().split('T')[0]}.${format}`
