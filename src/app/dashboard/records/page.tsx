@@ -488,6 +488,7 @@ export default function RecordsPage() {
         treatment_time: treatment.treatment_time || null,
         treatment_type: isOther ? otherType : treatment.treatment_type,
         dosage: treatment.dosage,
+        batch_number: treatment.batch_number || null,
         temperature: treatment.temperature,
         weather_conditions: treatment.weather_conditions || '',
         notes: treatment.notes || '',
