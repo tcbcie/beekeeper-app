@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { useReportsData } from '@/hooks/useReportsData'
-import { exportToCSV, printReport } from '@/lib/export-utils'
+import { exportToCSV, printReport, exportToImage } from '@/lib/export-utils'
 import type { DAFMTreatmentRecord, TimePeriod, ReportFilters as ReportFiltersState } from '@/types/reports'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
@@ -16,6 +16,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
   const { apiaries, hives, profile, loading, fetchBaseData, fetchDAFMTreatments } = useReportsData()
   const [treatments, setTreatments] = useState<DAFMTreatmentRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
 
   const [filters, setFilters] = useState<ReportFiltersState>(() => {
     const today = new Date()
@@ -86,6 +87,12 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
     ])
   }
 
+  const handleExportImage = async () => {
+    if (reportRef.current) {
+      await exportToImage(reportRef.current, 'dafm-varroa-report', 'png')
+    }
+  }
+
   const beekeeperName = profile
     ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email
     : ''
@@ -128,11 +135,12 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
       <ReportExportBar
         onExportCSV={handleExportCSV}
         onPrint={printReport}
+        onExportImage={handleExportImage}
         disabled={treatments.length === 0 || dataLoading}
       />
 
       {/* Official Report Document */}
-      <div className="print-container bg-white dark:bg-slate-900 rounded-lg border-2 border-[#006853] dark:border-[#00a67d] shadow-lg overflow-hidden">
+      <div ref={reportRef} className="print-container bg-white dark:bg-slate-900 rounded-lg border-2 border-[#006853] dark:border-[#00a67d] shadow-lg overflow-hidden">
 
         {/* Official Header with DAFM Branding */}
         <div className="bg-gradient-to-r from-[#006853] to-[#008060] text-white p-6 print-header">

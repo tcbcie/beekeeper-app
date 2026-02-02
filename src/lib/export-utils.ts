@@ -73,6 +73,40 @@ export function printReport(): void {
 }
 
 /**
+ * Exports an HTML element as a PNG/JPEG image
+ * @param element - The HTML element to capture
+ * @param filename - Name of the file (without extension)
+ * @param format - Image format ('png' or 'jpeg')
+ */
+export async function exportToImage(
+  element: HTMLElement,
+  filename: string,
+  format: 'png' | 'jpeg' = 'png'
+): Promise<void> {
+  try {
+    const html2canvas = (await import('html2canvas')).default
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    })
+
+    const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
+    const dataUrl = canvas.toDataURL(mimeType, 0.95)
+
+    const link = document.createElement('a')
+    link.download = `${filename}-${new Date().toISOString().split('T')[0]}.${format}`
+    link.href = dataUrl
+    link.click()
+  } catch (error) {
+    console.error('Failed to export image:', error)
+    throw error
+  }
+}
+
+/**
  * Format a value for CSV export (used for custom formatting)
  */
 export function formatForCSV(value: unknown): string {
