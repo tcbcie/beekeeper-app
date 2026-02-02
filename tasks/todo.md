@@ -2292,3 +2292,41 @@ User should test:
 2. Navigate to Research > GDD Data tab
 3. Click "Nearby Data" toggle
 4. Should now see shared records from `rico.zmarzly@gmail.com` (within 20km of "ME Apiary II")
+
+---
+
+## Session: Fix Varroa Treatment Batch Number Not Saving - February 2, 2026
+
+### Problem
+The batch number field for varroa treatments is not being saved to the database. Users can enter a batch number in the form, but it is not persisted.
+
+### Root Cause
+In `src/app/dashboard/records/page.tsx`, the `handleTreatmentSubmit` function constructs a `submitData` object (lines 485-495) that is missing the `batch_number` field. The form correctly includes `batch_number` in the treatment data, but it is omitted when building the data to save to the database.
+
+### Todo
+- [ ] Add `batch_number` field to `submitData` object in `handleTreatmentSubmit` function
+
+### Files to Change
+- `src/app/dashboard/records/page.tsx` - Add `batch_number: treatment.batch_number || null` to the `submitData` object
+
+### Impact
+- Single line addition
+- No other code changes required
+- Database column already exists (`batch_number varchar`)
+- Form already handles the field correctly
+
+### Review - Completed February 2, 2026
+
+#### Changes Made
+Added `batch_number: treatment.batch_number || null` to the `submitData` object in the `handleTreatmentSubmit` function.
+
+#### File Modified
+| File | Changes |
+|------|---------|
+| `src/app/dashboard/records/page.tsx` | Added `batch_number` field to submitData object (line 490) |
+
+#### Testing Required
+1. Navigate to Records page
+2. Create a new varroa treatment with a batch number
+3. Save and verify the batch number appears when editing the record
+4. Edit an existing treatment, add a batch number, save and verify it persists
