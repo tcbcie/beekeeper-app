@@ -3,17 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { FileText, ClipboardList, Search, LayoutGrid, Apple } from 'lucide-react'
+import { FileText, ClipboardList, Search, LayoutGrid, Apple, Archive } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import {
   DAFMVarroaReport,
   VarroaMonitoringReport,
   HiveInspectionSummary,
   ApiaryOverview,
-  HarvestReport
+  HarvestReport,
+  ArchivedHivesReport
 } from '@/components/reports'
 
-type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest'
+type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives'
 
 export default function ReportsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -24,7 +25,7 @@ export default function ReportsPage() {
   // Sync with URL params
   useEffect(() => {
     const section = searchParams.get('section')
-    if (section && ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest'].includes(section)) {
+    if (section && ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest', 'archived-hives'].includes(section)) {
       setActiveSection(section as ReportSection)
     }
   }, [searchParams])
@@ -55,6 +56,7 @@ export default function ReportsPage() {
     { id: 'hive-inspection' as const, label: 'Inspection Summary', icon: ClipboardList },
     { id: 'apiary-overview' as const, label: 'Apiary Overview', icon: LayoutGrid },
     { id: 'harvest' as const, label: 'Harvest', icon: Apple },
+    { id: 'archived-hives' as const, label: 'Archived Hives', icon: Archive },
   ]
 
   return (
@@ -108,6 +110,10 @@ export default function ReportsPage() {
 
         {activeSection === 'harvest' && (
           <HarvestReport userId={userId} />
+        )}
+
+        {activeSection === 'archived-hives' && (
+          <ArchivedHivesReport userId={userId} />
         )}
       </div>
     </div>

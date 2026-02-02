@@ -2,7 +2,7 @@
 
 import type { Apiary, Hive } from './records'
 
-export type ReportType = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest'
+export type ReportType = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives'
 
 export type TimePeriod = 'all' | '3months' | '6months' | '1year' | 'custom'
 
@@ -87,6 +87,16 @@ export interface HarvestRecord {
   frames_harvested: number | null
   floral_source: string | null
   notes: string
+}
+
+// Archived Hives Report data
+export interface ArchivedHiveRecord {
+  hive_id: string
+  hive_number: string
+  apiary_name: string
+  archived_at: string
+  archive_reason: string | null
+  archive_notes: string | null
 }
 
 // Report data state

@@ -2329,4 +2329,54 @@ Added `batch_number: treatment.batch_number || null` to the `submitData` object 
 1. Navigate to Records page
 2. Create a new varroa treatment with a batch number
 3. Save and verify the batch number appears when editing the record
-4. Edit an existing treatment, add a batch number, save and verify it persists
+
+---
+
+# Archived Hives Report Implementation
+
+## Tasks
+
+- [x] Add `ArchivedHiveRecord` type and update `ReportType` in `src/types/reports.ts`
+- [x] Add `fetchArchivedHives` function in `src/hooks/useReportsData.ts`
+- [x] Create `ArchivedHivesReport.tsx` component in `src/components/reports/`
+- [x] Update barrel export in `src/components/reports/index.ts`
+- [x] Add "Archived Hives" tab to `src/app/dashboard/reports/page.tsx`
+- [x] Update documentation in `docs/feature/reports.md`
+- [ ] User to test the feature
+
+## Review - February 2, 2026
+
+### Changes Made
+
+Added a new "Archived Hives" report tab to the Reports page that displays hives which have been archived (removed from active management).
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/types/reports.ts` | Added `ArchivedHiveRecord` interface, updated `ReportType` union |
+| `src/hooks/useReportsData.ts` | Added `fetchArchivedHives` function with apiary/date filtering |
+| `src/components/reports/ArchivedHivesReport.tsx` | New component following HarvestReport pattern |
+| `src/components/reports/index.ts` | Added barrel export for ArchivedHivesReport |
+| `src/app/dashboard/reports/page.tsx` | Added Archive icon, report type, section tab, and component render |
+| `docs/feature/reports.md` | Updated documentation with Archived Hives report details |
+
+### Features
+
+- Filters by apiary and date range (based on when hive was archived)
+- Summary statistics showing total archived and breakdown by reason
+- Table view with archived date, hive number, apiary, reason, and notes
+- CSV export support
+- Print/PDF support
+- Dark mode compatible
+
+### Testing Required
+
+1. Navigate to Reports page
+2. Click "Archived Hives" tab
+3. Verify archived hives display (if any exist)
+4. Test apiary filter
+5. Test date range filter
+6. Test CSV export
+7. Test Print/PDF functionality
+8. Verify dark mode styling
