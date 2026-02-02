@@ -21,7 +21,7 @@ The Reports feature provides beekeepers with printable and exportable reports fo
 - Professional header with report generation date
 - Beekeeper details and reporting period cards
 - Summary statistics (total treatments, hives treated, products used, apiaries)
-- DAFM logo support (optional)
+- DAFM logo included
 
 **Fields included:**
 - Treatment date
@@ -35,13 +35,6 @@ The Reports feature provides beekeepers with printable and exportable reports fo
 **Filters:**
 - Apiary selection
 - Time period (All time, 3 months, 6 months, 1 year, custom)
-
-**Adding the DAFM Logo:**
-To display the official DAFM logo on the report:
-1. Obtain the logo from [agriculture.gov.ie](https://www.agriculture.gov.ie/) or [gov.ie](https://www.gov.ie/en/organisation/department-of-agriculture-food-and-the-marine/)
-2. Save the image as `dafm-logo.png`
-3. Place it in the `/public` folder
-4. The logo will automatically appear in the report header
 
 ### 2. Varroa Monitoring Report
 

@@ -138,7 +138,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
         <div className="bg-gradient-to-r from-[#006853] to-[#008060] text-white p-6 print-header">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              {/* DAFM Logo Placeholder - replace src with actual logo */}
+              {/* DAFM Logo */}
               <div className="flex-shrink-0 bg-white rounded-lg p-2 shadow-md">
                 <Image
                   src="/dafm-logo.png"
@@ -370,12 +370,6 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
         </div>
       </div>
 
-      {/* Instructions for adding logo */}
-      <div className="no-print bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Note:</strong> To display the DAFM logo, add the logo image file as <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">/public/dafm-logo.png</code>
-        </p>
-      </div>
     </div>
   )
 }
