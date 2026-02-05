@@ -63,21 +63,45 @@ POST /user/scale/export
   "units": ["kg"],
   "data": [
     {
-      "time": "2020-01-01T00:00:00+01:00",
-      "weight": "23.550 [kg]",
-      "yield": "0.050 [kg]",
-      "temperature": "10.0 [°C]",
-      "brood": "10.0 [°C]",
-      "humidity": "50.0 [%]",
-      "rain": "0.005 [mm]",
-      "wind_speed": "10 [km/h]",
-      "wind_direction": "90 [°]"
+      "time": "2026-02-05T21:00:00+01:00",
+      "weight": 47.36,
+      "yield": -0.11,
+      "temperature": 5.7,
+      "brood": 29.6,
+      "humidity": 93.8,
+      "rain": 0,
+      "wind_speed": 15.72,
+      "wind_direction": 94
     }
   ]
 }
 ```
 
 **Time Resolution Options**: `hourly`, `daily`
+
+*Note: Contrary to initial API documentation, values are returned as raw numbers (not strings with units). The `parseWolfValue()` helper handles both formats for safety.*
+
+### Data Resolution & Intervals
+
+The Wolf Waagen API provides two resolution options - there is no real-time or minute-level data available.
+
+| Resolution | Interval | Use Case |
+|------------|----------|----------|
+| `hourly` | 1 reading per hour | Short-term analysis (hour, day, week) |
+| `daily` | 1 reading per day | Long-term trends (month, year) |
+
+**Application Usage:**
+
+| View Period | Resolution Used |
+|-------------|-----------------|
+| Hour | hourly |
+| Day | hourly |
+| Week | hourly |
+| Month | daily |
+| Year | daily |
+| Last Values | hourly (last 24h, returns most recent) |
+| 7-day weight change | daily |
+| 30-day weight change | daily |
 
 #### 3. Trachtnet Export (Battery Voltage)
 ```
@@ -117,7 +141,7 @@ POST /user/trachtnet/export
 
 ### Wolf Waagen Sensor Data
 - **weight**: Hive weight in kg
-- **yield**: Daily weight change in kg
+- **yield**: Weight change in kg (hourly or daily depending on `time_resolution`)
 - **temperature**: Ambient temperature in °C
 - **brood**: Brood nest temperature in °C
 - **humidity**: Relative humidity in %
@@ -125,6 +149,8 @@ POST /user/trachtnet/export
 - **wind_speed**: Wind speed in km/h
 - **wind_direction**: Wind direction in degrees
 - **battery_voltage**: Battery voltage in V (from Trachtnet endpoint)
+
+**Important**: Every reading includes both `weight` and `yield` values. The `yield` represents the weight change since the previous reading (positive = weight gain, negative = weight loss).
 
 ---
 
@@ -806,3 +832,59 @@ Updated to show brood temperature (instead of ambient) consistently across the a
 | `src/app/api/wolf-waagen/data/route.ts` | Sequential API calls, resilient error handling |
 | `src/components/research/HiveScaleCard.tsx` | Display brood temp with Flame icon |
 | `src/components/hive/WolfHistoryChart.tsx` | Brood temp line in blue colour |
+
+---
+
+## Verified API Response - February 5, 2026
+
+### Live Data Verification
+
+Tested the Wolf Waagen API with connected scales to verify the actual response format.
+
+#### Raw API Response (Hourly Resolution)
+```json
+{
+  "time": "2026-02-05T21:00:00+01:00",
+  "weight": 47.36,
+  "yield": -0.11,
+  "temperature": 5.7,
+  "brood": 29.6,
+  "humidity": 93.8,
+  "rain": 0,
+  "wind_speed": 15.72,
+  "wind_direction": 94
+}
+```
+
+#### Parsed Response (After Processing)
+```json
+{
+  "time": "2026-02-05T21:00:00+01:00",
+  "weight_kg": 47.36,
+  "yield_kg": -0.11,
+  "temperature_c": 5.7,
+  "brood_temp_c": 29.6,
+  "humidity_percent": 93.8,
+  "rain_mm": 0,
+  "wind_speed_kmh": 15.72,
+  "wind_direction_deg": 94
+}
+```
+
+#### Key Findings
+
+1. **Numeric Values**: All sensor values are returned as raw numbers (not strings with units)
+2. **Weight & Yield Always Present**: Every reading includes both `weight` and `yield` fields
+3. **Yield Meaning**: The `yield` value represents the weight change since the previous reading
+   - Positive values = weight gain (e.g., nectar flow)
+   - Negative values = weight loss (e.g., consumption, swarming)
+4. **Brood Temperature**: Consistently available and indicates colony health (typical range: 25-35°C)
+
+#### Sample Data from Connected Scales
+
+| Scale | Weight (kg) | Yield (kg) | Brood Temp (°C) | Humidity (%) |
+|-------|-------------|------------|-----------------|--------------|
+| PE8QO7 | 47.36 | -0.11 | 29.6 | 93.8 |
+| R4JLXN | 45.29 | -0.105 | 26.2 | 93.8 |
+
+*Data captured: 5 February 2026, 21:00 CET*
