@@ -648,7 +648,7 @@ export default function ApiariesPage() {
                 <button
                   type="button"
                   onClick={openTransferModal}
-                  className="px-6 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 min-h-[48px] flex items-center gap-2 border border-purple-300 dark:border-purple-800"
+                  className="px-6 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 min-h-[48px] flex items-center gap-2 border border-purple-300 dark:border-purple-800"
                 >
                   <UserPlus size={16} />
                   Transfer Ownership
@@ -789,14 +789,14 @@ export default function ApiariesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(apiary)}
-                  className="flex-1 px-4 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 border border-blue-300 dark:border-blue-800 min-h-[48px]"
+                  className="flex-1 px-4 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 border border-blue-300 dark:border-blue-800 min-h-[48px]"
                 >
                   <Edit2 size={16} />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(apiary.id)}
-                  className="flex-1 px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 border border-red-300 dark:border-red-800 min-h-[48px]"
+                  className="flex-1 px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 border border-red-300 dark:border-red-800 min-h-[48px]"
                 >
                   <Trash2 size={16} />
                   Delete

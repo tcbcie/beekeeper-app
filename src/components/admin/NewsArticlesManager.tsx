@@ -457,7 +457,7 @@ export default function NewsArticlesManager() {
                           <button
                             onClick={() => handleRemoveFromKB(article)}
                             disabled={removingKbId === article.id}
-                            className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded flex items-center gap-1 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                            className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 rounded flex items-center gap-1 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-900 dark:hover:text-red-300 transition-colors"
                             title="Remove from Knowledge Base"
                           >
                             {removingKbId === article.id ? (

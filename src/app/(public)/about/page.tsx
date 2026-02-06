@@ -68,7 +68,7 @@ export default function AboutPage() {
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-700 dark:text-amber-300 text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-900 dark:text-amber-300 text-sm font-medium mb-6">
               <span>🍯</span>
               <span>Modern Beekeeping Management</span>
             </div>

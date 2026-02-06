@@ -419,9 +419,9 @@ export default function TasksEventsPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800'
-      case 'high': return 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800'
-      case 'normal': return 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+      case 'urgent': return 'bg-red-100 dark:bg-red-950/30 text-red-900 dark:text-red-300 border-red-200 dark:border-red-800'
+      case 'high': return 'bg-orange-100 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300 border-orange-200 dark:border-orange-800'
+      case 'normal': return 'bg-blue-100 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800'
       case 'low': return 'bg-sage-100 dark:bg-slate-700 text-text-secondary border-border'
       default: return 'bg-sage-100 dark:bg-slate-700 text-text-secondary border-border'
     }
@@ -641,22 +641,22 @@ export default function TasksEventsPage() {
                         {getTypeLabel(task.event_type)}
                       </span>
                       {task.category && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-800 dark:text-forest-300 border border-forest-200 dark:border-forest-800">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-900 dark:text-forest-300 border border-forest-200 dark:border-forest-800">
                           {getCategoryLabel(task.category)}
                         </span>
                       )}
                       {task.reminder_enabled && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                           📧 Email Reminder
                         </span>
                       )}
                       {task.is_team_task && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-950/30 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                           Team Task
                         </span>
                       )}
                       {task.user_id !== userId && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                           Created by {task.creator_name || task.creator_email || 'team member'}
                         </span>
                       )}
