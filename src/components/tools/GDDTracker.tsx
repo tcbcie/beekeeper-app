@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, Pencil, Save, ChevronUp, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 
 interface Apiary {
   id: string
@@ -64,6 +65,9 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
   const [notes, setNotes] = useState<string>('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [vegModalOpen, setVegModalOpen] = useState(false)
+  const [vegModalName, setVegModalName] = useState('')
+  const [vegModalTypeId, setVegModalTypeId] = useState('')
 
   // Sort state
   const [sortColumn, setSortColumn] = useState<SortColumn>('year')
@@ -552,7 +556,9 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                   </td>
                   <td className="p-3 text-foreground font-medium">{record.year}</td>
                   <td className="p-3 text-foreground">{record.apiaries?.name || '-'}</td>
-                  <td className="p-3 text-foreground">{record.dropdown_values?.value || '-'}</td>
+                  <td className="p-3 text-foreground">
+                    <button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</button>
+                  </td>
                   <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
                   <td className="p-3 text-text-secondary">
                     {record.end_date ? new Date(record.end_date).toLocaleDateString() : '-'}
@@ -611,6 +617,14 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       <div className="text-xs text-text-tertiary">
         <p>GDD = Σ max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2) × multiplier. Seasonal multipliers: Jan ×0.5, Feb ×0.75, Mar-Dec ×1.0.</p>
       </div>
+
+      {/* Vegetation Info Modal */}
+      <VegetationInfoModal
+        isOpen={vegModalOpen}
+        onClose={() => setVegModalOpen(false)}
+        vegetationName={vegModalName}
+        vegetationTypeId={vegModalTypeId}
+      />
     </div>
   )
 }
