@@ -100,6 +100,23 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const [selectedYears, setSelectedYears] = useState<number[]>([])
   const [selectedVegetation, setSelectedVegetation] = useState<string>('')
   const [selectedApiary, setSelectedApiary] = useState<string>('')
+  const [periodFilter, setPeriodFilter] = useState<'all' | 'q1' | 'q2' | 'q3' | 'q4' | 'custom'>('all')
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([])
+
+  const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const QUARTER_MONTHS: Record<string, number[]> = {
+    q1: [1, 2, 3],
+    q2: [4, 5, 6],
+    q3: [7, 8, 9],
+    q4: [10, 11, 12],
+  }
+
+  // Get allowed months based on period filter
+  const allowedMonths = useMemo(() => {
+    if (periodFilter === 'all') return null // no filtering
+    if (periodFilter === 'custom') return selectedMonths.length > 0 ? selectedMonths : null
+    return QUARTER_MONTHS[periodFilter] || null
+  }, [periodFilter, selectedMonths])
 
   // Accumulation chart year selection (default: current year + 2 previous years)
   const currentYear = new Date().getFullYear()
@@ -452,9 +469,13 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       if (selectedYears.length > 0 && !selectedYears.includes(r.year)) return false
       if (selectedVegetation && r.dropdown_values?.value !== selectedVegetation) return false
       if (selectedApiary && r.apiaries?.name !== selectedApiary) return false
+      if (allowedMonths && r.start_date) {
+        const month = new Date(r.start_date).getMonth() + 1
+        if (!allowedMonths.includes(month)) return false
+      }
       return true
     })
-  }, [records, selectedYears, selectedVegetation, selectedApiary])
+  }, [records, selectedYears, selectedVegetation, selectedApiary, allowedMonths])
 
   // Filter community records (same year/vegetation filters, no apiary filter since it's "nearby")
   const filteredCommunityRecords = useMemo(() => {
@@ -462,9 +483,13 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     return communityRecords.filter(r => {
       if (selectedYears.length > 0 && !selectedYears.includes(r.year)) return false
       if (selectedVegetation && r.vegetation_name !== selectedVegetation) return false
+      if (allowedMonths && r.start_date) {
+        const month = new Date(r.start_date).getMonth() + 1
+        if (!allowedMonths.includes(month)) return false
+      }
       return true
     })
-  }, [communityRecords, showCommunityData, selectedYears, selectedVegetation])
+  }, [communityRecords, showCommunityData, selectedYears, selectedVegetation, allowedMonths])
 
   // Prepare chart data - group by vegetation, compare years
   const { chartData, dateMap } = useMemo(() => {
@@ -947,13 +972,59 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               </select>
             </div>
 
+            {/* Period Filter */}
+            {viewMode === 'chart' && chartType === 'vegetation' && (
+              <div className="space-y-1.5">
+                <label className="text-xs text-text-secondary">Period</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {([['all', 'All'], ['q1', 'Q1'], ['q2', 'Q2'], ['q3', 'Q3'], ['q4', 'Q4'], ['custom', 'Custom']] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => setPeriodFilter(key)}
+                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                        periodFilter === key
+                          ? 'bg-forest-600 text-white'
+                          : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {periodFilter === 'custom' && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {MONTH_LABELS.map((label, idx) => {
+                      const month = idx + 1
+                      return (
+                        <button
+                          key={month}
+                          onClick={() => setSelectedMonths(prev =>
+                            prev.includes(month) ? prev.filter(m => m !== month) : [...prev, month]
+                          )}
+                          className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                            selectedMonths.includes(month)
+                              ? 'bg-forest-600 text-white'
+                              : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Clear Filters */}
-            {(selectedYears.length !== years.length || selectedVegetation || selectedApiary) && (
+            {(selectedYears.length !== years.length || selectedVegetation || selectedApiary || periodFilter !== 'all') && (
               <button
                 onClick={() => {
                   setSelectedYears([...years]) // Reset to all years
                   setSelectedVegetation('')
                   setSelectedApiary('')
+                  setPeriodFilter('all')
+                  setSelectedMonths([])
                 }}
                 className="self-end px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
