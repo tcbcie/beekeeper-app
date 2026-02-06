@@ -1,3 +1,23 @@
+# Phenology Chart - Period Filter
+
+## Overview
+Add a period filter to the Phenology (GDD at First Bloom) chart to reduce the number of vegetation bars shown. Filter by quarters or custom months based on each record's bloom `start_date`.
+
+## Plan
+- [x] **1. Add state for period filter** — `periodFilter` state: `'all' | 'q1' | 'q2' | 'q3' | 'q4' | 'custom'` and `selectedMonths` state for custom month selection
+- [x] **2. Add period filter UI** — Add quarter chips (All, Q1, Q2, Q3, Q4) and custom month picker to the existing Filters section, only visible when Phenology chart is active
+- [x] **3. Apply filter to records** — Filter `filteredRecords` and `filteredCommunityRecords` by the month of their `start_date` based on the selected period
+
+## Review
+- **File changed:** `src/components/research/GDDDataTab.tsx`
+- Added `periodFilter` and `selectedMonths` state, plus an `allowedMonths` memo that resolves the active filter to a list of month numbers
+- Added a "Period" row in the existing Filters panel with chips: All, Q1, Q2, Q3, Q4, Custom. Selecting Custom reveals individual month chips (Jan–Dec)
+- Both `filteredRecords` and `filteredCommunityRecords` now check the record's `start_date` month against `allowedMonths`
+- Reset button clears the period filter too
+- Period filter only appears when viewing the Phenology chart (not Accumulation or Table)
+
+---
+
 # Code Review Fixes - Implementation Plan
 
 ## Overview
