@@ -749,7 +749,7 @@ export default function MapLocationPicker({
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors"
                 title="Exit fullscreen"
               >
                 <X size={20} />
@@ -808,7 +808,7 @@ export default function MapLocationPicker({
           <button
             type="button"
             onClick={() => handleStyleChange('outdoors')}
-            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Outdoors map"
           >
             <Map size={18} />
@@ -816,7 +816,7 @@ export default function MapLocationPicker({
           <button
             type="button"
             onClick={() => handleStyleChange('satellite')}
-            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'satellite' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'satellite' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Satellite view"
           >
             <Satellite size={18} />

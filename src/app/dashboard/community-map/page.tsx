@@ -577,7 +577,7 @@ export default function CommunityMapPage() {
           <button
             type="button"
             onClick={() => handleStyleChange('outdoors')}
-            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Outdoors map"
           >
             <Map size={18} />
@@ -585,7 +585,7 @@ export default function CommunityMapPage() {
           <button
             type="button"
             onClick={() => handleStyleChange('satellite')}
-            className={`p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Satellite view"
           >
             <Satellite size={18} />
@@ -593,7 +593,7 @@ export default function CommunityMapPage() {
           <button
             type="button"
             onClick={() => handleStyleChange('terrain')}
-            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
             title="Terrain view"
           >
             <Mountain size={18} />
@@ -722,7 +722,7 @@ export default function CommunityMapPage() {
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg shadow-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400"
+            className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg shadow-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 text-red-800 dark:text-red-400"
             title="Exit fullscreen"
           >
             <X size={18} />
@@ -759,10 +759,10 @@ export default function CommunityMapPage() {
       {/* Info Banner */}
       <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <Info size={20} className="text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-purple-800 dark:text-purple-200">
+          <Info size={20} className="text-purple-800 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-purple-900 dark:text-purple-200">
             <p className="font-medium mb-1">Privacy Protected Locations</p>
-            <p className="text-purple-700 dark:text-purple-300">
+            <p className="text-purple-900 dark:text-purple-300">
               All locations are obfuscated to a ~5km radius to protect beekeeper privacy.
               This helps identify general apiary density and potential drone congregation areas
               without revealing exact locations.

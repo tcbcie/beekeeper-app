@@ -63,7 +63,7 @@ export default function TermsPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
       {/* Header */}
       <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-700 dark:text-amber-300 text-sm font-medium mb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-900 dark:text-amber-300 text-sm font-medium mb-4">
           <span>📜</span>
           <span>Legal Information</span>
         </div>

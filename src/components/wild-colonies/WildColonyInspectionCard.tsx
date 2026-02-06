@@ -112,12 +112,12 @@ export default function WildColonyInspectionCard({
             {inspection.colony_status && (
               <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                 inspection.colony_status === 'active' || inspection.colony_status === 'strong'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                  ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-300'
                   : inspection.colony_status === 'weak'
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                  ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-300'
                   : inspection.colony_status === 'dead' || inspection.colony_status === 'absconded'
-                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                  ? 'bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-300'
+                  : 'bg-gray-100 text-gray-900 dark:bg-gray-900/30 dark:text-gray-300'
               }`}>
                 {getColonyStatusLabel(inspection.colony_status)}
               </span>
@@ -171,27 +171,27 @@ export default function WildColonyInspectionCard({
           {/* Boolean Indicators */}
           <div className="flex flex-wrap gap-1.5 mt-2">
             {inspection.pollen_observed && (
-              <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
+              <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
                 Pollen
               </span>
             )}
             {inspection.drones_observed && (
-              <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded">
+              <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-300 rounded">
                 Drones
               </span>
             )}
             {inspection.orientation_flights && (
-              <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded">
+              <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-900 dark:bg-purple-900/30 dark:text-purple-300 rounded">
                 Orientation Flights
               </span>
             )}
             {inspection.robbing_activity && (
-              <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 rounded">
+              <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-300 rounded">
                 Robbing
               </span>
             )}
             {inspection.swarm_activity_observed && (
-              <span className="px-2 py-0.5 text-xs bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300 rounded">
+              <span className="px-2 py-0.5 text-xs bg-pink-100 text-pink-900 dark:bg-pink-900/30 dark:text-pink-300 rounded">
                 Swarm Activity
               </span>
             )}
