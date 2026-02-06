@@ -15,6 +15,14 @@ const WOLF_API_BASE = 'https://new.app.wolf-waagen.de/api/v1'
 // ============================================================================
 
 /**
+ * Detected maintenance event (feeding, harvesting, etc.)
+ */
+export interface WolfMaintenanceEvent {
+  time: string
+  intervention: number  // positive = added (feed), negative = removed (harvest)
+}
+
+/**
  * Wolf Waagen scale device information
  */
 export interface WolfScale {
@@ -348,4 +356,62 @@ export async function wolfGetBatteryVoltage(
     // Don't throw - battery is optional, just return null
     return null
   }
+}
+
+// ============================================================================
+// Maintenance Event Detection
+// ============================================================================
+
+/**
+ * Detect maintenance events (feeding, harvesting) from historical readings.
+ *
+ * For each consecutive pair of readings, calculates:
+ *   intervention = (weight_after - weight_before) - yield
+ *
+ * If |intervention| > threshold, it's flagged as a maintenance event.
+ *
+ * @param history - Array of parsed readings (must include weight_kg and yield_kg)
+ * @param threshold - Minimum kg difference to consider an intervention (default 0.5kg)
+ * @returns Array of detected maintenance events
+ */
+export function detectMaintenanceEvents(
+  history: WolfParsedReading[],
+  threshold: number = 0.5
+): WolfMaintenanceEvent[] {
+  const events: WolfMaintenanceEvent[] = []
+
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i - 1]
+    const curr = history[i]
+
+    // Skip if missing required data
+    if (typeof prev.weight_kg !== 'number' || typeof curr.weight_kg !== 'number') {
+      continue
+    }
+    if (typeof curr.yield_kg !== 'number') {
+      continue
+    }
+
+    const weightDelta = curr.weight_kg - prev.weight_kg
+    const intervention = weightDelta - curr.yield_kg
+
+    if (Math.abs(intervention) > threshold) {
+      events.push({
+        time: curr.time,
+        intervention,
+      })
+    }
+  }
+
+  return events
+}
+
+/**
+ * Sum all interventions from detected maintenance events.
+ *
+ * @param events - Array of maintenance events
+ * @returns Total intervention weight (positive = net added, negative = net removed)
+ */
+export function sumInterventions(events: WolfMaintenanceEvent[]): number {
+  return events.reduce((sum, event) => sum + event.intervention, 0)
 }
