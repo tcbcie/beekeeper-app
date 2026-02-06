@@ -10,9 +10,8 @@ import { RecordSection } from '@/components/hive/RecordSection'
 import ScaleSensorDisplay from '@/components/hive/ScaleSensorDisplay'
 import ScaleSelectionModal from '@/components/hive/ScaleSelectionModal'
 import ScaleHistoryChart from '@/components/hive/ScaleHistoryChart'
-import WolfSensorDisplay from '@/components/hive/WolfSensorDisplay'
 import WolfScaleSelectionModal from '@/components/hive/WolfScaleSelectionModal'
-import WolfHistoryChart from '@/components/hive/WolfHistoryChart'
+import WolfScalePanel from '@/components/hive/WolfScalePanel'
 import { useHiveDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
@@ -241,20 +240,11 @@ export default function HiveDetailPage() {
               </div>
             </div>
           ) : hive.wolf_scale_id ? (
-            <div className="space-y-6">
-              <WolfSensorDisplay
-                scaleId={hive.wolf_scale_id}
-                scaleName={hive.wolf_scale_name || undefined}
-                hiveId={hiveId}
-              />
-              <div className="border-t border-border pt-4">
-                <WolfHistoryChart
-                  scaleId={hive.wolf_scale_id}
-                  scaleName={hive.wolf_scale_name || undefined}
-                  hiveId={hiveId}
-                />
-              </div>
-            </div>
+            <WolfScalePanel
+              scaleId={hive.wolf_scale_id}
+              scaleName={hive.wolf_scale_name || undefined}
+              hiveId={hiveId}
+            />
           ) : (
             <div className="flex items-center justify-between flex-wrap gap-2">
               <p className="text-sm text-text-secondary">No scale connected</p>
