@@ -72,26 +72,26 @@ export default function DashboardPage() {
   const isTeamMember = ownedTeams.length > 0 || memberTeams.length > 0
 
   const statCards = [
-    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-green-900 dark:text-green-300', href: '/dashboard/apiaries' },
-    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-300', href: '/dashboard/hives' },
-    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300', href: '/dashboard/records' },
+    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-gray-900 dark:text-green-300', href: '/dashboard/apiaries' },
+    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-amber-300', href: '/dashboard/hives' },
+    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300', href: '/dashboard/records' },
   ]
 
   const hasMySharedData = mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0
   const hasSharedWithMeData = sharedWithMeStats.hives > 0 || sharedWithMeStats.queens > 0 || sharedWithMeStats.inspections > 0
 
   const mySharedCards = hasMySharedData ? [
-    { label: 'Queens I Shared', value: mySharedStats.queens, icon: '👑', color: 'bg-purple-100 text-purple-900 border-2 border-purple-300' },
-    { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: '✨', color: 'bg-green-100 text-green-900 border-2 border-green-300' },
-    { label: 'Hives I Shared', value: mySharedStats.hives, icon: '🐝', color: 'bg-amber-100 text-amber-900 border-2 border-amber-300' },
-    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
+    { label: 'Queens I Shared', value: mySharedStats.queens, icon: '👑', color: 'bg-purple-100 text-gray-900 border-2 border-purple-300' },
+    { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: '✨', color: 'bg-green-100 text-gray-900 border-2 border-green-300' },
+    { label: 'Hives I Shared', value: mySharedStats.hives, icon: '🐝', color: 'bg-amber-100 text-gray-900 border-2 border-amber-300' },
+    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
   ] : []
 
   const sharedWithMeCards = hasSharedWithMeData ? [
-    { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: '👑', color: 'bg-purple-50 text-purple-900 border-2 border-purple-200' },
-    { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: '✨', color: 'bg-green-50 text-green-900 border-2 border-green-200' },
-    { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: '🐝', color: 'bg-amber-50 text-amber-900 border-2 border-amber-200' },
-    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
+    { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: '👑', color: 'bg-purple-50 text-gray-900 border-2 border-purple-200' },
+    { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: '✨', color: 'bg-green-50 text-gray-900 border-2 border-green-200' },
+    { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: '🐝', color: 'bg-amber-50 text-gray-900 border-2 border-amber-200' },
+    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
   ] : []
 
   return (

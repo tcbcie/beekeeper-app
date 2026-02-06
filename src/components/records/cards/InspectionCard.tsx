@@ -38,7 +38,7 @@ export default function InspectionCard({
         <div className="flex items-start gap-3 flex-1">
           {/* Icon Badge */}
           <div className="w-12 h-12 flex-shrink-0 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
-            <Search size={24} className="text-blue-600 dark:text-blue-400" />
+            <Search size={24} className="text-blue-800 dark:text-blue-400" />
           </div>
           {userHasActiveSubscription && inspection.image_url && (
             <div
@@ -88,14 +88,14 @@ export default function InspectionCard({
         <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={() => onEdit(inspection)}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation"
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-800 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation"
             aria-label="Edit inspection"
           >
             <Edit2 size={20} />
           </button>
           <button
             onClick={() => onDelete(inspection.id)}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation"
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation"
             aria-label="Delete inspection"
           >
             <Trash2 size={20} />
@@ -120,12 +120,12 @@ export default function InspectionCard({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-text-secondary">Brood:</span>
-              <span className="font-bold text-purple-600">{inspection.brood_frames ?? '-'}</span>
+              <span className="font-bold text-purple-800">{inspection.brood_frames ?? '-'}</span>
             </div>
             {hive?.configuration?.right_sized_broodbox && (
               <div className="flex items-center gap-2">
                 <span className="text-text-secondary">Right-Sized:</span>
-                <span className="font-bold text-amber-600">{inspection.right_sized_frames ?? '-'}</span>
+                <span className="font-bold text-amber-800">{inspection.right_sized_frames ?? '-'}</span>
               </div>
             )}
           </div>
@@ -188,7 +188,7 @@ export default function InspectionCard({
               {inspection.drones_present !== -1 && inspection.drones_present !== null && (
                 <div className="flex items-center gap-2">
                   <span className="text-text-secondary">Level:</span>
-                  <span className="font-semibold text-amber-600">
+                  <span className="font-semibold text-amber-800">
                     {inspection.drones_present === 0 && 'Low'}
                     {inspection.drones_present === 1 && 'Medium'}
                     {inspection.drones_present === 2 && 'High'}
@@ -262,22 +262,22 @@ export default function InspectionCard({
           <div className="px-3 py-1.5">
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
               {inspection.frames_foundation > 0 && (
-                <span><span className="text-text-secondary">Foundation:</span> <span className="font-bold text-orange-600">{inspection.frames_foundation}</span></span>
+                <span><span className="text-text-secondary">Foundation:</span> <span className="font-bold text-orange-800">{inspection.frames_foundation}</span></span>
               )}
               {inspection.frames_brood > 0 && (
-                <span><span className="text-text-secondary">Brood:</span> <span className="font-bold text-orange-600">{inspection.frames_brood}</span></span>
+                <span><span className="text-text-secondary">Brood:</span> <span className="font-bold text-orange-800">{inspection.frames_brood}</span></span>
               )}
               {inspection.frames_drawn > 0 && (
-                <span><span className="text-text-secondary">Drawn:</span> <span className="font-bold text-orange-600">{inspection.frames_drawn}</span></span>
+                <span><span className="text-text-secondary">Drawn:</span> <span className="font-bold text-orange-800">{inspection.frames_drawn}</span></span>
               )}
               {inspection.honey_supers > 0 && (
-                <span><span className="text-text-secondary">Supers:</span> <span className="font-bold text-orange-600">{inspection.honey_supers}</span></span>
+                <span><span className="text-text-secondary">Supers:</span> <span className="font-bold text-orange-800">{inspection.honey_supers}</span></span>
               )}
               {inspection.drone_frames > 0 && (
-                <span><span className="text-text-secondary">Drone:</span> <span className="font-bold text-orange-600">{inspection.drone_frames}</span></span>
+                <span><span className="text-text-secondary">Drone:</span> <span className="font-bold text-orange-800">{inspection.drone_frames}</span></span>
               )}
               {inspection.store_frames > 0 && (
-                <span><span className="text-text-secondary">Store:</span> <span className="font-bold text-orange-600">{inspection.store_frames}</span></span>
+                <span><span className="text-text-secondary">Store:</span> <span className="font-bold text-orange-800">{inspection.store_frames}</span></span>
               )}
             </div>
           </div>

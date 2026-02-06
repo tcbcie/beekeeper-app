@@ -110,10 +110,10 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
   }
 
   const getBadgeColor = (daysUntil: number) => {
-    if (daysUntil === 0) return 'bg-red-100 dark:bg-red-950/30 text-red-900 dark:text-red-300 border-red-200 dark:border-red-800'
-    if (daysUntil === 1) return 'bg-orange-100 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300 border-orange-200 dark:border-orange-800'
-    if (daysUntil <= 3) return 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
-    return 'bg-blue-100 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+    if (daysUntil === 0) return 'bg-red-100 dark:bg-red-950/30 text-gray-900 dark:text-red-300 border-red-200 dark:border-red-800'
+    if (daysUntil === 1) return 'bg-orange-100 dark:bg-orange-950/30 text-gray-900 dark:text-orange-300 border-orange-200 dark:border-orange-800'
+    if (daysUntil <= 3) return 'bg-yellow-100 dark:bg-yellow-950/30 text-gray-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
+    return 'bg-blue-100 dark:bg-blue-950/30 text-gray-900 dark:text-blue-300 border-blue-200 dark:border-blue-800'
   }
 
   const formatDate = (dateString: string) => {

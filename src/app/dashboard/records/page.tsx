@@ -1163,7 +1163,7 @@ export default function RecordsPage() {
                   <li><strong>Powdered Sugar Dusting:</strong> Encourages grooming behavior.</li>
                   <li><strong>Regular Monitoring:</strong> Check mite levels every 4-6 weeks during the active season.</li>
                 </ul>
-                <p className="text-amber-600 dark:text-amber-400 font-medium">
+                <p className="text-amber-800 dark:text-amber-400 font-medium">
                   Note: Always follow treatment product instructions and respect withdrawal periods before harvesting honey.
                 </p>
               </div>

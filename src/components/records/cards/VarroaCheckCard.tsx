@@ -31,7 +31,7 @@ export default function VarroaCheckCard({
         <div className="flex items-start gap-2 flex-1">
           {/* Icon Badge */}
           <div className="w-10 h-10 flex-shrink-0 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center">
-            <Bug size={20} className="text-orange-600 dark:text-orange-400" />
+            <Bug size={20} className="text-orange-800 dark:text-orange-400" />
           </div>
 
           {/* Image thumbnail */}
@@ -56,7 +56,7 @@ export default function VarroaCheckCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-gray-900 dark:text-orange-200 text-xs font-medium rounded">
                 Varroa Check
               </span>
               <h3 className="text-base font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>
@@ -91,14 +91,14 @@ export default function VarroaCheckCard({
         <div className="flex gap-1 flex-shrink-0">
           <button
             onClick={() => onEdit(check)}
-            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
+            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-800 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
             aria-label="Edit check"
           >
             <Edit2 size={18} />
           </button>
           <button
             onClick={() => onDelete(check)}
-            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
+            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
             aria-label="Delete check"
           >
             <Trash2 size={18} />
@@ -134,7 +134,7 @@ export default function VarroaCheckCard({
               <span className="text-text-tertiary">
                 {isNaturalDrop ? 'Daily Mite Drop:' : 'Infestation Rate:'}
               </span>{' '}
-              <span className={`font-bold ${check.infestation_rate > 3 ? 'text-red-600' : 'text-green-600'}`}>
+              <span className={`font-bold ${check.infestation_rate > 3 ? 'text-red-800' : 'text-green-800'}`}>
                 {isNaturalDrop ? check.infestation_rate : `${check.infestation_rate}%`}
               </span>
             </span>
@@ -142,7 +142,7 @@ export default function VarroaCheckCard({
         </div>
         <div className="mt-1.5 pt-1.5 border-t border-orange-200">
           <span className="text-text-tertiary text-sm">Action Threshold: </span>
-          <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-600' : 'text-green-600'}`}>
+          <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-800' : 'text-green-800'}`}>
             {check.action_threshold_reached ? '⚠️ Reached - Treatment Needed' : '✓ Not Reached'}
           </span>
         </div>

@@ -215,8 +215,8 @@ export default function HiveDetailPage() {
                 onClick={() => hive.wolf_scale_id ? setShowWolfModal(true) : setShowScaleModal(true)}
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium ${
                   hive.wolf_scale_id
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-                    : 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+                    ? 'bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 hover:bg-blue-700 dark:hover:bg-blue-900/50'
+                    : 'bg-amber-600 dark:bg-amber-900/30 text-white dark:text-amber-300 hover:bg-amber-700 dark:hover:bg-amber-900/50'
                 }`}
               >
                 Change Scale
@@ -253,7 +253,7 @@ export default function HiveDetailPage() {
                   {beepConnected && (
                     <button
                       onClick={() => setShowScaleModal(true)}
-                      className="px-3 py-1.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 font-medium"
+                      className="px-3 py-1.5 text-xs bg-amber-600 dark:bg-amber-900/30 text-white dark:text-amber-300 rounded-lg hover:bg-amber-700 dark:hover:bg-amber-900/50 font-medium"
                     >
                       Connect BEEP
                     </button>
@@ -261,7 +261,7 @@ export default function HiveDetailPage() {
                   {wolfConnected && (
                     <button
                       onClick={() => setShowWolfModal(true)}
-                      className="px-3 py-1.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium"
+                      className="px-3 py-1.5 text-xs bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium"
                     >
                       Connect Wolf
                     </button>

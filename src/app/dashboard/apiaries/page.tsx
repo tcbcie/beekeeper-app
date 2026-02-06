@@ -648,7 +648,7 @@ export default function ApiariesPage() {
                 <button
                   type="button"
                   onClick={openTransferModal}
-                  className="px-6 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 min-h-[48px] flex items-center gap-2 border border-purple-300 dark:border-purple-800"
+                  className="px-6 py-2 bg-purple-600 dark:bg-purple-900/30 text-white dark:text-purple-300 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-900/50 min-h-[48px] flex items-center gap-2"
                 >
                   <UserPlus size={16} />
                   Transfer Ownership
@@ -666,7 +666,7 @@ export default function ApiariesPage() {
             <h3 className="text-xl font-semibold mb-4 text-foreground">Transfer Apiary Ownership</h3>
 
             <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="text-sm text-gray-900 dark:text-amber-200">
                 <strong>Warning:</strong> Transferring &quot;{editingApiary.name}&quot; will give the new owner full control. You will lose access to this apiary and all its hives.
               </p>
             </div>
@@ -739,12 +739,12 @@ export default function ApiariesPage() {
                      apiary.city || apiary.location || 'No location specified'}
                   </p>
                   {apiary.eircode && (
-                    <p className="text-sm text-forest-600 dark:text-forest-400 font-medium mt-1">
+                    <p className="text-sm text-forest-800 dark:text-forest-400 font-medium mt-1">
                       Eircode: {apiary.eircode}
                     </p>
                   )}
                   {apiary.share_location && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-blue-800 dark:text-blue-400 mt-1 flex items-center gap-1">
                       <MapPin size={12} />
                       Location shared publicly (~5km radius)
                     </p>
@@ -752,7 +752,7 @@ export default function ApiariesPage() {
                   {apiary.latitude && apiary.longitude && (
                     <button
                       onClick={() => router.push('/dashboard/community-map')}
-                      className="text-xs text-purple-600 dark:text-purple-400 mt-1 flex items-center gap-1 hover:underline"
+                      className="text-xs text-purple-800 dark:text-purple-400 mt-1 flex items-center gap-1 hover:underline"
                     >
                       <Map size={12} />
                       View on community map
@@ -789,14 +789,14 @@ export default function ApiariesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(apiary)}
-                  className="flex-1 px-4 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 border border-blue-300 dark:border-blue-800 min-h-[48px]"
+                  className="flex-1 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Edit2 size={16} />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(apiary.id)}
-                  className="flex-1 px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 border border-red-300 dark:border-red-800 min-h-[48px]"
+                  className="flex-1 px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
                 >
                   <Trash2 size={16} />
                   Delete

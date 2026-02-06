@@ -944,13 +944,13 @@ export default function QueensPage() {
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         queen.marking_color === 'Yellow'
-                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-800'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-800'
                           : queen.marking_color === 'Red'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 border border-red-300 dark:border-red-800'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-gray-900 dark:text-red-300 border border-red-300 dark:border-red-800'
                           : queen.marking_color === 'Green'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 border border-green-300 dark:border-green-800'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-gray-900 dark:text-green-300 border border-green-300 dark:border-green-800'
                           : queen.marking_color === 'Blue'
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-gray-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
                           : 'bg-sage-100 dark:bg-slate-800/50 text-text-secondary border border-border'
                       }`}
                     >
@@ -977,7 +977,7 @@ export default function QueensPage() {
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         queen.status === 'active'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 border border-green-300 dark:border-green-800'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-gray-900 dark:text-green-300 border border-green-300 dark:border-green-800'
                           : 'bg-sage-100 dark:bg-slate-800/50 text-text-secondary border border-border'
                       }`}
                     >
