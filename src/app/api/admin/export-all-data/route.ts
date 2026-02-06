@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
       tables = [
         'apiaries',
         'batch_containers',
+        'batch_feedback',
         'batch_grafts',
         'batch_runs',
         'beekeeping_associations',
@@ -77,6 +78,8 @@ export async function POST(request: NextRequest) {
         'colony_movements',
         'container_harvests',
         'del_user_profiles',
+        'diagnosis_images',
+        'diagnosis_image_comments',
         'dropdown_categories',
         'dropdown_values',
         'feedings',
