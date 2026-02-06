@@ -1706,7 +1706,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleDisconnectBeep}
                 disabled={disconnectingBeep}
-                className="px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded-lg hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-2 disabled:opacity-50"
               >
                 <Unlink size={16} />
                 {disconnectingBeep ? 'Disconnecting...' : 'Disconnect'}
@@ -1785,7 +1785,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleDisconnectWolf}
                 disabled={disconnectingWolf}
-                className="px-4 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded-lg hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-2 disabled:opacity-50"
               >
                 <Unlink size={16} />
                 {disconnectingWolf ? 'Disconnecting...' : 'Disconnect'}
@@ -1982,7 +1982,7 @@ export default function ProfilePage() {
                                   {member.role !== 'owner' && (
                                     <button
                                       onClick={() => handleRemoveMember(member.id, member.user_email || 'this member')}
-                                      className="ml-3 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                      className="ml-3 px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
                                       title="Remove member"
                                     >
                                       <Trash2 size={12} />
@@ -2034,7 +2034,7 @@ export default function ProfilePage() {
                                       </div>
                                       <button
                                         onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
-                                        className="ml-3 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                        className="ml-3 px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
                                         title="Cancel invitation"
                                       >
                                         <X size={12} />

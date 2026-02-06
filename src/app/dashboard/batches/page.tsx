@@ -787,7 +787,7 @@ export default function BatchesPage() {
 
             {/* Timeline Dates - Grouped */}
             <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
-              <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-3">Timeline</h4>
+              <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-3">Timeline</h4>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-1">
@@ -858,7 +858,7 @@ export default function BatchesPage() {
 
             {/* Starter Colony Selection - Grouped */}
             <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
-              <h4 className="text-sm font-semibold text-green-700 dark:text-green-300 mb-3">Starter Colony</h4>
+              <h4 className="text-sm font-semibold text-green-900 dark:text-green-300 mb-3">Starter Colony</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>

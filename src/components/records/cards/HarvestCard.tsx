@@ -24,12 +24,12 @@ export default function HarvestCard({
         <div className="flex items-start gap-2 flex-1">
           {/* Icon Badge */}
           <div className="w-10 h-10 flex-shrink-0 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center">
-            <Droplet size={20} className="text-amber-600 dark:text-amber-400" />
+            <Droplet size={20} className="text-amber-800 dark:text-amber-400" />
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-gray-900 dark:text-green-200 text-xs font-medium rounded">
                 Harvest
               </span>
               <h3 className="text-base font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
@@ -58,14 +58,14 @@ export default function HarvestCard({
         <div className="flex gap-1 flex-shrink-0">
           <button
             onClick={() => onEdit(harvest)}
-            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
+            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-800 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
             aria-label="Edit harvest"
           >
             <Edit2 size={18} />
           </button>
           <button
             onClick={() => onDelete(harvest)}
-            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
+            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
             aria-label="Delete harvest"
           >
             <Trash2 size={18} />
@@ -103,7 +103,7 @@ export default function HarvestCard({
           {harvest.moisture_content !== null && (
             <span>
               <span className="text-text-tertiary">Moisture:</span>{' '}
-              <span className={`font-medium ${harvest.moisture_content > 20 ? 'text-red-600' : 'text-green-600'}`}>
+              <span className={`font-medium ${harvest.moisture_content > 20 ? 'text-red-800' : 'text-green-800'}`}>
                 {harvest.moisture_content}%
               </span>
             </span>

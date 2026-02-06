@@ -305,9 +305,9 @@ function AboutPageContent() {
 
   const getStatusBadge = (status: string) => {
     const badges = {
-      open: 'bg-blue-100 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300',
-      in_progress: 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-900 dark:text-yellow-300',
-      resolved: 'bg-green-100 dark:bg-green-950/30 text-green-900 dark:text-green-300',
+      open: 'bg-blue-100 dark:bg-blue-950/30 text-gray-900 dark:text-blue-300',
+      in_progress: 'bg-yellow-100 dark:bg-yellow-950/30 text-gray-900 dark:text-yellow-300',
+      resolved: 'bg-green-100 dark:bg-green-950/30 text-gray-900 dark:text-green-300',
       closed: 'bg-sage-100 dark:bg-slate-700 text-text-secondary',
     }
     return badges[status as keyof typeof badges] || badges.open
@@ -331,9 +331,9 @@ function AboutPageContent() {
   const getPriorityBadge = (priority: string) => {
     const badges = {
       low: 'bg-sage-100 dark:bg-slate-700 text-text-secondary',
-      normal: 'bg-blue-100 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300',
-      high: 'bg-orange-100 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300',
-      urgent: 'bg-red-100 dark:bg-red-950/30 text-red-900 dark:text-red-300',
+      normal: 'bg-blue-100 dark:bg-blue-950/30 text-gray-900 dark:text-blue-300',
+      high: 'bg-orange-100 dark:bg-orange-950/30 text-gray-900 dark:text-orange-300',
+      urgent: 'bg-red-100 dark:bg-red-950/30 text-gray-900 dark:text-red-300',
     }
     return badges[priority as keyof typeof badges] || badges.normal
   }
