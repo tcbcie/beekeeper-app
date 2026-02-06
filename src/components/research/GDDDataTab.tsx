@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2, Users } from 'lucide-react'
 import Link from 'next/link'
+import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -95,6 +96,11 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const [apiaryCoordsList, setApiaryCoordsList] = useState<{ latitude: number; longitude: number }[]>([])
   const [monthlyTemps, setMonthlyTemps] = useState<YearlyMonthlyTemps>({})
   const [showTemperature, setShowTemperature] = useState(true)
+
+  // Vegetation info modal
+  const [vegModalOpen, setVegModalOpen] = useState(false)
+  const [vegModalName, setVegModalName] = useState('')
+  const [vegModalTypeId, setVegModalTypeId] = useState('')
 
   // Filters
   const [selectedYears, setSelectedYears] = useState<number[]>([])
@@ -1248,7 +1254,9 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                   <tr key={record.id} className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-700/50">
                     <td className="p-3 text-foreground font-medium">{record.year}</td>
                     <td className="p-3 text-foreground">{record.apiaries?.name || '-'}</td>
-                    <td className="p-3 text-foreground">{record.dropdown_values?.value || '-'}</td>
+                    <td className="p-3 text-foreground">
+                      <button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</button>
+                    </td>
                     <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
                     <td className="p-3 text-text-secondary">
                       {record.end_date ? new Date(record.end_date).toLocaleDateString() : '-'}
@@ -1284,7 +1292,9 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                         {record.city || 'Nearby'}
                       </span>
                     </td>
-                    <td className="p-3 text-foreground">{record.vegetation_name || '-'}</td>
+                    <td className="p-3 text-foreground">
+                      <button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || '-'}</button>
+                    </td>
                     <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
                     <td className="p-3 text-text-secondary">
                       {record.end_date ? new Date(record.end_date).toLocaleDateString() : '-'}
@@ -1315,7 +1325,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {filteredRecords.map((record) => (
               <div key={record.id} className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">{record.dropdown_values?.value || 'Unknown'}</span>
+                  <button type="button" className="font-semibold text-foreground hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || 'Unknown'}</button>
                   <span className="text-sm text-text-secondary">{record.year}</span>
                 </div>
                 <div className="text-sm text-text-secondary">{record.apiaries?.name || '-'}</div>
@@ -1339,7 +1349,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {filteredCommunityRecords.map((record) => (
               <div key={`community-${record.id}`} className="p-4 space-y-2 bg-amber-50/50 dark:bg-amber-900/10">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">{record.vegetation_name || 'Unknown'}</span>
+                  <button type="button" className="font-semibold text-foreground hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || 'Unknown'}</button>
                   <span className="text-sm text-text-secondary">{record.year}</span>
                 </div>
                 <div className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-1">
@@ -1398,7 +1408,9 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                             {record.city || 'Nearby'}
                           </span>
                         </td>
-                        <td className="p-3 text-foreground">{record.vegetation_name || '-'}</td>
+                        <td className="p-3 text-foreground">
+                          <button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || '-'}</button>
+                        </td>
                         <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
                         <td className="p-3 text-right">
                           {record.gdd_value !== null ? (
@@ -1417,7 +1429,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 {filteredCommunityRecords.map((record) => (
                   <div key={record.id} className="p-4 space-y-2 bg-amber-50/50 dark:bg-amber-900/10">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground">{record.vegetation_name || 'Unknown'}</span>
+                      <button type="button" className="font-semibold text-foreground hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || 'Unknown'}</button>
                       <span className="text-sm text-text-secondary">{record.year}</span>
                     </div>
                     <div className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-1">
@@ -1467,6 +1479,14 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       <div className="text-xs text-text-tertiary">
         <p>GDD = Σ max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2) × multiplier. Seasonal multipliers: Jan ×0.5, Feb ×0.75, Mar-Dec ×1.0.</p>
       </div>
+
+      {/* Vegetation Info Modal */}
+      <VegetationInfoModal
+        isOpen={vegModalOpen}
+        onClose={() => setVegModalOpen(false)}
+        vegetationName={vegModalName}
+        vegetationTypeId={vegModalTypeId}
+      />
     </div>
   )
 }

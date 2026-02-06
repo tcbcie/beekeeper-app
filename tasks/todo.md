@@ -2521,3 +2521,80 @@ Combined `WolfSensorDisplay` and `WolfHistoryChart` into a single `WolfScalePane
 2. Change period selector (Hour, Day, Week, Month, Year)
 3. Verify stats update to show period-specific values
 4. Verify chart updates to show same period
+
+---
+
+# Vegetation Info Popup
+
+## Tasks
+
+- [x] Create `vegetation_info` table (migration via Supabase MCP)
+- [x] Seed data for all 29 vegetation types (migration via Supabase MCP)
+- [x] Create `VegetationInfoModal.tsx` component
+- [x] Wire up modal in `GDDDataTab.tsx` (6 clickable locations)
+- [x] Wire up modal in `GDDTracker.tsx` (1 clickable location)
+- [x] Update feature documentation
+
+## Review
+
+### Changes Made
+
+1. **Database**: Created `vegetation_info` table with FK to `dropdown_values`, RLS for authenticated users, and seeded 29 rows with scientific names (matching Wikipedia article titles), bloom periods, nectar/pollen ratings (1-5), honey characteristics, GDD ranges, and descriptions.
+
+2. **New Component**: `src/components/shared/VegetationInfoModal.tsx` (~150 lines) - Modal that fetches vegetation data from Supabase and hero image from Wikipedia REST API. Shows scientific name, star ratings, bloom period, GDD range, honey characteristics, and about text. Follows existing `ScaleSelectionModal` pattern. Handles loading, empty state, and image error gracefully.
+
+3. **GDDDataTab.tsx**: Added import, 3 state variables, made vegetation names clickable in 6 locations (desktop table user + community, mobile card user + community, community-only desktop + mobile), and rendered modal at bottom of component.
+
+4. **GDDTracker.tsx**: Added import, 3 state variables, made vegetation name clickable in 1 location (desktop table), and rendered modal at bottom of component.
+
+5. **Documentation**: Updated `docs/features/vegetation-info-popup.md` to reflect the actual implementation (runtime Wikipedia API, no stored images, 29 types seeded, all trigger points documented).
+
+### Key Design Decisions
+
+- **No stored images** - Images fetched live from Wikipedia at runtime. Simpler, no storage costs, always current.
+- **Scientific names as Wikipedia article titles** - e.g. `Narcissus_(plant)` not `Narcissus` to ensure correct Wikipedia page match.
+- **Button elements** for clickable names - Semantically correct, accessible, styled to look like links with green hover colour.
+- **Single modal instance** per page - Rendered once at bottom, state controls which vegetation is shown.
+
+---
+
+# Auto-Populate vegetation_info on New Vegetation Type
+
+## Overview
+When an admin creates a new vegetation type via Settings > Dropdown Management, auto-generate a fully populated `vegetation_info` row using OpenAI. Follows the existing `notify-admin-new-user` webhook pattern.
+
+## Tasks
+
+- [x] Deploy Edge Function `generate-vegetation-info` (OpenAI call + Supabase insert)
+- [x] Create database trigger + PL/pgSQL function on `dropdown_values` INSERT (filters vegetation_type only)
+- [x] Add ON DELETE CASCADE to `vegetation_info_vegetation_type_id_fkey`
+- [x] Update feature documentation
+
+## Review
+
+### Changes Made
+
+1. **Edge Function `generate-vegetation-info`** — Deployed via Supabase MCP. Receives webhook payload from the database trigger, calls OpenAI `gpt-4o-mini` with a structured prompt (JSON mode, temp 0.3), and inserts a fully populated `vegetation_info` row using the service role client. ~120 lines, follows `notify-admin-new-user` pattern exactly.
+
+2. **Database trigger + function** — Migration `create_vegetation_info_auto_generate_trigger`. PL/pgSQL function `handle_new_vegetation_type()` checks if the new `dropdown_values` row belongs to the `vegetation_type` category by joining `dropdown_categories`. If yes, fires `net.http_post()` to the Edge Function with the webhook payload. If no, returns NEW and does nothing. Trigger `on_new_vegetation_type` runs AFTER INSERT on `dropdown_values` FOR EACH ROW.
+
+3. **FK CASCADE** — Migration `add_cascade_delete_vegetation_info_fk`. Dropped `vegetation_info_vegetation_type_id_fkey` and re-added with `ON DELETE CASCADE`. Deleting a vegetation type dropdown value now auto-cleans its `vegetation_info` row.
+
+4. **Documentation** — Updated `docs/features/vegetation-info-popup.md` with a new "Auto-Population of New Vegetation Types" section documenting the full flow, Edge Function details, database objects, and cascade behaviour.
+
+### Key Design Decisions
+
+- **pg_net over supabase_functions.http_request** — The built-in `supabase_functions.http_request` cannot filter by category (it's a raw trigger function). Using `pg_net.http_post` inside a PL/pgSQL function allows the category check before making the HTTP call.
+- **SECURITY DEFINER** — The trigger function runs with definer privileges so it can read `dropdown_categories` and call `net.http_post()`.
+- **Zero frontend changes** — Fully automatic via database trigger + Edge Function.
+
+### Prerequisites for Testing
+
+- `OPENAI_API_KEY` must be set as a Supabase secret (`supabase secrets set OPENAI_API_KEY=sk-...`)
+
+### Verification Steps
+
+1. Add a new vegetation type via Settings > Dropdown Management
+2. Wait ~5 seconds for the Edge Function to complete
+3. Click the new vegetation name in GDD Tracker → verify modal shows populated data with Wikipedia image
+4. Delete the vegetation type → verify `vegetation_info` row is auto-deleted (CASCADE)
