@@ -429,6 +429,52 @@ textarea::placeholder {
   border-left-color: var(--surface-elevated);
 }
 
+/* ============================================
+   Light Mode: Darken coloured text for better
+   contrast on tablets and lower-quality displays.
+   Each shade shifted 2 steps darker for -600/-700,
+   and 1 step darker for -800.
+   Only affects text utilities, not backgrounds.
+   Dark mode is unaffected (uses dark: variants).
+   ============================================ */
+:root:not(.dark) {
+  /* Green */
+  .text-green-600 { color: #166534; }
+  .text-green-700 { color: #14532d; }
+  .text-green-800 { color: #14532d; }
+
+  /* Amber */
+  .text-amber-600 { color: #92400e; }
+  .text-amber-700 { color: #78350f; }
+  .text-amber-800 { color: #78350f; }
+
+  /* Orange */
+  .text-orange-600 { color: #9a3412; }
+  .text-orange-700 { color: #7c2d12; }
+  .text-orange-800 { color: #7c2d12; }
+
+  /* Red */
+  .text-red-600 { color: #991b1b; }
+  .text-red-700 { color: #7f1d1d; }
+
+  /* Blue */
+  .text-blue-600 { color: #1e40af; }
+  .text-blue-700 { color: #1e3a8a; }
+
+  /* Purple */
+  .text-purple-600 { color: #6b21a8; }
+  .text-purple-700 { color: #581c87; }
+
+  /* Yellow */
+  .text-yellow-600 { color: #854d0e; }
+  .text-yellow-700 { color: #713f12; }
+  .text-yellow-800 { color: #713f12; }
+
+  /* Emerald */
+  .text-emerald-600 { color: #065f46; }
+  .text-emerald-700 { color: #064e3b; }
+}
+
 /* Print styles for reports */
 @media print {
   /* Hide navigation and non-printable elements */
