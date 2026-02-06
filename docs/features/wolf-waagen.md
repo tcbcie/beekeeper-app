@@ -942,3 +942,83 @@ If `|intervention| > 0.5kg`, it's flagged as a maintenance event (feeding or har
 | `weightChange30d` | Raw change minus detected interventions |
 
 **No UI changes required** - both display components (`WolfSensorDisplay.tsx` and `HiveScaleCard.tsx`) automatically use the adjusted values from the API.
+
+---
+
+## Feature Update - February 6, 2026
+
+### Synced Period Selection
+
+Combined the sensor display and history chart into a single `WolfScalePanel` component with unified period selection. Stats now update to reflect the selected time period.
+
+#### Problem
+
+Previously, the sensor display showed fixed time comparisons (24h, 7d, 30d) while the chart had its own independent period selector. Changing the chart period didn't update the stats, which was confusing.
+
+#### Solution
+
+Created a new combined `WolfScalePanel` component that:
+1. Has a single period selector (Hour, Day, Week, Month, Year, Custom)
+2. Fetches data once for the selected period
+3. Calculates and displays period-specific stats
+4. Shows the history chart for the same period
+
+#### Stats Calculated from Period Data
+
+| Stat | Calculation |
+|------|-------------|
+| Current Weight | Latest weight reading in period |
+| Period Change | Sum of all `yield_kg` values (natural weight change) |
+| Avg Brood Temp | Average of `brood_temp_c` readings |
+| Avg Temp | Average of `temperature_c` readings |
+| Avg Humidity | Average of `humidity_percent` readings |
+| Total Rain | Sum of `rain_mm` readings |
+| Avg Wind | Average of `wind_speed_kmh` readings |
+| Wind Direction | Latest `wind_direction_deg` reading |
+| Battery | Latest `battery_voltage` reading |
+
+#### Component Architecture
+
+**Before (two separate components):**
+```
+WolfSensorDisplay (fixed 24h/7d/30d stats)
+    ↓
+WolfHistoryChart (own period state)
+```
+
+**After (combined component):**
+```
+WolfScalePanel
+  ├── Period Selector (shared state)
+  ├── Stats Display (calculated from period data)
+  └── History Chart (same period data)
+```
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/components/hive/WolfScalePanel.tsx` | NEW - Combined component (587 lines) |
+| `src/app/dashboard/hives/[id]/page.tsx` | Use WolfScalePanel instead of separate components |
+
+**Deprecated (still exist but unused):**
+- `src/components/hive/WolfSensorDisplay.tsx`
+- `src/components/hive/WolfHistoryChart.tsx`
+
+#### Usage
+
+```tsx
+<WolfScalePanel
+  scaleId={hive.wolf_scale_id}
+  scaleName={hive.wolf_scale_name}
+  hiveId={hiveId}
+/>
+```
+
+#### User Experience
+
+1. User selects a period (e.g., "Week")
+2. Component fetches history data for that week
+3. Stats show weekly averages and totals
+4. Chart displays the week's data
+5. All updates happen together with a single API call
