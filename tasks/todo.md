@@ -2451,3 +2451,53 @@ If `|intervention| > 0.5kg`, it's a maintenance event.
 2. Check 7d change around Jan 31, 2026 feeding event
 3. Should show natural activity (~0.06kg) not raw change (~3.4kg)
 4. Verify 24h change still uses yield_kg directly
+
+---
+
+## Session 34: Wolf Waagen Synced Period Selection - February 6, 2026
+
+### Task
+Sync the period selector between the stats display and history chart so that changing the period updates all values.
+
+### Problem
+The sensor display showed fixed 24h/7d/30d stats while the chart had its own period selector. Changing the chart period didn't update the stats.
+
+### Solution
+Combined `WolfSensorDisplay` and `WolfHistoryChart` into a single `WolfScalePanel` component with shared period state.
+
+### Tasks
+
+- [x] **1. Create combined WolfScalePanel component**
+  - Single period selector
+  - Calculate stats from history data
+  - Display chart with same data
+
+- [x] **2. Update hive detail page**
+  - Replace separate components with WolfScalePanel
+
+- [x] **3. Update documentation**
+  - Document new component and behaviour
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/components/hive/WolfScalePanel.tsx` | NEW - Combined component (587 lines) |
+| `src/app/dashboard/hives/[id]/page.tsx` | Use WolfScalePanel instead of separate components |
+| `docs/features/wolf-waagen.md` | Added Synced Period Selection section |
+
+### Review
+
+**Implementation Complete**
+
+**Key Changes:**
+- Stats now show period-specific data (averages, totals)
+- Single API call for both stats and chart
+- Period Change shows sum of yields for natural weight change
+
+### Testing Required
+
+1. Open hive with Wolf scale
+2. Change period selector (Hour, Day, Week, Month, Year)
+3. Verify stats update to show period-specific values
+4. Verify chart updates to show same period
