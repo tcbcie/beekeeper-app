@@ -61,6 +61,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         const tables = [
           'apiaries',
           'batch_containers',
+          'batch_feedback',
           'batch_grafts',
           'batch_runs',
           'bulk_containers',
@@ -71,6 +72,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
           'diagnosis_image_comments',
           'feedings',
           'financial_records',
+          'frame_standards',
           'gdd_records',
           'harvests',
           'hive_configuration_history',
@@ -91,6 +93,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
           'team_members',
           'teams',
           'varroa_checks',
+          'varroa_treatment_products',
           'varroa_treatments',
           'wild_colonies',
           'wild_colony_inspections'
