@@ -2380,3 +2380,74 @@ Added a new "Archived Hives" report tab to the Reports page that displays hives 
 6. Test CSV export
 7. Test Print/PDF functionality
 8. Verify dark mode styling
+
+---
+
+## Session 33: Wolf Waagen Adjusted Yield Calculation - February 5, 2026
+
+### Task
+Adjust the 7d and 30d weight changes to exclude manual interventions (feeding, harvesting) to show natural colony performance.
+
+### Problem
+Currently, if you add 3kg of feed, the 7d change shows +3kg even though the colony only gained ~0.1kg naturally.
+
+### Solution
+Detect maintenance events by comparing weight delta vs yield, then subtract interventions from yield calculations.
+
+### Tasks
+
+- [x] **1. Add detection functions to wolf-waagen-api.ts**
+  - Add `WolfMaintenanceEvent` interface
+  - Add `detectMaintenanceEvents()` function
+  - Add `sumInterventions()` helper function
+
+- [x] **2. Update API route to calculate adjusted yields**
+  - Detect maintenance events in 7d and 30d history
+  - Subtract interventions from weight changes
+
+- [x] **3. Update documentation**
+  - Add section about adjusted yield calculation to docs/features/wolf-waagen.md
+
+### Implementation Details
+
+**Detection Logic:** For each consecutive pair of readings:
+```
+intervention = (weight_after - weight_before) - yield
+```
+If `|intervention| > 0.5kg`, it's a maintenance event.
+
+**Example:**
+- Weight: 42.9kg → 46.3kg (delta = +3.4kg)
+- Yield reported: +0.06kg
+- Intervention detected: +3.34kg (feed added)
+- Adjusted 7d yield: +0.06kg (natural activity)
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/lib/wolf-waagen-api.ts` | Added `WolfMaintenanceEvent` interface, `detectMaintenanceEvents()`, `sumInterventions()` |
+| `src/app/api/wolf-waagen/data/route.ts` | Import new functions, calculate adjusted weight changes |
+| `docs/features/wolf-waagen.md` | Added Adjusted Yield Calculation section |
+
+### Review
+
+**Implementation Complete** - All tasks finished.
+
+**Changes Summary:**
+1. Added ~50 lines to API client library for intervention detection
+2. Added ~10 lines to API route for adjusted calculations
+3. Added comprehensive documentation section
+
+**Key Points:**
+- 24h change uses `yield_kg` directly (already natural)
+- 7d and 30d changes now subtract detected interventions
+- Threshold is 0.5kg to avoid flagging minor discrepancies
+- No UI changes needed - same API response structure
+
+### Testing Required
+
+1. Load hive with Wolf scale (R4JLXN)
+2. Check 7d change around Jan 31, 2026 feeding event
+3. Should show natural activity (~0.06kg) not raw change (~3.4kg)
+4. Verify 24h change still uses yield_kg directly

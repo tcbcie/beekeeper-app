@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { wolfGetLastValues, wolfGetMeasurements, wolfGetBatteryVoltage } from '@/lib/wolf-waagen-api'
+import { wolfGetLastValues, wolfGetMeasurements, wolfGetBatteryVoltage, detectMaintenanceEvents, sumInterventions, WolfParsedReading } from '@/lib/wolf-waagen-api'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch 7-day history (optional - for weight change calculation)
-    let history7d: { weight_kg?: number }[] = []
+    let history7d: WolfParsedReading[] = []
     try {
       history7d = await wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily')
     } catch (err) {
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch 30-day history (optional - for weight change calculation)
-    let history30d: { weight_kg?: number }[] = []
+    let history30d: WolfParsedReading[] = []
     try {
       history30d = await wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily')
     } catch (err) {
@@ -143,10 +143,22 @@ export async function GET(request: NextRequest) {
       lastValues.battery_voltage = batteryVoltage
     }
 
-    // Calculate weight changes
+    // Calculate weight changes (adjusted to exclude maintenance events)
     const weightChange24h = lastValues?.yield_kg ?? null
-    const weightChange7d = calcWeightChange(history7d)
-    const weightChange30d = calcWeightChange(history30d)
+
+    // Detect and subtract maintenance events (feeding, harvesting) from weight changes
+    const interventions7d = sumInterventions(detectMaintenanceEvents(history7d))
+    const interventions30d = sumInterventions(detectMaintenanceEvents(history30d))
+
+    const rawWeightChange7d = calcWeightChange(history7d)
+    const rawWeightChange30d = calcWeightChange(history30d)
+
+    const weightChange7d = rawWeightChange7d !== null
+      ? rawWeightChange7d - interventions7d
+      : null
+    const weightChange30d = rawWeightChange30d !== null
+      ? rawWeightChange30d - interventions30d
+      : null
 
     let history = null
     if (period || (customStart && customEnd)) {

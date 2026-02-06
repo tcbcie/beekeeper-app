@@ -888,3 +888,57 @@ Tested the Wolf Waagen API with connected scales to verify the actual response f
 | R4JLXN | 45.29 | -0.105 | 26.2 | 93.8 |
 
 *Data captured: 5 February 2026, 21:00 CET*
+
+---
+
+## Feature Update - February 5, 2026
+
+### Adjusted Yield Calculation
+
+Added automatic detection and exclusion of maintenance events (feeding, harvesting) from 7-day and 30-day weight change calculations.
+
+#### Problem
+
+Previously, if a beekeeper added 3kg of feed to a hive, the 7-day weight change would show +3kg even though the colony only gained ~0.1kg naturally. This made it difficult to assess actual colony performance.
+
+#### Solution
+
+The system now detects maintenance events by comparing the raw weight change between readings against the reported yield:
+
+```
+intervention = (weight_after - weight_before) - yield
+```
+
+If `|intervention| > 0.5kg`, it's flagged as a maintenance event (feeding or harvesting).
+
+#### Example
+
+| Metric | Value |
+|--------|-------|
+| Weight before | 42.9 kg |
+| Weight after | 46.3 kg |
+| Raw weight delta | +3.4 kg |
+| Reported yield | +0.06 kg |
+| **Detected intervention** | +3.34 kg (feed added) |
+| **Adjusted 7d change** | +0.06 kg (natural activity) |
+
+#### Implementation
+
+**New functions in `src/lib/wolf-waagen-api.ts`:**
+- `detectMaintenanceEvents(history, threshold)` - Scans readings for interventions
+- `sumInterventions(events)` - Totals all detected interventions
+
+**Updated API route (`src/app/api/wolf-waagen/data/route.ts`):**
+- Detects maintenance events in 7d and 30d history
+- Subtracts total interventions from raw weight changes
+- Returns adjusted values (same field names, cleaner data)
+
+#### Behaviour
+
+| Field | Calculation |
+|-------|-------------|
+| `weightChange24h` | Uses `yield_kg` directly (already natural) |
+| `weightChange7d` | Raw change minus detected interventions |
+| `weightChange30d` | Raw change minus detected interventions |
+
+**No UI changes required** - both display components (`WolfSensorDisplay.tsx` and `HiveScaleCard.tsx`) automatically use the adjusted values from the API.
