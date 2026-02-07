@@ -17,6 +17,7 @@ interface Association {
   email: string | null
   phone: string | null
   is_active: boolean
+  contacted: boolean
   comments: string | null
   created_at?: string
   updated_at?: string
@@ -32,6 +33,7 @@ interface AssociationFormData {
   email: string
   phone: string
   is_active: boolean
+  contacted: boolean
   comments: string
 }
 
@@ -45,6 +47,7 @@ const emptyFormData: AssociationFormData = {
   email: '',
   phone: '',
   is_active: true,
+  contacted: false,
   comments: '',
 }
 
@@ -58,7 +61,7 @@ export default function AssociationManagement() {
   const [jurisdictionFilter, setJurisdictionFilter] = useState<'all' | 'NI' | 'ROI'>('all')
   const [countyFilter, setCountyFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortField, setSortField] = useState<'name' | 'county_area'>('name')
+  const [sortField, setSortField] = useState<'name' | 'county_area' | 'email'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 15
@@ -103,6 +106,7 @@ export default function AssociationManagement() {
       email: formData.email || null,
       phone: formData.phone || null,
       is_active: formData.is_active,
+      contacted: formData.contacted,
       comments: formData.comments || null,
     }
 
@@ -148,6 +152,7 @@ export default function AssociationManagement() {
       email: association.email || '',
       phone: association.phone || '',
       is_active: association.is_active,
+      contacted: association.contacted ?? false,
       comments: association.comments || '',
     })
     setShowAddForm(true)
@@ -180,7 +185,7 @@ export default function AssociationManagement() {
     setFormData(emptyFormData)
   }
 
-  const handleSort = (field: 'name' | 'county_area') => {
+  const handleSort = (field: 'name' | 'county_area' | 'email') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -203,15 +208,14 @@ export default function AssociationManagement() {
         const matchesSearch =
           association.name.toLowerCase().includes(query) ||
           association.county_area.toLowerCase().includes(query) ||
-          (association.affiliation?.toLowerCase().includes(query) ?? false) ||
           (association.email?.toLowerCase().includes(query) ?? false)
         if (!matchesSearch) return false
       }
       return true
     })
     .sort((a, b) => {
-      const aValue = a[sortField].toLowerCase()
-      const bValue = b[sortField].toLowerCase()
+      const aValue = (a[sortField] ?? '').toLowerCase()
+      const bValue = (b[sortField] ?? '').toLowerCase()
       if (sortDirection === 'asc') {
         return aValue.localeCompare(bValue)
       }
@@ -224,7 +228,7 @@ export default function AssociationManagement() {
     currentPage * itemsPerPage
   )
 
-  const SortIcon = ({ field }: { field: 'name' | 'county_area' }) => {
+  const SortIcon = ({ field }: { field: 'name' | 'county_area' | 'email' }) => {
     if (sortField !== field) return <ChevronUp size={14} className="opacity-30" />
     return sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
   }
@@ -258,19 +262,6 @@ export default function AssociationManagement() {
         {/* Filters */}
         <div className="flex flex-wrap gap-4 items-center bg-surface dark:bg-background p-4 rounded-lg">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-text-secondary">Jurisdiction:</label>
-            <select
-              value={jurisdictionFilter}
-              onChange={(e) => { setJurisdictionFilter(e.target.value as 'all' | 'NI' | 'ROI'); setCurrentPage(1) }}
-              className="px-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Jurisdictions</option>
-              <option value="NI">Northern Ireland</option>
-              <option value="ROI">Republic of Ireland</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-text-secondary">County/Area:</label>
             <select
               value={countyFilter}
@@ -292,16 +283,15 @@ export default function AssociationManagement() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
-                placeholder="Name, email, affiliation..."
+                placeholder="Name, email, county..."
                 className="pl-8 pr-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-52"
               />
             </div>
           </div>
 
-          {(jurisdictionFilter !== 'all' || countyFilter !== 'all' || searchQuery) && (
+          {(countyFilter !== 'all' || searchQuery) && (
             <button
               onClick={() => {
-                setJurisdictionFilter('all')
                 setCountyFilter('all')
                 setSearchQuery('')
                 setCurrentPage(1)
@@ -333,18 +323,6 @@ export default function AssociationManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Jurisdiction *</label>
-                <input
-                  type="text"
-                  value={formData.jurisdiction}
-                  onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
-                  placeholder="e.g., Northern Ireland, Republic of Ireland"
-                  required
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">County/Area *</label>
                 <input
                   type="text"
@@ -353,28 +331,6 @@ export default function AssociationManagement() {
                   className="w-full px-3 py-2 border border-border rounded-md"
                   placeholder="e.g., County Antrim, Dublin"
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Affiliation</label>
-                <input
-                  type="text"
-                  value={formData.affiliation}
-                  onChange={(e) => setFormData({ ...formData, affiliation: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
-                  placeholder="e.g., FIBKA, IBA, UBKA"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Website</label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
-                  placeholder="https://example.com"
                 />
               </div>
 
@@ -411,15 +367,27 @@ export default function AssociationManagement() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="h-4 w-4 text-forest-600 border-border rounded"
-                />
-                <label htmlFor="is_active" className="text-sm font-medium text-text-secondary">Active</label>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={formData.is_active}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="h-4 w-4 text-forest-600 border-border rounded"
+                  />
+                  <label htmlFor="is_active" className="text-sm font-medium text-text-secondary">Active</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="contacted"
+                    checked={formData.contacted}
+                    onChange={(e) => setFormData({ ...formData, contacted: e.target.checked })}
+                    className="h-4 w-4 text-forest-600 border-border rounded"
+                  />
+                  <label htmlFor="contacted" className="text-sm font-medium text-text-secondary">Contacted</label>
+                </div>
               </div>
             </div>
 
@@ -482,7 +450,6 @@ export default function AssociationManagement() {
                         <SortIcon field="name" />
                       </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Jurisdiction</th>
                     <th
                       className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface dark:hover:bg-background"
                       onClick={() => handleSort('county_area')}
@@ -492,9 +459,16 @@ export default function AssociationManagement() {
                         <SortIcon field="county_area" />
                       </div>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Affiliation</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Website</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Email</th>
+                    <th
+                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface dark:hover:bg-background"
+                      onClick={() => handleSort('email')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Email
+                        <SortIcon field="email" />
+                      </div>
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Contacted</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Comments</th>
                   </tr>
                 </thead>
@@ -520,22 +494,16 @@ export default function AssociationManagement() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">{association.name}</td>
-                      <td className="px-4 py-3 text-sm text-foreground">{association.jurisdiction}</td>
                       <td className="px-4 py-3 text-sm text-foreground">{association.county_area}</td>
-                      <td className="px-4 py-3 text-sm text-foreground">{association.affiliation || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-foreground">
-                        {association.website ? (
-                          <a href={association.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-[150px]">
-                            {association.website.replace(/^https?:\/\//, '')}
-                          </a>
-                        ) : '-'}
-                      </td>
                       <td className="px-4 py-3 text-sm text-foreground">
                         {association.email ? (
                           <a href={`mailto:${association.email}`} className="text-blue-600 hover:underline">
                             {association.email}
                           </a>
                         ) : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center">
+                        {association.contacted ? '✓' : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground max-w-[200px] truncate" title={association.comments || ''}>
                         {association.comments || '-'}
