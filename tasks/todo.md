@@ -2598,3 +2598,50 @@ When an admin creates a new vegetation type via Settings > Dropdown Management, 
 2. Wait ~5 seconds for the Edge Function to complete
 3. Click the new vegetation name in GDD Tracker → verify modal shows populated data with Wikipedia image
 4. Delete the vegetation type → verify `vegetation_info` row is auto-deleted (CASCADE)
+
+---
+
+# Update Beekeeping Associations Table
+
+## Summary
+Compare the `beekeeping_associations` database table against `Emails_Beekeeping_Associations.csv` (the authoritative source) and update any discrepancies.
+
+## Differences Found
+
+### Email Updates
+- [ ] **Ashford Beekeepers Association** - Email: `wicklowbees@gmail.com` → `abka.secretary@gmail.com`
+- [ ] **Suck Valley Beekeepers Association** - Email case: `SVBKAsecretary@gmail.com` → `svbkasecretary@gmail.com`
+
+### Name Updates (CSV is authoritative)
+- [ ] "Tribes Beekeepers Association" → "Tribes Beekeepers Association (Galway)"
+- [ ] "Digges Beekeepers' Association" → "Digges Beekeepers' Association (Cavan/Leitrim)"
+- [ ] "Banner Beekeepers Association" → "Banner Beekeepers Association (Clare)"
+- [ ] "Fingal North Dublin Beekeepers Association" → "Fingal North Dublin Beekeepers' Association" (add apostrophe)
+- [ ] "The Royal County Beekeepers Association" → "Royal County Beekeepers Association (Meath)" (remove "The", add "(Meath)")
+- [ ] "Lake County Beekeepers Association" → "Lake County Beekeepers Association (Westmeath)"
+- [ ] "County Offaly Beekeepers Association" → "Offaly Beekeepers Association" (remove "County")
+- [ ] "East Waterford Beekeepers Association" → "Waterford Beekeepers Association" (remove "East")
+- [ ] "Iveragh Beekeepers Association" → "Iveragh Beekeepers Association (Kerry)"
+- [ ] "Inishowen Beekeepers Association" → "Inishowen Beekeepers Association (Donegal)"
+- [ ] "Northwest Beekeepers Association" → "Northwest Beekeepers Association (Donegal)"
+- [ ] "Derry & District Beekeepers Association" → "Derry and District Beekeepers Association" ("&" → "and")
+- [ ] "Dunamaise Beekeepers Association" → "Dunamaise Beekeepers Association (Laois)"
+
+### No Changes Needed (25 associations already match)
+Ballyhaunis, Connemara, Westport, Erris, County Mayo, Sligo/Leitrim, County Dublin, Kilternan, County Louth, County Carlow, Mid Kilkenny, Gorey, South Kilkenny, County Wexford, New Ross, South Wexford, Roundwood, North Tipperary, Duhallow, East Cork, North Cork, South Tipperary, County Cork, County Limerick, South Donegal, Armagh & Monaghan, County Cavan
+
+### Associations in DB without CSV entry (no changes - left as-is)
+These are associations that don't have emails in the CSV, so they remain unchanged.
+
+## Plan
+1. Run SQL UPDATE statements to fix the 2 email discrepancies
+2. Run SQL UPDATE statements to fix the 13 name discrepancies
+3. Verify the updates
+
+## Review
+**Completed 2026-02-07** - All 8 updates applied and verified.
+
+- 2 email corrections (Ashford, Suck Valley)
+- 5 name corrections (Fingal apostrophe, drop "The" from Royal County, drop "County" from Offaly, drop "East" from Waterford, "&" to "and" for Derry)
+- 1 county_area update (Digges: Cavan → Cavan/Leitrim)
+- County info from CSV parentheticals was mapped to existing `county_area` column rather than appended to names
