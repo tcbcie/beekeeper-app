@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Download, Printer } from 'lucide-react'
 
@@ -10,6 +11,22 @@ interface HiveQRCodeProps {
 
 export default function HiveQRCode({ hiveId, hiveNumber }: HiveQRCodeProps) {
   const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/hive-scan/${hiveId}`
+
+  // Load logo as base64 so it embeds into the SVG for download/print
+  const [logoBase64, setLogoBase64] = useState<string>('')
+  useEffect(() => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx?.drawImage(img, 0, 0)
+      setLogoBase64(canvas.toDataURL('image/png'))
+    }
+    img.src = '/logo_trans.png'
+  }, [])
 
   const downloadQrCode = () => {
     const svg = document.getElementById('hive-qr-code-svg')
@@ -68,12 +85,12 @@ export default function HiveQRCode({ hiveId, hiveNumber }: HiveQRCodeProps) {
         size={200}
         level="H"
         includeMargin
-        imageSettings={{
-          src: '/logo_trans.png',
+        imageSettings={logoBase64 ? {
+          src: logoBase64,
           height: 40,
           width: 40,
           excavate: true,
-        }}
+        } : undefined}
       />
       <p className="text-xs text-text-tertiary break-all max-w-[250px] text-center">{qrUrl}</p>
       <div className="flex gap-3">
