@@ -118,7 +118,8 @@ export default function VegetationInfoModal({
               {/* Hero Image */}
               {imageUrl && !imageError ? (
                 <div className="rounded-lg overflow-hidden bg-muted/10 max-h-56 flex items-center justify-center">
-                  <img
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                     src={imageUrl}
                     alt={vegetationName}
                     className="w-full h-56 object-cover"

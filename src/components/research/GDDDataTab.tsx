@@ -110,18 +110,17 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const [selectedMonths, setSelectedMonths] = useState<number[]>([])
 
   const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const QUARTER_MONTHS: Record<string, number[]> = {
-    q1: [1, 2, 3],
-    q2: [4, 5, 6],
-    q3: [7, 8, 9],
-    q4: [10, 11, 12],
-  }
-
   // Get allowed months based on period filter
   const allowedMonths = useMemo(() => {
+    const quarterMonths: Record<string, number[]> = {
+      q1: [1, 2, 3],
+      q2: [4, 5, 6],
+      q3: [7, 8, 9],
+      q4: [10, 11, 12],
+    }
     if (periodFilter === 'all') return null // no filtering
     if (periodFilter === 'custom') return selectedMonths.length > 0 ? selectedMonths : null
-    return QUARTER_MONTHS[periodFilter] || null
+    return quarterMonths[periodFilter] || null
   }, [periodFilter, selectedMonths])
 
   // Accumulation chart year selection (default: current year + 2 previous years)

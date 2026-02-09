@@ -58,7 +58,7 @@ export default function AssociationManagement() {
   const [editing, setEditing] = useState<Association | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState<AssociationFormData>(emptyFormData)
-  const [jurisdictionFilter, setJurisdictionFilter] = useState<'all' | 'NI' | 'ROI'>('all')
+  const [jurisdictionFilter] = useState<'all' | 'NI' | 'ROI'>('all')
   const [countyFilter, setCountyFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<'name' | 'county_area' | 'email'>('name')
