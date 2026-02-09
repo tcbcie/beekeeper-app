@@ -66,8 +66,14 @@ export default function HiveQRCode({ hiveId, hiveNumber }: HiveQRCodeProps) {
         id="hive-qr-code-svg"
         value={qrUrl}
         size={200}
-        level="M"
+        level="H"
         includeMargin
+        imageSettings={{
+          src: '/logo_trans.png',
+          height: 40,
+          width: 40,
+          excavate: true,
+        }}
       />
       <p className="text-xs text-text-tertiary break-all max-w-[250px] text-center">{qrUrl}</p>
       <div className="flex gap-3">
