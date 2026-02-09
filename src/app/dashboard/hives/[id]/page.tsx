@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale, QrCode, X } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
@@ -13,6 +13,7 @@ import ScaleHistoryChart from '@/components/hive/ScaleHistoryChart'
 import WolfScaleSelectionModal from '@/components/hive/WolfScaleSelectionModal'
 import WolfScalePanel from '@/components/hive/WolfScalePanel'
 import { useHiveDetail } from '@/hooks'
+import HiveQRCode from '@/components/hive/HiveQRCode'
 import { supabase } from '@/lib/supabase'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
 
@@ -36,6 +37,9 @@ export default function HiveDetailPage() {
     handleCompleteTask,
     handleUnarchive,
   } = useHiveDetail(hiveId)
+
+  // QR code modal state
+  const [showQrModal, setShowQrModal] = useState(false)
 
   // Scale selection state
   const [showScaleModal, setShowScaleModal] = useState(false)
@@ -158,13 +162,22 @@ export default function HiveDetailPage() {
             <ArrowLeft size={20} />
             Back to Hives
           </button>
-          <Link
-            href={`/dashboard/records?hive=${hiveId}`}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium flex items-center gap-2"
-          >
-            <Calendar size={18} />
-            View Records
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowQrModal(true)}
+              className="p-2 bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border"
+              title="Show QR Code"
+            >
+              <QrCode size={18} />
+            </button>
+            <Link
+              href={`/dashboard/records?hive=${hiveId}`}
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium flex items-center gap-2"
+            >
+              <Calendar size={18} />
+              View Records
+            </Link>
+          </div>
         </div>
         <h1 className="text-3xl font-bold text-foreground">Hive {hive.hive_number}</h1>
         <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -464,6 +477,21 @@ export default function HiveDetailPage() {
           )}
         />
       </div>
+
+      {/* QR Code Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowQrModal(false)}>
+          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full border border-border" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Hive QR Code</h2>
+              <button onClick={() => setShowQrModal(false)} className="text-text-tertiary hover:text-foreground">
+                <X size={20} />
+              </button>
+            </div>
+            <HiveQRCode hiveId={hiveId} hiveNumber={hive.hive_number} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
