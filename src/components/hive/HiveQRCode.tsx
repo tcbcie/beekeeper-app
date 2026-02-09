@@ -39,7 +39,7 @@ export default function HiveQRCode({ hiveId, hiveNumber }: HiveQRCodeProps) {
 
     img.onload = () => {
       canvas.width = img.width
-      canvas.height = img.height + 4
+      canvas.height = img.height + 14
       if (ctx) {
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -47,7 +47,7 @@ export default function HiveQRCode({ hiveId, hiveNumber }: HiveQRCodeProps) {
         ctx.fillStyle = '#666666'
         ctx.font = '14px sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillText('www.hivecraic.com', canvas.width / 2, img.height - 2)
+        ctx.fillText('www.hivecraic.com', canvas.width / 2, img.height + 8)
       }
       const pngUrl = canvas.toDataURL('image/png')
       const downloadLink = document.createElement('a')
