@@ -165,10 +165,10 @@ export default function HiveDetailPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowQrModal(true)}
-              className="p-2 bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border"
-              title="Show QR Code"
+              className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border font-medium flex items-center gap-2"
             >
               <QrCode size={18} />
+              QR Code
             </button>
             <Link
               href={`/dashboard/records?hive=${hiveId}`}
@@ -488,6 +488,7 @@ export default function HiveDetailPage() {
                 <X size={20} />
               </button>
             </div>
+            <p className="text-sm text-text-tertiary mb-4">Print this QR code and attach it to your hive. Scan it with your phone camera to quickly create inspections, treatments, and other records.</p>
             <HiveQRCode hiveId={hiveId} hiveNumber={hive.hive_number} />
           </div>
         </div>
