@@ -1,7 +1,7 @@
 'use client'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info, Calendar, Users, FlaskConical, FileText } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, X, Wrench, User, Info, Calendar, Users, FlaskConical, FileText, QrCode } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 
@@ -32,6 +32,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     { href: '/dashboard/queens', label: 'Queens', icon: Crown },
     { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
+    { href: '/dashboard/qr-tags', label: 'QR Tags', icon: QrCode },
     { href: '/dashboard/reports', label: 'Reports', icon: FileText },
     { href: '/dashboard/research', label: 'Research', icon: FlaskConical },
     { href: '/dashboard/profile', label: 'Profile', icon: User },

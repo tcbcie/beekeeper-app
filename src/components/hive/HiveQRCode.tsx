@@ -5,12 +5,12 @@ import { QRCodeSVG } from 'qrcode.react'
 import { Download, Printer } from 'lucide-react'
 
 interface HiveQRCodeProps {
-  hiveId: string
+  tagCode: string
   hiveNumber: string
 }
 
-export default function HiveQRCode({ hiveId, hiveNumber }: HiveQRCodeProps) {
-  const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/hive-scan/${hiveId}`
+export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
+  const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/hive-scan/tag/${tagCode}`
 
   // Load logo as base64 so it embeds into the SVG for download/print
   const [logoBase64, setLogoBase64] = useState<string>('')
