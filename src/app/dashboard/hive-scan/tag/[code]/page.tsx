@@ -2,61 +2,75 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { Calendar, Bug, Syringe, Wheat, Droplet, ArrowLeft } from 'lucide-react'
+import { Calendar, Bug, Syringe, Wheat, Droplet, ArrowLeft, Tag } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
-interface HiveScanData {
+interface TagData {
   id: string
-  hive_number: string
-  apiaries: { name: string } | null
+  code: string
+  hive_id: string | null
+  hive?: {
+    id: string
+    hive_number: string
+    apiaries: { name: string } | null
+  }
 }
 
-export default function HiveScanPage() {
+export default function TagScanPage() {
   const params = useParams()
-  const hiveId = params.id as string
+  const code = params.code as string
 
-  const [hive, setHive] = useState<HiveScanData | null>(null)
+  const [tag, setTag] = useState<TagData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchHive = useCallback(async () => {
+  const fetchTag = useCallback(async () => {
     try {
-      const userId = await getCurrentUserId()
-      if (!userId) {
-        setLoading(false)
-        return
-      }
-
       const { data, error: fetchError } = await supabase
-        .from('hives')
-        .select('id, hive_number, apiaries(name)')
-        .eq('id', hiveId)
+        .from('qr_tags')
+        .select('id, code, hive_id')
+        .eq('code', code)
         .single()
 
       if (fetchError || !data) {
-        setError('Hive not found. Please check the QR code is valid.')
+        setError('Tag not found. Please check the QR code is valid.')
         return
       }
 
-      const apiaryData = data.apiaries
-      setHive({
-        id: data.id,
-        hive_number: data.hive_number,
-        apiaries: Array.isArray(apiaryData) ? apiaryData[0] ?? null : apiaryData,
-      })
+      if (data.hive_id) {
+        const { data: hiveData } = await supabase
+          .from('hives')
+          .select('id, hive_number, apiaries(name)')
+          .eq('id', data.hive_id)
+          .single()
+
+        if (hiveData) {
+          const apiaryData = hiveData.apiaries
+          setTag({
+            ...data,
+            hive: {
+              id: hiveData.id,
+              hive_number: hiveData.hive_number,
+              apiaries: Array.isArray(apiaryData) ? apiaryData[0] ?? null : apiaryData,
+            },
+          })
+          return
+        }
+      }
+
+      setTag(data)
     } catch {
-      setError('Failed to load hive data.')
+      setError('Failed to load tag data.')
     } finally {
       setLoading(false)
     }
-  }, [hiveId])
+  }, [code])
 
   useEffect(() => {
-    fetchHive()
-  }, [fetchHive])
+    fetchTag()
+  }, [fetchTag])
 
   if (loading) {
     return (
@@ -66,16 +80,34 @@ export default function HiveScanPage() {
     )
   }
 
-  if (error || !hive) {
+  if (error || !tag) {
     return (
       <div className="p-6 max-w-lg mx-auto text-center">
-        <p className="text-red-500 mb-4">{error || 'Hive not found.'}</p>
+        <p className="text-red-500 mb-4">{error || 'Tag not found.'}</p>
         <Link href="/dashboard/hives" className="text-blue-500 hover:underline">
           Back to Hives
         </Link>
       </div>
     )
   }
+
+  if (!tag.hive) {
+    return (
+      <div className="p-6 max-w-lg mx-auto text-center">
+        <Tag size={48} className="mx-auto mb-4 text-text-tertiary" />
+        <h1 className="text-2xl font-bold text-foreground mb-2">Tag {tag.code}</h1>
+        <p className="text-text-tertiary mb-6">This tag is not yet assigned to a hive.</p>
+        <Link
+          href="/dashboard/qr-tags"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+        >
+          Manage QR Tags
+        </Link>
+      </div>
+    )
+  }
+
+  const hiveId = tag.hive.id
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -88,9 +120,9 @@ export default function HiveScanPage() {
           <ArrowLeft size={20} />
           View Full Hive Details
         </Link>
-        <h1 className="text-3xl font-bold text-foreground">Hive {hive.hive_number}</h1>
-        {hive.apiaries && (
-          <p className="text-text-tertiary mt-1">📍 {hive.apiaries.name}</p>
+        <h1 className="text-3xl font-bold text-foreground">Hive {tag.hive.hive_number}</h1>
+        {tag.hive.apiaries && (
+          <p className="text-text-tertiary mt-1">📍 {tag.hive.apiaries.name}</p>
         )}
       </div>
 

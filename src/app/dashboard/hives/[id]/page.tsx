@@ -40,6 +40,22 @@ export default function HiveDetailPage() {
 
   // QR code modal state
   const [showQrModal, setShowQrModal] = useState(false)
+  const [assignedTagCode, setAssignedTagCode] = useState<string | null>(null)
+
+  // Fetch assigned QR tag for this hive
+  useEffect(() => {
+    const fetchTag = async () => {
+      const { data } = await supabase
+        .from('qr_tags')
+        .select('code')
+        .eq('hive_id', hiveId)
+        .order('assigned_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      setAssignedTagCode(data?.code ?? null)
+    }
+    fetchTag()
+  }, [hiveId])
 
   // Scale selection state
   const [showScaleModal, setShowScaleModal] = useState(false)
@@ -489,7 +505,19 @@ export default function HiveDetailPage() {
               </button>
             </div>
             <p className="text-sm text-text-tertiary mb-4">Print this QR code and attach it to your hive. Scan it with your phone camera to quickly create inspections, treatments, and other records.</p>
-            <HiveQRCode hiveId={hiveId} hiveNumber={hive.hive_number} />
+            {assignedTagCode ? (
+              <HiveQRCode tagCode={assignedTagCode} hiveNumber={hive.hive_number} />
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-text-tertiary mb-4">No QR tag assigned to this hive yet.</p>
+                <Link
+                  href="/dashboard/qr-tags"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
+                >
+                  Manage QR Tags
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

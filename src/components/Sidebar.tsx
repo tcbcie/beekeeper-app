@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users, FlaskConical, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
+import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users, FlaskConical, ChevronLeft, ChevronRight, FileText, QrCode } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import VersionDisplay from './VersionDisplay'
 
@@ -43,6 +43,7 @@ export default function Sidebar() {
     { href: '/dashboard/queens', label: 'Queens', icon: Crown },
     { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
     { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
+    { href: '/dashboard/qr-tags', label: 'QR Tags', icon: QrCode },
     { href: '/dashboard/reports', label: 'Reports', icon: FileText },
     { href: '/dashboard/research', label: 'Research', icon: FlaskConical },
     { href: '/dashboard/profile', label: 'Profile', icon: User },
