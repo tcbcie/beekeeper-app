@@ -150,10 +150,10 @@ export default function RecordsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
-  // Refetch inspections when ownership filter changes
+  // Refetch all record types when ownership filter changes
   useEffect(() => {
     if (userId) {
-      fetchInspections(userId, filters.ownershipFilter)
+      fetchAllData(userId, filters.ownershipFilter)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.ownershipFilter, userId])
@@ -254,25 +254,29 @@ export default function RecordsPage() {
     const hiveParam = searchParams.get('hive')
     const typeParam = searchParams.get('type')
 
-    if (hiveParam && !typeParam && hives.length > 0) {
-      setHiveId(hiveParam)
-      router.replace('/dashboard/records')
-      return
-    }
-
-    if (hiveParam && typeParam && hives.length > 0) {
-      setHiveId(hiveParam)
-      const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest', 'archive']
-      if (validTypes.includes(typeParam)) {
-        const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
-                          typeParam === 'varroa-treatment' ? 'varroa_treatment' :
-                          typeParam as RecordType
-
-        handleNewRecord(mappedType, hiveParam)
-        router.replace('/dashboard/records')
+    if (hiveParam && hives.length > 0) {
+      // Auto-switch to 'all' if the hive is shared (not owned by current user)
+      const targetHive = hives.find(h => h.id === hiveParam)
+      if (targetHive && userId && targetHive.user_id !== userId) {
+        setOwnershipFilter('all')
       }
+
+      setHiveId(hiveParam)
+
+      if (typeParam) {
+        const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest', 'archive']
+        if (validTypes.includes(typeParam)) {
+          const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
+                            typeParam === 'varroa-treatment' ? 'varroa_treatment' :
+                            typeParam as RecordType
+
+          handleNewRecord(mappedType, hiveParam)
+        }
+      }
+
+      router.replace('/dashboard/records')
     }
-  }, [searchParams, hives, router, userId, setHiveId, handleNewRecord])
+  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, handleNewRecord])
 
 
   // Weather fetching

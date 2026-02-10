@@ -1,3 +1,32 @@
+# Fix: Shared Hive Records Not Visible to Team Members
+
+## Tasks
+
+- [x] **Task 1:** Fix ownership filter change to refetch ALL record types (not just inspections)
+  - File: `src/app/dashboard/records/page.tsx` lines 153-159
+  - Replaced `fetchInspections` with `fetchAllData` so all record types update
+
+- [x] **Task 2:** Auto-set ownership filter to 'all' when URL hive param is a shared hive
+  - File: `src/app/dashboard/records/page.tsx` lines 253-274
+  - Checks if URL hive param is owned by current user
+  - If not (shared hive), auto-sets ownership filter to 'all'
+
+- [ ] **Task 3:** User testing - verify records are visible for shared hives
+
+## Review
+
+### Changes Made
+**File:** `src/app/dashboard/records/page.tsx` (2 changes)
+
+**Change 1 (line ~154):** Replaced `fetchInspections(userId, filters.ownershipFilter)` with `fetchAllData(userId, filters.ownershipFilter)` in the ownership filter change effect. Previously, switching from 'my' to 'team' or 'all' only refetched inspections, leaving treatments, checks, feedings, and harvests stale.
+
+**Change 2 (lines ~253-276):** Added shared hive detection in the URL params handler. When a `?hive=` param points to a hive not owned by the current user, the ownership filter auto-switches to 'all'. This ensures team members navigating from hive detail "View Records" button or QR scan will see the shared hive's records.
+
+### Root Cause
+Database RLS was correct (`can_access_hive` returns TRUE, all functions are SECURITY DEFINER). The bug was purely frontend - the records page defaulted to 'my' ownership filter and never fetched shared hive records, and changing the filter only refetched inspections.
+
+---
+
 # Phenology Chart - Period Filter
 
 ## Overview
