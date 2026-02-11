@@ -20,6 +20,7 @@ export interface Hive {
   configuration: HiveConfiguration | null
   status: string
   archived_at: string | null
+  user_id: string
 }
 
 export interface Apiary {
