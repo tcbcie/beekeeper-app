@@ -46,6 +46,22 @@ export default function QrTagsPage() {
   // Delete confirmation
   const [deletingTagId, setDeletingTagId] = useState<string | null>(null)
 
+  // Load logo as base64 for QR codes
+  const [logoBase64, setLogoBase64] = useState<string>('')
+  useEffect(() => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx?.drawImage(img, 0, 0)
+      setLogoBase64(canvas.toDataURL('image/png'))
+    }
+    img.src = '/logo_trans.png'
+  }, [])
+
   const fetchTags = useCallback(async (uid: string) => {
     const { data, error } = await supabase
       .from('qr_tags')
@@ -215,9 +231,9 @@ export default function QrTagsPage() {
       return `
         <div style="display:inline-block;text-align:center;padding:16px;page-break-inside:avoid;">
           ${imgTag}
-          <p style="margin:4px 0 0;font-size:12px;font-weight:bold;">${tag.code}</p>
+          <p style="margin:4px 0 0;font-size:9px;color:#999;">www.hivecraic.com</p>
+          <p style="margin:2px 0 0;font-size:12px;font-weight:bold;">${tag.code}</p>
           ${tag.label ? `<p style="margin:2px 0 0;font-size:10px;color:#666;">${escapeHtml(tag.label)}</p>` : ''}
-          <p style="margin:2px 0 0;font-size:9px;color:#999;">www.hivecraic.com</p>
         </div>
       `
     }).join('')
@@ -477,8 +493,14 @@ export default function QrTagsPage() {
               data-tag-code={tag.code}
               value={url}
               size={150}
-              level="M"
+              level="H"
               includeMargin
+              imageSettings={logoBase64 ? {
+                src: logoBase64,
+                height: 30,
+                width: 30,
+                excavate: true,
+              } : undefined}
             />
           )
         })}
