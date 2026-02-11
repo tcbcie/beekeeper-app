@@ -79,7 +79,7 @@ export default function Sidebar() {
               href={item.href}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-emerald-600 text-white font-medium border-l-2 border-emerald-400'
+                  ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
                   : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 hover:text-foreground'
               } ${isCollapsed ? 'justify-center px-2' : ''}`}
               title={isCollapsed ? item.label : undefined}

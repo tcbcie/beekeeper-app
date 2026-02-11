@@ -2674,3 +2674,39 @@ These are associations that don't have emails in the CSV, so they remain unchang
 - 5 name corrections (Fingal apostrophe, drop "The" from Royal County, drop "County" from Offaly, drop "East" from Waterford, "&" to "and" for Derry)
 - 1 county_area update (Digges: Cavan → Cavan/Leitrim)
 - County info from CSV parentheticals was mapped to existing `county_area` column rather than appended to names
+
+---
+
+# P1 Typography Upgrade + P5 Micro-animations
+
+## Tasks
+
+- [x] **1. Update font imports in layout.tsx** — Replace Geist with DM_Serif_Display + DM_Sans, update CSS variables
+- [x] **2. Update globals.css font theme** — Change `--font-sans` to use new DM Sans var, add `--font-serif`, update body fallback
+- [x] **3. Add animation utilities in globals.css** — Add `animate-fade-in-up` keyframe + utility, stagger delay classes
+- [x] **4. Apply entrance animation to StatCard** — Add `animate-fade-in-up` class to card containers
+- [x] **5. Add stagger delays to dashboard stat cards** — Pass stagger index so cards animate in sequence
+- [x] **6. Update Sidebar active state colour** — Change `bg-emerald-600` to `bg-forest-600`
+- [x] **7. Update feature documentation** — Create/update docs for this change
+
+## Review
+
+### Changes Summary
+
+**Typography (5 files touched):**
+- Replaced Geist Sans with DM Sans (body) and DM Serif Display (available for headings via `font-serif`)
+- Updated CSS theme variables: `--font-sans` now references `--font-dm-sans`, new `--font-serif` references `--font-dm-serif`
+- Body fallback chain updated from `Arial, Helvetica, sans-serif` to `var(--font-dm-sans), 'DM Sans', Arial, Helvetica, sans-serif`
+- Geist Mono kept for monospace usage
+
+**Micro-animations:**
+- Added `fade-in-up` keyframe (12px translateY + opacity, 0.4s ease-out)
+- Added `.animate-fade-in-up` utility class and `.stagger-1` through `.stagger-6` delay classes (80ms increments)
+- StatCard now accepts a `className` prop and applies `animate-fade-in-up` to both link and div variants
+- Dashboard "My Beekeeping" stat cards use `stagger-1` through `stagger-3` for sequential entrance
+
+**Sidebar:**
+- Active nav item colour changed from `bg-emerald-600`/`border-emerald-400` to `bg-forest-600`/`border-forest-400` to match custom design tokens
+
+**Documentation:**
+- Created `docs/feature/typography-and-animations.md` with full details
