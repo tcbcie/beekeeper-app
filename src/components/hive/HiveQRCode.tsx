@@ -39,7 +39,7 @@ export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
 
     img.onload = () => {
       canvas.width = img.width
-      canvas.height = img.height + 14
+      canvas.height = img.height + 34
       if (ctx) {
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -48,6 +48,9 @@ export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
         ctx.font = '14px sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText('www.hivecraic.com', canvas.width / 2, img.height + 8)
+        ctx.fillStyle = '#333333'
+        ctx.font = 'bold 16px sans-serif'
+        ctx.fillText(tagCode, canvas.width / 2, img.height + 28)
       }
       const pngUrl = canvas.toDataURL('image/png')
       const downloadLink = document.createElement('a')
@@ -78,6 +81,7 @@ export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
           <h2>Hive ${escaped}</h2>
           ${svgData}
           <p style="color:#666;font-size:14px;margin-top:8px;">www.hivecraic.com</p>
+          <p style="color:#333;font-size:16px;font-weight:bold;margin-top:2px;">${tagCode}</p>
           <script>window.onload=function(){window.print();window.close();}</script>
         </body>
       </html>
@@ -102,6 +106,7 @@ export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
         } : undefined}
       />
       <p className="text-sm text-text-tertiary font-medium">www.hivecraic.com</p>
+      <p className="text-sm font-bold text-foreground tracking-wider">{tagCode}</p>
       <div className="flex gap-3">
         <button
           onClick={downloadQrCode}
