@@ -152,7 +152,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">My Beekeeping</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {statCards.map((card) => (
+          {statCards.map((card, index) => (
             <StatCard
               key={card.label}
               label={card.label}
@@ -160,6 +160,7 @@ export default function DashboardPage() {
               icon={card.icon}
               color={card.color}
               href={card.href}
+              className={`stagger-${index + 1}`}
             />
           ))}
         </div>

@@ -6,9 +6,10 @@ interface StatCardProps {
   icon: string
   color: string
   href?: string
+  className?: string
 }
 
-export default function StatCard({ label, value, icon, color, href }: StatCardProps) {
+export default function StatCard({ label, value, icon, color, href, className = '' }: StatCardProps) {
   const cardContent = (
     <div className="flex items-center justify-between">
       <div>
@@ -25,7 +26,7 @@ export default function StatCard({ label, value, icon, color, href }: StatCardPr
     return (
       <Link
         href={href}
-        className="block bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-lg hover:border-forest-500 dark:hover:border-forest-400 transition-all cursor-pointer"
+        className={`block bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border hover:shadow-lg hover:border-forest-500 dark:hover:border-forest-400 transition-all cursor-pointer animate-fade-in-up ${className}`}
       >
         {cardContent}
       </Link>
@@ -33,7 +34,7 @@ export default function StatCard({ label, value, icon, color, href }: StatCardPr
   }
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+    <div className={`bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border animate-fade-in-up ${className}`}>
       {cardContent}
     </div>
   )
