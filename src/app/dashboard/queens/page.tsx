@@ -4,8 +4,9 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink } from 'lucide-react'
+import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
 
@@ -870,7 +871,7 @@ export default function QueensPage() {
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-border">
-            <thead className="bg-sage-100 dark:bg-slate-800/50">
+            <thead className="bg-sage-50 dark:bg-slate-800">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
                   Actions
@@ -989,7 +990,15 @@ export default function QueensPage() {
             </tbody>
           </table>
           {filteredQueens.length === 0 && (
-            <div className="text-center py-8 text-text-secondary">No queens found</div>
+            <div className="py-4">
+              <EmptyState
+                icon={Crown}
+                title="No Queens Found"
+                description="Track your queens, their lineage, marking colours, and performance records."
+                actionLabel="Add Queen"
+                actionOnClick={() => setShowForm(true)}
+              />
+            </div>
           )}
         </div>
       </div>

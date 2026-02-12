@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import UpcomingEvents from '@/components/UpcomingEvents'
 import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
@@ -66,7 +66,21 @@ export default function DashboardPage() {
     }
   }, [userId, fetchTeams, fetchTeamStats])
 
-  if (loading) return <LoadingSpinner text="Loading dashboard..." />
+  if (loading) return (
+    <div className="space-y-6">
+      <div className="h-9 w-56 bg-sage-100 dark:bg-slate-800 rounded animate-shimmer" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border space-y-3">
+        <SkeletonRow />
+        <SkeletonRow />
+        <SkeletonRow />
+      </div>
+    </div>
+  )
 
   // Check if user is a team member
   const isTeamMember = ownedTeams.length > 0 || memberTeams.length > 0

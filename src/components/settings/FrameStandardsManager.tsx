@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Ruler, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface FrameStandard {
   id: string
@@ -22,6 +24,8 @@ interface EditingStandard {
 }
 
 export default function FrameStandardsManager() {
+  const toast = useToast()
+  const confirm = useConfirm()
   const [standards, setStandards] = useState<FrameStandard[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -50,7 +54,7 @@ export default function FrameStandardsManager() {
 
   async function handleAdd() {
     if (!newStandard.label.trim() || newStandard.width_mm <= 0 || newStandard.height_mm <= 0) {
-      alert('Please fill in all fields with valid values')
+      toast.warning('Please fill in all fields with valid values')
       return
     }
 
@@ -70,7 +74,7 @@ export default function FrameStandardsManager() {
 
     if (error) {
       console.error('Error adding frame standard:', error)
-      alert('Failed to add frame standard. Please try again.')
+      toast.error('Failed to add frame standard. Please try again.')
     } else if (data) {
       setStandards(prev => [...prev, data].sort((a, b) => a.display_order - b.display_order))
       setNewStandard({ label: '', width_mm: 0, height_mm: 0 })
@@ -82,7 +86,7 @@ export default function FrameStandardsManager() {
   async function handleUpdate() {
     if (!editingStandard || !editingStandard.id) return
     if (!editingStandard.label.trim() || editingStandard.width_mm <= 0 || editingStandard.height_mm <= 0) {
-      alert('Please fill in all fields with valid values')
+      toast.warning('Please fill in all fields with valid values')
       return
     }
 
@@ -98,7 +102,7 @@ export default function FrameStandardsManager() {
 
     if (error) {
       console.error('Error updating frame standard:', error)
-      alert('Failed to update frame standard. Please try again.')
+      toast.error('Failed to update frame standard. Please try again.')
     } else {
       setStandards(prev => prev.map(s =>
         s.id === editingStandard.id
@@ -111,7 +115,13 @@ export default function FrameStandardsManager() {
   }
 
   async function handleDelete(id: string, label: string) {
-    if (!confirm(`Delete "${label}"?`)) return
+    const confirmed = await confirm({
+      title: 'Delete Frame Standard',
+      message: `Are you sure you want to delete "${label}"?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     const { error } = await supabase
       .from('frame_standards')
@@ -120,7 +130,7 @@ export default function FrameStandardsManager() {
 
     if (error) {
       console.error('Error deleting frame standard:', error)
-      alert('Failed to delete frame standard. Please try again.')
+      toast.error('Failed to delete frame standard. Please try again.')
     } else {
       setStandards(prev => prev.filter(s => s.id !== id))
     }

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import type {
   Hive,
   HiveInspection,
@@ -31,6 +32,7 @@ interface UseHiveDetailReturn {
 
 export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
   const toast = useToast()
+  const confirm = useConfirm()
   const [hive, setHive] = useState<Hive | null>(null)
   const [inspections, setInspections] = useState<HiveInspection[]>([])
   const [varroaChecks, setVarroaChecks] = useState<HiveVarroaCheck[]>([])
@@ -219,13 +221,12 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
   const handleUnarchive = useCallback(async () => {
     if (!hive) return
 
-    const confirmed = window.confirm(
-      `Are you sure you want to unarchive hive ${hive.hive_number}?\n\n` +
-      'This will:\n' +
-      '- Set the hive status back to active\n' +
-      '- Clear the archive date and reason\n' +
-      '- Make the hive visible in your active hives list'
-    )
+    const confirmed = await confirm({
+      title: 'Unarchive Hive',
+      message: `Are you sure you want to unarchive hive ${hive.hive_number}? This will set the hive status back to active, clear the archive date and reason, and make it visible in your active hives list.`,
+      confirmLabel: 'Unarchive',
+      variant: 'warning',
+    })
 
     if (!confirmed) return
 

@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Bell, BellOff, Settings, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 export default function NotificationStatusCard() {
+  const toast = useToast()
   const [permission, setPermission] = useState<NotificationPermission>('default')
   const [isSupported, setIsSupported] = useState(false)
 
@@ -84,7 +86,7 @@ To enable notifications:
       `.trim()
     }
 
-    alert(instructions)
+    toast.info(instructions, 10000)
   }
 
   const status = getStatusInfo()

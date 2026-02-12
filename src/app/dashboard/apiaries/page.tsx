@@ -2,8 +2,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus, Camera } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import EmptyState from '@/components/ui/EmptyState'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
@@ -808,9 +809,13 @@ export default function ApiariesPage() {
       </div>
 
       {apiaries.length === 0 && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-12 text-center text-text-secondary border border-border">
-          No apiaries found. Add your first location!
-        </div>
+        <EmptyState
+          icon={MapPinOff}
+          title="No Apiaries Yet"
+          description="Add your first apiary to start tracking your bee yard locations, coordinates, and weather data."
+          actionLabel="Add Apiary"
+          actionOnClick={() => setShowForm(true)}
+        />
       )}
 
       {/* Image Zoom Modal */}

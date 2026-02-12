@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
 
 interface FinancialRecordFormProps {
@@ -21,6 +22,7 @@ export default function FinancialRecordForm({
   onCancel,
   saving
 }: FinancialRecordFormProps) {
+  const toast = useToast()
   const [recordType, setRecordType] = useState<'income' | 'expense'>(record?.record_type || 'expense')
   const [transactionDate, setTransactionDate] = useState(
     record?.transaction_date || new Date().toISOString().split('T')[0]
@@ -44,13 +46,13 @@ export default function FinancialRecordForm({
     e.preventDefault()
 
     if (!categoryId) {
-      alert('Please select a category')
+      toast.warning('Please select a category')
       return
     }
 
     const parsedAmount = parseFloat(amount)
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert('Please enter a valid amount greater than 0')
+      toast.warning('Please enter a valid amount greater than 0')
       return
     }
 
