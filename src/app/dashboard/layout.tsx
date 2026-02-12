@@ -49,7 +49,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
 
     checkAccount()
-  }, [user, authLoading, router])
+  }, [user, authLoading, router, toast])
 
   // Initialize update manager
   useEffect(() => {
@@ -82,7 +82,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return () => {
       clearInterval(accountCheckInterval)
     }
-  }, [user, router])
+  }, [user, router, toast])
 
   if (authLoading || checkingAccount) {
     return (

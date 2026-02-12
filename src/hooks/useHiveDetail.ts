@@ -259,7 +259,7 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
       console.error('Error unarchiving hive:', error)
       toast.error('Failed to unarchive hive')
     }
-  }, [hive, toast, fetchHiveData])
+  }, [hive, toast, fetchHiveData, confirm])
 
   return {
     hive,
