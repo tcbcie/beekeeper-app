@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Search, Calendar, CreditCard, Euro, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -34,11 +34,7 @@ export default function SubscriptionHistoryPage() {
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | 'credit_card' | 'registration_code'>('all')
   const [dateRangeFilter, setDateRangeFilter] = useState<'all' | '30days' | '90days' | '1year'>('all')
 
-  useEffect(() => {
-    fetchSubscriptionHistory()
-  }, [])
-
-  const fetchSubscriptionHistory = async () => {
+  const fetchSubscriptionHistory = useCallback(async () => {
     setLoading(true)
     try {
       // Fetch subscription history
@@ -80,7 +76,11 @@ export default function SubscriptionHistoryPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    fetchSubscriptionHistory()
+  }, [fetchSubscriptionHistory])
 
   // Filter records based on search and filters
   const filteredRecords = subscriptionHistory.filter(record => {
