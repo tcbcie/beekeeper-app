@@ -364,7 +364,7 @@ export default function QrTagsPage() {
           {/* Desktop Table */}
           <div className="hidden md:block bg-surface rounded-lg shadow-lg border border-border overflow-hidden">
             <table className="w-full">
-              <thead className="bg-sage-100 dark:bg-slate-800">
+              <thead className="bg-sage-50 dark:bg-slate-800">
                 <tr>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Code</th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Label</th>

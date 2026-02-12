@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 import { PurchaseItem, DropdownValue } from '@/types/records'
 
 interface PurchaseItemFormProps {
@@ -19,6 +20,7 @@ export default function PurchaseItemForm({
   onCancel,
   saving
 }: PurchaseItemFormProps) {
+  const toast = useToast()
   const [name, setName] = useState(item?.name || '')
   const [quantity, setQuantity] = useState(item?.quantity?.toString() || '')
   const [unit, setUnit] = useState(item?.unit || '')
@@ -33,7 +35,7 @@ export default function PurchaseItemForm({
     e.preventDefault()
 
     if (!name.trim()) {
-      alert('Please enter an item name')
+      toast.warning('Please enter an item name')
       return
     }
 

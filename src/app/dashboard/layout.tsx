@@ -14,9 +14,11 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import ImpersonationBanner from '@/components/ImpersonationBanner'
 import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
+import { useToast } from '@/components/ui/Toast'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth()
+  const toast = useToast()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [checkingAccount, setCheckingAccount] = useState(true)
   const router = useRouter()
@@ -37,7 +39,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (!hasShownDisabledAlert.current) {
           hasShownDisabledAlert.current = true
           await supabase.auth.signOut({ scope: 'local' })
-          alert('Your account has been deactivated. You can request account reactivation from the login page.')
+          toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
           router.push('/login')
         }
         return
@@ -71,7 +73,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         if (!hasShownDisabledAlert.current) {
           hasShownDisabledAlert.current = true
           await supabase.auth.signOut({ scope: 'local' })
-          alert('Your account has been deactivated. You can request account reactivation from the login page.')
+          toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
           router.push('/login')
         }
       }

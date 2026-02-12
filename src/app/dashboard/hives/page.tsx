@@ -2,10 +2,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore, Scale } from 'lucide-react'
+import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore, Scale, Archive } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 
 interface Apiary {
@@ -1929,11 +1930,15 @@ export default function HivesPage() {
       </div>
 
       {filteredHives.length === 0 && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-12 text-center text-text-secondary border border-border">
-          {filterApiaryId
+        <EmptyState
+          icon={Archive}
+          title="No Hives Found"
+          description={filterApiaryId
             ? 'No hives found for this apiary. Select "All Apiaries" or add a new hive.'
-            : 'No hives found. Add your first hive!'}
-        </div>
+            : 'Add your first hive to start tracking colonies, inspections, and queen records.'}
+          actionLabel={!filterApiaryId ? 'Add Hive' : undefined}
+          actionOnClick={!filterApiaryId ? () => setShowForm(true) : undefined}
+        />
       )}
     </div>
   )

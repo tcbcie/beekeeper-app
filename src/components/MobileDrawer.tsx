@@ -73,7 +73,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 z-[60] md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] md:hidden transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -110,7 +110,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                     href={item.href}
                     className={`flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-200 touch-manipulation min-h-[48px] ${
                       isActive
-                        ? 'bg-emerald-600 text-white font-medium border-l-2 border-emerald-400'
+                        ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
                         : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 active:bg-sage-200 dark:active:bg-slate-700 hover:text-foreground'
                     }`}
                   >

@@ -90,7 +90,7 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
   }
 
   return (
-    <nav className="bg-surface dark:bg-surface shadow-lg border-b border-border sticky top-0 z-30">
+    <nav className="bg-white/80 dark:bg-surface/80 backdrop-blur-xl shadow-lg border-b border-border sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">

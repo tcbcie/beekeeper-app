@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "./providers/theme-provider";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
@@ -65,7 +66,9 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <ToastProvider>
-            {children}
+            <ConfirmProvider>
+              {children}
+            </ConfirmProvider>
           </ToastProvider>
         </ThemeProvider>
         <ServiceWorkerRegistration />

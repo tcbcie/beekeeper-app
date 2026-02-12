@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { HelpCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
 
 interface VarroaTreatmentFormProps {
@@ -27,6 +28,7 @@ export default function VarroaTreatmentForm({
   onShowIpmTips,
   onFetchWeather
 }: VarroaTreatmentFormProps) {
+  const toast = useToast()
   const [formData, setFormData] = useState<VarroaTreatment>(treatment || {
     id: '',
     hive_id: '',
@@ -112,19 +114,19 @@ export default function VarroaTreatmentForm({
 
     // Validate required fields
     if (!formData.hive_id) {
-      alert('Please select a hive')
+      toast.warning('Please select a hive')
       return
     }
     if (!formData.treatment_date) {
-      alert('Please enter a treatment date')
+      toast.warning('Please enter a treatment date')
       return
     }
     if (!formData.treatment_type && !otherTreatmentType) {
-      alert('Please select or specify a treatment product')
+      toast.warning('Please select or specify a treatment product')
       return
     }
     if (!formData.dosage?.trim()) {
-      alert('Please enter the dosage')
+      toast.warning('Please enter the dosage')
       return
     }
 

@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Search, BookText, Plus, Edit2, Trash2, Save, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 const ITEMS_PER_PAGE = 15
 
@@ -21,6 +23,8 @@ interface EditingTerm {
 }
 
 export default function TerminologyTable() {
+  const toast = useToast()
+  const confirm = useConfirm()
   const [terms, setTerms] = useState<TerminologyEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -71,7 +75,7 @@ export default function TerminologyTable() {
 
   async function handleAdd() {
     if (!newTerm.english_term.trim() || !newTerm.german_term.trim()) {
-      alert('Please fill in both English and German terms')
+      toast.warning('Please fill in both English and German terms')
       return
     }
 
@@ -87,7 +91,7 @@ export default function TerminologyTable() {
 
     if (error) {
       console.error('Error adding term:', error)
-      alert('Failed to add term. Please try again.')
+      toast.error('Failed to add term. Please try again.')
     } else if (data) {
       setTerms(prev => [...prev, data].sort((a, b) =>
         a.english_term.localeCompare(b.english_term)
@@ -101,7 +105,7 @@ export default function TerminologyTable() {
   async function handleUpdate() {
     if (!editingTerm || !editingTerm.id) return
     if (!editingTerm.english_term.trim() || !editingTerm.german_term.trim()) {
-      alert('Please fill in both English and German terms')
+      toast.warning('Please fill in both English and German terms')
       return
     }
 
@@ -116,7 +120,7 @@ export default function TerminologyTable() {
 
     if (error) {
       console.error('Error updating term:', error)
-      alert('Failed to update term. Please try again.')
+      toast.error('Failed to update term. Please try again.')
     } else {
       setTerms(prev => prev.map(t =>
         t.id === editingTerm.id
@@ -129,7 +133,13 @@ export default function TerminologyTable() {
   }
 
   async function handleDelete(id: string, englishTerm: string) {
-    if (!confirm(`Delete "${englishTerm}"?`)) return
+    const confirmed = await confirm({
+      title: 'Delete Term',
+      message: `Are you sure you want to delete "${englishTerm}"?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     const { error } = await supabase
       .from('terminology')
@@ -138,7 +148,7 @@ export default function TerminologyTable() {
 
     if (error) {
       console.error('Error deleting term:', error)
-      alert('Failed to delete term. Please try again.')
+      toast.error('Failed to delete term. Please try again.')
     } else {
       setTerms(prev => prev.filter(t => t.id !== id))
     }

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Search, Calendar, CreditCard, Euro, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { useToast } from '@/components/ui/Toast'
 
 interface SubscriptionHistoryRecord {
   id: string
@@ -26,6 +27,7 @@ interface UserProfile {
 
 export default function SubscriptionHistoryPage() {
   const router = useRouter()
+  const toast = useToast()
   const [subscriptionHistory, setSubscriptionHistory] = useState<SubscriptionHistoryRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -74,7 +76,7 @@ export default function SubscriptionHistoryPage() {
       }
     } catch (error) {
       console.error('❌ Error fetching subscription history:', error)
-      alert('Failed to fetch subscription history. Make sure you have admin permissions.')
+      toast.error('Failed to fetch subscription history. Make sure you have admin permissions.')
     } finally {
       setLoading(false)
     }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { MapPin, Crosshair, X, Circle, Layers, Map, Satellite, Maximize2, Minimize2 } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
@@ -206,6 +207,7 @@ export default function MapLocationPicker({
   existingApiaries = [],
   editingApiaryId,
 }: MapLocationPickerProps) {
+  const toast = useToast()
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const marker = useRef<mapboxgl.Marker | null>(null)
@@ -573,7 +575,7 @@ export default function MapLocationPicker({
   // Get user's current location
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser')
+      toast.warning('Geolocation is not supported by your browser')
       return
     }
 
@@ -589,7 +591,7 @@ export default function MapLocationPicker({
       },
       (error) => {
         console.error('Geolocation error:', error)
-        alert('Unable to get your location. Please enable location services.')
+        toast.warning('Unable to get your location. Please enable location services.')
         setIsLocating(false)
       },
       { enableHighAccuracy: true, timeout: 10000 }

@@ -110,6 +110,14 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
   const isDark = typeof window !== 'undefined' &&
     document.documentElement.classList.contains('dark')
 
+  // Read theme colours from CSS variables
+  const getCssVar = (name: string) =>
+    typeof window !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+      : ''
+  const weightColor = getCssVar('--viz-warning') || '#f59e0b'
+  const tempColor = getCssVar('--viz-info') || '#3b82f6'
+
   // Prepare chart data
   const chartData = {
     labels: history.map(reading => new Date(reading.time)),
@@ -117,8 +125,8 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
       {
         label: 'Weight (kg)',
         data: history.map(reading => reading.weight_kg_corrected ?? reading.weight_kg ?? null),
-        borderColor: 'rgb(217, 119, 6)', // amber-600
-        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+        borderColor: weightColor,
+        backgroundColor: weightColor + '1a',
         yAxisID: 'y',
         tension: 0.3,
         pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
@@ -126,8 +134,8 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
       {
         label: 'Temperature (°C)',
         data: history.map(reading => reading.t_i ?? reading.t ?? reading.t_0 ?? null),
-        borderColor: 'rgb(37, 99, 235)', // blue-600
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        borderColor: tempColor,
+        backgroundColor: tempColor + '1a',
         yAxisID: 'y1',
         tension: 0.3,
         pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
@@ -157,6 +165,9 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
     interaction: {
       mode: 'index',
       intersect: false,
+    },
+    font: {
+      family: 'inherit',
     },
     plugins: {
       legend: {
@@ -204,7 +215,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         title: {
           display: true,
           text: 'Weight (kg)',
-          color: 'rgb(217, 119, 6)',
+          color: weightColor,
         },
         ticks: {
           color: isDark ? '#9ca3af' : '#374151',
@@ -220,7 +231,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         title: {
           display: true,
           text: 'Temp (°C)',
-          color: 'rgb(37, 99, 235)',
+          color: tempColor,
         },
         ticks: {
           color: isDark ? '#9ca3af' : '#374151',

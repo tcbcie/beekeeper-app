@@ -3,9 +3,10 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
-import { Home, X } from 'lucide-react'
+import { Home, X, ClipboardList } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
@@ -1065,9 +1066,11 @@ export default function RecordsPage() {
         {/* Records List */}
         <div className="space-y-4">
           {filteredRecords.length === 0 ? (
-            <div className="text-center py-12 text-text-secondary">
-              <p>No records found matching your filters.</p>
-            </div>
+            <EmptyState
+              icon={ClipboardList}
+              title="No Records Found"
+              description="No records match your current filters. Try adjusting your filters or add a new record."
+            />
           ) : (
             filteredRecords.map(record => {
               switch (record.record_type) {
