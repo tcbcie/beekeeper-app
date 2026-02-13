@@ -254,6 +254,7 @@ export default function RecordsPage() {
   useEffect(() => {
     const hiveParam = searchParams.get('hive')
     const typeParam = searchParams.get('type')
+    const createParam = searchParams.get('create')
 
     if (hiveParam && hives.length > 0) {
       // Auto-switch to 'all' if the hive is shared (not owned by current user)
@@ -275,6 +276,13 @@ export default function RecordsPage() {
         }
       }
 
+      router.replace('/dashboard/records')
+    } else if (createParam) {
+      // Handle quick action links from dashboard (no hive pre-selected)
+      const validTypes: RecordType[] = ['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest']
+      if (validTypes.includes(createParam as RecordType)) {
+        handleNewRecord(createParam as RecordType)
+      }
       router.replace('/dashboard/records')
     }
   }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, handleNewRecord])
