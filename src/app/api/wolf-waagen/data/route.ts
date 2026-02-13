@@ -91,8 +91,12 @@ export async function GET(request: NextRequest) {
     // Fetch latest sensor values and historical data for weight changes
     // Execute sequentially with error handling to avoid rate limiting (429 errors)
     const now = Math.floor(Date.now() / 1000)
+    const oneDayAgo = now - (24 * 60 * 60)
+    const twoDaysAgo = now - (48 * 60 * 60)
     const sevenDaysAgo = now - (7 * 24 * 60 * 60)
+    const fourteenDaysAgo = now - (14 * 24 * 60 * 60)
     const thirtyDaysAgo = now - (30 * 24 * 60 * 60)
+    const sixtyDaysAgo = now - (60 * 24 * 60 * 60)
 
     // Helper to calculate weight change from history array
     const calcWeightChange = (history: { weight_kg?: number }[]): number | null => {
@@ -114,20 +118,42 @@ export async function GET(request: NextRequest) {
       console.warn('Wolf lastValues fetch failed:', err)
     }
 
-    // Fetch 7-day history (optional - for weight change calculation)
+    // Fetch current and previous period histories for weight change comparisons
     let history7d: WolfParsedReading[] = []
+    let history30d: WolfParsedReading[] = []
+    let historyPrev24h: WolfParsedReading[] = []
+    let historyPrev7d: WolfParsedReading[] = []
+    let historyPrev30d: WolfParsedReading[] = []
+
     try {
       history7d = await wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily')
     } catch (err) {
       console.warn('Wolf 7d history fetch failed:', err)
     }
 
-    // Fetch 30-day history (optional - for weight change calculation)
-    let history30d: WolfParsedReading[] = []
     try {
       history30d = await wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily')
     } catch (err) {
       console.warn('Wolf 30d history fetch failed:', err)
+    }
+
+    // Fetch previous period histories (for bracket comparison values)
+    try {
+      historyPrev24h = await wolfGetMeasurements(wolfApiToken, scaleId, twoDaysAgo, oneDayAgo, 'daily')
+    } catch (err) {
+      console.warn('Wolf prev 24h history fetch failed:', err)
+    }
+
+    try {
+      historyPrev7d = await wolfGetMeasurements(wolfApiToken, scaleId, fourteenDaysAgo, sevenDaysAgo, 'daily')
+    } catch (err) {
+      console.warn('Wolf prev 7d history fetch failed:', err)
+    }
+
+    try {
+      historyPrev30d = await wolfGetMeasurements(wolfApiToken, scaleId, sixtyDaysAgo, thirtyDaysAgo, 'daily')
+    } catch (err) {
+      console.warn('Wolf prev 30d history fetch failed:', err)
     }
 
     // Battery voltage is optional
@@ -159,6 +185,11 @@ export async function GET(request: NextRequest) {
     const weightChange30d = rawWeightChange30d !== null
       ? rawWeightChange30d - interventions30d
       : null
+
+    // Calculate previous period changes (shown in brackets for comparison)
+    const prevWeightChange24h = calcWeightChange(historyPrev24h)
+    const prevWeightChange7d = calcWeightChange(historyPrev7d)
+    const prevWeightChange30d = calcWeightChange(historyPrev30d)
 
     let history = null
     if (period || (customStart && customEnd)) {
@@ -219,6 +250,9 @@ export async function GET(request: NextRequest) {
       weightChange24h,
       weightChange7d,
       weightChange30d,
+      prevWeightChange24h,
+      prevWeightChange7d,
+      prevWeightChange30d,
     })
   } catch (error) {
     console.error('Wolf Waagen data error:', error)
