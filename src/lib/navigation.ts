@@ -33,10 +33,10 @@ export const baseNavItems: NavItem[] = [
   { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg, group: 'manage' },
   { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity' },
   { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity' },
-  { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText, group: 'insights' },
   { href: '/dashboard/research', label: 'Research', icon: FlaskConical, group: 'insights' },
   { href: '/dashboard/community-map', label: 'Community Map', icon: Users, group: 'insights' },
+  { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
   { href: '/dashboard/profile', label: 'Profile', icon: User, pinToBottom: true },
   { href: '/dashboard/about', label: 'About', icon: Info, pinToBottom: true },
 ]
