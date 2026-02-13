@@ -182,9 +182,9 @@ export default function ApiaryDetailPage() {
               >
                 <div className="flex items-center gap-3">
                   <span className="font-medium text-foreground">{hive.hive_number}</span>
-                  {hive.queens && (
+                  {hive.queens?.[0] && (
                     <span className="text-xs text-text-secondary">
-                      Queen: {hive.queens.queen_number}
+                      Queen: {hive.queens[0].queen_number}
                     </span>
                   )}
                 </div>

@@ -12,7 +12,7 @@ interface ApiaryHive {
     id: string
     queen_number: string
     marking_color?: string
-  }
+  }[]
 }
 
 interface ApiaryRecentRecord {
@@ -96,22 +96,22 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
           supabase.from('harvests').select('id, harvest_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('harvest_date', { ascending: false }).limit(3),
         ])
 
-        type RecordRow = { id: string; hive_id: string; hives: { hive_number: string } }
+        type RecordRow = { id: string; hive_id: string; hives: { hive_number: string }[] }
 
         ;(inspRes.data || []).forEach((r: RecordRow & { inspection_date: string }) => {
-          records.push({ id: r.id, date: r.inspection_date, type: 'Inspection', hive_number: r.hives?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.inspection_date, type: 'Inspection', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
         })
         ;(treatRes.data || []).forEach((r: RecordRow & { treatment_date: string }) => {
-          records.push({ id: r.id, date: r.treatment_date, type: 'Treatment', hive_number: r.hives?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.treatment_date, type: 'Treatment', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
         })
         ;(checkRes.data || []).forEach((r: RecordRow & { check_date: string }) => {
-          records.push({ id: r.id, date: r.check_date, type: 'Varroa Check', hive_number: r.hives?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.check_date, type: 'Varroa Check', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
         })
         ;(feedRes.data || []).forEach((r: RecordRow & { feed_date: string }) => {
-          records.push({ id: r.id, date: r.feed_date, type: 'Feeding', hive_number: r.hives?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.feed_date, type: 'Feeding', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
         })
         ;(harvestRes.data || []).forEach((r: RecordRow & { harvest_date: string }) => {
-          records.push({ id: r.id, date: r.harvest_date, type: 'Harvest', hive_number: r.hives?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.harvest_date, type: 'Harvest', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
         })
 
         records.sort((a, b) => {

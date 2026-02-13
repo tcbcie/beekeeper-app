@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Edit2, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react'
@@ -13,6 +13,7 @@ export default function QueenDetailPage() {
   const params = useParams()
   const router = useRouter()
   const queenId = params.id as string
+  const [lineageExpanded, setLineageExpanded] = useState(true)
 
   const {
     queen,
@@ -215,7 +216,7 @@ export default function QueenDetailPage() {
       </div>
 
       {/* Lineage Tree */}
-      <QueenLineageTree queenId={queenId} />
+      <QueenLineageTree queenId={queenId} expanded={lineageExpanded} onToggle={() => setLineageExpanded(!lineageExpanded)} />
 
       {/* Offspring */}
       {offspring.length > 0 && (
