@@ -7,6 +7,7 @@ import { getUserRole, type UserRole } from '@/lib/auth'
 import {
   getTopItems,
   getGroupedItems,
+  getAfterGroupItems,
   getBottomItems,
   adminNavItems,
 } from '@/lib/navigation'
@@ -30,6 +31,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
   const topItems = getTopItems()
   const groupedItems = getGroupedItems()
+  const afterGroupItems = getAfterGroupItems()
   const bottomItems = getBottomItems()
 
   // Close drawer when route changes (only if drawer is open)
@@ -119,6 +121,16 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                 </div>
               </div>
             ))}
+
+            {/* After-group items (Tools) */}
+            <div className="space-y-2 mt-4">
+              {afterGroupItems.map(item => (
+                <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                  <item.icon size={24} />
+                  <span className="text-base">{item.label}</span>
+                </Link>
+              ))}
+            </div>
 
             {/* Divider */}
             <div className="border-t border-border my-4" />

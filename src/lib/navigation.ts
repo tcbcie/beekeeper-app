@@ -12,6 +12,7 @@ export interface NavItem {
   icon: LucideIcon
   group?: NavGroupId
   pinToBottom?: boolean
+  afterGroups?: boolean
 }
 
 export interface NavGroup {
@@ -36,7 +37,7 @@ export const baseNavItems: NavItem[] = [
   { href: '/dashboard/reports', label: 'Reports', icon: FileText, group: 'insights' },
   { href: '/dashboard/research', label: 'Research', icon: FlaskConical, group: 'insights' },
   { href: '/dashboard/community-map', label: 'Community Map', icon: Users, group: 'insights' },
-  { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
+  { href: '/dashboard/tools', label: 'Tools', icon: Wrench, afterGroups: true },
   { href: '/dashboard/profile', label: 'Profile', icon: User, pinToBottom: true },
   { href: '/dashboard/about', label: 'About', icon: Info, pinToBottom: true },
 ]
@@ -47,7 +48,12 @@ export const adminNavItems: NavItem[] = [
 
 /** Items with no group and not pinned to bottom (e.g. Overview) */
 export function getTopItems(): NavItem[] {
-  return baseNavItems.filter(item => !item.group && !item.pinToBottom)
+  return baseNavItems.filter(item => !item.group && !item.pinToBottom && !item.afterGroups)
+}
+
+/** Ungrouped items that render after all groups (e.g. Tools) */
+export function getAfterGroupItems(): NavItem[] {
+  return baseNavItems.filter(item => item.afterGroups)
 }
 
 /** Items grouped by NavGroupId, in group order */
