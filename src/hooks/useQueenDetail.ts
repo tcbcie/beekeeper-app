@@ -74,7 +74,7 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
         setHive({
           id: h.id,
           hive_number: h.hive_number,
-          apiary_name: h.apiaries?.name || null,
+          apiary_name: Array.isArray(h.apiaries) ? h.apiaries[0]?.name || null : h.apiaries?.name || null,
         })
       }
 
@@ -100,13 +100,13 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
           queen_seen: boolean
           eggs_present: boolean
           hive_id: string
-          hives: { hive_number: string }
+          hives: { hive_number: string }[]
         }>).map(s => ({
           id: s.id,
           inspection_date: s.inspection_date,
           queen_seen: s.queen_seen,
           eggs_present: s.eggs_present,
-          hive_number: s.hives?.hive_number || '',
+          hive_number: s.hives?.[0]?.hive_number || '',
           hive_id: s.hive_id,
         }))
         setSightings(sightingData)
