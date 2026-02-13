@@ -2,124 +2,32 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, ExternalLink, MoreVertical, ArchiveRestore, Scale, Archive } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, X, Scale, Archive } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
+import { Hive, HiveFormData } from '@/types/hive'
+import HiveListCard from '@/components/hive/HiveListCard'
 
-interface Apiary {
+interface HiveListApiary {
   id: string
   name: string
   user_id?: string
   is_shared?: boolean
 }
 
-interface Queen {
+interface HiveListQueen {
   id: string
   queen_number: string
   assigned_hive_id?: string | null
 }
 
-interface HiveConfiguration {
-  brood_boxes: number // Legacy field - will be deprecated
-  brood_boxes_full: number
-  brood_boxes_half: number
-  honey_supers: number
-  queen_excluder: boolean
-  feeder: boolean
-  feeder_type: string
-  entrance_reducer: boolean
-  varroa_mesh_floor: string
-  right_sized_broodbox: boolean
-  frame_orientation: string | null
-  hive_size: 'full' | 'nuc'
-}
-
-interface Colony {
-  id: string
-  colony_number: string
-  origin_type: string
-  origin_date: string
-  status: string
-}
-
-interface Hive {
-  id: string
-  hive_number: string
-  apiary_id: string | null
-  order_in_apiary: number | null
-  row_in_apiary: number | null
-  order_direction: 'entrances' | 'backs' | null
-  queen_id: string | null
-  queen_marked: boolean
-  queen_marking_color: string | null
-  queen_mated: boolean
-  queen_clipped: boolean
-  status: string
-  notes: string | null
-  colony_established_date: string | null
-  queen_installed_date: string | null
-  hive_type: string | null
-  configuration: HiveConfiguration | null
-  colony_id: string | null
-  user_id?: string
-  configuration_changed_at?: string | null
-  configuration_changed_by?: string | null
-  configuration_changer?: {
-    full_name: string | null
-    email: string
-  } | null
-  apiaries?: {
-    name: string
-  }
-  queens?: {
-    id: string
-    queen_number: string
-    marking_color?: string
-  }
-  colonies?: Colony
-  queen_last_seen?: string | null
-  eggs_last_present?: string | null
-  team_name?: string | null
-  is_shared?: boolean
-  shared_with_team?: string | null
-  archived_at?: string | null
-  archive_reason_id?: string | null
-  archive_notes?: string | null
-  last_record?: {
-    date: string
-    type: string
-  } | null
-  active_tasks_count?: number
-  beep_device_id?: string | null
-  wolf_scale_id?: string | null
-}
-
-interface FormData {
-  hive_number: string
-  apiary_id: string
-  order_in_apiary: number | null
-  row_in_apiary: number | null
-  order_direction: 'entrances' | 'backs'
-  queen_id: string
-  queen_marked: boolean
-  queen_marking_color: string
-  queen_mated: boolean
-  queen_clipped: boolean
-  status: string
-  notes: string
-  colony_established_date: string
-  queen_installed_date: string
-  hive_type: string
-  configuration: HiveConfiguration
-}
-
 export default function HivesPage() {
   const [hives, setHives] = useState<Hive[]>([])
-  const [apiaries, setApiaries] = useState<Apiary[]>([])
-  const [queens, setQueens] = useState<Queen[]>([])
+  const [apiaries, setApiaries] = useState<HiveListApiary[]>([])
+  const [queens, setQueens] = useState<HiveListQueen[]>([])
+
   const [showForm, setShowForm] = useState(false)
   const [editingHive, setEditingHive] = useState<Hive | null>(null)
   const [loading, setLoading] = useState(true)
@@ -134,9 +42,10 @@ export default function HivesPage() {
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active')
   const [scaleFilter, setScaleFilter] = useState(false)
+  const [sortOption, setSortOption] = useState<string>('default')
   const [filtersLoaded, setFiltersLoaded] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<HiveFormData>({
     hive_number: '',
     apiary_id: '',
     order_in_apiary: null,
@@ -376,6 +285,14 @@ export default function HivesPage() {
           .eq('completed', false)
       ])
 
+      // Build map of last inspection date per hive
+      const lastInspectionByHive = new Map<string, string>()
+      lastInspections?.forEach(i => {
+        if (!lastInspectionByHive.has(i.hive_id)) {
+          lastInspectionByHive.set(i.hive_id, i.inspection_date)
+        }
+      })
+
       // Build map of most recent record for each hive
       const lastRecordByHive = new Map<string, { date: string; type: string }>()
 
@@ -442,6 +359,7 @@ export default function HivesPage() {
           is_shared: isShared,
           shared_with_team: ownerSharedData?.name || null,
           last_record: lastRecord,
+          last_inspection_date: lastInspectionByHive.get(hive.id) || null,
           active_tasks_count: activeTasksByHive.get(hive.id) || 0,
         }
       })
@@ -480,7 +398,7 @@ export default function HivesPage() {
 
     const teamIds = teamMemberships?.map(tm => tm.team_id) || []
 
-    let sharedApiaries: Apiary[] = []
+    let sharedApiaries: HiveListApiary[] = []
     if (teamIds.length > 0) {
       // Get shared apiary IDs
       const { data: teamApiaries } = await supabase
@@ -514,7 +432,7 @@ export default function HivesPage() {
       ...sharedApiaries
     ]
 
-    setApiaries(allApiaries as Apiary[])
+    setApiaries(allApiaries as HiveListApiary[])
   }, [userId])
 
   const fetchQueens = useCallback(async (userIdParam?: string) => {
@@ -593,9 +511,9 @@ export default function HivesPage() {
           assigned_hive_id: assignmentMap.get(q.id) || null
         }))
 
-        setQueens(queensWithAssignments as Queen[])
+        setQueens(queensWithAssignments as HiveListQueen[])
       } else {
-        setQueens(data as Queen[])
+        setQueens(data as HiveListQueen[])
       }
     }
   }, [userId])
@@ -624,6 +542,11 @@ export default function HivesPage() {
       const savedScaleFilter = sessionStorage.getItem('hives_filter_scales')
       if (savedScaleFilter === 'true') {
         setScaleFilter(true)
+      }
+
+      const savedSort = sessionStorage.getItem('hives_sort')
+      if (savedSort) {
+        setSortOption(savedSort)
       }
 
       setFiltersLoaded(true)
@@ -1029,30 +952,41 @@ export default function HivesPage() {
       return true
     })
     .sort((a, b) => {
-      // First, sort by apiary name
-      const apiaryA = a.apiaries?.name || ''
-      const apiaryB = b.apiaries?.name || ''
-      if (apiaryA !== apiaryB) {
-        return apiaryA.localeCompare(apiaryB)
+      switch (sortOption) {
+        case 'hive_number':
+          return a.hive_number.localeCompare(b.hive_number, undefined, { numeric: true })
+        case 'last_inspected': {
+          const dateA = a.last_inspection_date ? new Date(a.last_inspection_date).getTime() : 0
+          const dateB = b.last_inspection_date ? new Date(b.last_inspection_date).getTime() : 0
+          return dateB - dateA
+        }
+        case 'status':
+          return (a.status || '').localeCompare(b.status || '')
+        default: {
+          // Default: Apiary > Row > Order > Hive Number
+          const apiaryA = a.apiaries?.name || ''
+          const apiaryB = b.apiaries?.name || ''
+          if (apiaryA !== apiaryB) return apiaryA.localeCompare(apiaryB)
+          const rowA = a.row_in_apiary ?? Number.MAX_SAFE_INTEGER
+          const rowB = b.row_in_apiary ?? Number.MAX_SAFE_INTEGER
+          if (rowA !== rowB) return rowA - rowB
+          const orderA = a.order_in_apiary ?? Number.MAX_SAFE_INTEGER
+          const orderB = b.order_in_apiary ?? Number.MAX_SAFE_INTEGER
+          if (orderA !== orderB) return orderA - orderB
+          return a.hive_number.localeCompare(b.hive_number)
+        }
       }
-
-      // Within same apiary, sort by row (nulls last)
-      const rowA = a.row_in_apiary ?? Number.MAX_SAFE_INTEGER
-      const rowB = b.row_in_apiary ?? Number.MAX_SAFE_INTEGER
-      if (rowA !== rowB) {
-        return rowA - rowB
-      }
-
-      // Within same row, sort by order (nulls last)
-      const orderA = a.order_in_apiary ?? Number.MAX_SAFE_INTEGER
-      const orderB = b.order_in_apiary ?? Number.MAX_SAFE_INTEGER
-      if (orderA !== orderB) {
-        return orderA - orderB
-      }
-
-      // Finally, sort by hive number as fallback
-      return a.hive_number.localeCompare(b.hive_number)
     })
+
+  // Summary stats
+  const activeCount = filteredHives.filter(h => !h.archived_at).length
+  const archivedCount = filteredHives.filter(h => h.archived_at).length
+  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000
+  const needInspectionCount = filteredHives.filter(h => {
+    if (h.archived_at) return false
+    if (!h.last_inspection_date) return true
+    return new Date(h.last_inspection_date).getTime() < fourteenDaysAgo
+  }).length
 
   if (loading) return <LoadingSpinner text="Loading hives..." />
 
@@ -1110,6 +1044,19 @@ export default function HivesPage() {
               <span className="text-sm whitespace-nowrap">With Scales</span>
             </label>
           )}
+          <select
+            value={sortOption}
+            onChange={(e) => {
+              setSortOption(e.target.value)
+              sessionStorage.setItem('hives_sort', e.target.value)
+            }}
+            className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
+          >
+            <option value="default">Sort: Default</option>
+            <option value="hive_number">Sort: Hive Number</option>
+            <option value="last_inspected">Sort: Last Inspected</option>
+            <option value="status">Sort: Status</option>
+          </select>
           <button
             onClick={() => setShowForm(!showForm)}
             className="px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto"
@@ -1626,306 +1573,25 @@ export default function HivesPage() {
         </div>
       )}
 
+      {/* Summary stats bar */}
+      {filteredHives.length > 0 && (
+        <p className="text-sm text-text-secondary">
+          {activeCount} Active | {archivedCount} Archived | {needInspectionCount} Need Inspection (14+ days)
+        </p>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredHives.map((hive) => (
-          <div key={hive.id} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border">
-            {/* Overview & Records Button - Top of Card */}
-            <button
-              onClick={() => router.push(`/dashboard/hives/${hive.id}`)}
-              className="w-full px-4 py-3 mb-4 text-sm bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-semibold shadow-sm min-h-[48px]"
-            >
-              Overview & Records
-            </button>
-
-            <div className="flex justify-between items-start mb-3">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                  {hive.hive_number}
-                  {hive.beep_device_id && (
-                    <span title="BEEP scale connected">
-                      <Scale size={18} className="text-amber-600" />
-                    </span>
-                  )}
-                  {hive.wolf_scale_id && (
-                    <span title="Wolf Waagen scale connected">
-                      <Scale size={18} className="text-blue-600" />
-                    </span>
-                  )}
-                </h3>
-                {hive.is_shared && hive.team_name && (
-                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
-                    <span>👥</span>
-                    <span>Shared via {hive.team_name}</span>
-                  </span>
-                )}
-                {!hive.is_shared && hive.shared_with_team && (
-                  <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-purple-300 dark:border-purple-800">
-                    <span>📤</span>
-                    <span>Shared with {hive.shared_with_team}</span>
-                  </span>
-                )}
-                {hive.archived_at && (
-                  <span className="px-2 py-0.5 bg-surface dark:bg-surface-elevated text-text-primary text-xs font-medium rounded flex items-center gap-1 w-fit border border-border">
-                    <span>📦</span>
-                    <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
-                  </span>
-                )}
-                {hive.active_tasks_count !== undefined && hive.active_tasks_count > 0 && (
-                  <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded flex items-center gap-1 w-fit border border-amber-400 dark:border-amber-700">
-                    <span>📋</span>
-                    <span className="font-bold">{hive.active_tasks_count}</span>
-                    <span>Active Task{hive.active_tasks_count > 1 ? 's' : ''}</span>
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
-                  hive.status === 'queenless' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800' :
-                  hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
-                  'bg-surface dark:bg-surface-elevated text-text-primary border border-border'
-                }`}>
-                  {hive.status}
-                </span>
-                {hive.archived_at && (
-                  <div className="relative context-menu-container">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setOpenMenuId(openMenuId === hive.id ? null : hive.id)
-                      }}
-                      className="p-1 hover:bg-sage-200 dark:hover:bg-slate-700 rounded transition-colors"
-                      aria-label="More options"
-                    >
-                      <MoreVertical size={16} className="text-text-secondary" />
-                    </button>
-                    {openMenuId === hive.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg z-10 min-w-[160px]">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleUnarchive(hive)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-forest-100 dark:hover:bg-forest-900/50 text-forest-600 dark:text-forest-400 flex items-center gap-2 rounded-lg transition-colors"
-                        >
-                          <ArchiveRestore size={16} />
-                          <span>Unarchive</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2 text-sm mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-text-tertiary">📍</span>
-                <span className="font-medium text-text-primary">{hive.apiaries?.name || 'No apiary'}</span>
-                {(hive.order_in_apiary || hive.row_in_apiary) && (
-                  <span className="text-xs text-text-tertiary ml-1">
-                    ({hive.row_in_apiary ? `Row ${hive.row_in_apiary}` : ''}{hive.row_in_apiary && hive.order_in_apiary ? ', ' : ''}{hive.order_in_apiary ? `Hive ${hive.order_in_apiary}` : ''})
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-text-tertiary">👑</span>
-                {hive.queens?.id ? (
-                  <span className="flex items-center gap-1">
-                    {hive.queens.marking_color && (
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        hive.queens.marking_color === 'White' ? 'bg-slate-100 dark:bg-slate-700 text-text-primary' :
-                        hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
-                        hive.queens.marking_color === 'Red' ? 'bg-red-200 text-red-900' :
-                        hive.queens.marking_color === 'Green' ? 'bg-green-200 text-green-900' :
-                        hive.queens.marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
-                        'bg-slate-100 dark:bg-slate-700 text-text-primary'
-                      }`}>
-                        {hive.queens.marking_color}
-                      </span>
-                    )}
-                    <span className="font-medium text-text-primary">Queen</span>
-                    <Link
-                      href={`/dashboard/queens?id=${hive.queens.id}`}
-                      className="text-forest-600 dark:text-forest-400 hover:text-forest-700 dark:hover:text-forest-300 hover:underline flex items-center gap-1"
-                    >
-                      {hive.queens.queen_number}
-                      <ExternalLink size={12} />
-                    </Link>
-                  </span>
-                ) : hive.queen_marked ? (
-                  <span className="flex items-center gap-1">
-                    {hive.queen_marking_color && (
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        hive.queen_marking_color === 'White' ? 'bg-slate-100 dark:bg-slate-700 text-text-primary' :
-                        hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
-                        hive.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
-                        hive.queen_marking_color === 'Green' ? 'bg-green-200 text-green-900' :
-                        hive.queen_marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
-                        'bg-slate-100 dark:bg-slate-700 text-text-primary'
-                      }`}>
-                        {hive.queen_marking_color}
-                      </span>
-                    )}
-                    <span className="font-medium text-text-primary">Queen</span>
-                  </span>
-                ) : (
-                  <span className="text-text-tertiary">No details</span>
-                )}
-              </div>
-              {hive.last_record && (
-                <div className="flex items-center gap-2">
-                  <span className="text-text-tertiary">📋</span>
-                  <span className="text-xs">
-                    <span className="font-medium text-text-secondary">{hive.last_record.type}</span>
-                    <span className="text-text-tertiary"> • {new Date(hive.last_record.date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-                  </span>
-                </div>
-              )}
-              {hive.notes && (
-                <div className="mt-3 p-2 bg-surface dark:bg-surface-elevated rounded text-text-primary text-xs border border-border">
-                  {hive.notes}
-                </div>
-              )}
-            </div>
-
-            {hive.configuration && (
-              <div className="mb-4 p-3 bg-surface dark:bg-surface-elevated rounded border border-forest-200 dark:border-forest-900/50">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-semibold text-forest-600 dark:text-forest-400">Hive Setup</div>
-                  {hive.configuration.hive_size && (
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      hive.configuration.hive_size === 'nuc'
-                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
-                        : 'bg-emerald-900/50 text-emerald-300 border border-emerald-800'
-                    }`}>
-                      {hive.configuration.hive_size === 'nuc' ? 'Nuc' : 'Full Size'}
-                    </span>
-                  )}
-                </div>
-
-                {/* Configuration Change Tracking - Only show for shared hives where user is not the owner */}
-                {hive.is_shared && hive.user_id !== userId && hive.configuration_changed_at && (
-                  <div className="mb-3 pb-2 border-b border-border">
-                    <div className="text-xs text-text-tertiary">
-                      <span className="font-medium">Last changed:</span>{' '}
-                      {new Date(hive.configuration_changed_at).toLocaleDateString('en-IE', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                      {hive.configuration_changer && (
-                        <>
-                          {' by '}
-                          <span className="font-medium text-text-primary">
-                            {hive.configuration_changer.full_name || hive.configuration_changer.email}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Visual Hive Stack - Half width for Nuc, full width for standard hive */}
-                <div className={`flex flex-col items-center gap-1 mb-3 ${hive.configuration.hive_size === 'nuc' ? 'w-1/2 mx-auto' : 'w-full'}`}>
-                  {/* Honey Supers (top to bottom) */}
-                  {Array.from({ length: hive.configuration.honey_supers }).map((_, i) => (
-                    <div key={`super-${i}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-center text-xs font-semibold">
-                      🍯 Super {i + 1}
-                    </div>
-                  ))}
-
-                  {/* Queen Excluder - always directly above brood boxes if present */}
-                  {hive.configuration.queen_excluder && (
-                    <div className="w-full h-3 bg-slate-300 dark:bg-slate-500 border-2 border-slate-500 dark:border-slate-600 rounded flex items-center justify-center text-xs font-bold">
-                      ═══
-                    </div>
-                  )}
-
-                  {/* Half-Size Brood Boxes (same height as honey supers) - Above full boxes */}
-                  {Array.from({ length: hive.configuration.brood_boxes_half || 0 }).map((_, i) => (
-                    <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-xs font-semibold">
-                      🐝 Brood Half {i + 1}
-                    </div>
-                  ))}
-
-                  {/* Full-Size Brood Boxes (top to bottom) - Below half boxes */}
-                  {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
-                    <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold relative">
-                      <span className="relative z-10">🐝 Brood Full {i + 1}</span>
-                      {/* Frame orientation visualization - show on bottom brood box */}
-                      {i === (hive.configuration?.brood_boxes_full || hive.configuration?.brood_boxes || 1) - 1 && hive.configuration?.frame_orientation && (
-                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none">
-                          {hive.configuration?.frame_orientation === 'warm' ? (
-                            // Warm way: horizontal lines (parallel to entrance)
-                            <div className="flex flex-col gap-0.5">
-                              <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
-                              <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
-                              <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
-                            </div>
-                          ) : (
-                            // Cold way: vertical lines (perpendicular to entrance)
-                            <div className="flex gap-0.5">
-                              <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
-                              <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
-                              <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Varroa Mesh Floor - always at the very bottom with feet */}
-                  <div className="w-full relative">
-                    <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-slate-200 dark:bg-slate-400' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
-                      {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
-                    </div>
-                    {/* Hive stand feet */}
-                    <div className="flex justify-between px-2 mt-0.5">
-                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
-                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
-                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
-                      <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Configuration Details */}
-                <div className="grid grid-cols-2 gap-2 text-xs text-text-primary">
-                  {hive.configuration.feeder_type && (
-                    <div className="flex items-center gap-1">
-                      <span>🍯</span>
-                      <span className="capitalize">{hive.configuration.feeder_type} feeder</span>
-                    </div>
-                  )}
-                  {hive.configuration.entrance_reducer && (
-                    <div className="flex items-center gap-1">
-                      <span>🚪</span>
-                      <span>Entrance reducer</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleEdit(hive)}
-                className="flex-1 px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/70 border border-blue-300 dark:border-blue-800 min-h-[44px]"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(hive.id)}
-                className="flex-1 px-3 py-2 text-sm bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/70 border border-red-300 dark:border-red-800 min-h-[44px]"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+          <HiveListCard
+            key={hive.id}
+            hive={hive}
+            userId={userId}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onUnarchive={handleUnarchive}
+            openMenuId={openMenuId}
+            setOpenMenuId={setOpenMenuId}
+          />
         ))}
       </div>
 

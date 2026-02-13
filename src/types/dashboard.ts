@@ -2,6 +2,7 @@
 
 export interface Inspection {
   id: string
+  hive_id: string
   inspection_date: string
   queen_seen: boolean
   hives?: {
@@ -95,6 +96,14 @@ export interface DashboardStats {
   apiaries: number
   hives: number
   recentInspections: number
+  queens: number
+  activeTasks: number
+}
+
+export interface AttentionAlerts {
+  overdueInspections: number
+  oldQueens: number
+  highVarroa: number
 }
 
 export interface TeamStats {

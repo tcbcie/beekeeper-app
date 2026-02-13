@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
+import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
@@ -17,39 +17,8 @@ const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker')
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import { useImageUpload } from '@/hooks/useImageUpload'
-
-interface Apiary {
-  id: string
-  name: string
-  location: string | null
-  city: string | null
-  eircode: string | null
-  latitude: number | null
-  longitude: number | null
-  notes: string | null
-  share_location: boolean
-  image_url: string | null
-  created_at?: string
-}
-
-interface FormData {
-  name: string
-  location: string
-  city: string
-  eircode: string
-  latitude: string
-  longitude: string
-  notes: string
-  is_uk_ni: boolean
-  share_location: boolean
-}
-
-interface UserOption {
-  id: string
-  email: string
-  first_name: string | null
-  last_name: string | null
-}
+import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
+import ApiaryCard from '@/components/apiaries/ApiaryCard'
 
 export default function ApiariesPage() {
   const toast = useToast()
@@ -59,7 +28,7 @@ export default function ApiariesPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<ApiaryFormData>({
     name: '',
     location: '',
     city: '',
@@ -205,7 +174,45 @@ export default function ApiariesPage() {
       .eq('user_id', currentUserId)
       .order('name')
 
-    if (data) setApiaries(data)
+    if (data) {
+      // Enrich with hive counts and last inspection dates (active hives only)
+      const apiaryIds = data.map(a => a.id)
+      const { data: activeHives } = await supabase
+        .from('hives')
+        .select('id, apiary_id')
+        .in('apiary_id', apiaryIds)
+        .is('archived_at', null)
+
+      const hiveCounts: Record<string, number> = {}
+      const activeHiveIds: string[] = []
+      ;(activeHives || []).forEach(h => {
+        hiveCounts[h.apiary_id] = (hiveCounts[h.apiary_id] || 0) + 1
+        activeHiveIds.push(h.id)
+      })
+
+      // Only fetch inspections for active hives
+      const lastInspections: Record<string, string> = {}
+      if (activeHiveIds.length > 0) {
+        const { data: inspData } = await supabase
+          .from('inspections')
+          .select('hive_id, inspection_date, hives!inner(apiary_id)')
+          .in('hive_id', activeHiveIds)
+          .order('inspection_date', { ascending: false })
+
+        ;((inspData || []) as Array<{ inspection_date: string; hives: { apiary_id: string }[] }>).forEach(i => {
+          const apiaryId = i.hives?.[0]?.apiary_id
+          if (apiaryId && !lastInspections[apiaryId]) {
+            lastInspections[apiaryId] = i.inspection_date
+          }
+        })
+      }
+
+      setApiaries(data.map(a => ({
+        ...a,
+        hive_count: hiveCounts[a.id] || 0,
+        last_inspection_date: lastInspections[a.id] || undefined,
+      })))
+    }
     setLoading(false)
   }, [userId])
 
@@ -728,84 +735,23 @@ export default function ApiariesPage() {
         </div>
       )}
 
+      {/* Summary stats bar */}
+      {apiaries.length > 0 && (
+        <p className="text-sm text-text-secondary">
+          {apiaries.length} Apiar{apiaries.length !== 1 ? 'ies' : 'y'} | {apiaries.reduce((sum, a) => sum + (a.hive_count || 0), 0)} Total Hives
+        </p>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {apiaries.map((apiary: Apiary) => {
-          return (
-            <div key={apiary.id} className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border">
-              <div className="flex justify-between items-start mb-4 gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-2xl font-bold text-foreground">{apiary.name}</h3>
-                  <p className="text-sm text-text-secondary mt-1">
-                    {apiary.city && apiary.location ? `${apiary.city} - ${apiary.location}` :
-                     apiary.city || apiary.location || 'No location specified'}
-                  </p>
-                  {apiary.eircode && (
-                    <p className="text-sm text-forest-800 dark:text-forest-400 font-medium mt-1">
-                      Eircode: {apiary.eircode}
-                    </p>
-                  )}
-                  {apiary.share_location && (
-                    <p className="text-xs text-blue-800 dark:text-blue-400 mt-1 flex items-center gap-1">
-                      <MapPin size={12} />
-                      Location shared publicly (~5km radius)
-                    </p>
-                  )}
-                  {apiary.latitude && apiary.longitude && (
-                    <button
-                      onClick={() => router.push('/dashboard/community-map')}
-                      className="text-xs text-purple-800 dark:text-purple-400 mt-1 flex items-center gap-1 hover:underline"
-                    >
-                      <Map size={12} />
-                      View on community map
-                    </button>
-                  )}
-                </div>
-                {apiary.image_url && (
-                  <div
-                    className="relative w-20 h-20 flex-shrink-0 cursor-pointer group"
-                    onClick={() => handleImageClick(apiary.image_url!)}
-                    title="Click to enlarge"
-                  >
-                    <Image
-                      src={apiary.image_url}
-                      alt={apiary.name}
-                      fill
-                      sizes="80px"
-                      className="object-cover rounded-lg border border-border shadow-sm"
-                      quality={85}
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
-                      <Camera size={16} className="text-white" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {apiary.notes && (
-                <div className="mb-4 p-3 bg-sage-50 dark:bg-slate-800/50 rounded text-sm text-text-primary border border-sage-200 dark:border-slate-700">
-                  {apiary.notes}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(apiary)}
-                  className="flex-1 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
-                >
-                  <Edit2 size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(apiary.id)}
-                  className="flex-1 px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
-              </div>
-            </div>
-          )
-        })}
+        {apiaries.map((apiary: Apiary) => (
+          <ApiaryCard
+            key={apiary.id}
+            apiary={apiary}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onImageClick={handleImageClick}
+          />
+        ))}
       </div>
 
       {apiaries.length === 0 && (

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import { SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import UpcomingEvents from '@/components/UpcomingEvents'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply } from 'lucide-react'
+import Link from 'next/link'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import type { RecentActivityRecord } from '@/types/dashboard'
 
@@ -16,7 +17,7 @@ export default function DashboardPage() {
   const router = useRouter()
 
   // Custom hooks
-  const { stats, recentActivity, loading, error: dashboardError, fetchDashboardData } = useDashboardStats()
+  const { stats, alerts, recentActivity, loading, error: dashboardError, fetchDashboardData } = useDashboardStats()
   const {
     ownedTeams,
     memberTeams,
@@ -69,7 +70,9 @@ export default function DashboardPage() {
   if (loading) return (
     <div className="space-y-6">
       <div className="h-9 w-56 bg-sage-100 dark:bg-slate-800 rounded animate-shimmer" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <SkeletonCard />
+        <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
@@ -88,7 +91,9 @@ export default function DashboardPage() {
   const statCards = [
     { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-gray-900 dark:text-green-300', href: '/dashboard/apiaries' },
     { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-amber-300', href: '/dashboard/hives' },
-    { label: 'My Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300', href: '/dashboard/records' },
+    { label: 'Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300', href: '/dashboard/records' },
+    { label: 'Active Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 dark:bg-purple-900/30 text-gray-900 dark:text-purple-300', href: '/dashboard/queens' },
+    { label: 'Active Tasks', value: stats.activeTasks, icon: '✅', color: 'bg-teal-50 dark:bg-teal-900/30 text-gray-900 dark:text-teal-300', href: '/dashboard/tasks' },
   ]
 
   const hasMySharedData = mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0
@@ -165,7 +170,7 @@ export default function DashboardPage() {
       {/* My Statistics Cards */}
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">My Beekeeping</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {statCards.map((card, index) => (
             <StatCard
               key={card.label}
@@ -179,6 +184,57 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} /> },
+          { label: 'Log Feeding', href: '/dashboard/records?create=feeding', icon: <Wheat size={14} /> },
+          { label: 'Varroa Check', href: '/dashboard/records?create=varroa_check', icon: <Bug size={14} /> },
+          { label: 'Add Treatment', href: '/dashboard/records?create=varroa_treatment', icon: <Syringe size={14} /> },
+          { label: 'Log Harvest', href: '/dashboard/records?create=harvest', icon: <Droplet size={14} /> },
+          { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={14} /> },
+        ].map((action) => (
+          <Link
+            key={action.label}
+            href={action.href}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
+          >
+            {action.icon}
+            {action.label}
+          </Link>
+        ))}
+      </div>
+
+      {/* Attention Needed Alerts */}
+      {(alerts.overdueInspections > 0 || alerts.oldQueens > 0 || alerts.highVarroa > 0) && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400" />
+            <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Attention Needed</h2>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {alerts.overdueInspections > 0 && (
+              <Link href="/dashboard/hives" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors">
+                <ClipboardList size={12} />
+                {alerts.overdueInspections} hive{alerts.overdueInspections !== 1 ? 's' : ''} overdue inspection (14+ days)
+              </Link>
+            )}
+            {alerts.oldQueens > 0 && (
+              <Link href="/dashboard/queens" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors">
+                <Crown size={12} />
+                {alerts.oldQueens} queen{alerts.oldQueens !== 1 ? 's' : ''} over 2 years old
+              </Link>
+            )}
+            {alerts.highVarroa > 0 && (
+              <Link href="/dashboard/records?type=varroa_check" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors">
+                <Bug size={12} />
+                {alerts.highVarroa} high varroa check{alerts.highVarroa !== 1 ? 's' : ''} (&gt;3%)
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Team Statistics Cards - Shared by Me */}
       {isTeamMember && hasMySharedData && (
@@ -297,29 +353,9 @@ export default function DashboardPage() {
       )}
 
       {/* Application Version */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">HiveCraic</h3>
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
-                <span className="font-medium text-text-secondary">Version:</span>
-                <span className="font-bold text-indigo-700 dark:text-indigo-300">v1.5.19</span>
-              </span>
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-surface-elevated dark:bg-surface-elevated rounded-full shadow-sm border border-border">
-                <span className="font-medium text-text-secondary">Last Updated:</span>
-                <span className="font-semibold text-blue-700 dark:text-blue-400">February 9, 2026</span>
-              </span>
-            </div>
-          </div>
-          <a
-            href="/dashboard/about?section=changes"
-            className="px-4 py-2 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 border border-blue-300 dark:border-blue-700 font-medium transition-colors"
-          >
-            View Changes
-          </a>
-        </div>
-      </div>
+      <p className="text-xs text-text-tertiary text-center py-2">
+        HiveCraic v1.5.19 &middot; February 9, 2026 &middot; <Link href="/dashboard/about?section=changes" className="text-forest-600 dark:text-forest-400 hover:underline">View Changes</Link>
+      </p>
     </div>
   )
 }
@@ -394,8 +430,11 @@ function RecentActivitySection({ recentActivity, dashboardError, onRetry }: Rece
               break
           }
 
+          const hiveId = record.hive_id
+          const recordHref = hiveId ? `/dashboard/records?hive=${hiveId}` : '/dashboard/records'
+
           return (
-            <div key={record.id} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded border border-border">
+            <Link key={record.id} href={recordHref} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {icon}
                 <div className="flex-1 min-w-0">
@@ -406,11 +445,16 @@ function RecentActivitySection({ recentActivity, dashboardError, onRetry }: Rece
                 </div>
               </div>
               {badge && <div className="ml-2 flex-shrink-0">{badge}</div>}
-            </div>
+            </Link>
           )
         })}
         {recentActivity.length === 0 && !dashboardError && (
           <p className="text-text-secondary text-center py-4">No recent activity</p>
+        )}
+        {recentActivity.length > 0 && (
+          <Link href="/dashboard/records" className="block text-center text-sm text-forest-600 dark:text-forest-400 hover:underline pt-2">
+            View All Records
+          </Link>
         )}
         {dashboardError && (
           <div className="text-center py-4">

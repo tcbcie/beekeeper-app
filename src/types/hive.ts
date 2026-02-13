@@ -11,12 +11,44 @@ export interface HiveConfiguration {
   entrance_reducer?: boolean
   varroa_mesh_floor?: string
   right_sized_broodbox?: boolean
+  frame_orientation?: string | null
+  hive_size?: 'full' | 'nuc'
+}
+
+export interface Colony {
+  id: string
+  colony_number: string
+  origin_type: string
+  origin_date: string
+  status: string
+}
+
+export interface HiveFormData {
+  hive_number: string
+  apiary_id: string
+  order_in_apiary: number | null
+  row_in_apiary: number | null
+  order_direction: 'entrances' | 'backs'
+  queen_id: string
+  queen_marked: boolean
+  queen_marking_color: string
+  queen_mated: boolean
+  queen_clipped: boolean
+  status: string
+  notes: string
+  colony_established_date: string
+  queen_installed_date: string
+  hive_type: string
+  configuration: HiveConfiguration
 }
 
 export interface Hive {
   id: string
   hive_number: string
   apiary_id: string | null
+  order_in_apiary?: number | null
+  row_in_apiary?: number | null
+  order_direction?: 'entrances' | 'backs' | null
   queen_id: string | null
   queen_marked: boolean
   queen_marking_color: string | null
@@ -28,6 +60,7 @@ export interface Hive {
   queen_installed_date: string | null
   hive_type: string | null
   configuration: HiveConfiguration | null
+  colony_id?: string | null
   queen_last_seen?: string | null
   eggs_last_present?: string | null
   archived_at?: string | null
@@ -35,11 +68,25 @@ export interface Hive {
   archive_notes?: string | null
   user_id: string
   is_shared?: boolean
-  shared_with_team?: string
+  shared_with_team?: string | null
   beep_device_id?: string | null
   beep_device_name?: string | null
   wolf_scale_id?: string | null
   wolf_scale_name?: string | null
+  configuration_changed_at?: string | null
+  configuration_changed_by?: string | null
+  configuration_changer?: {
+    full_name: string | null
+    email: string
+  } | null
+  team_name?: string | null
+  last_record?: {
+    date: string
+    type: string
+  } | null
+  last_inspection_date?: string | null
+  active_tasks_count?: number
+  colonies?: Colony
   archive_reason_value?: {
     value?: string
   }
