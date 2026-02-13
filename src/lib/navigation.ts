@@ -4,7 +4,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-export type NavGroupId = 'manage' | 'activity' | 'tools' | 'insights'
+export type NavGroupId = 'manage' | 'activity' | 'insights'
 
 export interface NavItem {
   href: string
@@ -22,7 +22,6 @@ export interface NavGroup {
 export const navGroups: NavGroup[] = [
   { id: 'manage', label: 'Manage' },
   { id: 'activity', label: 'Activity' },
-  { id: 'tools', label: 'Tools' },
   { id: 'insights', label: 'Insights' },
 ]
 
@@ -34,7 +33,7 @@ export const baseNavItems: NavItem[] = [
   { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg, group: 'manage' },
   { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity' },
   { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity' },
-  { href: '/dashboard/tools', label: 'Tools', icon: Wrench, group: 'tools' },
+  { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText, group: 'insights' },
   { href: '/dashboard/research', label: 'Research', icon: FlaskConical, group: 'insights' },
   { href: '/dashboard/community-map', label: 'Community Map', icon: Users, group: 'insights' },
