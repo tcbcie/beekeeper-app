@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode } from 'lucide-react'
 import Link from 'next/link'
 import GDDTracker from '@/components/tools/GDDTracker'
 import VarroaWeather from '@/components/tools/VarroaWeather'
@@ -124,25 +124,45 @@ export default function ToolsPage() {
         Helpful tools and utilities for managing your beekeeping operations.
       </p>
 
-      {/* Report Wild Colony Link */}
-      <Link
-        href="/dashboard/submit-colony"
-        className="block bg-amber-50 dark:bg-amber-900/20 rounded-lg shadow p-4 border border-amber-200 dark:border-amber-800 hover:shadow-md hover:border-amber-400 dark:hover:border-amber-600 transition-all"
-      >
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/50">
-            <Send size={24} className="text-amber-700 dark:text-amber-300" />
+      {/* Quick Links */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link
+          href="/dashboard/qr-tags"
+          className="block bg-amber-50 dark:bg-amber-900/20 rounded-lg shadow p-4 border border-amber-200 dark:border-amber-800 hover:shadow-md hover:border-amber-400 dark:hover:border-amber-600 transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/50">
+              <QrCode size={24} className="text-amber-700 dark:text-amber-300" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100">
+                QR Tags
+              </h3>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Generate and manage QR codes for your hives
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100">
-              Report Wild Colony
-            </h3>
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              Help track wild and feral bee colonies in your area
-            </p>
+        </Link>
+        <Link
+          href="/dashboard/submit-colony"
+          className="block bg-amber-50 dark:bg-amber-900/20 rounded-lg shadow p-4 border border-amber-200 dark:border-amber-800 hover:shadow-md hover:border-amber-400 dark:hover:border-amber-600 transition-all"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/50">
+              <Send size={24} className="text-amber-700 dark:text-amber-300" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100">
+                Report Wild Colony
+              </h3>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Help track wild and feral bee colonies in your area
+              </p>
+            </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+      </div>
 
       {/* Tab Navigation */}
       <nav className="border-b border-border pb-3">

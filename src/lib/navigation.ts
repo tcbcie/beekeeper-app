@@ -1,6 +1,6 @@
 import {
   Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings,
-  Wrench, User, Info, Calendar, Users, FlaskConical, FileText, QrCode,
+  Wrench, User, Info, Calendar, Users, FlaskConical, FileText,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -35,7 +35,6 @@ export const baseNavItems: NavItem[] = [
   { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity' },
   { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity' },
   { href: '/dashboard/tools', label: 'Tools', icon: Wrench, group: 'tools' },
-  { href: '/dashboard/qr-tags', label: 'QR Tags', icon: QrCode, group: 'tools' },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText, group: 'insights' },
   { href: '/dashboard/research', label: 'Research', icon: FlaskConical, group: 'insights' },
   { href: '/dashboard/community-map', label: 'Community Map', icon: Users, group: 'insights' },
