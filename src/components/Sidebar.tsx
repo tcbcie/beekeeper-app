@@ -27,7 +27,8 @@ export default function Sidebar() {
     const savedGroups = localStorage.getItem('sidebar-collapsed-groups')
     if (savedGroups) {
       try {
-        setCollapsedGroups(JSON.parse(savedGroups))
+        const parsed = JSON.parse(savedGroups)
+        if (Array.isArray(parsed)) setCollapsedGroups(parsed)
       } catch { /* ignore invalid JSON */ }
     }
   }, [])
@@ -61,7 +62,7 @@ export default function Sidebar() {
   const bottomItems = getBottomItems()
 
   const linkClasses = (href: string) => {
-    const isActive = pathname === href
+    const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
     return `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
       isActive
         ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
