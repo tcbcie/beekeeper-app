@@ -115,6 +115,12 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
     typeof window !== 'undefined'
       ? getComputedStyle(document.documentElement).getPropertyValue(name).trim()
       : ''
+  const hexWithAlpha = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
   const weightColor = getCssVar('--viz-warning') || '#f59e0b'
   const tempColor = getCssVar('--viz-info') || '#3b82f6'
 
@@ -126,7 +132,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         label: 'Weight (kg)',
         data: history.map(reading => reading.weight_kg_corrected ?? reading.weight_kg ?? null),
         borderColor: weightColor,
-        backgroundColor: weightColor + '1a',
+        backgroundColor: hexWithAlpha(weightColor, 0.1),
         yAxisID: 'y',
         tension: 0.3,
         pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
@@ -135,7 +141,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         label: 'Temperature (°C)',
         data: history.map(reading => reading.t_i ?? reading.t ?? reading.t_0 ?? null),
         borderColor: tempColor,
-        backgroundColor: tempColor + '1a',
+        backgroundColor: hexWithAlpha(tempColor, 0.1),
         yAxisID: 'y1',
         tension: 0.3,
         pointRadius: period === 'hour' || period === 'day' || period === 'custom' ? 2 : 0,
@@ -167,7 +173,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
       intersect: false,
     },
     font: {
-      family: 'inherit',
+      family: "'DM Sans', sans-serif",
     },
     plugins: {
       legend: {

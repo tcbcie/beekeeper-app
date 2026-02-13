@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react'
 import { AlertTriangle, Trash2, Info } from 'lucide-react'
 
 type ConfirmVariant = 'danger' | 'warning' | 'info'
@@ -61,6 +61,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const resolveRef = useRef<((value: boolean) => void) | null>(null)
 
   const confirm = useCallback((opts: ConfirmOptions): Promise<boolean> => {
+    // Resolve any pending dialog as cancelled before opening a new one
+    if (resolveRef.current) {
+      resolveRef.current(false)
+      resolveRef.current = null
+    }
     setOptions(opts)
     setOpen(true)
     return new Promise<boolean>((resolve) => {
@@ -68,17 +73,31 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     setOpen(false)
     resolveRef.current?.(true)
     resolveRef.current = null
-  }
+  }, [])
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setOpen(false)
     resolveRef.current?.(false)
     resolveRef.current = null
-  }
+  }, [])
+
+  const cancelBtnRef = useRef<HTMLButtonElement>(null)
+
+  // Escape key handler
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCancel()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    // Auto-focus the cancel button when dialog opens
+    cancelBtnRef.current?.focus()
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open, handleCancel])
 
   const variant = options.variant || 'danger'
   const style = variantStyles[variant]
@@ -93,6 +112,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in"
           onClick={handleCancel}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-dialog-title"
         >
           <div
             className="bg-surface dark:bg-surface-elevated rounded-xl shadow-xl max-w-md w-full p-6 border border-border animate-slide-up"
@@ -103,13 +125,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 <Icon size={24} className={style.iconColor} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-foreground">{options.title}</h3>
+                <h3 id="confirm-dialog-title" className="text-lg font-semibold text-foreground">{options.title}</h3>
                 <p className="mt-2 text-sm text-text-secondary">{options.message}</p>
               </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
               <button
+                ref={cancelBtnRef}
                 onClick={handleCancel}
                 className="px-4 py-2 text-sm font-medium bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[40px]"
               >
