@@ -55,7 +55,7 @@ export default function NotificationPermissionBanner() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-96 z-50 animate-slide-up">
+    <div className="fixed bottom-20 md:bottom-4 right-4 left-4 md:left-auto md:w-96 z-50 animate-slide-up">
       <div className="bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 rounded-lg shadow-2xl p-4 text-white border-2 border-amber-400 dark:border-amber-500">
         <div className="flex items-start gap-3">
           <div className="bg-white/20 p-2 rounded-full flex-shrink-0">

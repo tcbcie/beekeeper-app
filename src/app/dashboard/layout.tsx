@@ -10,6 +10,7 @@ import MobileDrawer from '@/components/MobileDrawer'
 import OfflineIndicator from '@/components/OfflineIndicator'
 import UpdateNotification from '@/components/UpdateNotification'
 import ChatButton from '@/components/chat/ChatButton'
+import BottomNavBar from '@/components/BottomNavBar'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import ImpersonationBanner from '@/components/ImpersonationBanner'
 import { updateManager } from '@/lib/update-manager'
@@ -109,7 +110,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-20 md:pb-6">
         <div className="flex gap-4 md:gap-6">
           <Sidebar />
           <main className="flex-1 w-full min-w-0">
@@ -118,6 +119,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <ChatButton />
+      <BottomNavBar onMoreClick={() => setIsMobileMenuOpen(true)} />
     </div>
   )
 }

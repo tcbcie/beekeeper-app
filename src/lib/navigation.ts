@@ -1,0 +1,66 @@
+import {
+  Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings,
+  Wrench, User, Info, Calendar, Users, FlaskConical, FileText, QrCode,
+  type LucideIcon,
+} from 'lucide-react'
+
+export type NavGroupId = 'manage' | 'activity' | 'tools' | 'insights'
+
+export interface NavItem {
+  href: string
+  label: string
+  icon: LucideIcon
+  group?: NavGroupId
+  pinToBottom?: boolean
+}
+
+export interface NavGroup {
+  id: NavGroupId
+  label: string
+}
+
+export const navGroups: NavGroup[] = [
+  { id: 'manage', label: 'Manage' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'tools', label: 'Tools' },
+  { id: 'insights', label: 'Insights' },
+]
+
+export const baseNavItems: NavItem[] = [
+  { href: '/dashboard', label: 'Overview', icon: Home },
+  { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin, group: 'manage' },
+  { href: '/dashboard/hives', label: 'Hives', icon: Archive, group: 'manage' },
+  { href: '/dashboard/queens', label: 'Queens', icon: Crown, group: 'manage' },
+  { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg, group: 'manage' },
+  { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity' },
+  { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity' },
+  { href: '/dashboard/tools', label: 'Tools', icon: Wrench, group: 'tools' },
+  { href: '/dashboard/qr-tags', label: 'QR Tags', icon: QrCode, group: 'tools' },
+  { href: '/dashboard/reports', label: 'Reports', icon: FileText, group: 'insights' },
+  { href: '/dashboard/research', label: 'Research', icon: FlaskConical, group: 'insights' },
+  { href: '/dashboard/community-map', label: 'Community Map', icon: Users, group: 'insights' },
+  { href: '/dashboard/profile', label: 'Profile', icon: User, pinToBottom: true },
+  { href: '/dashboard/about', label: 'About', icon: Info, pinToBottom: true },
+]
+
+export const adminNavItems: NavItem[] = [
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+]
+
+/** Items with no group and not pinned to bottom (e.g. Overview) */
+export function getTopItems(): NavItem[] {
+  return baseNavItems.filter(item => !item.group && !item.pinToBottom)
+}
+
+/** Items grouped by NavGroupId, in group order */
+export function getGroupedItems(): { group: NavGroup; items: NavItem[] }[] {
+  return navGroups.map(group => ({
+    group,
+    items: baseNavItems.filter(item => item.group === group.id),
+  }))
+}
+
+/** Items pinned to the bottom (Profile, About) */
+export function getBottomItems(): NavItem[] {
+  return baseNavItems.filter(item => item.pinToBottom)
+}

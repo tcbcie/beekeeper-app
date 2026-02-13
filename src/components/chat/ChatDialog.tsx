@@ -108,7 +108,7 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
 
       {/* Dialog */}
       <div
-        className="fixed bottom-0 left-0 right-0 md:bottom-24 md:right-6 md:left-auto
+        className="fixed bottom-16 left-0 right-0 md:bottom-24 md:right-6 md:left-auto
                    z-50 w-full md:w-96 h-[70vh] md:h-[500px] md:max-h-[70vh]
                    bg-surface rounded-t-2xl md:rounded-2xl shadow-2xl
                    flex flex-col overflow-hidden
