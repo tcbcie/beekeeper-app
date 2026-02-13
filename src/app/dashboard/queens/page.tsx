@@ -9,131 +9,14 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
-
-interface Queen {
-  id: string
-  user_id: string
-  queen_number: string
-  birth_date: string
-  marking_color: string
-  source: string
-  subspecies: string
-  lineage: string
-  queen_clipped: boolean
-  status: string
-  performance_notes: string
-  mated_at_eircode: string
-  created_at?: string
-  mother_id?: string
-  father_id?: string
-  batch_id?: string
-  mother?: {
-    id: string
-    queen_number: string
-    marking_color: string
-  } | null
-  father?: {
-    id: string
-    queen_number: string
-    marking_color: string
-  } | null
-  batch?: {
-    id: string
-    batch_name: string
-  } | null
-  hives?: {
-    id: string
-    hive_number: string
-    apiaries?: {
-      name: string
-    }
-  }
-}
-
-interface FormData {
-  queen_number: string
-  birth_date: string
-  marking_color: string
-  source: string
-  subspecies: string
-  lineage: string
-  queen_clipped: boolean
-  status: string
-  performance_notes: string
-  mated_at_eircode: string
-  mother_id: string
-  father_id: string
-  batch_id: string
-}
-
-interface Batch {
-  id: string
-  batch_name: string
-}
-
-// Calculate queen marking color based on birth year
-// International color coding: White=1,6 | Yellow=2,7 | Red=3,8 | Green=4,9 | Blue=5,0
-const getQueenColorFromYear = (birthDate: string): string => {
-  if (!birthDate) return ''
-  const year = new Date(birthDate).getFullYear()
-  const lastDigit = year % 10
-
-  switch (lastDigit) {
-    case 1:
-    case 6:
-      return 'White'
-    case 2:
-    case 7:
-      return 'Yellow'
-    case 3:
-    case 8:
-      return 'Red'
-    case 4:
-    case 9:
-      return 'Green'
-    case 5:
-    case 0:
-      return 'Blue'
-    default:
-      return ''
-  }
-}
-
-// Calculate queen age from birth date
-const calculateQueenAge = (birthDate: string): string => {
-  if (!birthDate) return 'N/A'
-
-  const birth = new Date(birthDate)
-  const today = new Date()
-  const ageInDays = Math.floor((today.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (ageInDays < 0) return 'Future date'
-  if (ageInDays === 0) return 'Today'
-  if (ageInDays === 1) return '1 day'
-  if (ageInDays < 7) return `${ageInDays} days`
-  if (ageInDays < 30) {
-    const weeks = Math.floor(ageInDays / 7)
-    return `${weeks} week${weeks > 1 ? 's' : ''}`
-  }
-  if (ageInDays < 365) {
-    const months = Math.floor(ageInDays / 30)
-    return `${months} month${months > 1 ? 's' : ''}`
-  }
-
-  const years = Math.floor(ageInDays / 365)
-  const remainingMonths = Math.floor((ageInDays % 365) / 30)
-
-  if (remainingMonths === 0) {
-    return `${years} year${years > 1 ? 's' : ''}`
-  }
-  return `${years}y ${remainingMonths}m`
-}
+import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 
 export default function QueensPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const toast = useToast()
   const highlightedQueenId = searchParams.get('id')
+  const editParam = searchParams.get('edit')
   const queenRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   const [queens, setQueens] = useState<Queen[]>([])
@@ -141,6 +24,7 @@ export default function QueensPage() {
   const [editingQueen, setEditingQueen] = useState<Queen | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
+  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
@@ -148,7 +32,7 @@ export default function QueensPage() {
   const [sourceOptions, setSourceOptions] = useState<string[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
   const [showLineage, setShowLineage] = useState(false)
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<QueenFormData>({
     queen_number: '',
     birth_date: '',
     marking_color: '',
@@ -409,6 +293,17 @@ export default function QueensPage() {
     }
   }, [highlightedQueenId, queens])
 
+  // Auto-open edit form when navigating from detail page with ?edit=true
+  useEffect(() => {
+    if (editParam === 'true' && highlightedQueenId && queens.length > 0 && !editingQueen) {
+      const queen = queens.find(q => q.id === highlightedQueenId)
+      if (queen) {
+        handleEdit(queen)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editParam, highlightedQueenId, queens])
+
   // Auto-calculate color when birth date changes
   useEffect(() => {
     if (formData.birth_date) {
@@ -571,6 +466,10 @@ export default function QueensPage() {
 
     if (!matchesSearch) return false
 
+    // Apply assignment filter
+    if (assignmentFilter === 'assigned' && !q.hives?.id) return false
+    if (assignmentFilter === 'unassigned' && q.hives?.id) return false
+
     // Apply ownership filter
     if (ownershipFilter === 'my') {
       return q.user_id === userId
@@ -581,6 +480,19 @@ export default function QueensPage() {
       return true
     }
   })
+
+  // Summary stats (computed from filtered queens to match visible data)
+  const activeQueens = filteredQueens.filter(q => q.status === 'active').length
+  const retiredQueens = filteredQueens.filter(q => q.status === 'retired').length
+  const deadQueens = filteredQueens.filter(q => q.status === 'dead').length
+  const avgAgeMonths = (() => {
+    const activeWithDates = filteredQueens.filter(q => q.status === 'active' && q.birth_date)
+    if (activeWithDates.length === 0) return 0
+    const totalDays = activeWithDates.reduce((sum, q) => {
+      return sum + Math.floor((Date.now() - new Date(q.birth_date).getTime()) / (1000 * 60 * 60 * 24))
+    }, 0)
+    return Math.round(totalDays / activeWithDates.length / 30)
+  })()
 
   const colorOptions = ['White', 'Yellow', 'Red', 'Green', 'Blue', 'None']
 
@@ -841,6 +753,13 @@ export default function QueensPage() {
         </div>
       )}
 
+      {/* Summary stats */}
+      {queens.length > 0 && (
+        <p className="text-sm text-text-secondary">
+          {activeQueens} Active | {retiredQueens} Retired | {deadQueens} Dead | Avg Age: {avgAgeMonths} months
+        </p>
+      )}
+
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="mb-4 flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -867,6 +786,15 @@ export default function QueensPage() {
               <option value="all">All Queens</option>
             </select>
           )}
+          <select
+            value={assignmentFilter}
+            onChange={(e) => setAssignmentFilter(e.target.value as 'all' | 'assigned' | 'unassigned')}
+            className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
+          >
+            <option value="all">All Queens</option>
+            <option value="assigned">Assigned</option>
+            <option value="unassigned">Unassigned</option>
+          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -927,7 +855,12 @@ export default function QueensPage() {
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap font-medium text-foreground">
-                    {queen.queen_number}
+                    <Link
+                      href={`/dashboard/queens/${queen.id}`}
+                      className="text-forest-600 dark:text-forest-400 hover:text-forest-700 dark:hover:text-forest-300 hover:underline"
+                    >
+                      {queen.queen_number}
+                    </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
                     {queen.mother ? (
@@ -939,7 +872,14 @@ export default function QueensPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-text-primary font-medium">
-                    {calculateQueenAge(queen.birth_date)}
+                    <span className="flex items-center gap-1.5">
+                      {calculateQueenAge(queen.birth_date)}
+                      {queen.status === 'active' && queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
+                        <span className="px-1.5 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
+                          Replace soon
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -961,7 +901,7 @@ export default function QueensPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
                     {queen.hives?.id ? (
                       <Link
-                        href={`/dashboard/hives`}
+                        href={`/dashboard/hives/${queen.hives.id}`}
                         className="text-forest-600 dark:text-forest-400 hover:text-forest-700 dark:hover:text-forest-300 hover:underline flex items-center gap-1 font-medium"
                       >
                         {queen.hives.hive_number}

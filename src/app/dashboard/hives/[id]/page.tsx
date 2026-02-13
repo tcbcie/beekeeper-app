@@ -612,7 +612,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 <div className="flex justify-between">
                   <span className="text-text-tertiary">Number:</span>
                   <Link
-                    href={`/dashboard/queens?id=${hive.queens.id}`}
+                    href={`/dashboard/queens/${hive.queens.id}`}
                     className="text-forest-600 dark:text-emerald-400 hover:underline font-medium"
                   >
                     {hive.queens.queen_number}

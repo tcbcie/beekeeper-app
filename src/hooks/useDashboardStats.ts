@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import type {
   DashboardStats,
+  AttentionAlerts,
   RecentActivityRecord,
   Inspection,
   VarroaTreatment,
@@ -12,6 +13,7 @@ import type {
 
 interface UseDashboardStatsReturn {
   stats: DashboardStats
+  alerts: AttentionAlerts
   recentActivity: RecentActivityRecord[]
   loading: boolean
   error: string | null
@@ -23,6 +25,13 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     apiaries: 0,
     hives: 0,
     recentInspections: 0,
+    queens: 0,
+    activeTasks: 0,
+  })
+  const [alerts, setAlerts] = useState<AttentionAlerts>({
+    overdueInspections: 0,
+    oldQueens: 0,
+    highVarroa: 0,
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,7 +45,10 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
     try {
       // Fetch all stats in parallel
-      const [apiariesRes, hivesRes, inspectionsRes] = await Promise.all([
+      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+      const [apiariesRes, hivesRes, inspectionsRes, queensRes, tasksRes] = await Promise.all([
         supabase.from('apiaries').select('id', { count: 'exact', head: true }).eq('user_id', userId),
         supabase.from('hives').select('id', { count: 'exact', head: true }).eq('user_id', userId),
         supabase
@@ -44,12 +56,54 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           .select('id', { count: 'exact', head: true })
           .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
           .eq('user_id', userId),
+        supabase.from('queens').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'active'),
+        supabase.from('tasks_events').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', false),
       ])
 
       setStats({
         apiaries: apiariesRes.count || 0,
         hives: hivesRes.count || 0,
         recentInspections: inspectionsRes.count || 0,
+        queens: queensRes.count || 0,
+        activeTasks: tasksRes.count || 0,
+      })
+
+      // Fetch attention alerts and overdue hives in parallel
+      const [oldQueensRes, highVarroaRes, activeHivesRes] = await Promise.all([
+        // Active queens older than 2 years
+        supabase.from('queens').select('id', { count: 'exact', head: true })
+          .eq('user_id', userId).eq('status', 'active').lt('birth_date', twoYearsAgo),
+        // Varroa checks > 3% infestation in last 30 days — fetch hive_ids for dedup
+        supabase.from('varroa_checks').select('hive_id')
+          .eq('user_id', userId).gt('infestation_rate', 3)
+          .gte('check_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+        // Active hives for overdue inspection calculation
+        supabase.from('hives').select('id')
+          .eq('user_id', userId).is('archived_at', null),
+      ])
+
+      // Count unique hives with high varroa
+      const highVarroaHiveIds = new Set((highVarroaRes.data || []).map(c => c.hive_id))
+
+      // Count hives needing inspection (no inspection in 14+ days)
+      let overdueCount = 0
+      const activeHives = activeHivesRes.data
+      if (activeHives && activeHives.length > 0) {
+        const hiveIds = activeHives.map(h => h.id)
+        const { data: recentInspections } = await supabase
+          .from('inspections')
+          .select('hive_id')
+          .in('hive_id', hiveIds)
+          .gte('inspection_date', fourteenDaysAgo)
+
+        const inspectedHiveIds = new Set((recentInspections || []).map(i => i.hive_id))
+        overdueCount = hiveIds.filter(id => !inspectedHiveIds.has(id)).length
+      }
+
+      setAlerts({
+        overdueInspections: overdueCount,
+        oldQueens: oldQueensRes.count || 0,
+        highVarroa: highVarroaHiveIds.size,
       })
 
       // Fetch recent activity from all record types
@@ -138,6 +192,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
   return {
     stats,
+    alerts,
     recentActivity,
     loading,
     error,
