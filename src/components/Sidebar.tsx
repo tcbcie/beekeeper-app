@@ -2,20 +2,33 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings, Wrench, User, Info, Calendar, Users, FlaskConical, ChevronLeft, ChevronRight, FileText, QrCode } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import VersionDisplay from './VersionDisplay'
+import {
+  getTopItems,
+  getGroupedItems,
+  getBottomItems,
+  adminNavItems,
+  type NavGroupId,
+} from '@/lib/navigation'
 
 export default function Sidebar() {
   const pathname = usePathname()
   const [userRole, setUserRole] = useState<UserRole>('User')
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<NavGroupId[]>([])
 
   useEffect(() => {
-    // Load collapsed state from localStorage
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved !== null) {
       setIsCollapsed(saved === 'true')
+    }
+    const savedGroups = localStorage.getItem('sidebar-collapsed-groups')
+    if (savedGroups) {
+      try {
+        setCollapsedGroups(JSON.parse(savedGroups))
+      } catch { /* ignore invalid JSON */ }
     }
   }, [])
 
@@ -33,32 +46,28 @@ export default function Sidebar() {
     localStorage.setItem('sidebar-collapsed', String(newState))
   }
 
-  const baseNavItems = [
-    { href: '/dashboard', label: 'Overview', icon: Home },
-    { href: '/dashboard/hives', label: 'Hives', icon: Archive },
-    { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin },
-    { href: '/dashboard/records', label: 'Records', icon: ClipboardList },
-    { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar },
-    { href: '/dashboard/community-map', label: 'Community Map', icon: Users },
-    { href: '/dashboard/queens', label: 'Queens', icon: Crown },
-    { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg },
-    { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
-    { href: '/dashboard/qr-tags', label: 'QR Tags', icon: QrCode },
-    { href: '/dashboard/reports', label: 'Reports', icon: FileText },
-    { href: '/dashboard/research', label: 'Research', icon: FlaskConical },
-    { href: '/dashboard/profile', label: 'Profile', icon: User },
-    { href: '/dashboard/about', label: 'About', icon: Info },
-  ]
+  const toggleGroup = (groupId: NavGroupId) => {
+    setCollapsedGroups(prev => {
+      const next = prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+      localStorage.setItem('sidebar-collapsed-groups', JSON.stringify(next))
+      return next
+    })
+  }
 
-  const adminNavItems = [
-    { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-  ]
+  const topItems = getTopItems()
+  const groupedItems = getGroupedItems()
+  const bottomItems = getBottomItems()
 
-  // Build nav items based on role
-  const navItems = [
-    ...baseNavItems,
-    ...(userRole === 'Admin' ? adminNavItems : [])
-  ]
+  const linkClasses = (href: string) => {
+    const isActive = pathname === href
+    return `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+      isActive
+        ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
+        : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 hover:text-foreground'
+    } ${isCollapsed ? 'justify-center px-2' : ''}`
+  }
 
   return (
     <aside className={`hidden md:block bg-surface dark:bg-surface rounded-xl shadow-lg p-4 h-fit border border-border transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
@@ -70,26 +79,76 @@ export default function Sidebar() {
       >
         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
       </button>
+
       <nav className="space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
-                  : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 hover:text-foreground'
-              } ${isCollapsed ? 'justify-center px-2' : ''}`}
-              title={isCollapsed ? item.label : undefined}
-            >
-              <item.icon size={20} className="shrink-0" />
-              {!isCollapsed && <span>{item.label}</span>}
-            </Link>
+        {/* Top items (Overview) */}
+        {topItems.map(item => (
+          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+            <item.icon size={20} className="shrink-0" />
+            {!isCollapsed && <span>{item.label}</span>}
+          </Link>
+        ))}
+
+        {/* Grouped items */}
+        {!isCollapsed ? (
+          groupedItems.map(({ group, items }) => {
+            const isGroupCollapsed = collapsedGroups.includes(group.id)
+            return (
+              <div key={group.id} className="pt-2">
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  className="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary hover:text-text-secondary transition-colors"
+                >
+                  <span>{group.label}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${isGroupCollapsed ? '-rotate-90' : ''}`}
+                  />
+                </button>
+                {!isGroupCollapsed && (
+                  <div className="space-y-1 mt-1">
+                    {items.map(item => (
+                      <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                        <item.icon size={20} className="shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        ) : (
+          /* Icon-only mode: flat list without group headers */
+          groupedItems.flatMap(({ items }) =>
+            items.map(item => (
+              <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={item.label}>
+                <item.icon size={20} className="shrink-0" />
+              </Link>
+            ))
           )
-        })}
+        )}
+
+        {/* Divider */}
+        <div className="border-t border-border my-2" />
+
+        {/* Bottom items (Profile, About) */}
+        {bottomItems.map(item => (
+          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+            <item.icon size={20} className="shrink-0" />
+            {!isCollapsed && <span>{item.label}</span>}
+          </Link>
+        ))}
+
+        {/* Admin */}
+        {userRole === 'Admin' && adminNavItems.map(item => (
+          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+            <item.icon size={20} className="shrink-0" />
+            {!isCollapsed && <span>{item.label}</span>}
+          </Link>
+        ))}
       </nav>
+
       {!isCollapsed && (
         <div className="mt-4 pt-4 border-t border-border flex justify-center">
           <VersionDisplay />

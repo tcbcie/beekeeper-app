@@ -38,7 +38,7 @@ export default function UpdateNotification() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+    <div className="fixed bottom-20 md:bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
       <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-2xl border-2 border-amber-500 max-w-md mx-4">
         <div className="p-4">
           <div className="flex items-start">

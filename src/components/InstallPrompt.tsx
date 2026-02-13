@@ -103,7 +103,7 @@ export default function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg animate-slide-up">
+    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg animate-slide-up">
       <div className="max-w-lg mx-auto flex items-center gap-3">
         <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
           <Smartphone size={24} className="text-white" />
