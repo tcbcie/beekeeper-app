@@ -53,7 +53,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   }, [isOpen])
 
   const linkClasses = (href: string) => {
-    const isActive = pathname === href
+    const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
     return `flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-200 touch-manipulation min-h-[48px] ${
       isActive
         ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'

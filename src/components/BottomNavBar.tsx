@@ -18,7 +18,7 @@ export default function BottomNavBar({ onMoreClick }: BottomNavBarProps) {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-white/95 dark:bg-surface/95 backdrop-blur-lg border-t border-border pb-[env(safe-area-inset-bottom)]">
+    <nav aria-label="Quick navigation" className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-white/95 dark:bg-surface/95 backdrop-blur-lg border-t border-border pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-around">
         {navItems.map(item => {
           const isActive = pathname.startsWith(item.href)
@@ -39,6 +39,8 @@ export default function BottomNavBar({ onMoreClick }: BottomNavBarProps) {
         })}
         <button
           onClick={onMoreClick}
+          aria-label="Open menu"
+          aria-haspopup="true"
           className="flex flex-col items-center justify-center gap-1 py-2 px-1 min-h-[48px] min-w-[48px] flex-1 text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <Menu size={22} />
