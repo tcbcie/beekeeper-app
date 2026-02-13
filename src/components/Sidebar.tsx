@@ -8,6 +8,7 @@ import VersionDisplay from './VersionDisplay'
 import {
   getTopItems,
   getGroupedItems,
+  getAfterGroupItems,
   getBottomItems,
   adminNavItems,
   type NavGroupId,
@@ -59,6 +60,7 @@ export default function Sidebar() {
 
   const topItems = getTopItems()
   const groupedItems = getGroupedItems()
+  const afterGroupItems = getAfterGroupItems()
   const bottomItems = getBottomItems()
 
   const linkClasses = (href: string) => {
@@ -129,6 +131,14 @@ export default function Sidebar() {
             ))
           )
         )}
+
+        {/* After-group items (Tools) */}
+        {afterGroupItems.map(item => (
+          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+            <item.icon size={20} className="shrink-0" />
+            {!isCollapsed && <span>{item.label}</span>}
+          </Link>
+        ))}
 
         {/* Divider */}
         <div className="border-t border-border my-2" />
