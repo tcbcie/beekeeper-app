@@ -185,9 +185,11 @@ export default function ApiariesPage() {
 
       const hiveCounts: Record<string, number> = {}
       const activeHiveIds: string[] = []
+      const hiveToApiary: Record<string, string> = {}
       ;(activeHives || []).forEach(h => {
         hiveCounts[h.apiary_id] = (hiveCounts[h.apiary_id] || 0) + 1
         activeHiveIds.push(h.id)
+        hiveToApiary[h.id] = h.apiary_id
       })
 
       // Only fetch inspections for active hives
@@ -195,12 +197,12 @@ export default function ApiariesPage() {
       if (activeHiveIds.length > 0) {
         const { data: inspData } = await supabase
           .from('inspections')
-          .select('hive_id, inspection_date, hives!inner(apiary_id)')
+          .select('hive_id, inspection_date')
           .in('hive_id', activeHiveIds)
           .order('inspection_date', { ascending: false })
 
-        ;((inspData || []) as Array<{ inspection_date: string; hives: { apiary_id: string }[] }>).forEach(i => {
-          const apiaryId = i.hives?.[0]?.apiary_id
+        ;((inspData || []) as Array<{ hive_id: string; inspection_date: string }>).forEach(i => {
+          const apiaryId = hiveToApiary[i.hive_id]
           if (apiaryId && !lastInspections[apiaryId]) {
             lastInspections[apiaryId] = i.inspection_date
           }
