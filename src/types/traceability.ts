@@ -53,6 +53,7 @@ export interface BatchRun {
   is_public: boolean
   is_creamed: boolean
   show_apiary_image: boolean
+  show_feedback: boolean
   public_title: string | null
   public_origin: string | null
   public_story: string | null
@@ -93,6 +94,7 @@ export interface BatchFormData {
   is_public: boolean
   is_creamed: boolean
   show_apiary_image: boolean
+  show_feedback: boolean
   public_title: string
   public_origin: string
   public_story: string

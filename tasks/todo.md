@@ -1,13 +1,17 @@
-# Fix: Prevent Multiple QR Tags Assigned to Same Hive
-
-## Problem
-The QR Tags assign modal shows all hives in the dropdown, including hives that already have a tag assigned. This allows multiple tags to be assigned to the same hive, which is undesirable.
+# Make Feedback Optional on Public Trace Page
 
 ## Plan
+Add a `show_feedback` toggle to batches (identical pattern to `show_apiary_image`) so beekeepers can choose whether the "How was this honey?" section appears on the public trace page.
 
-- [x] **1. Filter hive dropdown** — In the assign modal, exclude hives that already have a tag assigned (except if the current tag is already assigned to that hive, so reassignment still works)
-- [x] **2. Add DB unique constraint** — Add a partial unique index on `qr_tags(hive_id)` WHERE `hive_id IS NOT NULL` to enforce one-tag-per-hive at the database level
-- [x] **3. Update feature docs** — Note the one-tag-per-hive constraint in `docs/feature/qr-tags.md`
+## Todo
+
+- [x] **DB Migration** — Add `show_feedback` boolean column to `batch_runs` (default `true` for backwards compat)
+- [x] **Update RPC** — Add `show_feedback` to the `get_public_batch_info` return object
+- [x] **TypeScript types** — Add `show_feedback` to `BatchRun` and `BatchFormData` in `src/types/traceability.ts`
+- [x] **Batch form** — Add toggle checkbox in `TraceabilityTool.tsx` (next to the apiary image toggle area)
+- [x] **Form state** — Wire `show_feedback` into form init, reset, edit-load, and save
+- [x] **Public trace page** — Conditionally render `<FeedbackForm>` based on `show_feedback` from batch info
+- [x] **Update docs** — Update feature documentation
 
 ## Review
 
@@ -15,10 +19,15 @@ The QR Tags assign modal shows all hives in the dropdown, including hives that a
 
 | File / Resource | Change |
 |-----------------|--------|
-| `src/app/dashboard/qr-tags/page.tsx` | Added `.filter()` on hive dropdown to exclude hives already assigned to another tag |
-| `qr_tags` table (migration) | Added partial unique index `idx_qr_tags_one_per_hive` on `hive_id WHERE hive_id IS NOT NULL` |
-| `docs/feature/qr-tags.md` | Documented the one-tag-per-hive constraint |
+| `batch_runs` table (migration) | Added `show_feedback` boolean column, default `true` |
+| `get_public_batch_info` RPC (migration) | Added `show_feedback` to the returned JSON object |
+| `src/types/traceability.ts` | Added `show_feedback: boolean` to `BatchRun` and `BatchFormData` |
+| `src/components/tools/TraceabilityTool.tsx` | Added toggle checkbox, wired into init/reset/edit-load/save |
+| `src/app/(trace)/trace/[batchCode]/page.tsx` | Added `show_feedback` to `BatchInfo` type; conditionally renders `<FeedbackForm>` |
+| `docs/features/batch-feedback.md` | Documented the optional feedback toggle |
 
 ### How It Works
-- **UI layer**: The assign modal dropdown now only shows hives that don't already have a tag, unless the current tag is the one assigned to that hive (allowing reassignment of the same tag)
-- **DB layer**: The partial unique index prevents duplicate `hive_id` values at the database level as a safety net
+- New `show_feedback` boolean on `batch_runs` defaults to `true` (all existing batches keep showing feedback)
+- Beekeepers toggle it in the batch form — checkbox sits below the apiary image toggle
+- The RPC returns `show_feedback` to the public trace page
+- The trace page only renders `<FeedbackForm>` when `show_feedback` is not `false`

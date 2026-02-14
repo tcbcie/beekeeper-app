@@ -87,6 +87,15 @@ Add feedback section at bottom of trace page:
 4. Handle success/error states
 5. Store submission in localStorage to prevent duplicate submissions
 
+## Optional Feedback Toggle
+
+Beekeepers can enable or disable the feedback form per batch via a toggle in the batch form:
+
+- **Field**: `show_feedback` (boolean, default `true`)
+- **Location**: Batch form in Honey Provenance tool, below the apiary image toggle
+- **Behaviour**: When disabled, the "How was this honey?" section is hidden on the public trace page
+- **Backwards compatible**: Existing batches default to `true` (feedback shown)
+
 ## Security Considerations
 
 - Rate limiting: Consider adding rate limiting to prevent spam (future enhancement)
