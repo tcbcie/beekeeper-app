@@ -34,6 +34,10 @@ Tags use the format `HC-XXXXXX` where X is drawn from an unambiguous alphabet (n
 | `created_at` | TIMESTAMPTZ | Creation timestamp |
 | `assigned_at` | TIMESTAMPTZ (nullable) | When the tag was last assigned |
 
+### Constraints
+
+- **One tag per hive** — A partial unique index (`idx_qr_tags_one_per_hive`) on `hive_id WHERE hive_id IS NOT NULL` ensures each hive can only have one tag assigned. The assign modal also filters out already-assigned hives.
+
 ### RLS Policies
 
 - **SELECT**: Anyone can read tags (required for scan page to work for any visitor)

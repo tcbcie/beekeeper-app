@@ -526,7 +526,11 @@ export default function QrTagsPage() {
                   className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
                 >
                   <option value="">— Unassigned —</option>
-                  {hives.map(h => (
+                  {hives.filter(h => {
+                    // Exclude hives already assigned to another tag
+                    const taken = tags.some(t => t.hive_id === h.id && t.id !== assigningTag?.id)
+                    return !taken
+                  }).map(h => (
                     <option key={h.id} value={h.id}>
                       Hive {h.hive_number}{h.apiary_name ? ` (${h.apiary_name})` : ''}
                     </option>

@@ -1,45 +1,24 @@
-# FIBKA Applied Skills Logbook - Implementation Todo
+# Fix: Prevent Multiple QR Tags Assigned to Same Hive
 
-## Tasks
+## Problem
+The QR Tags assign modal shows all hives in the dropdown, including hives that already have a tag assigned. This allows multiple tags to be assigned to the same hive, which is undesirable.
 
-- [x] 1. **Database migration** - Create `logbook_entries` table with RLS policies via Supabase MCP
-- [x] 2. **Types** - Create `src/types/logbook.ts` with logbook entry types
-- [x] 3. **Skill constants** - Create `src/lib/logbook-skills.ts` with Stage 2 FIBKA skill definitions (7 categories, 75 skills)
-- [x] 4. **Custom hook** - Create `src/hooks/useLogbook.ts` for fetching/saving/deleting entries
-- [x] 5. **Logbook page** - Create `src/app/dashboard/logbook/page.tsx` with accordion categories, progress tracking, and inline completion form
-- [x] 6. **Navigation** - Add Logbook entry to `src/lib/navigation.ts` under 'activity' group
-- [x] 7. **Feature docs** - Create `docs/features/logbook.md`
-- [x] 8. **Stage 3 skills** - Add Stage 3 (116 skills across 10 categories) to `src/lib/logbook-skills.ts`
-- [x] 9. **Stage selector** - Add dropdown to logbook page for switching between Stage 2 and Stage 3
-- [x] 10. **Update docs** - Update `docs/features/logbook.md` with Stage 3 categories
+## Plan
+
+- [x] **1. Filter hive dropdown** — In the assign modal, exclude hives that already have a tag assigned (except if the current tag is already assigned to that hive, so reassignment still works)
+- [x] **2. Add DB unique constraint** — Add a partial unique index on `qr_tags(hive_id)` WHERE `hive_id IS NOT NULL` to enforce one-tag-per-hive at the database level
+- [x] **3. Update feature docs** — Note the one-tag-per-hive constraint in `docs/feature/qr-tags.md`
 
 ## Review
 
-### Summary of Changes
+### Changes Made
 
-**Database:**
-- Created `logbook_entries` table with columns: id, user_id, skill_id, assessor_name, assessor_fibka_number, completed_date, notes, timestamps
-- UNIQUE constraint on (user_id, skill_id) to prevent duplicate entries
-- RLS policies for full user-scoped CRUD
+| File / Resource | Change |
+|-----------------|--------|
+| `src/app/dashboard/qr-tags/page.tsx` | Added `.filter()` on hive dropdown to exclude hives already assigned to another tag |
+| `qr_tags` table (migration) | Added partial unique index `idx_qr_tags_one_per_hive` on `hive_id WHERE hive_id IS NOT NULL` |
+| `docs/feature/qr-tags.md` | Documented the one-tag-per-hive constraint |
 
-**New Files Created:**
-| File | Purpose |
-|------|---------|
-| `src/types/logbook.ts` | Types for entries, form data, skills, categories, stages |
-| `src/lib/logbook-skills.ts` | Stage 2 & 3 constants - 191 total skills with unique IDs |
-| `src/hooks/useLogbook.ts` | Hook with fetch/save (upsert)/delete, entries keyed by skill_id |
-| `src/app/dashboard/logbook/page.tsx` | Full page with accordion UI, stage selector, progress bar, inline forms |
-| `docs/features/logbook.md` | Feature documentation |
-
-**Modified Files:**
-| File | Change |
-|------|--------|
-| `src/lib/navigation.ts` | Added BookOpen import + Logbook nav item under 'activity' group |
-
-### Design Decisions
-- Skill definitions as frontend constants (not DB) - FIBKA skills are standardised
-- Single `logbook_entries` table with `skill_id` TEXT field matching constant IDs
-- Upsert on save (user_id + skill_id) so re-saving updates rather than duplicates
-- Entries stored in a `Record<string, LogbookEntry>` map for O(1) lookup by skill_id
-- Inline form (not modal) for quick completion - keeps context visible
-- Stage selector dropdown appears when more than 1 stage exists
+### How It Works
+- **UI layer**: The assign modal dropdown now only shows hives that don't already have a tag, unless the current tag is the one assigned to that hive (allowing reassignment of the same tag)
+- **DB layer**: The partial unique index prevents duplicate `hive_id` values at the database level as a safety net
