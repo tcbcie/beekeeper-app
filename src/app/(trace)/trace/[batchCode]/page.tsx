@@ -30,6 +30,7 @@ interface BatchInfo {
   public_origin: string | null
   public_story: string | null
   apiary_image_url: string | null
+  show_feedback: boolean
 }
 
 interface PageProps {
@@ -265,9 +266,11 @@ export default async function TracePage({ params }: PageProps) {
       </div>
 
       {/* Feedback Section */}
-      <div className="mt-6">
-        <FeedbackForm traceCode={traceCode} />
-      </div>
+      {batchInfo.show_feedback !== false && (
+        <div className="mt-6">
+          <FeedbackForm traceCode={traceCode} />
+        </div>
+      )}
     </div>
   )
 }

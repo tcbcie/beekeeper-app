@@ -53,6 +53,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     is_public: true,
     is_creamed: false,
     show_apiary_image: false,
+    show_feedback: true,
     public_title: '',
     public_origin: '',
     public_story: '',
@@ -602,6 +603,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       is_public: true,
       is_creamed: false,
       show_apiary_image: false,
+      show_feedback: true,
       public_title: '',
       public_origin: '',
       public_story: '',
@@ -628,6 +630,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       is_public: batch.is_public,
       is_creamed: batch.is_creamed || false,
       show_apiary_image: batch.show_apiary_image || false,
+      show_feedback: batch.show_feedback ?? true,
       public_title: batch.public_title || '',
       public_origin: batch.public_origin || '',
       public_story: batch.public_story || '',
@@ -678,6 +681,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         is_public: batchForm.is_public,
         is_creamed: batchForm.is_creamed,
         show_apiary_image: batchForm.show_apiary_image,
+        show_feedback: batchForm.show_feedback,
         public_title: batchForm.public_title.trim() || null,
         public_origin: batchForm.public_origin.trim() || null,
         public_story: stripMarkers(batchForm.public_story).trim() || null,
@@ -1283,6 +1287,22 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         </div>
                       </div>
                     )}
+
+                    {/* Feedback Toggle */}
+                    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={batchForm.show_feedback}
+                          onChange={(e) => setBatchForm(prev => ({ ...prev, show_feedback: e.target.checked }))}
+                          className="rounded text-amber-600"
+                        />
+                        <span className="text-sm font-medium">Show feedback form on public page</span>
+                      </label>
+                      <p className="text-xs text-slate-500 mt-1 ml-6">
+                        Allow customers to rate and comment on this honey
+                      </p>
+                    </div>
 
                     {/* Story Template Selector */}
                     <div>
