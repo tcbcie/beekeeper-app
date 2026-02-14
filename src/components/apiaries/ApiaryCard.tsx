@@ -61,9 +61,8 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick }: A
               src={apiary.image_url}
               alt={apiary.name}
               fill
-              sizes="80px"
+              sizes="160px"
               className="object-cover rounded-lg border border-border shadow-sm"
-              quality={85}
             />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
               <Camera size={16} className="text-white" />
