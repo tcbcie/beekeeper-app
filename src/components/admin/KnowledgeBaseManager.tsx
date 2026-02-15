@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink, Search, ArrowUpDown, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 type InputMode = 'text' | 'pdf' | 'url'
-type SortField = 'name' | 'author' | 'year' | 'chunks'
+type SortField = 'name' | 'author' | 'year' | 'chunks' | 'added' | 'updated'
 type SortDirection = 'asc' | 'desc'
 
 interface KnowledgeSource {
@@ -19,9 +19,11 @@ interface KnowledgeSource {
   file_path: string | null
   chunks_count: number
   created_at: string
+  updated_at: string
 }
 
 type SourceTypeFilter = 'all' | 'documents' | 'news'
+type MissingFilter = 'all' | 'missing_author' | 'missing_year' | 'missing_url' | 'any_missing'
 
 export default function KnowledgeBaseManager() {
   const [sources, setSources] = useState<KnowledgeSource[]>([])
@@ -47,6 +49,7 @@ export default function KnowledgeBaseManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('')
   const [typeFilter, setTypeFilter] = useState<SourceTypeFilter>('all')
+  const [missingFilter, setMissingFilter] = useState<MissingFilter>('all')
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [currentPage, setCurrentPage] = useState(1)
@@ -401,6 +404,12 @@ export default function KnowledgeBaseManager() {
       if (typeFilter === 'documents' && !source.file_path) return false
       if (typeFilter === 'news' && source.file_path) return false
 
+      // Missing info filter
+      if (missingFilter === 'missing_author' && source.author) return false
+      if (missingFilter === 'missing_year' && source.published_date) return false
+      if (missingFilter === 'missing_url' && source.source_url) return false
+      if (missingFilter === 'any_missing' && source.author && source.published_date && source.source_url) return false
+
       return true
     })
     .sort((a, b) => {
@@ -424,6 +433,14 @@ export default function KnowledgeBaseManager() {
           aVal = a.chunks_count
           bVal = b.chunks_count
           break
+        case 'added':
+          aVal = a.created_at || ''
+          bVal = b.created_at || ''
+          break
+        case 'updated':
+          aVal = a.updated_at || ''
+          bVal = b.updated_at || ''
+          break
       }
 
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
@@ -438,18 +455,10 @@ export default function KnowledgeBaseManager() {
     currentPage * itemsPerPage
   )
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return <ArrowUpDown size={14} className="opacity-40" />
-    return sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+  const handleSortChange = (value: string) => {
+    setSortField(value as SortField)
+    // Default to descending for date sorts (newest first), ascending for others
+    setSortDirection(value === 'added' || value === 'updated' ? 'desc' : 'asc')
   }
 
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
@@ -745,13 +754,45 @@ export default function KnowledgeBaseManager() {
             <option value="documents">Documents</option>
             <option value="news">News/URLs</option>
           </select>
-          {(searchQuery || yearFilter || typeFilter !== 'all') && (
+          <select
+            value={missingFilter}
+            onChange={(e) => { setMissingFilter(e.target.value as MissingFilter); setCurrentPage(1) }}
+            className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[150px]"
+          >
+            <option value="all">All Info</option>
+            <option value="any_missing">Any Missing Info</option>
+            <option value="missing_author">Missing Author</option>
+            <option value="missing_year">Missing Year</option>
+            <option value="missing_url">Missing URL</option>
+          </select>
+          <div className="flex items-center gap-1">
+            <select
+              value={sortField}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[150px]"
+            >
+              <option value="name">Sort: Name</option>
+              <option value="author">Sort: Author</option>
+              <option value="year">Sort: Year</option>
+              <option value="chunks">Sort: Chunks</option>
+              <option value="added">Sort: Recently Added</option>
+              <option value="updated">Sort: Recently Edited</option>
+            </select>
+            <button
+              onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+              className="p-2 border border-border rounded-lg hover:bg-surface-secondary text-text-secondary"
+              title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            >
+              <ArrowUpDown size={16} />
+            </button>
+          </div>
+          {(searchQuery || yearFilter || typeFilter !== 'all' || missingFilter !== 'all') && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-text-tertiary">
                 {filteredSources.length} of {sources.length}
               </span>
               <button
-                onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setCurrentPage(1) }}
+                onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setMissingFilter('all'); setCurrentPage(1) }}
                 className="text-xs text-forest-600 hover:underline"
               >
                 Clear all
@@ -774,39 +815,11 @@ export default function KnowledgeBaseManager() {
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">Actions</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary">
-                  <button
-                    onClick={() => handleSort('name')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors"
-                  >
-                    Name <SortIcon field="name" />
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary">
-                  <button
-                    onClick={() => handleSort('author')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors"
-                  >
-                    Author <SortIcon field="author" />
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary">
-                  <button
-                    onClick={() => handleSort('year')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors"
-                  >
-                    Year <SortIcon field="year" />
-                  </button>
-                </th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Name</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Author</th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary">Year</th>
                 <th className="px-4 py-3 text-sm font-medium text-text-secondary">URL</th>
-                <th className="px-4 py-3 text-sm font-medium text-text-secondary text-center">
-                  <button
-                    onClick={() => handleSort('chunks')}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors mx-auto"
-                  >
-                    Chunks <SortIcon field="chunks" />
-                  </button>
-                </th>
+                <th className="px-4 py-3 text-sm font-medium text-text-secondary text-center">Chunks</th>
               </tr>
             </thead>
             <tbody>
@@ -932,13 +945,13 @@ export default function KnowledgeBaseManager() {
                       <td className="px-4 py-3 text-sm text-foreground font-medium">
                         {source.name}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-secondary">
+                      <td className={`px-4 py-3 text-sm ${source.author ? 'text-text-secondary' : 'text-amber-500'}`}>
                         {source.author || '—'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-secondary">
+                      <td className={`px-4 py-3 text-sm ${source.published_date ? 'text-text-secondary' : 'text-amber-500'}`}>
                         {source.published_date ? source.published_date.split('-')[0] : '—'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-text-secondary">
+                      <td className={`px-4 py-3 text-sm ${source.source_url ? 'text-text-secondary' : 'text-amber-500'}`}>
                         {source.source_url ? (
                           <a
                             href={source.source_url}
@@ -957,13 +970,13 @@ export default function KnowledgeBaseManager() {
                   )}
                 </tr>
               ))}
-              {paginatedSources.length === 0 && (searchQuery || yearFilter || typeFilter !== 'all') && (
+              {paginatedSources.length === 0 && (searchQuery || yearFilter || typeFilter !== 'all' || missingFilter !== 'all') && (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p>No sources match your filters</p>
                     <button
-                      onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setCurrentPage(1) }}
+                      onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setMissingFilter('all'); setCurrentPage(1) }}
                       className="text-sm text-forest-600 hover:underline mt-1"
                     >
                       Clear filters
