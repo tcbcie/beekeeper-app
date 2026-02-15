@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, Pencil, Save, ChevronUp, ChevronDown } from 'lucide-react'
+import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, Pencil, Save, ChevronUp, ChevronDown, Layers } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 
@@ -72,6 +72,9 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
   // Sort state
   const [sortColumn, setSortColumn] = useState<SortColumn>('year')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+
+  // Group by vegetation state
+  const [groupByVegetation, setGroupByVegetation] = useState(false)
 
   // Fetch initial data
   const fetchData = useCallback(async () => {
@@ -349,6 +352,28 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     })
   }, [records, sortColumn, sortDirection])
 
+  // Grouped records by vegetation
+  const groupedRecords = useMemo(() => {
+    if (!groupByVegetation) return null
+    const groups: { name: string; records: GDDRecord[] }[] = []
+    const groupMap = new Map<string, GDDRecord[]>()
+
+    for (const record of sortedRecords) {
+      const vegName = record.dropdown_values?.value || 'Unknown'
+      if (!groupMap.has(vegName)) {
+        groupMap.set(vegName, [])
+      }
+      groupMap.get(vegName)!.push(record)
+    }
+
+    // Sort groups alphabetically by vegetation name
+    for (const [name, records] of [...groupMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      groups.push({ name, records })
+    }
+
+    return groups
+  }, [sortedRecords, groupByVegetation])
+
   // Sort indicator component
   const SortIndicator = ({ column }: { column: SortColumn }) => {
     if (sortColumn !== column) return <ChevronUp size={14} className="opacity-0 group-hover:opacity-30" />
@@ -356,6 +381,81 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       ? <ChevronUp size={14} className="text-forest-600" />
       : <ChevronDown size={14} className="text-forest-600" />
   }
+
+  // Render function (not a component) so React reconciles <tr> nodes via key, not via component identity
+  const renderRecordRow = (record: GDDRecord) => (
+    <tr key={record.id} className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-700/50">
+      <td className="p-3 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <button
+            onClick={() => handleEdit(record)}
+            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+            title="Edit record"
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            onClick={() => handleDelete(record.id)}
+            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+            title="Delete record"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </td>
+      <td className="p-3 text-foreground font-medium">{record.year}</td>
+      <td className="p-3 text-foreground">{record.apiaries?.name || '-'}</td>
+      <td className="p-3 text-foreground">
+        {groupByVegetation ? (
+          <span>{record.dropdown_values?.value || '-'}</span>
+        ) : (
+          <button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</button>
+        )}
+      </td>
+      <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
+      <td className="p-3 text-text-secondary">
+        {record.end_date ? new Date(record.end_date).toLocaleDateString() : '-'}
+      </td>
+      <td className="p-3 text-right">
+        {record.gdd_value !== null ? (
+          <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value}</span>
+        ) : (
+          <button
+            onClick={() => {
+              const apiary = apiaries.find(a => a.id === record.apiary_id)
+              if (apiary?.latitude && apiary?.longitude) {
+                calculateGDD(record.id, record.start_date, apiary.latitude, apiary.longitude)
+              } else {
+                toast.warning('Apiary is missing GPS coordinates. Please add them in the Apiaries page.')
+              }
+            }}
+            disabled={calculatingGDD === record.id}
+            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+          >
+            {calculatingGDD === record.id ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <RefreshCw size={14} />
+            )}
+            Calculate
+          </button>
+        )}
+      </td>
+      <td className="p-3 text-center">
+        <button
+          onClick={() => toggleSharing(record.id, record.is_shared)}
+          className={`p-1.5 rounded-full transition-colors ${
+            record.is_shared
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+          }`}
+          title={record.is_shared ? 'Sharing enabled' : 'Sharing disabled'}
+        >
+          <Share2 size={16} />
+        </button>
+      </td>
+    </tr>
+  )
 
   if (loading) {
     return (
@@ -372,15 +472,29 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
           <Thermometer size={24} className="text-forest-600 dark:text-forest-400" />
           GDD Tracker
         </h3>
-        {!showForm && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-forest-600 hover:bg-forest-700 text-white"
+            onClick={() => setGroupByVegetation(prev => !prev)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border text-sm ${
+              groupByVegetation
+                ? 'bg-forest-100 dark:bg-forest-900/30 border-forest-300 dark:border-forest-700 text-forest-700 dark:text-forest-300'
+                : 'bg-surface border-border text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-700'
+            }`}
+            title="Group by vegetation"
           >
-            <Plus size={18} />
-            Add Record
+            <Layers size={16} />
+            <span className="hidden sm:inline">Group by Vegetation</span>
           </button>
-        )}
+          {!showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-forest-600 hover:bg-forest-700 text-white"
+            >
+              <Plus size={18} />
+              Add Record
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Info Box */}
@@ -534,75 +648,34 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
               </tr>
             </thead>
             <tbody>
-              {sortedRecords.map((record) => (
-                <tr key={record.id} className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-700/50">
-                  <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => handleEdit(record)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
-                        title="Edit record"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(record.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                        title="Delete record"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="p-3 text-foreground font-medium">{record.year}</td>
-                  <td className="p-3 text-foreground">{record.apiaries?.name || '-'}</td>
-                  <td className="p-3 text-foreground">
-                    <button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</button>
-                  </td>
-                  <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
-                  <td className="p-3 text-text-secondary">
-                    {record.end_date ? new Date(record.end_date).toLocaleDateString() : '-'}
-                  </td>
-                  <td className="p-3 text-right">
-                    {record.gdd_value !== null ? (
-                      <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value}</span>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          const apiary = apiaries.find(a => a.id === record.apiary_id)
-                          if (apiary?.latitude && apiary?.longitude) {
-                            calculateGDD(record.id, record.start_date, apiary.latitude, apiary.longitude)
-                          } else {
-                            toast.warning('Apiary is missing GPS coordinates. Please add them in the Apiaries page.')
-                          }
-                        }}
-                        disabled={calculatingGDD === record.id}
-                        className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                      >
-                        {calculatingGDD === record.id ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <RefreshCw size={14} />
-                        )}
-                        Calculate
-                      </button>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => toggleSharing(record.id, record.is_shared)}
-                      className={`p-1.5 rounded-full transition-colors ${
-                        record.is_shared
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-                      }`}
-                      title={record.is_shared ? 'Sharing enabled' : 'Sharing disabled'}
-                    >
-                      <Share2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {groupByVegetation && groupedRecords ? (
+                groupedRecords.map((group) => (
+                  <Fragment key={`group-${group.name}`}>
+                    <tr className="bg-forest-50 dark:bg-forest-900/20">
+                      <td colSpan={8} className="p-3">
+                        <button
+                          type="button"
+                          className="font-semibold text-forest-700 dark:text-forest-300 hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer flex items-center gap-2"
+                          onClick={() => {
+                            const first = group.records[0]
+                            if (first) {
+                              setVegModalName(first.dropdown_values?.value || '')
+                              setVegModalTypeId(first.vegetation_type_id)
+                              setVegModalOpen(true)
+                            }
+                          }}
+                        >
+                          <Layers size={14} />
+                          {group.name} ({group.records.length} {group.records.length === 1 ? 'record' : 'records'})
+                        </button>
+                      </td>
+                    </tr>
+                    {group.records.map(renderRecordRow)}
+                  </Fragment>
+                ))
+              ) : (
+                sortedRecords.map(renderRecordRow)
+              )}
             </tbody>
           </table>
         </div>
