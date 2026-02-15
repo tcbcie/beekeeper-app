@@ -450,8 +450,8 @@ export default function ApiariesPage() {
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">Apiary Photo</label>
               {imagePreview ? (
-                <div className="relative inline-block group">
-                  <div className="relative w-full max-w-xs h-48">
+                <div className="relative max-w-xs group">
+                  <div className="relative w-full h-48">
                     <Image
                       src={imagePreview}
                       alt="Apiary preview"
