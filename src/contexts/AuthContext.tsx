@@ -23,30 +23,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const refreshUser = useCallback(async () => {
+    // Try to restore session from localStorage when offline
+    const tryOfflineFallback = (): boolean => {
+      if (navigator.onLine) return false
+      try {
+        const cachedSession = localStorage.getItem('supabase.auth.token')
+        if (cachedSession) {
+          const parsed = JSON.parse(cachedSession)
+          if (parsed?.currentSession?.user) {
+            setUser(parsed.currentSession.user)
+            setUserId(parsed.currentSession.user.id)
+            return true
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse cached session:', e)
+      }
+      return false
+    }
+
     try {
       const { data: { session }, error } = await supabase.auth.getSession()
 
       if (error) {
         console.error('Error getting session:', error)
-
-        // If offline, try to use cached session from localStorage
-        if (!navigator.onLine) {
-          const cachedSession = localStorage.getItem('supabase.auth.token')
-          if (cachedSession) {
-            try {
-              const parsed = JSON.parse(cachedSession)
-              if (parsed?.currentSession?.user) {
-                setUser(parsed.currentSession.user)
-                setUserId(parsed.currentSession.user.id)
-                setLoading(false)
-                return
-              }
-            } catch (e) {
-              console.error('Failed to parse cached session:', e)
-            }
-          }
-        }
-
+        if (tryOfflineFallback()) return
         setUser(null)
         setUserId(null)
         return
@@ -61,25 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error refreshing user:', error)
-
-      // If offline and error occurred, try to use cached session
-      if (!navigator.onLine) {
-        const cachedSession = localStorage.getItem('supabase.auth.token')
-        if (cachedSession) {
-          try {
-            const parsed = JSON.parse(cachedSession)
-            if (parsed?.currentSession?.user) {
-              setUser(parsed.currentSession.user)
-              setUserId(parsed.currentSession.user.id)
-              setLoading(false)
-              return
-            }
-          } catch (e) {
-            console.error('Failed to parse cached session:', e)
-          }
-        }
-      }
-
+      if (tryOfflineFallback()) return
       setUser(null)
       setUserId(null)
     } finally {

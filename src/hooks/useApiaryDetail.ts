@@ -69,11 +69,13 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
       setIsOwner(apiaryData.user_id === currentUserId)
 
       // Fetch hives in this apiary
-      const { data: hivesData } = await supabase
+      const { data: hivesData, error: hivesError } = await supabase
         .from('hives')
         .select('id, hive_number, status, archived_at, queens(id, queen_number, marking_color)')
         .eq('apiary_id', apiaryId)
         .order('hive_number')
+
+      if (hivesError) throw hivesError
 
       const hivesArr = (hivesData || []) as ApiaryHive[]
       setHives(hivesArr)
@@ -95,6 +97,12 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
           supabase.from('feedings').select('id, feed_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('feed_date', { ascending: false }).limit(3),
           supabase.from('harvests').select('id, harvest_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('harvest_date', { ascending: false }).limit(3),
         ])
+
+        if (inspRes.error) console.error('Failed to fetch inspections:', inspRes.error)
+        if (treatRes.error) console.error('Failed to fetch treatments:', treatRes.error)
+        if (checkRes.error) console.error('Failed to fetch varroa checks:', checkRes.error)
+        if (feedRes.error) console.error('Failed to fetch feedings:', feedRes.error)
+        if (harvestRes.error) console.error('Failed to fetch harvests:', harvestRes.error)
 
         type RecordRow = { id: string; hive_id: string; hives: { hive_number: string }[] }
 

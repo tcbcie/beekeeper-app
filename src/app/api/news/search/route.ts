@@ -4,7 +4,8 @@ import { searchNewsArticles } from '@/lib/rag'
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const query = searchParams.get('q')
-  const limit = parseInt(searchParams.get('limit') || '10', 10)
+  const parsedLimit = parseInt(searchParams.get('limit') || '10', 10)
+  const limit = Number.isNaN(parsedLimit) ? 10 : Math.min(Math.max(parsedLimit, 1), 50)
 
   if (!query || query.trim().length < 3) {
     return NextResponse.json(

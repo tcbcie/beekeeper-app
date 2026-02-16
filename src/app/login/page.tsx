@@ -13,7 +13,8 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectUrl = searchParams.get('redirect') || '/dashboard'
+  const rawRedirect = searchParams.get('redirect') || '/dashboard'
+  const redirectUrl = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard'
 
   // Handle URL parameters for pre-filling form (from invitation flow)
   useEffect(() => {
@@ -35,7 +36,7 @@ function LoginForm() {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           const pendingRedirect = localStorage.getItem('pendingRedirect')
-          if (pendingRedirect) {
+          if (pendingRedirect && pendingRedirect.startsWith('/') && !pendingRedirect.startsWith('//')) {
             localStorage.removeItem('pendingRedirect')
             router.push(pendingRedirect)
           } else if (!searchParams.get('redirect')) {
