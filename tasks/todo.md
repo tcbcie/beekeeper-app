@@ -1,42 +1,40 @@
-# Knowledge Base: Sort by Date & Filter Missing Attributes
+# Scrollable Bottom Nav with More Button
 
-## Problem
-When a new article/source is added to the AI Knowledge Base, it's hard to find the last entry to edit its metadata. There's also no way to find entries that are missing attributes (author, year, URL).
+## Goal
+Make the mobile bottom navigation bar horizontally scrollable, showing more menu items from the centralised navigation config, with the "More" button pinned to the right.
 
-## Plan
+## Todo
 
-### Changes (all in `KnowledgeBaseManager.tsx`)
+- [x] Update `BottomNavBar.tsx` to import items from `navigation.ts` instead of hardcoding 4 items
+- [x] Make the nav items area horizontally scrollable (overflow-x-auto, hide scrollbar)
+- [x] Pin the "More" button to the far right, outside the scrollable area
+- [x] Ensure active item styling still works correctly
+- [x] Create/update feature documentation in `docs/features/`
+- [x] QA: Fix P1 — auto-scroll active item into view on route change
+- [x] QA: Fix P2 — add right-edge fade gradient for scroll affordance
+- [x] QA: Fix P3 — add `touch-manipulation` to nav links and More button
 
-- [x] **1. Add `updated_at` to `KnowledgeSource` interface** — The API already returns it, the frontend just didn't use it.
-
-- [x] **2. Replace column-header sorting with a "Sort by" dropdown** — Moved sorting from clickable column headers to a dropdown in the filter bar. Options: Name, Author, Year, Chunks, Recently Added, Recently Edited. Added a direction toggle button. Date sorts default to descending (newest first).
-
-- [x] **3. Add "Missing Info" filter dropdown** — New dropdown with options: All Info, Any Missing Info, Missing Author, Missing Year, Missing URL.
-
-- [x] **4. Highlight missing fields** — Amber text on "—" cells where author, year, or URL is missing.
-
-- [x] **5. Clean up column headers** — Removed sort icons and click handlers from table headers (now plain text).
-
-- [x] **6. Update feature docs** — Created `docs/features/knowledge-base-manager.md`.
-
-### Files Changed
-- `src/components/admin/KnowledgeBaseManager.tsx` (only file modified)
-- `docs/features/knowledge-base-manager.md` (new)
+## Files Changed
+- `src/components/BottomNavBar.tsx` — scrollable nav from centralised config, auto-scroll to active, touch-manipulation
+- `src/app/globals.css` — added `scrollbar-hide` + `scroll-fade` utilities
+- `docs/features/navigation-restructure.md` — updated bottom nav section
 
 ## Review
 
-### Summary of Changes
+### Summary
+The bottom nav bar now shows all main navigation items in a horizontally scrollable row. The "More" button is pinned to the right. Active item auto-scrolls into view on navigation. A right-edge fade hints at more content.
 
-| Change | Detail |
-|--------|--------|
-| **Sort dropdown** | Replaced column-header click sorting with a "Sort by" dropdown in the filter bar. Added "Recently Added" (sorts by `created_at`) and "Recently Edited" (sorts by `updated_at`) options. Date sorts default descending. |
-| **Missing info filter** | New dropdown: filter to entries missing author, year, URL, or any missing info. |
-| **Amber highlights** | Missing author/year/URL cells show "—" in amber instead of grey, visible at a glance. |
-| **Direction toggle** | Arrow button next to sort dropdown to flip ascending/descending. |
-| **Clear all** | Updated to include `missingFilter` reset. Updated empty-results condition too. |
-| **Removed** | `handleSort()`, `SortIcon` component, `ChevronUp`/`ChevronDown` imports (no longer needed). |
+### QA Fixes Applied
+| Issue | Severity | Fix |
+|-------|----------|-----|
+| Active item off-screen with no indication | P1 | `scrollIntoView({ inline: 'center' })` on active ref, triggered on pathname change |
+| No visual scroll affordance | P2 | `mask-image` gradient fading the right edge to transparent |
+| Missing `touch-manipulation` | P3 | Added to all Link and button elements |
 
-### No Breaking Changes
-- All existing functionality works identically
-- No API or database changes
-- Table layout unchanged (still 6 columns)
+### Route collision analysis
+Verified all 15 nav item hrefs — no `startsWith` prefix collisions exist. `/dashboard/records` vs `/dashboard/reports` vs `/dashboard/research` are all distinct prefixes.
+
+### No breaking changes
+- MobileDrawer still works identically via the More button
+- Desktop sidebar unaffected
+- No database or API changes
