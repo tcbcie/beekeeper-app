@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
@@ -47,31 +47,19 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
   const fetchHiveData = useCallback(async (currentUserId: string) => {
     setLoading(true)
     try {
-      // Fetch hive details
+      // Fetch hive details with queen join
       const { data: hiveData, error: hiveError } = await supabase
         .from('hives')
         .select(`
           *,
           apiaries(name),
-          archive_reason_value:dropdown_values!archive_reason_id(value)
+          archive_reason_value:dropdown_values!archive_reason_id(value),
+          queens(id, queen_number, marking_color, status, source, subspecies, birth_date, queen_clipped, performance_notes)
         `)
         .eq('id', hiveId)
         .single()
 
       if (hiveError) throw hiveError
-
-      // Fetch queen separately if needed
-      if (hiveData.queen_id) {
-        const { data: queenData } = await supabase
-          .from('queens')
-          .select('id, queen_number, marking_color, status, source, subspecies, birth_date, queen_clipped, performance_notes')
-          .eq('id', hiveData.queen_id)
-          .single()
-
-        if (queenData) {
-          hiveData.queens = queenData
-        }
-      }
 
       // Check if this hive's apiary is shared with teams
       if (hiveData.apiary_id) {
@@ -196,7 +184,11 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
     }
   }, [hiveId, toast])
 
+  const completingTaskIds = useRef(new Set<string>())
+
   const handleCompleteTask = useCallback(async (taskId: string) => {
+    if (completingTaskIds.current.has(taskId)) return
+    completingTaskIds.current.add(taskId)
     try {
       const { error } = await supabase
         .from('tasks_events')
@@ -215,6 +207,8 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
     } catch (error) {
       console.error('Error completing task:', error)
       toast.error('Failed to complete task')
+    } finally {
+      completingTaskIds.current.delete(taskId)
     }
   }, [toast])
 

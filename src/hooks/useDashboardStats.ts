@@ -143,27 +143,27 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
       // Merge all records with their types
       const merged: RecentActivityRecord[] = [
-        ...((activityInspections.data as Inspection[]) || []).map((i) => ({
+        ...((activityInspections.data || []).filter(Boolean) as Inspection[]).map((i) => ({
           ...i,
           record_type: 'inspection' as const,
           date: i.inspection_date,
         })),
-        ...((activityTreatments.data as VarroaTreatment[]) || []).map((vt) => ({
+        ...((activityTreatments.data || []).filter(Boolean) as VarroaTreatment[]).map((vt) => ({
           ...vt,
           record_type: 'varroa_treatment' as const,
           date: vt.treatment_date,
         })),
-        ...((activityChecks.data as VarroaCheck[]) || []).map((vc) => ({
+        ...((activityChecks.data || []).filter(Boolean) as VarroaCheck[]).map((vc) => ({
           ...vc,
           record_type: 'varroa_check' as const,
           date: vc.check_date,
         })),
-        ...((activityFeedings.data as Feeding[]) || []).map((f) => ({
+        ...((activityFeedings.data || []).filter(Boolean) as Feeding[]).map((f) => ({
           ...f,
           record_type: 'feeding' as const,
           date: f.feed_date,
         })),
-        ...((activityHarvests.data as Harvest[]) || []).map((h) => ({
+        ...((activityHarvests.data || []).filter(Boolean) as Harvest[]).map((h) => ({
           ...h,
           record_type: 'harvest' as const,
           date: h.harvest_date,

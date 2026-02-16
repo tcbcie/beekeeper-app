@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
         const isAssociationMember = session.metadata?.isAssociationMember === 'true'
         const associationId = session.metadata?.associationId || null
         const associationCode = session.metadata?.associationCode || null
-        const priceEur = parseFloat(session.metadata?.priceEur || '0')
+        const parsedPrice = parseFloat(session.metadata?.priceEur || '0')
+        const priceEur = Number.isNaN(parsedPrice) ? 0 : parsedPrice
 
         console.log('Extracted data:', {
           userId,

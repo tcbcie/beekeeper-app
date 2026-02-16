@@ -34,7 +34,7 @@ export async function generateChatResponse(
     temperature: 0.7,
     max_tokens: 1000,
   })
-  return response.choices[0].message.content || ''
+  return response.choices?.[0]?.message?.content || ''
 }
 
 // Classify user query intent
@@ -87,7 +87,7 @@ Respond with JSON only: {"intent": "category", "confidence": 0.0-1.0}`
   })
 
   try {
-    const result = JSON.parse(response.choices[0].message.content || '{}')
+    const result = JSON.parse(response.choices?.[0]?.message?.content || '{}')
     return {
       intent: result.intent || 'general',
       confidence: result.confidence || 0.5

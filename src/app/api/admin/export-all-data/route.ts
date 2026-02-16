@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.warn(`[AUDIT] Admin data export: admin=${user.id} status=started timestamp=${new Date().toISOString()}`)
+
     // Get all table names from database
     const { data: tablesData, error: tablesError } = await supabaseAdmin.rpc('exec_sql', {
       query: `
@@ -195,6 +197,8 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- END OF EXPORT\n`
     sqlContent += `-- =====================================================\n`
+
+    console.warn(`[AUDIT] Admin data export: admin=${user.id} tables=${tables.length} status=success timestamp=${new Date().toISOString()}`)
 
     // Return the SQL content with appropriate headers
     return new NextResponse(sqlContent, {

@@ -98,7 +98,9 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
 
       if (rpcError) throw rpcError
 
-      const result = data as ActivateSubscriptionResponse
+      const result = data && typeof data === 'object' && 'success' in data
+        ? (data as ActivateSubscriptionResponse)
+        : { success: false, message: 'Unexpected response from server' } as ActivateSubscriptionResponse
 
       if (!result.success) {
         setError(result.message)

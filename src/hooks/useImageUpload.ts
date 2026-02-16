@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface UseImageUploadOptions {
@@ -38,12 +38,27 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUploadRe
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const readerRef = useRef<FileReader | null>(null)
+
+  // Abort any active FileReader on unmount
+  useEffect(() => {
+    return () => {
+      if (readerRef.current && readerRef.current.readyState === FileReader.LOADING) {
+        readerRef.current.abort()
+      }
+    }
+  }, [])
 
   const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Abort previous reader if still loading
+      if (readerRef.current && readerRef.current.readyState === FileReader.LOADING) {
+        readerRef.current.abort()
+      }
       setImageFile(file)
       const reader = new FileReader()
+      readerRef.current = reader
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
       }
