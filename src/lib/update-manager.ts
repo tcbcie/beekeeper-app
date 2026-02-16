@@ -17,11 +17,17 @@ class UpdateManager {
   private listeners: Set<UpdateListener> = new Set()
   private waitingWorker: ServiceWorker | null = null
   private currentState: UpdateState = { status: 'no-update' }
+  private initialized = false
+  private updateCheckInterval: ReturnType<typeof setInterval> | null = null
+  private visibilityHandler: (() => void) | null = null
+  private controllerChangeHandler: (() => void) | null = null
 
   /**
    * Initialize the update manager with service worker registration
    */
   async initialize(registration: ServiceWorkerRegistration): Promise<void> {
+    if (this.initialized) return
+    this.initialized = true
     this.registration = registration
 
     // Check for waiting service worker (update already downloaded)
@@ -47,22 +53,23 @@ class UpdateManager {
     })
 
     // Listen for controller change (new service worker activated)
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // Reload the page to get the new version
+    this.controllerChangeHandler = () => {
       window.location.reload()
-    })
+    }
+    navigator.serviceWorker.addEventListener('controllerchange', this.controllerChangeHandler)
 
     // Check for updates periodically (every 30 minutes)
-    setInterval(() => {
+    this.updateCheckInterval = setInterval(() => {
       this.checkForUpdates()
     }, 30 * 60 * 1000)
 
     // Check for updates on page visibility change
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
       if (!document.hidden) {
         this.checkForUpdates()
       }
-    })
+    }
+    document.addEventListener('visibilitychange', this.visibilityHandler)
   }
 
   /**
@@ -133,6 +140,26 @@ class UpdateManager {
    */
   getState(): UpdateState {
     return this.currentState
+  }
+
+  /**
+   * Clean up all event listeners and intervals
+   */
+  destroy(): void {
+    if (this.updateCheckInterval) {
+      clearInterval(this.updateCheckInterval)
+      this.updateCheckInterval = null
+    }
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler)
+      this.visibilityHandler = null
+    }
+    if (this.controllerChangeHandler) {
+      navigator.serviceWorker.removeEventListener('controllerchange', this.controllerChangeHandler)
+      this.controllerChangeHandler = null
+    }
+    this.listeners.clear()
+    this.initialized = false
   }
 
   /**

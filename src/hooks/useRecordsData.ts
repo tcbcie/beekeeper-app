@@ -174,8 +174,8 @@ export function useRecordsData(): UseRecordsDataReturn {
     }
   }, [])
 
-  const fetchInspections = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchInspections = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
 
     updateSharedHiveIds(allTeamHiveIds)
 
@@ -243,8 +243,8 @@ export function useRecordsData(): UseRecordsDataReturn {
     setLoading(false)
   }, [updateSharedHiveIds])
 
-  const fetchVarroaTreatments = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchVarroaTreatments = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -271,8 +271,8 @@ export function useRecordsData(): UseRecordsDataReturn {
     if (data) setVarroaTreatments(data as VarroaTreatment[])
   }, [updateSharedHiveIds])
 
-  const fetchVarroaChecks = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchVarroaChecks = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -299,8 +299,8 @@ export function useRecordsData(): UseRecordsDataReturn {
     if (data) setVarroaChecks(data as VarroaCheck[])
   }, [updateSharedHiveIds])
 
-  const fetchFeedings = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchFeedings = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -327,8 +327,8 @@ export function useRecordsData(): UseRecordsDataReturn {
     if (data) setFeedings(data as Feeding[])
   }, [updateSharedHiveIds])
 
-  const fetchHarvests = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = await getAccessibleHiveIds(userId)
+  const fetchHarvests = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -645,12 +645,15 @@ export function useRecordsData(): UseRecordsDataReturn {
 
     setLoading(true)
     try {
+      // Fetch accessible hive IDs once and pass to all record fetchers
+      const hiveIds = await getAccessibleHiveIds(userId)
+
       await Promise.all([
-        fetchInspections(userId, ownershipFilter),
-        fetchVarroaTreatments(userId, ownershipFilter),
-        fetchVarroaChecks(userId, ownershipFilter),
-        fetchFeedings(userId, ownershipFilter),
-        fetchHarvests(userId, ownershipFilter),
+        fetchInspections(userId, ownershipFilter, hiveIds),
+        fetchVarroaTreatments(userId, ownershipFilter, hiveIds),
+        fetchVarroaChecks(userId, ownershipFilter, hiveIds),
+        fetchFeedings(userId, ownershipFilter, hiveIds),
+        fetchHarvests(userId, ownershipFilter, hiveIds),
         fetchArchiveRecords(userId),
         fetchHives(userId),
         fetchApiaries(userId),

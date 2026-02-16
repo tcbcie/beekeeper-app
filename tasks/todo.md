@@ -1,40 +1,39 @@
-# Scrollable Bottom Nav with More Button
+# QA Audit - Top 10 Priority Fixes
 
-## Goal
-Make the mobile bottom navigation bar horizontally scrollable, showing more menu items from the centralised navigation config, with the "More" button pinned to the right.
+## Todo Items
 
-## Todo
-
-- [x] Update `BottomNavBar.tsx` to import items from `navigation.ts` instead of hardcoding 4 items
-- [x] Make the nav items area horizontally scrollable (overflow-x-auto, hide scrollbar)
-- [x] Pin the "More" button to the far right, outside the scrollable area
-- [x] Ensure active item styling still works correctly
-- [x] Create/update feature documentation in `docs/features/`
-- [x] QA: Fix P1 — auto-scroll active item into view on route change
-- [x] QA: Fix P2 — add right-edge fade gradient for scroll affordance
-- [x] QA: Fix P3 — add `touch-manipulation` to nav links and More button
-
-## Files Changed
-- `src/components/BottomNavBar.tsx` — scrollable nav from centralised config, auto-scroll to active, touch-manipulation
-- `src/app/globals.css` — added `scrollbar-hide` + `scroll-fade` utilities
-- `docs/features/navigation-restructure.md` — updated bottom nav section
+- [x] Fix 1: SEC-8 - Open redirect validation in login page
+- [x] Fix 2: SEC-2 - Add audit logging to admin impersonation
+- [x] Fix 3: QUAL-1 + SEC-9 - Fix AuthContext loading state & deduplicate offline fallback
+- [x] Fix 4: ERR-1 - Add error handling to useApiaryDetail queries
+- [x] Fix 5: PERF-2 - Deduplicate getAccessibleHiveIds in useRecordsData
+- [x] Fix 6: STATE-1 - Add cleanup to UpdateManager (memory leak)
+- [x] Fix 7: ERR-2 - Validate numeric parsing in news search API
+- [x] Fix 8: PERF-7/8 - Add useMemo to dashboard computed values
 
 ## Review
 
-### Summary
-The bottom nav bar now shows all main navigation items in a horizontally scrollable row. The "More" button is pinned to the right. Active item auto-scrolls into view on navigation. A right-edge fade hints at more content.
+### Summary of Changes
 
-### QA Fixes Applied
-| Issue | Severity | Fix |
-|-------|----------|-----|
-| Active item off-screen with no indication | P1 | `scrollIntoView({ inline: 'center' })` on active ref, triggered on pathname change |
-| No visual scroll affordance | P2 | `mask-image` gradient fading the right edge to transparent |
-| Missing `touch-manipulation` | P3 | Added to all Link and button elements |
+| Fix | File | What Changed |
+|-----|------|-------------|
+| SEC-8 | `src/app/login/page.tsx` | Validates `redirect` param and `pendingRedirect` localStorage to only allow paths starting with `/` (not `//`) |
+| SEC-2 | `src/app/api/admin/impersonate/route.ts` | Added `console.warn` audit logs for auth failure, role check failure, and successful impersonation |
+| QUAL-1 + SEC-9 | `src/contexts/AuthContext.tsx` | Extracted offline fallback into `tryOfflineFallback()` helper, removed duplicate `setLoading(false)` calls (now handled solely by `finally`) |
+| ERR-1 | `src/hooks/useApiaryDetail.ts` | Added error check on hives query (throws on error), added `console.error` for each Promise.all sub-query failure |
+| PERF-2 | `src/hooks/useRecordsData.ts` | `fetchAllData` calls `getAccessibleHiveIds` once and passes result to all 5 record fetch functions via optional `preloadedHiveIds` param. Eliminates 8 redundant Supabase queries per page load |
+| STATE-1 | `src/lib/update-manager.ts` | Added `initialized` guard, stored interval/handler references, added `destroy()` method to clean up listeners and intervals |
+| ERR-2 | `src/app/api/news/search/route.ts` | Added NaN check and bounds clamping (1-50) for `limit` parameter |
+| PERF-7/8 | `src/app/dashboard/page.tsx` | Wrapped `statCards`, `isTeamMember`, `hasMySharedData`, `hasSharedWithMeData`, `mySharedCards`, `sharedWithMeCards` in `useMemo` |
 
-### Route collision analysis
-Verified all 15 nav item hrefs — no `startsWith` prefix collisions exist. `/dashboard/records` vs `/dashboard/reports` vs `/dashboard/research` are all distinct prefixes.
+### No Breaking Changes
+- All fetch functions retain backward compatibility (new `preloadedHiveIds` param is optional)
+- UpdateManager singleton still works the same; `destroy()` is additive
+- Login redirect behaviour unchanged for valid internal paths
 
-### No breaking changes
-- MobileDrawer still works identically via the More button
-- Desktop sidebar unaffected
-- No database or API changes
+### Testing Recommendations
+1. Run `npm run build` to verify no TypeScript/compilation errors
+2. Test login with `?redirect=/dashboard/hives` (should work) and `?redirect=https://evil.com` (should redirect to `/dashboard`)
+3. Test dashboard loads correctly with team data
+4. Test records page loads (verify no regressions from hive ID deduplication)
+5. Test offline behaviour in AuthContext

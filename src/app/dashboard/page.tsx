@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
@@ -67,6 +67,34 @@ export default function DashboardPage() {
     }
   }, [userId, fetchTeams, fetchTeamStats])
 
+  // Memoised computed values (must be above early return to satisfy rules-of-hooks)
+  const isTeamMember = useMemo(() => ownedTeams.length > 0 || memberTeams.length > 0, [ownedTeams, memberTeams])
+
+  const statCards = useMemo(() => [
+    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-gray-900 dark:text-green-300', href: '/dashboard/apiaries' },
+    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-amber-300', href: '/dashboard/hives' },
+    { label: 'Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300', href: '/dashboard/records' },
+    { label: 'Active Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 dark:bg-purple-900/30 text-gray-900 dark:text-purple-300', href: '/dashboard/queens' },
+    { label: 'Active Tasks', value: stats.activeTasks, icon: '✅', color: 'bg-teal-50 dark:bg-teal-900/30 text-gray-900 dark:text-teal-300', href: '/dashboard/tasks' },
+  ], [stats])
+
+  const hasMySharedData = useMemo(() => mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0, [mySharedStats])
+  const hasSharedWithMeData = useMemo(() => sharedWithMeStats.hives > 0 || sharedWithMeStats.queens > 0 || sharedWithMeStats.inspections > 0, [sharedWithMeStats])
+
+  const mySharedCards = useMemo(() => hasMySharedData ? [
+    { label: 'Queens I Shared', value: mySharedStats.queens, icon: '👑', color: 'bg-purple-100 text-gray-900 border-2 border-purple-300' },
+    { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: '✨', color: 'bg-green-100 text-gray-900 border-2 border-green-300' },
+    { label: 'Hives I Shared', value: mySharedStats.hives, icon: '🐝', color: 'bg-amber-100 text-gray-900 border-2 border-amber-300' },
+    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
+  ] : [], [hasMySharedData, mySharedStats])
+
+  const sharedWithMeCards = useMemo(() => hasSharedWithMeData ? [
+    { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: '👑', color: 'bg-purple-50 text-gray-900 border-2 border-purple-200' },
+    { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: '✨', color: 'bg-green-50 text-gray-900 border-2 border-green-200' },
+    { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: '🐝', color: 'bg-amber-50 text-gray-900 border-2 border-amber-200' },
+    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
+  ] : [], [hasSharedWithMeData, sharedWithMeStats])
+
   if (loading) return (
     <div className="space-y-6">
       <div className="h-9 w-56 bg-sage-100 dark:bg-slate-800 rounded animate-shimmer" />
@@ -84,34 +112,6 @@ export default function DashboardPage() {
       </div>
     </div>
   )
-
-  // Check if user is a team member
-  const isTeamMember = ownedTeams.length > 0 || memberTeams.length > 0
-
-  const statCards = [
-    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-gray-900 dark:text-green-300', href: '/dashboard/apiaries' },
-    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-amber-300', href: '/dashboard/hives' },
-    { label: 'Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300', href: '/dashboard/records' },
-    { label: 'Active Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 dark:bg-purple-900/30 text-gray-900 dark:text-purple-300', href: '/dashboard/queens' },
-    { label: 'Active Tasks', value: stats.activeTasks, icon: '✅', color: 'bg-teal-50 dark:bg-teal-900/30 text-gray-900 dark:text-teal-300', href: '/dashboard/tasks' },
-  ]
-
-  const hasMySharedData = mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0
-  const hasSharedWithMeData = sharedWithMeStats.hives > 0 || sharedWithMeStats.queens > 0 || sharedWithMeStats.inspections > 0
-
-  const mySharedCards = hasMySharedData ? [
-    { label: 'Queens I Shared', value: mySharedStats.queens, icon: '👑', color: 'bg-purple-100 text-gray-900 border-2 border-purple-300' },
-    { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: '✨', color: 'bg-green-100 text-gray-900 border-2 border-green-300' },
-    { label: 'Hives I Shared', value: mySharedStats.hives, icon: '🐝', color: 'bg-amber-100 text-gray-900 border-2 border-amber-300' },
-    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
-  ] : []
-
-  const sharedWithMeCards = hasSharedWithMeData ? [
-    { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: '👑', color: 'bg-purple-50 text-gray-900 border-2 border-purple-200' },
-    { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: '✨', color: 'bg-green-50 text-gray-900 border-2 border-green-200' },
-    { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: '🐝', color: 'bg-amber-50 text-gray-900 border-2 border-amber-200' },
-    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
-  ] : []
 
   return (
     <div className="space-y-6">

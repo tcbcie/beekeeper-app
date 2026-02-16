@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
 
     if (authError || !user) {
+      console.warn(`[AUDIT] Admin impersonation: auth=failed status=unauthorized timestamp=${new Date().toISOString()}`)
       return NextResponse.json(
         { error: 'Invalid authentication' },
         { status: 401 }
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (profileError || !profile || profile.role !== 'Admin') {
+      console.warn(`[AUDIT] Admin impersonation: admin=${user.id} status=forbidden reason=not_admin timestamp=${new Date().toISOString()}`)
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
@@ -103,6 +105,8 @@ export async function POST(request: NextRequest) {
     const displayName = targetProfile?.first_name && targetProfile?.last_name
       ? `${targetProfile.first_name} ${targetProfile.last_name}`
       : targetUser.user.email
+
+    console.warn(`[AUDIT] Admin impersonation: admin=${user.id} target=${targetUserId} status=success timestamp=${new Date().toISOString()}`)
 
     // Return the token_hash for client to use with verifyOtp
     return NextResponse.json({
