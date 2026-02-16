@@ -182,6 +182,19 @@ body {
     min-width: 44px;
   }
 
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scroll-fade {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+
   /* Responsive text utilities */
   .text-responsive-sm {
     font-size: 0.875rem; /* 14px */

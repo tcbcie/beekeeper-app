@@ -34,19 +34,14 @@ Single source of truth for all nav items, groups, and helper functions. Eliminat
 
 ### Bottom Navigation Bar (`src/components/BottomNavBar.tsx`)
 
-Fixed 5-item bar at the bottom of the screen on mobile (`md:hidden`):
+Fixed bar at the bottom of the screen on mobile (`md:hidden`):
 
-| Label | Icon | Action |
-|-------|------|--------|
-| Hives | Archive | `/dashboard/hives` |
-| Records | ClipboardList | `/dashboard/records` |
-| Tasks | Calendar | `/dashboard/tasks` |
-| Tools | Wrench | `/dashboard/tools` |
-| More | Menu | Opens MobileDrawer |
-
-- Safe area inset for iOS home indicator
-- 48px minimum touch targets
-- Active state highlighting based on current path
+- **Scrollable items area** — all nav items from `navigation.ts` (excluding bottom-pinned items like Profile/About) are displayed in a horizontally scrollable row. Users can swipe to see all items.
+- **Pinned "More" button** — fixed to the far right with a left border separator, always visible. Opens the MobileDrawer for grouped/hierarchical navigation.
+- Uses the `scrollbar-hide` utility to hide the scrollbar while keeping swipe functionality.
+- Safe area inset for iOS home indicator.
+- 48px minimum touch targets.
+- Active state highlighting based on current path (exact match for Overview, prefix match for all others).
 
 ### Hamburger Button Hidden
 
