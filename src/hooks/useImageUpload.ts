@@ -86,13 +86,28 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUploadRe
     try {
       setUploading(true)
       const fileExt = file.name.split('.').pop()?.toLowerCase()
+
+      // Validate file type
+      if (!fileExt || !MIME_MAP[fileExt]) {
+        const allowed = Object.keys(MIME_MAP).join(', ')
+        onError?.(`Invalid file type ".${fileExt || ''}". Allowed: ${allowed}`)
+        return null
+      }
+
+      // Validate file size (max 10MB)
+      const MAX_SIZE = 10 * 1024 * 1024
+      if (file.size === 0 || file.size > MAX_SIZE) {
+        onError?.(file.size === 0 ? 'File is empty.' : 'File exceeds the 10MB size limit.')
+        return null
+      }
+
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
       const filePath = `${folder}/${fileName}`
 
       // Determine correct MIME type - fallback based on extension if file.type is wrong/empty
       let contentType = file.type
       if (!contentType || contentType === 'application/json') {
-        contentType = MIME_MAP[fileExt || ''] || 'image/jpeg'
+        contentType = MIME_MAP[fileExt] || 'image/jpeg'
       }
 
       // Create a new File object with the correct MIME type

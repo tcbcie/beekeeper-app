@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
@@ -21,8 +21,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const refreshingRef = useRef(false)
 
   const refreshUser = useCallback(async () => {
+    if (refreshingRef.current) return
+    refreshingRef.current = true
     // Try to restore session from localStorage when offline
     const tryOfflineFallback = (): boolean => {
       if (navigator.onLine) return false
@@ -67,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserId(null)
     } finally {
       setLoading(false)
+      refreshingRef.current = false
     }
   }, [])
 

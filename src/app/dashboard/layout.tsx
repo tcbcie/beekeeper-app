@@ -24,6 +24,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [checkingAccount, setCheckingAccount] = useState(true)
   const router = useRouter()
   const hasShownDisabledAlert = useRef(false)
+  const checkingAccountRef = useRef(false)
 
   useEffect(() => {
     const checkAccount = async () => {
@@ -69,14 +70,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     if (!user) return
 
     const accountCheckInterval = setInterval(async () => {
-      const accountActive = await isAccountActive()
-      if (!accountActive) {
-        if (!hasShownDisabledAlert.current) {
-          hasShownDisabledAlert.current = true
-          await supabase.auth.signOut({ scope: 'local' })
-          toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
-          router.push('/login')
+      if (checkingAccountRef.current) return
+      checkingAccountRef.current = true
+      try {
+        const accountActive = await isAccountActive()
+        if (!accountActive) {
+          if (!hasShownDisabledAlert.current) {
+            hasShownDisabledAlert.current = true
+            await supabase.auth.signOut({ scope: 'local' })
+            toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
+            router.push('/login')
+          }
         }
+      } catch (err) {
+        console.error('Account check failed:', err)
+      } finally {
+        checkingAccountRef.current = false
       }
     }, 30000) // Check every 30 seconds
 
