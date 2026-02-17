@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in impersonate:', error)
     return NextResponse.json(
-      { error: 'Failed to impersonate user', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to impersonate user' },
       { status: 500 }
     )
   }

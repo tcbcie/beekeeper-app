@@ -296,7 +296,7 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch articles' }, { status: 500 })
   }
 
   return NextResponse.json({ data, total: count })
@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to save article' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -397,7 +397,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('News articles POST error:', error)
     return NextResponse.json(
-      { error: 'Failed to add article', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to add article' },
       { status: 500 }
     )
   }
@@ -479,7 +479,7 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to update article' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, article: data })
@@ -487,7 +487,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     console.error('News articles PATCH error:', error)
     return NextResponse.json(
-      { error: 'Failed to update article', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to update article' },
       { status: 500 }
     )
   }
@@ -533,7 +533,7 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete article' }, { status: 500 })
   }
 
   return NextResponse.json({
