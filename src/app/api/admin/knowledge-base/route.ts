@@ -324,11 +324,30 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'URL is required' }, { status: 400 })
         }
 
-        // Validate URL
+        // Validate URL format and protocol
+        let parsedUrl: URL
         try {
-          new URL(url)
+          parsedUrl = new URL(url)
         } catch {
           return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+        }
+
+        // SSRF protection: only allow HTTPS, block private/internal addresses
+        if (parsedUrl.protocol !== 'https:') {
+          return NextResponse.json({ error: 'Only HTTPS URLs are allowed' }, { status: 400 })
+        }
+        const hostname = parsedUrl.hostname.toLowerCase()
+        const isPrivate =
+          hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname === '0.0.0.0' ||
+          hostname.endsWith('.local') ||
+          hostname.startsWith('10.') ||
+          hostname.startsWith('192.168.') ||
+          hostname.startsWith('169.254.') ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+        if (isPrivate) {
+          return NextResponse.json({ error: 'Internal/private URLs are not allowed' }, { status: 400 })
         }
 
         textContent = await extractTextFromUrl(url)

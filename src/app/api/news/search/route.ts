@@ -14,6 +14,13 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  if (query.trim().length > 500) {
+    return NextResponse.json(
+      { error: 'Query must be at most 500 characters' },
+      { status: 400 }
+    )
+  }
+
   try {
     const results = await searchNewsArticles(query.trim(), limit)
     return NextResponse.json({ results })

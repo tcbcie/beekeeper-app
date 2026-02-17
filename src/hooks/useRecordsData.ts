@@ -165,6 +165,7 @@ export function useRecordsData(): UseRecordsDataReturn {
   const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
   const sharedHiveIdsRef = useRef<string[]>([])
   const fetchInProgressRef = useRef(false)
+  const optionsLoadedRef = useRef(false)
 
   // Only update sharedHiveIds if the array actually changed
   const updateSharedHiveIds = useCallback((newIds: string[]) => {
@@ -626,6 +627,8 @@ export function useRecordsData(): UseRecordsDataReturn {
   }, [])
 
   const fetchAllOptions = useCallback(async () => {
+    if (optionsLoadedRef.current) return
+    optionsLoadedRef.current = true
     await Promise.all([
       fetchCheckMethods(),
       fetchFeedTypes(),

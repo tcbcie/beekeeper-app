@@ -39,10 +39,12 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUploadRe
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const readerRef = useRef<FileReader | null>(null)
+  const mountedRef = useRef(true)
 
   // Abort any active FileReader on unmount
   useEffect(() => {
     return () => {
+      mountedRef.current = false
       if (readerRef.current && readerRef.current.readyState === FileReader.LOADING) {
         readerRef.current.abort()
       }
@@ -94,6 +96,19 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUploadRe
         return null
       }
 
+      // Validate magic bytes to ensure file is a genuine image
+      const header = new Uint8Array(await file.slice(0, 12).arrayBuffer())
+      const isValidImage =
+        (header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF) || // JPEG
+        (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) || // PNG
+        (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38) || // GIF
+        (header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 &&
+         header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50) // WebP (RIFF...WEBP)
+      if (!isValidImage) {
+        onError?.('File does not appear to be a valid image. Please select a real image file.')
+        return null
+      }
+
       // Validate file size (max 10MB)
       const MAX_SIZE = 10 * 1024 * 1024
       if (file.size === 0 || file.size > MAX_SIZE) {
@@ -133,11 +148,13 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUploadRe
       return publicUrl
     } catch (error) {
       console.error('Failed to upload image:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      onError?.(`Failed to upload image: ${errorMessage}`)
+      if (mountedRef.current) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        onError?.(`Failed to upload image: ${errorMessage}`)
+      }
       return null
     } finally {
-      setUploading(false)
+      if (mountedRef.current) setUploading(false)
     }
   }, [bucket, folder, onError])
 

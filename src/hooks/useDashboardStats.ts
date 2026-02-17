@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 /** Returns YYYY-MM-DD in the user's local timezone (avoids UTC date shift near midnight). */
@@ -41,6 +41,11 @@ export function useDashboardStats(): UseDashboardStatsReturn {
   const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => { mountedRef.current = false }
+  }, [])
 
   const fetchDashboardData = useCallback(async (userId: string) => {
     if (!userId) return
@@ -65,6 +70,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         supabase.from('tasks_events').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', false),
       ])
 
+      if (!mountedRef.current) return
       setStats({
         apiaries: apiariesRes.count || 0,
         hives: hivesRes.count || 0,
@@ -105,6 +111,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         overdueCount = hiveIds.filter(id => !inspectedHiveIds.has(id)).length
       }
 
+      if (!mountedRef.current) return
       setAlerts({
         overdueInspections: overdueCount,
         oldQueens: oldQueensRes.count || 0,
@@ -186,6 +193,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
       })
 
       // Take only the 5 most recent records
+      if (!mountedRef.current) return
       setRecentActivity(merged.slice(0, 5))
     } catch (err) {
       console.error('Error fetching dashboard data:', err)

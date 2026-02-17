@@ -144,33 +144,29 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
         setHive(hiveData)
       }
 
-      // Calculate inspection averages
+      // Calculate inspection averages in a single pass
       if (inspectionsData && inspectionsData.length > 0) {
-        const broodFrames = inspectionsData.filter(i => i.brood_frames !== null && i.brood_frames > 0).map(i => i.brood_frames!)
-        const rightSizedFrames = inspectionsData.filter(i => i.right_sized_frames !== null && i.right_sized_frames > 0).map(i => i.right_sized_frames!)
-        const broodPatterns = inspectionsData.filter(i => i.brood_pattern_rating !== null && i.brood_pattern_rating > 0).map(i => i.brood_pattern_rating!)
-        const temperaments = inspectionsData.filter(i => i.temperament_rating !== null && i.temperament_rating > 0).map(i => i.temperament_rating!)
-        const populations = inspectionsData.filter(i => i.population_strength !== null && i.population_strength > 0).map(i => i.population_strength!)
-
-        const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
-
+        const sums = { brood: 0, rightSized: 0, pattern: 0, temper: 0, pop: 0 }
+        const counts = { brood: 0, rightSized: 0, pattern: 0, temper: 0, pop: 0 }
         const inspectionsWithData = new Set<string>()
-        inspectionsData.forEach(inspection => {
-          if ((inspection.brood_frames !== null && inspection.brood_frames > 0) ||
-              (inspection.right_sized_frames !== null && inspection.right_sized_frames > 0) ||
-              (inspection.brood_pattern_rating !== null && inspection.brood_pattern_rating > 0) ||
-              (inspection.temperament_rating !== null && inspection.temperament_rating > 0) ||
-              (inspection.population_strength !== null && inspection.population_strength > 0)) {
-            inspectionsWithData.add(inspection.id)
-          }
-        })
 
+        for (const i of inspectionsData) {
+          let hasData = false
+          if (i.brood_frames != null && i.brood_frames > 0) { sums.brood += i.brood_frames; counts.brood++; hasData = true }
+          if (i.right_sized_frames != null && i.right_sized_frames > 0) { sums.rightSized += i.right_sized_frames; counts.rightSized++; hasData = true }
+          if (i.brood_pattern_rating != null && i.brood_pattern_rating > 0) { sums.pattern += i.brood_pattern_rating; counts.pattern++; hasData = true }
+          if (i.temperament_rating != null && i.temperament_rating > 0) { sums.temper += i.temperament_rating; counts.temper++; hasData = true }
+          if (i.population_strength != null && i.population_strength > 0) { sums.pop += i.population_strength; counts.pop++; hasData = true }
+          if (hasData) inspectionsWithData.add(i.id)
+        }
+
+        const avg = (sum: number, count: number) => count > 0 ? sum / count : null
         setAverages({
-          brood_frames: avg(broodFrames),
-          right_sized_frames: avg(rightSizedFrames),
-          brood_pattern: avg(broodPatterns),
-          temperament: avg(temperaments),
-          population: avg(populations),
+          brood_frames: avg(sums.brood, counts.brood),
+          right_sized_frames: avg(sums.rightSized, counts.rightSized),
+          brood_pattern: avg(sums.pattern, counts.pattern),
+          temperament: avg(sums.temper, counts.temper),
+          population: avg(sums.pop, counts.pop),
           inspection_count: inspectionsWithData.size,
         })
       } else {
