@@ -1,5 +1,10 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+
+/** Returns YYYY-MM-DD in the user's local timezone (avoids UTC date shift near midnight). */
+function toLocalDateString(date: Date): string {
+  return date.toLocaleDateString('en-CA') // en-CA locale returns YYYY-MM-DD
+}
 import type {
   DashboardStats,
   AttentionAlerts,
@@ -45,8 +50,8 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
     try {
       // Fetch all stats in parallel
-      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const fourteenDaysAgo = toLocalDateString(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000))
+      const twoYearsAgo = toLocalDateString(new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000))
 
       const [apiariesRes, hivesRes, inspectionsRes, queensRes, tasksRes] = await Promise.all([
         supabase.from('apiaries').select('id', { count: 'exact', head: true }).eq('user_id', userId),
@@ -54,7 +59,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         supabase
           .from('inspections')
           .select('id', { count: 'exact', head: true })
-          .gte('inspection_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+          .gte('inspection_date', toLocalDateString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)))
           .eq('user_id', userId),
         supabase.from('queens').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'active'),
         supabase.from('tasks_events').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', false),
@@ -76,7 +81,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         // Varroa checks > 3% infestation in last 30 days — fetch hive_ids for dedup
         supabase.from('varroa_checks').select('hive_id')
           .eq('user_id', userId).gt('infestation_rate', 3)
-          .gte('check_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+          .gte('check_date', toLocalDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))),
         // Active hives for overdue inspection calculation
         supabase.from('hives').select('id')
           .eq('user_id', userId).is('archived_at', null),

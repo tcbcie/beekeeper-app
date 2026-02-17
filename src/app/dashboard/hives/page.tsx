@@ -590,11 +590,11 @@ export default function HivesPage() {
 
   // Refetch hives when ownership or archive filter changes
   useEffect(() => {
-    if (userId) {
+    if (userId && filtersLoaded) {
       fetchHives(userId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownershipFilter, archiveFilter, userId])
+  }, [ownershipFilter, archiveFilter, userId, filtersLoaded])
 
   // Close context menu when clicking outside
   useEffect(() => {
