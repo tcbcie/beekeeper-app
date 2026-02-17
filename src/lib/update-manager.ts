@@ -19,6 +19,7 @@ class UpdateManager {
   private currentState: UpdateState = { status: 'no-update' }
   private initialized = false
   private updateCheckInterval: ReturnType<typeof setInterval> | null = null
+  private noUpdateTimeout: ReturnType<typeof setTimeout> | null = null
   private visibilityHandler: (() => void) | null = null
   private controllerChangeHandler: (() => void) | null = null
 
@@ -87,7 +88,7 @@ class UpdateManager {
 
       // If no update was found, the state will remain 'checking'
       // We'll update it to 'no-update' after a brief delay
-      setTimeout(() => {
+      this.noUpdateTimeout = setTimeout(() => {
         if (this.currentState.status === 'checking') {
           this.updateState({ status: 'no-update' })
         }
@@ -146,6 +147,10 @@ class UpdateManager {
    * Clean up all event listeners and intervals
    */
   destroy(): void {
+    if (this.noUpdateTimeout) {
+      clearTimeout(this.noUpdateTimeout)
+      this.noUpdateTimeout = null
+    }
     if (this.updateCheckInterval) {
       clearInterval(this.updateCheckInterval)
       this.updateCheckInterval = null

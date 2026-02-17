@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (profileError) {
       console.error('[Stripe Checkout] Profile query error:', profileError)
       return NextResponse.json(
-        { error: 'User not found', details: profileError.message },
+        { error: 'User not found' },
         { status: 404 }
       )
     }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     if (!process.env.NEXT_PUBLIC_APP_URL) {
       console.error('[Stripe Checkout] NEXT_PUBLIC_APP_URL not set!')
       return NextResponse.json(
-        { error: 'Server configuration error: APP_URL missing' },
+        { error: 'Server configuration error' },
         { status: 500 }
       )
     }
@@ -153,18 +153,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[Stripe Checkout] Error:', error)
 
-    // Provide more detailed error information
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    const errorDetails = error instanceof Error ? error.stack : String(error)
-
-    console.error('[Stripe Checkout] Error details:', errorDetails)
-
     return NextResponse.json(
-      {
-        error: 'Failed to create checkout session',
-        message: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
-      },
+      { error: 'Failed to create checkout session' },
       { status: 500 }
     )
   }

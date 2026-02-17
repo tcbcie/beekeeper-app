@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import type { Apiary } from '@/types/apiary'
@@ -42,6 +42,12 @@ interface UseApiaryDetailReturn {
 
 export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
   const toast = useToast()
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => { mountedRef.current = false }
+  }, [])
+
   const [apiary, setApiary] = useState<Apiary | null>(null)
   const [hives, setHives] = useState<ApiaryHive[]>([])
   const [recentRecords, setRecentRecords] = useState<ApiaryRecentRecord[]>([])
@@ -65,6 +71,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         .single()
 
       if (apiaryError) throw apiaryError
+      if (!mountedRef.current) return
       setApiary(apiaryData)
       setIsOwner(apiaryData.user_id === currentUserId)
 
@@ -76,6 +83,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         .order('hive_number')
 
       if (hivesError) throw hivesError
+      if (!mountedRef.current) return
 
       const hivesArr = (hivesData || []) as ApiaryHive[]
       setHives(hivesArr)
@@ -97,6 +105,8 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
           supabase.from('feedings').select('id, feed_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('feed_date', { ascending: false }).limit(3),
           supabase.from('harvests').select('id, harvest_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('harvest_date', { ascending: false }).limit(3),
         ])
+
+        if (!mountedRef.current) return
 
         if (inspRes.error) console.error('Failed to fetch inspections:', inspRes.error)
         if (treatRes.error) console.error('Failed to fetch treatments:', treatRes.error)

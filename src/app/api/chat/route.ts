@@ -109,10 +109,7 @@ export async function POST(request: NextRequest) {
     const isOpenAIError = errorMessage.includes('OpenAI') || errorMessage.includes('API')
 
     return NextResponse.json(
-      {
-        error: isOpenAIError ? 'AI service error' : 'Failed to process message',
-        details: errorMessage
-      },
+      { error: isOpenAIError ? 'AI service error' : 'Failed to process message' },
       { status: 500 }
     )
   }
