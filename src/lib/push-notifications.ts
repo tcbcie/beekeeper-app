@@ -189,7 +189,10 @@ export class PushNotificationManager {
 export const pushNotificationManager = new PushNotificationManager()
 
 // Listen for background sync messages from service worker
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+// Guard prevents duplicate listeners on hot reload
+let messageListenerRegistered = false
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && !messageListenerRegistered) {
+  messageListenerRegistered = true
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'BACKGROUND_SYNC') {
       // Trigger sync manager

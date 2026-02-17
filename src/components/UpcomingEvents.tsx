@@ -17,6 +17,8 @@ interface UpcomingEvent {
   apiary_id?: string
 }
 
+const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
+
 export default function UpcomingEvents({ userId }: { userId: string }) {
   const [events, setEvents] = useState<UpcomingEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,10 +71,9 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
       if (a.days_until !== b.days_until) {
         return a.days_until - b.days_until
       }
-      // If same day, prioritize by priority (urgent > high > normal > low)
-      const priorityOrder = { urgent: 0, high: 1, normal: 2, low: 3 }
-      const aPriority = a.priority ? priorityOrder[a.priority] : 999
-      const bPriority = b.priority ? priorityOrder[b.priority] : 999
+      // If same day, prioritise by priority (urgent > high > normal > low)
+      const aPriority = a.priority ? PRIORITY_ORDER[a.priority] : 999
+      const bPriority = b.priority ? PRIORITY_ORDER[b.priority] : 999
       return aPriority - bPriority
     })
 

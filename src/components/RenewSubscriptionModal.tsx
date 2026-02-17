@@ -36,7 +36,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
     if (isOpen && paymentMethod === 'association_code' && associations.length === 0) {
       loadAssociations()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAssociations is stable, associations.length is intentionally excluded to only load once
   }, [isOpen, paymentMethod])
 
   const loadAssociations = async () => {

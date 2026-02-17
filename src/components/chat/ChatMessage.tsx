@@ -20,21 +20,26 @@ function parseMarkdownLinks(text: string, isUser: boolean): React.ReactNode[] {
       parts.push(text.slice(lastIndex, match.index))
     }
 
-    // Add the link
+    // Add the link — only allow http(s) to prevent javascript: XSS
     const [, linkText, url] = match
-    parts.push(
-      <a
-        key={match.index}
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`underline hover:opacity-80 ${
-          isUser ? 'text-green-200' : 'text-amber-600 dark:text-amber-400'
-        }`}
-      >
-        {linkText}
-      </a>
-    )
+    const isSafeUrl = /^https?:\/\//i.test(url)
+    if (isSafeUrl) {
+      parts.push(
+        <a
+          key={match.index}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`underline hover:opacity-80 ${
+            isUser ? 'text-green-200' : 'text-amber-600 dark:text-amber-400'
+          }`}
+        >
+          {linkText}
+        </a>
+      )
+    } else {
+      parts.push(linkText)
+    }
 
     lastIndex = match.index + match[0].length
   }
