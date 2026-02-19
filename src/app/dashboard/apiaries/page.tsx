@@ -181,6 +181,18 @@ export default function ApiariesPage() {
     }
   }
 
+  // Backfill elevation for existing apiaries missing it (runs once on load)
+  const backfillElevations = async (apiariesMissing: Apiary[]) => {
+    for (const a of apiariesMissing) {
+      const elev = await fetchElevation(Number(a.latitude), Number(a.longitude))
+      if (elev !== null) {
+        const rounded = Math.round(elev)
+        await supabase.from('apiaries').update({ elevation: rounded }).eq('id', a.id)
+        setApiaries(prev => prev.map(p => p.id === a.id ? { ...p, elevation: rounded } : p))
+      }
+    }
+  }
+
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
@@ -226,11 +238,18 @@ export default function ApiariesPage() {
         })
       }
 
-      setApiaries(data.map(a => ({
+      const enriched = data.map(a => ({
         ...a,
         hive_count: hiveCounts[a.id] || 0,
         last_inspection_date: lastInspections[a.id] || undefined,
-      })))
+      }))
+      setApiaries(enriched)
+
+      // Backfill elevation for apiaries that have coordinates but no elevation
+      const missing = enriched.filter(a => a.latitude && a.longitude && a.elevation == null)
+      if (missing.length > 0) {
+        backfillElevations(missing)
+      }
     }
     setLoading(false)
   }, [userId])
