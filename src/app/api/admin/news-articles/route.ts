@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
       .from('news_articles')
       .select('id, title')
       .eq('url', url)
-      .single()
+      .maybeSingle()
 
     if (existing) {
       return NextResponse.json({
@@ -339,7 +339,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract metadata from URL
-    const metadata = await extractUrlMetadata(url)
+    let metadata: UrlMetadata
+    try {
+      metadata = await extractUrlMetadata(url)
+    } catch (fetchError) {
+      const detail = fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'
+      return NextResponse.json(
+        { error: `Could not fetch URL: ${detail}` },
+        { status: 422 }
+      )
+    }
 
     // Ingest to knowledge base if enabled and content is sufficient
     let kbSourceId: string | null = null
@@ -396,8 +405,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('News articles POST error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to add article' },
+      { error: `Failed to add article: ${message}` },
       { status: 500 }
     )
   }
