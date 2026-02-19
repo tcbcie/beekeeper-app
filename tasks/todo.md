@@ -1,39 +1,38 @@
-# QA Audit - Top 10 Priority Fixes
+# Fix: News Articles POST 500 Error
 
-## Todo Items
+## Root Cause
+The POST `/api/admin/news-articles` endpoint fails with a 500 when adding a new article URL. The Supabase logs show:
+1. Auth verification succeeds (200)
+2. Duplicate check returns 406 (`.single()` with no matching row — expected for new articles)
+3. **No subsequent database operations** — the code crashes before reaching the insert
 
-- [x] Fix 1: SEC-8 - Open redirect validation in login page
-- [x] Fix 2: SEC-2 - Add audit logging to admin impersonation
-- [x] Fix 3: QUAL-1 + SEC-9 - Fix AuthContext loading state & deduplicate offline fallback
-- [x] Fix 4: ERR-1 - Add error handling to useApiaryDetail queries
-- [x] Fix 5: PERF-2 - Deduplicate getAccessibleHiveIds in useRecordsData
-- [x] Fix 6: STATE-1 - Add cleanup to UpdateManager (memory leak)
-- [x] Fix 7: ERR-2 - Validate numeric parsing in news search API
-- [x] Fix 8: PERF-7/8 - Add useMemo to dashboard computed values
+The failure occurs in `extractUrlMetadata()` — the server-side `fetch()` to the target URL (science.org) is likely blocked by the site (403/paywall/anti-bot). The error is swallowed by a generic `catch` block that returns `"Failed to add article"` with no detail.
+
+## Fix Plan
+
+- [x] **1. Use `.maybeSingle()` instead of `.single()` for duplicate check** — avoids the spurious 406 error from PostgREST when no row is found
+- [x] **2. Return the actual error message in the POST catch block** — so the user/dev can see WHY it failed (e.g. "Failed to fetch URL: 403") instead of a generic message
+- [x] **3. Add specific error handling for URL fetch failures** — catch fetch errors separately and return a clear 422 response (e.g. "Could not fetch URL: site returned 403") instead of a generic 500
+
+All changes are in a single file: `src/app/api/admin/news-articles/route.ts`
 
 ## Review
 
 ### Summary of Changes
 
-| Fix | File | What Changed |
-|-----|------|-------------|
-| SEC-8 | `src/app/login/page.tsx` | Validates `redirect` param and `pendingRedirect` localStorage to only allow paths starting with `/` (not `//`) |
-| SEC-2 | `src/app/api/admin/impersonate/route.ts` | Added `console.warn` audit logs for auth failure, role check failure, and successful impersonation |
-| QUAL-1 + SEC-9 | `src/contexts/AuthContext.tsx` | Extracted offline fallback into `tryOfflineFallback()` helper, removed duplicate `setLoading(false)` calls (now handled solely by `finally`) |
-| ERR-1 | `src/hooks/useApiaryDetail.ts` | Added error check on hives query (throws on error), added `console.error` for each Promise.all sub-query failure |
-| PERF-2 | `src/hooks/useRecordsData.ts` | `fetchAllData` calls `getAccessibleHiveIds` once and passes result to all 5 record fetch functions via optional `preloadedHiveIds` param. Eliminates 8 redundant Supabase queries per page load |
-| STATE-1 | `src/lib/update-manager.ts` | Added `initialized` guard, stored interval/handler references, added `destroy()` method to clean up listeners and intervals |
-| ERR-2 | `src/app/api/news/search/route.ts` | Added NaN check and bounds clamping (1-50) for `limit` parameter |
-| PERF-7/8 | `src/app/dashboard/page.tsx` | Wrapped `statCards`, `isTeamMember`, `hasMySharedData`, `hasSharedWithMeData`, `mySharedCards`, `sharedWithMeCards` in `useMemo` |
+| # | Change | Detail |
+|---|--------|--------|
+| 1 | `.single()` → `.maybeSingle()` | Duplicate URL check no longer triggers a 406 from PostgREST when no row exists |
+| 2 | Error detail in catch block | Outer catch now returns the actual error message (e.g. `"Failed to add article: Failed to fetch URL: 403"`) instead of a generic string |
+| 3 | URL fetch try-catch | `extractUrlMetadata()` is wrapped in its own try-catch; fetch failures return a **422** with a clear message (e.g. `"Could not fetch URL: Failed to fetch URL: 403"`) |
 
-### No Breaking Changes
-- All fetch functions retain backward compatibility (new `preloadedHiveIds` param is optional)
-- UpdateManager singleton still works the same; `destroy()` is additive
-- Login redirect behaviour unchanged for valid internal paths
+### What This Fixes
+- The user will now see a **specific error message** when adding an article fails (e.g. the target site blocked the request)
+- The duplicate check no longer produces spurious 406 errors in Supabase logs
+- URL fetch failures are distinguished from other errors (422 vs 500)
 
-### Testing Recommendations
-1. Run `npm run build` to verify no TypeScript/compilation errors
-2. Test login with `?redirect=/dashboard/hives` (should work) and `?redirect=https://evil.com` (should redirect to `/dashboard`)
-3. Test dashboard loads correctly with team data
-4. Test records page loads (verify no regressions from hive ID deduplication)
-5. Test offline behaviour in AuthContext
+### What This Doesn't Fix
+- If science.org (or any site) blocks server-side requests, the article still can't be auto-fetched — but now the error message makes this clear so the user understands why
+
+### Testing
+- Deploy and retry adding the science.org article — the error message should now say exactly what went wrong (e.g. "Could not fetch URL: Failed to fetch URL: 403")
