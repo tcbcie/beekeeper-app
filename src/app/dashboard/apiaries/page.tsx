@@ -20,6 +20,7 @@ import { useImageUpload } from '@/hooks/useImageUpload'
 import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
+import { toIrishGridRef } from '@/lib/irish-grid'
 
 export default function ApiariesPage() {
   const toast = useToast()
@@ -37,6 +38,7 @@ export default function ApiariesPage() {
     latitude: '',
     longitude: '',
     elevation: '',
+    grid_reference: '',
     notes: '',
     is_uk_ni: false,
     share_location: false,
@@ -145,6 +147,7 @@ export default function ApiariesPage() {
         longitude: coords.lon
       }))
       lookupElevation(coords.lat, coords.lon)
+      lookupGridReference(coords.lat, coords.lon)
       // Show warning that coordinates are approximate
       toast.info('Coordinates are approximate. Use "Pick on Map" to verify exact location.')
     } else {
@@ -160,6 +163,7 @@ export default function ApiariesPage() {
       longitude: lng
     }))
     lookupElevation(lat, lng)
+    lookupGridReference(lat, lng)
   }
 
   // Handle city change from map reverse geocoding
@@ -168,6 +172,15 @@ export default function ApiariesPage() {
       ...prev,
       city: city
     }))
+  }
+
+  // Look up Irish Grid reference for given coordinates and update form
+  const lookupGridReference = (lat: string, lng: string) => {
+    const latNum = parseFloat(lat)
+    const lngNum = parseFloat(lng)
+    if (isNaN(latNum) || isNaN(lngNum)) return
+    const ref = toIrishGridRef(latNum, lngNum)
+    setFormData(prev => ({ ...prev, grid_reference: ref || '' }))
   }
 
   // Look up elevation for given coordinates and update form
@@ -189,6 +202,17 @@ export default function ApiariesPage() {
         const rounded = Math.round(elev)
         await supabase.from('apiaries').update({ elevation: rounded }).eq('id', a.id)
         setApiaries(prev => prev.map(p => p.id === a.id ? { ...p, elevation: rounded } : p))
+      }
+    }
+  }
+
+  // Backfill grid references for existing apiaries missing them (runs once on load)
+  const backfillGridReferences = async (apiariesMissing: Apiary[]) => {
+    for (const a of apiariesMissing) {
+      const ref = toIrishGridRef(Number(a.latitude), Number(a.longitude))
+      if (ref) {
+        await supabase.from('apiaries').update({ grid_reference: ref }).eq('id', a.id)
+        setApiaries(prev => prev.map(p => p.id === a.id ? { ...p, grid_reference: ref } : p))
       }
     }
   }
@@ -250,6 +274,12 @@ export default function ApiariesPage() {
       if (missing.length > 0) {
         backfillElevations(missing)
       }
+
+      // Backfill grid references for apiaries that have coordinates but no grid_reference
+      const missingGrid = enriched.filter(a => a.latitude && a.longitude && !a.grid_reference)
+      if (missingGrid.length > 0) {
+        backfillGridReferences(missingGrid)
+      }
     }
     setLoading(false)
   }, [userId])
@@ -304,6 +334,7 @@ export default function ApiariesPage() {
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         elevation: formData.elevation ? parseFloat(formData.elevation) : null,
+        grid_reference: formData.grid_reference || null,
         notes: formData.notes || null,
         is_uk_ni: formData.is_uk_ni,
         share_location: formData.share_location,
@@ -392,6 +423,7 @@ export default function ApiariesPage() {
       latitude: apiary.latitude?.toString() || '',
       longitude: apiary.longitude?.toString() || '',
       elevation: apiary.elevation?.toString() || '',
+      grid_reference: apiary.grid_reference || '',
       notes: apiary.notes || '',
       is_uk_ni: apiary.is_uk_ni || false,
       share_location: apiary.share_location || false,
@@ -429,6 +461,7 @@ export default function ApiariesPage() {
       latitude: '',
       longitude: '',
       elevation: '',
+      grid_reference: '',
       notes: '',
       is_uk_ni: false,
       share_location: false,
@@ -709,6 +742,17 @@ export default function ApiariesPage() {
                   <input
                     type="text"
                     value={`${formData.elevation} m`}
+                    readOnly
+                    className="w-32 px-3 py-2 border border-border rounded-md bg-sage-100 dark:bg-slate-700 text-foreground text-sm cursor-default"
+                  />
+                </div>
+              )}
+              {formData.grid_reference && (
+                <div className="mt-3">
+                  <label className="block text-xs text-text-tertiary mb-1">Irish Grid (10km square)</label>
+                  <input
+                    type="text"
+                    value={formData.grid_reference}
                     readOnly
                     className="w-32 px-3 py-2 border border-border rounded-md bg-sage-100 dark:bg-slate-700 text-foreground text-sm cursor-default"
                   />

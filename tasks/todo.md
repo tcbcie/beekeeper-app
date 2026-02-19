@@ -1,40 +1,14 @@
-# Add Elevation (Height Above Sea Level) to Apiary Details
+# Add Irish Grid Reference (10km) to Apiary Details
 
-## Overview
-Add an `elevation` field to apiaries that automatically looks up the height above sea level when coordinates (latitude/longitude) are available. Display this on the apiary detail page.
+## Tasks
 
-## API Choice
-**Open-Meteo Elevation API** — Free, no API key required, simple REST endpoint.
-- Endpoint: `https://api.open-meteo.com/v1/elevation?latitude=XX&longitude=YY`
-- Returns elevation in metres above sea level
-- No rate limit concerns for our use case
-
-## Todo
-
-### 1. Database Migration
-- [x] Add `elevation` column (numeric, nullable) to the `apiaries` table
-
-### 2. TypeScript Types
-- [x] Add `elevation` field to the `Apiary` and `ApiaryFormData` interfaces in `src/types/apiary.ts`
-
-### 3. Elevation Lookup Utility
-- [x] Create a small helper function to fetch elevation from Open-Meteo API given lat/lng
-- [x] Add it to `src/lib/elevation.ts`
-
-### 4. Apiary Form Integration
-- [x] When coordinates are set (via geocoding or map picker), auto-fetch elevation
-- [x] Save elevation to the database when creating/editing an apiary
-- [x] Show elevation in the form as a read-only field (auto-populated)
-- [x] Populate elevation when editing an existing apiary
-
-### 5. Apiary Detail Page
-- [x] Display elevation on the apiary detail page alongside coordinates
-
-### 6. Backfill Existing Apiaries (Optional)
-- [ ] Consider a one-time backfill for existing apiaries that have coordinates but no elevation (can be done by editing and saving each apiary, which will trigger the lookup)
-
-### 7. Documentation
-- [x] Create `docs/features/apiary-elevation.md`
+- [x] 1. Install proj4 and @types/proj4
+- [x] 2. Database migration — add `grid_reference` (text, nullable) to `apiaries`
+- [x] 3. Create `src/lib/irish-grid.ts` — pure conversion utility (WGS84 → Irish Grid 10km ref)
+- [x] 4. Update `src/types/apiary.ts` — add `grid_reference` to both interfaces
+- [x] 5. Update `src/app/dashboard/apiaries/page.tsx` — form field, lookup, backfill, save
+- [x] 6. Update `src/app/dashboard/apiaries/[id]/page.tsx` — display grid ref in Location section
+- [x] 7. Create `docs/features/irish-grid-reference.md`
 
 ## Review
 
@@ -42,19 +16,17 @@ Add an `elevation` field to apiaries that automatically looks up the height abov
 
 | # | File | Change |
 |---|------|--------|
-| 1 | DB migration | Added `elevation` (numeric, nullable) column to `apiaries` table |
-| 2 | `src/types/apiary.ts` | Added `elevation` field to `Apiary` and `ApiaryFormData` interfaces |
-| 3 | `src/lib/elevation.ts` | **New file** — `fetchElevation(lat, lng)` utility using Open-Meteo API |
-| 4 | `src/app/dashboard/apiaries/page.tsx` | Imported elevation util; auto-fetches elevation on geocode/map pick; saves to DB; shows read-only field in form; populates on edit; resets on form clear |
-| 5 | `src/app/dashboard/apiaries/[id]/page.tsx` | Shows elevation below coordinates (e.g. "42 m above sea level") |
-| 6 | `docs/features/apiary-elevation.md` | **New file** — Feature documentation |
+| 1 | `package.json` | Added `proj4` + `@types/proj4` dependencies |
+| 2 | DB migration | `ALTER TABLE apiaries ADD COLUMN grid_reference text NULL` |
+| 3 | `src/lib/irish-grid.ts` | **New file** — `toIrishGridRef(lat, lng)` using proj4 to convert WGS84 → Irish Grid 10km ref |
+| 4 | `src/types/apiary.ts` | Added `grid_reference` to both `Apiary` and `ApiaryFormData` interfaces |
+| 5 | `src/app/dashboard/apiaries/page.tsx` | Added import, `lookupGridReference()` helper, calls in both coordinate handlers, `backfillGridReferences()` on load, grid_reference in formData init/reset/save/edit, read-only form field |
+| 6 | `src/app/dashboard/apiaries/[id]/page.tsx` | Shows "Irish Grid: N16" below elevation in Location section |
+| 7 | `docs/features/irish-grid-reference.md` | **New file** — Feature documentation |
 
 ### How It Works
-- Elevation is fetched automatically whenever coordinates are set (geocoding, map picker)
-- The value is stored as a rounded integer in metres
+- Grid reference is computed synchronously (pure maths via proj4) — no API call needed
+- Auto-populated when coordinates change via geocoding or map picker
+- Existing apiaries are backfilled on page load (same pattern as elevation)
+- Returns null for locations outside the Irish Grid (UK mainland etc.)
 - Displayed as a read-only field in the form and on the detail page
-- Existing apiaries will get elevation populated when next edited and saved
-
-### What's Not Included
-- No backfill script for existing apiaries (can be done manually by editing/saving each one)
-- No manual elevation input (always auto-populated from coordinates)
