@@ -207,7 +207,7 @@ export default function BatchesPage() {
 
     const { data } = await supabase
       .from('rearing_batches')
-      .select('*, queens(queen_number), hives(hive_number, apiaries(name))')
+      .select('*, queens!mother_queen_id(queen_number), hives!starter_colony_hive_id(hive_number, apiaries(name))')
       .eq('user_id', currentUserId)
       .order('graft_date', { ascending: false })
 
