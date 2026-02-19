@@ -207,11 +207,11 @@ export default function ApiariesPage() {
   }
 
   // Backfill grid references for existing apiaries missing them (runs once on load)
-  const backfillGridReferences = async (apiariesMissing: Apiary[]) => {
+  const backfillGridReferences = async (apiariesMissing: Apiary[], currentUserId: string) => {
     for (const a of apiariesMissing) {
       const ref = toIrishGridRef(Number(a.latitude), Number(a.longitude))
       if (ref) {
-        await supabase.from('apiaries').update({ grid_reference: ref }).eq('id', a.id)
+        await supabase.from('apiaries').update({ grid_reference: ref }).eq('id', a.id).eq('user_id', currentUserId)
         setApiaries(prev => prev.map(p => p.id === a.id ? { ...p, grid_reference: ref } : p))
       }
     }
@@ -275,10 +275,15 @@ export default function ApiariesPage() {
         backfillElevations(missing)
       }
 
-      // Backfill grid references for apiaries that have coordinates but no grid_reference
-      const missingGrid = enriched.filter(a => a.latitude && a.longitude && !a.grid_reference)
+      // Backfill grid references for Irish apiaries that have coordinates but no grid_reference
+      // Rough Ireland bounding box to avoid perpetual backfill attempts for non-Irish apiaries
+      const missingGrid = enriched.filter(a =>
+        a.latitude && a.longitude && !a.grid_reference &&
+        Number(a.latitude) >= 51 && Number(a.latitude) <= 56 &&
+        Number(a.longitude) >= -11 && Number(a.longitude) <= -5.5
+      )
       if (missingGrid.length > 0) {
-        backfillGridReferences(missingGrid)
+        backfillGridReferences(missingGrid, currentUserId)
       }
     }
     setLoading(false)
@@ -720,7 +725,11 @@ export default function ApiariesPage() {
                   <input
                     type="text"
                     value={formData.latitude}
-                    onChange={(e) => setFormData({...formData, latitude: e.target.value})}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setFormData({...formData, latitude: val})
+                      lookupGridReference(val, formData.longitude)
+                    }}
                     placeholder="e.g., 53.2744"
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                   />
@@ -730,7 +739,11 @@ export default function ApiariesPage() {
                   <input
                     type="text"
                     value={formData.longitude}
-                    onChange={(e) => setFormData({...formData, longitude: e.target.value})}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setFormData({...formData, longitude: val})
+                      lookupGridReference(formData.latitude, val)
+                    }}
                     placeholder="e.g., -9.0490"
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                   />
