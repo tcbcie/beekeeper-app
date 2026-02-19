@@ -37,6 +37,19 @@ interface WildColony {
   observation_date: string
 }
 
+interface ConservationArea {
+  id: string
+  name: string
+  type: 'apiary' | 'land'
+  description: string | null
+  latitude: number
+  longitude: number
+  radius_km: number
+  county: string | null
+  country: string
+  nihbs_url: string | null
+}
+
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
 
@@ -48,6 +61,11 @@ const MAP_STYLES = {
 } as const
 
 type MapStyleKey = keyof typeof MAP_STYLES
+
+// Escape HTML to prevent XSS in map popup innerHTML
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
 
 // Flight radius options
 const FLIGHT_RADIUS_OPTIONS = [
@@ -129,6 +147,8 @@ export default function CommunityMapPage() {
   const [wildColonies, setWildColonies] = useState<WildColony[]>([])
   const [showWildColonies, setShowWildColonies] = useState(true)
   const [isPowerUser, setIsPowerUser] = useState(false)
+  const [conservationAreas, setConservationAreas] = useState<ConservationArea[]>([])
+  const [showConservationAreas, setShowConservationAreas] = useState(true)
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
@@ -181,6 +201,13 @@ export default function CommunityMapPage() {
           setWildColonies(wildData)
         }
       }
+
+      // Fetch conservation areas (all authenticated users)
+      const { data: caData } = await supabase
+        .from('conservation_areas')
+        .select('id, name, type, description, latitude, longitude, radius_km, county, country, nihbs_url')
+        .eq('is_active', true)
+      if (caData) setConservationAreas(caData as ConservationArea[])
 
       setLoading(false)
     }
@@ -246,10 +273,11 @@ export default function CommunityMapPage() {
     const layersToRemove = [
       'user-flight-radius-fill', 'user-flight-radius-outline',
       'shared-flight-radius-fill', 'shared-flight-radius-outline',
-      'heat-map-layer', 'cluster-circles', 'cluster-count', 'unclustered-point'
+      'heat-map-layer', 'cluster-circles', 'cluster-count', 'unclustered-point',
+      'ca-fill', 'ca-outline',
     ]
     const sourcesToRemove = [
-      'user-flight-radius', 'shared-flight-radius', 'apiaries-geojson'
+      'user-flight-radius', 'shared-flight-radius', 'apiaries-geojson', 'ca-source',
     ]
     layersToRemove.forEach(layer => {
       if (map.current?.getLayer(layer)) map.current.removeLayer(layer)
@@ -503,6 +531,75 @@ export default function CommunityMapPage() {
       }
     }
 
+    // Add conservation area radius circles and markers
+    if (showConservationAreas && conservationAreas.length > 0) {
+      // Build GeoJSON FeatureCollection for radius circles
+      const caFeatures = conservationAreas.map(ca =>
+        createCircleGeoJSON([ca.longitude, ca.latitude], ca.radius_km)
+      )
+      const caGeoJSON: GeoJSON.FeatureCollection<GeoJSON.Polygon> = {
+        type: 'FeatureCollection',
+        features: caFeatures,
+      }
+
+      map.current.addSource('ca-source', { type: 'geojson', data: caGeoJSON })
+      map.current.addLayer({
+        id: 'ca-fill',
+        type: 'fill',
+        source: 'ca-source',
+        paint: { 'fill-color': '#0d9488', 'fill-opacity': 0.10 },
+      })
+      map.current.addLayer({
+        id: 'ca-outline',
+        type: 'line',
+        source: 'ca-source',
+        paint: { 'line-color': '#0d9488', 'line-width': 2, 'line-opacity': 0.55, 'line-dasharray': [3, 2] },
+      })
+
+      // Add centre markers for each CA
+      conservationAreas.forEach(ca => {
+        if (!map.current) return
+
+        const el = document.createElement('div')
+        el.className = 'ca-marker'
+        el.style.cursor = 'pointer'
+        el.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; background-color: #0d9488; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 17 3.5s-.1 1.5-2.1 7.2A7 7 0 0 1 11 20z"/>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+          </svg>
+        </div>`
+
+        // Validate nihbs_url is a safe https link before rendering as href
+        const safeUrl = ca.nihbs_url && ca.nihbs_url.startsWith('https://') ? ca.nihbs_url : null
+        const nihbsLink = safeUrl
+          ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 11px; color: #0d9488;">View NIHBS →</a>`
+          : ''
+        const typeLabel = ca.type === 'apiary' ? 'Apiary CA' : 'Land CA'
+
+        const popup = new mapboxgl.Popup({
+          offset: 15,
+          closeButton: false,
+          closeOnClick: true,
+        }).setHTML(`
+          <div style="padding: 4px 8px; max-width: 200px;">
+            <div style="font-weight: 600; color: #0d9488;">${escapeHtml(ca.name)}</div>
+            <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${escapeHtml(typeLabel)}${ca.county ? ` · ${escapeHtml(ca.county)}` : ''}</div>
+            ${ca.description ? `<div style="font-size: 12px; margin-top: 4px; opacity: 0.85;">${escapeHtml(ca.description)}</div>` : ''}
+            <div style="font-size: 11px; color: #0d9488; margin-top: 2px;">Radius: ${ca.radius_km} km</div>
+            ${nihbsLink}
+          </div>
+        `)
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([ca.longitude, ca.latitude])
+          .setPopup(popup)
+          .addTo(map.current)
+
+        markers.current.push(marker)
+      })
+    }
+
     // Fit bounds to include visible apiaries (only on first load)
     const visibleUserApiaries = showUserApiaries ? filteredUserApiaries : []
     const visibleSharedApiaries = showSharedApiaries ? filteredSharedApiaries : []
@@ -515,7 +612,7 @@ export default function CommunityMapPage() {
       })
       // Only fit bounds initially, not on every filter change
     }
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, showHeatMap, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, showHeatMap, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -647,6 +744,15 @@ export default function CommunityMapPage() {
           )}
           <button
             type="button"
+            onClick={() => setShowConservationAreas(prev => !prev)}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showConservationAreas ? 'text-teal-600' : 'text-text-tertiary'}`}
+          >
+            {showConservationAreas ? <Eye size={12} /> : <EyeOff size={12} />}
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block flex-shrink-0" />
+            <span>Conservation areas</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setShowHeatMap(prev => !prev)}
             className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showHeatMap ? 'text-orange-600' : 'text-text-tertiary'}`}
             title="Show density heat map"
@@ -702,6 +808,13 @@ export default function CommunityMapPage() {
                 <div className="w-3 h-3 rounded-full bg-amber-500 border border-white"></div>
                 <span className="font-medium text-foreground">{wildColonies.length}</span>
                 <span className="text-text-secondary hidden sm:inline">wild</span>
+              </div>
+            )}
+            {conservationAreas.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-teal-600 border border-white"></div>
+                <span className="font-medium text-foreground">{conservationAreas.length}</span>
+                <span className="text-text-secondary hidden sm:inline">CAs</span>
               </div>
             )}
           </div>
@@ -796,6 +909,10 @@ export default function CommunityMapPage() {
               <span className="text-text-secondary">Wild colony (~5km accuracy)</span>
             </div>
           )}
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-teal-600 border-2 border-white shadow"></div>
+            <span className="text-text-secondary">NIHBS Conservation Area (AMM)</span>
+          </div>
           {flightRadius > 0 && (
             <>
               <div className="flex items-center gap-2">

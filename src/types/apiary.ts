@@ -9,6 +9,7 @@ export interface Apiary {
   latitude: number | null
   longitude: number | null
   notes: string | null
+  is_uk_ni?: boolean
   share_location: boolean
   image_url: string | null
   created_at?: string
@@ -26,6 +27,8 @@ export interface ApiaryFormData {
   notes: string
   is_uk_ni: boolean
   share_location: boolean
+  is_conservation_area: boolean
+  ca_radius_km: string
 }
 
 export interface UserOption {

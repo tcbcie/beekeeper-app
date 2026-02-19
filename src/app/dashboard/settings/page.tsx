@@ -1,10 +1,11 @@
 'use client'
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId, isAdmin, hasActiveSubscription } from '@/lib/auth'
+import { getCurrentUserId, isAdmin, isPowerUserOrAdmin, hasActiveSubscription } from '@/lib/auth'
 import { Trash2, X, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Hexagon, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, UserPlus, Loader2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager'
+import ConservationAreaManager from '@/components/admin/ConservationAreaManager'
 import NewsArticlesManager from '@/components/admin/NewsArticlesManager'
 import ToolSuggestionsManager from '@/components/admin/ToolSuggestionsManager'
 import TerminologyTable from '@/components/settings/TerminologyTable'
@@ -106,10 +107,11 @@ export default function SettingsPage() {
   const toast = useToast()
   const [userId, setUserId] = useState<string | null>(null)
   const [userIsAdmin, setUserIsAdmin] = useState(false)
+  const [userIsPowerUserOrAdmin, setUserIsPowerUserOrAdmin] = useState(false)
   const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration' | 'knowledge' | 'news' | 'terminology' | 'frame_standards' | 'tool_suggestions'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration' | 'knowledge' | 'news' | 'terminology' | 'frame_standards' | 'tool_suggestions' | 'conservation_areas'>('profile')
 
   // User Management state
   const [showUserManagement, setShowUserManagement] = useState(false)
@@ -156,11 +158,15 @@ export default function SettingsPage() {
       const adminAccess = await isAdmin()
       setUserIsAdmin(adminAccess)
 
+      // Check if user is power user or admin
+      const powerUserAccess = await isPowerUserOrAdmin()
+      setUserIsPowerUserOrAdmin(powerUserAccess)
+
       // Check if user has active subscription
       const hasSubscription = await hasActiveSubscription()
       setUserHasActiveSubscription(hasSubscription)
 
-      if (!adminAccess) {
+      if (!powerUserAccess) {
         setAccessDenied(true)
       }
       setLoading(false)
@@ -760,7 +766,7 @@ export default function SettingsPage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
           <p className="text-text-tertiary mb-6">
-            You need administrator privileges to access the Settings page.
+            You need Power User or Admin privileges to access the Settings page.
           </p>
           <button
             onClick={() => router.push('/dashboard')}
@@ -774,19 +780,24 @@ export default function SettingsPage() {
   }
 
   const sections = [
-    { id: 'profile' as const, label: 'Profile & Export', icon: User, adminOnly: false },
-    { id: 'users' as const, label: 'User Management', icon: Users, adminOnly: true },
-    { id: 'registration' as const, label: 'Subscription Codes', icon: Shield, adminOnly: true },
-    { id: 'tickets' as const, label: 'Support Tickets', icon: MessageCircle, adminOnly: true },
-    { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true },
-    { id: 'associations' as const, label: 'Beekeeping Associations', icon: Building2, adminOnly: true },
-    { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true },
-    { id: 'knowledge' as const, label: 'AI Knowledge Base', icon: BookOpen, adminOnly: true },
-    { id: 'news' as const, label: 'News Articles', icon: Newspaper, adminOnly: true },
-    { id: 'tool_suggestions' as const, label: 'AI Tool Suggestions', icon: Lightbulb, adminOnly: true },
-    { id: 'terminology' as const, label: 'Terminology', icon: BookText, adminOnly: false },
-    { id: 'frame_standards' as const, label: 'Frame Standards', icon: Ruler, adminOnly: true },
-  ].filter(section => !section.adminOnly || userIsAdmin)
+    { id: 'profile' as const, label: 'Profile & Export', icon: User, adminOnly: false, powerUserAllowed: true },
+    { id: 'users' as const, label: 'User Management', icon: Users, adminOnly: true, powerUserAllowed: false },
+    { id: 'registration' as const, label: 'Subscription Codes', icon: Shield, adminOnly: true, powerUserAllowed: false },
+    { id: 'tickets' as const, label: 'Support Tickets', icon: MessageCircle, adminOnly: true, powerUserAllowed: false },
+    { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true, powerUserAllowed: false },
+    { id: 'associations' as const, label: 'Beekeeping Associations', icon: Building2, adminOnly: true, powerUserAllowed: false },
+    { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true, powerUserAllowed: false },
+    { id: 'knowledge' as const, label: 'AI Knowledge Base', icon: BookOpen, adminOnly: true, powerUserAllowed: false },
+    { id: 'news' as const, label: 'News Articles', icon: Newspaper, adminOnly: true, powerUserAllowed: false },
+    { id: 'tool_suggestions' as const, label: 'AI Tool Suggestions', icon: Lightbulb, adminOnly: true, powerUserAllowed: false },
+    { id: 'terminology' as const, label: 'Terminology', icon: BookText, adminOnly: false, powerUserAllowed: true },
+    { id: 'frame_standards' as const, label: 'Frame Standards', icon: Ruler, adminOnly: true, powerUserAllowed: false },
+    { id: 'conservation_areas' as const, label: 'Conservation Areas', icon: MapPin, adminOnly: true, powerUserAllowed: true },
+  ].filter(section => {
+    if (!section.adminOnly) return true
+    if (section.powerUserAllowed && userIsPowerUserOrAdmin) return true
+    return userIsAdmin
+  })
 
   return (
     <div className="space-y-6">
@@ -1754,6 +1765,13 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Conservation Areas Section */}
+      {activeSection === 'conservation_areas' && (
+        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+          <ConservationAreaManager />
         </div>
       )}
     </div>
