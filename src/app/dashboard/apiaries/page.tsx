@@ -38,6 +38,8 @@ export default function ApiariesPage() {
     notes: '',
     is_uk_ni: false,
     share_location: false,
+    is_conservation_area: false,
+    ca_radius_km: '1',
   })
   const [geocoding, setGeocoding] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
@@ -273,6 +275,7 @@ export default function ApiariesPage() {
         image_url: imageUrl,
       }
 
+      let apiaryId: string
       if (editingApiary) {
         const { error } = await supabase
           .from('apiaries')
@@ -281,12 +284,45 @@ export default function ApiariesPage() {
           .eq('user_id', userId)
 
         if (error) throw error
+        apiaryId = editingApiary.id
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('apiaries')
           .insert([{ ...dataToSave, user_id: userId }])
+          .select('id')
+          .single()
 
         if (error) throw error
+        if (!inserted) throw new Error('Failed to retrieve new apiary ID')
+        apiaryId = inserted.id
+      }
+
+      // Handle conservation area record
+      const lat = formData.latitude ? parseFloat(formData.latitude) : null
+      const lng = formData.longitude ? parseFloat(formData.longitude) : null
+      if (formData.is_conservation_area && formData.share_location && lat && lng) {
+        const { error: caError } = await supabase
+          .from('conservation_areas')
+          .upsert({
+            apiary_id: apiaryId,
+            user_id: userId,
+            name: formData.name,
+            type: 'apiary',
+            latitude: lat,
+            longitude: lng,
+            radius_km: parseFloat(formData.ca_radius_km) || 1,
+            country: formData.is_uk_ni ? 'NI' : 'IE',
+            is_active: true,
+          }, { onConflict: 'apiary_id' })
+        if (caError) throw caError
+      } else {
+        // Remove CA record if unchecked or location sharing disabled
+        const { error: caDelError } = await supabase
+          .from('conservation_areas')
+          .delete()
+          .eq('apiary_id', apiaryId)
+          .eq('user_id', userId!)
+        if (caDelError) throw caDelError
       }
 
       fetchApiaries()
@@ -297,8 +333,22 @@ export default function ApiariesPage() {
     }
   }
 
-  const handleEdit = (apiary: Apiary) => {
+  const handleEdit = async (apiary: Apiary) => {
     setEditingApiary(apiary)
+
+    // Check if this apiary has a conservation area record
+    let isCA = false
+    let caRadius = '1'
+    const { data: caData } = await supabase
+      .from('conservation_areas')
+      .select('id, radius_km')
+      .eq('apiary_id', apiary.id)
+      .maybeSingle()
+    if (caData) {
+      isCA = true
+      caRadius = caData.radius_km?.toString() || '1'
+    }
+
     setFormData({
       name: apiary.name,
       location: apiary.location || '',
@@ -307,8 +357,10 @@ export default function ApiariesPage() {
       latitude: apiary.latitude?.toString() || '',
       longitude: apiary.longitude?.toString() || '',
       notes: apiary.notes || '',
-      is_uk_ni: false,
+      is_uk_ni: apiary.is_uk_ni || false,
       share_location: apiary.share_location || false,
+      is_conservation_area: isCA,
+      ca_radius_km: caRadius,
     })
     // Load existing image
     setPreviewFromUrl(apiary.image_url)
@@ -343,6 +395,8 @@ export default function ApiariesPage() {
       notes: '',
       is_uk_ni: false,
       share_location: false,
+      is_conservation_area: false,
+      ca_radius_km: '1',
     })
   }
 
@@ -633,7 +687,15 @@ export default function ApiariesPage() {
                   <input
                     type="checkbox"
                     checked={formData.share_location}
-                    onChange={(e) => setFormData({...formData, share_location: e.target.checked})}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setFormData({
+                        ...formData,
+                        share_location: checked,
+                        // Auto-uncheck CA if sharing is disabled
+                        is_conservation_area: checked ? formData.is_conservation_area : false,
+                      })
+                    }}
                     className="mt-1 h-4 w-4 text-forest-600 border-border rounded focus:ring-forest-500"
                   />
                   <div>
@@ -644,6 +706,40 @@ export default function ApiariesPage() {
                     </p>
                   </div>
                 </label>
+              </div>
+            )}
+
+            {/* Conservation Area Option — only when sharing is enabled */}
+            {formData.share_location && formData.latitude && formData.longitude && (
+              <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_conservation_area}
+                    onChange={(e) => setFormData({...formData, is_conservation_area: e.target.checked})}
+                    className="mt-1 h-4 w-4 text-teal-600 border-border rounded focus:ring-teal-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-text-primary">Declare as NIHBS Conservation Area</span>
+                    <p className="text-xs text-text-tertiary mt-1">
+                      Marks this apiary as a designated AMM (Apis mellifera mellifera) conservation area on the community map.
+                    </p>
+                  </div>
+                </label>
+                {formData.is_conservation_area && (
+                  <div className="mt-3 ml-7">
+                    <label className="block text-xs font-medium text-text-secondary mb-1">Conservation area radius (km)</label>
+                    <input
+                      type="number"
+                      min="0.5"
+                      max="50"
+                      step="0.5"
+                      value={formData.ca_radius_km}
+                      onChange={(e) => setFormData({...formData, ca_radius_km: e.target.value})}
+                      className="w-32 px-3 py-1.5 border border-teal-300 dark:border-teal-700 rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
