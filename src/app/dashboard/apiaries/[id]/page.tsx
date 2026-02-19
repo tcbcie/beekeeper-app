@@ -96,6 +96,11 @@ export default function ApiaryDetailPage() {
                 {Number(apiary.latitude).toFixed(4)}, {Number(apiary.longitude).toFixed(4)}
               </p>
             )}
+            {apiary.elevation != null && (
+              <p className="text-xs text-text-tertiary mt-1">
+                {Math.round(Number(apiary.elevation))} m above sea level
+              </p>
+            )}
             {apiary.share_location && (
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
                 <MapPin size={10} />

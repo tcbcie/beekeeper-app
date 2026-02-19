@@ -8,6 +8,7 @@ export interface Apiary {
   eircode: string | null
   latitude: number | null
   longitude: number | null
+  elevation: number | null
   notes: string | null
   is_uk_ni?: boolean
   share_location: boolean
@@ -24,6 +25,7 @@ export interface ApiaryFormData {
   eircode: string
   latitude: string
   longitude: string
+  elevation: string
   notes: string
   is_uk_ni: boolean
   share_location: boolean

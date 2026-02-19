@@ -1,38 +1,60 @@
-# Fix: News Articles POST 500 Error
+# Add Elevation (Height Above Sea Level) to Apiary Details
 
-## Root Cause
-The POST `/api/admin/news-articles` endpoint fails with a 500 when adding a new article URL. The Supabase logs show:
-1. Auth verification succeeds (200)
-2. Duplicate check returns 406 (`.single()` with no matching row — expected for new articles)
-3. **No subsequent database operations** — the code crashes before reaching the insert
+## Overview
+Add an `elevation` field to apiaries that automatically looks up the height above sea level when coordinates (latitude/longitude) are available. Display this on the apiary detail page.
 
-The failure occurs in `extractUrlMetadata()` — the server-side `fetch()` to the target URL (science.org) is likely blocked by the site (403/paywall/anti-bot). The error is swallowed by a generic `catch` block that returns `"Failed to add article"` with no detail.
+## API Choice
+**Open-Meteo Elevation API** — Free, no API key required, simple REST endpoint.
+- Endpoint: `https://api.open-meteo.com/v1/elevation?latitude=XX&longitude=YY`
+- Returns elevation in metres above sea level
+- No rate limit concerns for our use case
 
-## Fix Plan
+## Todo
 
-- [x] **1. Use `.maybeSingle()` instead of `.single()` for duplicate check** — avoids the spurious 406 error from PostgREST when no row is found
-- [x] **2. Return the actual error message in the POST catch block** — so the user/dev can see WHY it failed (e.g. "Failed to fetch URL: 403") instead of a generic message
-- [x] **3. Add specific error handling for URL fetch failures** — catch fetch errors separately and return a clear 422 response (e.g. "Could not fetch URL: site returned 403") instead of a generic 500
+### 1. Database Migration
+- [x] Add `elevation` column (numeric, nullable) to the `apiaries` table
 
-All changes are in a single file: `src/app/api/admin/news-articles/route.ts`
+### 2. TypeScript Types
+- [x] Add `elevation` field to the `Apiary` and `ApiaryFormData` interfaces in `src/types/apiary.ts`
+
+### 3. Elevation Lookup Utility
+- [x] Create a small helper function to fetch elevation from Open-Meteo API given lat/lng
+- [x] Add it to `src/lib/elevation.ts`
+
+### 4. Apiary Form Integration
+- [x] When coordinates are set (via geocoding or map picker), auto-fetch elevation
+- [x] Save elevation to the database when creating/editing an apiary
+- [x] Show elevation in the form as a read-only field (auto-populated)
+- [x] Populate elevation when editing an existing apiary
+
+### 5. Apiary Detail Page
+- [x] Display elevation on the apiary detail page alongside coordinates
+
+### 6. Backfill Existing Apiaries (Optional)
+- [ ] Consider a one-time backfill for existing apiaries that have coordinates but no elevation (can be done by editing and saving each apiary, which will trigger the lookup)
+
+### 7. Documentation
+- [x] Create `docs/features/apiary-elevation.md`
 
 ## Review
 
 ### Summary of Changes
 
-| # | Change | Detail |
-|---|--------|--------|
-| 1 | `.single()` → `.maybeSingle()` | Duplicate URL check no longer triggers a 406 from PostgREST when no row exists |
-| 2 | Error detail in catch block | Outer catch now returns the actual error message (e.g. `"Failed to add article: Failed to fetch URL: 403"`) instead of a generic string |
-| 3 | URL fetch try-catch | `extractUrlMetadata()` is wrapped in its own try-catch; fetch failures return a **422** with a clear message (e.g. `"Could not fetch URL: Failed to fetch URL: 403"`) |
+| # | File | Change |
+|---|------|--------|
+| 1 | DB migration | Added `elevation` (numeric, nullable) column to `apiaries` table |
+| 2 | `src/types/apiary.ts` | Added `elevation` field to `Apiary` and `ApiaryFormData` interfaces |
+| 3 | `src/lib/elevation.ts` | **New file** — `fetchElevation(lat, lng)` utility using Open-Meteo API |
+| 4 | `src/app/dashboard/apiaries/page.tsx` | Imported elevation util; auto-fetches elevation on geocode/map pick; saves to DB; shows read-only field in form; populates on edit; resets on form clear |
+| 5 | `src/app/dashboard/apiaries/[id]/page.tsx` | Shows elevation below coordinates (e.g. "42 m above sea level") |
+| 6 | `docs/features/apiary-elevation.md` | **New file** — Feature documentation |
 
-### What This Fixes
-- The user will now see a **specific error message** when adding an article fails (e.g. the target site blocked the request)
-- The duplicate check no longer produces spurious 406 errors in Supabase logs
-- URL fetch failures are distinguished from other errors (422 vs 500)
+### How It Works
+- Elevation is fetched automatically whenever coordinates are set (geocoding, map picker)
+- The value is stored as a rounded integer in metres
+- Displayed as a read-only field in the form and on the detail page
+- Existing apiaries will get elevation populated when next edited and saved
 
-### What This Doesn't Fix
-- If science.org (or any site) blocks server-side requests, the article still can't be auto-fetched — but now the error message makes this clear so the user understands why
-
-### Testing
-- Deploy and retry adding the science.org article — the error message should now say exactly what went wrong (e.g. "Could not fetch URL: Failed to fetch URL: 403")
+### What's Not Included
+- No backfill script for existing apiaries (can be done manually by editing/saving each one)
+- No manual elevation input (always auto-populated from coordinates)

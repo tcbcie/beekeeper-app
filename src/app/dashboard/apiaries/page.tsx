@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
+import { fetchElevation } from '@/lib/elevation'
 
 export default function ApiariesPage() {
   const toast = useToast()
@@ -35,6 +36,7 @@ export default function ApiariesPage() {
     eircode: '',
     latitude: '',
     longitude: '',
+    elevation: '',
     notes: '',
     is_uk_ni: false,
     share_location: false,
@@ -142,6 +144,7 @@ export default function ApiariesPage() {
         latitude: coords.lat,
         longitude: coords.lon
       }))
+      lookupElevation(coords.lat, coords.lon)
       // Show warning that coordinates are approximate
       toast.info('Coordinates are approximate. Use "Pick on Map" to verify exact location.')
     } else {
@@ -156,6 +159,7 @@ export default function ApiariesPage() {
       latitude: lat,
       longitude: lng
     }))
+    lookupElevation(lat, lng)
   }
 
   // Handle city change from map reverse geocoding
@@ -164,6 +168,17 @@ export default function ApiariesPage() {
       ...prev,
       city: city
     }))
+  }
+
+  // Look up elevation for given coordinates and update form
+  const lookupElevation = async (lat: string, lng: string) => {
+    const latNum = parseFloat(lat)
+    const lngNum = parseFloat(lng)
+    if (isNaN(latNum) || isNaN(lngNum)) return
+    const elev = await fetchElevation(latNum, lngNum)
+    if (elev !== null) {
+      setFormData(prev => ({ ...prev, elevation: String(Math.round(elev)) }))
+    }
   }
 
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
@@ -269,6 +284,7 @@ export default function ApiariesPage() {
         eircode: formData.eircode || null,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        elevation: formData.elevation ? parseFloat(formData.elevation) : null,
         notes: formData.notes || null,
         is_uk_ni: formData.is_uk_ni,
         share_location: formData.share_location,
@@ -356,6 +372,7 @@ export default function ApiariesPage() {
       eircode: apiary.eircode || '',
       latitude: apiary.latitude?.toString() || '',
       longitude: apiary.longitude?.toString() || '',
+      elevation: apiary.elevation?.toString() || '',
       notes: apiary.notes || '',
       is_uk_ni: apiary.is_uk_ni || false,
       share_location: apiary.share_location || false,
@@ -392,6 +409,7 @@ export default function ApiariesPage() {
       eircode: '',
       latitude: '',
       longitude: '',
+      elevation: '',
       notes: '',
       is_uk_ni: false,
       share_location: false,
@@ -666,6 +684,17 @@ export default function ApiariesPage() {
                   />
                 </div>
               </div>
+              {formData.elevation && (
+                <div className="mt-3">
+                  <label className="block text-xs text-text-tertiary mb-1">Elevation (metres above sea level)</label>
+                  <input
+                    type="text"
+                    value={`${formData.elevation} m`}
+                    readOnly
+                    className="w-32 px-3 py-2 border border-border rounded-md bg-sage-100 dark:bg-slate-700 text-foreground text-sm cursor-default"
+                  />
+                </div>
+              )}
               <p className="text-xs text-text-tertiary mt-2">Used for GDD calculations, weather data on inspections, and identifying potential drone congregation areas. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>
             </div>
 
