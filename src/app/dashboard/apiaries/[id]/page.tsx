@@ -101,6 +101,11 @@ export default function ApiaryDetailPage() {
                 {Math.round(Number(apiary.elevation))} m above sea level
               </p>
             )}
+            {apiary.grid_reference && (
+              <p className="text-xs text-text-tertiary mt-1">
+                Irish Grid: {apiary.grid_reference}
+              </p>
+            )}
             {apiary.share_location && (
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
                 <MapPin size={10} />

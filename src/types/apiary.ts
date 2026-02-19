@@ -9,6 +9,7 @@ export interface Apiary {
   latitude: number | null
   longitude: number | null
   elevation: number | null
+  grid_reference: string | null
   notes: string | null
   is_uk_ni?: boolean
   share_location: boolean
@@ -26,6 +27,7 @@ export interface ApiaryFormData {
   latitude: string
   longitude: string
   elevation: string
+  grid_reference: string
   notes: string
   is_uk_ni: boolean
   share_location: boolean
