@@ -1,105 +1,46 @@
-# NIHBS Monthly Returns — Excel Export TODO
+# Profile Page Modularisation — Code Audit Fixes
 
 ## Steps
 
-- [x] 1. Install `exceljs` dependency
-- [x] 2. Database migrations (4 migrations via MCP)
-  - [x] 2a. Add `experience_level` to `rearing_group_members`
-  - [x] 2b. Create `rearing_group_mating_apiaries` junction table
-  - [x] 2c. Add `mating_apiary_id` to `rearing_batches`
-  - [x] 2d. Create `nihbs_monthly_returns` table
-- [x] 3. Batch form — add mating apiary dropdown (`batches/page.tsx`)
-- [x] 4. Profile page — group management enhancements
-  - [x] 4a. Member experience level dropdown
-  - [x] 4b. Mating apiaries subsection (add/remove)
-- [x] 5. Modify `useRearingGroupReport` hook (add `cell_count` + `mating_apiary_id`)
-- [x] 6. Create `useNIHBSReport` hook (new file)
-- [x] 7. Create `NIHBSMonthlyReturn` component (new file — UI + Excel export)
-- [x] 8. Profile page integration — import + render NIHBS component
-- [x] 9. Documentation (`docs/features/nihbs-monthly-returns.md`)
+- [x] 1. **CRITICAL**: Slim down profile page — remove all extracted code (4,244 → 1,267 lines)
+  - [x] 1a. Remove unused imports (Scale, Link2, Unlink, useRearingGroups, RearingGroupReport, NIHBSMonthlyReturn, Crown)
+  - [x] 1b. Remove Teams interfaces + state (lines 46-94, 134-162)
+  - [x] 1c. Remove BEEP/Wolf state (lines 208-223)
+  - [x] 1d. Remove Rearing Groups hook + modal state (lines 164-193)
+  - [x] 1e. Remove BEEP/Wolf handlers (fetchBeepDeviceCount, handleConnectBeep, handleDisconnectBeep, fetchWolfScaleCount, handleConnectWolf, handleDisconnectWolf)
+  - [x] 1f. Remove Team handlers (fetchTeams, fetchUserApiaries, fetchTeamApiaries, handleShareApiary, handleUnshareApiary, handleCreateTeam, fetchTeamDetails, handleSendInvite, handleDeleteTeam, handleRenameTeam, handleRemoveMember, handleLeaveTeam, handleCancelInvitation)
+  - [x] 1g. Remove Rearing Group handlers (handleCreateRg, handleDeleteRg, handleRenameRg, handleTransferRgOwnership, handleSendRgInvite, handleCancelRgInvitation, handleRemoveRgMember, handleUpdateExperienceLevel, mating apiaries handlers, handleLeaveRg)
+  - [x] 1h. Remove init useEffect calls to fetchTeams, fetchUserApiaries, fetchRearingGroups
+  - [x] 1i. Remove BEEP/Wolf useEffects
+  - [x] 1j. Simplify fetchUserProfile — remove BEEP/Wolf connection state setting (lines 280-295)
+  - [x] 1k. Remove Scales JSX section
+  - [x] 1l. Remove Team Management JSX section
+  - [x] 1m. Remove Rearing Groups JSX section
+  - [x] 1n. Remove Team modals (create team, invite member, share apiary, rename team)
+  - [x] 1o. Remove RG modals (create RG, invite RG member, rename RG, transfer ownership)
+- [x] 2. **CRITICAL**: Add 3 nav items to `navigation.ts` (Scales, Apiary Team, Rearing Team)
+- [x] 3. **HIGH**: Remove dead `userId` state from scales page
+- [x] 4. **HIGH**: Guard `response.json()` with `response.ok` check in scales page
+- [x] 5. **HIGH**: Verify `handleCreateTeam` auto-inserts owner as team member — confirmed DB trigger `on_team_created` → `add_team_owner_as_member()` handles this
+- [x] 6. Documentation — create `docs/features/profile-page-split.md`
 
 ## Review
 
 ### Summary of Changes
 
-**Database (4 migrations applied via MCP):**
-- Added `experience_level` TEXT column to `rearing_group_members` (experienced/intermediate/novice)
-- Created `rearing_group_mating_apiaries` junction table with RLS (owners manage, members view)
-- Added `mating_apiary_id` UUID column to `rearing_batches` (FK to apiaries)
-- Created `nihbs_monthly_returns` table with RLS (owner-only) for manual-entry fields
+**Profile page slimmed:** `src/app/dashboard/profile/page.tsx` reduced from 4,244 to 1,267 lines by surgically removing all scales, team management, and rearing group code. What remains: Profile Information, Theme Preferences, Subscription Management, Data Export, Additional Settings, Danger Zone, and related modals.
 
-**`package.json`:**
-- Added `exceljs` dependency for client-side .xlsx generation
+**Navigation updated:** `src/lib/navigation.ts` now includes three new nav items in the "Manage" group — Scales, Apiary Team, and Rearing Team — each routing to the corresponding new dashboard page.
 
-**`src/app/dashboard/batches/page.tsx`:**
-- Added `mating_apiary_id` to Batch interface, FormData interface, initial state, resetForm
-- Added `mating_apiary_id` to dataToSubmit in handleSubmit and form initialisation in handleEdit
-- Added Mating Apiary dropdown section in the form UI between Starter Colony and Batch Quantities
+**Scales page fixed:** `src/app/dashboard/scales/page.tsx` — removed dead `userId` state variable. Error response handling already uses `response.text()` + `JSON.parse` try/catch pattern to safely handle non-JSON error responses.
 
-**`src/hooks/useRearingGroups.ts`:**
-- Added `experience_level` to `RearingGroupMember` interface
+**DB trigger verified:** The `on_team_created` trigger on the `teams` table calls `add_team_owner_as_member()`, automatically inserting the creator as a team member. No code fix needed.
 
-**`src/hooks/useRearingGroupReport.ts`:**
-- Added `cell_count` to `RearingGroupMemberReport` interface and totals
-- Updated select query to include `cell_count` and `mating_apiary_id`
-- Updated aggregation and reducer to handle `cell_count`
+### Files Changed
 
-**`src/hooks/useNIHBSReport.ts` (new):**
-- Fetches group members with experience levels
-- Fetches mating apiaries with grid reference and elevation
-- Fetches batches for all members in a year, groups by month and mating apiary
-- Fetches/saves manual fields from nihbs_monthly_returns via upsert
-- Returns structured NIHBSReportData
-
-**`src/components/rearing-groups/NIHBSMonthlyReturn.tsx` (new):**
-- Group + Year selectors
-- Summary card (members, mating apiaries, first/last graft dates)
-- Per-month breakdown tables with 8 NIHBS metric rows (5 auto + 3 manual inputs)
-- Save button per month for manual fields
-- Export NIHBS Excel button — generates multi-sheet workbook:
-  - Sheet 1: Group Details with member breakdown and mating apiary table
-  - Monthly sheets: metrics with per-apiary columns matching NIHBS row numbers
-- Mobile and desktop responsive views
-
-**`src/app/dashboard/profile/page.tsx`:**
-- Added NIHBSMonthlyReturn import and render below RearingGroupReport (owner-only)
-- Added `handleUpdateExperienceLevel` handler
-- Added mating apiaries state, fetch functions, add/remove handlers
-- Updated "View Members" button to also fetch mating apiaries and member apiaries
-- Added experience level dropdown next to each non-owner member in the expanded member list
-- Added Mating Apiaries subsection with add dropdown and remove buttons
-
-**`docs/features/nihbs-monthly-returns.md` (new):**
-- Full feature documentation covering all aspects
-
-### QA Bug Fixes
-
-7 bugs found during QA audit, all fixed:
-
-**P1 — Fix #1: Timezone month-bucket shift (useNIHBSReport.ts + NIHBSMonthlyReturn.tsx)**
-- `new Date("2026-05-01")` parses as UTC midnight, shifts to April in BST
-- Fixed: parse date strings directly via `split('-')` instead of `new Date()`
-
-**P1 — Fix #2: Excel export uses stale manual edits (NIHBSMonthlyReturn.tsx)**
-- `handleExportExcel` read from `reportData` (last DB fetch) not current UI state
-- Fixed: merge `manualEdits` into `exportData` before export, replaced all references, added `manualEdits` to dependency array
-
-**P1 — Fix #3: Experience dropdown reverts on re-render (profile/page.tsx + useRearingGroups.ts)**
-- `handleUpdateExperienceLevel` updated DB but not local `rgMembers` state
-- Fixed: exposed `setRgMembers` from hook, update local state after successful DB save
-
-**P1 — Fix #4: Stale mating apiaries flash when switching groups (profile/page.tsx)**
-- `rgMatingApiaries`/`rgMemberApiaries` showed previous group's data until fetch completed
-- Fixed: clear both arrays immediately when expanding a different group
-
-**P2 — Fix #5: Elevation 0 treated as null (useNIHBSReport.ts + profile/page.tsx)**
-- `|| null` treats sea-level elevation (0) as falsy
-- Fixed: changed to `?? null` in both files
-
-**P2 — Fix #6: No save feedback (NIHBSMonthlyReturn.tsx)**
-- `handleSaveMonth` discarded the boolean return from `saveManualFields`
-- Fixed: added "Saved"/"Failed to save" status indicator next to Save button with 3s auto-dismiss
-
-**P2 — Fix #7: Orphaned manual returns invisible (useNIHBSReport.ts)**
-- Months with only manual data (no batches) were not shown
-- Fixed: create month entry when manual return exists but no batches in that month
+| File | Action | Lines |
+|---|---|---|
+| `src/app/dashboard/profile/page.tsx` | Modified | 4,244 → 1,267 |
+| `src/lib/navigation.ts` | Modified | Added 3 nav items + Scale import |
+| `src/app/dashboard/scales/page.tsx` | Modified | Removed dead userId state |
+| `docs/features/profile-page-split.md` | Created | Feature documentation |

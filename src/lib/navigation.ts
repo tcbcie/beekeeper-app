@@ -1,7 +1,7 @@
 import {
   Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings,
   Wrench, User, Info, Calendar, Users, FlaskConical, FileText,
-  BookOpen,
+  BookOpen, Scale,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -33,6 +33,9 @@ export const baseNavItems: NavItem[] = [
   { href: '/dashboard/hives', label: 'Hives', icon: Archive, group: 'manage' },
   { href: '/dashboard/queens', label: 'Queens', icon: Crown, group: 'manage' },
   { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg, group: 'manage' },
+  { href: '/dashboard/scales', label: 'Scales', icon: Scale, group: 'manage' },
+  { href: '/dashboard/apiary-team', label: 'Apiary Team', icon: Users, group: 'manage' },
+  { href: '/dashboard/rearing-team', label: 'Rearing Team', icon: Crown, group: 'manage' },
   { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity' },
   { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity' },
   { href: '/dashboard/logbook', label: 'Logbook', icon: BookOpen, group: 'activity' },
