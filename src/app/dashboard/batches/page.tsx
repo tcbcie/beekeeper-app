@@ -52,6 +52,7 @@ interface Batch {
   notes: string | null
   enable_browser_notifications: boolean
   enable_email_digest: boolean
+  mating_apiary_id: string | null
   enable_batch_event_reminders?: boolean
   batch_reminder_minutes_before?: number
   queens?: {
@@ -82,6 +83,7 @@ interface FormData {
   notes: string
   enable_browser_notifications: boolean
   enable_email_digest: boolean
+  mating_apiary_id: string
   enable_batch_event_reminders: boolean
   batch_reminder_minutes_before: string
 }
@@ -195,6 +197,7 @@ export default function BatchesPage() {
     second_option_to_cage_date: '',
     emergence_date: '',
     notes: '',
+    mating_apiary_id: '',
     enable_browser_notifications: false,
     enable_email_digest: false,
     enable_batch_event_reminders: false,
@@ -420,6 +423,7 @@ export default function BatchesPage() {
         second_option_to_cage_date: formData.second_option_to_cage_date || null,
         emergence_date: formData.emergence_date || null,
         notes: formData.notes || null,
+        mating_apiary_id: formData.mating_apiary_id || null,
         enable_browser_notifications: formData.enable_browser_notifications,
         enable_email_digest: formData.enable_email_digest,
         enable_batch_event_reminders: formData.enable_batch_event_reminders,
@@ -469,6 +473,7 @@ export default function BatchesPage() {
       second_option_to_cage_date: batch.second_option_to_cage_date || '',
       emergence_date: batch.emergence_date || '',
       notes: batch.notes || '',
+      mating_apiary_id: batch.mating_apiary_id || '',
       enable_browser_notifications: batch.enable_browser_notifications || false,
       enable_email_digest: batch.enable_email_digest || false,
       enable_batch_event_reminders: batch.enable_batch_event_reminders || false,
@@ -675,6 +680,7 @@ export default function BatchesPage() {
       second_option_to_cage_date: '',
       emergence_date: '',
       notes: '',
+      mating_apiary_id: '',
       enable_browser_notifications: false,
       enable_email_digest: false,
       enable_batch_event_reminders: false,
@@ -893,6 +899,25 @@ export default function BatchesPage() {
                     <p className="text-xs text-text-tertiary mt-1">Select an apiary first</p>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Mating Apiary */}
+            <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">Mating Apiary</h4>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
+                <select
+                  value={formData.mating_apiary_id}
+                  onChange={(e) => setFormData({...formData, mating_apiary_id: e.target.value})}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                >
+                  <option value="">Select mating apiary (optional)</option>
+                  {apiaries.map((apiary) => (
+                    <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-text-tertiary mt-1">Where queens go for mating (used in NIHBS reports)</p>
               </div>
             </div>
 

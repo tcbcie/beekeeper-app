@@ -20,6 +20,7 @@ export interface RearingGroupMember {
   user_email?: string
   first_name?: string
   last_name?: string
+  experience_level?: 'experienced' | 'intermediate' | 'novice' | null
 }
 
 export interface RearingGroupInvitation {
@@ -184,6 +185,7 @@ export function useRearingGroups() {
     memberRearingGroups,
     loadingRearingGroups,
     rgMembers,
+    setRgMembers,
     rgPendingInvitations,
     rgAcceptedInvitations,
     rgDeclinedInvitations,

@@ -8,6 +8,7 @@ export interface RearingGroupMemberReport {
   queens_hatched: number
   queens_mated: number
   batch_count: number
+  cell_count: number
 }
 
 export interface RearingGroupReport {
@@ -21,6 +22,7 @@ export interface RearingGroupReport {
     queens_hatched: number
     queens_mated: number
     batch_count: number
+    cell_count: number
   }
 }
 
@@ -48,7 +50,7 @@ export function useRearingGroupReport() {
           month,
           year,
           members: [],
-          totals: { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, batch_count: 0 },
+          totals: { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, batch_count: 0, cell_count: 0 },
         })
         setLoadingReport(false)
         return
@@ -63,7 +65,7 @@ export function useRearingGroupReport() {
       // Fetch rearing batches for those user_ids within the month
       const { data: batches, error: batchesError } = await supabase
         .from('rearing_batches')
-        .select('user_id, grafts_accepted, queens_hatched, queens_mated')
+        .select('user_id, cell_count, grafts_accepted, queens_hatched, queens_mated, mating_apiary_id')
         .in('user_id', userIds)
         .gte('graft_date', startDate)
         .lt('graft_date', endDate)
@@ -92,12 +94,14 @@ export function useRearingGroupReport() {
           queens_hatched: 0,
           queens_mated: 0,
           batch_count: 0,
+          cell_count: 0,
         })
       }
 
       for (const batch of (batches || [])) {
         const entry = memberAgg.get(batch.user_id)
         if (entry) {
+          entry.cell_count += batch.cell_count || 0
           entry.grafts_accepted += batch.grafts_accepted || 0
           entry.queens_hatched += batch.queens_hatched || 0
           entry.queens_mated += batch.queens_mated || 0
@@ -113,8 +117,9 @@ export function useRearingGroupReport() {
           queens_hatched: acc.queens_hatched + m.queens_hatched,
           queens_mated: acc.queens_mated + m.queens_mated,
           batch_count: acc.batch_count + m.batch_count,
+          cell_count: acc.cell_count + m.cell_count,
         }),
-        { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, batch_count: 0 }
+        { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, batch_count: 0, cell_count: 0 }
       )
 
       setReport({
