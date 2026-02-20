@@ -13,6 +13,7 @@ This feature is **separate from the existing team system** — teams handle apia
 - The creator becomes the group **owner** and is automatically added as a member
 - The owner can **invite members** via email (same flow as team invitations)
 - The owner can **rename** or **delete** the group
+- The owner can **transfer ownership** to an existing group member via a dropdown — the old owner becomes a regular member
 - Members can **leave** a group at any time
 
 ### Invitation Flow

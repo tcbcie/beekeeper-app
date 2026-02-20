@@ -5,8 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { User, Mail, Calendar, Edit2, Save, Download, Users, Plus, X, Trash2, UserPlus, Clock, Send, Phone, MapPin, Share2, Palette, Scale, Link2, Unlink, Crown } from 'lucide-react'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
-import type { RearingGroup } from '@/hooks/useRearingGroups'
+import type { RearingGroup, RearingGroupMember } from '@/hooks/useRearingGroups'
 import RearingGroupReport from '@/components/rearing-groups/RearingGroupReport'
+import NIHBSMonthlyReturn from '@/components/rearing-groups/NIHBSMonthlyReturn'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
@@ -166,6 +167,7 @@ export default function ProfilePage() {
     memberRearingGroups,
     loadingRearingGroups,
     rgMembers,
+    setRgMembers,
     rgPendingInvitations,
     rgAcceptedInvitations,
     rgDeclinedInvitations,
@@ -186,6 +188,9 @@ export default function ProfilePage() {
   const [expandedRgId, setExpandedRgId] = useState<string | null>(null)
   const [renameRgName, setRenameRgName] = useState('')
   const [renamingRg, setRenamingRg] = useState(false)
+  const [showTransferRgModal, setShowTransferRgModal] = useState(false)
+  const [transferRgTargetUserId, setTransferRgTargetUserId] = useState('')
+  const [transferringRg, setTransferringRg] = useState(false)
 
   // Subscription state
   const [showRenewSubscriptionModal, setShowRenewSubscriptionModal] = useState(false)
@@ -1449,6 +1454,60 @@ export default function ProfilePage() {
     }
   }
 
+  const handleTransferRgOwnership = async () => {
+    if (!selectedRg || !transferRgTargetUserId || !userId) return
+    setTransferringRg(true)
+    try {
+      // Order matters: member role updates FIRST, owner_id LAST
+      // RLS checks is_rearing_group_owner() which reads rearing_groups.owner_id
+      // If we update owner_id first, subsequent member updates are denied by RLS
+
+      // Step 1: Set new owner's member role to 'owner'
+      const { data: d1, error: e1 } = await supabase
+        .from('rearing_group_members')
+        .update({ role: 'owner' })
+        .eq('group_id', selectedRg.id)
+        .eq('user_id', transferRgTargetUserId)
+        .select()
+      if (e1) throw e1
+      if (!d1 || d1.length === 0) throw new Error('Failed to update new owner role — member may have been removed.')
+
+      // Step 2: Set old owner's member role to 'member'
+      const { data: d2, error: e2 } = await supabase
+        .from('rearing_group_members')
+        .update({ role: 'member' })
+        .eq('group_id', selectedRg.id)
+        .eq('user_id', userId)
+        .select()
+      if (e2) throw e2
+      if (!d2 || d2.length === 0) throw new Error('Failed to update old owner role.')
+
+      // Step 3: Transfer group ownership (old owner still has owner_id here)
+      const { data: d3, error: e3 } = await supabase
+        .from('rearing_groups')
+        .update({ owner_id: transferRgTargetUserId })
+        .eq('id', selectedRg.id)
+        .eq('owner_id', userId)
+        .select()
+      if (e3) throw e3
+      if (!d3 || d3.length === 0) throw new Error('Failed to transfer group ownership.')
+
+      toast.success(`Ownership of "${selectedRg.name}" transferred successfully!`)
+      setShowTransferRgModal(false)
+      setSelectedRg(null)
+      setTransferRgTargetUserId('')
+      fetchRearingGroups(userId)
+    } catch (error) {
+      console.error('Error transferring rearing group ownership:', error)
+      const msg = error instanceof Error ? error.message : 'Please try again.'
+      toast.error(`Failed to transfer ownership. ${msg}`)
+      // Refresh to show current state (partially updated or not)
+      if (userId) fetchRearingGroups(userId)
+    } finally {
+      setTransferringRg(false)
+    }
+  }
+
   const handleSendRgInvite = async () => {
     if (!selectedRg || !rgInviteEmail.trim()) {
       toast.warning('Please enter an email address.')
@@ -1596,6 +1655,98 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error removing member:', error)
       toast.error('Failed to remove member. Please try again.')
+    }
+  }
+
+  const handleUpdateExperienceLevel = async (memberId: string, level: string) => {
+    try {
+      const { error } = await supabase
+        .from('rearing_group_members')
+        .update({ experience_level: level || null })
+        .eq('id', memberId)
+      if (error) throw error
+      setRgMembers((prev) =>
+        prev.map((m) => m.id === memberId ? { ...m, experience_level: (level || null) as RearingGroupMember['experience_level'] } : m)
+      )
+    } catch (error) {
+      console.error('Error updating experience level:', error)
+      toast.error('Failed to update experience level.')
+    }
+  }
+
+  // Mating apiaries state
+  const [rgMatingApiaries, setRgMatingApiaries] = useState<Array<{ id: string; apiary_id: string; apiary_name: string; grid_reference: string | null; elevation: number | null }>>([])
+  const [rgMemberApiaries, setRgMemberApiaries] = useState<Array<{ id: string; name: string; user_id: string }>>([])
+  const [rgMatingApiaryToAdd, setRgMatingApiaryToAdd] = useState('')
+
+  const fetchRgMatingApiaries = useCallback(async (groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('rearing_group_mating_apiaries')
+        .select('id, apiary_id, apiaries(name, grid_reference, elevation)')
+        .eq('group_id', groupId)
+        .order('sort_order')
+      if (error) throw error
+      setRgMatingApiaries((data || []).map((d: Record<string, unknown>) => {
+        const apiary = d.apiaries as Record<string, unknown> | null
+        return {
+          id: d.id as string,
+          apiary_id: d.apiary_id as string,
+          apiary_name: (apiary?.name as string) || 'Unknown',
+          grid_reference: (apiary?.grid_reference as string) || null,
+          elevation: (apiary?.elevation as number) ?? null,
+        }
+      }))
+    } catch (error) {
+      console.error('Error fetching mating apiaries:', error)
+    }
+  }, [])
+
+  const fetchRgMemberApiaries = useCallback(async (groupId: string) => {
+    try {
+      // Get all member user_ids
+      const { data: members } = await supabase
+        .from('rearing_group_members')
+        .select('user_id')
+        .eq('group_id', groupId)
+      if (!members || members.length === 0) return
+      const userIds = members.map((m) => m.user_id)
+      // Get apiaries for those users
+      const { data: apiaries, error } = await supabase
+        .from('apiaries')
+        .select('id, name, user_id')
+        .in('user_id', userIds)
+        .order('name')
+      if (error) throw error
+      setRgMemberApiaries(apiaries || [])
+    } catch (error) {
+      console.error('Error fetching member apiaries:', error)
+    }
+  }, [])
+
+  const handleAddMatingApiary = async (groupId: string) => {
+    if (!rgMatingApiaryToAdd) return
+    try {
+      const { error } = await supabase
+        .from('rearing_group_mating_apiaries')
+        .insert({ group_id: groupId, apiary_id: rgMatingApiaryToAdd })
+      if (error) throw error
+      setRgMatingApiaryToAdd('')
+      fetchRgMatingApiaries(groupId)
+    } catch (error) {
+      console.error('Error adding mating apiary:', error)
+      toast.error('Failed to add mating apiary.')
+    }
+  }
+
+  const handleRemoveMatingApiary = async (id: string, groupId: string) => {
+    try {
+      const { error } = await supabase.from('rearing_group_mating_apiaries').delete().eq('id', id)
+      if (error) throw error
+      fetchRgMatingApiaries(groupId)
+    } catch (error) {
+      console.error('Error removing mating apiary:', error)
+      toast.error('Failed to remove mating apiary.')
     }
   }
 
@@ -2620,8 +2771,12 @@ export default function ProfilePage() {
                                 setExpandedRgId(null)
                               } else {
                                 setExpandedRgId(group.id)
+                                setRgMatingApiaries([])
+                                setRgMemberApiaries([])
                                 setLoadingRgMembers(true)
                                 fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
+                                fetchRgMatingApiaries(group.id)
+                                fetchRgMemberApiaries(group.id)
                               }
                             }}
                             className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
@@ -2651,6 +2806,18 @@ export default function ProfilePage() {
                           >
                             <Edit2 size={14} />
                             Rename
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedRg(group)
+                              setTransferRgTargetUserId('')
+                              setShowTransferRgModal(true)
+                              fetchRearingGroupDetails(group.id)
+                            }}
+                            className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 flex items-center gap-1"
+                          >
+                            <Share2 size={14} />
+                            Transfer
                           </button>
                           <button
                             onClick={() => handleDeleteRg(group.id, group.name)}
@@ -2701,14 +2868,27 @@ export default function ProfilePage() {
                                     </span>
                                   </div>
                                   {member.role !== 'owner' && (
-                                    <button
-                                      onClick={() => handleRemoveRgMember(member.id, member.user_email || 'this member')}
-                                      className="ml-3 px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
-                                      title="Remove member"
-                                    >
-                                      <Trash2 size={12} />
-                                      Remove
-                                    </button>
+                                    <div className="flex items-center gap-2 ml-3">
+                                      <select
+                                        value={member.experience_level || ''}
+                                        onChange={(e) => handleUpdateExperienceLevel(member.id, e.target.value)}
+                                        className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+                                        title="Experience level"
+                                      >
+                                        <option value="">Level</option>
+                                        <option value="experienced">Experienced</option>
+                                        <option value="intermediate">Intermediate</option>
+                                        <option value="novice">Novice</option>
+                                      </select>
+                                      <button
+                                        onClick={() => handleRemoveRgMember(member.id, member.user_email || 'this member')}
+                                        className="px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                        title="Remove member"
+                                      >
+                                        <Trash2 size={12} />
+                                        Remove
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               ))}
@@ -2716,6 +2896,50 @@ export default function ProfilePage() {
                           ) : (
                             <p className="text-sm text-text-tertiary text-center py-4">No members yet. Invite someone to get started!</p>
                           )}
+
+                          {/* Mating Apiaries Section */}
+                          <div className="mt-6 pt-4 border-t border-border">
+                            <h5 className="text-sm font-semibold text-foreground mb-3">Mating Apiaries</h5>
+                            {rgMatingApiaries.length > 0 && (
+                              <div className="space-y-2 mb-3">
+                                {rgMatingApiaries.map((ma) => (
+                                  <div key={ma.id} className="flex items-center justify-between p-2 bg-surface dark:bg-surface-elevated rounded border border-border">
+                                    <div className="text-sm text-foreground">
+                                      {ma.apiary_name}
+                                      {ma.grid_reference && <span className="text-xs text-text-tertiary ml-2">({ma.grid_reference})</span>}
+                                    </div>
+                                    <button
+                                      onClick={() => handleRemoveMatingApiary(ma.id, group.id)}
+                                      className="px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 border border-red-300 dark:border-red-700"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex gap-2">
+                              <select
+                                value={rgMatingApiaryToAdd}
+                                onChange={(e) => setRgMatingApiaryToAdd(e.target.value)}
+                                className="flex-1 px-2 py-1.5 text-sm border border-border rounded bg-surface text-foreground"
+                              >
+                                <option value="">Select apiary to add...</option>
+                                {rgMemberApiaries
+                                  .filter((a) => !rgMatingApiaries.some((ma) => ma.apiary_id === a.id))
+                                  .map((a) => (
+                                    <option key={a.id} value={a.id}>{a.name}</option>
+                                  ))}
+                              </select>
+                              <button
+                                onClick={() => handleAddMatingApiary(group.id)}
+                                disabled={!rgMatingApiaryToAdd}
+                                className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
 
                           {/* Pending Invitations */}
                           {rgPendingInvitations.length > 0 && (
@@ -2896,6 +3120,11 @@ export default function ProfilePage() {
             {/* Monthly Report (only for group owners) */}
             {ownedRearingGroups.length > 0 && (
               <RearingGroupReport ownedGroups={ownedRearingGroups} />
+            )}
+
+            {/* NIHBS Monthly Returns (only for group owners) */}
+            {ownedRearingGroups.length > 0 && userId && (
+              <NIHBSMonthlyReturn ownedGroups={ownedRearingGroups} userId={userId} />
             )}
           </div>
         )}
@@ -3531,6 +3760,73 @@ export default function ProfilePage() {
                   <>
                     <Edit2 size={16} />
                     Rename Group
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Rearing Group Ownership Modal */}
+      {showTransferRgModal && selectedRg && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-foreground">Transfer Ownership</h3>
+              <button onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId('') }} className="text-text-tertiary hover:text-text-secondary">
+                <X size={24} />
+              </button>
+            </div>
+            <p className="text-sm text-text-secondary mb-4">
+              Transfer ownership of <span className="font-semibold text-foreground">{selectedRg.name}</span> to another member. You will become a regular member.
+            </p>
+            {loadingRgMembers ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-amber-600 border-t-transparent"></div>
+              </div>
+            ) : rgMembers.filter(m => m.role !== 'owner').length === 0 ? (
+              <p className="text-sm text-text-tertiary text-center py-4">No other members to transfer to. Invite members first.</p>
+            ) : (
+              <>
+                <label className="block text-sm font-medium text-text-secondary mb-2">New Owner</label>
+                <select
+                  value={transferRgTargetUserId}
+                  onChange={(e) => setTransferRgTargetUserId(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 bg-surface dark:bg-surface-elevated text-foreground mb-4"
+                >
+                  <option value="">Select a member...</option>
+                  {rgMembers.filter(m => m.role !== 'owner').map((member) => (
+                    <option key={member.user_id} value={member.user_id}>
+                      {member.first_name && member.last_name
+                        ? `${member.first_name} ${member.last_name} (${member.user_email})`
+                        : member.user_email}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId('') }}
+                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTransferRgOwnership}
+                disabled={transferringRg || !transferRgTargetUserId}
+                className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {transferringRg ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Transferring...
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={16} />
+                    Transfer Ownership
                   </>
                 )}
               </button>
