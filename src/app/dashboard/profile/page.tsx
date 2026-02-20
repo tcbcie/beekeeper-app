@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Calendar, Edit2, Save, Download, X, Trash2, Phone, Palette } from 'lucide-react'
+import { User, Calendar, Edit2, Save, Download, X, Trash2, Phone, Palette, Scale, Users, Crown, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
@@ -776,6 +777,33 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Manage Section */}
+      <div className="bg-surface dark:bg-surface border border-border rounded-lg shadow p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-semibold text-foreground">Manage</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { href: '/dashboard/scales', label: 'Scales', description: 'BEEP & Wolf Waagen integrations', icon: Scale, colour: 'text-blue-600 dark:text-blue-400' },
+            { href: '/dashboard/apiary-team', label: 'Apiary Team', description: 'Team-based apiary sharing', icon: Users, colour: 'text-green-600 dark:text-green-400' },
+            { href: '/dashboard/rearing-team', label: 'Rearing Team', description: 'Queen rearing groups', icon: Crown, colour: 'text-amber-600 dark:text-amber-400' },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-colors"
+            >
+              <item.icon size={20} className={item.colour} />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-foreground text-sm">{item.label}</h3>
+                <p className="text-xs text-text-secondary truncate">{item.description}</p>
+              </div>
+              <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Theme Preferences */}
