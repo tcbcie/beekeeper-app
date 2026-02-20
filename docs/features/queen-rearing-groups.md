@@ -1,0 +1,75 @@
+# Queen Rearing Groups & Monthly Report
+
+## Overview
+
+Queen Rearing Groups allow beekeepers to form groups for collaborative queen rearing. The group owner can generate consolidated monthly reports showing grafts accepted, queens hatched, and queens mated across all group members' rearing batches.
+
+This feature is **separate from the existing team system** — teams handle apiary sharing, whilst rearing groups focus exclusively on queen rearing reporting.
+
+## How It Works
+
+### Group Management
+- Any user can **create a rearing group** from the Profile page
+- The creator becomes the group **owner** and is automatically added as a member
+- The owner can **invite members** via email (same flow as team invitations)
+- The owner can **rename** or **delete** the group
+- Members can **leave** a group at any time
+
+### Invitation Flow
+1. Owner enters an email address to invite
+2. If the user already has a HiveCraic account, they are added directly
+3. If the user does not have an account, a pending invitation is created and an email is sent
+4. The email contains **Accept** and **Decline** links
+5. New users who sign up with a matching email are auto-accepted via the `auto-accept-invitations` webhook
+
+### Monthly Report
+- Available only to group **owners**
+- Select a group, month, and year to generate a report
+- The report aggregates data from all members' `rearing_batches` where `graft_date` falls within the selected month
+- Shows per-member breakdown and group totals for:
+  - Number of batches
+  - Grafts accepted
+  - Queens hatched
+  - Queens mated
+- Responsive design: table on desktop, cards on mobile
+
+### Privacy
+- Members **cannot** see each other's batches in the normal batches page
+- Only the group owner can view aggregated batch data via the report
+- The RLS policy on `rearing_batches` grants the owner **read-only** access to member batches (SELECT only)
+
+## Database Schema
+
+### Tables
+- `rearing_groups` — group name + owner
+- `rearing_group_members` — membership records (group_id, user_id, role)
+- `rearing_group_invitations` — invitation records with status tracking
+
+### Helper Functions
+- `is_rearing_group_owner(group_uuid, user_uuid)` — checks ownership (used in RLS policies)
+- `get_rearing_group_member_user_ids(owner_uuid)` — returns all member user_ids for groups owned by the given user (used in rearing_batches RLS)
+
+### RLS Policies
+- `rearing_groups`: owners and members can view; only owners can create/update/delete
+- `rearing_group_members`: members can view members of their groups; owners can manage
+- `rearing_group_invitations`: publicly readable (UUID-protected); owners can create/delete; invitees can update their own
+- `rearing_batches`: additive SELECT policy allowing group owners to read member batches
+
+## Files
+
+| File | Description |
+|------|-------------|
+| `src/hooks/useRearingGroups.ts` | Group CRUD, member/invitation management |
+| `src/hooks/useRearingGroupReport.ts` | Monthly report data aggregation |
+| `src/components/rearing-groups/RearingGroupReport.tsx` | Report UI component |
+| `src/app/accept-rearing-group-invitation/page.tsx` | Accept invitation page |
+| `src/app/decline-rearing-group-invitation/page.tsx` | Decline invitation page |
+| `src/app/dashboard/profile/page.tsx` | Profile page (rearing groups section added) |
+
+### Edge Functions
+- `send-rearing-group-invitation` — sends invitation email via Resend
+- `auto-accept-invitations` — updated to also handle rearing group invitations on signup
+
+## Location in UI
+
+The **Queen Rearing Groups** section appears on the Profile page between **Team Management** and **Data Export**.
