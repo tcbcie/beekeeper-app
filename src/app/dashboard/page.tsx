@@ -6,8 +6,9 @@ import StatCard from '@/components/ui/StatCard'
 import { SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import UpcomingEvents from '@/components/UpcomingEvents'
 import Link from 'next/link'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
+import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RecentActivityRecord } from '@/types/dashboard'
 
 export default function DashboardPage() {
@@ -31,6 +32,7 @@ export default function DashboardPage() {
     fetchMySharedTeamMembers,
   } = useTeams()
   const { openTicketsCount, userTicketStatus, fetchOpenTicketsCount, fetchUserTicketStatus } = useTicketStatus()
+  const { ownedRearingGroups, memberRearingGroups, loadingRearingGroups, fetchRearingGroups } = useRearingGroups()
 
   useEffect(() => {
     const initUser = async () => {
@@ -59,16 +61,18 @@ export default function DashboardPage() {
     initUser()
   }, [router, fetchDashboardData, fetchOpenTicketsCount, fetchUserTicketStatus])
 
-  // Separate effect for team data that depends on userId being set
+  // Separate effect for team/group data that depends on userId being set
   useEffect(() => {
     if (userId) {
       fetchTeams(userId)
       fetchTeamStats(userId)
+      fetchRearingGroups(userId)
     }
-  }, [userId, fetchTeams, fetchTeamStats])
+  }, [userId, fetchTeams, fetchTeamStats, fetchRearingGroups])
 
   // Memoised computed values (must be above early return to satisfy rules-of-hooks)
   const isTeamMember = useMemo(() => ownedTeams.length > 0 || memberTeams.length > 0, [ownedTeams, memberTeams])
+  const isRearingGroupMember = useMemo(() => ownedRearingGroups.length > 0 || memberRearingGroups.length > 0, [ownedRearingGroups, memberRearingGroups])
 
   const statCards = useMemo(() => [
     { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-gray-900 dark:text-green-300', href: '/dashboard/apiaries' },
@@ -352,6 +356,15 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Rearing Groups Section */}
+      {(loadingRearingGroups || isRearingGroupMember) && (
+        <RearingGroupsSection
+          ownedRearingGroups={ownedRearingGroups}
+          memberRearingGroups={memberRearingGroups}
+          loadingRearingGroups={loadingRearingGroups}
+        />
+      )}
+
       {/* Application Version */}
       <p className="text-xs text-text-tertiary text-center py-2">
         HiveCraic v1.5.19 &middot; February 9, 2026 &middot; <Link href="/dashboard/about?section=changes" className="text-forest-600 dark:text-forest-400 hover:underline">View Changes</Link>
@@ -486,12 +499,12 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
           <Users size={24} className="text-blue-600 dark:text-blue-400" />
           <h2 className="text-xl font-semibold text-foreground">My Teams</h2>
         </div>
-        <a
-          href="/dashboard/profile#teams"
+        <Link
+          href="/dashboard/apiary-team"
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium"
         >
           Manage Teams
-        </a>
+        </Link>
       </div>
 
       {loadingTeams ? (
@@ -564,6 +577,95 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
               <p className="text-sm text-text-secondary">
                 You&apos;re part of a team, but no apiaries have been shared yet. Team owners need to share apiaries for team data to appear here.
               </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface RearingGroupsSectionProps {
+  ownedRearingGroups: { id: string; name: string; member_count?: number; user_role?: string }[]
+  memberRearingGroups: { id: string; name: string; member_count?: number; user_role?: string }[]
+  loadingRearingGroups: boolean
+}
+
+function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loadingRearingGroups }: RearingGroupsSectionProps) {
+  return (
+    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Egg size={24} className="text-amber-600 dark:text-amber-400" />
+          <h2 className="text-xl font-semibold text-foreground">My Rearing Groups</h2>
+        </div>
+        <Link
+          href="/dashboard/rearing-team"
+          className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium"
+        >
+          Manage Groups
+        </Link>
+      </div>
+
+      {loadingRearingGroups ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-amber-600 border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Owned Groups */}
+          {ownedRearingGroups.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Crown size={16} className="text-amber-600 dark:text-amber-400" />
+                <h3 className="font-semibold text-foreground text-sm">Groups I Own ({ownedRearingGroups.length})</h3>
+              </div>
+              <div className="space-y-2">
+                {ownedRearingGroups.map((group) => (
+                  <div key={group.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
+                      <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs rounded font-medium">
+                        Owner
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-text-secondary">
+                      <span className="flex items-center gap-1">
+                        <Users size={12} />
+                        {group.member_count || 0}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Member Groups */}
+          {memberRearingGroups.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <UserCheck size={16} className="text-green-600 dark:text-green-400" />
+                <h3 className="font-semibold text-foreground text-sm">Groups I&apos;m In ({memberRearingGroups.length})</h3>
+              </div>
+              <div className="space-y-2">
+                {memberRearingGroups.map((group) => (
+                  <div key={group.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-green-300 dark:hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
+                      <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs rounded font-medium">
+                        Member
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-text-secondary">
+                      <span className="flex items-center gap-1">
+                        <Users size={12} />
+                        {group.member_count || 0}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

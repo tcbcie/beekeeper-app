@@ -2,7 +2,7 @@
 
 ## Overview
 
-The original profile page (`src/app/dashboard/profile/page.tsx`) was 4,244 lines managing 11 distinct feature areas. It has been split into 4 focused pages, each accessible from the sidebar navigation.
+The original profile page (`src/app/dashboard/profile/page.tsx`) was 4,244 lines managing 11 distinct feature areas. It has been split into 4 focused pages. The three sub-pages (Scales, Apiary Team, Rearing Team) are accessed via link cards on the Profile page under a "Manage" section.
 
 ## New Pages
 
@@ -43,6 +43,7 @@ Manages queen rearing groups:
 
 Retains:
 - Profile Information (display/edit name, phone, association memberships)
+- **Manage section** — 3 link cards to Scales, Apiary Team, and Rearing Team sub-pages
 - Theme Preferences (ThemeSwitcher component)
 - Subscription Management (status card, history, renewal modal)
 - Data Export (JSON download)
@@ -51,10 +52,9 @@ Retains:
 
 ## Navigation
 
-Three nav items added to `src/lib/navigation.ts` in the "Manage" group:
-- Scales (Scale icon)
-- Apiary Team (Users icon)
-- Rearing Team (Crown icon)
+Sub-pages are **not** in the sidebar. They are accessed from the Profile page via the "Manage" section link cards. The dashboard overview also shows:
+- **My Teams** section with a "Manage Teams" button linking to `/dashboard/apiary-team`
+- **My Rearing Groups** section (if the user belongs to any) with a "Manage Groups" button linking to `/dashboard/rearing-team`
 
 ## Key Dependencies
 
@@ -64,6 +64,7 @@ Three nav items added to `src/lib/navigation.ts` in the "Manage" group:
 | Apiary Team | — | `teams`, `team_members`, `team_invitations`, `team_apiaries`, `apiaries` |
 | Rearing Team | `useRearingGroups`, `RearingGroupReport`, `NIHBSMonthlyReturn` | `rearing_groups`, `rearing_group_members`, `rearing_group_invitations`, `rearing_group_mating_apiaries` |
 | Profile | `SubscriptionStatusCard`, `RenewSubscriptionModal`, `SubscriptionHistoryTable`, `ThemeSwitcher` | `profiles`, `associations` |
+| Dashboard | `useRearingGroups`, `useTeams` | (read-only summaries) |
 
 ## Database Notes
 
