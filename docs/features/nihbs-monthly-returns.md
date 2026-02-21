@@ -16,9 +16,9 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
 - Configured via a dropdown in the expanded member list on the Profile page.
 - Used in the Group Details Sheet of the Excel export.
 
-### Mating Apiaries Management
-- Group owners can designate up to 20 mating apiaries from all group members' apiaries.
-- Managed via a subsection in the expanded group view on the Profile page.
+### Mating Apiaries
+- Mating apiaries are derived automatically from the `mating_apiary_id` assigned on individual batches.
+- No separate management is needed — any apiary referenced by a batch appears in the report.
 - Each mating apiary appears as a column in the monthly Excel sheets.
 
 ### NIHBS Monthly Returns Section
@@ -36,30 +36,37 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
   - Virgins distributed outside — successfully mated
 
 ### Excel Export
-Generates a multi-sheet `.xlsx` workbook matching the NIHBS template:
+Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is available even when there is no monthly batch data for the selected year.
 
-**Sheet 1: Group Details Sheet**
-- Group name, year, member count
-- Experience breakdown (experienced/intermediate/novice)
-- First and last graft dates
-- Mating apiary details table (name, 10km grid reference, altitude)
+**Sheet 1: Group Details Sheet** — matches the official NIHBS template layout:
+- Row 1: Title with scheme year
+- Row 3: Group name (yellow highlight)
+- Row 5: Number of Group Members/Participants (yellow)
+- Rows 6-8: Member Breakdown — Experienced/Advanced, Intermediate, Novice (yellow counts + description text)
+- Row 10: Date of first graft with group for the year (yellow)
+- Row 11: Date of last graft within group for the year (yellow)
+- Row 13: Number of Mating Apiaries used (yellow)
+- Row 23: Mating Apiary Details table header
+- Rows 24+: Numbered apiary rows (#1–#13 minimum) with Name, 10km Grid Reference, Altitude
 
-**Monthly Sheets (one per active month)**
-- Metrics broken down by total and per mating apiary
-- Row numbers match the official NIHBS template (7, 9, 11, 13, 19, 21, 24, 26)
+**Monthly Sheets (one per active month)** — matches the official NIHBS template layout:
+- Row 1: Group name with red background (spanning all columns)
+- Row 3: "Data Checks" header (red bg, white text) + "Breakdown of quantities..." explanatory text with rich-text YELLOW highlight
+- Row 4: Numbered column headers #1–#20 (grey fill for unused apiary slots)
+- Row 5: "Total" label + apiary names (rotated 45°) or "N/A" with grey fill for unused slots
+- Row 7: Number of Grafting rounds this month (yellow fill for Total + per-apiary values, grey for unused)
+- Row 9: Total number of cells grafted or cell cups transferred from Cupkit/Jenter boxes
+- Row 11: Number of Sealed queen cells achieved
+- Row 13: Number of queen cells hatched this month
+- Rows 14-16: Note about hatching in calendar month (red bold italic)
+- "Within your group" section header
+- Row 19: Number of queens mated this month (per-apiary breakdown)
+- Row 21: Number of newly mated queens showing hybridised offspring (total only + explanatory note)
+- "Outside your group" section header
+- Row 24: Number of virgin queens distributed outside the group (total only + NB note in red)
+- Row 26: Number of virgin queens distributed outside the group that were successfully mated
 
 ## Database Tables
-
-### `rearing_group_mating_apiaries`
-Junction table linking rearing groups to designated mating apiaries.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| group_id | UUID | FK to rearing_groups |
-| apiary_id | UUID | FK to apiaries |
-| sort_order | INTEGER | Display ordering |
-| added_at | TIMESTAMPTZ | When added |
 
 ### `nihbs_monthly_returns`
 Stores the manual-entry fields per group per month.
@@ -93,5 +100,4 @@ Stores the manual-entry fields per group per month.
 
 ## RLS Policies
 
-- `rearing_group_mating_apiaries`: Group owners can manage; members can view.
 - `nihbs_monthly_returns`: Group owners only (SELECT/INSERT/UPDATE).
