@@ -9,6 +9,8 @@ export interface RearingGroup {
   updated_at: string
   member_count?: number
   user_role?: string
+  membership_id?: string
+  experience_level?: 'experienced' | 'intermediate' | 'novice' | null
 }
 
 export interface RearingGroupMember {
@@ -64,18 +66,21 @@ export function useRearingGroups() {
       // Fetch groups where user is a member (not owner)
       const { data: memberData, error: memberError } = await supabase
         .from('rearing_group_members')
-        .select('group_id, role, rearing_groups(*)')
+        .select('id, group_id, role, experience_level, rearing_groups(*)')
         .eq('user_id', userId)
 
       if (memberError) throw memberError
 
-      // Filter to groups the user doesn't own
-      const memberGroupsData = (memberData || [])
-        .filter((m) => {
-          const group = (m as unknown as { rearing_groups: RearingGroup }).rearing_groups
-          return group && group.owner_id !== userId
-        })
-        .map((m) => (m as unknown as { rearing_groups: RearingGroup }).rearing_groups)
+      // Filter to groups the user doesn't own, keeping membership info
+      interface MemberRow { id: string; group_id: string; role: string; experience_level: string | null; rearing_groups: RearingGroup }
+      const rows = (memberData || []) as unknown as MemberRow[]
+
+      const memberGroupsRaw = rows.filter((m) => m.rearing_groups && m.rearing_groups.owner_id !== userId)
+      const memberGroupsData = memberGroupsRaw.map((m) => m.rearing_groups)
+      const membershipMap = new Map(memberGroupsRaw.map((m) => [
+        m.rearing_groups.id,
+        { membership_id: m.id, experience_level: m.experience_level as RearingGroup['experience_level'] }
+      ]))
 
       const memberGroupIds = memberGroupsData.map((g) => g.id)
 
@@ -104,6 +109,8 @@ export function useRearingGroups() {
         ...group,
         member_count: memberCountMap.get(group.id) || 0,
         user_role: 'member',
+        membership_id: membershipMap.get(group.id)?.membership_id,
+        experience_level: membershipMap.get(group.id)?.experience_level,
       })))
     } catch (error) {
       console.error('Error fetching rearing groups:', error)
@@ -183,6 +190,7 @@ export function useRearingGroups() {
   return {
     ownedRearingGroups,
     memberRearingGroups,
+    setMemberRearingGroups,
     loadingRearingGroups,
     rgMembers,
     setRgMembers,

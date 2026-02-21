@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { User, Mail, Edit2, Users, Plus, X, Trash2, UserPlus, Clock, Send, Share2, Crown } from 'lucide-react'
+import { User, Mail, Edit2, Users, Plus, X, Trash2, UserPlus, Clock, Send, Share2, Crown, HelpCircle } from 'lucide-react'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RearingGroup, RearingGroupMember } from '@/hooks/useRearingGroups'
 import RearingGroupReport from '@/components/rearing-groups/RearingGroupReport'
@@ -23,6 +23,7 @@ export default function RearingTeamPage() {
   const {
     ownedRearingGroups,
     memberRearingGroups,
+    setMemberRearingGroups,
     loadingRearingGroups,
     rgMembers,
     setRgMembers,
@@ -56,6 +57,7 @@ export default function RearingTeamPage() {
   const [rgMatingApiaries, setRgMatingApiaries] = useState<Array<{ id: string; apiary_id: string; apiary_name: string; grid_reference: string | null; elevation: number | null }>>([])
   const [rgMemberApiaries, setRgMemberApiaries] = useState<Array<{ id: string; name: string; user_id: string }>>([])
   const [rgMatingApiaryToAdd, setRgMatingApiaryToAdd] = useState('')
+  const [skillLevelInfoTarget, setSkillLevelInfoTarget] = useState<string | null>(null)
 
   // Init useEffect
   useEffect(() => {
@@ -119,25 +121,25 @@ export default function RearingTeamPage() {
         throw memberError
       }
 
-      toast.success(`Rearing group "${newRgName}" created successfully!`)
+      toast.success(`Rearing group "${newRgName}" created successfully!} /
       setNewRgName('')
       setShowCreateRgModal(false)
       fetchRearingGroups(userId)
     } catch (error) {
       console.error('Error creating rearing group:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Failed to create rearing group: ${errorMessage}`)
+      toast.error(`Failed to create rearing group: ${errorMessage}} /
     } finally {
       setCreatingRg(false)
     }
   }
 
   const handleDeleteRg = async (groupId: string, groupName: string) => {
-    if (!confirm(`Are you sure you want to delete the rearing group "${groupName}"? This action cannot be undone.`)) return
+    if (!confirm(`Are you sure you want to delete the rearing group "${groupName}"? This action cannot be undone.} /) return
     try {
       const { error } = await supabase.from('rearing_groups').delete().eq('id', groupId)
       if (error) throw error
-      toast.success(`Rearing group "${groupName}" deleted successfully.`)
+      toast.success(`Rearing group "${groupName}" deleted successfully.} /
       if (userId) fetchRearingGroups(userId)
     } catch (error) {
       console.error('Error deleting rearing group:', error)
@@ -162,7 +164,7 @@ export default function RearingTeamPage() {
         .eq('id', selectedRg.id)
         .eq('owner_id', userId)
       if (error) throw error
-      toast.success(`Rearing group renamed to "${renameRgName.trim()}" successfully!`)
+      toast.success(`Rearing group renamed to "${renameRgName.trim()}" successfully!} /
       setShowRenameRgModal(false)
       setRenameRgName('')
       setSelectedRg(null)
@@ -213,7 +215,7 @@ export default function RearingTeamPage() {
       if (e3) throw e3
       if (!d3 || d3.length === 0) throw new Error('Failed to transfer group ownership.')
 
-      toast.success(`Ownership of "${selectedRg.name}" transferred successfully!`)
+      toast.success(`Ownership of "${selectedRg.name}" transferred successfully!} /
       setShowTransferRgModal(false)
       setSelectedRg(null)
       setTransferRgTargetUserId('')
@@ -221,7 +223,7 @@ export default function RearingTeamPage() {
     } catch (error) {
       console.error('Error transferring rearing group ownership:', error)
       const msg = error instanceof Error ? error.message : 'Please try again.'
-      toast.error(`Failed to transfer ownership. ${msg}`)
+      toast.error(`Failed to transfer ownership. ${msg}} /
       // Refresh to show current state (partially updated or not)
       if (userId) fetchRearingGroups(userId)
     } finally {
@@ -296,7 +298,7 @@ export default function RearingTeamPage() {
           status: 'accepted',
           accepted_at: new Date().toISOString(),
         })
-        toast.success(`${rgInviteEmail} has been added to the group!`)
+        toast.success(`${rgInviteEmail} has been added to the group!} /
       } else {
         // Create pending invitation and send email
         const { data: newInvite, error: inviteError } = await supabase
@@ -326,16 +328,16 @@ export default function RearingTeamPage() {
           })
           if (emailError) {
             if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
-              toast.info(`Invitation created! Email system not configured yet. ${rgInviteEmail} will be added when they sign up.`)
+              toast.info(`Invitation created! Email system not configured yet. ${rgInviteEmail} will be added when they sign up.} /
             } else {
-              toast.warning(`Invitation created but email failed to send. Please contact ${rgInviteEmail} directly.`)
+              toast.warning(`Invitation created but email failed to send. Please contact ${rgInviteEmail} directly.} /
             }
           } else {
-            toast.success(`Invitation email sent to ${rgInviteEmail}!`)
+            toast.success(`Invitation email sent to ${rgInviteEmail}!} /
           }
         } catch (emailException) {
           console.error('Exception sending invitation email:', emailException)
-          toast.info(`Invitation created! Email system not configured. Please contact ${rgInviteEmail} directly.`)
+          toast.info(`Invitation created! Email system not configured. Please contact ${rgInviteEmail} directly.} /
         }
       }
 
@@ -351,13 +353,13 @@ export default function RearingTeamPage() {
   }
 
   const handleCancelRgInvitation = async (invitationId: string, email: string) => {
-    if (!confirm(`Are you sure you want to cancel the invitation to ${email}?`)) return
+    if (!confirm(`Are you sure you want to cancel the invitation to ${email}?} /) return
     try {
       const { error } = await supabase.from('rearing_group_invitations').delete().eq('id', invitationId)
       if (error) throw error
       setRgPendingInvitations(prev => prev.filter(inv => inv.id !== invitationId))
       if (selectedRg) await fetchRearingGroupDetails(selectedRg.id)
-      toast.success(`Invitation to ${email} cancelled.`)
+      toast.success(`Invitation to ${email} cancelled.} /
     } catch (error) {
       console.error('Error cancelling invitation:', error)
       toast.error('Failed to cancel invitation. Please try again.')
@@ -366,11 +368,11 @@ export default function RearingTeamPage() {
   }
 
   const handleRemoveRgMember = async (memberId: string, memberEmail: string) => {
-    if (!confirm(`Are you sure you want to remove ${memberEmail} from the group?`)) return
+    if (!confirm(`Are you sure you want to remove ${memberEmail} from the group?} /) return
     try {
       const { error } = await supabase.from('rearing_group_members').delete().eq('id', memberId)
       if (error) throw error
-      toast.success(`${memberEmail} removed from group.`)
+      toast.success(`${memberEmail} removed from group.} /
       if (selectedRg) fetchRearingGroupDetails(selectedRg.id)
       if (userId) fetchRearingGroups(userId)
     } catch (error) {
@@ -388,6 +390,22 @@ export default function RearingTeamPage() {
       if (error) throw error
       setRgMembers((prev) =>
         prev.map((m) => m.id === memberId ? { ...m, experience_level: (level || null) as RearingGroupMember['experience_level'] } : m)
+      )
+    } catch (error) {
+      console.error('Error updating experience level:', error)
+      toast.error('Failed to update experience level.')
+    }
+  }
+
+  const handleUpdateOwnExperienceLevel = async (membershipId: string, groupId: string, level: string) => {
+    try {
+      const { error } = await supabase
+        .from('rearing_group_members')
+        .update({ experience_level: level || null })
+        .eq('id', membershipId)
+      if (error) throw error
+      setMemberRearingGroups((prev) =>
+        prev.map((g) => g.id === groupId ? { ...g, experience_level: (level || null) as RearingGroup['experience_level'] } : g)
       )
     } catch (error) {
       console.error('Error updating experience level:', error)
@@ -468,7 +486,7 @@ export default function RearingTeamPage() {
 
   const handleLeaveRg = async (groupId: string, groupName: string) => {
     if (!userId) return
-    if (!confirm(`Are you sure you want to leave the rearing group "${groupName}"?`)) return
+    if (!confirm(`Are you sure you want to leave the rearing group "${groupName}"?} /) return
     try {
       const { data, error } = await supabase
         .from('rearing_group_members')
@@ -481,13 +499,36 @@ export default function RearingTeamPage() {
         toast.warning('You are not a member of this group or membership not found.')
         return
       }
-      toast.success(`You have left the rearing group "${groupName}".`)
+      toast.success(`You have left the rearing group "${groupName}".} /
       fetchRearingGroups(userId)
     } catch (error) {
       console.error('Error leaving rearing group:', error)
       toast.error('Failed to leave rearing group. Please try again.')
     }
   }
+
+  const renderSkillLevelInfo = (targetId: string) => (
+    <div className="relative">
+      <button
+        onClick={() => setSkillLevelInfoTarget(skillLevelInfoTarget === targetId ? null : targetId)}
+        className="text-text-tertiary hover:text-text-secondary"
+        title="Skill level guide"
+      >
+        <HelpCircle size={16} />
+      </button>
+      {skillLevelInfoTarget === targetId && (
+        <div className="absolute left-0 sm:left-0 right-auto top-6 z-50 w-72 max-w-[calc(100vw-2rem)] p-3 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg text-xs">
+          <p className="font-semibold text-foreground mb-2">Experience Level Guide</p>
+          <ul className="space-y-1.5 text-text-secondary">
+            <li><span className="font-medium text-foreground">Experienced/Advanced</span> — were already using colony selection and queen rearing, for a number of seasons, before joining group</li>
+            <li><span className="font-medium text-foreground">Intermediate</span> — had some queen rearing experience prior to joining group</li>
+            <li><span className="font-medium text-foreground">Novice</span> — no queen rearing experience prior to joining group</li>
+          </ul>
+          <button onClick={() => setSkillLevelInfoTarget(null)} className="mt-2 text-amber-600 hover:text-amber-700 font-medium">Close</button>
+        </div>
+      )}
+    </div>
+  )
 
   if (loading) {
     return (
@@ -618,7 +659,10 @@ export default function RearingTeamPage() {
                       {/* Expanded Member List */}
                       {expandedRgId === group.id && (
                         <div className="mt-4 pt-4 border-t border-border">
-                          <h5 className="text-sm font-semibold text-foreground mb-3">Group Members</h5>
+                          <div className="flex items-center gap-2 mb-3">
+                            <h5 className="text-sm font-semibold text-foreground">Group Members</h5>
+                            {renderSkillLevelInfo(`owner-${group.id}`)}
+                          </div>
                           {loadingRgMembers ? (
                             <div className="flex justify-center py-4">
                               <div className="animate-spin rounded-full h-6 w-6 border-2 border-amber-600 border-t-transparent"></div>
@@ -647,19 +691,19 @@ export default function RearingTeamPage() {
                                       {member.role}
                                     </span>
                                   </div>
-                                  {member.role !== 'owner' && (
-                                    <div className="flex items-center gap-2 ml-3">
-                                      <select
-                                        value={member.experience_level || ''}
-                                        onChange={(e) => handleUpdateExperienceLevel(member.id, e.target.value)}
-                                        className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
-                                        title="Experience level"
-                                      >
-                                        <option value="">Level</option>
-                                        <option value="experienced">Experienced</option>
-                                        <option value="intermediate">Intermediate</option>
-                                        <option value="novice">Novice</option>
-                                      </select>
+                                  <div className="flex items-center gap-2 ml-3">
+                                    <select
+                                      value={member.experience_level || ''}
+                                      onChange={(e) => handleUpdateExperienceLevel(member.id, e.target.value)}
+                                      className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+                                      title="Experience level"
+                                    >
+                                      <option value="">Level</option>
+                                      <option value="experienced">Experienced</option>
+                                      <option value="intermediate">Intermediate</option>
+                                      <option value="novice">Novice</option>
+                                    </select>
+                                    {member.role !== 'owner' && (
                                       <button
                                         onClick={() => handleRemoveRgMember(member.id, member.user_email || 'this member')}
                                         className="px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
@@ -668,8 +712,8 @@ export default function RearingTeamPage() {
                                         <Trash2 size={12} />
                                         Remove
                                       </button>
-                                    </div>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -873,6 +917,25 @@ export default function RearingTeamPage() {
                             Leave Group
                           </button>
                         </div>
+                        {group.membership_id && (() => {
+                          const membershipId = group.membership_id
+                          return (
+                            <div className="flex items-center gap-2">
+                              <label className="text-sm text-text-secondary">My Experience Level:</label>
+                              <select
+                                value={group.experience_level || ''}
+                                onChange={(e) => handleUpdateOwnExperienceLevel(membershipId, group.id, e.target.value)}
+                                className="px-2 py-1 text-sm border border-border rounded bg-surface text-foreground"
+                              >
+                                <option value="">Select level</option>
+                                <option value="experienced">Experienced</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="novice">Novice</option>
+                              </select>
+                              {renderSkillLevelInfo(`member-${group.id}`)}
+                            </div>
+                          )
+                        })()}
                       </div>
                       <div className="text-sm text-text-tertiary">
                         <span className="font-medium">{group.member_count || 0}</span> member{(group.member_count || 0) !== 1 ? 's' : ''}

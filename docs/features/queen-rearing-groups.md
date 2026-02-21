@@ -34,6 +34,17 @@ This feature is **separate from the existing team system** — teams handle apia
   - Queens mated
 - Responsive design: table on desktop, cards on mobile
 
+### Experience Level (Skill Level)
+- Each member (including the owner) has an **experience level**: Experienced, Intermediate, or Novice
+- Members can **self-declare** their level from the "Groups I'm In" section
+- The group owner can also **view and change** any member's level from the expanded members list
+- An **info tooltip** (help icon) explains the levels:
+  - **Experienced/Advanced** — were already using colony selection and queen rearing, for a number of seasons, before joining group
+  - **Intermediate** — had some queen rearing experience prior to joining group
+  - **Novice** — no queen rearing experience prior to joining group
+- Experience levels are stored in the `experience_level` column on `rearing_group_members`
+- Used in NIHBS monthly returns to count members by skill level
+
 ### Privacy
 - Members **cannot** see each other's batches in the normal batches page
 - Only the group owner can view aggregated batch data via the report
