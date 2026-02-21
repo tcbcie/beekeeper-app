@@ -10,9 +10,10 @@ interface ApiaryCardProps {
   onEdit: (apiary: Apiary) => void
   onDelete: (id: string) => void
   onImageClick: (url: string) => void
+  isReadOnly?: boolean
 }
 
-export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick }: ApiaryCardProps) {
+export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isReadOnly }: ApiaryCardProps) {
   const router = useRouter()
 
   const daysSinceInspection = apiary.last_inspection_date
@@ -20,7 +21,10 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick }: A
     : null
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border">
+    <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border ${
+      apiary.is_shared ? 'border-l-4 border-l-blue-500' :
+      apiary.is_mating_apiary ? 'border-l-4 border-l-purple-500' : ''
+    }`}>
       <div className="flex justify-between items-start mb-4 gap-4">
         <div className="flex-1 min-w-0">
           <Link href={`/dashboard/apiaries/${apiary.id}`} className="hover:underline">
@@ -34,6 +38,16 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick }: A
             <p className="text-sm text-forest-800 dark:text-forest-400 font-medium mt-1">
               Eircode: {apiary.eircode}
             </p>
+          )}
+          {apiary.is_shared && (
+            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full border border-blue-300 dark:border-blue-700 mt-1">
+              Shared via {apiary.team_name || 'team'}
+            </span>
+          )}
+          {apiary.is_mating_apiary && !apiary.is_shared && (
+            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
+              Mating Apiary
+            </span>
           )}
           {apiary.share_location && (
             <p className="text-xs text-blue-800 dark:text-blue-400 mt-1 flex items-center gap-1">
@@ -103,22 +117,24 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick }: A
         </div>
       )}
 
-      <div className="flex gap-2">
-        <button
-          onClick={() => onEdit(apiary)}
-          className="flex-1 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
-        >
-          <Edit2 size={16} />
-          Edit
-        </button>
-        <button
-          onClick={() => onDelete(apiary.id)}
-          className="flex-1 px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
-        >
-          <Trash2 size={16} />
-          Delete
-        </button>
-      </div>
+      {!isReadOnly && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => onEdit(apiary)}
+            className="flex-1 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
+          >
+            <Edit2 size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(apiary.id)}
+            className="flex-1 px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   )
 }
