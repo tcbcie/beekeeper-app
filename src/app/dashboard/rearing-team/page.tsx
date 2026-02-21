@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
@@ -53,10 +53,6 @@ export default function RearingTeamPage() {
   const [transferRgTargetUserId, setTransferRgTargetUserId] = useState('')
   const [transferringRg, setTransferringRg] = useState(false)
 
-  // Mating apiaries state
-  const [rgMatingApiaries, setRgMatingApiaries] = useState<Array<{ id: string; apiary_id: string; apiary_name: string; grid_reference: string | null; elevation: number | null }>>([])
-  const [rgMemberApiaries, setRgMemberApiaries] = useState<Array<{ id: string; name: string; user_id: string }>>([])
-  const [rgMatingApiaryToAdd, setRgMatingApiaryToAdd] = useState('')
   const [skillLevelInfoTarget, setSkillLevelInfoTarget] = useState<string | null>(null)
 
   // Init useEffect
@@ -121,25 +117,25 @@ export default function RearingTeamPage() {
         throw memberError
       }
 
-      toast.success(`Rearing group "${newRgName}" created successfully!} /
+      toast.success(`Rearing group "${newRgName}" created successfully!`)
       setNewRgName('')
       setShowCreateRgModal(false)
       fetchRearingGroups(userId)
     } catch (error) {
       console.error('Error creating rearing group:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Failed to create rearing group: ${errorMessage}} /
+      toast.error(`Failed to create rearing group: ${errorMessage}`)
     } finally {
       setCreatingRg(false)
     }
   }
 
   const handleDeleteRg = async (groupId: string, groupName: string) => {
-    if (!confirm(`Are you sure you want to delete the rearing group "${groupName}"? This action cannot be undone.} /) return
+    if (!confirm(`Are you sure you want to delete the rearing group "${groupName}"? This action cannot be undone.`)) return
     try {
       const { error } = await supabase.from('rearing_groups').delete().eq('id', groupId)
       if (error) throw error
-      toast.success(`Rearing group "${groupName}" deleted successfully.} /
+      toast.success(`Rearing group "${groupName}" deleted successfully.`)
       if (userId) fetchRearingGroups(userId)
     } catch (error) {
       console.error('Error deleting rearing group:', error)
@@ -164,7 +160,7 @@ export default function RearingTeamPage() {
         .eq('id', selectedRg.id)
         .eq('owner_id', userId)
       if (error) throw error
-      toast.success(`Rearing group renamed to "${renameRgName.trim()}" successfully!} /
+      toast.success(`Rearing group renamed to "${renameRgName.trim()}" successfully!`)
       setShowRenameRgModal(false)
       setRenameRgName('')
       setSelectedRg(null)
@@ -215,7 +211,7 @@ export default function RearingTeamPage() {
       if (e3) throw e3
       if (!d3 || d3.length === 0) throw new Error('Failed to transfer group ownership.')
 
-      toast.success(`Ownership of "${selectedRg.name}" transferred successfully!} /
+      toast.success(`Ownership of "${selectedRg.name}" transferred successfully!`)
       setShowTransferRgModal(false)
       setSelectedRg(null)
       setTransferRgTargetUserId('')
@@ -223,7 +219,7 @@ export default function RearingTeamPage() {
     } catch (error) {
       console.error('Error transferring rearing group ownership:', error)
       const msg = error instanceof Error ? error.message : 'Please try again.'
-      toast.error(`Failed to transfer ownership. ${msg}} /
+      toast.error(`Failed to transfer ownership. ${msg}`)
       // Refresh to show current state (partially updated or not)
       if (userId) fetchRearingGroups(userId)
     } finally {
@@ -298,7 +294,7 @@ export default function RearingTeamPage() {
           status: 'accepted',
           accepted_at: new Date().toISOString(),
         })
-        toast.success(`${rgInviteEmail} has been added to the group!} /
+        toast.success(`${rgInviteEmail} has been added to the group!`)
       } else {
         // Create pending invitation and send email
         const { data: newInvite, error: inviteError } = await supabase
@@ -328,16 +324,16 @@ export default function RearingTeamPage() {
           })
           if (emailError) {
             if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
-              toast.info(`Invitation created! Email system not configured yet. ${rgInviteEmail} will be added when they sign up.} /
+              toast.info(`Invitation created! Email system not configured yet. ${rgInviteEmail} will be added when they sign up.`)
             } else {
-              toast.warning(`Invitation created but email failed to send. Please contact ${rgInviteEmail} directly.} /
+              toast.warning(`Invitation created but email failed to send. Please contact ${rgInviteEmail} directly.`)
             }
           } else {
-            toast.success(`Invitation email sent to ${rgInviteEmail}!} /
+            toast.success(`Invitation email sent to ${rgInviteEmail}!`)
           }
         } catch (emailException) {
           console.error('Exception sending invitation email:', emailException)
-          toast.info(`Invitation created! Email system not configured. Please contact ${rgInviteEmail} directly.} /
+          toast.info(`Invitation created! Email system not configured. Please contact ${rgInviteEmail} directly.`)
         }
       }
 
@@ -353,13 +349,13 @@ export default function RearingTeamPage() {
   }
 
   const handleCancelRgInvitation = async (invitationId: string, email: string) => {
-    if (!confirm(`Are you sure you want to cancel the invitation to ${email}?} /) return
+    if (!confirm(`Are you sure you want to cancel the invitation to ${email}?`)) return
     try {
       const { error } = await supabase.from('rearing_group_invitations').delete().eq('id', invitationId)
       if (error) throw error
       setRgPendingInvitations(prev => prev.filter(inv => inv.id !== invitationId))
       if (selectedRg) await fetchRearingGroupDetails(selectedRg.id)
-      toast.success(`Invitation to ${email} cancelled.} /
+      toast.success(`Invitation to ${email} cancelled.`)
     } catch (error) {
       console.error('Error cancelling invitation:', error)
       toast.error('Failed to cancel invitation. Please try again.')
@@ -368,11 +364,11 @@ export default function RearingTeamPage() {
   }
 
   const handleRemoveRgMember = async (memberId: string, memberEmail: string) => {
-    if (!confirm(`Are you sure you want to remove ${memberEmail} from the group?} /) return
+    if (!confirm(`Are you sure you want to remove ${memberEmail} from the group?`)) return
     try {
       const { error } = await supabase.from('rearing_group_members').delete().eq('id', memberId)
       if (error) throw error
-      toast.success(`${memberEmail} removed from group.} /
+      toast.success(`${memberEmail} removed from group.`)
       if (selectedRg) fetchRearingGroupDetails(selectedRg.id)
       if (userId) fetchRearingGroups(userId)
     } catch (error) {
@@ -413,80 +409,9 @@ export default function RearingTeamPage() {
     }
   }
 
-  const fetchRgMatingApiaries = useCallback(async (groupId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('rearing_group_mating_apiaries')
-        .select('id, apiary_id, apiaries(name, grid_reference, elevation)')
-        .eq('group_id', groupId)
-        .order('sort_order')
-      if (error) throw error
-      setRgMatingApiaries((data || []).map((d: Record<string, unknown>) => {
-        const apiary = d.apiaries as Record<string, unknown> | null
-        return {
-          id: d.id as string,
-          apiary_id: d.apiary_id as string,
-          apiary_name: (apiary?.name as string) || 'Unknown',
-          grid_reference: (apiary?.grid_reference as string) || null,
-          elevation: (apiary?.elevation as number) ?? null,
-        }
-      }))
-    } catch (error) {
-      console.error('Error fetching mating apiaries:', error)
-    }
-  }, [])
-
-  const fetchRgMemberApiaries = useCallback(async (groupId: string) => {
-    try {
-      // Get all member user_ids
-      const { data: members } = await supabase
-        .from('rearing_group_members')
-        .select('user_id')
-        .eq('group_id', groupId)
-      if (!members || members.length === 0) return
-      const userIds = members.map((m) => m.user_id)
-      // Get apiaries for those users
-      const { data: apiaries, error } = await supabase
-        .from('apiaries')
-        .select('id, name, user_id')
-        .in('user_id', userIds)
-        .order('name')
-      if (error) throw error
-      setRgMemberApiaries(apiaries || [])
-    } catch (error) {
-      console.error('Error fetching member apiaries:', error)
-    }
-  }, [])
-
-  const handleAddMatingApiary = async (groupId: string) => {
-    if (!rgMatingApiaryToAdd) return
-    try {
-      const { error } = await supabase
-        .from('rearing_group_mating_apiaries')
-        .insert({ group_id: groupId, apiary_id: rgMatingApiaryToAdd })
-      if (error) throw error
-      setRgMatingApiaryToAdd('')
-      fetchRgMatingApiaries(groupId)
-    } catch (error) {
-      console.error('Error adding mating apiary:', error)
-      toast.error('Failed to add mating apiary.')
-    }
-  }
-
-  const handleRemoveMatingApiary = async (id: string, groupId: string) => {
-    try {
-      const { error } = await supabase.from('rearing_group_mating_apiaries').delete().eq('id', id)
-      if (error) throw error
-      fetchRgMatingApiaries(groupId)
-    } catch (error) {
-      console.error('Error removing mating apiary:', error)
-      toast.error('Failed to remove mating apiary.')
-    }
-  }
-
   const handleLeaveRg = async (groupId: string, groupName: string) => {
     if (!userId) return
-    if (!confirm(`Are you sure you want to leave the rearing group "${groupName}"?} /) return
+    if (!confirm(`Are you sure you want to leave the rearing group "${groupName}"?`)) return
     try {
       const { data, error } = await supabase
         .from('rearing_group_members')
@@ -499,7 +424,7 @@ export default function RearingTeamPage() {
         toast.warning('You are not a member of this group or membership not found.')
         return
       }
-      toast.success(`You have left the rearing group "${groupName}".} /
+      toast.success(`You have left the rearing group "${groupName}".`)
       fetchRearingGroups(userId)
     } catch (error) {
       console.error('Error leaving rearing group:', error)
@@ -592,12 +517,8 @@ export default function RearingTeamPage() {
                                 setExpandedRgId(null)
                               } else {
                                 setExpandedRgId(group.id)
-                                setRgMatingApiaries([])
-                                setRgMemberApiaries([])
                                 setLoadingRgMembers(true)
                                 fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
-                                fetchRgMatingApiaries(group.id)
-                                fetchRgMemberApiaries(group.id)
                               }
                             }}
                             className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
@@ -720,50 +641,6 @@ export default function RearingTeamPage() {
                           ) : (
                             <p className="text-sm text-text-tertiary text-center py-4">No members yet. Invite someone to get started!</p>
                           )}
-
-                          {/* Mating Apiaries Section */}
-                          <div className="mt-6 pt-4 border-t border-border">
-                            <h5 className="text-sm font-semibold text-foreground mb-3">Mating Apiaries</h5>
-                            {rgMatingApiaries.length > 0 && (
-                              <div className="space-y-2 mb-3">
-                                {rgMatingApiaries.map((ma) => (
-                                  <div key={ma.id} className="flex items-center justify-between p-2 bg-surface dark:bg-surface-elevated rounded border border-border">
-                                    <div className="text-sm text-foreground">
-                                      {ma.apiary_name}
-                                      {ma.grid_reference && <span className="text-xs text-text-tertiary ml-2">({ma.grid_reference})</span>}
-                                    </div>
-                                    <button
-                                      onClick={() => handleRemoveMatingApiary(ma.id, group.id)}
-                                      className="px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 border border-red-300 dark:border-red-700"
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <div className="flex gap-2">
-                              <select
-                                value={rgMatingApiaryToAdd}
-                                onChange={(e) => setRgMatingApiaryToAdd(e.target.value)}
-                                className="flex-1 px-2 py-1.5 text-sm border border-border rounded bg-surface text-foreground"
-                              >
-                                <option value="">Select apiary to add...</option>
-                                {rgMemberApiaries
-                                  .filter((a) => !rgMatingApiaries.some((ma) => ma.apiary_id === a.id))
-                                  .map((a) => (
-                                    <option key={a.id} value={a.id}>{a.name}</option>
-                                  ))}
-                              </select>
-                              <button
-                                onClick={() => handleAddMatingApiary(group.id)}
-                                disabled={!rgMatingApiaryToAdd}
-                                className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Add
-                              </button>
-                            </div>
-                          </div>
 
                           {/* Pending Invitations */}
                           {rgPendingInvitations.length > 0 && (
