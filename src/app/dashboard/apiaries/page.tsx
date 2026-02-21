@@ -875,8 +875,7 @@ export default function ApiariesPage() {
             </div>
 
             {/* Share Location Option */}
-            {formData.latitude && formData.longitude && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -900,11 +899,10 @@ export default function ApiariesPage() {
                     </p>
                   </div>
                 </label>
-              </div>
-            )}
+            </div>
 
             {/* Conservation Area Option — only when sharing is enabled */}
-            {formData.share_location && formData.latitude && formData.longitude && (
+            {formData.share_location && (
               <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
