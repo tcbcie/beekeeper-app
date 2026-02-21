@@ -1,49 +1,46 @@
-# Apiary Categories: Own / Shared / Mating — Implementation Plan
+# NIHBS Monthly Excel Export — Match Official Template
 
-## Tasks
+## Problem
+The monthly sheet in the NIHBS Excel export didn't match the official NIHBS template. The current output was a simple table with minimal formatting, but the template has specific formatting, layout, section headers, and styling.
 
-- [x] 1. Database migration — Add `is_mating_apiary` column to `apiaries` table
-- [x] 2. Update TypeScript types — Add `user_id`, `is_mating_apiary`, `is_shared`, `team_name` to `Apiary` interface; add `is_mating_apiary` to `ApiaryFormData`
-- [x] 3. Update `fetchApiaries` — Fetch team memberships + shared apiaries (same pattern as hives page), enrich with `is_shared` and `team_name`
-- [x] 4. Add category filter dropdown — `all` / `own` / `shared` (if team member) / `mating`, client-side filtering
-- [x] 5. Add mating apiary checkbox to form — Initial state, resetForm, handleEdit, dataToSave, and form UI
-- [x] 6. Update ApiaryCard — Coloured left border (blue=shared, purple=mating), category badge, `isReadOnly` prop to hide edit/delete
-- [x] 7. Pass `isReadOnly` from page to ApiaryCard for shared apiaries
-- [x] 8. Create feature documentation — `docs/features/apiary-categories.md`
+## Plan
 
-## Post-Implementation Fixes
+### Monthly Sheet Layout Changes
+- [x] **1. Add Group Name row** — Row 1: "Group Name" label + group name with red background
+- [x] **2. Add "Data Checks" header** — Red-background header block with white text in row 3
+- [x] **3. Add "Breakdown of quantities..." header** — Rich text with YELLOW highlighted, merged across columns
+- [x] **4. Add #1–#20 numbered column headers** — Show all 20 apiary slots with grey fill for unused
+- [x] **5. Add rotated apiary names** — Apiary names at 45° angle, N/A with grey for unused slots
+- [x] **6. Use full metric labels** — Matched the template's longer, more descriptive labels
+- [x] **7. Add yellow highlighting** — Yellow fill on all data value cells (Total + per-apiary)
+- [x] **8. Add grey fill for unused columns** — Grey out N/A apiary columns in data rows
+- [x] **9. Add "Within your group" section header** — Before queens mated and hybridised rows
+- [x] **10. Add "Outside your group" section header** — Before virgin queens distributed rows
+- [x] **11. Add per-apiary breakdown for queens mated** — Yellow cells for each apiary column
+- [x] **12. Add note about hatching** — Red bold italic note below queen cells hatched row
+- [x] **13. Add explanatory notes** — Hybridised offspring note + NB note for virgin queens
 
-- [x] 9. Fix TS error — Replace `Map<string, string>` with `Record<string, string>` (PostgREST constructor issue)
-- [x] 10. Fix form visibility — Remove coordinate dependency from share location and conservation area checkboxes
-- [x] 11. Fix INSERT 403 — Generate apiary UUID client-side to avoid `INSERT...RETURNING` RLS conflict with `can_access_apiary()`
-- [x] 12. Code audit — Scope backfill to owned apiaries only, add `useMemo` for filtered list, guard stale category filter
+### Documentation
+- [x] **14. Update docs/features/nihbs-monthly-returns.md** — Documented the new monthly sheet layout
 
 ## Review
 
-### Summary of Changes
+### Summary
+Reworked the monthly sheet generation in the NIHBS Excel export to closely match the official NIHBS template. All changes were confined to the Excel export code — no data logic changes, no UI changes, no database changes.
 
-**Database:** Added `is_mating_apiary boolean NOT NULL DEFAULT false` column to the `apiaries` table via Supabase migration. No RLS changes needed.
-
-**Types (`src/types/apiary.ts`):** Extended `Apiary` with `user_id`, `is_mating_apiary`, `is_shared`, and `team_name`. Extended `ApiaryFormData` with `is_mating_apiary`.
-
-**Fetch logic (`apiaries/page.tsx`):** Rewrote `fetchApiaries` to follow the hives page pattern — fetches team memberships, shared apiary IDs via `team_apiaries`, then queries with `.or()` to include both owned and shared apiaries. Each apiary is enriched with computed `is_shared` and looked-up `team_name`. Backfill operations scoped to owned apiaries only.
-
-**Category filter (`apiaries/page.tsx`):** Added `categoryFilter` state and a `<select>` dropdown with options: All / My / Shared (conditional on team membership) / Mating. Client-side `filteredApiaries` wrapped in `useMemo` with auto-reset guard if "shared" is selected but user is no longer a team member.
-
-**Mating checkbox (`apiaries/page.tsx`):** Added purple-themed checkbox in the form after the notes field. Wired into `formData`, `resetForm`, `handleEdit`, and `dataToSave`.
-
-**Form options:** Removed coordinate dependency from "Share location" and "Conservation area" checkboxes so they are always visible.
-
-**INSERT fix (`apiaries/page.tsx`):** Replaced `.insert().select('id').single()` with client-side UUID generation via `crypto.randomUUID()`. The SELECT RLS policy (`can_access_apiary`) queries the `apiaries` table in a sub-query that cannot see the uncommitted row during `INSERT...RETURNING`, causing a 403.
-
-**ApiaryCard (`ApiaryCard.tsx`):** Added `isReadOnly` prop. Shared cards get blue left border + "Shared via {team}" badge. Mating cards get purple left border + "Mating Apiary" badge. Edit/Delete buttons hidden when `isReadOnly`.
+### Key Changes
+- Monthly sheets now have 22 columns (Label + Total + 20 apiary slots) instead of dynamic columns
+- Added proper header section with Group Name (red bg), Data Checks box (red bg, white text), breakdown instructions with rich text
+- All 20 apiary slots shown with numbered headers, rotated names, and N/A/grey for unused
+- Data cells use yellow fill for values, grey fill for unused apiary columns
+- Added "Within your group" and "Outside your group" section headers
+- Added hatching note in red bold italic matching template
+- Added explanatory notes alongside hybridised offspring and virgin queens rows
+- Updated metric labels to match template exactly
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| Database (migration) | Added `is_mating_apiary` column |
-| `src/types/apiary.ts` | Added new fields to both interfaces |
-| `src/app/dashboard/apiaries/page.tsx` | Shared apiary fetching, category filter, mating checkbox, form visibility fix, client-side UUID, `useMemo`, backfill scoping |
-| `src/components/apiaries/ApiaryCard.tsx` | Coloured borders, badges, read-only mode |
-| `docs/features/apiary-categories.md` | New feature documentation |
+| `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | Replaced monthly sheet Excel generation with template-matching layout |
+| `docs/features/nihbs-monthly-returns.md` | Updated monthly sheet documentation |

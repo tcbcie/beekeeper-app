@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useNIHBSReport } from '@/hooks/useNIHBSReport'
-import type { ManualFields, MonthlyData } from '@/hooks/useNIHBSReport'
+import type { ManualFields } from '@/hooks/useNIHBSReport'
 import type { RearingGroup } from '@/hooks/useRearingGroups'
 import { Download, Save } from 'lucide-react'
 
@@ -22,7 +22,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
   const [manualEdits, setManualEdits] = useState<Map<number, ManualFields>>(new Map())
   const [savingMonth, setSavingMonth] = useState<number | null>(null)
   const [exporting, setExporting] = useState(false)
-  const { reportData, loading, fetchReport, saveManualFields } = useNIHBSReport()
+  const { reportData, loading, error, fetchReport, saveManualFields } = useNIHBSReport()
 
   useEffect(() => {
     if (!selectedGroupId) return
@@ -83,6 +83,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
     if (!dateStr) return '-'
     // Parse date string directly to avoid timezone shift (e.g. "2026-05-01" in UTC → April 30 in BST)
     const parts = dateStr.split('-')
+    if (parts.length !== 3) return dateStr
     return `${parts[2]}/${parts[1]}/${parts[0]}`
   }
 
@@ -104,186 +105,265 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
       // ====== Sheet 1: Group Details Sheet ======
       const detailsSheet = workbook.addWorksheet('Group Details Sheet')
       detailsSheet.columns = [
-        { width: 30 }, { width: 20 }, { width: 20 }, { width: 20 },
+        { width: 38 }, { width: 26 }, { width: 18 }, { width: 38 },
       ]
 
-      const titleRow = detailsSheet.addRow(['NIHBS Conservation & Queen Rearing Group'])
-      titleRow.font = { bold: true, size: 14 }
-      detailsSheet.addRow([])
-
-      detailsSheet.addRow(['Group Name:', exportData.group_name])
-      detailsSheet.addRow(['Year:', exportData.year])
-      detailsSheet.addRow(['Number of Members:', exportData.member_count])
-      detailsSheet.addRow([])
-
-      const expHeader = detailsSheet.addRow(['Experience Breakdown'])
-      expHeader.font = { bold: true }
-      detailsSheet.addRow(['Experienced:', exportData.experience_counts.experienced])
-      detailsSheet.addRow(['Intermediate:', exportData.experience_counts.intermediate])
-      detailsSheet.addRow(['Novice:', exportData.experience_counts.novice])
-      detailsSheet.addRow([])
-
-      detailsSheet.addRow(['First Graft Date:', formatDate(exportData.first_graft_date)])
-      detailsSheet.addRow(['Last Graft Date:', formatDate(exportData.last_graft_date)])
-      detailsSheet.addRow(['Number of Mating Apiaries:', exportData.mating_apiaries.length])
-      detailsSheet.addRow([])
-
-      if (exportData.mating_apiaries.length > 0) {
-        const maHeader = detailsSheet.addRow(['#', 'Mating Apiary Name', '10km Grid Reference', 'Altitude (m)'])
-        maHeader.font = { bold: true }
-        maHeader.eachCell((cell) => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }
-          cell.border = {
-            top: { style: 'thin' }, bottom: { style: 'thin' },
-            left: { style: 'thin' }, right: { style: 'thin' },
-          }
-        })
-
-        exportData.mating_apiaries.forEach((ma, i) => {
-          const row = detailsSheet.addRow([i + 1, ma.apiary_name, ma.grid_reference || '-', ma.elevation ?? '-'])
-          row.eachCell((cell) => {
-            cell.border = {
-              top: { style: 'thin' }, bottom: { style: 'thin' },
-              left: { style: 'thin' }, right: { style: 'thin' },
-            }
-          })
-        })
+      const yellowFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFFFF00' } }
+      const redFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFF0000' } }
+      const greyFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFC0C0C0' } }
+      const thinBorder = {
+        top: { style: 'thin' as const }, bottom: { style: 'thin' as const },
+        left: { style: 'thin' as const }, right: { style: 'thin' as const },
       }
 
-      // Style the label cells in details
-      detailsSheet.eachRow((row) => {
-        const firstCell = row.getCell(1)
-        if (typeof firstCell.value === 'string' && firstCell.value.endsWith(':')) {
-          firstCell.font = { bold: true }
-        }
+      // Row 1: Title
+      const titleRow = detailsSheet.addRow([`NIHBS Conservation and Queen Rearing Group Scheme ${exportData.year} monthly returns`])
+      titleRow.font = { bold: true, size: 12 }
+      // Row 2: blank
+      detailsSheet.addRow([])
+      // Row 3: Name of group
+      const nameRow = detailsSheet.addRow(['Name of group', exportData.group_name])
+      nameRow.getCell(2).fill = yellowFill
+      nameRow.getCell(2).font = { bold: true, size: 14 }
+      // Row 4: blank
+      detailsSheet.addRow([])
+      // Row 5: Number of Group Members/Participants
+      const membersRow = detailsSheet.addRow(['Number of Group Members/Participants', '', exportData.member_count])
+      membersRow.getCell(3).fill = yellowFill
+      // Row 6: Member Breakdown — Experienced/Advanced
+      const expRow = detailsSheet.addRow(['Member Breakdown:', 'Experienced/Advanced', exportData.experience_counts.experienced, 'were already using colony selection and queen rearing, for a number of seasons, before joining group'])
+      expRow.getCell(1).font = { bold: true }
+      expRow.getCell(3).fill = yellowFill
+      expRow.getCell(4).font = { italic: true, size: 10, color: { argb: 'FF666666' } }
+      // Row 7: Intermediate
+      const intRow = detailsSheet.addRow(['', 'Intermediate', exportData.experience_counts.intermediate, 'had some queen rearing experience prior to joining group'])
+      intRow.getCell(3).fill = yellowFill
+      intRow.getCell(4).font = { italic: true, size: 10, color: { argb: 'FF666666' } }
+      // Row 8: Novice
+      const novRow = detailsSheet.addRow(['', 'Novice', exportData.experience_counts.novice, 'no queen rearing experience prior to joining group'])
+      novRow.getCell(3).fill = yellowFill
+      novRow.getCell(4).font = { italic: true, size: 10, color: { argb: 'FF666666' } }
+      // Row 9: blank
+      detailsSheet.addRow([])
+      // Row 10: Date of first graft
+      const firstGraftRow = detailsSheet.addRow([`Date of first graft with group for ${exportData.year}`, '', formatDate(exportData.first_graft_date)])
+      firstGraftRow.getCell(3).fill = yellowFill
+      // Row 11: Date of last graft
+      const lastGraftRow = detailsSheet.addRow([`Date of last graft within group for ${exportData.year}`, '', formatDate(exportData.last_graft_date)])
+      lastGraftRow.getCell(3).fill = yellowFill
+      // Row 12: blank
+      detailsSheet.addRow([])
+      // Row 13: Number of Mating Apiaries used
+      const maCountRow = detailsSheet.addRow(['Number of Mating Apiaries used', '', exportData.mating_apiaries.length])
+      maCountRow.getCell(3).fill = yellowFill
+      // Rows 14-22: blank spacing before mating apiary table
+      for (let i = 0; i < 9; i++) detailsSheet.addRow([])
+      // Row 23: Mating Apiary Details header
+      const maHeader = detailsSheet.addRow(['Mating Apiary Details', 'Apiary Name/Reference', '10 km Grid Reference', 'Altitude (height above sea level)'])
+      maHeader.font = { bold: true }
+      maHeader.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }
+        cell.border = thinBorder
       })
+      // Row 24+: Mating apiary data (always show at least 13 rows like the template)
+      const maCount = Math.max(exportData.mating_apiaries.length, 13)
+      for (let i = 0; i < maCount; i++) {
+        const ma = exportData.mating_apiaries[i]
+        const row = detailsSheet.addRow([
+          `# ${i + 1}`,
+          ma?.apiary_name || '',
+          ma?.grid_reference || '',
+          ma?.elevation ?? '',
+        ])
+        row.eachCell((cell) => { cell.border = thinBorder })
+      }
 
       // ====== Monthly Sheets ======
       for (const md of exportData.months) {
-        const monthName = MONTH_NAMES[md.month - 1]
+        const monthName = MONTH_NAMES[md.month - 1] || `Month ${md.month}`
         const sheetName = `${monthName} ${md.year}`
         const sheet = workbook.addWorksheet(sheetName)
 
-        // Column widths: Label | Sub-label | Total | one per mating apiary
-        const colWidths = [{ width: 5 }, { width: 35 }, { width: 12 }]
-        exportData.mating_apiaries.forEach(() => colWidths.push({ width: 14 }))
+        const apiaryCount = exportData.mating_apiaries.length
+        const lastCol = 2 + apiaryCount // B=Total, then one col per apiary
+
+        // Column widths: A=Label(45), B=Total(8), then one col per apiary(10 each)
+        const colWidths: { width: number }[] = [{ width: 65 }, { width: 8 }]
+        for (let i = 0; i < apiaryCount; i++) colWidths.push({ width: 10 })
         sheet.columns = colWidths
 
-        // Header row
-        const headerValues = ['', 'Metric', 'Total']
-        exportData.mating_apiaries.forEach((ma) => headerValues.push(ma.apiary_name))
-        const headerRow = sheet.addRow(headerValues)
-        headerRow.font = { bold: true }
-        headerRow.eachCell((cell) => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }
-          cell.border = {
-            top: { style: 'thin' }, bottom: { style: 'thin' },
-            left: { style: 'thin' }, right: { style: 'thin' },
-          }
-        })
+        // === Header Section (Rows 1-6) ===
 
-        // Title row
-        const titleRow2 = sheet.addRow(['', `${monthName} ${md.year} - Monthly Return`])
-        titleRow2.font = { bold: true, size: 12 }
+        // Row 1: Group Name
+        const r1 = sheet.addRow([])
+        r1.getCell(1).value = 'Group Name'
+        r1.getCell(1).font = { size: 10 }
+        r1.getCell(2).value = exportData.group_name
+        r1.getCell(2).fill = redFill
+        r1.getCell(2).font = { bold: true, size: 14 }
+        if (lastCol > 2) sheet.mergeCells(1, 2, 1, lastCol)
+
+        // Row 2: blank
         sheet.addRow([])
 
-        // Helper to add a metric row
-        const addMetricRow = (num: string, label: string, getValue: (d: MonthlyData, apiaryId: string) => number | string) => {
-          const values: (string | number)[] = [num, label, getValue(md, 'total')]
-          exportData.mating_apiaries.forEach((ma) => {
-            values.push(getValue(md, ma.apiary_id))
-          })
-          const row = sheet.addRow(values)
-          row.eachCell((cell) => {
-            cell.border = {
-              top: { style: 'thin' }, bottom: { style: 'thin' },
-              left: { style: 'thin' }, right: { style: 'thin' },
-            }
-          })
+        // Row 3: Breakdown text
+        const r3 = sheet.addRow([])
+        if (apiaryCount > 0) {
+          r3.getCell(3).value = {
+            richText: [
+              { text: 'Breakdown of quantities, by the mating apiaries listed on Group Details Sheet -  You just fill in the ' },
+              { font: { bold: true, color: { argb: 'FFFF0000' } }, text: 'YELLOW' },
+              { text: ' boxes' },
+            ],
+          }
+          sheet.mergeCells(3, 3, 3, Math.max(lastCol, 12))
+        }
+
+        // Row 4: Data Checks + #1-#N column numbers (one per apiary)
+        const r4 = sheet.addRow([])
+        r4.getCell(1).value = 'Data Checks'
+        r4.getCell(1).fill = redFill
+        r4.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } }
+        r4.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+        r4.height = 22.5 // default 15 × 1.5
+        for (let i = 0; i < apiaryCount; i++) {
+          const cell = r4.getCell(3 + i)
+          cell.value = `#${i + 1}`
+          cell.font = { bold: true, size: 10 }
+          cell.alignment = { horizontal: 'center' }
+        }
+
+        // Row 5: "Total" + apiary names (rotated)
+        const r5 = sheet.addRow([])
+        r5.getCell(2).value = 'Total'
+        r5.getCell(2).font = { bold: true, size: 10 }
+        r5.getCell(2).alignment = { horizontal: 'center' }
+        for (let i = 0; i < apiaryCount; i++) {
+          const cell = r5.getCell(3 + i)
+          cell.value = exportData.mating_apiaries[i].apiary_name
+          cell.font = { bold: true, size: 10 }
+          cell.alignment = { textRotation: 45, horizontal: 'center' }
+        }
+
+        // Row 6: blank
+        sheet.addRow([])
+
+        // === Data Rows ===
+
+        // Helper: add a data metric row with per-apiary breakdown (yellow fill)
+        const addDataRow = (label: string, field: 'batch_count' | 'cell_count' | 'grafts_accepted' | 'queens_hatched' | 'queens_mated') => {
+          const row = sheet.addRow([])
+          row.getCell(1).value = label
+          row.getCell(1).font = { size: 11 }
+          row.getCell(1).alignment = { wrapText: true, vertical: 'middle' }
+          row.getCell(2).value = md.total[field] || 0
+          row.getCell(2).fill = yellowFill
+          row.getCell(2).border = thinBorder
+          row.getCell(2).alignment = { horizontal: 'center' }
+          for (let i = 0; i < apiaryCount; i++) {
+            const cell = row.getCell(3 + i)
+            const ma = exportData.mating_apiaries[i]
+            cell.value = (md.byApiary.get(ma.apiary_id)?.[field] as number) || 0
+            cell.fill = yellowFill
+            cell.border = thinBorder
+            cell.alignment = { horizontal: 'center' }
+          }
           return row
         }
 
-        const getApiaryVal = (md: MonthlyData, apiaryId: string, field: keyof typeof md.total): number => {
-          if (apiaryId === 'total') return md.total[field] as number
-          return (md.byApiary.get(apiaryId)?.[field] as number) || 0
-        }
-
         // Row 7: Grafting rounds
-        addMetricRow('7', 'Number of grafting rounds', (md, aid) => getApiaryVal(md, aid, 'batch_count'))
+        addDataRow('Number of Grafting rounds this month', 'batch_count')
         sheet.addRow([])
 
         // Row 9: Cells grafted
-        addMetricRow('9', 'Number of cells grafted', (md, aid) => getApiaryVal(md, aid, 'cell_count'))
+        addDataRow('Total number of cells grafted\nor cell cups transferred from Cupkit/Jenter boxes', 'cell_count')
         sheet.addRow([])
 
         // Row 11: Sealed queen cells
-        addMetricRow('11', 'Number of sealed queen cells', (md, aid) => getApiaryVal(md, aid, 'grafts_accepted'))
+        addDataRow('Number of Sealed queen cells achieved', 'grafts_accepted')
         sheet.addRow([])
 
         // Row 13: Queen cells hatched
-        addMetricRow('13', 'Number of queen cells hatched', (md, aid) => getApiaryVal(md, aid, 'queens_hatched'))
-        sheet.addRow([])
-        sheet.addRow([])
+        addDataRow('Number of queen cells hatched this month', 'queens_hatched')
+
+        // Rows 14-16: Note about hatching
+        const r14 = sheet.addRow([])
+        r14.getCell(1).value = '     ^'
+        const r15 = sheet.addRow([])
+        r15.getCell(1).value = '     |'
+        const r16 = sheet.addRow([])
+        r16.getCell(1).value = "     -----------------------------------------> This is the number of cells that hatched in the calendar month - if grafted cells are due to hatch in the first few days of next month - they go into next month's figures"
+        r16.getCell(1).font = { bold: true, italic: true, color: { argb: 'FFFF0000' } }
+
+        // Row 17: blank
         sheet.addRow([])
 
-        // Row 19: Queens mated within group (total only)
-        const matedValues: (string | number)[] = ['19', 'Queens successfully mated within group', md.total.queens_mated]
-        exportData.mating_apiaries.forEach(() => matedValues.push(''))
-        const matedRow = sheet.addRow(matedValues)
-        matedRow.eachCell((cell) => {
-          cell.border = {
-            top: { style: 'thin' }, bottom: { style: 'thin' },
-            left: { style: 'thin' }, right: { style: 'thin' },
-          }
-        })
+        // === Within your group ===
+        const r18 = sheet.addRow([])
+        r18.getCell(1).value = 'Within your group'
+        r18.getCell(1).font = { bold: true, size: 11 }
+
+        // Row 19: Queens mated this month (per-apiary breakdown)
+        addDataRow('     Number of queens mated this month', 'queens_mated')
         sheet.addRow([])
 
-        // Row 21: Hybridised offspring
-        const hybValues: (string | number)[] = ['21', 'Hybridised offspring from queens mated in group', md.hybridised_offspring]
-        exportData.mating_apiaries.forEach(() => hybValues.push(''))
-        const hybRow = sheet.addRow(hybValues)
-        hybRow.eachCell((cell) => {
-          cell.border = {
-            top: { style: 'thin' }, bottom: { style: 'thin' },
-            left: { style: 'thin' }, right: { style: 'thin' },
-          }
-        })
-        sheet.addRow([])
+        // Row 21: Hybridised offspring (total only, manual field)
+        const r21 = sheet.addRow([])
+        r21.getCell(1).value = '     Number of newly mated queens showing hybridised offspring'
+        r21.getCell(1).font = { size: 11 }
+        r21.getCell(2).value = md.hybridised_offspring
+        r21.getCell(2).fill = yellowFill
+        r21.getCell(2).border = thinBorder
+        r21.getCell(2).alignment = { horizontal: 'center' }
+        r21.getCell(3).value = "<-------- Queens mated within group & group members mating locations - don't include any that were reported on previous returns"
+        r21.getCell(3).font = { italic: true, size: 11 }
+
+        // Row 22: blank
         sheet.addRow([])
 
-        // Row 24: Virgin queens distributed outside
-        const virgValues: (string | number)[] = ['24', 'Virgin queens distributed outside group', md.virgins_distributed_external]
-        exportData.mating_apiaries.forEach(() => virgValues.push(''))
-        const virgRow = sheet.addRow(virgValues)
-        virgRow.eachCell((cell) => {
-          cell.border = {
-            top: { style: 'thin' }, bottom: { style: 'thin' },
-            left: { style: 'thin' }, right: { style: 'thin' },
-          }
-        })
+        // === Outside your group ===
+        const r23 = sheet.addRow([])
+        r23.getCell(1).value = 'Outside your group'
+        r23.getCell(1).font = { bold: true, size: 11 }
+
+        // Row 24: Virgin queens distributed outside group
+        const r24 = sheet.addRow([])
+        r24.getCell(1).value = '     Number of virgin queens distributed outside the group\n     (include ripe queen cells sent outside the group as well)'
+        r24.getCell(1).font = { size: 11 }
+        r24.getCell(1).alignment = { wrapText: true, vertical: 'middle' }
+        r24.getCell(2).value = md.virgins_distributed_external
+        r24.getCell(2).fill = yellowFill
+        r24.getCell(2).border = thinBorder
+        r24.getCell(2).alignment = { horizontal: 'center' }
+        r24.getCell(3).value = "NB:  You'll need to keep track of the destinations of these Virgin Queens, to check over-wintering success rates & signs of  hybridisation"
+        r24.getCell(3).font = { bold: true, italic: true, size: 11, color: { argb: 'FFFF0000' } }
+
+        // Row 25: blank
         sheet.addRow([])
 
-        // Row 26: Virgins outside successfully mated
-        const virgMatedValues: (string | number)[] = ['26', 'Virgins distributed outside - successfully mated', md.virgins_external_mated]
-        exportData.mating_apiaries.forEach(() => virgMatedValues.push(''))
-        const virgMatedRow = sheet.addRow(virgMatedValues)
-        virgMatedRow.eachCell((cell) => {
-          cell.border = {
-            top: { style: 'thin' }, bottom: { style: 'thin' },
-            left: { style: 'thin' }, right: { style: 'thin' },
-          }
-        })
+        // Row 26: Virgins successfully mated outside
+        const r26 = sheet.addRow([])
+        r26.getCell(1).value = '     Number of virgin queens distributed outside the group\n     that were successfully mated'
+        r26.getCell(1).font = { size: 11 }
+        r26.getCell(1).alignment = { wrapText: true, vertical: 'middle' }
+        r26.getCell(2).value = md.virgins_external_mated
+        r26.getCell(2).fill = yellowFill
+        r26.getCell(2).border = thinBorder
+        r26.getCell(2).alignment = { horizontal: 'center' }
       }
 
       // Generate and download
       const buffer = await workbook.xlsx.writeBuffer()
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `NIHBS_Monthly_Return_${exportData.group_name.replace(/\s+/g, '_')}_${exportData.year}.xlsx`
-      a.click()
-      URL.revokeObjectURL(url)
+      try {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `NIHBS_Monthly_Return_${exportData.group_name.replace(/\s+/g, '_')}_${exportData.year}.xlsx`
+        a.click()
+      } finally {
+        URL.revokeObjectURL(url)
+      }
     } catch (error) {
       console.error('Error generating Excel:', error)
     } finally {
@@ -321,7 +401,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         </select>
         <button
           onClick={handleExportExcel}
-          disabled={exporting || !reportData || reportData.months.length === 0}
+          disabled={exporting || !reportData}
           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download size={14} />
@@ -333,7 +413,9 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
         </div>
-      ) : reportData && reportData.months.length > 0 ? (
+      ) : error ? (
+        <div className="text-center py-8 text-red-600 text-sm">{error}</div>
+      ) : reportData ? (
         <div className="space-y-6">
           {/* Summary */}
           <div className="p-4 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border">
