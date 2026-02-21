@@ -11,6 +11,7 @@ import NotificationStatusCard from '@/components/NotificationStatusCard'
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
 import MatingNucsTab from '@/components/batches/MatingNucsTab'
 import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
+import { useRearingGroups } from '@/hooks/useRearingGroups'
 
 interface Queen {
   id: string
@@ -53,6 +54,7 @@ interface Batch {
   enable_browser_notifications: boolean
   enable_email_digest: boolean
   mating_apiary_id: string | null
+  rearing_group_id: string | null
   enable_batch_event_reminders?: boolean
   batch_reminder_minutes_before?: number
   queens?: {
@@ -84,6 +86,7 @@ interface FormData {
   enable_browser_notifications: boolean
   enable_email_digest: boolean
   mating_apiary_id: string
+  rearing_group_id: string
   enable_batch_event_reminders: boolean
   batch_reminder_minutes_before: string
 }
@@ -198,11 +201,18 @@ export default function BatchesPage() {
     emergence_date: '',
     notes: '',
     mating_apiary_id: '',
+    rearing_group_id: '',
     enable_browser_notifications: false,
     enable_email_digest: false,
     enable_batch_event_reminders: false,
     batch_reminder_minutes_before: '60',
   })
+
+  // Rearing groups
+  const { ownedRearingGroups, memberRearingGroups, fetchRearingGroups } = useRearingGroups()
+  const allRearingGroups = [...ownedRearingGroups, ...memberRearingGroups]
+  const isInRearingGroup = allRearingGroups.length > 0
+  const isGroupBatch = formData.rearing_group_id !== ''
 
   const fetchBatches = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
@@ -296,9 +306,10 @@ export default function BatchesPage() {
       fetchQueens(id)
       fetchApiaries(id)
       fetchHives(id)
+      fetchRearingGroups(id)
     }
     initUser()
-  }, [router, fetchBatches, fetchQueens, fetchApiaries, fetchHives])
+  }, [router, fetchBatches, fetchQueens, fetchApiaries, fetchHives, fetchRearingGroups])
 
   // Initialize browser notifications
   useEffect(() => {
@@ -424,6 +435,7 @@ export default function BatchesPage() {
         emergence_date: formData.emergence_date || null,
         notes: formData.notes || null,
         mating_apiary_id: formData.mating_apiary_id || null,
+        rearing_group_id: formData.rearing_group_id || null,
         enable_browser_notifications: formData.enable_browser_notifications,
         enable_email_digest: formData.enable_email_digest,
         enable_batch_event_reminders: formData.enable_batch_event_reminders,
@@ -474,6 +486,7 @@ export default function BatchesPage() {
       emergence_date: batch.emergence_date || '',
       notes: batch.notes || '',
       mating_apiary_id: batch.mating_apiary_id || '',
+      rearing_group_id: batch.rearing_group_id || '',
       enable_browser_notifications: batch.enable_browser_notifications || false,
       enable_email_digest: batch.enable_email_digest || false,
       enable_batch_event_reminders: batch.enable_batch_event_reminders || false,
@@ -681,6 +694,7 @@ export default function BatchesPage() {
       emergence_date: '',
       notes: '',
       mating_apiary_id: '',
+      rearing_group_id: '',
       enable_browser_notifications: false,
       enable_email_digest: false,
       enable_batch_event_reminders: false,
@@ -902,24 +916,70 @@ export default function BatchesPage() {
               </div>
             </div>
 
-            {/* Mating Apiary */}
-            <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
-              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">Mating Apiary</h4>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-                <select
-                  value={formData.mating_apiary_id}
-                  onChange={(e) => setFormData({...formData, mating_apiary_id: e.target.value})}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-                >
-                  <option value="">Select mating apiary (optional)</option>
-                  {apiaries.map((apiary) => (
-                    <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-text-tertiary mt-1">Where queens go for mating (used in NIHBS reports)</p>
+            {/* Rearing Group Toggle */}
+            {isInRearingGroup && (
+              <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">Group Batch</h4>
+                    <p className="text-xs text-text-tertiary">Link this batch to a rearing group</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isGroupBatch}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          // Default to first group
+                          setFormData({...formData, rearing_group_id: allRearingGroups[0]?.id || ''})
+                        } else {
+                          setFormData({...formData, rearing_group_id: '', mating_apiary_id: ''})
+                        }
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-sage-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-sage-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-amber-600"></div>
+                  </label>
+                </div>
+
+                {/* Group Selector - only if 2+ groups */}
+                {isGroupBatch && allRearingGroups.length > 1 && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Rearing Group</label>
+                    <select
+                      value={formData.rearing_group_id}
+                      onChange={(e) => setFormData({...formData, rearing_group_id: e.target.value})}
+                      className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    >
+                      {allRearingGroups.map((group) => (
+                        <option key={group.id} value={group.id}>{group.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Mating Apiary - shown when group batch toggle is ON, or always if not in any group */}
+            {(isGroupBatch || !isInRearingGroup) && (
+              <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">Mating Apiary</h4>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
+                  <select
+                    value={formData.mating_apiary_id}
+                    onChange={(e) => setFormData({...formData, mating_apiary_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                  >
+                    <option value="">Select mating apiary (optional)</option>
+                    {apiaries.map((apiary) => (
+                      <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-text-tertiary mt-1">Where queens go for mating (used in NIHBS reports)</p>
+                </div>
+              </div>
+            )}
 
             {/* Batch Quantities - Grouped Vertically */}
             <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
