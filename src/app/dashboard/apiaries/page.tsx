@@ -413,15 +413,15 @@ export default function ApiariesPage() {
         if (error) throw error
         apiaryId = editingApiary.id
       } else {
-        const { data: inserted, error } = await supabase
+        // Generate ID client-side to avoid INSERT...RETURNING which triggers
+        // the SELECT RLS policy (can_access_apiary can't see the uncommitted row)
+        const newId = crypto.randomUUID()
+        const { error } = await supabase
           .from('apiaries')
-          .insert([{ ...dataToSave, user_id: userId }])
-          .select('id')
-          .single()
+          .insert([{ id: newId, ...dataToSave, user_id: userId }])
 
         if (error) throw error
-        if (!inserted) throw new Error('Failed to retrieve new apiary ID')
-        apiaryId = inserted.id
+        apiaryId = newId
       }
 
       // Handle conservation area record
