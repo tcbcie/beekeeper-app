@@ -953,7 +953,7 @@ export default function ApiariesPage() {
               <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[48px]">
                 Cancel
               </button>
-              {editingApiary && (
+              {editingApiary && !formData.is_mating_apiary && (
                 <button
                   type="button"
                   onClick={openTransferModal}
