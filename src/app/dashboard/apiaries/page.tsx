@@ -862,11 +862,20 @@ export default function ApiariesPage() {
                 <input
                   type="checkbox"
                   checked={formData.is_mating_apiary}
-                  onChange={(e) => setFormData({...formData, is_mating_apiary: e.target.checked})}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setFormData({
+                      ...formData,
+                      is_mating_apiary: checked,
+                      // Auto-uncheck sharing options when mating is enabled
+                      share_location: checked ? false : formData.share_location,
+                      is_conservation_area: checked ? false : formData.is_conservation_area,
+                    })
+                  }}
                   className="mt-1 h-4 w-4 text-purple-600 border-border rounded focus:ring-purple-500"
                 />
                 <div>
-                  <span className="text-sm font-medium text-text-primary">Mating Apiary / Location</span>
+                  <span className="text-sm font-medium text-text-primary">Mating Location (Apiary)</span>
                   <p className="text-xs text-text-tertiary mt-1">
                     Mark this as a mating location used for queen mating that you don&apos;t actively manage.
                   </p>
@@ -874,7 +883,8 @@ export default function ApiariesPage() {
               </label>
             </div>
 
-            {/* Share Location Option */}
+            {/* Share Location Option — hidden for mating locations */}
+            {!formData.is_mating_apiary && (
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
@@ -900,6 +910,7 @@ export default function ApiariesPage() {
                   </div>
                 </label>
             </div>
+            )}
 
             {/* Conservation Area Option — only when sharing is enabled */}
             {formData.share_location && (
@@ -1036,7 +1047,7 @@ export default function ApiariesPage() {
             <option value="all">All Apiaries</option>
             <option value="own">My Apiaries</option>
             {isTeamMember && <option value="shared">Shared Apiaries</option>}
-            <option value="mating">Mating Apiaries</option>
+            <option value="mating">Mating Location (Apiary)</option>
           </select>
           <p className="text-sm text-text-secondary">
             {filteredApiaries.length} Apiar{filteredApiaries.length !== 1 ? 'ies' : 'y'} | {filteredApiaries.reduce((sum, a) => sum + (a.hive_count || 0), 0)} Total Hives

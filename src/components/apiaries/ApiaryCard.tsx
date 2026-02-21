@@ -55,7 +55,7 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
               Location shared publicly (~5km radius)
             </p>
           )}
-          {apiary.latitude && apiary.longitude && (
+          {apiary.share_location && apiary.latitude && apiary.longitude && (
             <button
               onClick={() => router.push('/dashboard/community-map')}
               className="text-xs text-purple-800 dark:text-purple-400 mt-1 flex items-center gap-1 hover:underline"
