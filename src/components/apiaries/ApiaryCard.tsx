@@ -46,7 +46,7 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
           )}
           {apiary.is_mating_apiary && !apiary.is_shared && (
             <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
-              Mating Apiary
+              Mating Location (Apiary)
             </span>
           )}
           {apiary.share_location && (
