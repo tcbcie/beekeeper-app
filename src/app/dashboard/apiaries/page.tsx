@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
@@ -44,6 +44,7 @@ export default function ApiariesPage() {
     share_location: false,
     is_conservation_area: false,
     ca_radius_km: '1',
+    is_mating_apiary: false,
   })
   const [geocoding, setGeocoding] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
@@ -54,6 +55,9 @@ export default function ApiariesPage() {
   const [availableUsers, setAvailableUsers] = useState<UserOption[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [transferring, setTransferring] = useState(false)
+
+  const [isTeamMember, setIsTeamMember] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'own' | 'shared' | 'mating'>('all')
 
   // Image zoom modal state
   const [imageModalOpen, setImageModalOpen] = useState(false)
@@ -221,13 +225,59 @@ export default function ApiariesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
-      .from('apiaries')
-      .select('*')
+    // Fetch team memberships (same pattern as hives page)
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
       .eq('user_id', currentUserId)
-      .order('name')
+
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+    setIsTeamMember(teamIds.length > 0)
+
+    // Fetch shared apiary IDs if user is in any teams
+    let sharedApiaryIds: string[] = []
+    if (teamIds.length > 0) {
+      const { data: sharedApiaries } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
+    }
+
+    // Fetch own + shared apiaries
+    let query = supabase.from('apiaries').select('*')
+    if (sharedApiaryIds.length > 0) {
+      query = query.or(`user_id.eq.${currentUserId},id.in.(${sharedApiaryIds.join(',')})`)
+    } else {
+      query = query.eq('user_id', currentUserId)
+    }
+    const { data } = await query.order('name')
 
     if (data) {
+      // Look up team names for shared apiaries
+      const teamNameMap: Map<string, string> = new Map()
+      if (sharedApiaryIds.length > 0) {
+        const { data: teamApiaryData } = await supabase
+          .from('team_apiaries')
+          .select('apiary_id, teams(name)')
+          .in('apiary_id', sharedApiaryIds)
+
+        if (teamApiaryData) {
+          teamApiaryData.forEach((ta) => {
+            const typedData = ta as { apiary_id: string; teams: { name: string } | { name: string }[] | null }
+            if (typedData.teams) {
+              const teamName = Array.isArray(typedData.teams)
+                ? typedData.teams[0]?.name || ''
+                : typedData.teams.name
+              if (teamName) {
+                teamNameMap.set(typedData.apiary_id, teamName)
+              }
+            }
+          })
+        }
+      }
+
       // Enrich with hive counts and last inspection dates (active hives only)
       const apiaryIds = data.map(a => a.id)
       const { data: activeHives } = await supabase
@@ -266,18 +316,23 @@ export default function ApiariesPage() {
         ...a,
         hive_count: hiveCounts[a.id] || 0,
         last_inspection_date: lastInspections[a.id] || undefined,
+        is_shared: a.user_id !== currentUserId,
+        team_name: teamNameMap.get(a.id) || null,
       }))
       setApiaries(enriched)
 
+      // Backfill only owned apiaries — never attempt writes to shared apiaries
+      const owned = enriched.filter(a => !a.is_shared)
+
       // Backfill elevation for apiaries that have coordinates but no elevation
-      const missing = enriched.filter(a => a.latitude && a.longitude && a.elevation == null)
+      const missing = owned.filter(a => a.latitude && a.longitude && a.elevation == null)
       if (missing.length > 0) {
         backfillElevations(missing)
       }
 
       // Backfill grid references for Irish apiaries that have coordinates but no grid_reference
       // Rough Ireland bounding box to avoid perpetual backfill attempts for non-Irish apiaries
-      const missingGrid = enriched.filter(a =>
+      const missingGrid = owned.filter(a =>
         a.latitude && a.longitude && !a.grid_reference &&
         Number(a.latitude) >= 51 && Number(a.latitude) <= 56 &&
         Number(a.longitude) >= -11 && Number(a.longitude) <= -5.5
@@ -343,6 +398,7 @@ export default function ApiariesPage() {
         notes: formData.notes || null,
         is_uk_ni: formData.is_uk_ni,
         share_location: formData.share_location,
+        is_mating_apiary: formData.is_mating_apiary,
         image_url: imageUrl,
       }
 
@@ -434,6 +490,7 @@ export default function ApiariesPage() {
       share_location: apiary.share_location || false,
       is_conservation_area: isCA,
       ca_radius_km: caRadius,
+      is_mating_apiary: apiary.is_mating_apiary || false,
     })
     // Load existing image
     setPreviewFromUrl(apiary.image_url)
@@ -472,6 +529,7 @@ export default function ApiariesPage() {
       share_location: false,
       is_conservation_area: false,
       ca_radius_km: '1',
+      is_mating_apiary: false,
     })
   }
 
@@ -541,6 +599,19 @@ export default function ApiariesPage() {
       setTransferring(false)
     }
   }
+
+  // Reset filter if "shared" is selected but user is no longer a team member
+  if (categoryFilter === 'shared' && !isTeamMember) {
+    setCategoryFilter('all')
+  }
+
+  // Client-side category filtering
+  const filteredApiaries = useMemo(() => apiaries.filter(a => {
+    if (categoryFilter === 'own') return !a.is_shared && !a.is_mating_apiary
+    if (categoryFilter === 'shared') return a.is_shared
+    if (categoryFilter === 'mating') return a.is_mating_apiary && !a.is_shared
+    return true // 'all'
+  }), [apiaries, categoryFilter])
 
   if (loading) return <LoadingSpinner text="Loading apiaries..." />
 
@@ -785,6 +856,24 @@ export default function ApiariesPage() {
               />
             </div>
 
+            {/* Mating Apiary Option */}
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.is_mating_apiary}
+                  onChange={(e) => setFormData({...formData, is_mating_apiary: e.target.checked})}
+                  className="mt-1 h-4 w-4 text-purple-600 border-border rounded focus:ring-purple-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-text-primary">Mating Apiary / Location</span>
+                  <p className="text-xs text-text-tertiary mt-1">
+                    Mark this as a mating location used for queen mating that you don&apos;t actively manage.
+                  </p>
+                </div>
+              </label>
+            </div>
+
             {/* Share Location Option */}
             {formData.latitude && formData.longitude && (
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -938,24 +1027,41 @@ export default function ApiariesPage() {
         </div>
       )}
 
-      {/* Summary stats bar */}
+      {/* Category filter and summary stats */}
       {apiaries.length > 0 && (
-        <p className="text-sm text-text-secondary">
-          {apiaries.length} Apiar{apiaries.length !== 1 ? 'ies' : 'y'} | {apiaries.reduce((sum, a) => sum + (a.hive_count || 0), 0)} Total Hives
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
+            className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500 w-full sm:w-auto"
+          >
+            <option value="all">All Apiaries</option>
+            <option value="own">My Apiaries</option>
+            {isTeamMember && <option value="shared">Shared Apiaries</option>}
+            <option value="mating">Mating Apiaries</option>
+          </select>
+          <p className="text-sm text-text-secondary">
+            {filteredApiaries.length} Apiar{filteredApiaries.length !== 1 ? 'ies' : 'y'} | {filteredApiaries.reduce((sum, a) => sum + (a.hive_count || 0), 0)} Total Hives
+          </p>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {apiaries.map((apiary: Apiary) => (
+        {filteredApiaries.map((apiary: Apiary) => (
           <ApiaryCard
             key={apiary.id}
             apiary={apiary}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onImageClick={handleImageClick}
+            isReadOnly={apiary.is_shared === true}
           />
         ))}
       </div>
+
+      {filteredApiaries.length === 0 && apiaries.length > 0 && (
+        <p className="text-center text-text-tertiary py-8">No apiaries match the selected filter.</p>
+      )}
 
       {apiaries.length === 0 && (
         <EmptyState

@@ -17,6 +17,10 @@ export interface Apiary {
   created_at?: string
   hive_count?: number
   last_inspection_date?: string
+  user_id?: string
+  is_mating_apiary?: boolean
+  is_shared?: boolean
+  team_name?: string | null
 }
 
 export interface ApiaryFormData {
@@ -33,6 +37,7 @@ export interface ApiaryFormData {
   share_location: boolean
   is_conservation_area: boolean
   ca_radius_km: string
+  is_mating_apiary: boolean
 }
 
 export interface UserOption {

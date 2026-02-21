@@ -1,30 +1,38 @@
-# Add Skill Level for Owner + Member Self-Declaration
+# Apiary Categories: Own / Shared / Mating — Implementation Plan
 
 ## Tasks
 
-- [x] **Hook**: Add `membership_id` and `experience_level` to the `RearingGroup` interface, and include `id` + `experience_level` in the member groups fetch query
-- [x] **Hook**: Map `membership_id` and `experience_level` onto `memberRearingGroups` items; expose `setMemberRearingGroups`
-- [x] **Owner view**: Show experience level dropdown for the owner row too (keep Remove button hidden for owner)
-- [x] **Member view**: Add experience level dropdown + info icon in the "Groups I'm In" card so members can self-declare
-- [x] **Info tooltip**: Add `HelpCircle` icon with a pop-up explaining the three skill levels (shown in both owner and member views)
-- [x] **Docs**: Update `docs/features/queen-rearing-groups.md`
+- [x] 1. Database migration — Add `is_mating_apiary` column to `apiaries` table
+- [x] 2. Update TypeScript types — Add `user_id`, `is_mating_apiary`, `is_shared`, `team_name` to `Apiary` interface; add `is_mating_apiary` to `ApiaryFormData`
+- [x] 3. Update `fetchApiaries` — Fetch team memberships + shared apiaries (same pattern as hives page), enrich with `is_shared` and `team_name`
+- [x] 4. Add category filter dropdown — `all` / `own` / `shared` (if team member) / `mating`, client-side filtering
+- [x] 5. Add mating apiary checkbox to form — Initial state, resetForm, handleEdit, dataToSave, and form UI
+- [x] 6. Update ApiaryCard — Coloured left border (blue=shared, purple=mating), category badge, `isReadOnly` prop to hide edit/delete
+- [x] 7. Pass `isReadOnly` from page to ApiaryCard for shared apiaries
+- [x] 8. Create feature documentation — `docs/features/apiary-categories.md`
 
 ## Review
 
 ### Summary of Changes
 
-**Hook (`useRearingGroups.ts`):** Added `membership_id` and `experience_level` fields to the `RearingGroup` interface. Updated the member groups query to also select `id` and `experience_level` from `rearing_group_members`. Built a lookup map to pass these through to each `memberRearingGroups` entry. Exposed `setMemberRearingGroups` from the hook return.
+**Database:** Added `is_mating_apiary boolean NOT NULL DEFAULT false` column to the `apiaries` table via Supabase migration. No RLS changes needed.
 
-**Owner view (`rearing-team/page.tsx`):** Moved the experience level `<select>` outside the `member.role !== 'owner'` guard so it now renders for all members including the owner. The Remove button remains owner-only hidden.
+**Types (`src/types/apiary.ts`):** Extended `Apiary` with `user_id`, `is_mating_apiary`, `is_shared`, and `team_name`. Extended `ApiaryFormData` with `is_mating_apiary`.
 
-**Member self-declaration (`rearing-team/page.tsx`):** Added a new `handleUpdateOwnExperienceLevel` handler that updates the member's own `rearing_group_members` row and syncs local state. Added an experience level dropdown with label in the "Groups I'm In" card.
+**Fetch logic (`apiaries/page.tsx`):** Rewrote `fetchApiaries` to follow the hives page pattern — fetches team memberships, shared apiary IDs via `team_apiaries`, then queries with `.or()` to include both owned and shared apiaries. Each apiary is enriched with computed `is_shared` and looked-up `team_name`.
 
-**Info tooltip:** Added `HelpCircle` icon next to both the "Group Members" heading (owner view) and the member's dropdown. Clicking it toggles a pop-up explaining the three levels.
+**Category filter (`apiaries/page.tsx`):** Added `categoryFilter` state and a `<select>` dropdown with options: All / My / Shared (conditional on team membership) / Mating. Client-side `filteredApiaries` array drives rendering and stats.
+
+**Mating checkbox (`apiaries/page.tsx`):** Added purple-themed checkbox in the form after the notes field. Wired into `formData`, `resetForm`, `handleEdit`, and `dataToSave`.
+
+**ApiaryCard (`ApiaryCard.tsx`):** Added `isReadOnly` prop. Shared cards get blue left border + "Shared via {team}" badge. Mating cards get purple left border + "Mating Apiary" badge. Edit/Delete buttons hidden when `isReadOnly`.
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/hooks/useRearingGroups.ts` | Added `membership_id` + `experience_level` to `RearingGroup` interface; updated query; exposed setter |
-| `src/app/dashboard/rearing-team/page.tsx` | Added `HelpCircle` import, `showSkillLevelInfo` state, `handleUpdateOwnExperienceLevel` handler, owner dropdown, member self-declaration UI, info tooltips |
-| `docs/features/queen-rearing-groups.md` | Added Experience Level section |
+| Database (migration) | Added `is_mating_apiary` column |
+| `src/types/apiary.ts` | Added new fields to both interfaces |
+| `src/app/dashboard/apiaries/page.tsx` | Shared apiary fetching, category filter, mating checkbox, `isReadOnly` pass-through |
+| `src/components/apiaries/ApiaryCard.tsx` | Coloured borders, badges, read-only mode |
+| `docs/features/apiary-categories.md` | New feature documentation |
