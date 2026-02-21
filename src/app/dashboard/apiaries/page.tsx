@@ -256,7 +256,7 @@ export default function ApiariesPage() {
 
     if (data) {
       // Look up team names for shared apiaries
-      const teamNameMap: Map<string, string> = new Map()
+      const teamNameMap: Record<string, string> = {}
       if (sharedApiaryIds.length > 0) {
         const { data: teamApiaryData } = await supabase
           .from('team_apiaries')
@@ -271,7 +271,7 @@ export default function ApiariesPage() {
                 ? typedData.teams[0]?.name || ''
                 : typedData.teams.name
               if (teamName) {
-                teamNameMap.set(typedData.apiary_id, teamName)
+                teamNameMap[typedData.apiary_id] = teamName
               }
             }
           })
@@ -317,7 +317,7 @@ export default function ApiariesPage() {
         hive_count: hiveCounts[a.id] || 0,
         last_inspection_date: lastInspections[a.id] || undefined,
         is_shared: a.user_id !== currentUserId,
-        team_name: teamNameMap.get(a.id) || null,
+        team_name: teamNameMap[a.id] || null,
       }))
       setApiaries(enriched)
 
