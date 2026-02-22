@@ -65,6 +65,7 @@ export default function DistributeGraftModal({
   const [searchResults, setSearchResults] = useState<RecipientUser[]>([])
   const [searching, setSearching] = useState(false)
   const [selectedUser, setSelectedUser] = useState<RecipientUser | null>(null)
+  const [groupOnly, setGroupOnly] = useState(false)
   const searchCounter = useRef(0)
 
   const [apiaries, setApiaries] = useState<RecipientApiary[]>([])
@@ -89,12 +90,15 @@ export default function DistributeGraftModal({
       const results = await searchUsers(searchText)
       // Only apply results if this is still the latest request
       if (requestId === searchCounter.current) {
-        setSearchResults(results)
+        const filtered = groupOnly && groupMemberIds
+          ? results.filter(u => groupMemberIds.includes(u.id))
+          : results
+        setSearchResults(filtered)
         setSearching(false)
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [searchText, searchUsers])
+  }, [searchText, searchUsers, groupOnly, groupMemberIds])
 
   // Fetch apiaries when user selected
   useEffect(() => {
@@ -187,7 +191,22 @@ export default function DistributeGraftModal({
 
           {/* Recipient Search */}
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Recipient *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium text-text-secondary">Recipient *</label>
+              {groupMemberIds && groupMemberIds.length > 0 && !selectedUser && (
+                <button
+                  type="button"
+                  onClick={() => setGroupOnly(!groupOnly)}
+                  className={`px-2 py-0.5 text-xs rounded font-medium ${
+                    groupOnly
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                      : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                  }`}
+                >
+                  Group Only
+                </button>
+              )}
+            </div>
             {selectedUser ? (
               <div className="flex items-center gap-2 p-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border">
                 <User size={16} className="text-text-tertiary" />
