@@ -37,7 +37,7 @@ const GRAFT_STATUSES = [
   { value: 'sold', label: 'Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
 ]
 
-const DISTRIBUTABLE_STATUSES = ['accepted', 'caged', 'emerged', 'in_nuc', 'mated']
+const DISTRIBUTABLE_STATUSES = ['emerged', 'in_nuc', 'mated']
 
 const CUP_COLORS: Record<string, string> = {
   grafted: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
