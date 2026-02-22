@@ -49,9 +49,11 @@ export interface ManualFields {
 export function useNIHBSReport() {
   const [reportData, setReportData] = useState<NIHBSReportData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchReport = useCallback(async (groupId: string, groupName: string, year: number) => {
     setLoading(true)
+    setError(null)
     try {
       // 1. Fetch members with experience levels
       const { data: members, error: membersError } = await supabase
@@ -69,27 +71,7 @@ export function useNIHBSReport() {
         else if (m.experience_level === 'novice') experience_counts.novice++
       }
 
-      // 2. Fetch mating apiaries
-      const { data: matingApiariesRaw, error: maError } = await supabase
-        .from('rearing_group_mating_apiaries')
-        .select('id, apiary_id, apiaries(name, grid_reference, elevation)')
-        .eq('group_id', groupId)
-        .order('sort_order')
-
-      if (maError) throw maError
-
-      const mating_apiaries: MatingApiaryInfo[] = (matingApiariesRaw || []).map((d: Record<string, unknown>) => {
-        const apiary = d.apiaries as Record<string, unknown> | null
-        return {
-          id: d.id as string,
-          apiary_id: d.apiary_id as string,
-          apiary_name: (apiary?.name as string) || 'Unknown',
-          grid_reference: (apiary?.grid_reference as string) || null,
-          elevation: (apiary?.elevation as number) ?? null,
-        }
-      })
-
-      // 3. Fetch batches for all members in the year
+      // 2. Fetch batches for all members in the year
       const startDate = `${year}-01-01`
       const endDate = `${year + 1}-01-01`
 
@@ -110,6 +92,8 @@ export function useNIHBSReport() {
 
         for (const batch of (batches || [])) {
           const graftDate = batch.graft_date
+          if (!graftDate) continue
+
           if (!first_graft_date || graftDate < first_graft_date) first_graft_date = graftDate
           if (!last_graft_date || graftDate > last_graft_date) last_graft_date = graftDate
 
@@ -148,6 +132,37 @@ export function useNIHBSReport() {
           ad.grafts_accepted += batch.grafts_accepted || 0
           ad.queens_hatched += batch.queens_hatched || 0
           ad.queens_mated += batch.queens_mated || 0
+        }
+      }
+
+      // 3. Derive mating apiaries from batch data
+      const batchApiaryIds = new Set<string>()
+      for (const [, md] of monthlyMap) {
+        for (const [apiaryId] of md.byApiary) {
+          if (apiaryId !== 'unassigned') {
+            batchApiaryIds.add(apiaryId)
+          }
+        }
+      }
+
+      const mating_apiaries: MatingApiaryInfo[] = []
+      if (batchApiaryIds.size > 0) {
+        const { data: batchApiariesRaw } = await supabase
+          .from('apiaries')
+          .select('id, name, grid_reference, elevation')
+          .in('id', Array.from(batchApiaryIds))
+          .order('name')
+
+        if (batchApiariesRaw) {
+          for (const a of batchApiariesRaw) {
+            mating_apiaries.push({
+              id: a.id,
+              apiary_id: a.id,
+              apiary_name: a.name || 'Unknown',
+              grid_reference: a.grid_reference || null,
+              elevation: a.elevation ?? null,
+            })
+          }
         }
       }
 
@@ -192,8 +207,9 @@ export function useNIHBSReport() {
         mating_apiaries: mating_apiaries,
         months,
       })
-    } catch (error) {
-      console.error('Error fetching NIHBS report:', error)
+    } catch (err) {
+      console.error('Error fetching NIHBS report:', err)
+      setError('Failed to load report data. Please try again.')
       setReportData(null)
     } finally {
       setLoading(false)
@@ -232,6 +248,7 @@ export function useNIHBSReport() {
   return {
     reportData,
     loading,
+    error,
     fetchReport,
     saveManualFields,
   }
