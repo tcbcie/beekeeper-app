@@ -1022,6 +1022,8 @@ export default function BatchesPage() {
               <h4 className="text-sm font-semibold text-foreground mb-3">Batch Quantities</h4>
               <div className="space-y-3">
                 {/* Frame Layout: Rows × Cells per Row */}
+                <div className="p-3 rounded-lg border-2 border-amber-600 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 space-y-3">
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Grafting Frame Layout</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-text-secondary mb-1">Rows</label>
@@ -1145,6 +1147,7 @@ export default function BatchesPage() {
                       <Plus size={16} />
                     </button>
                   </div>
+                </div>
                 </div>
 
                 {/* Grafts Accepted */}
@@ -1300,6 +1303,25 @@ export default function BatchesPage() {
               />
             </div>
 
+            {/* Individual Grafts Section - Only show when editing existing batch */}
+            {editingBatch && userId && (
+              <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                <BatchGraftsSection
+                  batchId={editingBatch.id}
+                  userId={userId}
+                  cellCount={formData.cell_count ? parseInt(formData.cell_count) : null}
+                  frameRows={formData.frame_rows ? parseInt(formData.frame_rows) : null}
+                  cellsPerRow={formData.cells_per_row ? parseInt(formData.cells_per_row) : null}
+                  groupId={editingBatch.rearing_group_id}
+                  batchCounters={{
+                    grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted, 10) : null,
+                    queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) : null,
+                    queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) : null,
+                  }}
+                />
+              </div>
+            )}
+
             {/* Notification Preferences - Grouped */}
             <div className="md:col-span-2 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
               <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-3">Notification Preferences</h4>
@@ -1378,25 +1400,6 @@ export default function BatchesPage() {
                 </div>
               </div>
             </div>
-
-            {/* Individual Grafts Section - Only show when editing existing batch */}
-            {editingBatch && userId && (
-              <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                <BatchGraftsSection
-                  batchId={editingBatch.id}
-                  userId={userId}
-                  cellCount={formData.cell_count ? parseInt(formData.cell_count) : null}
-                  frameRows={formData.frame_rows ? parseInt(formData.frame_rows) : null}
-                  cellsPerRow={formData.cells_per_row ? parseInt(formData.cells_per_row) : null}
-                  groupId={editingBatch.rearing_group_id}
-                  batchCounters={{
-                    grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted, 10) : null,
-                    queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) : null,
-                    queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) : null,
-                  }}
-                />
-              </div>
-            )}
 
             <div className="md:col-span-2 flex gap-3">
               <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
