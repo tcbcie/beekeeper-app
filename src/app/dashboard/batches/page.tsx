@@ -1046,10 +1046,10 @@ export default function BatchesPage() {
                         type="number"
                         value={formData.frame_rows}
                         onChange={(e) => {
-                          const rows = parseInt(e.target.value || '0')
-                          const cols = parseInt(formData.cells_per_row || '0')
+                          const rows = Math.max(0, parseInt(e.target.value) || 0)
+                          const cols = Math.max(0, parseInt(formData.cells_per_row) || 0)
                           const total = rows * cols
-                          setFormData({...formData, frame_rows: e.target.value, cell_count: total > 0 ? total.toString() : ''})
+                          setFormData({...formData, frame_rows: rows.toString(), cell_count: total > 0 ? total.toString() : ''})
                         }}
                         className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                         min="0"
@@ -1090,10 +1090,10 @@ export default function BatchesPage() {
                         type="number"
                         value={formData.cells_per_row}
                         onChange={(e) => {
-                          const cols = parseInt(e.target.value || '0')
-                          const rows = parseInt(formData.frame_rows || '0')
+                          const cols = Math.max(0, parseInt(e.target.value) || 0)
+                          const rows = Math.max(0, parseInt(formData.frame_rows) || 0)
                           const total = rows * cols
-                          setFormData({...formData, cells_per_row: e.target.value, cell_count: total > 0 ? total.toString() : ''})
+                          setFormData({...formData, cells_per_row: cols.toString(), cell_count: total > 0 ? total.toString() : ''})
                         }}
                         className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
                         min="0"

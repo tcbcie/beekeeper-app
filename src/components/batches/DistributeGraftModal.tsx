@@ -106,7 +106,7 @@ export default function DistributeGraftModal({
       setApiaries([])
       return
     }
-    fetchRecipientApiaries(selectedUser.id).then(setApiaries)
+    fetchRecipientApiaries(selectedUser.id).then(setApiaries, () => setApiaries([]))
   }, [selectedUser, fetchRecipientApiaries])
 
   // Fetch hives when apiary selected
@@ -115,7 +115,7 @@ export default function DistributeGraftModal({
       setHives([])
       return
     }
-    fetchRecipientHives(selectedUser.id, selectedApiaryId).then(setHives)
+    fetchRecipientHives(selectedUser.id, selectedApiaryId).then(setHives, () => setHives([]))
   }, [selectedUser, selectedApiaryId, fetchRecipientHives])
 
   const handleSelectUser = useCallback((user: RecipientUser) => {
@@ -196,7 +196,7 @@ export default function DistributeGraftModal({
               {groupMemberIds && groupMemberIds.length > 0 && !selectedUser && (
                 <button
                   type="button"
-                  onClick={() => setGroupOnly(!groupOnly)}
+                  onClick={() => { setGroupOnly(!groupOnly); setSearchResults([]) }}
                   className={`px-2 py-0.5 text-xs rounded font-medium ${
                     groupOnly
                       ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
