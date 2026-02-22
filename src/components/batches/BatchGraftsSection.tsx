@@ -140,9 +140,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       }
     }
 
-    const existingNumbers = grafts.map(g => g.cell_number)
     const newGrafts = []
-    const nextNumber = Math.max(0, ...existingNumbers) + 1
+    const nextNumber = grafts.length > 0
+      ? Math.max(...grafts.map(g => g.cell_number)) + 1
+      : 1
 
     for (let i = 0; i < cellCount; i++) {
       newGrafts.push({
@@ -475,11 +476,19 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           <div className="border-4 border-amber-700 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 min-w-fit">
             {(() => {
               // Organise grafts into rows
-              const rows = frameRows && cellsPerRow
-                ? Array.from({ length: frameRows }, (_, r) =>
-                    grafts.slice(r * cellsPerRow, (r + 1) * cellsPerRow)
-                  ).filter(row => row.length > 0)
-                : [grafts] // fallback: single row
+              let rows: Graft[][]
+              if (frameRows && cellsPerRow) {
+                rows = Array.from({ length: frameRows }, (_, r) =>
+                  grafts.slice(r * cellsPerRow, (r + 1) * cellsPerRow)
+                ).filter(row => row.length > 0)
+                // Include any overflow grafts beyond frameRows × cellsPerRow
+                const shown = frameRows * cellsPerRow
+                if (grafts.length > shown) {
+                  rows.push(grafts.slice(shown))
+                }
+              } else {
+                rows = [grafts] // fallback: single row
+              }
 
               return rows.map((rowGrafts, rowIdx) => (
                 <div key={rowIdx} className={rowIdx > 0 ? 'mt-4' : ''}>
@@ -590,7 +599,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           <h4 className="text-sm font-semibold text-foreground mb-3">Distributions ({distributions.length})</h4>
           <div className="space-y-2">
             {distributions.map((dist) => {
-              const typeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell
+              const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell
               return (
                 <div
                   key={dist.id}
@@ -601,8 +610,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       <span className="text-sm font-medium text-foreground">
                         Cell #{dist.cell_number}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeInfo.color}`}>
-                        {typeInfo.label}
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${distTypeInfo.color}`}>
+                        {distTypeInfo.label}
                       </span>
                     </div>
                     <div className="text-xs text-text-secondary mt-1">
