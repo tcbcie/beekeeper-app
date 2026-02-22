@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { FileText, ClipboardList, Search, LayoutGrid, Apple, Archive } from 'lucide-react'
+import { FileText, ClipboardList, Search, LayoutGrid, Apple, Archive, Crown } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import {
   DAFMVarroaReport,
@@ -13,19 +13,23 @@ import {
   HarvestReport,
   ArchivedHivesReport
 } from '@/components/reports'
+import RearingGroupReport from '@/components/rearing-groups/RearingGroupReport'
+import NIHBSMonthlyReturn from '@/components/rearing-groups/NIHBSMonthlyReturn'
+import { useRearingGroups } from '@/hooks/useRearingGroups'
 
-type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives'
+type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives' | 'rearing-report' | 'nihbs-returns'
 
 export default function ReportsPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<ReportSection>('dafm-varroa')
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { ownedRearingGroups, fetchRearingGroups } = useRearingGroups()
 
   // Sync with URL params
   useEffect(() => {
     const section = searchParams.get('section')
-    if (section && ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest', 'archived-hives'].includes(section)) {
+    if (section && ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest', 'archived-hives', 'rearing-report', 'nihbs-returns'].includes(section)) {
       setActiveSection(section as ReportSection)
     }
   }, [searchParams])
@@ -38,9 +42,10 @@ export default function ReportsPage() {
         return
       }
       setUserId(id)
+      fetchRearingGroups(id)
     }
     initUser()
-  }, [router])
+  }, [router, fetchRearingGroups])
 
   if (!userId) {
     return (
@@ -50,6 +55,8 @@ export default function ReportsPage() {
     )
   }
 
+  const hasRearingGroups = ownedRearingGroups.length > 0
+
   const sections = [
     { id: 'dafm-varroa' as const, label: 'DAFM Varroa', icon: FileText },
     { id: 'varroa-monitoring' as const, label: 'Varroa Monitoring', icon: Search },
@@ -57,7 +64,16 @@ export default function ReportsPage() {
     { id: 'apiary-overview' as const, label: 'Apiary Overview', icon: LayoutGrid },
     { id: 'harvest' as const, label: 'Harvest', icon: Apple },
     { id: 'archived-hives' as const, label: 'Archived Hives', icon: Archive },
+    ...(hasRearingGroups ? [
+      { id: 'rearing-report' as const, label: 'Rearing Report', icon: Crown },
+      { id: 'nihbs-returns' as const, label: 'NIHBS Returns', icon: Crown },
+    ] : []),
   ]
+
+  // Fall back to default tab if active section is no longer available
+  // (e.g. URL deep-link to rearing tab by a non-owner, or groups deleted externally)
+  const isRearingTab = activeSection === 'rearing-report' || activeSection === 'nihbs-returns'
+  const effectiveSection = (isRearingTab && !hasRearingGroups) ? 'dafm-varroa' : activeSection
 
   return (
     <div className="space-y-6">
@@ -78,7 +94,7 @@ export default function ReportsPage() {
               key={section.id}
               onClick={() => setActiveSection(section.id)}
               className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeSection === section.id
+                effectiveSection === section.id
                   ? 'bg-forest-600 text-white dark:bg-forest-500'
                   : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
               }`}
@@ -92,28 +108,36 @@ export default function ReportsPage() {
 
       {/* Report Content */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-        {activeSection === 'dafm-varroa' && (
+        {effectiveSection === 'dafm-varroa' && (
           <DAFMVarroaReport userId={userId} />
         )}
 
-        {activeSection === 'varroa-monitoring' && (
+        {effectiveSection === 'varroa-monitoring' && (
           <VarroaMonitoringReport userId={userId} />
         )}
 
-        {activeSection === 'hive-inspection' && (
+        {effectiveSection === 'hive-inspection' && (
           <HiveInspectionSummary userId={userId} />
         )}
 
-        {activeSection === 'apiary-overview' && (
+        {effectiveSection === 'apiary-overview' && (
           <ApiaryOverview userId={userId} />
         )}
 
-        {activeSection === 'harvest' && (
+        {effectiveSection === 'harvest' && (
           <HarvestReport userId={userId} />
         )}
 
-        {activeSection === 'archived-hives' && (
+        {effectiveSection === 'archived-hives' && (
           <ArchivedHivesReport userId={userId} />
+        )}
+
+        {effectiveSection === 'rearing-report' && (
+          <RearingGroupReport ownedGroups={ownedRearingGroups} />
+        )}
+
+        {effectiveSection === 'nihbs-returns' && (
+          <NIHBSMonthlyReturn ownedGroups={ownedRearingGroups} userId={userId} />
         )}
       </div>
     </div>

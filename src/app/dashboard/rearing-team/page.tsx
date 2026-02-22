@@ -6,8 +6,6 @@ import { getCurrentUserId } from '@/lib/auth'
 import { User, Mail, Edit2, Users, Plus, X, Trash2, UserPlus, Clock, Send, Share2, Crown, HelpCircle } from 'lucide-react'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RearingGroup, RearingGroupMember } from '@/hooks/useRearingGroups'
-import RearingGroupReport from '@/components/rearing-groups/RearingGroupReport'
-import NIHBSMonthlyReturn from '@/components/rearing-groups/NIHBSMonthlyReturn'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -837,15 +835,6 @@ export default function RearingTeamPage() {
               </div>
             )}
 
-            {/* Monthly Report (only for group owners) */}
-            {ownedRearingGroups.length > 0 && (
-              <RearingGroupReport ownedGroups={ownedRearingGroups} />
-            )}
-
-            {/* NIHBS Monthly Returns (only for group owners) */}
-            {ownedRearingGroups.length > 0 && userId && (
-              <NIHBSMonthlyReturn ownedGroups={ownedRearingGroups} userId={userId} />
-            )}
           </div>
         )}
       </div>
