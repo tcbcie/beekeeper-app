@@ -51,6 +51,18 @@ export interface CreateDistributionData {
   previous_graft_status: string
 }
 
+export interface BulkDistributionData {
+  batch_id: string
+  distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
+  recipient_user_id: string
+  recipient_apiary_id: string | null
+  recipient_hive_id: string | null
+  distribution_date: string
+  notes: string | null
+  user_id: string
+  grafts: { id: string; previous_graft_status: string }[]
+}
+
 export function useGraftDistributions() {
   const [distributions, setDistributions] = useState<GraftDistribution[]>([])
   const [loading, setLoading] = useState(false)
@@ -129,6 +141,44 @@ export function useGraftDistributions() {
       return true
     } catch (err) {
       console.error('Error creating distribution:', err)
+      return false
+    }
+  }, [])
+
+  const createBulkDistributions = useCallback(async (data: BulkDistributionData): Promise<boolean> => {
+    try {
+      const rows = data.grafts.map((g) => ({
+        graft_id: g.id,
+        batch_id: data.batch_id,
+        distribution_type: data.distribution_type,
+        recipient_user_id: data.recipient_user_id,
+        recipient_apiary_id: data.recipient_apiary_id,
+        recipient_hive_id: data.recipient_hive_id,
+        distribution_date: data.distribution_date,
+        notes: data.notes,
+        user_id: data.user_id,
+        previous_graft_status: g.previous_graft_status,
+      }))
+
+      const { error } = await supabase
+        .from('graft_distributions')
+        .insert(rows)
+
+      if (error) throw error
+
+      const graftIds = data.grafts.map((g) => g.id)
+      const { error: graftError } = await supabase
+        .from('batch_grafts')
+        .update({ status: 'sold' })
+        .in('id', graftIds)
+
+      if (graftError) {
+        console.error('Error bulk-updating graft statuses to sold:', graftError)
+      }
+
+      return true
+    } catch (err) {
+      console.error('Error creating bulk distributions:', err)
       return false
     }
   }, [])
@@ -219,6 +269,7 @@ export function useGraftDistributions() {
     loading,
     fetchDistributions,
     createDistribution,
+    createBulkDistributions,
     deleteDistribution,
     toggleMatingConfirmed,
     searchUsers,

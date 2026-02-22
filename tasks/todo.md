@@ -1,63 +1,44 @@
-# Batch Distribution Tracking & NIHBS Report Enhancement
+# Grafting Frame Visualisation
 
-## Todo
+## Tasks
 
-- [x] 1. Database migration — create `graft_distributions` table, RLS policies, and helper functions
-- [x] 2. Create `useGraftDistributions` hook — CRUD operations + user/apiary/hive search
-- [x] 3. Create `DistributeGraftModal` component — modal form for recording distributions
-- [x] 4. Integrate into `BatchGraftsSection` — add Distribute button + distribution list
-- [x] 5. Integrate into `MatingNucsTab` — add Distribute button on distributable nucs
-- [x] 6. Update `useNIHBSReport` — auto-calculate distribution counts from records
-- [x] 7. Update `NIHBSMonthlyReturn` — show auto-calculated defaults with indicator
-- [x] 8. Documentation — create/update feature docs
+- [x] 1. Database migration — add `frame_rows` and `cells_per_row` columns to `rearing_batches`
+- [x] 2. Update `Batch` and `FormData` interfaces in `batches/page.tsx` — add `frame_rows`, `cells_per_row` fields
+- [x] 3. Replace "Number of Grafts" stepper with "Rows" + "Cells per Row" steppers + auto-calculated total
+- [x] 4. Update submit handler — include `frame_rows` and `cells_per_row` in upsert payload
+- [x] 5. Update edit handler — populate `frame_rows` and `cells_per_row` from batch record
+- [x] 6. Update reset handler — reset both new fields to `''`
+- [x] 7. Pass `frameRows` and `cellsPerRow` props to `BatchGraftsSection`
+- [x] 8. Update `BatchGraftsSection` — accept new props, replace CSS grid with frame visualisation
+- [x] 9. Update documentation in `docs/features/queen-rearing.md`
+- [x] 10. Prompt user to test the build
 
 ## Review
 
 ### Summary of Changes
 
 **Database:**
-- New `graft_distributions` table with RLS policies for user ownership and group owner visibility
-- 3 helper functions: `search_users_for_distribution`, `get_recipient_apiaries`, `get_recipient_hives`
+- Added `frame_rows INTEGER` and `cells_per_row INTEGER` nullable columns to `rearing_batches`
 
-**New Files (2):**
-- `src/hooks/useGraftDistributions.ts` — CRUD hook with user search, apiary/hive lookup, mating toggle
-- `src/components/batches/DistributeGraftModal.tsx` — modal form with debounced recipient search, auto-detected type, conditional apiary/hive pickers
+**`src/app/dashboard/batches/page.tsx`:**
+- Added `frame_rows` and `cells_per_row` to `Batch` interface, `FormData` interface, initial state, reset handler, edit handler, and submit payload
+- Replaced single "Number of Grafts" stepper with two side-by-side steppers (Rows + Cells per Row) that auto-calculate `cell_count` as `rows × cellsPerRow`
+- Added read-only "Total Grafts: X" display below the steppers
+- Passed `frameRows` and `cellsPerRow` as new props to `BatchGraftsSection`
 
-**Modified Files (4):**
-- `src/components/batches/BatchGraftsSection.tsx` — added Distribute (Send) icon on distributable grafts, distribution list section below grid with mating confirmation toggle and delete. New `groupId` prop.
-- `src/components/batches/MatingNucsTab.tsx` — added Distribute button on nucs with graft_id in virgin/mating/laying status. On distribute, nuc status also set to 'sold'.
-- `src/hooks/useNIHBSReport.ts` — fetches `graft_distributions` for group batches, auto-calculates `auto_virgins_distributed_external` and `auto_virgins_external_mated`. Added `auto_*` fields to `MonthlyData` interface. Manual overrides from `nihbs_monthly_returns` take precedence.
-- `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` — shows "Auto: X from records" indicator below manual input fields when auto-calculated values exist (both desktop and mobile views).
+**`src/components/batches/BatchGraftsSection.tsx`:**
+- Added `frameRows` and `cellsPerRow` optional props
+- Added `CUP_COLORS` map for circular cup background colours per status
+- Replaced flat CSS grid with frame visualisation: amber wooden border, horizontal bars per row, connector lines, and circular cell cups hanging below each bar
+- Cups are colour-coded by status, show cell number inside, and support the same select mode (ring highlight + checkbox) and action controls (status dropdown, distribute, delete)
+- Frame is horizontally scrollable on mobile via `overflow-x-auto`
+- Falls back to a single row when `frameRows`/`cellsPerRow` are not set
 
-**Prop Change (1):**
-- `src/app/dashboard/batches/page.tsx` — passes `groupId={editingBatch.rearing_group_id}` to `BatchGraftsSection`
-
-**Documentation (3):**
-- Created `docs/features/batch-distributions.md`
-- Updated `docs/features/nihbs-monthly-returns.md` — documented auto-calculation from distributions
-- Updated `docs/features/queen-rearing.md` — added `graft_distributions` table, new files, related doc link
+**`docs/features/queen-rearing.md`:**
+- Documented `frame_rows` and `cells_per_row` columns
+- Updated component descriptions to reference frame visualisation
+- Added frame visualisation to Key Design Patterns list
 
 ### Impact
-- 2 new files, 5 modified files, 1 new database table, 3 new database functions
-- No breaking changes to existing functionality
-- Manual override workflow preserved for NIHBS report
-
----
-
-## Code Audit Fixes
-
-- [x] CRITICAL-1: Data corruption on distribution delete — added `previous_graft_status` column to DB + stored/used across all files so deleting a distribution reverts the graft to its actual prior status instead of always `'mated'`
-- [x] CRITICAL-2: Non-atomic two-table writes — error-checked secondary Supabase operations in `createDistribution`, `deleteDistribution`, and `handleDistributeSave` (MatingNucsTab)
-- [x] HIGH-1: Race condition in debounced search — added `searchCounter` ref to `DistributeGraftModal` to discard stale out-of-order network responses
-- [x] HIGH-2: Unhandled promise rejection — added `.catch()` to group member fetch in `BatchGraftsSection`
-- [x] MEDIUM-1: Constants inside component body — hoisted `NUC_DISTRIBUTABLE_STATUSES` and `getNucDistributionType` outside `MatingNucsTab` component
-- [x] MEDIUM-2: Stale data on fetch error — `fetchDistributions` now clears distributions to `[]` on error
-
-**Database Migration:**
-- Added `previous_graft_status TEXT` column to `graft_distributions` table
-
-**Files Modified (4):**
-- `src/hooks/useGraftDistributions.ts` — added `previous_graft_status` to interfaces, mapped in fetch, error-checked secondary operations, clear distributions on error
-- `src/components/batches/DistributeGraftModal.tsx` — added `useRef` import, `searchCounter` ref for stale-result guard, passes `previous_graft_status: graftStatus` in submit data
-- `src/components/batches/BatchGraftsSection.tsx` — uses `dist.previous_graft_status` on delete revert, added `.catch()` to group member fetch
-- `src/components/batches/MatingNucsTab.tsx` — hoisted constants outside component, error-checked nuc status update, passes actual graft status from `batch_grafts` relation
+- 2 files modified, 1 database migration applied, 1 docs file updated
+- No breaking changes — existing batches without `frame_rows`/`cells_per_row` fall back to a single-row frame display

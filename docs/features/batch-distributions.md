@@ -34,7 +34,7 @@ The NIHBS monthly report auto-calculates external distribution counts from these
 
 - `search_users_for_distribution(search_text)` — search users by name/email for recipient picker
 - `get_recipient_apiaries(recipient_uuid)` — get a recipient's apiaries
-- `get_recipient_hives(recipient_uuid, apiary_uuid)` — get a recipient's hives in an apiary
+- `get_recipient_hives(recipient_uuid, apiary_uuid)` — get a recipient's active (non-archived) hives in an apiary
 
 ## UI
 
@@ -67,10 +67,47 @@ Shown below the graft grid in `BatchGraftsSection`:
 - Mating confirmed toggle (for queen cell/virgin queen distributions)
 - Delete button to remove distribution and revert graft status
 
+### Bulk Operations
+
+#### Select Mode
+
+Toggle via the **Select** button in the graft grid header. In select mode:
+- Each card shows a checkbox icon — click cards to select/deselect
+- Selected cards get a green ring highlight
+- Individual action buttons (distribute, delete) are hidden — use the bulk action bar instead
+- Click **Done** to exit select mode and clear selections
+
+#### Bulk Action Bar
+
+Appears when at least one graft is selected:
+- **{N} selected** count with **Select All** / **Deselect All** links
+- **Change Status** dropdown — bulk-updates all selected grafts via `.in('id', ids)`
+- **Distribute** button — opens `DistributeGraftModal` in bulk mode for distributable grafts
+- **Delete** button — bulk-deletes selected grafts with confirmation
+
+#### Bulk Distribute
+
+Uses the same `DistributeGraftModal` with `bulkGrafts` prop:
+- Title shows "Distribute {N} Grafts"
+- Distribution type auto-detected from the most advanced status among selected grafts
+- Each graft's `previous_graft_status` is stored individually
+- Single bulk `.insert()` for distribution records + single `.in()` update for graft statuses
+
+#### Sync from Counters
+
+**"Sync from Counters"** button in the Quick Actions bar (visible when batch counters are set). On click:
+1. Filters out `failed` and `sold` grafts (locked statuses)
+2. Sorts remaining by cell number
+3. Assigns in order: first N → `mated`, next → `emerged`, next → `accepted`, remainder → `grafted`
+4. Confirmation dialog shows the breakdown
+5. Executes grouped `.update().in()` calls (max 4 queries)
+
+Batch counter values (`grafts_accepted`, `queens_hatched`, `queens_mated`) are passed from the form.
+
 ### Side Effects
 
 On distribute: graft status → `sold`, nuc status → `sold` (if from nuc)
-On delete: graft status reverted to `mated`
+On delete: graft status reverted to previous status (stored in `previous_graft_status`)
 
 ## NIHBS Report Integration
 
@@ -88,7 +125,7 @@ The UI shows "Auto: X from records" below the manual input fields when auto-calc
 |------|-------------|
 | `src/hooks/useGraftDistributions.ts` | Distribution CRUD hook + search functions |
 | `src/components/batches/DistributeGraftModal.tsx` | Distribution form modal |
-| `src/components/batches/BatchGraftsSection.tsx` | Modified — distribute button + distribution list |
+| `src/components/batches/BatchGraftsSection.tsx` | Modified — distribute button, distribution list, bulk operations, sync from counters |
 | `src/components/batches/MatingNucsTab.tsx` | Modified — distribute button on nucs |
 | `src/hooks/useNIHBSReport.ts` | Modified — auto-calculate distribution counts |
 | `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | Modified — show auto-calculated indicators |

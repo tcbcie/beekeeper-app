@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, Search, User } from 'lucide-react'
-import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData } from '@/hooks/useGraftDistributions'
+import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData, BulkDistributionData } from '@/hooks/useGraftDistributions'
 
 interface DistributeGraftModalProps {
   graftId: string
@@ -16,6 +16,9 @@ interface DistributeGraftModalProps {
   fetchRecipientHives: (userId: string, apiaryId: string) => Promise<RecipientHive[]>
   onSave: (data: CreateDistributionData) => Promise<boolean>
   onClose: () => void
+  // Bulk mode props
+  bulkGrafts?: { id: string; status: string; cell_number: number }[]
+  onBulkSave?: (data: BulkDistributionData) => Promise<boolean>
 }
 
 const TYPE_FROM_GRAFT_STATUS: Record<string, 'queen_cell' | 'virgin_queen' | 'mated_queen'> = {
@@ -44,8 +47,18 @@ export default function DistributeGraftModal({
   fetchRecipientHives,
   onSave,
   onClose,
+  bulkGrafts,
+  onBulkSave,
 }: DistributeGraftModalProps) {
-  const distributionType = TYPE_FROM_GRAFT_STATUS[graftStatus] || 'queen_cell'
+  const isBulk = bulkGrafts && bulkGrafts.length > 0
+  // In bulk mode, use the most advanced status among selected grafts for the distribution type
+  const effectiveStatus = isBulk
+    ? bulkGrafts.reduce((best, g) => {
+        const order = ['accepted', 'caged', 'emerged', 'in_nuc', 'mated']
+        return order.indexOf(g.status) > order.indexOf(best) ? g.status : best
+      }, bulkGrafts[0].status)
+    : graftStatus
+  const distributionType = TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
   const typeInfo = TYPE_LABELS[distributionType]
 
   const [searchText, setSearchText] = useState('')
@@ -114,20 +127,37 @@ export default function DistributeGraftModal({
     if (!selectedUser) return
 
     setSaving(true)
-    const data: CreateDistributionData = {
-      graft_id: graftId,
-      batch_id: batchId,
-      distribution_type: distributionType,
-      recipient_user_id: selectedUser.id,
-      recipient_apiary_id: selectedApiaryId || null,
-      recipient_hive_id: selectedHiveId || null,
-      distribution_date: distributionDate,
-      notes: notes || null,
-      user_id: userId,
-      previous_graft_status: graftStatus,
+
+    let success: boolean
+    if (isBulk && onBulkSave) {
+      const bulkData: BulkDistributionData = {
+        batch_id: batchId,
+        distribution_type: distributionType,
+        recipient_user_id: selectedUser.id,
+        recipient_apiary_id: selectedApiaryId || null,
+        recipient_hive_id: selectedHiveId || null,
+        distribution_date: distributionDate,
+        notes: notes || null,
+        user_id: userId,
+        grafts: bulkGrafts.map((g) => ({ id: g.id, previous_graft_status: g.status })),
+      }
+      success = await onBulkSave(bulkData)
+    } else {
+      const data: CreateDistributionData = {
+        graft_id: graftId,
+        batch_id: batchId,
+        distribution_type: distributionType,
+        recipient_user_id: selectedUser.id,
+        recipient_apiary_id: selectedApiaryId || null,
+        recipient_hive_id: selectedHiveId || null,
+        distribution_date: distributionDate,
+        notes: notes || null,
+        user_id: userId,
+        previous_graft_status: graftStatus,
+      }
+      success = await onSave(data)
     }
 
-    const success = await onSave(data)
     setSaving(false)
     if (success) onClose()
   }
@@ -139,7 +169,7 @@ export default function DistributeGraftModal({
       <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
         <div className="p-4 border-b border-border flex justify-between items-center">
           <h3 className="text-lg font-semibold text-foreground">
-            Distribute Cell #{cellNumber}
+            {isBulk ? `Distribute ${bulkGrafts.length} Grafts` : `Distribute Cell #${cellNumber}`}
           </h3>
           <button onClick={onClose} className="p-2 text-text-secondary hover:text-foreground rounded">
             <X size={20} />
