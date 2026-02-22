@@ -23,7 +23,8 @@ The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stay
 **`rearing_batches`** — batch lifecycle
 - `id`, `user_id`, `batch_name`, `graft_date`
 - `mother_queen_id` (FK → queens), `starter_colony_hive_id` (FK → hives)
-- `cell_count`, `grafts_accepted`, `queens_hatched`, `queens_mated`, `queens_hybridised`
+- `cell_count`, `frame_rows`, `cells_per_row` (cell_count auto-calculated as rows × cells per row)
+- `grafts_accepted`, `queens_hatched`, `queens_mated`, `queens_hybridised`
 - Auto-calculated dates: `acceptance_check_date` (+1d), `first_option_to_cage_date` (+5d), `second_option_to_cage_date` (+10d), `emergence_date` (+12d)
 - Notification flags: `enable_browser_notifications`, `enable_email_digest`, `enable_batch_event_reminders`, `batch_reminder_minutes_before`
 - `status`, `notes`, `created_by`, `created_at`, `updated_at`
@@ -104,7 +105,8 @@ Queen Record (queen_number, lineage, batch_id)
 - Batch CRUD form with auto-calculated timeline dates from graft date
 - Breeder queen dropdown (active queens only)
 - Starter colony picker (apiary → hive cascade)
-- Quantity counters with increment/decrement: grafts, accepted, hatched, mated, hybridised offspring
+- Frame layout inputs: Rows and Cells per Row steppers (total grafts auto-calculated)
+- Quantity counters with increment/decrement: accepted, hatched, mated, hybridised offspring
 - Notification preferences (browser, email digest, event reminders)
 - Integrates `BatchGraftsSection` for existing batches
 - Mobile card view / desktop table view
@@ -122,7 +124,7 @@ Queen Record (queen_number, lineage, batch_id)
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Grid of individual grafts with status dropdowns, bulk generation, delete |
+| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Frame visualisation of individual grafts — horizontal bars with hanging cell cups, status dropdowns, bulk generation, select mode, distribution |
 | `MatingNucsTab` | `src/components/batches/MatingNucsTab.tsx` | Full nuc CRUD, retirement with history, expandable inspections |
 | `NucInspectionPanel` | `src/components/batches/NucInspectionPanel.tsx` | Inline inspection form + history list per nuc |
 | `NucInspectionCard` | `src/components/batches/NucInspectionCard.tsx` | Single inspection display with badges |
@@ -234,6 +236,7 @@ Component-level interfaces in `batches/page.tsx`:
 6. **Weighted scoring** — configurable multi-criteria algorithm for breeder selection
 7. **Genealogy** — self-referencing mother/father FKs with recursive tree fetching (up to 4 generations)
 8. **Team visibility** — queens visible across shared apiaries via team membership
+9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile
 
 ---
 
@@ -244,7 +247,7 @@ Component-level interfaces in `batches/page.tsx`:
 | `src/app/dashboard/batches/page.tsx` | Main batches page (Planning, Nucs, Selection tabs) |
 | `src/app/dashboard/queens/page.tsx` | Queens list with CRUD and CSV export |
 | `src/app/dashboard/queens/[id]/page.tsx` | Queen detail with lineage and sightings |
-| `src/components/batches/BatchGraftsSection.tsx` | Individual graft management grid + distribution list |
+| `src/components/batches/BatchGraftsSection.tsx` | Frame visualisation of grafts (bars + cups) + distribution list |
 | `src/components/batches/MatingNucsTab.tsx` | Mating nuc CRUD with retirement system + distribute button |
 | `src/components/batches/DistributeGraftModal.tsx` | Distribution form modal |
 | `src/hooks/useGraftDistributions.ts` | Distribution CRUD hook + search functions |

@@ -43,6 +43,8 @@ interface Batch {
   starter_colony_hive_id: string | null
   graft_date: string
   cell_count: number | null
+  frame_rows: number | null
+  cells_per_row: number | null
   grafts_accepted: number | null
   queens_hatched: number | null
   queens_mated: number | null
@@ -76,6 +78,8 @@ interface FormData {
   starter_colony_hive_id: string
   graft_date: string
   cell_count: string
+  frame_rows: string
+  cells_per_row: string
   grafts_accepted: string
   queens_hatched: string
   queens_mated: string
@@ -210,6 +214,8 @@ export default function BatchesPage() {
     starter_colony_hive_id: '',
     graft_date: toLocalDateString(new Date()),
     cell_count: '',
+    frame_rows: '',
+    cells_per_row: '',
     grafts_accepted: '',
     queens_hatched: '',
     queens_mated: '',
@@ -292,6 +298,7 @@ export default function BatchesPage() {
       .from('hives')
       .select('id, hive_number, apiary_id')
       .eq('user_id', currentUserId)
+      .is('archived_at', null)
       .order('hive_number')
 
     if (data) setHives(data)
@@ -316,23 +323,30 @@ export default function BatchesPage() {
 
     if (!queensData) return
 
-    // Then, get hives with apiaries for these queens
+    // Then, get hives with apiaries for these queens (include archived_at to filter)
     const queenIds = queensData.map(q => q.id)
     const { data: hivesData } = await supabase
       .from('hives')
-      .select('queen_id, hive_number, apiaries(name)')
+      .select('queen_id, hive_number, archived_at, apiaries(name)')
       .in('queen_id', queenIds)
       .eq('user_id', currentUserId)
 
-    // Merge the data
-    const queensWithHives: Queen[] = queensData.map(queen => ({
-      ...queen,
-      hives: hivesData?.filter(h => h.queen_id === queen.id).map(h => ({
-        queen_id: h.queen_id,
-        hive_number: h.hive_number,
-        apiaries: Array.isArray(h.apiaries) ? h.apiaries[0] || null : h.apiaries
-      })) || []
-    }))
+    // Queens in archived hives should not be selectable
+    const archivedQueenIds = new Set(
+      hivesData?.filter(h => h.archived_at).map(h => h.queen_id) || []
+    )
+
+    // Merge the data, excluding queens in archived hives
+    const queensWithHives: Queen[] = queensData
+      .filter(queen => !archivedQueenIds.has(queen.id))
+      .map(queen => ({
+        ...queen,
+        hives: hivesData?.filter(h => h.queen_id === queen.id && !h.archived_at).map(h => ({
+          queen_id: h.queen_id,
+          hive_number: h.hive_number,
+          apiaries: Array.isArray(h.apiaries) ? h.apiaries[0] || null : h.apiaries
+        })) || []
+      }))
 
     setQueens(queensWithHives)
   }, [userId])
@@ -436,6 +450,8 @@ export default function BatchesPage() {
         starter_colony_hive_id: formData.starter_colony_hive_id || null,
         graft_date: formData.graft_date,
         cell_count: formData.cell_count ? parseInt(formData.cell_count, 10) || null : null,
+        frame_rows: formData.frame_rows ? parseInt(formData.frame_rows, 10) || null : null,
+        cells_per_row: formData.cells_per_row ? parseInt(formData.cells_per_row, 10) || null : null,
         grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted, 10) || null : null,
         queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) || null : null,
         queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) || null : null,
@@ -488,6 +504,8 @@ export default function BatchesPage() {
       starter_colony_hive_id: batch.starter_colony_hive_id || '',
       graft_date: batch.graft_date,
       cell_count: batch.cell_count?.toString() || '',
+      frame_rows: batch.frame_rows?.toString() || '',
+      cells_per_row: batch.cells_per_row?.toString() || '',
       grafts_accepted: batch.grafts_accepted?.toString() || '',
       queens_hatched: batch.queens_hatched?.toString() || '',
       queens_mated: batch.queens_mated?.toString() || '',
@@ -577,6 +595,7 @@ export default function BatchesPage() {
           )
         `)
         .eq('user_id', userId)
+        .is('archived_at', null)
 
       // Apply apiary filter
       if (selectedApiary !== 'all') {
@@ -697,6 +716,8 @@ export default function BatchesPage() {
       starter_colony_hive_id: '',
       graft_date: toLocalDateString(new Date()),
       cell_count: '',
+      frame_rows: '',
+      cells_per_row: '',
       grafts_accepted: '',
       queens_hatched: '',
       queens_mated: '',
@@ -1000,39 +1021,100 @@ export default function BatchesPage() {
             <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
               <h4 className="text-sm font-semibold text-foreground mb-3">Batch Quantities</h4>
               <div className="space-y-3">
-                {/* Number of Grafts */}
-                <div>
-                  <label className="block text-xs font-medium text-text-secondary mb-1">Number of Grafts</label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const val = parseInt(formData.cell_count || '0')
-                        if (val > 0) setFormData({...formData, cell_count: (val - 1).toString()})
-                      }}
-                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <input
-                      type="number"
-                      value={formData.cell_count}
-                      onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
-                      min="0"
-                      placeholder="0"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const val = parseInt(formData.cell_count || '0')
-                        setFormData({...formData, cell_count: (val + 1).toString()})
-                      }}
-                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
-                    >
-                      <Plus size={16} />
-                    </button>
+                {/* Frame Layout: Rows × Cells per Row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-text-secondary mb-1">Rows</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = parseInt(formData.frame_rows || '0')
+                          if (val > 0) {
+                            const newRows = (val - 1).toString()
+                            const total = (val - 1) * (parseInt(formData.cells_per_row || '0'))
+                            setFormData({...formData, frame_rows: newRows, cell_count: total > 0 ? total.toString() : ''})
+                          }
+                        }}
+                        className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.frame_rows}
+                        onChange={(e) => {
+                          const rows = parseInt(e.target.value || '0')
+                          const cols = parseInt(formData.cells_per_row || '0')
+                          const total = rows * cols
+                          setFormData({...formData, frame_rows: e.target.value, cell_count: total > 0 ? total.toString() : ''})
+                        }}
+                        className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                        min="0"
+                        placeholder="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = parseInt(formData.frame_rows || '0')
+                          const newRows = (val + 1).toString()
+                          const total = (val + 1) * (parseInt(formData.cells_per_row || '0'))
+                          setFormData({...formData, frame_rows: newRows, cell_count: total > 0 ? total.toString() : ''})
+                        }}
+                        className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-text-secondary mb-1">Cells per Row</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = parseInt(formData.cells_per_row || '0')
+                          if (val > 0) {
+                            const newCols = (val - 1).toString()
+                            const total = (parseInt(formData.frame_rows || '0')) * (val - 1)
+                            setFormData({...formData, cells_per_row: newCols, cell_count: total > 0 ? total.toString() : ''})
+                          }
+                        }}
+                        className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <input
+                        type="number"
+                        value={formData.cells_per_row}
+                        onChange={(e) => {
+                          const cols = parseInt(e.target.value || '0')
+                          const rows = parseInt(formData.frame_rows || '0')
+                          const total = rows * cols
+                          setFormData({...formData, cells_per_row: e.target.value, cell_count: total > 0 ? total.toString() : ''})
+                        }}
+                        className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                        min="0"
+                        placeholder="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = parseInt(formData.cells_per_row || '0')
+                          const newCols = (val + 1).toString()
+                          const total = (parseInt(formData.frame_rows || '0')) * (val + 1)
+                          setFormData({...formData, cells_per_row: newCols, cell_count: total > 0 ? total.toString() : ''})
+                        }}
+                        className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {/* Auto-calculated total */}
+                <div className="text-sm text-text-secondary font-medium">
+                  Total Grafts: <span className="text-foreground">{formData.cell_count || '0'}</span>
                 </div>
 
                 {/* Grafts Accepted */}
@@ -1274,7 +1356,14 @@ export default function BatchesPage() {
                   batchId={editingBatch.id}
                   userId={userId}
                   cellCount={formData.cell_count ? parseInt(formData.cell_count) : null}
+                  frameRows={formData.frame_rows ? parseInt(formData.frame_rows) : null}
+                  cellsPerRow={formData.cells_per_row ? parseInt(formData.cells_per_row) : null}
                   groupId={editingBatch.rearing_group_id}
+                  batchCounters={{
+                    grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted, 10) : null,
+                    queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) : null,
+                    queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) : null,
+                  }}
                 />
               </div>
             )}
