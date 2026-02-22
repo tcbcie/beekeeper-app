@@ -495,9 +495,9 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                   {/* Horizontal bar */}
                   <div className="h-2 bg-amber-600 dark:bg-amber-700 rounded mx-2" />
                   {/* Cell cups hanging below */}
-                  <div className="flex gap-1 sm:gap-2 pt-1 px-2">
+                  <div className="flex justify-between pt-1 px-2">
                     {rowGrafts.map(graft => (
-                      <div key={graft.id} className="flex flex-col items-center" style={{ minWidth: '2.75rem' }}>
+                      <div key={graft.id} className="flex flex-col items-center flex-1 min-w-0">
                         {/* Connector line */}
                         <div className="w-0.5 h-2 bg-amber-600 dark:bg-amber-700" />
                         {/* Select checkbox above cup */}
