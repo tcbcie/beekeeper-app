@@ -1112,9 +1112,39 @@ export default function BatchesPage() {
                     </div>
                   </div>
                 </div>
-                {/* Auto-calculated total */}
-                <div className="text-sm text-text-secondary font-medium">
-                  Total Grafts: <span className="text-foreground">{formData.cell_count || '0'}</span>
+                {/* Total Grafts (auto-calculated but editable) */}
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Total Grafts</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.cell_count || '0')
+                        if (val > 0) setFormData({...formData, cell_count: (val - 1).toString()})
+                      }}
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      value={formData.cell_count}
+                      onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                      min="0"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.cell_count || '0')
+                        setFormData({...formData, cell_count: (val + 1).toString()})
+                      }}
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Grafts Accepted */}

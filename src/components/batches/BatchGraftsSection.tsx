@@ -372,11 +372,6 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = GRAFT_STATUSES.find(s => s.value === status)
-    return statusConfig?.color || 'bg-gray-100 text-gray-700'
-  }
-
   if (loading) {
     return <div className="text-sm text-text-secondary">Loading grafts...</div>
   }
