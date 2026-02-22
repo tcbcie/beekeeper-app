@@ -375,7 +375,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
   const yearOptions = [now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2]
 
   return (
-    <div className="mt-6 pt-6 border-t border-border">
+    <div>
       <h3 className="text-lg font-semibold text-foreground mb-4">NIHBS Monthly Returns</h3>
 
       {/* Selectors */}

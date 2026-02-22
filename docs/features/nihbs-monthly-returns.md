@@ -22,7 +22,7 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
 - Each mating apiary appears as a column in the monthly Excel sheets.
 
 ### NIHBS Monthly Returns Section
-- Located on the Profile page below the existing Monthly Rearing Report (owner-only).
+- Located on the Reports page (`/dashboard/reports`) as a conditional tab (visible to rearing group owners only).
 - Select a group and year to view data.
 - Auto-calculated metrics from batch data:
   - Grafting rounds (batch count)
@@ -51,10 +51,10 @@ Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is 
 
 **Monthly Sheets (one per active month)** — matches the official NIHBS template layout:
 - Row 1: Group name with red background (spanning all columns)
-- Row 3: "Data Checks" header (red bg, white text) + "Breakdown of quantities..." explanatory text with rich-text YELLOW highlight
-- Row 4: Numbered column headers #1–#20 (grey fill for unused apiary slots)
-- Row 5: "Total" label + apiary names (rotated 45°) or "N/A" with grey fill for unused slots
-- Row 7: Number of Grafting rounds this month (yellow fill for Total + per-apiary values, grey for unused)
+- Row 3: "Breakdown of quantities..." explanatory text with rich-text YELLOW highlight (merged across columns, minimum 10-column span for readability)
+- Row 4: "Data Checks" header (red bg, white text, 1.5× row height) + dynamically numbered column headers #1–#N matching actual apiary count
+- Row 5: "Total" label + apiary names (bold, rotated 45°)
+- Row 7: Number of Grafting rounds this month (yellow fill for Total + per-apiary values)
 - Row 9: Total number of cells grafted or cell cups transferred from Cupkit/Jenter boxes
 - Row 11: Number of Sealed queen cells achieved
 - Row 13: Number of queen cells hatched this month
@@ -65,6 +65,15 @@ Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is 
 - "Outside your group" section header
 - Row 24: Number of virgin queens distributed outside the group (total only + NB note in red)
 - Row 26: Number of virgin queens distributed outside the group that were successfully mated
+
+**Dynamic Column Behaviour:**
+- Apiary columns are generated dynamically based on the actual mating apiaries referenced by batches
+- No hardcoded 20-column layout — only columns for real apiaries are shown
+- Mating apiaries are derived automatically from `mating_apiary_id` on batch records (no separate management needed)
+
+**Error Handling:**
+- The `useNIHBSReport` hook exposes an `error` state for failed data fetches
+- Error messages are displayed inline in the UI when report loading fails
 
 ## Database Tables
 
@@ -96,7 +105,7 @@ Stores the manual-entry fields per group per month.
 | `src/hooks/useRearingGroups.ts` | Modified — added experience_level to member interface |
 | `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | NIHBS report UI + Excel export component |
 | `src/app/dashboard/batches/page.tsx` | Modified — mating apiary dropdown on batch form |
-| `src/app/dashboard/profile/page.tsx` | Modified — experience levels, mating apiaries, NIHBS component |
+| `src/app/dashboard/reports/page.tsx` | Modified — rearing report and NIHBS returns tabs (conditional on group ownership) |
 
 ## RLS Policies
 

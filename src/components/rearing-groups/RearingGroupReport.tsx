@@ -41,7 +41,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
   const yearOptions = [now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2]
 
   return (
-    <div className="mt-6 pt-6 border-t border-border">
+    <div>
       <h3 className="text-lg font-semibold text-foreground mb-4">Monthly Rearing Report</h3>
 
       {/* Selectors */}
@@ -79,7 +79,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
         </div>
-      ) : report && report.members.length > 0 && report.totals.batch_count > 0 ? (
+      ) : report && report.members.length > 0 ? (
         <>
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
@@ -94,9 +94,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                 </tr>
               </thead>
               <tbody>
-                {report.members
-                  .filter((m) => m.batch_count > 0)
-                  .map((member) => (
+                {report.members.map((member) => (
                     <tr key={member.user_id} className="border-b border-border">
                       <td className="py-2 px-3 text-foreground">{member.member_name}</td>
                       <td className="py-2 px-3 text-right text-foreground">{member.batch_count}</td>
@@ -118,9 +116,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
 
           {/* Mobile Card View */}
           <div className="md:hidden space-y-3">
-            {report.members
-              .filter((m) => m.batch_count > 0)
-              .map((member) => (
+            {report.members.map((member) => (
                 <div key={member.user_id} className="p-3 rounded-lg border border-border bg-surface">
                   <div className="font-medium text-foreground mb-2">{member.member_name}</div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
