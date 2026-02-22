@@ -424,15 +424,17 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       )}
 
       {/* Bulk Action Bar */}
-      {selectMode && selectedIds.size > 0 && (
+      {selectMode && (
         <div className="flex flex-wrap items-center gap-2 p-3 bg-forest-50 dark:bg-forest-950/30 rounded-lg border border-forest-200 dark:border-forest-800">
           <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
           <button type="button" onClick={selectAll} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
             Select All
           </button>
-          <button type="button" onClick={deselectAll} className="text-xs text-text-secondary hover:underline">
-            Deselect All
-          </button>
+          {selectedIds.size > 0 && (
+            <button type="button" onClick={deselectAll} className="text-xs text-text-secondary hover:underline">
+              Deselect All
+            </button>
+          )}
           <span className="text-border">|</span>
           <select
             onChange={(e) => { if (e.target.value) { handleBulkStatusChange(e.target.value); e.target.value = '' } }}
