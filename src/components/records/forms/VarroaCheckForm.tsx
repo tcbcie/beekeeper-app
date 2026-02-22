@@ -11,6 +11,7 @@ interface VarroaCheckFormProps {
   hives: Hive[]
   apiaries: Apiary[]
   checkMethodOptions: string[]
+  existingChecks: VarroaCheck[]
   userHasActiveSubscription: boolean
   onSubmit: (check: VarroaCheck, imageFile: File | null) => Promise<void>
   onCancel: () => void
@@ -22,6 +23,7 @@ export default function VarroaCheckForm({
   hives,
   apiaries,
   checkMethodOptions,
+  existingChecks,
   userHasActiveSubscription,
   onSubmit,
   onCancel,
@@ -118,6 +120,35 @@ export default function VarroaCheckForm({
 
     return { infestationRate, actionThreshold }
   }, [])
+
+  // Auto-populate Days from last check with same method for the selected hive (new checks only)
+  useEffect(() => {
+    if (check?.id || !formData.hive_id || !isNaturalDrop) return
+
+    const lastCheck = existingChecks
+      .filter(c => c.hive_id === formData.hive_id && c.method === formData.method)
+      .sort((a, b) => new Date(b.check_date).getTime() - new Date(a.check_date).getTime())[0]
+
+    if (!lastCheck) return
+
+    const currentDate = new Date(formData.check_date)
+    const lastDate = new Date(lastCheck.check_date)
+    const diffDays = Math.round((currentDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays > 0) {
+      setFormData(prev => {
+        const { infestationRate, actionThreshold } = calculateRateAndThreshold(
+          prev.mites_count, diffDays, prev.method, prev.check_date
+        )
+        return {
+          ...prev,
+          sample_size: diffDays,
+          infestation_rate: infestationRate,
+          action_threshold_reached: actionThreshold
+        }
+      })
+    }
+  }, [check?.id, formData.hive_id, formData.method, formData.check_date, isNaturalDrop, existingChecks, calculateRateAndThreshold])
 
   const handleMitesChange = (value: string) => {
     const mitesCount = value ? parseInt(value) : null
