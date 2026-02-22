@@ -62,7 +62,7 @@ Sub-pages are **not** in the sidebar. They are accessed from the Profile page vi
 |---|---|---|
 | Scales | — | `profiles` (beep/wolf token fields) |
 | Apiary Team | — | `teams`, `team_members`, `team_invitations`, `team_apiaries`, `apiaries` |
-| Rearing Team | `useRearingGroups`, `RearingGroupReport`, `NIHBSMonthlyReturn` | `rearing_groups`, `rearing_group_members`, `rearing_group_invitations`, `rearing_group_mating_apiaries` |
+| Rearing Team | `useRearingGroups`, `RearingGroupReport`, `NIHBSMonthlyReturn` | `rearing_groups`, `rearing_group_members`, `rearing_group_invitations` |
 | Profile | `SubscriptionStatusCard`, `RenewSubscriptionModal`, `SubscriptionHistoryTable`, `ThemeSwitcher` | `profiles`, `associations` |
 | Dashboard | `useRearingGroups`, `useTeams` | (read-only summaries) |
 

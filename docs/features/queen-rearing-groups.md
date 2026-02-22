@@ -9,7 +9,7 @@ This feature is **separate from the existing team system** — teams handle apia
 ## How It Works
 
 ### Group Management
-- Any user can **create a rearing group** from the Profile page
+- Any user can **create a rearing group** from the Rearing Team page
 - The creator becomes the group **owner** and is automatically added as a member
 - The owner can **invite members** via email (same flow as team invitations)
 - The owner can **rename** or **delete** the group
@@ -27,6 +27,7 @@ This feature is **separate from the existing team system** — teams handle apia
 - Available only to group **owners**
 - Select a group, month, and year to generate a report
 - The report aggregates data from all members' `rearing_batches` where `graft_date` falls within the selected month
+- The report **always renders** for the selected month, even if all values are zero — all members are listed with their counts
 - Shows per-member breakdown and group totals for:
   - Number of batches
   - Grafts accepted
@@ -54,7 +55,7 @@ This feature is **separate from the existing team system** — teams handle apia
 
 ### Tables
 - `rearing_groups` — group name + owner
-- `rearing_group_members` — membership records (group_id, user_id, role)
+- `rearing_group_members` — membership records (group_id, user_id, role, experience_level)
 - `rearing_group_invitations` — invitation records with status tracking
 
 ### Helper Functions
@@ -71,12 +72,12 @@ This feature is **separate from the existing team system** — teams handle apia
 
 | File | Description |
 |------|-------------|
-| `src/hooks/useRearingGroups.ts` | Group CRUD, member/invitation management |
+| `src/hooks/useRearingGroups.ts` | Group CRUD, member/invitation management, experience level |
 | `src/hooks/useRearingGroupReport.ts` | Monthly report data aggregation |
 | `src/components/rearing-groups/RearingGroupReport.tsx` | Report UI component |
 | `src/app/accept-rearing-group-invitation/page.tsx` | Accept invitation page |
 | `src/app/decline-rearing-group-invitation/page.tsx` | Decline invitation page |
-| `src/app/dashboard/profile/page.tsx` | Profile page (rearing groups section added) |
+| `src/app/dashboard/rearing-team/page.tsx` | Rearing Team page (group management, members, experience levels) |
 
 ### Edge Functions
 - `send-rearing-group-invitation` — sends invitation email via Resend
@@ -84,4 +85,15 @@ This feature is **separate from the existing team system** — teams handle apia
 
 ## Location in UI
 
-The **Queen Rearing Groups** section appears on the Profile page between **Team Management** and **Data Export**.
+The **Queen Rearing Groups** section is on the dedicated **Rearing Team** page (`/dashboard/rearing-team`).
+
+### Owner View ("My Rearing Groups")
+- Group cards with View Members, Invite, Rename, Transfer, and Delete buttons
+- Expanded member list with experience level dropdown for all members (including the owner)
+- Info tooltip (help icon) explaining the three experience levels
+- Pending, accepted, and declined invitation lists
+
+### Member View ("Groups I'm In")
+- Group card with Leave Group button
+- "My Experience Level" self-declaration dropdown
+- Info tooltip (help icon) explaining the three experience levels
