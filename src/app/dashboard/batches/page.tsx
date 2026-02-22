@@ -46,6 +46,7 @@ interface Batch {
   grafts_accepted: number | null
   queens_hatched: number | null
   queens_mated: number | null
+  queens_hybridised: number | null
   acceptance_check_date: string | null
   first_option_to_cage_date: string | null
   second_option_to_cage_date: string | null
@@ -78,6 +79,7 @@ interface FormData {
   grafts_accepted: string
   queens_hatched: string
   queens_mated: string
+  queens_hybridised: string
   acceptance_check_date: string
   first_option_to_cage_date: string
   second_option_to_cage_date: string
@@ -135,10 +137,26 @@ interface HiveScore {
   score: number
 }
 
+// Get short day name (Mon, Tue, etc.) from a date string
+const getDayName = (dateString: string): string => {
+  if (!dateString) return ''
+  const date = new Date(dateString + 'T00:00:00')
+  if (isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-GB', { weekday: 'short' })
+}
+
+// Format a local Date object to YYYY-MM-DD string without timezone shift
+const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Format date to Irish format (DD/MM/YYYY)
 const formatDateIrish = (dateString: string | null): string => {
   if (!dateString) return '-'
-  const date = new Date(dateString)
+  const date = new Date(dateString + 'T00:00:00')
   const day = date.getDate().toString().padStart(2, '0')
   const month = (date.getMonth() + 1).toString().padStart(2, '0')
   const year = date.getFullYear()
@@ -190,11 +208,12 @@ export default function BatchesPage() {
     mother_queen_id: '',
     starter_apiary_id: '',
     starter_colony_hive_id: '',
-    graft_date: new Date().toISOString().split('T')[0],
+    graft_date: toLocalDateString(new Date()),
     cell_count: '',
     grafts_accepted: '',
     queens_hatched: '',
     queens_mated: '',
+    queens_hybridised: '',
     acceptance_check_date: '',
     first_option_to_cage_date: '',
     second_option_to_cage_date: '',
@@ -218,13 +237,17 @@ export default function BatchesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('rearing_batches')
       .select('*, queens!mother_queen_id(queen_number), hives!starter_colony_hive_id(hive_number, apiaries(name))')
       .eq('user_id', currentUserId)
       .order('graft_date', { ascending: false })
 
-    if (data) setBatches(data)
+    if (error) {
+      console.error('Error fetching batches:', error)
+    } else if (data) {
+      setBatches(data)
+    }
     setLoading(false)
   }, [userId])
 
@@ -363,81 +386,48 @@ export default function BatchesPage() {
     }
   }, [formData.starter_apiary_id, hives])
 
-  // Auto-calculate acceptance check date (graft_date + 1 day)
+  // Auto-calculate all timeline dates from graft_date
   useEffect(() => {
-    if (formData.graft_date) {
-      const graftDate = new Date(formData.graft_date)
-      const acceptanceDate = new Date(graftDate)
-      acceptanceDate.setDate(acceptanceDate.getDate() + 1)
-      const calculatedDate = acceptanceDate.toISOString().split('T')[0]
+    if (!formData.graft_date) return
 
-      // Only update if the calculated date is different from current acceptance_check_date
-      // This prevents infinite loops
-      if (formData.acceptance_check_date !== calculatedDate && !editingBatch) {
-        setFormData(prev => ({
-          ...prev,
-          acceptance_check_date: calculatedDate
-        }))
-      }
+    const graft = new Date(formData.graft_date + 'T00:00:00')
+
+    const addDays = (d: Date, days: number): string => {
+      const result = new Date(d)
+      result.setDate(result.getDate() + days)
+      return toLocalDateString(result)
     }
-  }, [formData.graft_date, formData.acceptance_check_date, editingBatch])
 
-  // Auto-calculate first option to cage date (graft_date + 5 days)
-  useEffect(() => {
-    if (formData.graft_date) {
-      const graftDate = new Date(formData.graft_date)
-      const cageDate = new Date(graftDate)
-      cageDate.setDate(cageDate.getDate() + 5)
-      const calculatedDate = cageDate.toISOString().split('T')[0]
+    const acceptance = addDays(graft, 1)
+    const firstCage = addDays(graft, 5)
+    const secondCage = addDays(graft, 10)
+    const emergence = addDays(graft, 12)
 
-      if (formData.first_option_to_cage_date !== calculatedDate && !editingBatch) {
-        setFormData(prev => ({
-          ...prev,
-          first_option_to_cage_date: calculatedDate
-        }))
-      }
+    // Only update if any date differs to prevent unnecessary re-renders
+    if (
+      formData.acceptance_check_date !== acceptance ||
+      formData.first_option_to_cage_date !== firstCage ||
+      formData.second_option_to_cage_date !== secondCage ||
+      formData.emergence_date !== emergence
+    ) {
+      setFormData(prev => ({
+        ...prev,
+        acceptance_check_date: acceptance,
+        first_option_to_cage_date: firstCage,
+        second_option_to_cage_date: secondCage,
+        emergence_date: emergence,
+      }))
     }
-  }, [formData.graft_date, formData.first_option_to_cage_date, editingBatch])
-
-  // Auto-calculate second option to cage date (graft_date + 10 days)
-  useEffect(() => {
-    if (formData.graft_date) {
-      const graftDate = new Date(formData.graft_date)
-      const cageDate = new Date(graftDate)
-      cageDate.setDate(cageDate.getDate() + 10)
-      const calculatedDate = cageDate.toISOString().split('T')[0]
-
-      if (formData.second_option_to_cage_date !== calculatedDate && !editingBatch) {
-        setFormData(prev => ({
-          ...prev,
-          second_option_to_cage_date: calculatedDate
-        }))
-      }
-    }
-  }, [formData.graft_date, formData.second_option_to_cage_date, editingBatch])
-
-  // Auto-calculate emergence date (graft_date + 12 days)
-  useEffect(() => {
-    if (formData.graft_date) {
-      const graftDate = new Date(formData.graft_date)
-      const emergenceDate = new Date(graftDate)
-      emergenceDate.setDate(emergenceDate.getDate() + 12)
-      const calculatedDate = emergenceDate.toISOString().split('T')[0]
-
-      // Only update if the calculated date is different from current emergence_date
-      // This prevents infinite loops
-      if (formData.emergence_date !== calculatedDate && !editingBatch) {
-        setFormData(prev => ({
-          ...prev,
-          emergence_date: calculatedDate
-        }))
-      }
-    }
-  }, [formData.graft_date, formData.emergence_date, editingBatch])
+  }, [formData.graft_date, formData.acceptance_check_date, formData.first_option_to_cage_date, formData.second_option_to_cage_date, formData.emergence_date])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
+
+    if (isGroupBatch && !formData.mating_apiary_id) {
+      toast.error('Mating Location (Apiary) is required for group batches.')
+      return
+    }
 
     try {
       const dataToSubmit = {
@@ -445,10 +435,11 @@ export default function BatchesPage() {
         mother_queen_id: formData.mother_queen_id || null,
         starter_colony_hive_id: formData.starter_colony_hive_id || null,
         graft_date: formData.graft_date,
-        cell_count: formData.cell_count ? parseInt(formData.cell_count) : null,
-        grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted) : null,
-        queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched) : null,
-        queens_mated: formData.queens_mated ? parseInt(formData.queens_mated) : null,
+        cell_count: formData.cell_count ? parseInt(formData.cell_count, 10) || null : null,
+        grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted, 10) || null : null,
+        queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) || null : null,
+        queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) || null : null,
+        queens_hybridised: formData.queens_hybridised ? parseInt(formData.queens_hybridised, 10) || null : null,
         acceptance_check_date: formData.acceptance_check_date || null,
         first_option_to_cage_date: formData.first_option_to_cage_date || null,
         second_option_to_cage_date: formData.second_option_to_cage_date || null,
@@ -459,7 +450,7 @@ export default function BatchesPage() {
         enable_browser_notifications: formData.enable_browser_notifications,
         enable_email_digest: formData.enable_email_digest,
         enable_batch_event_reminders: formData.enable_batch_event_reminders,
-        batch_reminder_minutes_before: formData.batch_reminder_minutes_before ? parseInt(formData.batch_reminder_minutes_before) : 60,
+        batch_reminder_minutes_before: formData.batch_reminder_minutes_before ? parseInt(formData.batch_reminder_minutes_before, 10) || 60 : 60,
       }
 
       if (editingBatch) {
@@ -500,6 +491,7 @@ export default function BatchesPage() {
       grafts_accepted: batch.grafts_accepted?.toString() || '',
       queens_hatched: batch.queens_hatched?.toString() || '',
       queens_mated: batch.queens_mated?.toString() || '',
+      queens_hybridised: batch.queens_hybridised?.toString() || '',
       acceptance_check_date: batch.acceptance_check_date || '',
       first_option_to_cage_date: batch.first_option_to_cage_date || '',
       second_option_to_cage_date: batch.second_option_to_cage_date || '',
@@ -703,11 +695,12 @@ export default function BatchesPage() {
       mother_queen_id: '',
       starter_apiary_id: '',
       starter_colony_hive_id: '',
-      graft_date: new Date().toISOString().split('T')[0],
+      graft_date: toLocalDateString(new Date()),
       cell_count: '',
       grafts_accepted: '',
       queens_hatched: '',
       queens_mated: '',
+      queens_hybridised: '',
       acceptance_check_date: '',
       first_option_to_cage_date: '',
       second_option_to_cage_date: '',
@@ -840,6 +833,7 @@ export default function BatchesPage() {
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                     required
                   />
+                  {formData.graft_date && <p className="text-xs text-text-tertiary mt-1">{getDayName(formData.graft_date)}</p>}
                 </div>
 
                 <div>
@@ -850,7 +844,7 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-text-tertiary mt-1">Graft + 1 day</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 1 day{formData.acceptance_check_date ? ` · ${getDayName(formData.acceptance_check_date)}` : ''}</p>
                 </div>
 
                 <div>
@@ -861,7 +855,7 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, first_option_to_cage_date: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-text-tertiary mt-1">Graft + 5 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 5 days{formData.first_option_to_cage_date ? ` · ${getDayName(formData.first_option_to_cage_date)}` : ''}</p>
                 </div>
 
                 <div>
@@ -872,7 +866,7 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, second_option_to_cage_date: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-text-tertiary mt-1">Graft + 10 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 10 days{formData.second_option_to_cage_date ? ` · ${getDayName(formData.second_option_to_cage_date)}` : ''}</p>
                 </div>
 
                 <div>
@@ -891,7 +885,7 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   />
-                  <p className="text-xs text-text-tertiary mt-1">Graft + 12 days</p>
+                  <p className="text-xs text-text-tertiary mt-1">Graft + 12 days{formData.emergence_date ? ` · ${getDayName(formData.emergence_date)}` : ''}</p>
                 </div>
               </div>
             </div>
@@ -991,12 +985,13 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, mating_apiary_id: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   >
-                    <option value="">Select mating location (optional)</option>
+                    <option value="">{isGroupBatch ? 'Select mating location (required)' : 'Select mating location (optional)'}</option>
                     {apiaries.map((apiary) => (
                       <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-text-tertiary mt-1">Where queens go for mating (used in NIHBS reports)</p>
+                  <p className="text-xs text-text-tertiary mt-1">If your mating location (apiary) is not listed, please set one up in the Apiary section.</p>
+                  <p className="text-xs text-text-tertiary mt-1">This is the intended mating location and will be used as the default for the NIHBS report unless the location is overwritten by the [placeholder].</p>
                 </div>
               </div>
             )}
@@ -1137,6 +1132,41 @@ export default function BatchesPage() {
                       onClick={() => {
                         const val = parseInt(formData.queens_mated || '0')
                         setFormData({...formData, queens_mated: (val + 1).toString()})
+                      }}
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Queens Showing Hybridised Offspring */}
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Showing Hybridised Offspring</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.queens_hybridised || '0')
+                        if (val > 0) setFormData({...formData, queens_hybridised: (val - 1).toString()})
+                      }}
+                      className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      value={formData.queens_hybridised}
+                      onChange={(e) => setFormData({...formData, queens_hybridised: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+                      min="0"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = parseInt(formData.queens_hybridised || '0')
+                        setFormData({...formData, queens_hybridised: (val + 1).toString()})
                       }}
                       className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground hover:bg-sage-50 dark:hover:bg-slate-700"
                     >

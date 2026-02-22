@@ -23,7 +23,7 @@ The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stay
 **`rearing_batches`** — batch lifecycle
 - `id`, `user_id`, `batch_name`, `graft_date`
 - `mother_queen_id` (FK → queens), `starter_colony_hive_id` (FK → hives)
-- `cell_count`, `grafts_accepted`, `queens_hatched`, `queens_mated`
+- `cell_count`, `grafts_accepted`, `queens_hatched`, `queens_mated`, `queens_hybridised`
 - Auto-calculated dates: `acceptance_check_date` (+1d), `first_option_to_cage_date` (+5d), `second_option_to_cage_date` (+10d), `emergence_date` (+12d)
 - Notification flags: `enable_browser_notifications`, `enable_email_digest`, `enable_batch_event_reminders`, `batch_reminder_minutes_before`
 - `status`, `notes`, `created_by`, `created_at`, `updated_at`
@@ -99,7 +99,7 @@ Queen Record (queen_number, lineage, batch_id)
 - Batch CRUD form with auto-calculated timeline dates from graft date
 - Breeder queen dropdown (active queens only)
 - Starter colony picker (apiary → hive cascade)
-- Quantity counters with increment/decrement: grafts, accepted, hatched, mated
+- Quantity counters with increment/decrement: grafts, accepted, hatched, mated, hybridised offspring
 - Notification preferences (browser, email digest, event reminders)
 - Integrates `BatchGraftsSection` for existing batches
 - Mobile card view / desktop table view
@@ -252,6 +252,29 @@ Component-level interfaces in `batches/page.tsx`:
 | `supabase/functions/weekly-email-digest/index.ts` | Weekly email digest edge function |
 | `supabase/functions/task-event-reminders/index.ts` | Event reminder edge function |
 | `docs/features/mating-nucs.md` | Mating nucs feature documentation |
+
+---
+
+## NIHBS Report — Month Attribution Logic
+
+The NIHBS monthly report (`useNIHBSReport` hook) attributes batch metrics to the calendar month when the event actually occurred, not blindly to the graft month.
+
+| Metric | Attributed to month of | Date source |
+|--------|----------------------|-------------|
+| `batch_count` | Grafting | `graft_date` |
+| `cell_count` | Grafting | `graft_date` |
+| `grafts_accepted` | Grafting | `graft_date` |
+| `queens_hatched` | Emergence | `emergence_date` (fallback: `graft_date` + 12 days) |
+| `queens_mated` | Emergence | `emergence_date` (fallback: `graft_date` + 12 days) |
+| `queens_hybridised` | Emergence | `emergence_date` (fallback: `graft_date` + 12 days) |
+
+**Example:** A batch grafted on 24-Jan-2026 has an emergence date of 05-Feb-2026. Grafts and cells appear in the January report; hatched, mated, and hybridised queens appear in the February report.
+
+A single batch may therefore contribute data to two different monthly buckets. Per-apiary breakdowns follow the same split.
+
+**Year boundary handling:** If a batch's emergence date falls in the following year (e.g. graft in December, emergence in January), the post-emergence metrics are excluded from the current year's report to prevent misattribution. They will need to be accounted for in the next year's report.
+
+> **Temporary:** `queens_mated` and `queens_hybridised` currently use the emergence date month as a proxy because there is no explicit mating or hybridisation date stored on the batch. This needs to be revisited — ideally these should be attributed to the month when mating was actually confirmed or when hybridised offspring were observed.
 
 ---
 

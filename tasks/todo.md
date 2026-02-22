@@ -1,49 +1,28 @@
-# Move Rearing Reports to Main Reports Page
+# NIHBS Report: Attribute Batch Metrics to Correct Calendar Month
 
 ## Tasks
 
-- [x] 1. Add rearing report tabs to Reports page (`src/app/dashboard/reports/page.tsx`)
-  - Import `RearingGroupReport`, `NIHBSMonthlyReturn`, `useRearingGroups`, and `Crown` icon
-  - Expand `ReportSection` type with `'rearing-report'` and `'nihbs-returns'`
-  - Call `fetchRearingGroups(userId)` in the existing user init `useEffect`
-  - Conditionally add tabs to `sections` array when `ownedRearingGroups.length > 0`
-  - Add URL param validation for the new section values
-  - Render the two components when their tab is active
-
-- [x] 2. Remove report sections from rearing-team page (`src/app/dashboard/rearing-team/page.tsx`)
-  - Remove the `RearingGroupReport` and `NIHBSMonthlyReturn` rendering blocks (lines ~840-848)
-  - Remove their imports (lines 9-10)
-
-- [x] 3. Update docs (`docs/features/nihbs-monthly-returns.md`)
-  - Update location reference from rearing-team to reports page
-
-## Code Audit
-
-### HIGH — Orphaned tab state via URL deep-link (Fixed)
-- Non-owner navigating to `?section=rearing-report` would see blank content panel with no tab highlighted
-- Fixed with `effectiveSection` derived value that falls back to `'dafm-varroa'` when rearing tabs are unavailable
-
-### MEDIUM — Vestigial border-t styling (Fixed)
-- Both `RearingGroupReport` and `NIHBSMonthlyReturn` had `mt-6 pt-6 border-t` from when they sat below group management UI
-- Removed — they now render standalone inside the report content card which provides its own padding
+- [x] 1. Add `emergence_date` to the Supabase select query in useNIHBSReport.ts
+- [x] 2. Refactor the batch loop: split metrics across two months — graft metrics go to graft month, post-emergence metrics go to emergence month (including per-apiary data)
+- [x] 3. Update feature docs with month attribution logic (noted queens_mated/hybridised as temporary)
 
 ## Review
 
 ### Summary
-Moved the Monthly Rearing Report and NIHBS Monthly Returns from the Rearing Team page to the main Reports page as conditional tabs. Tabs only appear for users who own a rearing group. Hardened with `effectiveSection` fallback for edge cases.
+The NIHBS report now attributes batch metrics to the correct calendar month based on when the event actually occurred, rather than lumping everything into the graft date month.
 
 ### Changes Made
 
 | File | Change |
 |------|--------|
-| `src/app/dashboard/reports/page.tsx` | Added imports, `useRearingGroups` hook, two conditional tabs, `effectiveSection` fallback, URL param validation, and component rendering |
-| `src/app/dashboard/rearing-team/page.tsx` | Removed `RearingGroupReport` and `NIHBSMonthlyReturn` imports and rendering blocks |
-| `src/components/rearing-groups/RearingGroupReport.tsx` | Removed vestigial `mt-6 pt-6 border-t border-border` wrapper styling |
-| `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | Removed vestigial `mt-6 pt-6 border-t border-border` wrapper styling |
-| `docs/features/nihbs-monthly-returns.md` | Updated location reference to Reports page |
+| `src/hooks/useNIHBSReport.ts` | Added `emergence_date` to select query |
+| `src/hooks/useNIHBSReport.ts` | Replaced monolithic batch loop with split logic: graft metrics (batch_count, cell_count, grafts_accepted) → graft_date month; post-emergence metrics (queens_hatched, queens_mated, queens_hybridised) → emergence_date month |
+| `src/hooks/useNIHBSReport.ts` | Added helper functions `getMonth`, `getApiary`, `getEmergenceMonth` to cleanly manage month bucket creation and emergence date fallback |
+| `docs/features/queen-rearing.md` | Added "NIHBS Report — Month Attribution Logic" section with table and temporary note |
 
 ### Notes
-- No data logic changes — components receive the same props as before
-- Tabs are conditionally rendered using spread operator on the sections array
-- Non-owners see no change to their Reports page
-- `effectiveSection` prevents blank content panel from orphaned URL params or async race conditions
+- A single batch may now contribute data to two different monthly buckets (e.g. Jan grafts, Feb hatched)
+- If `emergence_date` is null, falls back to `graft_date + 12 days`
+- Per-apiary breakdowns follow the same month split
+- **Temporary:** queens_mated and queens_hybridised use emergence month as a proxy — documented for future revisiting when explicit dates are available
+- 1 code file changed, 1 doc file updated
