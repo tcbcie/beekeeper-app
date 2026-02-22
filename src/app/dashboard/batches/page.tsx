@@ -232,12 +232,32 @@ export default function BatchesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    const { data } = await supabase
-      .from('apiaries')
-      .select('id, name')
+    // Fetch team memberships to include shared apiaries
+    const { data: teamMemberships } = await supabase
+      .from('team_members')
+      .select('team_id')
       .eq('user_id', currentUserId)
-      .order('name')
 
+    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+
+    let sharedApiaryIds: string[] = []
+    if (teamIds.length > 0) {
+      const { data: sharedApiaries } = await supabase
+        .from('team_apiaries')
+        .select('apiary_id')
+        .in('team_id', teamIds)
+
+      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
+    }
+
+    let query = supabase.from('apiaries').select('id, name')
+    if (sharedApiaryIds.length > 0) {
+      query = query.or(`user_id.eq.${currentUserId},id.in.(${sharedApiaryIds.join(',')})`)
+    } else {
+      query = query.eq('user_id', currentUserId)
+    }
+
+    const { data } = await query.order('name')
     if (data) setApiaries(data)
   }, [userId])
 
@@ -960,10 +980,10 @@ export default function BatchesPage() {
               </div>
             )}
 
-            {/* Mating Apiary - shown when group batch toggle is ON, or always if not in any group */}
+            {/* Mating Location (Apiary) - shown when group batch toggle is ON, or always if not in any group */}
             {(isGroupBatch || !isInRearingGroup) && (
               <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
-                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">Mating Apiary</h4>
+                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">Mating Location (Apiary)</h4>
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
                   <select
@@ -971,7 +991,7 @@ export default function BatchesPage() {
                     onChange={(e) => setFormData({...formData, mating_apiary_id: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                   >
-                    <option value="">Select mating apiary (optional)</option>
+                    <option value="">Select mating location (optional)</option>
                     {apiaries.map((apiary) => (
                       <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
                     ))}
@@ -1307,6 +1327,7 @@ export default function BatchesPage() {
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-sage-50 dark:bg-slate-800">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Actions</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Batch Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Breeder Queen</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Graft Date</th>
@@ -1315,20 +1336,11 @@ export default function BatchesPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hatched</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Mated</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Acceptance Check</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-surface dark:bg-surface divide-y divide-border">
             {batches.map((batch: Batch) => (
               <tr key={batch.id} className="hover:bg-sage-50 dark:hover:bg-slate-800">
-                <td className="px-6 py-4 whitespace-nowrap font-medium">{batch.batch_name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.acceptance_check_date)}</td>
                 <td className="px-6 py-4 whitespace-nowrap flex gap-2">
                   <button onClick={() => handleEdit(batch)} className="text-blue-600 hover:text-blue-900">
                     <Edit2 size={16} />
@@ -1337,6 +1349,14 @@ export default function BatchesPage() {
                     <Trash2 size={16} />
                   </button>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap font-medium">{batch.batch_name}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.acceptance_check_date)}</td>
               </tr>
             ))}
           </tbody>

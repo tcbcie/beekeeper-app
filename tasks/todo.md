@@ -1,46 +1,49 @@
-# NIHBS Monthly Excel Export — Match Official Template
+# Move Rearing Reports to Main Reports Page
 
-## Problem
-The monthly sheet in the NIHBS Excel export didn't match the official NIHBS template. The current output was a simple table with minimal formatting, but the template has specific formatting, layout, section headers, and styling.
+## Tasks
 
-## Plan
+- [x] 1. Add rearing report tabs to Reports page (`src/app/dashboard/reports/page.tsx`)
+  - Import `RearingGroupReport`, `NIHBSMonthlyReturn`, `useRearingGroups`, and `Crown` icon
+  - Expand `ReportSection` type with `'rearing-report'` and `'nihbs-returns'`
+  - Call `fetchRearingGroups(userId)` in the existing user init `useEffect`
+  - Conditionally add tabs to `sections` array when `ownedRearingGroups.length > 0`
+  - Add URL param validation for the new section values
+  - Render the two components when their tab is active
 
-### Monthly Sheet Layout Changes
-- [x] **1. Add Group Name row** — Row 1: "Group Name" label + group name with red background
-- [x] **2. Add "Data Checks" header** — Red-background header block with white text in row 3
-- [x] **3. Add "Breakdown of quantities..." header** — Rich text with YELLOW highlighted, merged across columns
-- [x] **4. Add #1–#20 numbered column headers** — Show all 20 apiary slots with grey fill for unused
-- [x] **5. Add rotated apiary names** — Apiary names at 45° angle, N/A with grey for unused slots
-- [x] **6. Use full metric labels** — Matched the template's longer, more descriptive labels
-- [x] **7. Add yellow highlighting** — Yellow fill on all data value cells (Total + per-apiary)
-- [x] **8. Add grey fill for unused columns** — Grey out N/A apiary columns in data rows
-- [x] **9. Add "Within your group" section header** — Before queens mated and hybridised rows
-- [x] **10. Add "Outside your group" section header** — Before virgin queens distributed rows
-- [x] **11. Add per-apiary breakdown for queens mated** — Yellow cells for each apiary column
-- [x] **12. Add note about hatching** — Red bold italic note below queen cells hatched row
-- [x] **13. Add explanatory notes** — Hybridised offspring note + NB note for virgin queens
+- [x] 2. Remove report sections from rearing-team page (`src/app/dashboard/rearing-team/page.tsx`)
+  - Remove the `RearingGroupReport` and `NIHBSMonthlyReturn` rendering blocks (lines ~840-848)
+  - Remove their imports (lines 9-10)
 
-### Documentation
-- [x] **14. Update docs/features/nihbs-monthly-returns.md** — Documented the new monthly sheet layout
+- [x] 3. Update docs (`docs/features/nihbs-monthly-returns.md`)
+  - Update location reference from rearing-team to reports page
+
+## Code Audit
+
+### HIGH — Orphaned tab state via URL deep-link (Fixed)
+- Non-owner navigating to `?section=rearing-report` would see blank content panel with no tab highlighted
+- Fixed with `effectiveSection` derived value that falls back to `'dafm-varroa'` when rearing tabs are unavailable
+
+### MEDIUM — Vestigial border-t styling (Fixed)
+- Both `RearingGroupReport` and `NIHBSMonthlyReturn` had `mt-6 pt-6 border-t` from when they sat below group management UI
+- Removed — they now render standalone inside the report content card which provides its own padding
 
 ## Review
 
 ### Summary
-Reworked the monthly sheet generation in the NIHBS Excel export to closely match the official NIHBS template. All changes were confined to the Excel export code — no data logic changes, no UI changes, no database changes.
+Moved the Monthly Rearing Report and NIHBS Monthly Returns from the Rearing Team page to the main Reports page as conditional tabs. Tabs only appear for users who own a rearing group. Hardened with `effectiveSection` fallback for edge cases.
 
-### Key Changes
-- Monthly sheets now have 22 columns (Label + Total + 20 apiary slots) instead of dynamic columns
-- Added proper header section with Group Name (red bg), Data Checks box (red bg, white text), breakdown instructions with rich text
-- All 20 apiary slots shown with numbered headers, rotated names, and N/A/grey for unused
-- Data cells use yellow fill for values, grey fill for unused apiary columns
-- Added "Within your group" and "Outside your group" section headers
-- Added hatching note in red bold italic matching template
-- Added explanatory notes alongside hybridised offspring and virgin queens rows
-- Updated metric labels to match template exactly
-
-### Files Changed
+### Changes Made
 
 | File | Change |
 |------|--------|
-| `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | Replaced monthly sheet Excel generation with template-matching layout |
-| `docs/features/nihbs-monthly-returns.md` | Updated monthly sheet documentation |
+| `src/app/dashboard/reports/page.tsx` | Added imports, `useRearingGroups` hook, two conditional tabs, `effectiveSection` fallback, URL param validation, and component rendering |
+| `src/app/dashboard/rearing-team/page.tsx` | Removed `RearingGroupReport` and `NIHBSMonthlyReturn` imports and rendering blocks |
+| `src/components/rearing-groups/RearingGroupReport.tsx` | Removed vestigial `mt-6 pt-6 border-t border-border` wrapper styling |
+| `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | Removed vestigial `mt-6 pt-6 border-t border-border` wrapper styling |
+| `docs/features/nihbs-monthly-returns.md` | Updated location reference to Reports page |
+
+### Notes
+- No data logic changes — components receive the same props as before
+- Tabs are conditionally rendered using spread operator on the sections array
+- Non-owners see no change to their Reports page
+- `effectiveSection` prevents blank content panel from orphaned URL params or async race conditions
