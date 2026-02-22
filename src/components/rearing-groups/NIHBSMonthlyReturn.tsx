@@ -110,7 +110,6 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
 
       const yellowFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFFFF00' } }
       const redFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFF0000' } }
-      const greyFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFC0C0C0' } }
       const thinBorder = {
         top: { style: 'thin' as const }, bottom: { style: 'thin' as const },
         left: { style: 'thin' as const }, right: { style: 'thin' as const },
