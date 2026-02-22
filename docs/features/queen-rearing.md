@@ -33,6 +33,11 @@ The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stay
 - `cell_number` (UNIQUE per batch), `status`, `notes`
 - Status values: `grafted` → `accepted` → `caged` → `emerged` → `in_nuc` → `mated` | `failed` | `sold`
 
+**`graft_distributions`** — distribution tracking (see [batch-distributions.md](./batch-distributions.md))
+- One distribution per graft (UNIQUE on graft_id)
+- Records recipient, type, destination apiary/hive, mating confirmation
+- Auto-populates NIHBS report external distribution counts
+
 **`mating_nucs`** — mating nucleus colonies
 - `id`, `user_id`, `nuc_number`
 - `graft_id` (FK → batch_grafts, SET NULL), `batch_id` (FK, SET NULL), `queen_id` (FK, SET NULL)
@@ -239,8 +244,10 @@ Component-level interfaces in `batches/page.tsx`:
 | `src/app/dashboard/batches/page.tsx` | Main batches page (Planning, Nucs, Selection tabs) |
 | `src/app/dashboard/queens/page.tsx` | Queens list with CRUD and CSV export |
 | `src/app/dashboard/queens/[id]/page.tsx` | Queen detail with lineage and sightings |
-| `src/components/batches/BatchGraftsSection.tsx` | Individual graft management grid |
-| `src/components/batches/MatingNucsTab.tsx` | Mating nuc CRUD with retirement system |
+| `src/components/batches/BatchGraftsSection.tsx` | Individual graft management grid + distribution list |
+| `src/components/batches/MatingNucsTab.tsx` | Mating nuc CRUD with retirement system + distribute button |
+| `src/components/batches/DistributeGraftModal.tsx` | Distribution form modal |
+| `src/hooks/useGraftDistributions.ts` | Distribution CRUD hook + search functions |
 | `src/components/batches/NucInspectionPanel.tsx` | Expandable nuc inspection management |
 | `src/components/batches/NucInspectionCard.tsx` | Single nuc inspection card display |
 | `src/components/QueenLineageTree.tsx` | Multi-generation family tree visualisation |
@@ -281,3 +288,4 @@ A single batch may therefore contribute data to two different monthly buckets. P
 ## Related Documentation
 
 - [Mating Nucs](./mating-nucs.md) — detailed mating nuc feature docs with schema DDL and verification checklist
+- [Batch Distributions](./batch-distributions.md) — distribution tracking for grafts with NIHBS report integration

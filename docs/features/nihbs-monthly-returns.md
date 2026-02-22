@@ -32,8 +32,12 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
   - Queens mated within group
 - Manual-entry fields (saved per month):
   - Hybridised offspring
-  - Virgin queens distributed outside group
-  - Virgins distributed outside — successfully mated
+  - Virgin queens distributed outside group (auto-calculated from distribution records)
+  - Virgins distributed outside — successfully mated (auto-calculated from distribution records)
+- Auto-calculated distribution counts from `graft_distributions` records:
+  - External distributions = distributions where recipient is NOT a group member
+  - Auto-calculated values used as defaults; manual overrides take precedence when saved
+  - "Auto: X from records" indicator shown below manual fields
 
 ### Excel Export
 Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is available even when there is no monthly batch data for the selected year.

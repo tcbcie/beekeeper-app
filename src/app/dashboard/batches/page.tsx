@@ -1274,6 +1274,7 @@ export default function BatchesPage() {
                   batchId={editingBatch.id}
                   userId={userId}
                   cellCount={formData.cell_count ? parseInt(formData.cell_count) : null}
+                  groupId={editingBatch.rearing_group_id}
                 />
               </div>
             )}

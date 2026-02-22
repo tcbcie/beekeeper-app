@@ -1,27 +1,63 @@
-# Auto-populate "Days" field in Varroa Check form
+# Batch Distribution Tracking & NIHBS Report Enhancement
 
-## Context
-When creating a new varroa check with "Natural Mite Drop" or "Screening Board" method, the `sample_size` field displays as "Days". The user wants this field auto-populated with the number of days since the last varroa check for the selected hive. The field must remain editable.
+## Todo
 
-## Plan
-
-- [x] **1. Pass `varroaChecks` to `VarroaCheckForm`** — Add a new prop `existingChecks` to the form component. Pass the existing `varroaChecks` array from the records page.
-
-- [x] **2. Add auto-populate logic in `VarroaCheckForm`** — When a hive is selected (new check only, not editing), find the most recent varroa check for that hive **with the same method**, calculate the day difference between the current check date and the last check date, and set it as the `sample_size` value. Only auto-populate when `isNaturalDrop` is true and the user hasn't manually edited the field yet.
-
-## Files to change
-- `src/components/records/forms/VarroaCheckForm.tsx` — Add prop, add useEffect for auto-populate
-- `src/app/dashboard/records/page.tsx` — Pass `varroaChecks` to the form
-
----
+- [x] 1. Database migration — create `graft_distributions` table, RLS policies, and helper functions
+- [x] 2. Create `useGraftDistributions` hook — CRUD operations + user/apiary/hive search
+- [x] 3. Create `DistributeGraftModal` component — modal form for recording distributions
+- [x] 4. Integrate into `BatchGraftsSection` — add Distribute button + distribution list
+- [x] 5. Integrate into `MatingNucsTab` — add Distribute button on distributable nucs
+- [x] 6. Update `useNIHBSReport` — auto-calculate distribution counts from records
+- [x] 7. Update `NIHBSMonthlyReturn` — show auto-calculated defaults with indicator
+- [x] 8. Documentation — create/update feature docs
 
 ## Review
 
-### Changes Made
-- **`VarroaCheckForm.tsx`** — Added `existingChecks` prop. Added a `useEffect` that triggers on hive/method/date change. For new checks only, it finds the last varroa check for the same hive **with the same method**, calculates the day difference, and pre-fills the Days (`sample_size`) field. The field remains fully editable.
-- **`records/page.tsx`** — Passed the existing `varroaChecks` array to the form component.
+### Summary of Changes
+
+**Database:**
+- New `graft_distributions` table with RLS policies for user ownership and group owner visibility
+- 3 helper functions: `search_users_for_distribution`, `get_recipient_apiaries`, `get_recipient_hives`
+
+**New Files (2):**
+- `src/hooks/useGraftDistributions.ts` — CRUD hook with user search, apiary/hive lookup, mating toggle
+- `src/components/batches/DistributeGraftModal.tsx` — modal form with debounced recipient search, auto-detected type, conditional apiary/hive pickers
+
+**Modified Files (4):**
+- `src/components/batches/BatchGraftsSection.tsx` — added Distribute (Send) icon on distributable grafts, distribution list section below grid with mating confirmation toggle and delete. New `groupId` prop.
+- `src/components/batches/MatingNucsTab.tsx` — added Distribute button on nucs with graft_id in virgin/mating/laying status. On distribute, nuc status also set to 'sold'.
+- `src/hooks/useNIHBSReport.ts` — fetches `graft_distributions` for group batches, auto-calculates `auto_virgins_distributed_external` and `auto_virgins_external_mated`. Added `auto_*` fields to `MonthlyData` interface. Manual overrides from `nihbs_monthly_returns` take precedence.
+- `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` — shows "Auto: X from records" indicator below manual input fields when auto-calculated values exist (both desktop and mobile views).
+
+**Prop Change (1):**
+- `src/app/dashboard/batches/page.tsx` — passes `groupId={editingBatch.rearing_group_id}` to `BatchGraftsSection`
+
+**Documentation (3):**
+- Created `docs/features/batch-distributions.md`
+- Updated `docs/features/nihbs-monthly-returns.md` — documented auto-calculation from distributions
+- Updated `docs/features/queen-rearing.md` — added `graft_distributions` table, new files, related doc link
 
 ### Impact
-- 2 files changed, ~15 lines added
-- 0 new files, 0 breaking changes
-- Only affects new varroa checks with Natural Mite Drop / Screening Board method
+- 2 new files, 5 modified files, 1 new database table, 3 new database functions
+- No breaking changes to existing functionality
+- Manual override workflow preserved for NIHBS report
+
+---
+
+## Code Audit Fixes
+
+- [x] CRITICAL-1: Data corruption on distribution delete — added `previous_graft_status` column to DB + stored/used across all files so deleting a distribution reverts the graft to its actual prior status instead of always `'mated'`
+- [x] CRITICAL-2: Non-atomic two-table writes — error-checked secondary Supabase operations in `createDistribution`, `deleteDistribution`, and `handleDistributeSave` (MatingNucsTab)
+- [x] HIGH-1: Race condition in debounced search — added `searchCounter` ref to `DistributeGraftModal` to discard stale out-of-order network responses
+- [x] HIGH-2: Unhandled promise rejection — added `.catch()` to group member fetch in `BatchGraftsSection`
+- [x] MEDIUM-1: Constants inside component body — hoisted `NUC_DISTRIBUTABLE_STATUSES` and `getNucDistributionType` outside `MatingNucsTab` component
+- [x] MEDIUM-2: Stale data on fetch error — `fetchDistributions` now clears distributions to `[]` on error
+
+**Database Migration:**
+- Added `previous_graft_status TEXT` column to `graft_distributions` table
+
+**Files Modified (4):**
+- `src/hooks/useGraftDistributions.ts` — added `previous_graft_status` to interfaces, mapped in fetch, error-checked secondary operations, clear distributions on error
+- `src/components/batches/DistributeGraftModal.tsx` — added `useRef` import, `searchCounter` ref for stale-result guard, passes `previous_graft_status: graftStatus` in submit data
+- `src/components/batches/BatchGraftsSection.tsx` — uses `dist.previous_graft_status` on delete revert, added `.catch()` to group member fetch
+- `src/components/batches/MatingNucsTab.tsx` — hoisted constants outside component, error-checked nuc status update, passes actual graft status from `batch_grafts` relation
