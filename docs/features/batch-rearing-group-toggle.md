@@ -12,7 +12,7 @@ When creating/editing a rearing batch, the user can optionally link the batch to
 | In rearing group(s) | Shown | Shown when toggle is ON | Shown if in 2+ groups |
 
 - **Toggle OFF (private):** Batch has no `rearing_group_id`, mating apiary section hidden
-- **Toggle ON (group batch):** Batch gets a `rearing_group_id`, mating apiary dropdown shown (user's own apiaries)
+- **Toggle ON (group batch):** Batch gets a `rearing_group_id`, mating location (apiary) dropdown shown (user's own apiaries) — **mating location is mandatory**; a toast error is shown if the user attempts to save without selecting one
 - When the toggle is switched OFF, both `rearing_group_id` and `mating_apiary_id` are cleared
 - When the toggle is switched ON, `rearing_group_id` defaults to the first available group
 

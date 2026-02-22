@@ -82,7 +82,7 @@ export function useNIHBSReport() {
       if (userIds.length > 0) {
         const { data: batches, error: batchesError } = await supabase
           .from('rearing_batches')
-          .select('graft_date, cell_count, grafts_accepted, queens_hatched, queens_mated, mating_apiary_id')
+          .select('graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, queens_hybridised, mating_apiary_id')
           .in('user_id', userIds)
           .gte('graft_date', startDate)
           .lt('graft_date', endDate)
@@ -90,19 +90,11 @@ export function useNIHBSReport() {
 
         if (batchesError) throw batchesError
 
-        for (const batch of (batches || [])) {
-          const graftDate = batch.graft_date
-          if (!graftDate) continue
-
-          if (!first_graft_date || graftDate < first_graft_date) first_graft_date = graftDate
-          if (!last_graft_date || graftDate > last_graft_date) last_graft_date = graftDate
-
-          // Parse date string directly to avoid timezone shift (DATE "2026-05-01" parsed as UTC midnight shifts to April in BST)
-          const month = parseInt(graftDate.split('-')[1], 10)
-
-          if (!monthlyMap.has(month)) {
-            monthlyMap.set(month, {
-              month,
+        // Helper: get or create a monthly bucket
+        const getMonth = (m: number): MonthlyData => {
+          if (!monthlyMap.has(m)) {
+            monthlyMap.set(m, {
+              month: m,
               year,
               total: { apiary_id: 'total', batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 },
               byApiary: new Map(),
@@ -111,27 +103,63 @@ export function useNIHBSReport() {
               virgins_external_mated: 0,
             })
           }
+          return monthlyMap.get(m)!
+        }
 
-          const md = monthlyMap.get(month)!
-
-          // Update totals
-          md.total.batch_count++
-          md.total.cell_count += batch.cell_count || 0
-          md.total.grafts_accepted += batch.grafts_accepted || 0
-          md.total.queens_hatched += batch.queens_hatched || 0
-          md.total.queens_mated += batch.queens_mated || 0
-
-          // Update per-apiary
-          const apiaryId = batch.mating_apiary_id || 'unassigned'
+        // Helper: get or create a per-apiary bucket within a month
+        const getApiary = (md: MonthlyData, apiaryId: string): MonthlyApiaryData => {
           if (!md.byApiary.has(apiaryId)) {
             md.byApiary.set(apiaryId, { apiary_id: apiaryId, batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
           }
-          const ad = md.byApiary.get(apiaryId)!
-          ad.batch_count++
-          ad.cell_count += batch.cell_count || 0
-          ad.grafts_accepted += batch.grafts_accepted || 0
-          ad.queens_hatched += batch.queens_hatched || 0
-          ad.queens_mated += batch.queens_mated || 0
+          return md.byApiary.get(apiaryId)!
+        }
+
+        // Helper: derive emergence month/year from emergence_date or graft_date + 12 days
+        const getEmergenceMonthYear = (batch: { emergence_date?: string | null; graft_date: string }): { month: number; year: number } => {
+          if (batch.emergence_date) {
+            const parts = batch.emergence_date.split('-')
+            return { month: parseInt(parts[1], 10), year: parseInt(parts[0], 10) }
+          }
+          // Fallback: graft_date + 12 days
+          const graft = new Date(batch.graft_date + 'T00:00:00')
+          graft.setDate(graft.getDate() + 12)
+          return { month: graft.getMonth() + 1, year: graft.getFullYear() }
+        }
+
+        for (const batch of (batches || [])) {
+          const graftDate = batch.graft_date
+          if (!graftDate) continue
+
+          if (!first_graft_date || graftDate < first_graft_date) first_graft_date = graftDate
+          if (!last_graft_date || graftDate > last_graft_date) last_graft_date = graftDate
+
+          // Parse date string directly to avoid timezone shift
+          const graftMonth = parseInt(graftDate.split('-')[1], 10)
+          const emergence = getEmergenceMonthYear(batch)
+          const apiaryId = batch.mating_apiary_id || 'unassigned'
+
+          // Graft-time metrics → graft month
+          const graftMd = getMonth(graftMonth)
+          graftMd.total.batch_count++
+          graftMd.total.cell_count += batch.cell_count || 0
+          graftMd.total.grafts_accepted += batch.grafts_accepted || 0
+
+          const graftAd = getApiary(graftMd, apiaryId)
+          graftAd.batch_count++
+          graftAd.cell_count += batch.cell_count || 0
+          graftAd.grafts_accepted += batch.grafts_accepted || 0
+
+          // Post-emergence metrics → emergence month (only if within the report year)
+          if (emergence.year === year) {
+            const emergMd = getMonth(emergence.month)
+            emergMd.total.queens_hatched += batch.queens_hatched || 0
+            emergMd.total.queens_mated += batch.queens_mated || 0
+            emergMd.hybridised_offspring += batch.queens_hybridised || 0
+
+            const emergAd = getApiary(emergMd, apiaryId)
+            emergAd.queens_hatched += batch.queens_hatched || 0
+            emergAd.queens_mated += batch.queens_mated || 0
+          }
         }
       }
 
@@ -188,7 +216,10 @@ export function useNIHBSReport() {
             })
           }
           const md = monthlyMap.get(r.month)!
-          md.hybridised_offspring = r.hybridised_offspring || 0
+          // Only override batch-aggregated hybridised_offspring if a manual value was explicitly saved
+          if (r.hybridised_offspring != null) {
+            md.hybridised_offspring = r.hybridised_offspring
+          }
           md.virgins_distributed_external = r.virgins_distributed_external || 0
           md.virgins_external_mated = r.virgins_external_mated || 0
         }
