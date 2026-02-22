@@ -26,6 +26,8 @@ export interface MonthlyData {
   hybridised_offspring: number
   virgins_distributed_external: number
   virgins_external_mated: number
+  auto_virgins_distributed_external: number
+  auto_virgins_external_mated: number
 }
 
 export interface NIHBSReportData {
@@ -82,7 +84,7 @@ export function useNIHBSReport() {
       if (userIds.length > 0) {
         const { data: batches, error: batchesError } = await supabase
           .from('rearing_batches')
-          .select('graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, queens_hybridised, mating_apiary_id')
+          .select('id, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, queens_hybridised, mating_apiary_id')
           .in('user_id', userIds)
           .gte('graft_date', startDate)
           .lt('graft_date', endDate)
@@ -101,6 +103,8 @@ export function useNIHBSReport() {
               hybridised_offspring: 0,
               virgins_distributed_external: 0,
               virgins_external_mated: 0,
+              auto_virgins_distributed_external: 0,
+              auto_virgins_external_mated: 0,
             })
           }
           return monthlyMap.get(m)!
@@ -161,6 +165,37 @@ export function useNIHBSReport() {
             emergAd.queens_mated += batch.queens_mated || 0
           }
         }
+
+        // 2b. Fetch distributions and auto-calculate external distribution counts
+        const batchIds = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
+        if (batchIds.length > 0) {
+          const { data: dists } = await supabase
+            .from('graft_distributions')
+            .select('distribution_type, recipient_user_id, mating_confirmed, distribution_date')
+            .in('batch_id', batchIds)
+
+          if (dists) {
+            const memberIdSet = new Set(userIds)
+            for (const d of dists) {
+              // Only count external distributions (recipient not in the group)
+              if (memberIdSet.has(d.recipient_user_id)) continue
+              // Only count queen_cell and virgin_queen types
+              if (d.distribution_type !== 'queen_cell' && d.distribution_type !== 'virgin_queen') continue
+
+              const distDate = d.distribution_date
+              if (!distDate) continue
+              const distMonth = parseInt(distDate.split('-')[1], 10)
+              const distYear = parseInt(distDate.split('-')[0], 10)
+              if (distYear !== year) continue
+
+              const md = getMonth(distMonth)
+              md.auto_virgins_distributed_external++
+              if (d.mating_confirmed) {
+                md.auto_virgins_external_mated++
+              }
+            }
+          }
+        }
       }
 
       // 3. Derive mating apiaries from batch data
@@ -201,6 +236,12 @@ export function useNIHBSReport() {
         .eq('group_id', groupId)
         .eq('year', year)
 
+      // Before applying manual overrides, set auto-calculated values as defaults
+      for (const [, md] of monthlyMap) {
+        md.virgins_distributed_external = md.auto_virgins_distributed_external
+        md.virgins_external_mated = md.auto_virgins_external_mated
+      }
+
       if (!returnsError && returns) {
         for (const r of returns) {
           if (!monthlyMap.has(r.month)) {
@@ -213,6 +254,8 @@ export function useNIHBSReport() {
               hybridised_offspring: 0,
               virgins_distributed_external: 0,
               virgins_external_mated: 0,
+              auto_virgins_distributed_external: 0,
+              auto_virgins_external_mated: 0,
             })
           }
           const md = monthlyMap.get(r.month)!
@@ -220,8 +263,13 @@ export function useNIHBSReport() {
           if (r.hybridised_offspring != null) {
             md.hybridised_offspring = r.hybridised_offspring
           }
-          md.virgins_distributed_external = r.virgins_distributed_external || 0
-          md.virgins_external_mated = r.virgins_external_mated || 0
+          // Manual overrides take precedence over auto-calculated values when explicitly saved
+          if (r.virgins_distributed_external != null) {
+            md.virgins_distributed_external = r.virgins_distributed_external
+          }
+          if (r.virgins_external_mated != null) {
+            md.virgins_external_mated = r.virgins_external_mated
+          }
         }
       }
 

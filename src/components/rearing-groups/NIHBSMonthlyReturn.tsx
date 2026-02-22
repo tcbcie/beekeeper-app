@@ -511,7 +511,12 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                     </tr>
                     <tr className="border-b border-border bg-amber-50 dark:bg-amber-950/20">
                       <td className="py-2 px-3 text-text-tertiary">24</td>
-                      <td className="py-2 px-3 text-foreground">Virgin queens distributed outside group</td>
+                      <td className="py-2 px-3 text-foreground">
+                        Virgin queens distributed outside group
+                        {md.auto_virgins_distributed_external > 0 && (
+                          <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_distributed_external} from records</div>
+                        )}
+                      </td>
                       <td className="py-2 px-3 text-right">
                         <input
                           type="number"
@@ -524,7 +529,12 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                     </tr>
                     <tr className="bg-amber-50 dark:bg-amber-950/20">
                       <td className="py-2 px-3 text-text-tertiary">26</td>
-                      <td className="py-2 px-3 text-foreground">Virgins distributed outside - successfully mated</td>
+                      <td className="py-2 px-3 text-foreground">
+                        Virgins distributed outside - successfully mated
+                        {md.auto_virgins_external_mated > 0 && (
+                          <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_external_mated} from records</div>
+                        )}
+                      </td>
                       <td className="py-2 px-3 text-right">
                         <input
                           type="number"
@@ -572,25 +582,35 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
                     />
                   </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-tertiary">Virgins distributed:</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={getManualField(md.month, 'virgins_distributed_external')}
-                      onChange={(e) => setManualField(md.month, 'virgins_distributed_external', parseInt(e.target.value) || 0)}
-                      className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
-                    />
+                  <div className="text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Virgins distributed:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={getManualField(md.month, 'virgins_distributed_external')}
+                        onChange={(e) => setManualField(md.month, 'virgins_distributed_external', parseInt(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                      />
+                    </div>
+                    {md.auto_virgins_distributed_external > 0 && (
+                      <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_distributed_external} from records</div>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-tertiary">Virgins mated externally:</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={getManualField(md.month, 'virgins_external_mated')}
-                      onChange={(e) => setManualField(md.month, 'virgins_external_mated', parseInt(e.target.value) || 0)}
-                      className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
-                    />
+                  <div className="text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Virgins mated externally:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={getManualField(md.month, 'virgins_external_mated')}
+                        onChange={(e) => setManualField(md.month, 'virgins_external_mated', parseInt(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                      />
+                    </div>
+                    {md.auto_virgins_external_mated > 0 && (
+                      <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_external_mated} from records</div>
+                    )}
                   </div>
                 </div>
               </div>

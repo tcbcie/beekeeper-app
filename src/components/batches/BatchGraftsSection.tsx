@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Send, Check, X } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { useGraftDistributions } from '@/hooks/useGraftDistributions'
+import type { GraftDistribution } from '@/hooks/useGraftDistributions'
+import DistributeGraftModal from './DistributeGraftModal'
 
 interface Graft {
   id: string
@@ -17,6 +20,7 @@ interface BatchGraftsSectionProps {
   batchId: string
   userId: string
   cellCount: number | null
+  groupId?: string | null
 }
 
 const GRAFT_STATUSES = [
@@ -30,10 +34,40 @@ const GRAFT_STATUSES = [
   { value: 'sold', label: 'Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
 ]
 
-export default function BatchGraftsSection({ batchId, userId, cellCount }: BatchGraftsSectionProps) {
+const DISTRIBUTABLE_STATUSES = ['accepted', 'caged', 'emerged', 'in_nuc', 'mated']
+
+const TYPE_LABELS: Record<string, { label: string; color: string }> = {
+  queen_cell: { label: 'Queen Cell', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+  virgin_queen: { label: 'Virgin Queen', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
+  mated_queen: { label: 'Mated Queen', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300' },
+}
+
+// Format date to Irish format (DD/MM/YYYY)
+const formatDateIrish = (dateString: string | null): string => {
+  if (!dateString) return '-'
+  const parts = dateString.split('-')
+  if (parts.length !== 3) return dateString
+  return `${parts[2]}/${parts[1]}/${parts[0]}`
+}
+
+export default function BatchGraftsSection({ batchId, userId, cellCount, groupId }: BatchGraftsSectionProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
   const [loading, setLoading] = useState(true)
+  const [distributeGraft, setDistributeGraft] = useState<Graft | null>(null)
+  const [groupMemberIds, setGroupMemberIds] = useState<string[]>([])
+
+  const {
+    distributions,
+    loading: distLoading,
+    fetchDistributions,
+    createDistribution,
+    deleteDistribution,
+    toggleMatingConfirmed,
+    searchUsers,
+    fetchRecipientApiaries,
+    fetchRecipientHives,
+  } = useGraftDistributions()
 
   const fetchGrafts = useCallback(async () => {
     const { data, error } = await supabase
@@ -51,9 +85,25 @@ export default function BatchGraftsSection({ batchId, userId, cellCount }: Batch
     setLoading(false)
   }, [batchId, userId])
 
+  // Fetch group member IDs for the "Group" badge in the modal
+  useEffect(() => {
+    if (!groupId) return
+    supabase
+      .from('rearing_group_members')
+      .select('user_id')
+      .eq('group_id', groupId)
+      .then(({ data }) => {
+        if (data) setGroupMemberIds(data.map((m) => m.user_id))
+      })
+      .catch((err) => {
+        console.error('Error fetching group members:', err)
+      })
+  }, [groupId])
+
   useEffect(() => {
     fetchGrafts()
-  }, [fetchGrafts])
+    fetchDistributions(batchId)
+  }, [fetchGrafts, fetchDistributions, batchId])
 
   const generateGrafts = async () => {
     if (!cellCount || cellCount <= 0) {
@@ -61,7 +111,6 @@ export default function BatchGraftsSection({ batchId, userId, cellCount }: Batch
       return
     }
 
-    // Check if grafts already exist
     if (grafts.length > 0) {
       if (!confirm(`This will add ${cellCount} new grafts. Existing grafts will be kept. Continue?`)) {
         return
@@ -128,6 +177,39 @@ export default function BatchGraftsSection({ batchId, userId, cellCount }: Batch
     }
   }
 
+  const handleDistributeSave = async (data: Parameters<typeof createDistribution>[0]) => {
+    const success = await createDistribution(data)
+    if (success) {
+      toast.success('Distribution recorded')
+      fetchGrafts()
+      fetchDistributions(batchId)
+    } else {
+      toast.error('Failed to record distribution')
+    }
+    return success
+  }
+
+  const handleDeleteDistribution = async (dist: GraftDistribution) => {
+    if (!confirm(`Remove distribution for Cell #${dist.cell_number}?`)) return
+    const success = await deleteDistribution(dist.id, dist.graft_id, dist.previous_graft_status || 'mated')
+    if (success) {
+      toast.success('Distribution removed')
+      fetchGrafts()
+      fetchDistributions(batchId)
+    } else {
+      toast.error('Failed to remove distribution')
+    }
+  }
+
+  const handleToggleMating = async (dist: GraftDistribution) => {
+    const success = await toggleMatingConfirmed(dist.id, !dist.mating_confirmed)
+    if (success) {
+      fetchDistributions(batchId)
+    } else {
+      toast.error('Failed to update mating status')
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     const statusConfig = GRAFT_STATUSES.find(s => s.value === status)
     return statusConfig?.color || 'bg-gray-100 text-gray-700'
@@ -190,14 +272,26 @@ export default function BatchGraftsSection({ batchId, userId, cellCount }: Batch
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={() => deleteGraft(graft.id)}
-                className="mt-1 p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                title="Delete"
-              >
-                <Trash2 size={12} />
-              </button>
+              <div className="flex justify-center gap-1 mt-1">
+                {DISTRIBUTABLE_STATUSES.includes(graft.status) && (
+                  <button
+                    type="button"
+                    onClick={() => setDistributeGraft(graft)}
+                    className="p-1 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
+                    title="Distribute"
+                  >
+                    <Send size={12} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => deleteGraft(graft.id)}
+                  className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                  title="Delete"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -215,6 +309,82 @@ export default function BatchGraftsSection({ batchId, userId, cellCount }: Batch
             Refresh
           </button>
         </div>
+      )}
+
+      {/* Distribution List */}
+      {!distLoading && distributions.length > 0 && (
+        <div className="pt-4 border-t border-border">
+          <h4 className="text-sm font-semibold text-foreground mb-3">Distributions ({distributions.length})</h4>
+          <div className="space-y-2">
+            {distributions.map((dist) => {
+              const typeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell
+              return (
+                <div
+                  key={dist.id}
+                  className="flex items-center gap-3 p-3 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">
+                        Cell #{dist.cell_number}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeInfo.color}`}>
+                        {typeInfo.label}
+                      </span>
+                    </div>
+                    <div className="text-xs text-text-secondary mt-1">
+                      To: {dist.recipient_name || dist.recipient_email || 'Unknown'}
+                      {dist.recipient_apiary_name && ` \u2022 ${dist.recipient_apiary_name}`}
+                      {dist.recipient_hive_number && ` \u2022 Hive ${dist.recipient_hive_number}`}
+                      {' \u2022 '}{formatDateIrish(dist.distribution_date)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {dist.distribution_type !== 'mated_queen' && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleMating(dist)}
+                        className={`p-1.5 rounded text-xs ${
+                          dist.mating_confirmed
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                        }`}
+                        title={dist.mating_confirmed ? 'Mating confirmed' : 'Confirm mating'}
+                      >
+                        <Check size={14} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDistribution(dist)}
+                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                      title="Remove distribution"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Distribute Modal */}
+      {distributeGraft && (
+        <DistributeGraftModal
+          graftId={distributeGraft.id}
+          batchId={batchId}
+          cellNumber={distributeGraft.cell_number}
+          graftStatus={distributeGraft.status}
+          userId={userId}
+          groupMemberIds={groupMemberIds}
+          searchUsers={searchUsers}
+          fetchRecipientApiaries={fetchRecipientApiaries}
+          fetchRecipientHives={fetchRecipientHives}
+          onSave={handleDistributeSave}
+          onClose={() => setDistributeGraft(null)}
+        />
       )}
     </div>
   )

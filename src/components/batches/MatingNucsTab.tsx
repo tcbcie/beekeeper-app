@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit2, Archive, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff } from 'lucide-react'
+import { Plus, Edit2, Archive, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import NucInspectionPanel from './NucInspectionPanel'
+import { useGraftDistributions } from '@/hooks/useGraftDistributions'
+import type { CreateDistributionData } from '@/hooks/useGraftDistributions'
+import DistributeGraftModal from './DistributeGraftModal'
 
 interface Batch {
   id: string
@@ -79,6 +82,13 @@ const formatDateIrish = (dateString: string | null): string => {
   return `${day}/${month}/${year}`
 }
 
+const NUC_DISTRIBUTABLE_STATUSES = ['virgin', 'mating', 'laying']
+
+const getNucDistributionType = (status: string): 'virgin_queen' | 'mated_queen' => {
+  if (status === 'laying') return 'mated_queen'
+  return 'virgin_queen'
+}
+
 export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   const toast = useToast()
   const [nucs, setNucs] = useState<MatingNuc[]>([])
@@ -93,6 +103,14 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   const [showRetired, setShowRetired] = useState(false)
   const [historyNucNumber, setHistoryNucNumber] = useState<string | null>(null)
   const [historyData, setHistoryData] = useState<MatingNuc[]>([])
+  const [distributeNuc, setDistributeNuc] = useState<MatingNuc | null>(null)
+
+  const {
+    createDistribution,
+    searchUsers,
+    fetchRecipientApiaries,
+    fetchRecipientHives,
+  } = useGraftDistributions()
 
   // Form state
   const [formData, setFormData] = useState({
@@ -301,6 +319,29 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
       setHistoryData(data || [])
       setHistoryNucNumber(nucNumber)
     }
+  }
+
+  const handleDistributeSave = async (data: CreateDistributionData) => {
+    const success = await createDistribution(data)
+    if (success) {
+      // Also update nuc status to 'sold'
+      if (distributeNuc) {
+        const { error: nucError } = await supabase
+          .from('mating_nucs')
+          .update({ status: 'sold' })
+          .eq('id', distributeNuc.id)
+
+        if (nucError) {
+          console.error('Error updating nuc status to sold:', nucError)
+        }
+      }
+      toast.success('Distribution recorded')
+      fetchNucs()
+      fetchGrafts()
+    } else {
+      toast.error('Failed to record distribution')
+    }
+    return success
   }
 
   const toggleExpand = (nucId: string) => {
@@ -526,6 +567,15 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
                   {/* Action Buttons */}
                   <div className="flex gap-1 shrink-0">
+                    {nuc.graft_id && NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
+                      <button
+                        onClick={() => setDistributeNuc(nuc)}
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
+                        title="Distribute"
+                      >
+                        <Send size={18} />
+                      </button>
+                    )}
                     <button
                       onClick={() => fetchHistory(nuc.nuc_number)}
                       className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
@@ -622,6 +672,22 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Distribute Modal */}
+      {distributeNuc && distributeNuc.graft_id && distributeNuc.batch_id && (
+        <DistributeGraftModal
+          graftId={distributeNuc.graft_id}
+          batchId={distributeNuc.batch_id}
+          cellNumber={distributeNuc.batch_grafts?.cell_number ?? 0}
+          graftStatus={distributeNuc.batch_grafts?.status || (getNucDistributionType(distributeNuc.status) === 'mated_queen' ? 'mated' : 'emerged')}
+          userId={userId}
+          searchUsers={searchUsers}
+          fetchRecipientApiaries={fetchRecipientApiaries}
+          fetchRecipientHives={fetchRecipientHives}
+          onSave={handleDistributeSave}
+          onClose={() => setDistributeNuc(null)}
+        />
       )}
     </div>
   )
