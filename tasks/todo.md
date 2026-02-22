@@ -1,28 +1,27 @@
-# NIHBS Report: Attribute Batch Metrics to Correct Calendar Month
+# Auto-populate "Days" field in Varroa Check form
 
-## Tasks
+## Context
+When creating a new varroa check with "Natural Mite Drop" or "Screening Board" method, the `sample_size` field displays as "Days". The user wants this field auto-populated with the number of days since the last varroa check for the selected hive. The field must remain editable.
 
-- [x] 1. Add `emergence_date` to the Supabase select query in useNIHBSReport.ts
-- [x] 2. Refactor the batch loop: split metrics across two months — graft metrics go to graft month, post-emergence metrics go to emergence month (including per-apiary data)
-- [x] 3. Update feature docs with month attribution logic (noted queens_mated/hybridised as temporary)
+## Plan
+
+- [x] **1. Pass `varroaChecks` to `VarroaCheckForm`** — Add a new prop `existingChecks` to the form component. Pass the existing `varroaChecks` array from the records page.
+
+- [x] **2. Add auto-populate logic in `VarroaCheckForm`** — When a hive is selected (new check only, not editing), find the most recent varroa check for that hive **with the same method**, calculate the day difference between the current check date and the last check date, and set it as the `sample_size` value. Only auto-populate when `isNaturalDrop` is true and the user hasn't manually edited the field yet.
+
+## Files to change
+- `src/components/records/forms/VarroaCheckForm.tsx` — Add prop, add useEffect for auto-populate
+- `src/app/dashboard/records/page.tsx` — Pass `varroaChecks` to the form
+
+---
 
 ## Review
 
-### Summary
-The NIHBS report now attributes batch metrics to the correct calendar month based on when the event actually occurred, rather than lumping everything into the graft date month.
-
 ### Changes Made
+- **`VarroaCheckForm.tsx`** — Added `existingChecks` prop. Added a `useEffect` that triggers on hive/method/date change. For new checks only, it finds the last varroa check for the same hive **with the same method**, calculates the day difference, and pre-fills the Days (`sample_size`) field. The field remains fully editable.
+- **`records/page.tsx`** — Passed the existing `varroaChecks` array to the form component.
 
-| File | Change |
-|------|--------|
-| `src/hooks/useNIHBSReport.ts` | Added `emergence_date` to select query |
-| `src/hooks/useNIHBSReport.ts` | Replaced monolithic batch loop with split logic: graft metrics (batch_count, cell_count, grafts_accepted) → graft_date month; post-emergence metrics (queens_hatched, queens_mated, queens_hybridised) → emergence_date month |
-| `src/hooks/useNIHBSReport.ts` | Added helper functions `getMonth`, `getApiary`, `getEmergenceMonth` to cleanly manage month bucket creation and emergence date fallback |
-| `docs/features/queen-rearing.md` | Added "NIHBS Report — Month Attribution Logic" section with table and temporary note |
-
-### Notes
-- A single batch may now contribute data to two different monthly buckets (e.g. Jan grafts, Feb hatched)
-- If `emergence_date` is null, falls back to `graft_date + 12 days`
-- Per-apiary breakdowns follow the same month split
-- **Temporary:** queens_mated and queens_hybridised use emergence month as a proxy — documented for future revisiting when explicit dates are available
-- 1 code file changed, 1 doc file updated
+### Impact
+- 2 files changed, ~15 lines added
+- 0 new files, 0 breaking changes
+- Only affects new varroa checks with Natural Mite Drop / Screening Board method

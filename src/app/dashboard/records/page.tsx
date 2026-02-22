@@ -983,6 +983,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 checkMethodOptions={checkMethodOptions}
+                existingChecks={varroaChecks}
                 userHasActiveSubscription={userHasActiveSubscription}
                 onSubmit={handleCheckSubmit}
                 onCancel={resetForm}

@@ -75,6 +75,7 @@ export default function TasksEventsPage() {
   const [filterApiary, setFilterApiary] = useState<string>('all')
   const [filterOwnership, setFilterOwnership] = useState<'all' | 'my' | 'team'>('all')
   const [showChecklist, setShowChecklist] = useState(false)
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
 
   // Form state
   const [formData, setFormData] = useState({
@@ -127,10 +128,14 @@ export default function TasksEventsPage() {
     const uniqueUserIds = [...new Set(data?.map(task => task.user_id) || [])]
 
     // Fetch profile names and emails for all users
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, full_name, email')
       .in('id', uniqueUserIds)
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError)
+    }
 
     // Create a map of user_id to profile info
     const profileMap = new Map(profiles?.map(p => [p.id, { full_name: p.full_name, email: p.email }]) || [])
@@ -160,14 +165,24 @@ export default function TasksEventsPage() {
       supabase.from('rearing_batches').select('id, batch_name').eq('user_id', userId).order('batch_name')
     ])
 
+    if (ownHivesRes.error || ownApiariesRes.error || batchesRes.error) {
+      console.error('Error fetching associations:', ownHivesRes.error || ownApiariesRes.error || batchesRes.error)
+      toast.error('Error loading hives or apiaries. Please refresh.')
+      return
+    }
+
     const ownHives = (ownHivesRes.data || []) as Hive[]
     const ownApiaries = (ownApiariesRes.data || []) as Apiary[]
 
     // Fetch team memberships
-    const { data: teamMemberships } = await supabase
+    const { data: teamMemberships, error: teamError } = await supabase
       .from('team_members')
       .select('team_id')
       .eq('user_id', userId)
+
+    if (teamError) {
+      console.error('Error fetching team memberships:', teamError)
+    }
 
     const teamIds = (teamMemberships || []).map(tm => tm.team_id)
 
@@ -180,10 +195,14 @@ export default function TasksEventsPage() {
 
     if (teamIds.length > 0) {
       // Fetch shared apiaries via team_apiaries
-      const { data: teamApiariesData } = await supabase
+      const { data: teamApiariesData, error: teamApiariesError } = await supabase
         .from('team_apiaries')
         .select('apiaries(id, name)')
         .in('team_id', teamIds)
+
+      if (teamApiariesError) {
+        console.error('Error fetching team apiaries:', teamApiariesError)
+      }
 
       if (teamApiariesData) {
         const extractedApiaries = teamApiariesData
@@ -201,20 +220,26 @@ export default function TasksEventsPage() {
       // Fetch shared hives from those apiaries
       const sharedApiaryIds = sharedApiaries.map(a => a.id)
       if (sharedApiaryIds.length > 0) {
-        const { data: sharedHivesData } = await supabase
+        const { data: sharedHivesData, error: sharedHivesError } = await supabase
           .from('hives')
           .select('id, hive_number, apiary_id, user_id')
           .in('apiary_id', sharedApiaryIds)
+
+        if (sharedHivesError) {
+          console.error('Error fetching shared hives:', sharedHivesError)
+        }
 
         sharedHives = (sharedHivesData || []).map(h => ({ ...h, is_shared: true }))
       }
     }
 
-    // Combine own and shared resources
-    setHives([...ownHives, ...sharedHives])
-    setApiaries([...ownApiaries, ...sharedApiaries])
+    // Combine own and shared resources, deduplicating by id
+    const ownHiveIds = new Set(ownHives.map(h => h.id))
+    const ownApiaryIds = new Set(ownApiaries.map(a => a.id))
+    setHives([...ownHives, ...sharedHives.filter(h => !ownHiveIds.has(h.id))])
+    setApiaries([...ownApiaries, ...sharedApiaries.filter(a => !ownApiaryIds.has(a.id))])
     if (batchesRes.data) setBatches(batchesRes.data)
-  }, [userId])
+  }, [userId, toast])
 
   useEffect(() => {
     if (userId) {
@@ -251,6 +276,12 @@ export default function TasksEventsPage() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate end date is not before start date
+    if (formData.end_date && formData.end_date < formData.start_date) {
+      toast.error('End date cannot be before start date.')
+      return
+    }
 
     const taskData = {
       user_id: userId,
@@ -376,18 +407,29 @@ export default function TasksEventsPage() {
 
   // Toggle completion
   const toggleComplete = async (task: TaskEvent) => {
-    const { error } = await supabase
-      .from('tasks_events')
-      .update({
-        completed: !task.completed,
-        completed_at: !task.completed ? new Date().toISOString() : null
-      })
-      .eq('id', task.id)
+    if (togglingIds.has(task.id)) return
+    setTogglingIds(prev => new Set(prev).add(task.id))
 
-    if (error) {
-      toast.error('Error updating task: ' + error.message)
-    } else {
-      await fetchTasks()
+    try {
+      const { error } = await supabase
+        .from('tasks_events')
+        .update({
+          completed: !task.completed,
+          completed_at: !task.completed ? new Date().toISOString() : null
+        })
+        .eq('id', task.id)
+
+      if (error) {
+        toast.error('Error updating task: ' + error.message)
+      } else {
+        await fetchTasks()
+      }
+    } finally {
+      setTogglingIds(prev => {
+        const next = new Set(prev)
+        next.delete(task.id)
+        return next
+      })
     }
   }
 
@@ -620,6 +662,7 @@ export default function TasksEventsPage() {
                   <button
                     onClick={() => toggleComplete(task)}
                     className="mt-1 flex-shrink-0"
+                    disabled={togglingIds.has(task.id)}
                   >
                     {task.completed ? (
                       <CheckCircle2 size={20} className="text-green-600" />
@@ -978,7 +1021,7 @@ export default function TasksEventsPage() {
                     <input
                       type="number"
                       value={formData.reminder_minutes_before}
-                      onChange={(e) => setFormData({ ...formData, reminder_minutes_before: parseInt(e.target.value) || 60 })}
+                      onChange={(e) => { const val = parseInt(e.target.value); setFormData({ ...formData, reminder_minutes_before: Number.isNaN(val) ? 60 : val }) }}
                       className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                       min="0"
                     />
