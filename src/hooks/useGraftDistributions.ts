@@ -226,7 +226,7 @@ export function useGraftDistributions() {
       console.error('Error deleting distribution:', err)
       return false
     }
-  }, [])
+  }, [toast])
 
   const toggleMatingConfirmed = useCallback(async (id: string, confirmed: boolean): Promise<boolean> => {
     try {
