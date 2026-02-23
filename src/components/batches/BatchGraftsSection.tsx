@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, Send, Check, X, CheckSquare, Square } from 'lucide-react'
+import { Plus, Trash2, Send, Check, X, CheckSquare, Square, HelpCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { GraftDistribution } from '@/hooks/useGraftDistributions'
@@ -93,6 +93,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   const [loading, setLoading] = useState(true)
   const [distributeGraft, setDistributeGraft] = useState<Graft | null>(null)
   const [groupMemberIds, setGroupMemberIds] = useState<string[]>([])
+  const [showHelp, setShowHelp] = useState(false)
 
   // Selection state
   const [selectMode, setSelectMode] = useState(false)
@@ -368,7 +369,17 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-semibold text-foreground">Individual Cells/Grafts</h4>
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-foreground">Individual Cells/Grafts</h4>
+          <button
+            type="button"
+            onClick={() => setShowHelp(!showHelp)}
+            className={`p-1 rounded-full transition-colors ${showHelp ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' : 'text-text-tertiary hover:text-blue-600'}`}
+            title="How this works"
+          >
+            <HelpCircle size={16} />
+          </button>
+        </div>
         <div className="flex gap-2">
           {grafts.length > 0 && (
             <button
@@ -394,6 +405,33 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           </button>
         </div>
       </div>
+
+      {/* Help Banner */}
+      {showHelp && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 relative">
+          <button
+            type="button"
+            onClick={() => setShowHelp(false)}
+            className="absolute top-2 right-2 p-1 text-blue-400 hover:text-blue-600 dark:hover:text-blue-300"
+          >
+            <X size={14} />
+          </button>
+          <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">How Graft Tracking Works</h5>
+          <div className="text-xs text-blue-700 dark:text-blue-300 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 font-medium">Grafted</span>
+              <span>&rarr;</span>
+              <span className="px-2 py-0.5 rounded bg-green-200 dark:bg-green-900 font-medium">Accepted</span>
+              <span>&rarr;</span>
+              <span className="px-2 py-0.5 rounded bg-cyan-200 dark:bg-cyan-900 font-medium">Sealed</span>
+              <span>&rarr;</span>
+              <span className="text-text-secondary">moves to table below</span>
+            </div>
+            <p><strong>Frame</strong> &mdash; tracks cells from grafting through to sealing. Mark cells as <em>Failed</em> if they don&apos;t take. Use <em>Select All</em> + <em>Change Status</em> to advance cells in bulk.</p>
+            <p><strong>Queen Tracking Table</strong> &mdash; appears once cells are sealed. Track queen marking, assign queen numbers, change status (Caged &rarr; Emerged &rarr; In Nuc &rarr; Mated), and distribute queen cells or queens.</p>
+          </div>
+        </div>
+      )}
 
       {/* Status Summary */}
       {grafts.length > 0 && (
