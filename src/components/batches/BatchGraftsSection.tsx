@@ -1147,6 +1147,11 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       {dist.recipient_hive_number && ` \u2022 Hive ${dist.recipient_hive_number}`}
                       {' \u2022 '}{formatDateIrish(dist.distribution_date)}
                     </div>
+                    {dist.mating_confirmed && dist.mating_confirmed_date && (
+                      <div className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                        Mated: {formatDateIrish(dist.mating_confirmed_date)}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {dist.distribution_type !== 'mated_queen' && (
@@ -1158,7 +1163,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                             ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                             : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                         }`}
-                        title={dist.mating_confirmed ? 'Mating confirmed' : 'Confirm mating'}
+                        title={dist.mating_confirmed ? `Mating confirmed ${dist.mating_confirmed_date ? formatDateIrish(dist.mating_confirmed_date) : ''}`.trim() : 'Confirm mating'}
                       >
                         <Check size={14} />
                       </button>

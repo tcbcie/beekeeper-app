@@ -41,7 +41,7 @@ The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stay
 
 **`graft_distributions`** — distribution tracking (see [batch-distributions.md](./batch-distributions.md))
 - One distribution per graft (UNIQUE on graft_id)
-- Records recipient, type, destination apiary/hive, mating confirmation
+- Records recipient, type, destination apiary/hive, mating confirmation, and mating confirmed date
 - Auto-populates NIHBS report external distribution counts
 
 **`mating_nucs`** — mating nucleus colonies
