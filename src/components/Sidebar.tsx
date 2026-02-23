@@ -73,7 +73,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={`hidden md:block bg-surface dark:bg-surface rounded-xl shadow-lg p-4 h-fit border border-border transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`hidden md:block sticky top-4 self-start bg-surface dark:bg-surface rounded-xl shadow-lg p-4 h-fit border border-border transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Collapse Toggle */}
       <button
         onClick={toggleCollapsed}
