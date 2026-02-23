@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, Search, User } from 'lucide-react'
+import { X, Search, User, Users } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData, BulkDistributionData } from '@/hooks/useGraftDistributions'
 
 interface DistributeGraftModalProps {
@@ -61,11 +62,13 @@ export default function DistributeGraftModal({
   const distributionType = TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
   const typeInfo = TYPE_LABELS[distributionType]
 
+  const hasGroup = groupMemberIds && groupMemberIds.length > 0
   const [searchText, setSearchText] = useState('')
   const [searchResults, setSearchResults] = useState<RecipientUser[]>([])
   const [searching, setSearching] = useState(false)
   const [selectedUser, setSelectedUser] = useState<RecipientUser | null>(null)
-  const [groupOnly, setGroupOnly] = useState(false)
+  const [groupOnly, setGroupOnly] = useState(!!hasGroup)
+  const [groupMembers, setGroupMembers] = useState<RecipientUser[]>([])
   const searchCounter = useRef(0)
 
   const [apiaries, setApiaries] = useState<RecipientApiary[]>([])
@@ -77,6 +80,22 @@ export default function DistributeGraftModal({
   const [distributionDate, setDistributionDate] = useState(today)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Fetch group member profiles when group mode is active
+  useEffect(() => {
+    if (!groupOnly || !groupMemberIds || groupMemberIds.length === 0) {
+      setGroupMembers([])
+      return
+    }
+    supabase
+      .from('profiles')
+      .select('id, email, full_name')
+      .in('id', groupMemberIds)
+      .order('full_name')
+      .then(({ data }) => {
+        if (data) setGroupMembers(data as RecipientUser[])
+      })
+  }, [groupOnly, groupMemberIds])
 
   // Debounced user search with stale-result guard
   useEffect(() => {
@@ -193,16 +212,17 @@ export default function DistributeGraftModal({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-sm font-medium text-text-secondary">Recipient *</label>
-              {groupMemberIds && groupMemberIds.length > 0 && !selectedUser && (
+              {hasGroup && !selectedUser && (
                 <button
                   type="button"
-                  onClick={() => { setGroupOnly(!groupOnly); setSearchResults([]) }}
-                  className={`px-2 py-0.5 text-xs rounded font-medium ${
+                  onClick={() => { setGroupOnly(!groupOnly); setSearchText(''); setSearchResults([]) }}
+                  className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1.5 transition-colors ${
                     groupOnly
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                      : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                      ? 'bg-green-600 text-white dark:bg-green-700'
+                      : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
+                  <Users size={12} />
                   Group Only
                 </button>
               )}
@@ -228,6 +248,27 @@ export default function DistributeGraftModal({
                 >
                   <X size={14} />
                 </button>
+              </div>
+            ) : groupOnly && groupMembers.length > 0 ? (
+              <div className="border border-border rounded-lg overflow-hidden">
+                {groupMembers.map((user) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => handleSelectUser(user)}
+                    className="w-full text-left p-3 hover:bg-surface-elevated dark:hover:bg-surface-elevated border-b border-border last:border-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <User size={14} className="text-text-tertiary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">
+                          {user.full_name || 'No name'}
+                        </div>
+                        <div className="text-xs text-text-tertiary truncate">{user.email}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             ) : (
               <div className="relative">
