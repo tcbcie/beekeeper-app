@@ -40,7 +40,7 @@ const GRAFT_STATUSES = [
   { value: 'in_nuc', label: 'In Nuc', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' },
   { value: 'mated', label: 'Mated', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300' },
   { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
-  { value: 'sold', label: 'Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
+  { value: 'sold', label: 'Distributed/Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
 ]
 
 const FRAME_STATUSES = [
@@ -57,7 +57,7 @@ const TABLE_STATUSES = [
   { value: 'in_nuc', label: 'In Nuc', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' },
   { value: 'mated', label: 'Mated', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300' },
   { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
-  { value: 'sold', label: 'Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
+  { value: 'sold', label: 'Distributed/Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
 ]
 
 const FRAME_STATUS_VALUES = ['grafted', 'accepted', 'failed']
@@ -832,7 +832,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               </thead>
               <tbody className="divide-y divide-border">
                 {tableGrafts.map(graft => {
-                  const isDistributed = distributedGraftIds.has(graft.id)
+                  const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
                   const isLocked = isDistributed && !unlockedGraftIds.has(graft.id)
                   return (
                     <tr key={graft.id} className={`hover:bg-sage-50 dark:hover:bg-slate-800 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
@@ -955,7 +955,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           <div className="md:hidden space-y-3">
             {tableGrafts.map(graft => {
               const statusInfo = GRAFT_STATUSES.find(s => s.value === graft.status)
-              const isDistributed = distributedGraftIds.has(graft.id)
+              const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
               const isLocked = isDistributed && !unlockedGraftIds.has(graft.id)
               return (
                 <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
