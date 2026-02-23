@@ -129,9 +129,10 @@ export function useGraftDistributions() {
       if (error) throw error
 
       // Update graft status to 'sold'
+      const today = new Date().toISOString().split('T')[0]
       const { error: graftError } = await supabase
         .from('batch_grafts')
-        .update({ status: 'sold' })
+        .update({ status: 'sold', status_date: today })
         .eq('id', data.graft_id)
 
       if (graftError) {
@@ -167,9 +168,10 @@ export function useGraftDistributions() {
       if (error) throw error
 
       const graftIds = data.grafts.map((g) => g.id)
+      const today = new Date().toISOString().split('T')[0]
       const { error: graftError } = await supabase
         .from('batch_grafts')
-        .update({ status: 'sold' })
+        .update({ status: 'sold', status_date: today })
         .in('id', graftIds)
 
       if (graftError) {
