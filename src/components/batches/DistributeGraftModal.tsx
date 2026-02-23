@@ -92,8 +92,17 @@ export default function DistributeGraftModal({
       .select('id, email, full_name')
       .in('id', groupMemberIds)
       .order('full_name')
-      .then(({ data }) => {
-        if (data) setGroupMembers(data as RecipientUser[])
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Failed to fetch group members:', error)
+          setGroupMembers([])
+        } else if (data) {
+          setGroupMembers(data as RecipientUser[])
+        }
+      })
+      .catch(err => {
+        console.error('Group members fetch error:', err)
+        setGroupMembers([])
       })
   }, [groupOnly, groupMemberIds])
 
@@ -104,12 +113,13 @@ export default function DistributeGraftModal({
       return
     }
     const requestId = ++searchCounter.current
+    const groupOnlyAtRequest = groupOnly  // capture before async boundary
     const timer = setTimeout(async () => {
       setSearching(true)
       const results = await searchUsers(searchText)
       // Only apply results if this is still the latest request
       if (requestId === searchCounter.current) {
-        const filtered = groupOnly && groupMemberIds
+        const filtered = groupOnlyAtRequest && groupMemberIds
           ? results.filter(u => groupMemberIds.includes(u.id))
           : results
         setSearchResults(filtered)
@@ -146,7 +156,7 @@ export default function DistributeGraftModal({
   }, [])
 
   const handleSubmit = async () => {
-    if (!selectedUser) return
+    if (!selectedUser || saving) return  // guard against double-click
 
     setSaving(true)
 

@@ -180,6 +180,15 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     fetchDistributions(batchId)
   }, [fetchGrafts, fetchDistributions, batchId])
 
+  // Prune unlockedGraftIds when distributions change (e.g. after a distribution is deleted)
+  useEffect(() => {
+    const currentDistributed = new Set(distributions.map(d => d.graft_id))
+    setUnlockedGraftIds(prev => {
+      const next = new Set([...prev].filter(id => currentDistributed.has(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [distributions])
+
   // Reset table select mode when all grafts leave the table
   useEffect(() => {
     const hasTableGrafts = grafts.some(g => !FRAME_STATUS_VALUES.includes(g.status))
@@ -1082,7 +1091,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           <h4 className="text-sm font-semibold text-foreground mb-3">Distributions ({distributions.length})</h4>
           <div className="space-y-2">
             {distributions.map((dist) => {
-              const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell
+              const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell || { label: 'Unknown', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
               return (
                 <div
                   key={dist.id}
@@ -1136,7 +1145,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       )}
 
       {/* Distribute Modal (single) */}
-      {distributeGraft && (
+      {distributeGraft && grafts.some(g => g.id === distributeGraft.id) && (
         <DistributeGraftModal
           graftId={distributeGraft.id}
           batchId={batchId}

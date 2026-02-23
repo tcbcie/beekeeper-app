@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/components/ui/Toast'
 
 export interface GraftDistribution {
   id: string
@@ -64,6 +65,7 @@ export interface BulkDistributionData {
 }
 
 export function useGraftDistributions() {
+  const toast = useToast()
   const [distributions, setDistributions] = useState<GraftDistribution[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -136,17 +138,22 @@ export function useGraftDistributions() {
         .eq('id', data.graft_id)
 
       if (graftError) {
-        console.error('Error updating graft status to sold:', graftError)
+        // Rollback: remove the distribution we just inserted
+        await supabase.from('graft_distributions').delete().eq('graft_id', data.graft_id)
+        console.error('Error updating graft status, distribution rolled back:', graftError)
+        throw graftError
       }
 
       return true
     } catch (err: unknown) {
-      const pgError = err as { code?: string }
-      if (pgError.code === '23505') {
-        console.error('Distribution already exists for this graft')
-      } else {
-        console.error('Error creating distribution:', err)
+      if (err && typeof err === 'object' && 'code' in err) {
+        const pgError = err as { code: string }
+        if (pgError.code === '23505') {
+          console.error('Distribution already exists for this graft')
+          return false
+        }
       }
+      console.error('Error creating distribution:', err)
       return false
     }
   }, [])
@@ -180,7 +187,10 @@ export function useGraftDistributions() {
         .in('id', graftIds)
 
       if (graftError) {
-        console.error('Error bulk-updating graft statuses to sold:', graftError)
+        // Rollback: remove all distributions just inserted
+        await supabase.from('graft_distributions').delete().in('graft_id', graftIds)
+        console.error('Error bulk-updating graft statuses, distributions rolled back:', graftError)
+        throw graftError
       }
 
       return true
@@ -206,7 +216,9 @@ export function useGraftDistributions() {
         .eq('id', graftId)
 
       if (revertError) {
-        console.error('Error reverting graft status:', revertError)
+        console.error('Distribution deleted but graft status revert failed — graft may be stuck as sold:', revertError)
+        toast.error('Distribution removed but graft status could not be reverted. Please update manually.')
+        return true // distribution IS deleted; surface warning but don't pretend it failed
       }
 
       return true
