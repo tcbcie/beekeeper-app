@@ -100,10 +100,6 @@ export default function DistributeGraftModal({
           setGroupMembers(data as RecipientUser[])
         }
       })
-      .catch(err => {
-        console.error('Group members fetch error:', err)
-        setGroupMembers([])
-      })
   }, [groupOnly, groupMemberIds])
 
   // Debounced user search with stale-result guard
