@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, Send, Check, X, CheckSquare, Square, HelpCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
-import type { GraftDistribution } from '@/hooks/useGraftDistributions'
+import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDistributions'
+import { getQueenColorFromYear } from '@/types/queen'
 import DistributeGraftModal from './DistributeGraftModal'
 
 interface Graft {
@@ -25,6 +26,7 @@ interface BatchGraftsSectionProps {
   frameRows?: number | null
   cellsPerRow?: number | null
   groupId?: string | null
+  emergenceDate?: string | null
   onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
 }
 
@@ -79,6 +81,14 @@ const TYPE_LABELS: Record<string, { label: string; color: string }> = {
   mated_queen: { label: 'Mated Queen', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300' },
 }
 
+const COLOUR_DOTS: Record<string, string> = {
+  White: 'bg-gray-200 dark:bg-gray-400',
+  Yellow: 'bg-yellow-400',
+  Red: 'bg-red-500',
+  Green: 'bg-green-500',
+  Blue: 'bg-blue-500',
+}
+
 // Format date to Irish format (DD/MM/YYYY)
 const formatDateIrish = (dateString: string | null): string => {
   if (!dateString) return '-'
@@ -87,7 +97,7 @@ const formatDateIrish = (dateString: string | null): string => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`
 }
 
-export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, onCountsChange }: BatchGraftsSectionProps) {
+export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, onCountsChange }: BatchGraftsSectionProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
   const [loading, setLoading] = useState(true)
@@ -95,14 +105,20 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   const [groupMemberIds, setGroupMemberIds] = useState<string[]>([])
   const [showHelp, setShowHelp] = useState(false)
 
-  // Selection state
+  // Frame selection state
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Table selection state
+  const [tableSelectMode, setTableSelectMode] = useState(false)
+  const [tableSelectedIds, setTableSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDistributeGrafts, setBulkDistributeGrafts] = useState<Graft[] | null>(null)
   const {
     distributions,
     loading: distLoading,
     fetchDistributions,
     createDistribution,
+    createBulkDistributions,
     deleteDistribution,
     toggleMatingConfirmed,
     searchUsers,
@@ -122,11 +138,18 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       console.error('Error fetching grafts:', error)
     } else if (data) {
       setGrafts(data)
-      // Prune selected IDs to only include grafts still on the frame
+      // Prune frame selected IDs to only include grafts still on the frame
       setSelectedIds(prev => {
         if (prev.size === 0) return prev
         const frameIds = new Set(data.filter((g: Graft) => FRAME_STATUS_VALUES.includes(g.status)).map((g: Graft) => g.id))
         const pruned = new Set([...prev].filter(id => frameIds.has(id)))
+        return pruned.size === prev.size ? prev : pruned
+      })
+      // Prune table selected IDs to only include grafts still in the table
+      setTableSelectedIds(prev => {
+        if (prev.size === 0) return prev
+        const tableIds = new Set(data.filter((g: Graft) => !FRAME_STATUS_VALUES.includes(g.status)).map((g: Graft) => g.id))
+        const pruned = new Set([...prev].filter(id => tableIds.has(id)))
         return pruned.size === prev.size ? prev : pruned
       })
     }
@@ -154,6 +177,15 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     fetchGrafts()
     fetchDistributions(batchId)
   }, [fetchGrafts, fetchDistributions, batchId])
+
+  // Reset table select mode when all grafts leave the table
+  useEffect(() => {
+    const hasTableGrafts = grafts.some(g => !FRAME_STATUS_VALUES.includes(g.status))
+    if (!hasTableGrafts && tableSelectMode) {
+      setTableSelectMode(false)
+      setTableSelectedIds(new Set())
+    }
+  }, [grafts, tableSelectMode])
 
   // Sync counts to parent when grafts change
   useEffect(() => {
@@ -313,7 +345,20 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   const deselectAll = () => setSelectedIds(new Set())
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()) }
 
-  // --- Bulk handlers ---
+  // --- Table selection helpers ---
+  const toggleTableSelect = (id: string) => {
+    setTableSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const selectAllTable = () => setTableSelectedIds(new Set(grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status) && g.status !== 'failed').map(g => g.id)))
+  const deselectAllTable = () => setTableSelectedIds(new Set())
+  const exitTableSelectMode = () => { setTableSelectMode(false); setTableSelectedIds(new Set()) }
+
+  // --- Bulk handlers (frame) ---
   const handleBulkStatusChange = async (newStatus: string) => {
     const ids = Array.from(selectedIds)
     if (ids.length === 0) return
@@ -352,6 +397,77 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     }
   }
 
+  // --- Table bulk handlers ---
+  const handleTableBulkStatusChange = async (newStatus: string) => {
+    const ids = Array.from(tableSelectedIds)
+    if (ids.length === 0) return
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ status: newStatus })
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} grafts updated to ${newStatus}`)
+      fetchGrafts()
+      deselectAllTable()
+    } catch (error) {
+      console.error('Error bulk updating grafts:', error)
+      toast.error('Failed to update grafts')
+    }
+  }
+
+  const handleTableBulkQueenMarked = async (marked: boolean) => {
+    const ids = Array.from(tableSelectedIds)
+    if (ids.length === 0) return
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ queen_marked: marked })
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} queens ${marked ? 'marked' : 'unmarked'}`)
+      fetchGrafts()
+      deselectAllTable()
+    } catch (error) {
+      console.error('Error bulk updating queen marked:', error)
+      toast.error('Failed to update queen marked')
+    }
+  }
+
+  const handleTableBulkDelete = async () => {
+    const ids = Array.from(tableSelectedIds)
+    if (ids.length === 0) return
+    if (!confirm(`Delete ${ids.length} selected grafts? This cannot be undone.`)) return
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .delete()
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} grafts deleted`)
+      fetchGrafts()
+      fetchDistributions(batchId)
+      deselectAllTable()
+    } catch (error) {
+      console.error('Error bulk deleting grafts:', error)
+      toast.error('Failed to delete grafts')
+    }
+  }
+
+  const handleBulkDistributeSave = async (data: BulkDistributionData) => {
+    const success = await createBulkDistributions(data)
+    if (success) {
+      toast.success(`${data.grafts.length} distributions recorded`)
+      fetchGrafts()
+      fetchDistributions(batchId)
+      setBulkDistributeGrafts(null)
+      deselectAllTable()
+    } else {
+      toast.error('Failed to record distributions')
+    }
+    return success
+  }
+
   if (loading) {
     return <div className="text-sm text-text-secondary">Loading grafts...</div>
   }
@@ -365,6 +481,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   // Split grafts into frame (grafted/accepted) and table (everything else)
   const frameGrafts = grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status))
   const tableGrafts = grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status))
+
+  // Marking colour derived from emergence date
+  const markingColour = emergenceDate ? getQueenColorFromYear(emergenceDate) : ''
+  const emergenceYear = emergenceDate ? new Date(emergenceDate).getFullYear() : null
 
   return (
     <div className="space-y-4">
@@ -384,7 +504,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           {grafts.length > 0 && (
             <button
               type="button"
-              onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+              onClick={() => { if (selectMode) { exitSelectMode() } else { exitTableSelectMode(); setSelectMode(true) } }}
               className={`px-3 py-1.5 text-sm rounded flex items-center gap-1 ${
                 selectMode
                   ? 'bg-forest-600 text-white hover:bg-forest-700'
@@ -580,13 +700,105 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       {/* Queen Tracking Table */}
       {tableGrafts.length > 0 && (
         <div className="pt-4 border-t border-border">
-          <h4 className="text-sm font-semibold text-foreground mb-3">Queen Tracking ({tableGrafts.length})</h4>
+          <div className="flex justify-between items-center mb-1">
+            <h4 className="text-sm font-semibold text-foreground">Queen Tracking ({tableGrafts.length})</h4>
+            <button
+              type="button"
+              onClick={() => { if (tableSelectMode) { exitTableSelectMode() } else { exitSelectMode(); setTableSelectMode(true) } }}
+              className={`px-3 py-1.5 text-sm rounded flex items-center gap-1 ${
+                tableSelectMode
+                  ? 'bg-forest-600 text-white hover:bg-forest-700'
+                  : 'bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
+            >
+              <CheckSquare size={14} />
+              {tableSelectMode ? 'Done' : 'Select'}
+            </button>
+          </div>
+
+          {/* Marking Colour Note */}
+          {markingColour && emergenceYear && !isNaN(emergenceYear) && (
+            <p className="text-xs text-text-secondary mb-2 flex items-center gap-1.5">
+              Marking colour for this batch:
+              <span className={`inline-block w-3 h-3 rounded-full ${COLOUR_DOTS[markingColour] || ''}`} />
+              <span className="font-semibold">{markingColour}</span>
+              ({emergenceYear})
+            </p>
+          )}
+
+          {/* Table Bulk Action Bar */}
+          {tableSelectMode && (
+            <div className="flex flex-wrap items-center gap-2 p-3 mb-3 bg-forest-50 dark:bg-forest-950/30 rounded-lg border border-forest-200 dark:border-forest-800">
+              <span className="text-sm font-medium text-foreground">{tableSelectedIds.size} selected</span>
+              <button type="button" onClick={selectAllTable} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
+                Select All
+              </button>
+              {tableSelectedIds.size > 0 && (
+                <button type="button" onClick={deselectAllTable} className="text-xs text-text-secondary hover:underline">
+                  Deselect All
+                </button>
+              )}
+              <span className="text-border">|</span>
+              <select
+                onChange={(e) => { if (e.target.value) { handleTableBulkStatusChange(e.target.value); e.target.value = '' } }}
+                defaultValue=""
+                className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+              >
+                <option value="" disabled>Change Status...</option>
+                {TABLE_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => handleTableBulkQueenMarked(true)}
+                disabled={tableSelectedIds.size === 0}
+                className="px-2 py-1 text-xs bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50"
+              >
+                Mark All
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTableBulkQueenMarked(false)}
+                disabled={tableSelectedIds.size === 0}
+                className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-foreground rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+              >
+                Unmark All
+              </button>
+              {tableSelectedIds.size > 0 && Array.from(tableSelectedIds).every(id => {
+                const g = grafts.find(gr => gr.id === id)
+                return g && DISTRIBUTABLE_STATUSES.includes(g.status)
+              }) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const selected = grafts.filter(g => tableSelectedIds.has(g.id))
+                    setBulkDistributeGrafts(selected)
+                  }}
+                  className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-1"
+                >
+                  <Send size={12} />
+                  Distribute
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleTableBulkDelete}
+                disabled={tableSelectedIds.size === 0}
+                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+              >
+                <Trash2 size={12} />
+                Delete
+              </button>
+            </div>
+          )}
 
           {/* Desktop Table */}
           <div className="hidden md:block">
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-sage-50 dark:bg-slate-800">
                 <tr>
+                  {tableSelectMode && <th className="px-2 py-2 w-8" />}
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Status</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Marked</th>
@@ -596,7 +808,17 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               </thead>
               <tbody className="divide-y divide-border">
                 {tableGrafts.map(graft => (
-                    <tr key={graft.id} className="hover:bg-sage-50 dark:hover:bg-slate-800">
+                    <tr key={graft.id} className={`hover:bg-sage-50 dark:hover:bg-slate-800 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''}`}>
+                      {tableSelectMode && (
+                        <td className="px-2 py-2">
+                          <button type="button" onClick={() => toggleTableSelect(graft.id)}>
+                            {tableSelectedIds.has(graft.id)
+                              ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
+                              : <Square size={16} className="text-text-tertiary" />
+                            }
+                          </button>
+                        </td>
+                      )}
                       <td className="px-3 py-2 text-sm font-medium text-foreground">#{graft.cell_number}</td>
                       <td className="px-3 py-2">
                         <select
@@ -665,9 +887,19 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             {tableGrafts.map(graft => {
               const statusInfo = GRAFT_STATUSES.find(s => s.value === graft.status)
               return (
-                <div key={graft.id} className="p-3 bg-surface-elevated rounded-lg border border-border space-y-2">
+                <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''}`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">Cell #{graft.cell_number}</span>
+                    <div className="flex items-center gap-2">
+                      {tableSelectMode && (
+                        <button type="button" onClick={() => toggleTableSelect(graft.id)}>
+                          {tableSelectedIds.has(graft.id)
+                            ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
+                            : <Square size={16} className="text-text-tertiary" />
+                          }
+                        </button>
+                      )}
+                      <span className="text-sm font-medium text-foreground">Cell #{graft.cell_number}</span>
+                    </div>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusInfo?.color || ''}`}>
                       {statusInfo?.label || graft.status}
                     </span>
@@ -811,6 +1043,25 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           fetchRecipientHives={fetchRecipientHives}
           onSave={handleDistributeSave}
           onClose={() => setDistributeGraft(null)}
+        />
+      )}
+
+      {/* Distribute Modal (bulk from table) */}
+      {bulkDistributeGrafts && bulkDistributeGrafts.length > 0 && (
+        <DistributeGraftModal
+          graftId={bulkDistributeGrafts[0].id}
+          batchId={batchId}
+          cellNumber={bulkDistributeGrafts[0].cell_number}
+          graftStatus={bulkDistributeGrafts[0].status}
+          userId={userId}
+          groupMemberIds={groupMemberIds}
+          searchUsers={searchUsers}
+          fetchRecipientApiaries={fetchRecipientApiaries}
+          fetchRecipientHives={fetchRecipientHives}
+          onSave={handleDistributeSave}
+          onClose={() => setBulkDistributeGrafts(null)}
+          bulkGrafts={bulkDistributeGrafts.map(g => ({ id: g.id, status: g.status, cell_number: g.cell_number }))}
+          onBulkSave={handleBulkDistributeSave}
         />
       )}
 
