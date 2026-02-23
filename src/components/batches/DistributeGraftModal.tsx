@@ -145,8 +145,7 @@ export default function DistributeGraftModal({
     setSelectedHiveId('')
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     if (!selectedUser) return
 
     setSaving(true)
@@ -199,7 +198,7 @@ export default function DistributeGraftModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
+        <div className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
           {/* Distribution Type Badge */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
@@ -381,7 +380,8 @@ export default function DistributeGraftModal({
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={!selectedUser || saving}
               className="flex-1 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
@@ -395,7 +395,7 @@ export default function DistributeGraftModal({
               Cancel
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
