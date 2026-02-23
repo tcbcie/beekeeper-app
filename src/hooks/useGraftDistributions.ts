@@ -20,6 +20,10 @@ export interface GraftDistribution {
   recipient_name: string | null
   recipient_email: string | null
   recipient_apiary_name: string | null
+  recipient_apiary_latitude: number | null
+  recipient_apiary_longitude: number | null
+  recipient_apiary_elevation: number | null
+  recipient_apiary_grid_reference: string | null
   recipient_hive_number: string | null
   cell_number: number
 }
@@ -78,8 +82,8 @@ export function useGraftDistributions() {
         .select(`
           *,
           batch_grafts(cell_number),
-          profiles!graft_distributions_recipient_profile_id_fkey(full_name, email),
-          apiaries!graft_distributions_recipient_apiary_id_fkey(name),
+          profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name, email),
+          apiaries!graft_distributions_recipient_apiary_id_fkey(name, latitude, longitude, elevation, grid_reference),
           hives!graft_distributions_recipient_hive_id_fkey(hive_number)
         `)
         .eq('batch_id', batchId)
@@ -89,9 +93,19 @@ export function useGraftDistributions() {
 
       const mapped: GraftDistribution[] = (data || []).map((d: Record<string, unknown>) => {
         const grafts = d.batch_grafts as { cell_number: number }[] | { cell_number: number } | null
-        const profile = d.profiles as { full_name: string; email: string }[] | { full_name: string; email: string } | null
-        const apiary = d.apiaries as { name: string }[] | { name: string } | null
+        const profile = d.profiles as { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null }[] | { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null } | null
+        const apiary = d.apiaries as { name: string; latitude: number | null; longitude: number | null; elevation: number | null; grid_reference: string | null }[] | { name: string; latitude: number | null; longitude: number | null; elevation: number | null; grid_reference: string | null } | null
         const hive = d.hives as { hive_number: string }[] | { hive_number: string } | null
+
+        const p = Array.isArray(profile) ? profile[0] : profile
+        const a = Array.isArray(apiary) ? apiary[0] : apiary
+
+        // Best available display name: full_name → first+last → email
+        const firstName = p?.first_name ?? null
+        const lastName = p?.last_name ?? null
+        const fullName = p?.full_name ?? null
+        const combinedName = (firstName || lastName) ? `${firstName ?? ''} ${lastName ?? ''}`.trim() : null
+        const recipientName = fullName || combinedName || p?.email || null
 
         return {
           id: d.id as string,
@@ -108,9 +122,13 @@ export function useGraftDistributions() {
           previous_graft_status: d.previous_graft_status as string | null,
           created_at: d.created_at as string,
           cell_number: Array.isArray(grafts) ? grafts[0]?.cell_number ?? 0 : grafts?.cell_number ?? 0,
-          recipient_name: Array.isArray(profile) ? profile[0]?.full_name ?? null : profile?.full_name ?? null,
-          recipient_email: Array.isArray(profile) ? profile[0]?.email ?? null : profile?.email ?? null,
-          recipient_apiary_name: Array.isArray(apiary) ? apiary[0]?.name ?? null : apiary?.name ?? null,
+          recipient_name: recipientName,
+          recipient_email: p?.email ?? null,
+          recipient_apiary_name: a?.name ?? null,
+          recipient_apiary_latitude: a?.latitude ?? null,
+          recipient_apiary_longitude: a?.longitude ?? null,
+          recipient_apiary_elevation: a?.elevation ?? null,
+          recipient_apiary_grid_reference: a?.grid_reference ?? null,
           recipient_hive_number: Array.isArray(hive) ? hive[0]?.hive_number ?? null : hive?.hive_number ?? null,
         }
       })
