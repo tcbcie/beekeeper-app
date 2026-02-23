@@ -1012,7 +1012,7 @@ export default function BatchesPage() {
                     ))}
                   </select>
                   <p className="text-xs text-text-tertiary mt-1">If your mating location (apiary) is not listed, please set one up in the Apiary section.</p>
-                  <p className="text-xs text-text-tertiary mt-1">This is the intended mating location and will be used as the default for the NIHBS report unless the location is overwritten by the [placeholder].</p>
+                  <p className="text-xs text-text-tertiary mt-1">This is the intended mating location and will be used as the default for the NIHBS report unless the location is overwritten by the location at the time of distribution.</p>
                 </div>
               </div>
             )}
