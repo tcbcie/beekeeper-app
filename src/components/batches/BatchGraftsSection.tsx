@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, RefreshCw, Send, Check, X, CheckSquare, Square } from 'lucide-react'
+import { Plus, Trash2, Send, Check, X, CheckSquare, Square } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { GraftDistribution } from '@/hooks/useGraftDistributions'
@@ -25,7 +25,6 @@ interface BatchGraftsSectionProps {
   frameRows?: number | null
   cellsPerRow?: number | null
   groupId?: string | null
-  batchCounters?: { grafts_accepted: number | null; queens_hatched: number | null; queens_mated: number | null }
   onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
 }
 
@@ -84,7 +83,7 @@ const formatDateIrish = (dateString: string | null): string => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`
 }
 
-export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, batchCounters, onCountsChange }: BatchGraftsSectionProps) {
+export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, onCountsChange }: BatchGraftsSectionProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
   const [loading, setLoading] = useState(true)
@@ -344,68 +343,6 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     } catch (error) {
       console.error('Error bulk deleting grafts:', error)
       toast.error('Failed to delete grafts')
-    }
-  }
-
-  // --- Sync from counters ---
-  const handleSyncFromCounters = async () => {
-    if (!batchCounters) return
-    const { grafts_accepted, queens_hatched, queens_mated } = batchCounters
-    const accepted = grafts_accepted || 0
-    const hatched = queens_hatched || 0
-    const mated = queens_mated || 0
-
-    // Filter out locked statuses, sort by cell_number
-    const assignable = grafts
-      .filter((g) => g.status !== 'failed' && g.status !== 'sold')
-      .sort((a, b) => a.cell_number - b.cell_number)
-
-    if (assignable.length === 0) {
-      toast.error('No assignable grafts (all failed or sold)')
-      return
-    }
-
-    // Build assignment plan
-    const plan: Record<string, string[]> = { mated: [], emerged: [], accepted: [], grafted: [] }
-    let idx = 0
-    // First N → mated
-    for (let i = 0; i < mated && idx < assignable.length; i++, idx++) {
-      plan.mated.push(assignable[idx].id)
-    }
-    // Next (hatched - mated) → emerged
-    for (let i = 0; i < (hatched - mated) && idx < assignable.length; i++, idx++) {
-      plan.emerged.push(assignable[idx].id)
-    }
-    // Next (accepted - hatched) → accepted
-    for (let i = 0; i < (accepted - hatched) && idx < assignable.length; i++, idx++) {
-      plan.accepted.push(assignable[idx].id)
-    }
-    // Remainder → grafted
-    for (; idx < assignable.length; idx++) {
-      plan.grafted.push(assignable[idx].id)
-    }
-
-    const summary = Object.entries(plan)
-      .filter(([, ids]) => ids.length > 0)
-      .map(([status, ids]) => `${ids.length} → ${status}`)
-      .join(', ')
-
-    if (!confirm(`Sync statuses from batch counters?\n\n${summary}\n\n(Failed and sold grafts are unchanged)`)) return
-
-    try {
-      for (const [status, ids] of Object.entries(plan)) {
-        if (ids.length === 0) continue
-        const { error } = await supabase
-          .from('batch_grafts')
-          .update({ status })
-          .in('id', ids)
-        if (error) throw error
-      }
-      toast.success('Statuses synced from counters')
-      fetchGrafts()
-    } catch (error) {
-      console.error('Error syncing from counters:', error)
-      toast.error('Failed to sync statuses')
     }
   }
 
@@ -752,30 +689,6 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               )
             })}
           </div>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      {grafts.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-          <button
-            type="button"
-            onClick={() => fetchGrafts()}
-            className="px-3 py-1.5 text-sm text-text-secondary hover:text-foreground flex items-center gap-1"
-          >
-            <RefreshCw size={14} />
-            Refresh
-          </button>
-          {batchCounters && (
-            <button
-              type="button"
-              onClick={handleSyncFromCounters}
-              className="px-3 py-1.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded flex items-center gap-1"
-            >
-              <RefreshCw size={14} />
-              Sync from Counters
-            </button>
-          )}
         </div>
       )}
 

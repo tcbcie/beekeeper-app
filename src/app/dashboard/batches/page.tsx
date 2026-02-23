@@ -1302,11 +1302,6 @@ export default function BatchesPage() {
                   frameRows={formData.frame_rows ? parseInt(formData.frame_rows) : null}
                   cellsPerRow={formData.cells_per_row ? parseInt(formData.cells_per_row) : null}
                   groupId={editingBatch.rearing_group_id}
-                  batchCounters={{
-                    grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted, 10) : null,
-                    queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) : null,
-                    queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) : null,
-                  }}
                   onCountsChange={(counts) => setFormData(prev => ({
                     ...prev,
                     grafts_accepted: counts.grafts_accepted.toString(),
