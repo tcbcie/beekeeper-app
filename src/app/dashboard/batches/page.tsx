@@ -1292,17 +1292,6 @@ export default function BatchesPage() {
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                rows={3}
-                placeholder="Weather conditions, acceptance rate, observations..."
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
-              />
-            </div>
-
             {/* Individual Grafts Section - Only show when editing existing batch */}
             {editingBatch && userId && (
               <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -1321,6 +1310,17 @@ export default function BatchesPage() {
                 />
               </div>
             )}
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                rows={3}
+                placeholder="Weather conditions, acceptance rate, observations..."
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+              />
+            </div>
 
             {/* Notification Preferences - Grouped */}
             <div className="md:col-span-2 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
