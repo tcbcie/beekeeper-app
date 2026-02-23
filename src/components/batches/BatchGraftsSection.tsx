@@ -62,7 +62,7 @@ const TABLE_STATUSES = [
 
 const FRAME_STATUS_VALUES = ['grafted', 'accepted', 'failed']
 
-const DISTRIBUTABLE_STATUSES = ['sealed', 'emerged', 'in_nuc', 'mated']
+const DISTRIBUTABLE_STATUSES = ['sealed', 'emerged', 'mated']
 
 const CUP_COLORS: Record<string, string> = {
   grafted: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
@@ -819,7 +819,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                   {tableSelectMode && <th className="px-2 py-2 w-8" />}
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Status</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Date</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Last Update</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Marked</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Number</th>
                   <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">Actions</th>
@@ -946,7 +946,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       </select>
                     </div>
                     <div className="flex items-center justify-between">
-                      <label className="text-xs text-text-secondary">Status Date</label>
+                      <label className="text-xs text-text-secondary">Last Update</label>
                       <input
                         key={`${graft.id}-sd-${graft.status_date ?? ''}`}
                         type="date"
