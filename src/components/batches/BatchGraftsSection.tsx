@@ -505,14 +505,14 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             <button
               type="button"
               onClick={() => { if (selectMode) { exitSelectMode() } else { exitTableSelectMode(); setSelectMode(true) } }}
-              className={`px-3 py-1.5 text-sm rounded flex items-center gap-1 ${
+              className={`px-3 py-1.5 text-sm rounded font-medium flex items-center gap-1 ${
                 selectMode
                   ? 'bg-forest-600 text-white hover:bg-forest-700'
-                  : 'bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600'
+                  : 'border border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30'
               }`}
             >
               <CheckSquare size={14} />
-              {selectMode ? 'Done' : 'Select'}
+              {selectMode ? 'Done' : 'Bulk Actions'}
             </button>
           )}
           <button
@@ -705,14 +705,14 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             <button
               type="button"
               onClick={() => { if (tableSelectMode) { exitTableSelectMode() } else { exitSelectMode(); setTableSelectMode(true) } }}
-              className={`px-3 py-1.5 text-sm rounded flex items-center gap-1 ${
+              className={`px-3 py-1.5 text-sm rounded font-medium flex items-center gap-1 ${
                 tableSelectMode
                   ? 'bg-forest-600 text-white hover:bg-forest-700'
-                  : 'bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600'
+                  : 'border border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30'
               }`}
             >
               <CheckSquare size={14} />
-              {tableSelectMode ? 'Done' : 'Select'}
+              {tableSelectMode ? 'Done' : 'Bulk Actions'}
             </button>
           </div>
 
