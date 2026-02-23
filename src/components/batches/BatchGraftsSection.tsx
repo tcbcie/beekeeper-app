@@ -318,11 +318,12 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     const success = await createDistribution(data)
     if (success) {
       toast.success('Distribution recorded')
-      fetchGrafts()
-      fetchDistributions(batchId)
     } else {
-      toast.error('Failed to record distribution')
+      toast.error('This graft has already been distributed')
     }
+    // Always refresh to sync UI state
+    fetchGrafts()
+    fetchDistributions(batchId)
     return success
   }
 
@@ -921,7 +922,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                               {isLocked ? <Lock size={14} /> : <LockOpen size={14} />}
                             </button>
                           )}
-                          {!isLocked && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
+                          {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
                             <button
                               type="button"
                               onClick={() => setDistributeGraft(graft)}
@@ -1047,7 +1048,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                         {isLocked ? 'Unlock' : 'Lock'}
                       </button>
                     )}
-                    {!isLocked && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
+                    {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
                       <button
                         type="button"
                         onClick={() => setDistributeGraft(graft)}

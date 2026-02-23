@@ -140,8 +140,13 @@ export function useGraftDistributions() {
       }
 
       return true
-    } catch (err) {
-      console.error('Error creating distribution:', err)
+    } catch (err: unknown) {
+      const pgError = err as { code?: string }
+      if (pgError.code === '23505') {
+        console.error('Distribution already exists for this graft')
+      } else {
+        console.error('Error creating distribution:', err)
+      }
       return false
     }
   }, [])
