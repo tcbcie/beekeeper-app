@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, RefreshCw, Send, Check, X, CheckSquare, Square } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
-import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDistributions'
+import type { GraftDistribution } from '@/hooks/useGraftDistributions'
 import DistributeGraftModal from './DistributeGraftModal'
 
 interface Graft {
@@ -14,6 +14,8 @@ interface Graft {
   cell_number: number
   status: string
   notes: string | null
+  queen_marked: boolean
+  queen_number: string | null
 }
 
 interface BatchGraftsSectionProps {
@@ -36,6 +38,23 @@ const GRAFT_STATUSES = [
   { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
   { value: 'sold', label: 'Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
 ]
+
+const FRAME_STATUSES = [
+  { value: 'grafted', label: 'Grafted', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  { value: 'accepted', label: 'Accepted', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+  { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+]
+
+const TABLE_STATUSES = [
+  { value: 'caged', label: 'Caged', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+  { value: 'emerged', label: 'Emerged', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
+  { value: 'in_nuc', label: 'In Nuc', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300' },
+  { value: 'mated', label: 'Mated', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300' },
+  { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+  { value: 'sold', label: 'Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
+]
+
+const FRAME_STATUS_VALUES = ['grafted', 'accepted']
 
 const DISTRIBUTABLE_STATUSES = ['emerged', 'in_nuc', 'mated']
 
@@ -74,15 +93,11 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   // Selection state
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  // Bulk distribute modal state
-  const [bulkDistributeGrafts, setBulkDistributeGrafts] = useState<Graft[] | null>(null)
-
   const {
     distributions,
     loading: distLoading,
     fetchDistributions,
     createDistribution,
-    createBulkDistributions,
     deleteDistribution,
     toggleMatingConfirmed,
     searchUsers,
@@ -102,6 +117,13 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       console.error('Error fetching grafts:', error)
     } else if (data) {
       setGrafts(data)
+      // Prune selected IDs to only include grafts still on the frame
+      setSelectedIds(prev => {
+        if (prev.size === 0) return prev
+        const frameIds = new Set(data.filter((g: Graft) => FRAME_STATUS_VALUES.includes(g.status)).map((g: Graft) => g.id))
+        const pruned = new Set([...prev].filter(id => frameIds.has(id)))
+        return pruned.size === prev.size ? prev : pruned
+      })
     }
     setLoading(false)
   }, [batchId, userId])
@@ -201,6 +223,34 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     }
   }
 
+  const updateGraftQueenMarked = async (graftId: string, marked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ queen_marked: marked })
+        .eq('id', graftId)
+      if (error) throw error
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: marked } : g))
+    } catch (error) {
+      console.error('Error updating queen marked:', error)
+      toast.error('Failed to update queen marked')
+    }
+  }
+
+  const updateGraftQueenNumber = async (graftId: string, queenNumber: string) => {
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ queen_number: queenNumber || null })
+        .eq('id', graftId)
+      if (error) throw error
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: queenNumber || null } : g))
+    } catch (error) {
+      console.error('Error updating queen number:', error)
+      toast.error('Failed to update queen number')
+    }
+  }
+
   const handleDistributeSave = async (data: Parameters<typeof createDistribution>[0]) => {
     const success = await createDistribution(data)
     if (success) {
@@ -244,7 +294,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     })
   }
 
-  const selectAll = () => setSelectedIds(new Set(grafts.map((g) => g.id)))
+  const selectAll = () => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id)))
   const deselectAll = () => setSelectedIds(new Set())
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()) }
 
@@ -265,30 +315,6 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       console.error('Error bulk updating grafts:', error)
       toast.error('Failed to update grafts')
     }
-  }
-
-  const handleBulkDistribute = () => {
-    const selected = grafts.filter(
-      (g) => selectedIds.has(g.id) && DISTRIBUTABLE_STATUSES.includes(g.status) && g.status !== 'sold'
-    )
-    if (selected.length === 0) {
-      toast.error('No distributable grafts selected')
-      return
-    }
-    setBulkDistributeGrafts(selected)
-  }
-
-  const handleBulkDistributeSave = async (data: BulkDistributionData) => {
-    const success = await createBulkDistributions(data)
-    if (success) {
-      toast.success(`${data.grafts.length} distributions recorded`)
-      fetchGrafts()
-      fetchDistributions(batchId)
-      deselectAll()
-    } else {
-      toast.error('Failed to record distributions')
-    }
-    return success
   }
 
   const handleBulkDelete = async () => {
@@ -383,6 +409,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     return acc
   }, {} as Record<string, number>)
 
+  // Split grafts into frame (grafted/accepted) and table (everything else)
+  const frameGrafts = grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status))
+  const tableGrafts = grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status))
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -443,18 +473,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
           >
             <option value="" disabled>Change Status...</option>
-            {GRAFT_STATUSES.map((s) => (
+            {FRAME_STATUSES.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
-          <button
-            type="button"
-            onClick={handleBulkDistribute}
-            className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-1"
-          >
-            <Send size={12} />
-            Distribute
-          </button>
           <button
             type="button"
             onClick={handleBulkDelete}
@@ -471,23 +493,26 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         <p className="text-sm text-text-tertiary">
           No grafts yet. Click &quot;Generate from Cell Count&quot; to create grafts based on your cell count.
         </p>
+      ) : frameGrafts.length === 0 ? (
+        <p className="text-sm text-text-tertiary">
+          All grafts have progressed beyond the frame stage.
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <div className="border-4 border-amber-700 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 min-w-fit">
             {(() => {
-              // Organise grafts into rows
+              // Organise frame grafts into rows
               let rows: Graft[][]
               if (frameRows && cellsPerRow) {
                 rows = Array.from({ length: frameRows }, (_, r) =>
-                  grafts.slice(r * cellsPerRow, (r + 1) * cellsPerRow)
+                  frameGrafts.slice(r * cellsPerRow, (r + 1) * cellsPerRow)
                 ).filter(row => row.length > 0)
-                // Include any overflow grafts beyond frameRows × cellsPerRow
                 const shown = frameRows * cellsPerRow
-                if (grafts.length > shown) {
-                  rows.push(grafts.slice(shown))
+                if (frameGrafts.length > shown) {
+                  rows.push(frameGrafts.slice(shown))
                 }
               } else {
-                rows = [grafts] // fallback: single row
+                rows = [frameGrafts]
               }
 
               return rows.map((rowGrafts, rowIdx) => (
@@ -520,7 +545,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                               ? 'ring-2 ring-forest-500 ring-offset-1'
                               : ''
                           }`}
-                          title={`#${graft.cell_number} - ${GRAFT_STATUSES.find(s => s.value === graft.status)?.label || graft.status}`}
+                          title={`#${graft.cell_number} - ${FRAME_STATUSES.find(s => s.value === graft.status)?.label || graft.status}`}
                         >
                           {graft.cell_number}
                         </button>
@@ -533,21 +558,11 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                               onClick={(e) => e.stopPropagation()}
                               className="w-16 px-0 py-0.5 text-[10px] rounded border border-border bg-surface text-foreground text-center"
                             >
-                              {GRAFT_STATUSES.map(s => (
+                              {FRAME_STATUSES.map(s => (
                                 <option key={s.value} value={s.value}>{s.label}</option>
                               ))}
                             </select>
                             <div className="flex gap-0.5">
-                              {DISTRIBUTABLE_STATUSES.includes(graft.status) && (
-                                <button
-                                  type="button"
-                                  onClick={() => setDistributeGraft(graft)}
-                                  className="p-0.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
-                                  title="Distribute"
-                                >
-                                  <Send size={10} />
-                                </button>
-                              )}
                               <button
                                 type="button"
                                 onClick={() => deleteGraft(graft.id)}
@@ -565,6 +580,167 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                 </div>
               ))
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Queen Tracking Table */}
+      {tableGrafts.length > 0 && (
+        <div className="pt-4 border-t border-border">
+          <h4 className="text-sm font-semibold text-foreground mb-3">Queen Tracking ({tableGrafts.length})</h4>
+
+          {/* Desktop Table */}
+          <div className="hidden md:block">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-sage-50 dark:bg-slate-800">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Status</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Marked</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Number</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {tableGrafts.map(graft => (
+                    <tr key={graft.id} className="hover:bg-sage-50 dark:hover:bg-slate-800">
+                      <td className="px-3 py-2 text-sm font-medium text-foreground">#{graft.cell_number}</td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={graft.status}
+                          onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
+                          className="px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                        >
+                          {TABLE_STATUSES.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={graft.queen_marked}
+                          onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
+                          className="h-4 w-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          key={`${graft.id}-qn-${graft.queen_number ?? ''}`}
+                          type="text"
+                          defaultValue={graft.queen_number || ''}
+                          onBlur={(e) => {
+                            const val = e.target.value.trim()
+                            if (val !== (graft.queen_number || '')) {
+                              updateGraftQueenNumber(graft.id, val)
+                            }
+                          }}
+                          placeholder="Enter number..."
+                          className="w-28 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                        />
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex gap-1 justify-end">
+                          {DISTRIBUTABLE_STATUSES.includes(graft.status) && (
+                            <button
+                              type="button"
+                              onClick={() => setDistributeGraft(graft)}
+                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
+                              title="Distribute"
+                            >
+                              <Send size={14} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => deleteGraft(graft.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-3">
+            {tableGrafts.map(graft => {
+              const statusInfo = GRAFT_STATUSES.find(s => s.value === graft.status)
+              return (
+                <div key={graft.id} className="p-3 bg-surface-elevated rounded-lg border border-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">Cell #{graft.cell_number}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusInfo?.color || ''}`}>
+                      {statusInfo?.label || graft.status}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-text-secondary">Status</label>
+                      <select
+                        value={graft.status}
+                        onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
+                        className="px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                      >
+                        {TABLE_STATUSES.map(s => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-text-secondary">Queen Marked</label>
+                      <input
+                        type="checkbox"
+                        checked={graft.queen_marked}
+                        onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
+                        className="h-4 w-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs text-text-secondary shrink-0">Queen Number</label>
+                      <input
+                        key={`${graft.id}-qn-${graft.queen_number ?? ''}`}
+                        type="text"
+                        defaultValue={graft.queen_number || ''}
+                        onBlur={(e) => {
+                          const val = e.target.value.trim()
+                          if (val !== (graft.queen_number || '')) {
+                            updateGraftQueenNumber(graft.id, val)
+                          }
+                        }}
+                        placeholder="Enter number..."
+                        className="w-28 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-1 pt-1 border-t border-border">
+                    {DISTRIBUTABLE_STATUSES.includes(graft.status) && (
+                      <button
+                        type="button"
+                        onClick={() => setDistributeGraft(graft)}
+                        className="px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded flex items-center gap-1"
+                      >
+                        <Send size={12} />
+                        Distribute
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => deleteGraft(graft.id)}
+                      className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex items-center gap-1"
+                    >
+                      <Trash2 size={12} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -669,24 +845,6 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         />
       )}
 
-      {/* Distribute Modal (bulk) */}
-      {bulkDistributeGrafts && bulkDistributeGrafts.length > 0 && (
-        <DistributeGraftModal
-          graftId={bulkDistributeGrafts[0].id}
-          batchId={batchId}
-          cellNumber={bulkDistributeGrafts[0].cell_number}
-          graftStatus={bulkDistributeGrafts[0].status}
-          userId={userId}
-          groupMemberIds={groupMemberIds}
-          searchUsers={searchUsers}
-          fetchRecipientApiaries={fetchRecipientApiaries}
-          fetchRecipientHives={fetchRecipientHives}
-          onSave={handleDistributeSave}
-          onClose={() => setBulkDistributeGrafts(null)}
-          bulkGrafts={bulkDistributeGrafts.map((g) => ({ id: g.id, status: g.status, cell_number: g.cell_number }))}
-          onBulkSave={handleBulkDistributeSave}
-        />
-      )}
     </div>
   )
 }

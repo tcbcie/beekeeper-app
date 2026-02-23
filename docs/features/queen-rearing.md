@@ -32,7 +32,11 @@ The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stay
 **`batch_grafts`** — individual cell tracking
 - `id`, `batch_id` (FK, CASCADE), `user_id` (FK, CASCADE)
 - `cell_number` (UNIQUE per batch), `status`, `notes`
+- `queen_marked` (BOOLEAN, default false) — whether the queen has been marked
+- `queen_number` (TEXT, nullable) — queen identification number
 - Status values: `grafted` → `accepted` → `caged` → `emerged` → `in_nuc` → `mated` | `failed` | `sold`
+- **Frame view**: shows grafts with status `grafted` or `accepted` (early lifecycle)
+- **Queen tracking table**: shows grafts with status `caged`, `emerged`, `in_nuc`, `mated`, `failed`, or `sold` (post-acceptance) with queen marking and numbering controls
 
 **`graft_distributions`** — distribution tracking (see [batch-distributions.md](./batch-distributions.md))
 - One distribution per graft (UNIQUE on graft_id)
@@ -124,7 +128,7 @@ Queen Record (queen_number, lineage, batch_id)
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Frame visualisation of individual grafts — horizontal bars with hanging cell cups, status dropdowns, bulk generation, select mode, distribution |
+| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: frame visualisation for grafted/accepted grafts (bars + cups) + queen tracking table for post-acceptance grafts (caged/emerged/in_nuc/mated/failed/sold) with queen marking, queen numbering, distribution, and delete actions |
 | `MatingNucsTab` | `src/components/batches/MatingNucsTab.tsx` | Full nuc CRUD, retirement with history, expandable inspections |
 | `NucInspectionPanel` | `src/components/batches/NucInspectionPanel.tsx` | Inline inspection form + history list per nuc |
 | `NucInspectionCard` | `src/components/batches/NucInspectionCard.tsx` | Single inspection display with badges |
@@ -236,7 +240,7 @@ Component-level interfaces in `batches/page.tsx`:
 6. **Weighted scoring** — configurable multi-criteria algorithm for breeder selection
 7. **Genealogy** — self-referencing mother/father FKs with recursive tree fetching (up to 4 generations)
 8. **Team visibility** — queens visible across shared apiaries via team membership
-9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile
+9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile. Frame only shows grafted/accepted grafts; post-acceptance grafts appear in a separate queen tracking table below with queen marking checkbox, queen number input, status dropdown, distribute, and delete controls
 
 ---
 
