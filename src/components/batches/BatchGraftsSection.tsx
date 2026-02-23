@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, Send, Check, X, CheckSquare, Square, HelpCircle, Lock, LockOpen } from 'lucide-react'
+import { Plus, Trash2, Send, Check, X, CheckSquare, Square, HelpCircle, Lock, LockOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDistributions'
@@ -60,7 +60,7 @@ const TABLE_STATUSES = [
   { value: 'sold', label: 'Distributed/Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
 ]
 
-const FRAME_STATUS_VALUES = ['grafted', 'accepted', 'failed']
+const FRAME_STATUS_VALUES = ['grafted', 'accepted']
 
 const DISTRIBUTABLE_STATUSES = ['sealed', 'emerged', 'mated']
 
@@ -115,6 +115,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   const [tableSelectedIds, setTableSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDistributeGrafts, setBulkDistributeGrafts] = useState<Graft[] | null>(null)
   const [unlockedGraftIds, setUnlockedGraftIds] = useState<Set<string>>(new Set())
+  const [frameCollapsed, setFrameCollapsed] = useState(false)
+  const frameInitialised = useRef(false)
   const {
     distributions,
     loading: distLoading,
@@ -197,6 +199,14 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       setTableSelectedIds(new Set())
     }
   }, [grafts, tableSelectMode])
+
+  // Auto-collapse frame once on first load if table grafts already exist
+  useEffect(() => {
+    if (frameInitialised.current || grafts.length === 0) return
+    frameInitialised.current = true
+    const hasTableGrafts = grafts.some(g => !FRAME_STATUS_VALUES.includes(g.status))
+    if (hasTableGrafts) setFrameCollapsed(true)
+  }, [grafts])
 
   // Sync counts to parent when grafts change
   useEffect(() => {
@@ -367,8 +377,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     })
   }
 
-  const selectAll = () => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status) && g.status !== 'failed').map((g) => g.id)))
-  const selectAllIncludingFailed = () => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id)))
+  const selectAll = () => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id)))
   const deselectAll = () => setSelectedIds(new Set())
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()) }
 
@@ -603,9 +612,6 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           <button type="button" onClick={selectAll} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
             Select All
           </button>
-          <button type="button" onClick={selectAllIncludingFailed} className="text-xs text-text-secondary hover:underline">
-            Include Failed
-          </button>
           {selectedIds.size > 0 && (
             <button type="button" onClick={deselectAll} className="text-xs text-text-secondary hover:underline">
               Deselect All
@@ -638,12 +644,25 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         <p className="text-sm text-text-tertiary">
           No grafts yet. Click &quot;Generate from Cell Count&quot; to create grafts based on your cell count.
         </p>
-      ) : frameGrafts.length === 0 ? (
-        <p className="text-sm text-text-tertiary">
-          All grafts have progressed beyond the frame stage.
-        </p>
       ) : (
-        <div className="overflow-x-auto">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-text-secondary uppercase tracking-wide">Cell Frame</span>
+            <button
+              type="button"
+              onClick={() => setFrameCollapsed(prev => !prev)}
+              className="flex items-center gap-1 text-xs text-text-tertiary hover:text-foreground"
+            >
+              {frameCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              {frameCollapsed ? 'Show' : 'Hide'}
+            </button>
+          </div>
+          {!frameCollapsed && (frameGrafts.length === 0 ? (
+            <p className="text-sm text-text-tertiary">
+              All grafts have progressed beyond the frame stage.
+            </p>
+          ) : (
+          <div className="overflow-x-auto">
           <div className="border-4 border-amber-700 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 min-w-fit">
             {(() => {
               // Organise frame grafts into rows
@@ -726,6 +745,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               ))
             })()}
           </div>
+          </div>
+          ))}
         </div>
       )}
 
@@ -842,7 +863,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               <tbody className="divide-y divide-border">
                 {tableGrafts.map(graft => {
                   const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
-                  const isLocked = isDistributed && !unlockedGraftIds.has(graft.id)
+                  const isLockedByFailed = graft.status === 'failed'
+                  const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
                   return (
                     <tr key={graft.id} className={`hover:bg-sage-50 dark:hover:bg-slate-800 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
                       {tableSelectMode && (
@@ -858,9 +880,15 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       <td className="px-3 py-2 text-sm font-medium text-foreground">#{graft.cell_number}</td>
                       <td className="px-3 py-2">
                         {isLocked ? (
-                          <span className="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">
-                            Distributed
-                          </span>
+                          isLockedByFailed ? (
+                            <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium">
+                              Failed
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">
+                              Distributed
+                            </span>
+                          )
                         ) : (
                           <select
                             value={graft.status}
@@ -916,7 +944,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       </td>
                       <td className="px-3 py-2 text-right">
                         <div className="flex gap-1 justify-end items-center">
-                          {isDistributed && (
+                          {(isDistributed || isLockedByFailed) && (
                             <button
                               type="button"
                               onClick={() => setUnlockedGraftIds(prev => {
@@ -965,7 +993,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             {tableGrafts.map(graft => {
               const statusInfo = GRAFT_STATUSES.find(s => s.value === graft.status)
               const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
-              const isLocked = isDistributed && !unlockedGraftIds.has(graft.id)
+              const isLockedByFailed = graft.status === 'failed'
+              const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
               return (
                 <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between">
@@ -981,9 +1010,15 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       <span className="text-sm font-medium text-foreground">Cell #{graft.cell_number}</span>
                     </div>
                     {isLocked ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-                        Distributed
-                      </span>
+                      isLockedByFailed ? (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                          Failed
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+                          Distributed
+                        </span>
+                      )
                     ) : (
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusInfo?.color || ''}`}>
                         {statusInfo?.label || graft.status}
@@ -1042,7 +1077,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                     </div>
                   )}
                   <div className="flex gap-1 pt-1 border-t border-border items-center">
-                    {isDistributed && (
+                    {(isDistributed || isLockedByFailed) && (
                       <button
                         type="button"
                         onClick={() => setUnlockedGraftIds(prev => {

@@ -36,8 +36,8 @@ The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stay
 - `queen_marked` (BOOLEAN, default false) — whether the queen has been marked
 - `queen_number` (TEXT, nullable) — queen identification number
 - Status values: `grafted` → `accepted` → `caged` → `emerged` → `in_nuc` → `mated` | `failed` | `sold`
-- **Frame view**: shows grafts with status `grafted` or `accepted` (early lifecycle)
-- **Queen tracking table**: shows grafts with status `caged`, `emerged`, `in_nuc`, `mated`, `failed`, or `sold` (post-acceptance) with queen marking and numbering controls
+- **Frame view**: shows grafts with status `grafted` or `accepted` only (active early-lifecycle cells). Collapsible via a "Cell Frame ▼/▲" toggle; auto-collapses on page load when any grafts are already in the queen tracking table
+- **Queen tracking table**: shows grafts with status `caged`, `emerged`, `in_nuc`, `mated`, `failed`, or `sold` (i.e. everything that has progressed past the frame stage). Rows with status `sold` (distributed) or `failed` are automatically locked with a badge ("Distributed" or "Failed") and can be toggled unlocked for correction
 
 **`graft_distributions`** — distribution tracking (see [batch-distributions.md](./batch-distributions.md))
 - One distribution per graft (UNIQUE on graft_id)
@@ -129,7 +129,7 @@ Queen Record (queen_number, lineage, batch_id)
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: frame visualisation for grafted/accepted grafts (bars + cups) with bulk actions + queen tracking table for post-acceptance grafts (caged/emerged/in_nuc/mated/failed/sold) with bulk actions (status change, mark/unmark, distribute, delete), queen marking, queen numbering, marking colour note, and individual distribution/delete actions |
+| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: collapsible frame visualisation for grafted/accepted grafts (bars + cups) with bulk actions + queen tracking table for all post-frame grafts (caged/emerged/in_nuc/mated/failed/sold) with bulk actions (status change, mark/unmark, distribute, delete), queen marking, queen numbering, marking colour note, and individual distribute/delete actions. Failed and distributed rows are auto-locked with a red "Failed" or indigo "Distributed" badge; lock can be toggled for correction |
 | `MatingNucsTab` | `src/components/batches/MatingNucsTab.tsx` | Full nuc CRUD, retirement with history, expandable inspections |
 | `NucInspectionPanel` | `src/components/batches/NucInspectionPanel.tsx` | Inline inspection form + history list per nuc |
 | `NucInspectionCard` | `src/components/batches/NucInspectionCard.tsx` | Single inspection display with badges |
@@ -241,7 +241,7 @@ Component-level interfaces in `batches/page.tsx`:
 6. **Weighted scoring** — configurable multi-criteria algorithm for breeder selection
 7. **Genealogy** — self-referencing mother/father FKs with recursive tree fetching (up to 4 generations)
 8. **Team visibility** — queens visible across shared apiaries via team membership
-9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile. Frame only shows grafted/accepted grafts with bulk select/status/delete actions; post-acceptance grafts appear in a separate queen tracking table below with its own bulk action bar (status change, mark all/unmark all, distribute, delete), queen marking checkbox, queen number input, and individual distribute/delete actions
+9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile. Frame shows only `grafted`/`accepted` grafts with bulk select/status/delete actions; it is collapsible via a toggle and auto-collapses on load when any grafts have progressed to the queen tracking table. Post-frame grafts (including `failed`) appear in a separate queen tracking table below with its own bulk action bar (status change, mark all/unmark all, distribute, delete), queen marking checkbox, queen number input, and individual distribute/delete actions. Rows in `sold` or `failed` status are auto-locked and show a coloured badge; the lock can be toggled to allow corrections
 10. **Marking colour display** — when a batch has an emergence date, the queen tracking table shows an info line with the international marking colour (White/Yellow/Red/Green/Blue) and a colour swatch dot, derived from the emergence year via `getQueenColorFromYear()`
 
 ---
