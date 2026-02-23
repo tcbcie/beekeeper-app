@@ -307,7 +307,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     })
   }
 
-  const selectAll = () => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id)))
+  const selectAll = () => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status) && g.status !== 'failed').map((g) => g.id)))
+  const selectAllIncludingFailed = () => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id)))
   const deselectAll = () => setSelectedIds(new Set())
   const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()) }
 
@@ -411,6 +412,9 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
           <button type="button" onClick={selectAll} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
             Select All
+          </button>
+          <button type="button" onClick={selectAllIncludingFailed} className="text-xs text-text-secondary hover:underline">
+            Include Failed
           </button>
           {selectedIds.size > 0 && (
             <button type="button" onClick={deselectAll} className="text-xs text-text-secondary hover:underline">
