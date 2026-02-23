@@ -75,7 +75,7 @@ export function useGraftDistributions() {
         .select(`
           *,
           batch_grafts(cell_number),
-          profiles!graft_distributions_recipient_user_id_fkey(full_name, email),
+          profiles!graft_distributions_recipient_profile_id_fkey(full_name, email),
           apiaries!graft_distributions_recipient_apiary_id_fkey(name),
           hives!graft_distributions_recipient_hive_id_fkey(hive_number)
         `)
