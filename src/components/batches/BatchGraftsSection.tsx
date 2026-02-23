@@ -500,6 +500,9 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   const frameGrafts = grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status))
   const tableGrafts = grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status))
 
+  // Set of graft IDs that have been distributed
+  const distributedGraftIds = new Set(distributions.map(d => d.graft_id))
+
   // Marking colour derived from emergence date
   const markingColour = emergenceDate ? getQueenColorFromYear(emergenceDate) : ''
   const emergenceYear = emergenceDate ? new Date(emergenceDate).getFullYear() : null
@@ -883,8 +886,12 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                         />
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <div className="flex gap-1 justify-end">
-                          {DISTRIBUTABLE_STATUSES.includes(graft.status) && (
+                        <div className="flex gap-1 justify-end items-center">
+                          {distributedGraftIds.has(graft.id) ? (
+                            <span className="px-2 py-0.5 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">
+                              Distributed
+                            </span>
+                          ) : DISTRIBUTABLE_STATUSES.includes(graft.status) ? (
                             <button
                               type="button"
                               onClick={() => setDistributeGraft(graft)}
@@ -893,7 +900,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                             >
                               <Send size={14} />
                             </button>
-                          )}
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => deleteGraft(graft.id)}
@@ -981,8 +988,12 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       />
                     </div>
                   </div>
-                  <div className="flex gap-1 pt-1 border-t border-border">
-                    {DISTRIBUTABLE_STATUSES.includes(graft.status) && (
+                  <div className="flex gap-1 pt-1 border-t border-border items-center">
+                    {distributedGraftIds.has(graft.id) ? (
+                      <span className="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">
+                        Distributed
+                      </span>
+                    ) : DISTRIBUTABLE_STATUSES.includes(graft.status) ? (
                       <button
                         type="button"
                         onClick={() => setDistributeGraft(graft)}
@@ -991,7 +1002,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                         <Send size={12} />
                         Distribute
                       </button>
-                    )}
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => deleteGraft(graft.id)}
