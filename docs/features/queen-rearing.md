@@ -128,7 +128,7 @@ Queen Record (queen_number, lineage, batch_id)
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: frame visualisation for grafted/accepted grafts (bars + cups) + queen tracking table for post-acceptance grafts (caged/emerged/in_nuc/mated/failed/sold) with queen marking, queen numbering, distribution, and delete actions |
+| `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: frame visualisation for grafted/accepted grafts (bars + cups) with bulk actions + queen tracking table for post-acceptance grafts (caged/emerged/in_nuc/mated/failed/sold) with bulk actions (status change, mark/unmark, distribute, delete), queen marking, queen numbering, marking colour note, and individual distribution/delete actions |
 | `MatingNucsTab` | `src/components/batches/MatingNucsTab.tsx` | Full nuc CRUD, retirement with history, expandable inspections |
 | `NucInspectionPanel` | `src/components/batches/NucInspectionPanel.tsx` | Inline inspection form + history list per nuc |
 | `NucInspectionCard` | `src/components/batches/NucInspectionCard.tsx` | Single inspection display with badges |
@@ -240,7 +240,8 @@ Component-level interfaces in `batches/page.tsx`:
 6. **Weighted scoring** — configurable multi-criteria algorithm for breeder selection
 7. **Genealogy** — self-referencing mother/father FKs with recursive tree fetching (up to 4 generations)
 8. **Team visibility** — queens visible across shared apiaries via team membership
-9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile. Frame only shows grafted/accepted grafts; post-acceptance grafts appear in a separate queen tracking table below with queen marking checkbox, queen number input, status dropdown, distribute, and delete controls
+9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile. Frame only shows grafted/accepted grafts with bulk select/status/delete actions; post-acceptance grafts appear in a separate queen tracking table below with its own bulk action bar (status change, mark all/unmark all, distribute, delete), queen marking checkbox, queen number input, and individual distribute/delete actions
+10. **Marking colour display** — when a batch has an emergence date, the queen tracking table shows an info line with the international marking colour (White/Yellow/Red/Green/Blue) and a colour swatch dot, derived from the emergence year via `getQueenColorFromYear()`
 
 ---
 
