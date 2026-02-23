@@ -26,6 +26,7 @@ interface BatchGraftsSectionProps {
   cellsPerRow?: number | null
   groupId?: string | null
   batchCounters?: { grafts_accepted: number | null; queens_hatched: number | null; queens_mated: number | null }
+  onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
 }
 
 const GRAFT_STATUSES = [
@@ -83,7 +84,7 @@ const formatDateIrish = (dateString: string | null): string => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`
 }
 
-export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, batchCounters }: BatchGraftsSectionProps) {
+export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, batchCounters, onCountsChange }: BatchGraftsSectionProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
   const [loading, setLoading] = useState(true)
@@ -149,6 +150,15 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     fetchGrafts()
     fetchDistributions(batchId)
   }, [fetchGrafts, fetchDistributions, batchId])
+
+  // Sync counts to parent when grafts change
+  useEffect(() => {
+    if (!onCountsChange || grafts.length === 0) return
+    const accepted = grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
+    const hatched = grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
+    const mated = grafts.filter(g => ['mated', 'sold'].includes(g.status)).length
+    onCountsChange({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
+  }, [grafts, onCountsChange])
 
   const generateGrafts = async () => {
     if (!cellCount || cellCount <= 0) {

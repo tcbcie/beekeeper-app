@@ -1307,6 +1307,12 @@ export default function BatchesPage() {
                     queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) : null,
                     queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) : null,
                   }}
+                  onCountsChange={(counts) => setFormData(prev => ({
+                    ...prev,
+                    grafts_accepted: counts.grafts_accepted.toString(),
+                    queens_hatched: counts.queens_hatched.toString(),
+                    queens_mated: counts.queens_mated.toString(),
+                  }))}
                 />
               </div>
             )}
