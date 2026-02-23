@@ -32,6 +32,7 @@ The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stay
 **`batch_grafts`** — individual cell tracking
 - `id`, `batch_id` (FK, CASCADE), `user_id` (FK, CASCADE)
 - `cell_number` (UNIQUE per batch), `status`, `notes`
+- `status_date` (DATE, nullable) — date the status was last changed (auto-set to today on status change, editable for backdating)
 - `queen_marked` (BOOLEAN, default false) — whether the queen has been marked
 - `queen_number` (TEXT, nullable) — queen identification number
 - Status values: `grafted` → `accepted` → `caged` → `emerged` → `in_nuc` → `mated` | `failed` | `sold`

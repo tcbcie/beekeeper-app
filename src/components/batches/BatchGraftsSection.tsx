@@ -14,6 +14,7 @@ interface Graft {
   batch_id: string
   cell_number: number
   status: string
+  status_date: string | null
   notes: string | null
   queen_marked: boolean
   queen_number: string | null
@@ -238,9 +239,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
 
   const updateGraftStatus = async (graftId: string, newStatus: string) => {
     try {
+      const today = new Date().toISOString().split('T')[0]
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ status: newStatus })
+        .update({ status: newStatus, status_date: today })
         .eq('id', graftId)
 
       if (error) throw error
@@ -280,6 +282,20 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     } catch (error) {
       console.error('Error updating queen marked:', error)
       toast.error('Failed to update queen marked')
+    }
+  }
+
+  const updateGraftStatusDate = async (graftId: string, date: string) => {
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ status_date: date || null })
+        .eq('id', graftId)
+      if (error) throw error
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, status_date: date || null } : g))
+    } catch (error) {
+      console.error('Error updating status date:', error)
+      toast.error('Failed to update status date')
     }
   }
 
@@ -363,9 +379,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     const ids = Array.from(selectedIds)
     if (ids.length === 0) return
     try {
+      const today = new Date().toISOString().split('T')[0]
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ status: newStatus })
+        .update({ status: newStatus, status_date: today })
         .in('id', ids)
       if (error) throw error
       toast.success(`${ids.length} grafts updated to ${newStatus}`)
@@ -402,9 +419,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     const ids = Array.from(tableSelectedIds)
     if (ids.length === 0) return
     try {
+      const today = new Date().toISOString().split('T')[0]
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ status: newStatus })
+        .update({ status: newStatus, status_date: today })
         .in('id', ids)
       if (error) throw error
       toast.success(`${ids.length} grafts updated to ${newStatus}`)
@@ -801,6 +819,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                   {tableSelectMode && <th className="px-2 py-2 w-8" />}
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Status</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Date</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Marked</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Number</th>
                   <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">Actions</th>
@@ -830,6 +849,15 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                             <option key={s.value} value={s.value}>{s.label}</option>
                           ))}
                         </select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          key={`${graft.id}-sd-${graft.status_date ?? ''}`}
+                          type="date"
+                          defaultValue={graft.status_date || ''}
+                          onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
+                          className="w-32 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                        />
                       </td>
                       <td className="px-3 py-2">
                         <input
@@ -916,6 +944,16 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                           <option key={s.value} value={s.value}>{s.label}</option>
                         ))}
                       </select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-text-secondary">Status Date</label>
+                      <input
+                        key={`${graft.id}-sd-${graft.status_date ?? ''}`}
+                        type="date"
+                        defaultValue={graft.status_date || ''}
+                        onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
+                        className="w-32 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <label className="text-xs text-text-secondary">Queen Marked</label>

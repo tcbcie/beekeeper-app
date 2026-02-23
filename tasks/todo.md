@@ -1,49 +1,37 @@
-# Queen Tracking Table — Bulk Actions + Marking Colour
+# Status Date Column for Queen Tracking Table
 
 ## Todo
 
-- [x] 1. Add `emergenceDate` prop to `BatchGraftsSection` and pass from parent
-- [x] 2. Add table selection state (`tableSelectedIds`, `tableSelectMode`)
-- [x] 3. Add table selection UI (checkboxes on rows, Select/Done button)
-- [x] 4. Add table bulk action bar (status change, mark/unmark, distribute, delete)
-- [x] 5. Add marking colour note above the table
-- [x] 6. Re-import `createBulkDistributions` for table bulk distribute
-- [x] 7. Update documentation
-- [x] 8. Code audit — hardening fixes
+- [x] 1. Database migration — add `status_date` column to `batch_grafts`
+- [x] 2. Update `Graft` interface to include `status_date`
+- [x] 3. Update `updateGraftStatus` to set `status_date` to today
+- [x] 4. Update `handleTableBulkStatusChange` and `handleBulkStatusChange` to set `status_date` to today
+- [x] 5. Add editable date column to desktop table (between Status and Queen Marked)
+- [x] 6. Add editable date field to mobile cards
+- [x] 7. Add `updateGraftStatusDate` handler for inline date edits
+- [x] 8. Update docs
 - [ ] 9. Prompt user to test
-
-## Code Audit Fixes
-
-| Severity | Issue | Fix |
-|----------|-------|-----|
-| CRITICAL | Stale `tableSelectedIds` not pruned on data refresh — bulk ops could target grafts no longer in the table | Added `setTableSelectedIds` pruning in `fetchGrafts` mirroring the existing frame pruning |
-| HIGH | `tableSelectMode` persists when table section empties — phantom action bar on re-entry | Added `useEffect` that resets table select mode when no table grafts exist |
-| HIGH | Both frame and table select modes can be active simultaneously — confusing dual action bars | Added mutual exclusion: entering one mode exits the other |
-| MEDIUM | `COLOUR_DOTS` object re-allocated inside render IIFE every cycle | Hoisted to module-level constant |
-| MEDIUM | `new Date(emergenceDate).getFullYear()` renders NaN for malformed dates | Pre-computed `emergenceYear` with `isNaN` guard in JSX condition |
 
 ## Review
 
 ### Summary of Changes
 
-**`src/app/dashboard/batches/page.tsx`:**
-- Passed `emergenceDate={editingBatch.emergence_date}` prop to `BatchGraftsSection`
+**Database:**
+- Added `status_date DATE` column to `batch_grafts` (nullable, existing rows get NULL)
 
 **`src/components/batches/BatchGraftsSection.tsx`:**
-- Added `emergenceDate` to props interface and destructuring
-- Added imports: `getQueenColorFromYear`, `BulkDistributionData`, `createBulkDistributions`
-- Added table selection state: `tableSelectMode`, `tableSelectedIds`, `bulkDistributeGrafts`
-- Added table selection helpers with frame pruning and table pruning in `fetchGrafts`
-- Added `useEffect` to reset table select mode when table empties
-- Added mutual exclusion between frame and table select modes
-- Added table bulk handlers: status change, mark/unmark, delete, bulk distribute
-- Added Select/Done button, bulk action bar, checkbox column (desktop + mobile)
-- Added marking colour note with hoisted `COLOUR_DOTS` constant and NaN guard
-- Added bulk distribute modal using existing `DistributeGraftModal` bulk mode
+- Added `status_date: string | null` to `Graft` interface
+- `updateGraftStatus` now sets `status_date` to today (`YYYY-MM-DD`)
+- `handleBulkStatusChange` (frame) now sets `status_date` to today
+- `handleTableBulkStatusChange` (table) now sets `status_date` to today
+- Added `updateGraftStatusDate` handler for inline date edits (saves on change)
+- Desktop table: new "Date" column with `<input type="date">` between Status and Queen Marked
+- Mobile cards: new "Status Date" row with `<input type="date">` between Status and Queen Marked
 
 **`docs/features/queen-rearing.md`:**
-- Updated component and design pattern descriptions
+- Documented `status_date` column in `batch_grafts` table description
 
 ### Impact
-- 3 files modified, no database changes, no new files
-- 5 defensive hardening fixes applied during code audit
+- 1 database migration, 1 component modified, 1 doc updated
+- No new files, no new dependencies
+- Existing grafts show blank date (NULL) — date only starts tracking from now on
