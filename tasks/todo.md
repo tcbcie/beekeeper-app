@@ -1,44 +1,46 @@
-# Grafting Frame Visualisation
+# Split Grafts into Frame + Queen Tracking Table
 
-## Tasks
+## Todo
 
-- [x] 1. Database migration — add `frame_rows` and `cells_per_row` columns to `rearing_batches`
-- [x] 2. Update `Batch` and `FormData` interfaces in `batches/page.tsx` — add `frame_rows`, `cells_per_row` fields
-- [x] 3. Replace "Number of Grafts" stepper with "Rows" + "Cells per Row" steppers + auto-calculated total
-- [x] 4. Update submit handler — include `frame_rows` and `cells_per_row` in upsert payload
-- [x] 5. Update edit handler — populate `frame_rows` and `cells_per_row` from batch record
-- [x] 6. Update reset handler — reset both new fields to `''`
-- [x] 7. Pass `frameRows` and `cellsPerRow` props to `BatchGraftsSection`
-- [x] 8. Update `BatchGraftsSection` — accept new props, replace CSS grid with frame visualisation
-- [x] 9. Update documentation in `docs/features/queen-rearing.md`
-- [x] 10. Prompt user to test the build
+- [x] 1. Database migration — add `queen_marked` and `queen_number` columns to `batch_grafts`
+- [x] 2. Update `Graft` interface — add `queen_marked` and `queen_number` fields
+- [x] 3. Define `FRAME_STATUSES` and `TABLE_STATUSES` constants
+- [x] 4. Split grafts into `frameGrafts` / `tableGrafts` arrays
+- [x] 5. Limit frame cup dropdown to frame statuses only (grafted, accepted, failed)
+- [x] 6. Limit bulk action bar status dropdown to frame statuses
+- [x] 7. Update selectAll/deselectAll to only apply to frameGrafts
+- [x] 8. Add queen tracking table below the frame (desktop table + mobile cards)
+- [x] 9. Add `updateGraftQueenMarked` and `updateGraftQueenNumber` handlers
+- [x] 10. Update feature documentation
+- [ ] 11. Prompt user to test
 
 ## Review
 
 ### Summary of Changes
 
 **Database:**
-- Added `frame_rows INTEGER` and `cells_per_row INTEGER` nullable columns to `rearing_batches`
-
-**`src/app/dashboard/batches/page.tsx`:**
-- Added `frame_rows` and `cells_per_row` to `Batch` interface, `FormData` interface, initial state, reset handler, edit handler, and submit payload
-- Replaced single "Number of Grafts" stepper with two side-by-side steppers (Rows + Cells per Row) that auto-calculate `cell_count` as `rows × cellsPerRow`
-- Added read-only "Total Grafts: X" display below the steppers
-- Passed `frameRows` and `cellsPerRow` as new props to `BatchGraftsSection`
+- Added `queen_marked BOOLEAN DEFAULT false` and `queen_number TEXT` (nullable) to `batch_grafts`
 
 **`src/components/batches/BatchGraftsSection.tsx`:**
-- Added `frameRows` and `cellsPerRow` optional props
-- Added `CUP_COLORS` map for circular cup background colours per status
-- Replaced flat CSS grid with frame visualisation: amber wooden border, horizontal bars per row, connector lines, and circular cell cups hanging below each bar
-- Cups are colour-coded by status, show cell number inside, and support the same select mode (ring highlight + checkbox) and action controls (status dropdown, distribute, delete)
-- Frame is horizontally scrollable on mobile via `overflow-x-auto`
-- Falls back to a single row when `frameRows`/`cellsPerRow` are not set
+- Added `queen_marked` and `queen_number` to `Graft` interface
+- Defined `FRAME_STATUSES` (grafted, accepted, failed), `TABLE_STATUSES` (caged, emerged, in_nuc, mated, failed, sold), and `FRAME_STATUS_VALUES` helper
+- Split grafts into `frameGrafts` (grafted/accepted) and `tableGrafts` (all others)
+- Frame visualisation now only renders `frameGrafts` — shows message when all have progressed
+- Frame cup dropdowns limited to `FRAME_STATUSES` only
+- Removed distribute button from frame cups (not applicable at grafted/accepted stage)
+- Bulk action bar dropdown limited to `FRAME_STATUSES`, removed bulk distribute button
+- `selectAll` now only selects frame grafts
+- Added queen tracking table below the frame:
+  - Desktop: table with Cell #, Status dropdown, Queen Marked checkbox, Queen Number text input, Actions (distribute + delete)
+  - Mobile: card view with the same controls
+- Added `updateGraftQueenMarked` and `updateGraftQueenNumber` handlers that update DB and optimistically update local state
+- Queen number saves on blur to avoid excessive DB calls
 
 **`docs/features/queen-rearing.md`:**
-- Documented `frame_rows` and `cells_per_row` columns
-- Updated component descriptions to reference frame visualisation
-- Added frame visualisation to Key Design Patterns list
+- Documented new `queen_marked` and `queen_number` columns
+- Documented frame/table split behaviour
+- Updated component description and design patterns
 
 ### Impact
-- 2 files modified, 1 database migration applied, 1 docs file updated
-- No breaking changes — existing batches without `frame_rows`/`cells_per_row` fall back to a single-row frame display
+- 1 file modified, 1 database migration applied, 1 docs file updated
+- No breaking changes — existing grafts default to `queen_marked = false` and `queen_number = null`
