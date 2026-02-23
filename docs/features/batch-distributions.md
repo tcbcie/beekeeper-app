@@ -65,6 +65,8 @@ Modal form with:
 
 Shown below the graft grid in `BatchGraftsSection`:
 - Cell number, type badge, recipient name, date, destination
+- Recipient name resolved as: `full_name` → `first_name + last_name` → `email` — never shows "Unknown" for registered users
+- If the destination apiary has location data, a secondary line shows whichever of these are present: grid reference, elevation (metres), and lat/lon coordinates (4 decimal places)
 - Mating confirmed toggle (for queen cell/virgin queen distributions) — when confirmed, the confirmed date is shown in green below the recipient info ("Mated: DD/MM/YYYY"); toggling off clears the date
 - Delete button to remove distribution and revert graft status
 

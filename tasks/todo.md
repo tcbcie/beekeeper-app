@@ -1,21 +1,19 @@
-# Mating Confirmed Date for Graft Distributions
+# Distribution Records — Richer Recipient & Apiary Details
 
 ## Plan
 
-### 1. DB migration — add `mating_confirmed_date` column
-- [x] 1. Add `mating_confirmed_date DATE` (nullable) to `graft_distributions` via MCP migration
+### 1. `src/hooks/useGraftDistributions.ts`
+- [x] 1a. Profiles join: add `first_name, last_name` alongside `full_name, email`
+- [x] 1b. Apiaries join: add `latitude, longitude, elevation, grid_reference` alongside `name`
+- [x] 1c–1f. Add 4 new apiary fields to `GraftDistribution` interface
+- [x] 1g. Compute `recipient_name` as: `full_name → first_name+last_name → email → null`
+- [x] 1h. Map the four new apiary fields
 
-### 2. `src/hooks/useGraftDistributions.ts`
-- [x] 2a. Add `mating_confirmed_date: string | null` to `GraftDistribution` interface
-- [x] 2b. Map `mating_confirmed_date` in `fetchDistributions`
-- [x] 2c. Update `toggleMatingConfirmed` to set `mating_confirmed_date` to today when confirming, `null` when un-confirming
+### 2. `src/components/batches/BatchGraftsSection.tsx`
+- [x] 2. Show secondary apiary location line: grid reference • elevation • lat, lon
 
-### 3. `src/components/batches/BatchGraftsSection.tsx`
-- [x] 3a. (No change needed — `handleToggleMating` passes the boolean through unchanged; date is set in the hook)
-- [x] 3b. Show confirmed date in green below recipient info when `mating_confirmed_date` is set
-
-### 4. Update docs
-- [x] 4. Updated `docs/features/batch-distributions.md` and `docs/features/queen-rearing.md`
+### 3. Update docs
+- [x] 3. Updated `docs/features/batch-distributions.md`
 
 ---
 
@@ -23,15 +21,12 @@
 
 ### Summary of Changes
 
-**DB:** Added `mating_confirmed_date DATE NULL` to `graft_distributions`. Existing rows default to NULL.
-
 **`src/hooks/useGraftDistributions.ts`:**
-- Added `mating_confirmed_date: string | null` to `GraftDistribution` interface
-- Mapped field in `fetchDistributions`
-- `toggleMatingConfirmed` now also sets `mating_confirmed_date` to today when confirming, or `null` when un-confirming
+- `GraftDistribution` interface: added `recipient_apiary_latitude`, `recipient_apiary_longitude`, `recipient_apiary_elevation`, `recipient_apiary_grid_reference`
+- Query now fetches `first_name, last_name` from profiles and `latitude, longitude, elevation, grid_reference` from apiaries
+- `recipient_name` computed as: `full_name → first_name+last_name → email → null` (no more 'Unknown' for registered users)
 
 **`src/components/batches/BatchGraftsSection.tsx`:**
-- Distribution list shows "Mated: DD/MM/YYYY" in green below recipient info when confirmed
-- Button tooltip updated to include the date when confirmed
+- Distribution list: secondary grey line shown when apiary has location data — `{grid_ref} • {elevation}m • {lat}, {lon}` (each part only shown if present)
 
-**Docs:** `batch-distributions.md` and `queen-rearing.md` updated.
+**No DB changes required.**
