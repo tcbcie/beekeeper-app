@@ -54,7 +54,7 @@ const TABLE_STATUSES = [
   { value: 'sold', label: 'Sold', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' },
 ]
 
-const FRAME_STATUS_VALUES = ['grafted', 'accepted']
+const FRAME_STATUS_VALUES = ['grafted', 'accepted', 'failed']
 
 const DISTRIBUTABLE_STATUSES = ['emerged', 'in_nuc', 'mated']
 
