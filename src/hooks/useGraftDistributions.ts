@@ -12,6 +12,7 @@ export interface GraftDistribution {
   recipient_hive_id: string | null
   distribution_date: string
   mating_confirmed: boolean
+  mating_confirmed_date: string | null
   notes: string | null
   previous_graft_status: string | null
   created_at: string
@@ -102,6 +103,7 @@ export function useGraftDistributions() {
           recipient_hive_id: d.recipient_hive_id as string | null,
           distribution_date: d.distribution_date as string,
           mating_confirmed: d.mating_confirmed as boolean,
+          mating_confirmed_date: d.mating_confirmed_date as string | null,
           notes: d.notes as string | null,
           previous_graft_status: d.previous_graft_status as string | null,
           created_at: d.created_at as string,
@@ -230,9 +232,13 @@ export function useGraftDistributions() {
 
   const toggleMatingConfirmed = useCallback(async (id: string, confirmed: boolean): Promise<boolean> => {
     try {
+      const today = new Date().toISOString().split('T')[0]
       const { error } = await supabase
         .from('graft_distributions')
-        .update({ mating_confirmed: confirmed })
+        .update({
+          mating_confirmed: confirmed,
+          mating_confirmed_date: confirmed ? today : null,
+        })
         .eq('id', id)
 
       if (error) throw error

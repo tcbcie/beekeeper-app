@@ -21,6 +21,7 @@ The NIHBS monthly report auto-calculates external distribution counts from these
 | recipient_hive_id | UUID | FK to hives (optional) — destination hive |
 | distribution_date | DATE | When distributed (defaults to today) |
 | mating_confirmed | BOOLEAN | Whether the virgin queen mated successfully |
+| mating_confirmed_date | DATE | Date mating was confirmed (set automatically to today when toggled on, cleared to NULL when toggled off) |
 | notes | TEXT | Optional notes |
 | user_id | UUID | FK to auth.users — who created the record |
 | created_at | TIMESTAMPTZ | Record creation timestamp |
@@ -64,7 +65,7 @@ Modal form with:
 
 Shown below the graft grid in `BatchGraftsSection`:
 - Cell number, type badge, recipient name, date, destination
-- Mating confirmed toggle (for queen cell/virgin queen distributions)
+- Mating confirmed toggle (for queen cell/virgin queen distributions) — when confirmed, the confirmed date is shown in green below the recipient info ("Mated: DD/MM/YYYY"); toggling off clears the date
 - Delete button to remove distribution and revert graft status
 
 ### Bulk Operations

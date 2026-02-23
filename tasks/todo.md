@@ -1,24 +1,21 @@
-# Batch Page: Failed Row Lock + Collapsible Frame
+# Mating Confirmed Date for Graft Distributions
 
-## Changes Required
+## Plan
 
-### Fix 1: Failed rows stay in table (locked), not removed
+### 1. DB migration — add `mating_confirmed_date` column
+- [x] 1. Add `mating_confirmed_date DATE` (nullable) to `graft_distributions` via MCP migration
 
-- [x] 1a. Change `FRAME_STATUS_VALUES` from `['grafted', 'accepted', 'failed']` → `['grafted', 'accepted']`
-- [x] 1b. Update `selectAll` (frame) — remove redundant `&& g.status !== 'failed'` check
-- [x] 1c. Remove `selectAllIncludingFailed` and the "Include Failed" bulk-action button
-- [x] 1d. Update `isLocked` logic in desktop table rows to also lock when `graft.status === 'failed'`
-- [x] 1e. Update status badge display: show "Failed" (red) for locked failed rows; "Distributed" (indigo) for distributed
-- [x] 1f. Update lock/unlock button visibility: show when `isDistributed || graft.status === 'failed'`
-- [x] 1g. Repeat 1d–1f for mobile card rows
+### 2. `src/hooks/useGraftDistributions.ts`
+- [x] 2a. Add `mating_confirmed_date: string | null` to `GraftDistribution` interface
+- [x] 2b. Map `mating_confirmed_date` in `fetchDistributions`
+- [x] 2c. Update `toggleMatingConfirmed` to set `mating_confirmed_date` to today when confirming, `null` when un-confirming
 
-### Fix 2: Collapsible frame section
+### 3. `src/components/batches/BatchGraftsSection.tsx`
+- [x] 3a. (No change needed — `handleToggleMating` passes the boolean through unchanged; date is set in the hook)
+- [x] 3b. Show confirmed date in green below recipient info when `mating_confirmed_date` is set
 
-- [x] 2a. Add `ChevronDown`, `ChevronUp` to lucide-react imports; add `useRef` to react imports
-- [x] 2b. Add `frameCollapsed` state and `frameInitialised` ref
-- [x] 2c. Add one-time auto-collapse effect: when grafts first load and table grafts exist, collapse frame
-- [x] 2d. Add a collapsible header (toggle button) above the frame visualisation
-- [x] 2e. Wrap frame content in `{!frameCollapsed && (...)}`
+### 4. Update docs
+- [x] 4. Updated `docs/features/batch-distributions.md` and `docs/features/queen-rearing.md`
 
 ---
 
@@ -26,19 +23,15 @@
 
 ### Summary of Changes
 
-All changes in `src/components/batches/BatchGraftsSection.tsx` only.
+**DB:** Added `mating_confirmed_date DATE NULL` to `graft_distributions`. Existing rows default to NULL.
 
-**Fix 1 — Failed rows stay in table (locked):**
-- `FRAME_STATUS_VALUES` changed to `['grafted', 'accepted']` — failed grafts now always belong to `tableGrafts`
-- `isLocked` in both desktop table and mobile cards updated: `(isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)`
-- Status badge shows red "Failed" badge (not indigo "Distributed") for locked failed rows
-- Lock/unlock toggle button shown for failed rows (same as distributed rows)
-- Frame bulk-action "Include Failed" button removed (no failed cups on frame anymore)
+**`src/hooks/useGraftDistributions.ts`:**
+- Added `mating_confirmed_date: string | null` to `GraftDistribution` interface
+- Mapped field in `fetchDistributions`
+- `toggleMatingConfirmed` now also sets `mating_confirmed_date` to today when confirming, or `null` when un-confirming
 
-**Fix 2 — Collapsible frame section:**
-- New `frameCollapsed` state + `frameInitialised` ref
-- On first data load, if table grafts already exist → auto-collapses frame
-- "Cell Frame ▼/▲" toggle header added above the amber frame visualisation
-- Frame content hidden when collapsed
+**`src/components/batches/BatchGraftsSection.tsx`:**
+- Distribution list shows "Mated: DD/MM/YYYY" in green below recipient info when confirmed
+- Button tooltip updated to include the date when confirmed
 
-**No DB changes required.**
+**Docs:** `batch-distributions.md` and `queen-rearing.md` updated.
