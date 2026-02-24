@@ -93,7 +93,7 @@ const COLOUR_DOTS: Record<string, string> = {
 // Format date to Irish format (DD/MM/YYYY)
 const formatDateIrish = (dateString: string | null): string => {
   if (!dateString) return '-'
-  const parts = dateString.split('-')
+  const parts = dateString.split('T')[0].split('-')
   if (parts.length !== 3) return dateString
   return `${parts[2]}/${parts[1]}/${parts[0]}`
 }
@@ -140,6 +140,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
 
     if (error) {
       console.error('Error fetching grafts:', error)
+      toast.error('Failed to load grafts')
     } else if (data) {
       setGrafts(data)
       // Prune frame selected IDs to only include grafts still on the frame
@@ -210,12 +211,16 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
 
   // Sync counts to parent when grafts change
   useEffect(() => {
-    if (!onCountsChange || grafts.length === 0) return
+    if (!onCountsChange || loading) return
+    if (grafts.length === 0) {
+      onCountsChange({ grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
+      return
+    }
     const accepted = grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
     const hatched = grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
     const mated = grafts.filter(g => ['mated', 'sold'].includes(g.status)).length
     onCountsChange({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
-  }, [grafts, onCountsChange])
+  }, [grafts, onCountsChange, loading])
 
   const generateGrafts = async () => {
     if (!cellCount || cellCount <= 0) {
@@ -231,7 +236,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
 
     const newGrafts = []
     const nextNumber = grafts.length > 0
-      ? Math.max(...grafts.map(g => g.cell_number)) + 1
+      ? grafts.reduce((max, g) => g.cell_number > max ? g.cell_number : max, 0) + 1
       : 1
 
     for (let i = 0; i < cellCount; i++) {
@@ -390,7 +395,17 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       return next
     })
   }
-  const selectAllTable = () => setTableSelectedIds(new Set(grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status) && g.status !== 'failed').map(g => g.id)))
+  const selectAllTable = () => {
+    const distributedIds = new Set(distributions.map(d => d.graft_id))
+    setTableSelectedIds(new Set(
+      grafts.filter(g =>
+        !FRAME_STATUS_VALUES.includes(g.status) &&
+        g.status !== 'failed' &&
+        g.status !== 'sold' &&
+        !distributedIds.has(g.id)
+      ).map(g => g.id)
+    ))
+  }
   const deselectAllTable = () => setTableSelectedIds(new Set())
   const exitTableSelectMode = () => { setTableSelectMode(false); setTableSelectedIds(new Set()) }
 
@@ -501,7 +516,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       setBulkDistributeGrafts(null)
       deselectAllTable()
     } else {
-      toast.error('Failed to record distributions')
+      toast.error('Failed to record distributions. One or more may already be distributed.')
     }
     return success
   }
@@ -869,12 +884,14 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                     <tr key={graft.id} className={`hover:bg-sage-50 dark:hover:bg-slate-800 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
                       {tableSelectMode && (
                         <td className="px-2 py-2">
-                          <button type="button" onClick={() => toggleTableSelect(graft.id)}>
-                            {tableSelectedIds.has(graft.id)
-                              ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
-                              : <Square size={16} className="text-text-tertiary" />
-                            }
-                          </button>
+                          {!isLocked && (
+                            <button type="button" onClick={() => toggleTableSelect(graft.id)}>
+                              {tableSelectedIds.has(graft.id)
+                                ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
+                                : <Square size={16} className="text-text-tertiary" />
+                              }
+                            </button>
+                          )}
                         </td>
                       )}
                       <td className="px-3 py-2 text-sm font-medium text-foreground">#{graft.cell_number}</td>
@@ -999,7 +1016,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                 <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {tableSelectMode && (
+                      {tableSelectMode && !isLocked && (
                         <button type="button" onClick={() => toggleTableSelect(graft.id)}>
                           {tableSelectedIds.has(graft.id)
                             ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
