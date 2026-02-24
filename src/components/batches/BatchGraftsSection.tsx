@@ -62,7 +62,7 @@ const TABLE_STATUSES = [
 
 const FRAME_STATUS_VALUES = ['grafted', 'accepted']
 
-const DISTRIBUTABLE_STATUSES = ['sealed', 'emerged', 'mated']
+const DISTRIBUTABLE_STATUSES = ['sealed', 'caged', 'emerged', 'in_nuc', 'mated']
 
 const CUP_COLORS: Record<string, string> = {
   grafted: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
@@ -340,10 +340,12 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
 
   const handleDistributeSave = async (data: Parameters<typeof createDistribution>[0]) => {
     const success = await createDistribution(data)
-    if (success) {
+    if (success === true) {
       toast.success('Distribution recorded')
-    } else {
+    } else if (success === false) {
       toast.error('This graft has already been distributed')
+    } else {
+      toast.error('Failed to record distribution')
     }
     // Always refresh to sync UI state
     fetchGrafts()
@@ -509,7 +511,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
 
   const handleBulkDistributeSave = async (data: BulkDistributionData) => {
     const success = await createBulkDistributions(data)
-    if (success) {
+    if (success === true) {
       toast.success(`${data.grafts.length} distributions recorded`)
       fetchGrafts()
       fetchDistributions(batchId)
