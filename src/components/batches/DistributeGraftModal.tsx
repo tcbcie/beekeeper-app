@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, Search, User, Users } from 'lucide-react'
+import { X, Search, User, Users, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData, BulkDistributionData } from '@/hooks/useGraftDistributions'
 
@@ -37,6 +37,8 @@ const TYPE_LABELS: Record<string, { label: string; color: string }> = {
   mated_queen: { label: 'Mated Queen', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300' },
 }
 
+type RecipientMode = 'group' | 'app_user' | 'external'
+
 export default function DistributeGraftModal({
   graftId,
   batchId,
@@ -53,7 +55,6 @@ export default function DistributeGraftModal({
   onBulkSave,
 }: DistributeGraftModalProps) {
   const isBulk = bulkGrafts && bulkGrafts.length > 0
-  // In bulk mode, use the most advanced status among selected grafts for the distribution type
   const effectiveStatus = isBulk
     ? bulkGrafts.reduce((best, g) => {
         const order = ['accepted', 'caged', 'emerged', 'in_nuc', 'mated']
@@ -64,27 +65,47 @@ export default function DistributeGraftModal({
   const typeInfo = TYPE_LABELS[distributionType]
 
   const hasGroup = groupMemberIds && groupMemberIds.length > 0
+
+  // Recipient mode
+  const [recipientMode, setRecipientMode] = useState<RecipientMode>(hasGroup ? 'group' : 'app_user')
+
+  // App user / group state
   const [searchText, setSearchText] = useState('')
   const [searchResults, setSearchResults] = useState<RecipientUser[]>([])
   const [searching, setSearching] = useState(false)
   const [selectedUser, setSelectedUser] = useState<RecipientUser | null>(null)
-  const [groupOnly, setGroupOnly] = useState(!!hasGroup)
   const [groupMembers, setGroupMembers] = useState<RecipientUser[]>([])
   const searchCounter = useRef(0)
 
+  // App user apiary / hive state
   const [apiaries, setApiaries] = useState<RecipientApiary[]>([])
   const [hives, setHives] = useState<RecipientHive[]>([])
   const [selectedApiaryId, setSelectedApiaryId] = useState('')
   const [selectedHiveId, setSelectedHiveId] = useState('')
+
+  // External beekeeper state
+  const [extName, setExtName] = useState('')
+  const [extEmail, setExtEmail] = useState('')
+  const [extPhone, setExtPhone] = useState('')
+  const [extLocation, setExtLocation] = useState('')
 
   const today = new Date().toISOString().split('T')[0]
   const [distributionDate, setDistributionDate] = useState(today)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Fetch group member profiles when group mode is active
+  const switchMode = (mode: RecipientMode) => {
+    setRecipientMode(mode)
+    setSelectedUser(null)
+    setSearchText('')
+    setSearchResults([])
+    setSelectedApiaryId('')
+    setSelectedHiveId('')
+  }
+
+  // Fetch group members when in group mode
   useEffect(() => {
-    if (!groupOnly || !groupMemberIds || groupMemberIds.length === 0) {
+    if (recipientMode !== 'group' || !groupMemberIds || groupMemberIds.length === 0) {
       setGroupMembers([])
       return
     }
@@ -101,30 +122,25 @@ export default function DistributeGraftModal({
           setGroupMembers(data as RecipientUser[])
         }
       })
-  }, [groupOnly, groupMemberIds])
+  }, [recipientMode, groupMemberIds])
 
-  // Debounced user search with stale-result guard
+  // Debounced user search with stale-result guard (app_user mode only)
   useEffect(() => {
-    if (searchText.length < 2) {
+    if (recipientMode !== 'app_user' || searchText.length < 2) {
       setSearchResults([])
       return
     }
     const requestId = ++searchCounter.current
-    const groupOnlyAtRequest = groupOnly  // capture before async boundary
     const timer = setTimeout(async () => {
       setSearching(true)
       const results = await searchUsers(searchText)
-      // Only apply results if this is still the latest request
       if (requestId === searchCounter.current) {
-        const filtered = groupOnlyAtRequest && groupMemberIds
-          ? results.filter(u => groupMemberIds.includes(u.id))
-          : results
-        setSearchResults(filtered)
+        setSearchResults(results)
         setSearching(false)
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [searchText, searchUsers, groupOnly, groupMemberIds])
+  }, [searchText, searchUsers, recipientMode])
 
   // Fetch apiaries when user selected
   useEffect(() => {
@@ -152,8 +168,12 @@ export default function DistributeGraftModal({
     setSelectedHiveId('')
   }, [])
 
+  const isExternal = recipientMode === 'external'
+  const externalHasData = extName.trim() || extEmail.trim() || extPhone.trim() || extLocation.trim()
+  const canSubmit = isExternal ? !!externalHasData : !!selectedUser
+
   const handleSubmit = async () => {
-    if (!selectedUser || saving) return  // guard against double-click
+    if (!canSubmit || saving) return
 
     setSaving(true)
 
@@ -162,13 +182,17 @@ export default function DistributeGraftModal({
       const bulkData: BulkDistributionData = {
         batch_id: batchId,
         distribution_type: distributionType,
-        recipient_user_id: selectedUser.id,
-        recipient_apiary_id: selectedApiaryId || null,
-        recipient_hive_id: selectedHiveId || null,
+        recipient_user_id: isExternal ? null : selectedUser!.id,
+        recipient_apiary_id: isExternal ? null : (selectedApiaryId || null),
+        recipient_hive_id: isExternal ? null : (selectedHiveId || null),
         distribution_date: distributionDate,
         notes: notes || null,
         user_id: userId,
         grafts: bulkGrafts.map((g) => ({ id: g.id, previous_graft_status: g.status })),
+        external_recipient_name: isExternal ? (extName.trim() || null) : null,
+        external_recipient_email: isExternal ? (extEmail.trim() || null) : null,
+        external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
+        external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
       }
       success = await onBulkSave(bulkData)
     } else {
@@ -176,13 +200,17 @@ export default function DistributeGraftModal({
         graft_id: graftId,
         batch_id: batchId,
         distribution_type: distributionType,
-        recipient_user_id: selectedUser.id,
-        recipient_apiary_id: selectedApiaryId || null,
-        recipient_hive_id: selectedHiveId || null,
+        recipient_user_id: isExternal ? null : selectedUser!.id,
+        recipient_apiary_id: isExternal ? null : (selectedApiaryId || null),
+        recipient_hive_id: isExternal ? null : (selectedHiveId || null),
         distribution_date: distributionDate,
         notes: notes || null,
         user_id: userId,
         previous_graft_status: graftStatus,
+        external_recipient_name: isExternal ? (extName.trim() || null) : null,
+        external_recipient_email: isExternal ? (extEmail.trim() || null) : null,
+        external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
+        external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
       }
       success = await onSave(data)
     }
@@ -214,26 +242,48 @@ export default function DistributeGraftModal({
             </span>
           </div>
 
-          {/* Recipient Search */}
+          {/* Recipient */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-sm font-medium text-text-secondary">Recipient *</label>
-              {hasGroup && !selectedUser && (
+            <label className="block text-sm font-medium text-text-secondary mb-2">Recipient *</label>
+
+            {/* Mode toggles */}
+            <div className="flex rounded-lg border border-border overflow-hidden text-xs font-medium mb-3">
+              {hasGroup && (
                 <button
                   type="button"
-                  onClick={() => { setGroupOnly(!groupOnly); setSearchText(''); setSearchResults([]) }}
-                  className={`px-3 py-1 text-xs rounded-full font-medium flex items-center gap-1.5 transition-colors ${
-                    groupOnly
-                      ? 'bg-green-600 text-white dark:bg-green-700'
-                      : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  onClick={() => switchMode('group')}
+                  className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 transition-colors ${
+                    recipientMode === 'group' ? 'bg-forest-600 text-white' : 'bg-surface text-text-secondary hover:bg-surface-elevated'
                   }`}
                 >
                   <Users size={12} />
-                  Group Only
+                  Group Member
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => switchMode('app_user')}
+                className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 transition-colors ${
+                  recipientMode === 'app_user' ? 'bg-forest-600 text-white' : 'bg-surface text-text-secondary hover:bg-surface-elevated'
+                }`}
+              >
+                <User size={12} />
+                App User
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode('external')}
+                className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 transition-colors ${
+                  recipientMode === 'external' ? 'bg-forest-600 text-white' : 'bg-surface text-text-secondary hover:bg-surface-elevated'
+                }`}
+              >
+                <UserPlus size={12} />
+                Other Beekeeper
+              </button>
             </div>
-            {selectedUser ? (
+
+            {/* Selected app / group user chip */}
+            {!isExternal && selectedUser && (
               <div className="flex items-center gap-2 p-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border">
                 <User size={16} className="text-text-tertiary" />
                 <div className="flex-1 min-w-0">
@@ -255,7 +305,10 @@ export default function DistributeGraftModal({
                   <X size={14} />
                 </button>
               </div>
-            ) : groupOnly && groupMembers.length > 0 ? (
+            )}
+
+            {/* Group member list */}
+            {recipientMode === 'group' && !selectedUser && groupMembers.length > 0 && (
               <div className="border border-border rounded-lg overflow-hidden">
                 {groupMembers.map((user) => (
                   <button
@@ -276,7 +329,10 @@ export default function DistributeGraftModal({
                   </button>
                 ))}
               </div>
-            ) : (
+            )}
+
+            {/* App user search */}
+            {recipientMode === 'app_user' && !selectedUser && (
               <div className="relative">
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
@@ -321,6 +377,53 @@ export default function DistributeGraftModal({
                 )}
               </div>
             )}
+
+            {/* External beekeeper fields */}
+            {isExternal && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-text-secondary mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={extName}
+                    onChange={(e) => setExtName(e.target.value)}
+                    placeholder="Beekeeper name..."
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-text-secondary mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={extEmail}
+                    onChange={(e) => setExtEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-text-secondary mb-1">Mobile</label>
+                  <input
+                    type="tel"
+                    value={extPhone}
+                    onChange={(e) => setExtPhone(e.target.value)}
+                    placeholder="+353 ..."
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-text-secondary mb-1">Apiary / Mating Location (closest Eircode)</label>
+                  <input
+                    type="text"
+                    value={extLocation}
+                    onChange={(e) => setExtLocation(e.target.value)}
+                    placeholder="e.g. D01 AB12"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Distribution Date */}
@@ -334,8 +437,8 @@ export default function DistributeGraftModal({
             />
           </div>
 
-          {/* Recipient Apiary — shown for virgin_queen and mated_queen */}
-          {selectedUser && (distributionType === 'virgin_queen' || distributionType === 'mated_queen') && (
+          {/* Recipient Apiary — shown for virgin_queen and mated_queen, app user only */}
+          {!isExternal && selectedUser && (distributionType === 'virgin_queen' || distributionType === 'mated_queen') && (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 Recipient&apos;s Apiary
@@ -353,8 +456,8 @@ export default function DistributeGraftModal({
             </div>
           )}
 
-          {/* Recipient Hive — shown only for mated_queen with selected apiary */}
-          {selectedUser && distributionType === 'mated_queen' && selectedApiaryId && (
+          {/* Recipient Hive — shown only for mated_queen with selected apiary, app user only */}
+          {!isExternal && selectedUser && distributionType === 'mated_queen' && selectedApiaryId && (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 Recipient&apos;s Hive
@@ -389,7 +492,7 @@ export default function DistributeGraftModal({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!selectedUser || saving}
+              disabled={!canSubmit || saving}
               className="flex-1 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {saving ? 'Saving...' : 'Distribute'}

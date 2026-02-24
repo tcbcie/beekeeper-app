@@ -16,15 +16,19 @@ The NIHBS monthly report auto-calculates external distribution counts from these
 | graft_id | UUID | FK to batch_grafts (UNIQUE — one distribution per graft) |
 | batch_id | UUID | FK to rearing_batches |
 | distribution_type | TEXT | `queen_cell`, `virgin_queen`, or `mated_queen` |
-| recipient_user_id | UUID | FK to auth.users — who received it |
-| recipient_apiary_id | UUID | FK to apiaries (optional) — destination apiary |
-| recipient_hive_id | UUID | FK to hives (optional) — destination hive |
+| recipient_user_id | UUID | FK to auth.users — who received it (NULL for external recipients) |
+| recipient_apiary_id | UUID | FK to apiaries (optional) — destination apiary (app users only) |
+| recipient_hive_id | UUID | FK to hives (optional) — destination hive (app users only) |
 | distribution_date | DATE | When distributed (defaults to today) |
 | mating_confirmed | BOOLEAN | Whether the virgin queen mated successfully |
 | mating_confirmed_date | DATE | Date mating was confirmed (set automatically to today when toggled on, cleared to NULL when toggled off) |
 | notes | TEXT | Optional notes |
 | user_id | UUID | FK to auth.users — who created the record |
 | created_at | TIMESTAMPTZ | Record creation timestamp |
+| external_recipient_name | TEXT | Free-text name for non-app recipients |
+| external_recipient_email | TEXT | Free-text email for non-app recipients |
+| external_recipient_phone | TEXT | Free-text mobile for non-app recipients |
+| external_recipient_location | TEXT | Apiary / mating location (closest Eircode) for non-app recipients |
 
 ### RLS Policies
 
@@ -55,10 +59,13 @@ Distribution type is auto-detected from status:
 
 Modal form with:
 1. **Type badge** — auto-detected, read-only
-2. **Recipient search** — debounced search by name/email, shows "Group" badge for group members
+2. **Recipient mode toggle** — three options:
+   - **Group Member** (hidden when no group) — shows the group member list to pick from
+   - **App User** — debounced search by name/email; shows "Group" badge for group members in results
+   - **Other Beekeeper** — free-text fields: Name, Email, Mobile, Apiary/Mating Location (closest Eircode); submit enabled when at least one field is filled
 3. **Distribution date** — defaults to today
-4. **Recipient's apiary** — shown for virgin/mated queen types
-5. **Recipient's hive** — shown for mated queen type when apiary selected
+4. **Recipient's apiary** — shown for virgin/mated queen types (app user mode only)
+5. **Recipient's hive** — shown for mated queen type when apiary selected (app user mode only)
 6. **Notes** — optional
 
 ### Distribution List

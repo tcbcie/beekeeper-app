@@ -7,7 +7,7 @@ export interface GraftDistribution {
   graft_id: string
   batch_id: string
   distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
-  recipient_user_id: string
+  recipient_user_id: string | null
   recipient_apiary_id: string | null
   recipient_hive_id: string | null
   distribution_date: string
@@ -16,7 +16,7 @@ export interface GraftDistribution {
   notes: string | null
   previous_graft_status: string | null
   created_at: string
-  // Joined fields
+  // Joined fields (app users)
   recipient_name: string | null
   recipient_email: string | null
   recipient_apiary_name: string | null
@@ -26,6 +26,11 @@ export interface GraftDistribution {
   recipient_apiary_grid_reference: string | null
   recipient_hive_number: string | null
   cell_number: number
+  // External recipient fields
+  external_recipient_name: string | null
+  external_recipient_email: string | null
+  external_recipient_phone: string | null
+  external_recipient_location: string | null
 }
 
 export interface RecipientUser {
@@ -48,25 +53,33 @@ export interface CreateDistributionData {
   graft_id: string
   batch_id: string
   distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
-  recipient_user_id: string
+  recipient_user_id: string | null
   recipient_apiary_id: string | null
   recipient_hive_id: string | null
   distribution_date: string
   notes: string | null
   user_id: string
   previous_graft_status: string
+  external_recipient_name: string | null
+  external_recipient_email: string | null
+  external_recipient_phone: string | null
+  external_recipient_location: string | null
 }
 
 export interface BulkDistributionData {
   batch_id: string
   distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
-  recipient_user_id: string
+  recipient_user_id: string | null
   recipient_apiary_id: string | null
   recipient_hive_id: string | null
   distribution_date: string
   notes: string | null
   user_id: string
   grafts: { id: string; previous_graft_status: string }[]
+  external_recipient_name: string | null
+  external_recipient_email: string | null
+  external_recipient_phone: string | null
+  external_recipient_location: string | null
 }
 
 export function useGraftDistributions() {
@@ -112,7 +125,7 @@ export function useGraftDistributions() {
           graft_id: d.graft_id as string,
           batch_id: d.batch_id as string,
           distribution_type: d.distribution_type as GraftDistribution['distribution_type'],
-          recipient_user_id: d.recipient_user_id as string,
+          recipient_user_id: d.recipient_user_id as string | null,
           recipient_apiary_id: d.recipient_apiary_id as string | null,
           recipient_hive_id: d.recipient_hive_id as string | null,
           distribution_date: d.distribution_date as string,
@@ -130,6 +143,10 @@ export function useGraftDistributions() {
           recipient_apiary_elevation: a?.elevation ?? null,
           recipient_apiary_grid_reference: a?.grid_reference ?? null,
           recipient_hive_number: Array.isArray(hive) ? hive[0]?.hive_number ?? null : hive?.hive_number ?? null,
+          external_recipient_name: d.external_recipient_name as string | null,
+          external_recipient_email: d.external_recipient_email as string | null,
+          external_recipient_phone: d.external_recipient_phone as string | null,
+          external_recipient_location: d.external_recipient_location as string | null,
         }
       })
 
@@ -194,6 +211,10 @@ export function useGraftDistributions() {
         notes: data.notes,
         user_id: data.user_id,
         previous_graft_status: g.previous_graft_status,
+        external_recipient_name: data.external_recipient_name,
+        external_recipient_email: data.external_recipient_email,
+        external_recipient_phone: data.external_recipient_phone,
+        external_recipient_location: data.external_recipient_location,
       }))
 
       const { error } = await supabase
