@@ -1144,6 +1144,17 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           <div className="space-y-2">
             {distributions.map((dist) => {
               const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell || { label: 'Unknown', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
+              const graft = grafts.find(g => g.id === dist.graft_id)
+              const recipientDisplay = dist.recipient_name && dist.recipient_email && dist.recipient_name !== dist.recipient_email
+                ? `${dist.recipient_name} (${dist.recipient_email})`
+                : dist.recipient_name || dist.recipient_email || 'Unknown'
+              const locationParts = [
+                dist.recipient_apiary_grid_reference ? `Grid: ${dist.recipient_apiary_grid_reference}` : null,
+                dist.recipient_apiary_elevation != null ? `Elev: ${dist.recipient_apiary_elevation}m` : null,
+                (dist.recipient_apiary_latitude != null && dist.recipient_apiary_longitude != null)
+                  ? `${dist.recipient_apiary_latitude.toFixed(4)}\u00b0, ${dist.recipient_apiary_longitude.toFixed(4)}\u00b0`
+                  : null,
+              ].filter(Boolean)
               return (
                 <div
                   key={dist.id}
@@ -1159,19 +1170,24 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       </span>
                     </div>
                     <div className="text-xs text-text-secondary mt-1">
-                      To: {dist.recipient_name || dist.recipient_email || 'Unknown'}
-                      {dist.recipient_apiary_name && ` \u2022 ${dist.recipient_apiary_name}`}
-                      {dist.recipient_hive_number && ` \u2022 Hive ${dist.recipient_hive_number}`}
-                      {' \u2022 '}{formatDateIrish(dist.distribution_date)}
+                      Distributed to {recipientDisplay}
                     </div>
-                    {dist.recipient_apiary_name && (dist.recipient_apiary_grid_reference || dist.recipient_apiary_elevation != null || dist.recipient_apiary_latitude != null) && (
+                    <div className="text-xs text-text-secondary mt-0.5">
+                      {dist.recipient_apiary_name
+                        ? <>to {dist.recipient_apiary_name}{dist.recipient_hive_number && `, Hive ${dist.recipient_hive_number}`} on {formatDateIrish(dist.distribution_date)}</>
+                        : <>on {formatDateIrish(dist.distribution_date)}</>
+                      }
+                    </div>
+                    {locationParts.length > 0 && (
+                      <div className="text-xs text-text-tertiary mt-0.5">
+                        {locationParts.join(' \u2022 ')}
+                      </div>
+                    )}
+                    {(graft?.queen_marked || graft?.queen_number) && (
                       <div className="text-xs text-text-tertiary mt-0.5">
                         {[
-                          dist.recipient_apiary_grid_reference,
-                          dist.recipient_apiary_elevation != null ? `${dist.recipient_apiary_elevation}m` : null,
-                          (dist.recipient_apiary_latitude != null && dist.recipient_apiary_longitude != null)
-                            ? `${dist.recipient_apiary_latitude.toFixed(4)}, ${dist.recipient_apiary_longitude.toFixed(4)}`
-                            : null,
+                          graft.queen_marked ? 'Queen marked' : null,
+                          graft.queen_number ? `Queen #${graft.queen_number}` : null,
                         ].filter(Boolean).join(' \u2022 ')}
                       </div>
                     )}
