@@ -545,7 +545,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-y-2">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-semibold text-foreground">Individual Cells/Grafts</h4>
           <button
@@ -667,7 +667,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             <button
               type="button"
               onClick={() => setFrameCollapsed(prev => !prev)}
-              className="flex items-center gap-1 text-xs text-text-tertiary hover:text-foreground"
+              className="flex items-center gap-1 px-2 py-1.5 text-xs text-text-tertiary hover:text-foreground rounded"
             >
               {frameCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
               {frameCollapsed ? 'Show' : 'Hide'}
@@ -675,7 +675,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           </div>
           {!frameCollapsed && (
           <div className="overflow-x-auto">
-          <div className="border-4 border-amber-700 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 min-w-fit">
+          <div className="border-4 border-amber-700 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2 sm:p-4 min-w-fit">
             {(() => {
               // Show all grafts in the frame visual regardless of status
               let rows: Graft[][]
@@ -734,7 +734,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                               value={graft.status}
                               onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
                               onClick={(e) => e.stopPropagation()}
-                              className="w-16 px-0 py-0.5 text-[10px] rounded border border-border bg-surface text-foreground text-center"
+                              className="w-16 px-0 py-1 text-[10px] rounded border border-border bg-surface text-foreground text-center"
                             >
                               {FRAME_STATUSES.map(s => (
                                 <option key={s.value} value={s.value}>{s.label}</option>
@@ -744,7 +744,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                               <button
                                 type="button"
                                 onClick={() => deleteGraft(graft.id)}
-                                className="p-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                                 title="Delete"
                               >
                                 <Trash2 size={10} />
@@ -1014,7 +1014,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               return (
                 <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       {tableSelectMode && !isLocked && (
                         <button type="button" onClick={() => toggleTableSelect(graft.id)}>
                           {tableSelectedIds.has(graft.id)
@@ -1062,7 +1062,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                           type="date"
                           defaultValue={graft.status_date || ''}
                           onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
-                          className="w-32 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                          className="w-28 sm:w-32 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
                         />
                       </div>
                       <div className="flex items-center justify-between">
@@ -1087,12 +1087,12 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                             }
                           }}
                           placeholder="Enter number..."
-                          className="w-28 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                          className="w-24 sm:w-28 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
                         />
                       </div>
                     </div>
                   )}
-                  <div className="flex gap-1 pt-1 border-t border-border items-center">
+                  <div className="flex flex-wrap gap-1 pt-1 border-t border-border items-center">
                     {(isDistributed || isLockedByFailed) && (
                       <button
                         type="button"
@@ -1173,10 +1173,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                         {distTypeInfo.label}
                       </span>
                     </div>
-                    <div className="text-xs text-text-secondary mt-1">
+                    <div className="text-xs text-text-secondary mt-1 break-words">
                       Distributed to {recipientDisplay}
                     </div>
-                    <div className="text-xs text-text-secondary mt-0.5">
+                    <div className="text-xs text-text-secondary mt-0.5 break-words">
                       {!isExternal && dist.recipient_apiary_name
                         ? <>to {dist.recipient_apiary_name}{dist.recipient_hive_number && `, Hive ${dist.recipient_hive_number}`} on {formatDateIrish(dist.distribution_date)}</>
                         : <>on {formatDateIrish(dist.distribution_date)}</>
@@ -1214,12 +1214,12 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {dist.distribution_type !== 'mated_queen' && (
                       <button
                         type="button"
                         onClick={() => handleToggleMating(dist)}
-                        className={`p-1.5 rounded text-xs ${
+                        className={`p-2 rounded text-xs ${
                           dist.mating_confirmed
                             ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                             : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
@@ -1232,7 +1232,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                     <button
                       type="button"
                       onClick={() => handleDeleteDistribution(dist)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                       title="Remove distribution"
                     >
                       <X size={14} />
