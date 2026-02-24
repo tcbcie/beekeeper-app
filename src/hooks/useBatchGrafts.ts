@@ -1,0 +1,560 @@
+'use client'
+
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useToast } from '@/components/ui/Toast'
+import { useGraftDistributions } from '@/hooks/useGraftDistributions'
+import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDistributions'
+import { getQueenColorFromYear } from '@/types/queen'
+import { Graft, GRAFT_STATUSES, FRAME_STATUS_VALUES } from '@/components/batches/graftConstants'
+
+interface UseBatchGraftsProps {
+  batchId: string
+  userId: string
+  cellCount: number | null
+  groupId?: string | null
+  emergenceDate?: string | null
+  onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
+}
+
+export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, onCountsChange }: UseBatchGraftsProps) {
+  const toast = useToast()
+  const [grafts, setGrafts] = useState<Graft[]>([])
+  const [loading, setLoading] = useState(true)
+  const [distributeGraft, setDistributeGraft] = useState<Graft | null>(null)
+  const [groupMemberIds, setGroupMemberIds] = useState<string[]>([])
+  const [showHelp, setShowHelp] = useState(false)
+
+  // Stable ref for onCountsChange to avoid infinite re-render loops
+  const onCountsChangeRef = useRef(onCountsChange)
+  onCountsChangeRef.current = onCountsChange
+
+  // Frame selection state
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Table selection state
+  const [tableSelectMode, setTableSelectMode] = useState(false)
+  const [tableSelectedIds, setTableSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDistributeGrafts, setBulkDistributeGrafts] = useState<Graft[] | null>(null)
+  const [unlockedGraftIds, setUnlockedGraftIds] = useState<Set<string>>(new Set())
+  const [frameCollapsed, setFrameCollapsed] = useState(false)
+  const frameInitialised = useRef(false)
+
+  const {
+    distributions,
+    loading: distLoading,
+    fetchDistributions,
+    createDistribution,
+    createBulkDistributions,
+    deleteDistribution,
+    toggleMatingConfirmed,
+    searchUsers,
+    fetchRecipientApiaries,
+    fetchRecipientHives,
+  } = useGraftDistributions()
+
+  // --- Data fetching ---
+
+  const fetchGrafts = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('batch_grafts')
+      .select('*')
+      .eq('batch_id', batchId)
+      .eq('user_id', userId)
+      .order('cell_number')
+
+    if (error) {
+      console.error('Error fetching grafts:', error)
+      toast.error('Failed to load grafts')
+    } else if (data) {
+      setGrafts(data as Graft[])
+      // Prune frame selected IDs to only include grafts still on the frame
+      setSelectedIds(prev => {
+        if (prev.size === 0) return prev
+        const frameIds = new Set(data.filter((g: Graft) => FRAME_STATUS_VALUES.includes(g.status)).map((g: Graft) => g.id))
+        const pruned = new Set([...prev].filter(id => frameIds.has(id)))
+        return pruned.size === prev.size ? prev : pruned
+      })
+      // Prune table selected IDs to only include grafts still in the table
+      setTableSelectedIds(prev => {
+        if (prev.size === 0) return prev
+        const tableIds = new Set(data.filter((g: Graft) => !FRAME_STATUS_VALUES.includes(g.status)).map((g: Graft) => g.id))
+        const pruned = new Set([...prev].filter(id => tableIds.has(id)))
+        return pruned.size === prev.size ? prev : pruned
+      })
+    }
+    setLoading(false)
+  }, [batchId, userId, toast])
+
+  // Fetch group member IDs for the "Group" badge in the modal
+  useEffect(() => {
+    if (!groupId) return
+    supabase
+      .from('rearing_group_members')
+      .select('user_id')
+      .eq('group_id', groupId)
+      .then(
+        ({ data }) => {
+          if (data) setGroupMemberIds(data.map((m) => m.user_id))
+        },
+        (err) => {
+          console.error('Error fetching group members:', err)
+        }
+      )
+  }, [groupId])
+
+  useEffect(() => {
+    fetchGrafts()
+    fetchDistributions(batchId)
+  }, [fetchGrafts, fetchDistributions, batchId])
+
+  // Prune unlockedGraftIds when distributions change
+  useEffect(() => {
+    const currentDistributed = new Set(distributions.map(d => d.graft_id))
+    setUnlockedGraftIds(prev => {
+      const next = new Set([...prev].filter(id => currentDistributed.has(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [distributions])
+
+  // Reset table select mode when all grafts leave the table
+  useEffect(() => {
+    const hasTableGrafts = grafts.some(g => !FRAME_STATUS_VALUES.includes(g.status))
+    if (!hasTableGrafts && tableSelectMode) {
+      setTableSelectMode(false)
+      setTableSelectedIds(new Set())
+    }
+  }, [grafts, tableSelectMode])
+
+  // Auto-collapse frame once on first load if table grafts already exist
+  useEffect(() => {
+    if (frameInitialised.current || grafts.length === 0) return
+    frameInitialised.current = true
+    const hasTableGrafts = grafts.some(g => !FRAME_STATUS_VALUES.includes(g.status))
+    if (hasTableGrafts) setFrameCollapsed(true)
+  }, [grafts])
+
+  // Sync counts to parent when grafts change (uses ref to avoid infinite loop)
+  useEffect(() => {
+    const cb = onCountsChangeRef.current
+    if (!cb || loading) return
+    if (grafts.length === 0) {
+      cb({ grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
+      return
+    }
+    const accepted = grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
+    const hatched = grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
+    const mated = grafts.filter(g => ['mated', 'sold'].includes(g.status)).length
+    cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
+  }, [grafts, loading])
+
+  // --- CRUD ---
+
+  const generateGrafts = useCallback(async () => {
+    if (!cellCount || cellCount <= 0) {
+      toast.error('Set cell count first')
+      return
+    }
+
+    if (grafts.length > 0) {
+      if (!confirm(`This will add ${cellCount} new grafts. Existing grafts will be kept. Continue?`)) {
+        return
+      }
+    }
+
+    const newGrafts = []
+    const nextNumber = grafts.length > 0
+      ? grafts.reduce((max, g) => g.cell_number > max ? g.cell_number : max, 0) + 1
+      : 1
+
+    for (let i = 0; i < cellCount; i++) {
+      newGrafts.push({
+        batch_id: batchId,
+        cell_number: nextNumber + i,
+        status: 'grafted',
+        user_id: userId,
+      })
+    }
+
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .insert(newGrafts)
+
+      if (error) throw error
+      toast.success(`${cellCount} grafts created`)
+      fetchGrafts()
+    } catch (error) {
+      console.error('Error creating grafts:', error)
+      toast.error('Failed to create grafts')
+    }
+  }, [cellCount, grafts, batchId, userId, toast, fetchGrafts])
+
+  const updateGraftStatus = useCallback(async (graftId: string, newStatus: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ status: newStatus, status_date: today })
+        .eq('id', graftId)
+
+      if (error) throw error
+      fetchGrafts()
+    } catch (error) {
+      console.error('Error updating graft:', error)
+      toast.error('Failed to update graft')
+    }
+  }, [fetchGrafts, toast])
+
+  const deleteGraft = useCallback(async (graftId: string) => {
+    if (!confirm('Delete this graft?')) return
+
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .delete()
+        .eq('id', graftId)
+
+      if (error) throw error
+      toast.success('Graft deleted')
+      fetchGrafts()
+    } catch (error) {
+      console.error('Error deleting graft:', error)
+      toast.error('Failed to delete graft')
+    }
+  }, [fetchGrafts, toast])
+
+  const updateGraftQueenMarked = useCallback(async (graftId: string, marked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ queen_marked: marked })
+        .eq('id', graftId)
+      if (error) throw error
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: marked } : g))
+    } catch (error) {
+      console.error('Error updating queen marked:', error)
+      toast.error('Failed to update queen marked')
+    }
+  }, [toast])
+
+  const updateGraftStatusDate = useCallback(async (graftId: string, date: string) => {
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ status_date: date || null })
+        .eq('id', graftId)
+      if (error) throw error
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, status_date: date || null } : g))
+    } catch (error) {
+      console.error('Error updating status date:', error)
+      toast.error('Failed to update status date')
+    }
+  }, [toast])
+
+  const updateGraftQueenNumber = useCallback(async (graftId: string, queenNumber: string) => {
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ queen_number: queenNumber || null })
+        .eq('id', graftId)
+      if (error) throw error
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: queenNumber || null } : g))
+    } catch (error) {
+      console.error('Error updating queen number:', error)
+      toast.error('Failed to update queen number')
+    }
+  }, [toast])
+
+  // --- Distribution wrappers ---
+
+  const handleDistributeSave = useCallback(async (data: Parameters<typeof createDistribution>[0]) => {
+    const success = await createDistribution(data)
+    if (success === true) {
+      toast.success('Distribution recorded')
+    } else if (success === false) {
+      toast.error('This graft has already been distributed')
+    } else {
+      toast.error('Failed to record distribution')
+    }
+    fetchGrafts()
+    fetchDistributions(batchId)
+    return success
+  }, [createDistribution, toast, fetchGrafts, fetchDistributions, batchId])
+
+  const handleDeleteDistribution = useCallback(async (dist: GraftDistribution) => {
+    if (!confirm(`Remove distribution for Cell #${dist.cell_number}?`)) return
+    const success = await deleteDistribution(dist.id, dist.graft_id, dist.previous_graft_status || 'mated')
+    if (success) {
+      toast.success('Distribution removed')
+      fetchGrafts()
+      fetchDistributions(batchId)
+    } else {
+      toast.error('Failed to remove distribution')
+    }
+  }, [deleteDistribution, toast, fetchGrafts, fetchDistributions, batchId])
+
+  const handleToggleMating = useCallback(async (dist: GraftDistribution) => {
+    const success = await toggleMatingConfirmed(dist.id, !dist.mating_confirmed)
+    if (success) {
+      fetchDistributions(batchId)
+    } else {
+      toast.error('Failed to update mating status')
+    }
+  }, [toggleMatingConfirmed, fetchDistributions, batchId, toast])
+
+  const handleBulkDistributeSave = useCallback(async (data: BulkDistributionData) => {
+    const success = await createBulkDistributions(data)
+    if (success === true) {
+      toast.success(`${data.grafts.length} distributions recorded`)
+      fetchGrafts()
+      fetchDistributions(batchId)
+      setBulkDistributeGrafts(null)
+      setTableSelectedIds(new Set())
+    } else {
+      toast.error('Failed to record distributions. One or more may already be distributed.')
+    }
+    return success
+  }, [createBulkDistributions, toast, fetchGrafts, fetchDistributions, batchId])
+
+  // --- Frame selection helpers ---
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id))), [grafts])
+  const deselectAll = useCallback(() => setSelectedIds(new Set()), [])
+  const exitSelectMode = useCallback(() => { setSelectMode(false); setSelectedIds(new Set()) }, [])
+
+  // --- Table selection helpers ---
+
+  const toggleTableSelect = useCallback((id: string) => {
+    setTableSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAllTable = useCallback(() => {
+    const distributedIds = new Set(distributions.map(d => d.graft_id))
+    setTableSelectedIds(new Set(
+      grafts.filter(g =>
+        !FRAME_STATUS_VALUES.includes(g.status) &&
+        g.status !== 'failed' &&
+        g.status !== 'sold' &&
+        !distributedIds.has(g.id)
+      ).map(g => g.id)
+    ))
+  }, [grafts, distributions])
+
+  const deselectAllTable = useCallback(() => setTableSelectedIds(new Set()), [])
+  const exitTableSelectMode = useCallback(() => { setTableSelectMode(false); setTableSelectedIds(new Set()) }, [])
+
+  // --- Bulk handlers (frame) ---
+
+  const handleBulkStatusChange = useCallback(async (newStatus: string) => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ status: newStatus, status_date: today })
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} grafts updated to ${newStatus}`)
+      fetchGrafts()
+      setSelectedIds(new Set())
+    } catch (error) {
+      console.error('Error bulk updating grafts:', error)
+      toast.error('Failed to update grafts')
+    }
+  }, [selectedIds, toast, fetchGrafts])
+
+  const handleBulkDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    if (!confirm(`Delete ${ids.length} selected grafts? This cannot be undone.`)) return
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .delete()
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} grafts deleted`)
+      fetchGrafts()
+      fetchDistributions(batchId)
+      setSelectedIds(new Set())
+    } catch (error) {
+      console.error('Error bulk deleting grafts:', error)
+      toast.error('Failed to delete grafts')
+    }
+  }, [selectedIds, toast, fetchGrafts, fetchDistributions, batchId])
+
+  // --- Table bulk handlers ---
+
+  const handleTableBulkStatusChange = useCallback(async (newStatus: string) => {
+    const ids = Array.from(tableSelectedIds)
+    if (ids.length === 0) return
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ status: newStatus, status_date: today })
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} grafts updated to ${newStatus}`)
+      fetchGrafts()
+      setTableSelectedIds(new Set())
+    } catch (error) {
+      console.error('Error bulk updating grafts:', error)
+      toast.error('Failed to update grafts')
+    }
+  }, [tableSelectedIds, toast, fetchGrafts])
+
+  const handleTableBulkQueenMarked = useCallback(async (marked: boolean) => {
+    const ids = Array.from(tableSelectedIds)
+    if (ids.length === 0) return
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ queen_marked: marked })
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} queens ${marked ? 'marked' : 'unmarked'}`)
+      fetchGrafts()
+      setTableSelectedIds(new Set())
+    } catch (error) {
+      console.error('Error bulk updating queen marked:', error)
+      toast.error('Failed to update queen marked')
+    }
+  }, [tableSelectedIds, toast, fetchGrafts])
+
+  const handleTableBulkDelete = useCallback(async () => {
+    const ids = Array.from(tableSelectedIds)
+    if (ids.length === 0) return
+    if (!confirm(`Delete ${ids.length} selected grafts? This cannot be undone.`)) return
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .delete()
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} grafts deleted`)
+      fetchGrafts()
+      fetchDistributions(batchId)
+      setTableSelectedIds(new Set())
+    } catch (error) {
+      console.error('Error bulk deleting grafts:', error)
+      toast.error('Failed to delete grafts')
+    }
+  }, [tableSelectedIds, toast, fetchGrafts, fetchDistributions, batchId])
+
+  // --- Computed values (memoised to stabilise references for child components) ---
+
+  const statusCounts = useMemo(() =>
+    GRAFT_STATUSES.reduce((acc, s) => {
+      acc[s.value] = grafts.filter(g => g.status === s.value).length
+      return acc
+    }, {} as Record<string, number>),
+  [grafts])
+
+  const tableGrafts = useMemo(() =>
+    grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status)),
+  [grafts])
+
+  const distributedGraftIds = useMemo(() =>
+    new Set(distributions.map(d => d.graft_id)),
+  [distributions])
+
+  const markingColour = useMemo(() =>
+    emergenceDate ? getQueenColorFromYear(emergenceDate) : '',
+  [emergenceDate])
+
+  const emergenceYear = useMemo(() => {
+    if (!emergenceDate) return null
+    const year = new Date(emergenceDate).getFullYear()
+    return isNaN(year) ? null : year
+  }, [emergenceDate])
+
+  return {
+    // State
+    grafts,
+    loading,
+    distributeGraft,
+    setDistributeGraft,
+    groupMemberIds,
+    showHelp,
+    setShowHelp,
+    selectMode,
+    setSelectMode,
+    selectedIds,
+    tableSelectMode,
+    setTableSelectMode,
+    tableSelectedIds,
+    bulkDistributeGrafts,
+    setBulkDistributeGrafts,
+    unlockedGraftIds,
+    setUnlockedGraftIds,
+    frameCollapsed,
+    setFrameCollapsed,
+
+    // Distribution hook pass-through
+    distributions,
+    distLoading,
+    searchUsers,
+    fetchRecipientApiaries,
+    fetchRecipientHives,
+
+    // CRUD
+    generateGrafts,
+    updateGraftStatus,
+    deleteGraft,
+    updateGraftQueenMarked,
+    updateGraftStatusDate,
+    updateGraftQueenNumber,
+
+    // Distribution wrappers
+    handleDistributeSave,
+    handleDeleteDistribution,
+    handleToggleMating,
+    handleBulkDistributeSave,
+
+    // Frame selection
+    toggleSelect,
+    selectAll,
+    deselectAll,
+    exitSelectMode,
+
+    // Table selection
+    toggleTableSelect,
+    selectAllTable,
+    deselectAllTable,
+    exitTableSelectMode,
+
+    // Bulk handlers (frame)
+    handleBulkStatusChange,
+    handleBulkDelete,
+
+    // Table bulk handlers
+    handleTableBulkStatusChange,
+    handleTableBulkQueenMarked,
+    handleTableBulkDelete,
+
+    // Computed
+    statusCounts,
+    tableGrafts,
+    distributedGraftIds,
+    markingColour,
+    emergenceYear,
+  }
+}

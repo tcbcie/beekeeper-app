@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { X, Search, User, Users, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData, BulkDistributionData } from '@/hooks/useGraftDistributions'
+import { TYPE_LABELS } from './graftConstants'
 
 interface DistributeGraftModalProps {
   graftId: string
@@ -31,12 +32,6 @@ const TYPE_FROM_GRAFT_STATUS: Record<string, 'queen_cell' | 'virgin_queen' | 'ma
   mated: 'mated_queen',
 }
 
-const TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  queen_cell: { label: 'Queen Cell', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-  virgin_queen: { label: 'Virgin Queen', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
-  mated_queen: { label: 'Mated Queen', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300' },
-}
-
 type RecipientMode = 'group' | 'app_user' | 'external'
 
 export default function DistributeGraftModal({
@@ -62,7 +57,7 @@ export default function DistributeGraftModal({
       }, bulkGrafts[0].status)
     : graftStatus
   const distributionType = TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
-  const typeInfo = TYPE_LABELS[distributionType]
+  const typeInfo = TYPE_LABELS[distributionType] || { label: 'Queen Cell', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' }
 
   const hasGroup = groupMemberIds && groupMemberIds.length > 0
 
