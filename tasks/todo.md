@@ -1,59 +1,34 @@
-# Modularise BatchGraftsSection.tsx
+# Fix Group Member Visibility + Improve List UX
 
 ## Tasks
-- [x] 1. Create `graftConstants.ts` — extract interfaces, constants, colour maps, formatDateIrish
-- [x] 2. Create `useBatchGrafts.ts` — extract all state and business logic into a custom hook
-- [x] 3. Create `GraftHelpBanner.tsx` — extract help banner component
-- [x] 4. Create `CellFrame.tsx` — extract frame visualisation + frame bulk action bar
-- [x] 5. Create `QueenTrackingSection.tsx` — extract queen tracking header, table, mobile cards, table bulk bar
-- [x] 6. Create `DistributionList.tsx` — extract distribution cards section
-- [x] 7. Refactor `BatchGraftsSection.tsx` — thin composition layer using the new modules
-- [x] 8. Update `DistributeGraftModal.tsx` — import shared TYPE_LABELS from graftConstants
+- [x] 1. Apply RLS migration — add policy on `profiles` for rearing group co-members
+- [x] 2. Update `DistributeGraftModal.tsx` — add filter input + scrollable list for group members
 
 ## Review
 
 ### Summary
-Refactored `BatchGraftsSection.tsx` from a single 1,287-line file into 7 focused modules:
+Two changes to fix group member visibility in the distribute graft modal:
 
-| File | Purpose | ~Lines |
-|------|---------|--------|
-| `graftConstants.ts` | Shared interfaces, status arrays, colour maps, `formatDateIrish` | 80 |
-| `useBatchGrafts.ts` | All state, effects, CRUD, selection, bulk handlers | 500 |
-| `GraftHelpBanner.tsx` | Static help banner component | 35 |
-| `CellFrame.tsx` | Frame visualisation + frame bulk action bar | 150 |
-| `QueenTrackingSection.tsx` | Queen tracking header, table, mobile cards, table bulk bar | 300 |
-| `DistributionList.tsx` | Distribution cards with mating toggle and delete | 120 |
-| `BatchGraftsSection.tsx` | Thin composition layer | 150 |
+**1. RLS Policy (root cause fix)**
+- Added `"Users can view rearing group member profiles"` SELECT policy on `profiles`
+- Uses same join pattern as the existing team member policy: joins `rearing_group_members` to itself to find co-members
+- Without this, the Supabase query silently filtered out group members the current user couldn't "see"
 
-### Changes Made
-- **No logic changes** — all business logic moved verbatim into the hook
-- **No UI changes** — all JSX moved verbatim into sub-components
-- **Removed duplicate** `TYPE_LABELS` from `DistributeGraftModal.tsx`; now imports from shared `graftConstants.ts`
-- All async functions in the hook wrapped with `useCallback` following the existing `useGraftDistributions` pattern
-- Used proper `Dispatch<SetStateAction<T>>` types for state setter props
+**2. Modal UX improvements**
+- Added `groupFilter` state and a search/filter input (only shown when 6+ members) above the group member list
+- Filters by name or email as user types
+- Added `max-h-48 overflow-y-auto` to the list container so large groups don't push the form off-screen
+- Clears filter when switching recipient mode tabs
+- Matches the existing App User search dropdown styling (same `max-h-48 overflow-y-auto` classes)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| Migration | New RLS policy `"Users can view rearing group member profiles"` on `profiles` |
+| `src/components/batches/DistributeGraftModal.tsx` | +1 state, +filter input, +scroll cap, filter cleared on mode switch |
 
 ### Verification
-- User should run `npm run build` to check for TypeScript/lint errors
-- User should manually test: generate grafts, change status on frame, bulk select on frame, queen tracking table (desktop + mobile), distribution flow, bulk distribute
-
----
-
-## Code Audit
-
-### Fixes Applied (6 total)
-
-| # | Severity | File | Issue | Fix |
-|---|----------|------|-------|-----|
-| 1 | CRITICAL | `useBatchGrafts.ts` | Unused `DISTRIBUTABLE_STATUSES` import — build breaker with ESLint `no-unused-vars` | Removed from import |
-| 2 | HIGH | `useBatchGrafts.ts` | 5 computed values (`statusCounts`, `tableGrafts`, `distributedGraftIds`, `markingColour`, `emergenceYear`) creating new references every render — unnecessary child re-renders | Wrapped all in `useMemo` |
-| 3 | HIGH | `useBatchGrafts.ts` | `onCountsChange` in useEffect deps causes infinite re-render loop if parent doesn't memoise callback | `useRef` pattern for stable callback reference |
-| 4 | HIGH | `DistributeGraftModal.tsx` | `TYPE_LABELS[distributionType]` can be `undefined` — runtime crash on `typeInfo.color` | Added `\|\| { label, color }` fallback |
-| 5 | MEDIUM | `graftConstants.ts` | `Graft.status` typed as loose `string` — allows silent data corruption | Added `GraftStatus` union type; `as Graft[]` cast at Supabase boundary |
-| 6 | MEDIUM | `useBatchGrafts.ts` | `emergenceYear` could propagate `NaN` for malformed dates | Return `null` for `isNaN(year)` |
-
-### Known Pre-Existing Patterns (not introduced by refactoring)
-- Fire-and-forget `fetchGrafts()` calls after mutations (no `await`) — pre-existing pattern, not a regression
-- No abort controller on group member fetch effect — low impact since `groupId` rarely changes
-
-### Audit Verification
-- User should run `npm run build` to confirm no TypeScript/lint errors after audit fixes
+- User should run `npm run build` to check for errors
+- Open distribute modal → Group Member tab → all group members should now appear
+- Groups with 6+ members show a filter input
+- List scrolls when content exceeds height

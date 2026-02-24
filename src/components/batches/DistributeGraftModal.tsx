@@ -65,6 +65,7 @@ export default function DistributeGraftModal({
   const [recipientMode, setRecipientMode] = useState<RecipientMode>(hasGroup ? 'group' : 'app_user')
 
   // App user / group state
+  const [groupFilter, setGroupFilter] = useState('')
   const [searchText, setSearchText] = useState('')
   const [searchResults, setSearchResults] = useState<RecipientUser[]>([])
   const [searching, setSearching] = useState(false)
@@ -93,6 +94,7 @@ export default function DistributeGraftModal({
     setRecipientMode(mode)
     setSelectedUser(null)
     setSearchText('')
+    setGroupFilter('')
     setSearchResults([])
     setSelectedApiaryId('')
     setSelectedHiveId('')
@@ -304,25 +306,45 @@ export default function DistributeGraftModal({
 
             {/* Group member list */}
             {recipientMode === 'group' && !selectedUser && groupMembers.length > 0 && (
-              <div className="border border-border rounded-lg overflow-hidden">
-                {groupMembers.map((user) => (
-                  <button
-                    key={user.id}
-                    type="button"
-                    onClick={() => handleSelectUser(user)}
-                    className="w-full text-left p-3 hover:bg-surface-elevated dark:hover:bg-surface-elevated border-b border-border last:border-0"
-                  >
-                    <div className="flex items-center gap-2">
-                      <User size={14} className="text-text-tertiary shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-foreground truncate">
-                          {user.full_name || 'No name'}
+              <div>
+                {groupMembers.length > 5 && (
+                  <div className="relative mb-2">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                    <input
+                      type="text"
+                      value={groupFilter}
+                      onChange={(e) => setGroupFilter(e.target.value)}
+                      placeholder="Filter members..."
+                      className="w-full pl-9 pr-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                    />
+                  </div>
+                )}
+                <div className="border border-border rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                  {groupMembers
+                    .filter((user) => {
+                      if (!groupFilter.trim()) return true
+                      const q = groupFilter.toLowerCase()
+                      return (user.full_name || '').toLowerCase().includes(q) || user.email.toLowerCase().includes(q)
+                    })
+                    .map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleSelectUser(user)}
+                        className="w-full text-left p-3 hover:bg-surface-elevated dark:hover:bg-surface-elevated border-b border-border last:border-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <User size={14} className="text-text-tertiary shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">
+                              {user.full_name || 'No name'}
+                            </div>
+                            <div className="text-xs text-text-tertiary truncate">{user.email}</div>
+                          </div>
                         </div>
-                        <div className="text-xs text-text-tertiary truncate">{user.email}</div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                      </button>
+                    ))}
+                </div>
               </div>
             )}
 
