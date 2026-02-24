@@ -533,8 +533,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     return acc
   }, {} as Record<string, number>)
 
-  // Split grafts into frame (grafted/accepted) and table (everything else)
-  const frameGrafts = grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status))
+  // Table grafts: everything that has progressed beyond the frame stage
   const tableGrafts = grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status))
 
   // Set of graft IDs that have been distributed
@@ -674,26 +673,22 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               {frameCollapsed ? 'Show' : 'Hide'}
             </button>
           </div>
-          {!frameCollapsed && (frameGrafts.length === 0 ? (
-            <p className="text-sm text-text-tertiary">
-              All grafts have progressed beyond the frame stage.
-            </p>
-          ) : (
+          {!frameCollapsed && (
           <div className="overflow-x-auto">
           <div className="border-4 border-amber-700 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 min-w-fit">
             {(() => {
-              // Organise frame grafts into rows
+              // Show all grafts in the frame visual regardless of status
               let rows: Graft[][]
               if (frameRows && cellsPerRow) {
                 rows = Array.from({ length: frameRows }, (_, r) =>
-                  frameGrafts.slice(r * cellsPerRow, (r + 1) * cellsPerRow)
+                  grafts.slice(r * cellsPerRow, (r + 1) * cellsPerRow)
                 ).filter(row => row.length > 0)
                 const shown = frameRows * cellsPerRow
-                if (frameGrafts.length > shown) {
-                  rows.push(frameGrafts.slice(shown))
+                if (grafts.length > shown) {
+                  rows.push(grafts.slice(shown))
                 }
               } else {
-                rows = [frameGrafts]
+                rows = [grafts]
               }
 
               return rows.map((rowGrafts, rowIdx) => (
@@ -702,12 +697,14 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                   <div className="h-2 bg-amber-600 dark:bg-amber-700 rounded mx-2" />
                   {/* Cell cups hanging below */}
                   <div className="flex justify-between pt-1 px-2">
-                    {rowGrafts.map(graft => (
+                    {rowGrafts.map(graft => {
+                      const isFrameStage = FRAME_STATUS_VALUES.includes(graft.status)
+                      return (
                       <div key={graft.id} className="flex flex-col items-center flex-1 min-w-0">
                         {/* Connector line */}
                         <div className="w-0.5 h-2 bg-amber-600 dark:bg-amber-700" />
-                        {/* Select checkbox above cup */}
-                        {selectMode && (
+                        {/* Select checkbox above cup (frame-stage grafts only) */}
+                        {selectMode && isFrameStage && (
                           <div className="mb-0.5">
                             {selectedIds.has(graft.id)
                               ? <CheckSquare size={12} className="text-forest-600 dark:text-forest-400" />
@@ -718,20 +715,20 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                         {/* Cup */}
                         <button
                           type="button"
-                          onClick={selectMode ? () => toggleSelect(graft.id) : undefined}
+                          onClick={selectMode && isFrameStage ? () => toggleSelect(graft.id) : undefined}
                           className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                             CUP_COLORS[graft.status] || 'bg-gray-200 text-gray-700'
-                          } ${selectMode ? 'cursor-pointer' : ''} ${
+                          } ${selectMode && isFrameStage ? 'cursor-pointer' : ''} ${
                             selectedIds.has(graft.id)
                               ? 'ring-2 ring-forest-500 ring-offset-1'
                               : ''
                           }`}
-                          title={`#${graft.cell_number} - ${FRAME_STATUSES.find(s => s.value === graft.status)?.label || graft.status}`}
+                          title={`#${graft.cell_number} - ${GRAFT_STATUSES.find(s => s.value === graft.status)?.label || graft.status}`}
                         >
                           {graft.cell_number}
                         </button>
-                        {/* Status dropdown + actions (when not in select mode) */}
-                        {!selectMode && (
+                        {/* Status dropdown + delete (frame-stage grafts only) */}
+                        {!selectMode && isFrameStage && (
                           <div className="flex flex-col items-center mt-1 gap-0.5">
                             <select
                               value={graft.status}
@@ -756,14 +753,14 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                           </div>
                         )}
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </div>
               ))
             })()}
           </div>
           </div>
-          ))}
+          )}
         </div>
       )}
 
