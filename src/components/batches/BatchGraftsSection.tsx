@@ -63,7 +63,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             className="px-3 py-1.5 text-sm bg-forest-600 text-white rounded hover:bg-forest-700 flex items-center gap-1"
           >
             <Plus size={14} />
-            Generate from Cell Count
+            Generate Cell Records
           </button>
         </div>
       </div>
