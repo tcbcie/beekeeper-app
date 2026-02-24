@@ -95,8 +95,10 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         selectAll={hook.selectAll}
         deselectAll={hook.deselectAll}
         handleBulkStatusChange={hook.handleBulkStatusChange}
+        handleBulkDateChange={hook.handleBulkDateChange}
         handleBulkDelete={hook.handleBulkDelete}
         updateGraftStatus={hook.updateGraftStatus}
+        updateGraftStatusDate={hook.updateGraftStatusDate}
         deleteGraft={hook.deleteGraft}
       />
 
