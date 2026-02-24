@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from 'react'
-import { Trash2, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react'
+import { Trash2, CheckSquare, Square, ChevronDown, ChevronUp, Grid3X3 } from 'lucide-react'
 import { Graft, GRAFT_STATUSES, FRAME_STATUSES, FRAME_STATUS_VALUES, CUP_COLORS } from './graftConstants'
 
 interface CellFrameProps {
@@ -37,9 +37,27 @@ export default function CellFrame({
 }: CellFrameProps) {
   if (grafts.length === 0) {
     return (
-      <p className="text-sm text-text-tertiary">
-        No grafts yet. Click &quot;Generate from Cell Count&quot; to create grafts based on your cell count.
-      </p>
+      <div className="border border-dashed border-amber-300 dark:border-amber-700 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 p-6 text-center">
+        <Grid3X3 size={32} className="mx-auto mb-3 text-amber-600 dark:text-amber-400" />
+        <h5 className="text-sm font-semibold text-foreground mb-1">Set Up Your Grafting Frame</h5>
+        <p className="text-sm text-text-secondary mb-3">
+          Generate individual cell records to track each graft&apos;s progress from cup to mated queen.
+        </p>
+        <ul className="text-xs text-text-tertiary space-y-1 max-w-xs mx-auto text-left">
+          <li className="flex items-start gap-1.5">
+            <span className="text-amber-600 dark:text-amber-400 mt-0.5">&#x2022;</span>
+            Creates a tracking record for each cell in your frame
+          </li>
+          <li className="flex items-start gap-1.5">
+            <span className="text-amber-600 dark:text-amber-400 mt-0.5">&#x2022;</span>
+            Visual frame layout based on your row configuration
+          </li>
+          <li className="flex items-start gap-1.5">
+            <span className="text-amber-600 dark:text-amber-400 mt-0.5">&#x2022;</span>
+            Track status, queen marking, and distribution for each cell
+          </li>
+        </ul>
+      </div>
     )
   }
 
