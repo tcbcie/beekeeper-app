@@ -14,8 +14,10 @@ interface CellFrameProps {
   selectAll: () => void
   deselectAll: () => void
   handleBulkStatusChange: (newStatus: string) => void
+  handleBulkDateChange: (date: string) => void
   handleBulkDelete: () => void
   updateGraftStatus: (graftId: string, newStatus: string) => void
+  updateGraftStatusDate: (graftId: string, date: string) => void
   deleteGraft: (graftId: string) => void
 }
 
@@ -31,8 +33,10 @@ export default function CellFrame({
   selectAll,
   deselectAll,
   handleBulkStatusChange,
+  handleBulkDateChange,
   handleBulkDelete,
   updateGraftStatus,
+  updateGraftStatusDate,
   deleteGraft,
 }: CellFrameProps) {
   if (grafts.length === 0) {
@@ -86,6 +90,12 @@ export default function CellFrame({
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
+          <input
+            type="date"
+            onChange={(e) => { if (e.target.value) handleBulkDateChange(e.target.value) }}
+            className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+            title="Change date for selected"
+          />
           <button
             type="button"
             onClick={handleBulkDelete}
@@ -177,6 +187,13 @@ export default function CellFrame({
                                   <option key={s.value} value={s.value}>{s.label}</option>
                                 ))}
                               </select>
+                              <input
+                                type="date"
+                                value={graft.status_date || ''}
+                                onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-16 px-0 py-0.5 text-[10px] rounded border border-border bg-surface text-foreground text-center"
+                              />
                               <div className="flex gap-0.5">
                                 <button
                                   type="button"

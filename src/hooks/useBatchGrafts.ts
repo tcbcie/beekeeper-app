@@ -380,6 +380,23 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     }
   }, [selectedIds, toast, fetchGrafts])
 
+  const handleBulkDateChange = useCallback(async (date: string) => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ status_date: date || null })
+        .in('id', ids)
+      if (error) throw error
+      toast.success(`${ids.length} graft dates updated`)
+      fetchGrafts()
+    } catch (error) {
+      console.error('Error bulk updating graft dates:', error)
+      toast.error('Failed to update graft dates')
+    }
+  }, [selectedIds, toast, fetchGrafts])
+
   const handleBulkDelete = useCallback(async () => {
     const ids = Array.from(selectedIds)
     if (ids.length === 0) return
@@ -543,6 +560,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
     // Bulk handlers (frame)
     handleBulkStatusChange,
+    handleBulkDateChange,
     handleBulkDelete,
 
     // Table bulk handlers
