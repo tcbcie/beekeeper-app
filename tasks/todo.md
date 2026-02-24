@@ -1,20 +1,33 @@
-# Distribution List — Queen Details & Readable Layout
+# Distribution — External (Non-App) Recipient Support
 
 ## Plan
 
-### 1. `src/components/batches/BatchGraftsSection.tsx`
+### 1. DB migration
+- [x] 1a. Make `recipient_user_id` nullable (currently `NOT NULL`)
+- [x] 1b. Add `external_recipient_name TEXT NULL`
+- [x] 1c. Add `external_recipient_email TEXT NULL`
+- [x] 1d. Add `external_recipient_phone TEXT NULL`
+- [x] 1e. Add `external_recipient_location TEXT NULL` (Eircode / apiary description)
 
-- [x] 1a. For each distribution, look up the matching graft from `grafts` state (by `dist.graft_id`) to get `queen_marked` and `queen_number`
-- [x] 1b. Restructure the distribution card text into clearly labelled lines:
-  - **Line 1** (unchanged): Cell # badge + type badge
-  - **Line 2**: "Distributed to [name]" — if both name and email are present, show name with email in parentheses
-  - **Line 3**: "to [Apiary Name][, Hive N] on [date]" — or just "on [date]" if no apiary
-  - **Line 4** (location, only if present): labelled — e.g. `Grid: A1B2 • Elev: 45m • 52.1234°, -6.5678°`
-  - **Line 5** (queen info, only if set): e.g. `Queen marked • Queen #123` — shown in tertiary text
-  - **Line 6** (mating, unchanged): "Mated: DD/MM/YYYY" in green
+### 2. `src/hooks/useGraftDistributions.ts`
+- [x] 2a. Add 4 new external fields to `GraftDistribution` interface; make `recipient_user_id` `string | null`
+- [x] 2b. Add 4 new external fields to `CreateDistributionData` and `BulkDistributionData`; make `recipient_user_id` optional (`string | null`)
+- [x] 2c. New columns auto-included via `*` — no query change needed
+- [x] 2d. Map the 4 new columns in the data transform; update bulk row builder
 
-### 2. Update docs
-- [x] 2. Update `docs/features/batch-distributions.md` — Distribution List section
+### 3. `src/components/batches/DistributeGraftModal.tsx`
+- [x] 3a. Replace `groupOnly` boolean with `recipientMode: 'group' | 'app_user' | 'external'` state
+- [x] 3b. Three toggle buttons: Group Member / App User / Other Beekeeper
+- [x] 3c. External form: Name, Email, Mobile, Apiary/Mating Location (closest Eircode)
+- [x] 3d. Submit enabled when external mode has at least one field filled
+- [x] 3e. `handleSubmit` builds correct shape for each mode
+- [x] 3f. `switchMode` helper resets all mode-specific state on toggle
+
+### 4. `src/components/batches/BatchGraftsSection.tsx`
+- [x] 4. Distribution card: `isExternal` flag drives display — external name/email/phone/location shown instead of app user joined fields
+
+### 5. Update docs
+- [x] 5. Updated `docs/features/batch-distributions.md` — schema table and modal section
 
 ---
 
@@ -22,14 +35,25 @@
 
 ### Summary of Changes
 
+**DB migration (`add_external_recipient_fields`):**
+- `recipient_user_id` made nullable — existing records unaffected
+- 4 new nullable TEXT columns: `external_recipient_name`, `external_recipient_email`, `external_recipient_phone`, `external_recipient_location`
+
+**`src/hooks/useGraftDistributions.ts`:**
+- `GraftDistribution`, `CreateDistributionData`, `BulkDistributionData` interfaces updated — `recipient_user_id` now `string | null`, 4 external fields added
+- Mapping includes 4 new columns (auto-fetched by existing `*` select)
+- Bulk row builder passes external fields through
+
+**`src/components/batches/DistributeGraftModal.tsx`:**
+- `groupOnly` boolean replaced with `recipientMode: 'group' | 'app_user' | 'external'`
+- Three segmented toggle buttons at the top of the recipient section
+- External mode shows: Name, Email, Mobile, Apiary/Mating Location (closest Eircode)
+- Submit enabled when at least one external field is non-empty
+- `switchMode()` helper resets all state on toggle
+
 **`src/components/batches/BatchGraftsSection.tsx`:**
-- Each distribution card now looks up its matching graft from the already-loaded `grafts` state (no extra query) to read `queen_marked` and `queen_number`
-- Distribution card restructured into labelled lines:
-  - "Distributed to [name] ([email])" — email shown in brackets only when a named recipient also has an email
-  - "to [Apiary Name][, Hive N] on DD/MM/YYYY" — or "on DD/MM/YYYY" if no apiary
-  - Location line with explicit labels: `Grid: X • Elev: Nm • 52.1234°, -6.5678°`
-  - Queen info line: `Queen marked • Queen #123` (only when queen_marked or queen_number is set)
+- `isExternal = !dist.recipient_user_id` flag drives the card display
+- External: shows name/email, phone on tertiary line, location labelled "Location: ..."
+- App user: existing geo-labelled display unchanged
 
-**`docs/features/batch-distributions.md`:** Distribution List section updated to reflect new card layout.
-
-**No DB changes required.**
+**`docs/features/batch-distributions.md`:** Schema table and modal section updated.

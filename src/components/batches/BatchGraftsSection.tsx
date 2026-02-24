@@ -1145,10 +1145,15 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             {distributions.map((dist) => {
               const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell || { label: 'Unknown', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
               const graft = grafts.find(g => g.id === dist.graft_id)
-              const recipientDisplay = dist.recipient_name && dist.recipient_email && dist.recipient_name !== dist.recipient_email
-                ? `${dist.recipient_name} (${dist.recipient_email})`
-                : dist.recipient_name || dist.recipient_email || 'Unknown'
-              const locationParts = [
+              const isExternal = !dist.recipient_user_id
+              const recipientDisplay = isExternal
+                ? (dist.external_recipient_name && dist.external_recipient_email
+                    ? `${dist.external_recipient_name} (${dist.external_recipient_email})`
+                    : dist.external_recipient_name || dist.external_recipient_email || dist.external_recipient_phone || 'External beekeeper')
+                : (dist.recipient_name && dist.recipient_email && dist.recipient_name !== dist.recipient_email
+                    ? `${dist.recipient_name} (${dist.recipient_email})`
+                    : dist.recipient_name || dist.recipient_email || 'Unknown')
+              const locationParts = isExternal ? [] : [
                 dist.recipient_apiary_grid_reference ? `Grid: ${dist.recipient_apiary_grid_reference}` : null,
                 dist.recipient_apiary_elevation != null ? `Elev: ${dist.recipient_apiary_elevation}m` : null,
                 (dist.recipient_apiary_latitude != null && dist.recipient_apiary_longitude != null)
@@ -1173,12 +1178,25 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
                       Distributed to {recipientDisplay}
                     </div>
                     <div className="text-xs text-text-secondary mt-0.5">
-                      {dist.recipient_apiary_name
+                      {!isExternal && dist.recipient_apiary_name
                         ? <>to {dist.recipient_apiary_name}{dist.recipient_hive_number && `, Hive ${dist.recipient_hive_number}`} on {formatDateIrish(dist.distribution_date)}</>
                         : <>on {formatDateIrish(dist.distribution_date)}</>
                       }
                     </div>
-                    {locationParts.length > 0 && (
+                    {isExternal ? (
+                      <>
+                        {dist.external_recipient_location && (
+                          <div className="text-xs text-text-tertiary mt-0.5">
+                            Location: {dist.external_recipient_location}
+                          </div>
+                        )}
+                        {dist.external_recipient_phone && (
+                          <div className="text-xs text-text-tertiary mt-0.5">
+                            Tel: {dist.external_recipient_phone}
+                          </div>
+                        )}
+                      </>
+                    ) : locationParts.length > 0 && (
                       <div className="text-xs text-text-tertiary mt-0.5">
                         {locationParts.join(' \u2022 ')}
                       </div>
