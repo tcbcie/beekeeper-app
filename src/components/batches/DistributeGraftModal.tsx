@@ -15,11 +15,11 @@ interface DistributeGraftModalProps {
   searchUsers: (text: string) => Promise<RecipientUser[]>
   fetchRecipientApiaries: (userId: string) => Promise<RecipientApiary[]>
   fetchRecipientHives: (userId: string, apiaryId: string) => Promise<RecipientHive[]>
-  onSave: (data: CreateDistributionData) => Promise<boolean>
+  onSave: (data: CreateDistributionData) => Promise<boolean | null>
   onClose: () => void
   // Bulk mode props
   bulkGrafts?: { id: string; status: string; cell_number: number }[]
-  onBulkSave?: (data: BulkDistributionData) => Promise<boolean>
+  onBulkSave?: (data: BulkDistributionData) => Promise<boolean | null>
 }
 
 const TYPE_FROM_GRAFT_STATUS: Record<string, 'queen_cell' | 'virgin_queen' | 'mated_queen'> = {
@@ -57,7 +57,7 @@ export default function DistributeGraftModal({
   const isBulk = bulkGrafts && bulkGrafts.length > 0
   const effectiveStatus = isBulk
     ? bulkGrafts.reduce((best, g) => {
-        const order = ['accepted', 'caged', 'emerged', 'in_nuc', 'mated']
+        const order = ['accepted', 'sealed', 'caged', 'emerged', 'in_nuc', 'mated']
         return order.indexOf(g.status) > order.indexOf(best) ? g.status : best
       }, bulkGrafts[0].status)
     : graftStatus
@@ -177,7 +177,7 @@ export default function DistributeGraftModal({
 
     setSaving(true)
 
-    let success: boolean
+    let success: boolean | null
     if (isBulk && onBulkSave) {
       const bulkData: BulkDistributionData = {
         batch_id: batchId,

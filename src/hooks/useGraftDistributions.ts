@@ -159,7 +159,7 @@ export function useGraftDistributions() {
     }
   }, [])
 
-  const createDistribution = useCallback(async (data: CreateDistributionData): Promise<boolean> => {
+  const createDistribution = useCallback(async (data: CreateDistributionData): Promise<boolean | null> => {
     try {
       const { error } = await supabase
         .from('graft_distributions')
@@ -194,11 +194,11 @@ export function useGraftDistributions() {
         }
       }
       console.error('Error creating distribution:', err)
-      return false
+      return null
     }
   }, [])
 
-  const createBulkDistributions = useCallback(async (data: BulkDistributionData): Promise<boolean> => {
+  const createBulkDistributions = useCallback(async (data: BulkDistributionData): Promise<boolean | null> => {
     try {
       const rows = data.grafts.map((g) => ({
         graft_id: g.id,
@@ -250,7 +250,7 @@ export function useGraftDistributions() {
         }
       }
       console.error('Error creating bulk distributions:', err)
-      return false
+      return null
     }
   }, [])
 

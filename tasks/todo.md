@@ -1,59 +1,89 @@
-# Distribution — External (Non-App) Recipient Support
+# Code Audit — Post External Recipient Changes
+
+## Audit Findings
+
+### H-1. `DISTRIBUTABLE_STATUSES` is missing `caged` and `in_nuc`
+**File:** `BatchGraftsSection.tsx:65`
+```
+const DISTRIBUTABLE_STATUSES = ['sealed', 'emerged', 'mated']
+```
+**Impact:** Grafts in `caged` or `in_nuc` status never show the Distribute button and cannot be included in bulk distributions. Both statuses are mapped in `TYPE_FROM_GRAFT_STATUS` in the modal (`caged → queen_cell`, `in_nuc → virgin_queen`), so the modal handles them — they just never get triggered.
+
+**Fix:**
+```typescript
+const DISTRIBUTABLE_STATUSES = ['sealed', 'caged', 'emerged', 'in_nuc', 'mated']
+```
+
+---
+
+### H-2. All distribution failures show the same misleading error toast
+**File:** `BatchGraftsSection.tsx:345-347`
+```typescript
+} else {
+  toast.error('This graft has already been distributed')
+}
+```
+**Impact:** Any failure — network error, RLS violation, unexpected DB error — shows "This graft has already been distributed", which is wrong and confusing.
+
+**Root cause:** `createDistribution` returns `false` for both the 23505 duplicate and all other errors. The caller cannot distinguish them.
+
+**Fix:** Change `createDistribution` and `createBulkDistributions` to return `boolean | null`:
+- `true` = success
+- `false` = 23505 duplicate
+- `null` = any other error
+
+Then update callers and prop types.
+
+---
+
+### M-1. `effectiveStatus` order array in `DistributeGraftModal` doesn't include `sealed` or `caged`
+**File:** `DistributeGraftModal.tsx:60`
+```typescript
+const order = ['accepted', 'caged', 'emerged', 'in_nuc', 'mated']
+```
+**Impact:** `sealed` is a valid distributable status (in `DISTRIBUTABLE_STATUSES`) but is absent from the bulk order. If the first graft in a bulk selection has status `sealed`, it is treated as lowest priority (`indexOf = -1`) and could be overridden by `caged` (which maps to the same type). Functionally harmless today but fragile and inconsistent.
+
+**Fix:**
+```typescript
+const order = ['accepted', 'sealed', 'caged', 'emerged', 'in_nuc', 'mated']
+```
+
+---
 
 ## Plan
 
-### 1. DB migration
-- [x] 1a. Make `recipient_user_id` nullable (currently `NOT NULL`)
-- [x] 1b. Add `external_recipient_name TEXT NULL`
-- [x] 1c. Add `external_recipient_email TEXT NULL`
-- [x] 1d. Add `external_recipient_phone TEXT NULL`
-- [x] 1e. Add `external_recipient_location TEXT NULL` (Eircode / apiary description)
+### 1. Fix DISTRIBUTABLE_STATUSES — `BatchGraftsSection.tsx`
+- [x] 1. Change `DISTRIBUTABLE_STATUSES = ['sealed', 'caged', 'emerged', 'in_nuc', 'mated']`
 
-### 2. `src/hooks/useGraftDistributions.ts`
-- [x] 2a. Add 4 new external fields to `GraftDistribution` interface; make `recipient_user_id` `string | null`
-- [x] 2b. Add 4 new external fields to `CreateDistributionData` and `BulkDistributionData`; make `recipient_user_id` optional (`string | null`)
-- [x] 2c. New columns auto-included via `*` — no query change needed
-- [x] 2d. Map the 4 new columns in the data transform; update bulk row builder
+### 2. Return `boolean | null` from distribution hooks — `useGraftDistributions.ts`
+- [x] 2a. `createDistribution`: change return type to `Promise<boolean | null>`, return `false` for 23505, `null` for other errors
+- [x] 2b. `createBulkDistributions`: same change
 
-### 3. `src/components/batches/DistributeGraftModal.tsx`
-- [x] 3a. Replace `groupOnly` boolean with `recipientMode: 'group' | 'app_user' | 'external'` state
-- [x] 3b. Three toggle buttons: Group Member / App User / Other Beekeeper
-- [x] 3c. External form: Name, Email, Mobile, Apiary/Mating Location (closest Eircode)
-- [x] 3d. Submit enabled when external mode has at least one field filled
-- [x] 3e. `handleSubmit` builds correct shape for each mode
-- [x] 3f. `switchMode` helper resets all mode-specific state on toggle
+### 3. Update callers in `BatchGraftsSection.tsx`
+- [x] 3a. `handleDistributeSave`: check `=== true`, `=== false`, else `null` with three distinct toasts
+- [x] 3b. `handleBulkDistributeSave`: update `success` check (both `false` and `null` still show generic failure)
 
-### 4. `src/components/batches/BatchGraftsSection.tsx`
-- [x] 4. Distribution card: `isExternal` flag drives display — external name/email/phone/location shown instead of app user joined fields
+### 4. Update prop types and local typing in `DistributeGraftModal.tsx`
+- [x] 4a. `onSave` prop: `Promise<boolean>` → `Promise<boolean | null>`
+- [x] 4b. `onBulkSave` prop: same
+- [x] 4c. `let success: boolean` → `let success: boolean | null` in `handleSubmit`
 
-### 5. Update docs
-- [x] 5. Updated `docs/features/batch-distributions.md` — schema table and modal section
+### 5. Fix `effectiveStatus` order array — `DistributeGraftModal.tsx`
+- [x] 5. Added `sealed` to the order array: `['accepted', 'sealed', 'caged', 'emerged', 'in_nuc', 'mated']`
 
 ---
 
 ## Review
 
-### Summary of Changes
+**`BatchGraftsSection.tsx`:**
+- `DISTRIBUTABLE_STATUSES` extended to include `caged` and `in_nuc` — the Distribute button now appears for these statuses, and bulk distribute works for selections containing them
+- `handleDistributeSave` now distinguishes `true` / `false` / `null` for accurate error messaging
+- `handleBulkDistributeSave` uses strict `=== true` check
 
-**DB migration (`add_external_recipient_fields`):**
-- `recipient_user_id` made nullable — existing records unaffected
-- 4 new nullable TEXT columns: `external_recipient_name`, `external_recipient_email`, `external_recipient_phone`, `external_recipient_location`
+**`useGraftDistributions.ts`:**
+- `createDistribution` and `createBulkDistributions` return `boolean | null`: `true` = ok, `false` = 23505 duplicate, `null` = other error
 
-**`src/hooks/useGraftDistributions.ts`:**
-- `GraftDistribution`, `CreateDistributionData`, `BulkDistributionData` interfaces updated — `recipient_user_id` now `string | null`, 4 external fields added
-- Mapping includes 4 new columns (auto-fetched by existing `*` select)
-- Bulk row builder passes external fields through
-
-**`src/components/batches/DistributeGraftModal.tsx`:**
-- `groupOnly` boolean replaced with `recipientMode: 'group' | 'app_user' | 'external'`
-- Three segmented toggle buttons at the top of the recipient section
-- External mode shows: Name, Email, Mobile, Apiary/Mating Location (closest Eircode)
-- Submit enabled when at least one external field is non-empty
-- `switchMode()` helper resets all state on toggle
-
-**`src/components/batches/BatchGraftsSection.tsx`:**
-- `isExternal = !dist.recipient_user_id` flag drives the card display
-- External: shows name/email, phone on tertiary line, location labelled "Location: ..."
-- App user: existing geo-labelled display unchanged
-
-**`docs/features/batch-distributions.md`:** Schema table and modal section updated.
+**`DistributeGraftModal.tsx`:**
+- `onSave` and `onBulkSave` prop types updated to `Promise<boolean | null>`
+- `let success: boolean | null` — modal correctly stays open on `null` (other error) since it's falsy
+- `effectiveStatus` order array includes `sealed` and `caged` for consistent bulk type resolution
