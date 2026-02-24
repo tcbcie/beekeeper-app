@@ -92,7 +92,7 @@ export default function CellFrame({
           </select>
           <input
             type="date"
-            onChange={(e) => { if (e.target.value) handleBulkDateChange(e.target.value) }}
+            onChange={(e) => { if (e.target.value) { handleBulkDateChange(e.target.value); e.target.value = '' } }}
             className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
             title="Change date for selected"
           />
@@ -188,8 +188,9 @@ export default function CellFrame({
                                 ))}
                               </select>
                               <input
+                                key={`${graft.id}-sd-${graft.status_date ?? ''}`}
                                 type="date"
-                                value={graft.status_date || ''}
+                                defaultValue={graft.status_date || ''}
                                 onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
                                 className="w-16 px-0 py-0.5 text-[10px] rounded border border-border bg-surface text-foreground text-center"
