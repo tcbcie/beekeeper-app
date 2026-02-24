@@ -24,6 +24,7 @@ interface DistributeGraftModalProps {
 
 const TYPE_FROM_GRAFT_STATUS: Record<string, 'queen_cell' | 'virgin_queen' | 'mated_queen'> = {
   accepted: 'queen_cell',
+  sealed: 'queen_cell',
   caged: 'queen_cell',
   emerged: 'virgin_queen',
   in_nuc: 'virgin_queen',

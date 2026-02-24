@@ -158,9 +158,12 @@ export function useGraftDistributions() {
         .eq('id', data.graft_id)
 
       if (graftError) {
-        // Rollback: remove the distribution we just inserted
-        await supabase.from('graft_distributions').delete().eq('graft_id', data.graft_id)
-        console.error('Error updating graft status, distribution rolled back:', graftError)
+        const { error: rollbackError } = await supabase.from('graft_distributions').delete().eq('graft_id', data.graft_id)
+        if (rollbackError) {
+          console.error('Rollback failed — orphaned distribution for graft:', data.graft_id, rollbackError)
+        } else {
+          console.error('Error updating graft status, distribution rolled back:', graftError)
+        }
         throw graftError
       }
 
@@ -207,14 +210,24 @@ export function useGraftDistributions() {
         .in('id', graftIds)
 
       if (graftError) {
-        // Rollback: remove all distributions just inserted
-        await supabase.from('graft_distributions').delete().in('graft_id', graftIds)
-        console.error('Error bulk-updating graft statuses, distributions rolled back:', graftError)
+        const { error: rollbackError } = await supabase.from('graft_distributions').delete().in('graft_id', graftIds)
+        if (rollbackError) {
+          console.error('Rollback failed — orphaned distributions for grafts:', graftIds, rollbackError)
+        } else {
+          console.error('Error bulk-updating graft statuses, distributions rolled back:', graftError)
+        }
         throw graftError
       }
 
       return true
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const pgError = err as { code: string }
+        if (pgError.code === '23505') {
+          console.error('One or more grafts have already been distributed')
+          return false
+        }
+      }
       console.error('Error creating bulk distributions:', err)
       return false
     }
