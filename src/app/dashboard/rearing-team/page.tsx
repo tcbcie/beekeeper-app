@@ -45,6 +45,7 @@ export default function RearingTeamPage() {
   const [creatingRg, setCreatingRg] = useState(false)
   const [sendingRgInvite, setSendingRgInvite] = useState(false)
   const [expandedRgId, setExpandedRgId] = useState<string | null>(null)
+  const [expandedMemberRgId, setExpandedMemberRgId] = useState<string | null>(null)
   const [renameRgName, setRenameRgName] = useState('')
   const [renamingRg, setRenamingRg] = useState(false)
   const [showTransferRgModal, setShowTransferRgModal] = useState(false)
@@ -515,6 +516,7 @@ export default function RearingTeamPage() {
                                 setExpandedRgId(null)
                               } else {
                                 setExpandedRgId(group.id)
+                                setExpandedMemberRgId(null)
                                 setLoadingRgMembers(true)
                                 fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
                               }
@@ -786,6 +788,23 @@ export default function RearingTeamPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
+                            onClick={() => {
+                              if (expandedMemberRgId === group.id) {
+                                setExpandedMemberRgId(null)
+                              } else {
+                                setExpandedMemberRgId(group.id)
+                                setExpandedRgId(null)
+                                setLoadingRgMembers(true)
+                                fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
+                              }
+                            }}
+                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
+                          >
+                            <Users size={14} />
+                            <span className="hidden sm:inline">{expandedMemberRgId === group.id ? 'Hide' : 'View'} Members</span>
+                            <span className="sm:hidden">Members</span>
+                          </button>
+                          <button
                             onClick={() => handleLeaveRg(group.id, group.name)}
                             className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded hover:bg-sage-300 dark:hover:bg-slate-600"
                           >
@@ -815,6 +834,45 @@ export default function RearingTeamPage() {
                       <div className="text-sm text-text-tertiary">
                         <span className="font-medium">{group.member_count || 0}</span> member{(group.member_count || 0) !== 1 ? 's' : ''}
                       </div>
+
+                      {/* Expanded Member List (no experience level shown) */}
+                      {expandedMemberRgId === group.id && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <h5 className="text-sm font-semibold text-foreground mb-3">Group Members</h5>
+                          {loadingRgMembers ? (
+                            <div className="flex justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-2 border-amber-600 border-t-transparent"></div>
+                            </div>
+                          ) : rgMembers.length > 0 ? (
+                            <div className="space-y-2">
+                              {rgMembers.map((member) => (
+                                <div key={member.id} className="flex items-center gap-3 p-3 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+                                  <User size={16} className="text-text-tertiary shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-foreground truncate">
+                                      {member.first_name && member.last_name
+                                        ? `${member.first_name} ${member.last_name}`
+                                        : member.user_email}
+                                    </div>
+                                    {member.first_name && member.last_name && (
+                                      <div className="text-xs text-text-tertiary truncate">{member.user_email}</div>
+                                    )}
+                                  </div>
+                                  <span className={`px-2 py-1 text-xs rounded font-medium capitalize shrink-0 ${
+                                    member.role === 'owner'
+                                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200'
+                                      : 'bg-surface-elevated dark:bg-surface-elevated text-foreground border border-border'
+                                  }`}>
+                                    {member.role}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-text-tertiary text-center py-4">No members found.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
