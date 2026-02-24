@@ -159,7 +159,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       })
     }
     setLoading(false)
-  }, [batchId, userId])
+  }, [batchId, userId, toast])
 
   // Fetch group member IDs for the "Group" badge in the modal
   useEffect(() => {
