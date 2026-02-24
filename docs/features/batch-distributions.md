@@ -63,11 +63,13 @@ Modal form with:
 
 ### Distribution List
 
-Shown below the graft grid in `BatchGraftsSection`:
-- Cell number, type badge, recipient name, date, destination
-- Recipient name resolved as: `full_name` → `first_name + last_name` → `email` — never shows "Unknown" for registered users
-- If the destination apiary has location data, a secondary line shows whichever of these are present: grid reference, elevation (metres), and lat/lon coordinates (4 decimal places)
-- Mating confirmed toggle (for queen cell/virgin queen distributions) — when confirmed, the confirmed date is shown in green below the recipient info ("Mated: DD/MM/YYYY"); toggling off clears the date
+Shown below the graft grid in `BatchGraftsSection`. Each card shows:
+- Cell number and type badge
+- "Distributed to [name] ([email])" — if only name or email is known, shows whichever is available; never shows "Unknown" for registered users. Recipient name resolved as: `full_name` → `first_name + last_name` → `email`
+- "to [Apiary Name][, Hive N] on DD/MM/YYYY" — or just "on DD/MM/YYYY" if no apiary was recorded
+- Apiary location line (if any location data present): `Grid: X1Y2 • Elev: 45m • 52.1234°, -6.5678°` — each part labelled and only shown if present
+- Queen info line (if set on the graft at time of distribution): `Queen marked • Queen #123`
+- Mating confirmed toggle (for queen cell/virgin queen distributions) — when confirmed, the confirmed date is shown in green ("Mated: DD/MM/YYYY"); toggling off clears the date
 - Delete button to remove distribution and revert graft status
 
 ### Bulk Operations
