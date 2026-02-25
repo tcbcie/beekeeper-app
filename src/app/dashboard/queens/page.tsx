@@ -25,6 +25,7 @@ export default function QueensPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
   const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
+  const [statusFilter, setStatusFilter] = useState<'active' | 'retired' | 'dead' | 'all'>('active')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
@@ -32,6 +33,7 @@ export default function QueensPage() {
   const [sourceOptions, setSourceOptions] = useState<string[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
   const [showLineage, setShowLineage] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState<QueenFormData>({
     queen_number: '',
     birth_date: '',
@@ -370,10 +372,40 @@ export default function QueensPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!userId) return
-    if (confirm('Are you sure you want to delete this queen?')) {
-      const { error } = await supabase.from('queens').delete().eq('id', id).eq('user_id', userId)
-      if (!error) fetchQueens()
+    if (!userId || deleting) return
+    setDeleting(true)
+
+    try {
+      // Check for offspring before allowing delete
+      const { count, error: countError } = await supabase
+        .from('queens')
+        .select('id', { count: 'exact', head: true })
+        .or(`mother_id.eq.${id},father_id.eq.${id}`)
+
+      if (countError) {
+        toast.error('Failed to check queen lineage. Please try again.')
+        return
+      }
+
+      if (count && count > 0) {
+        toast.warning(
+          `This queen has ${count} offspring in the lineage tree. Consider retiring her instead to preserve breeding records.`,
+          8000
+        )
+        return
+      }
+
+      if (confirm('Are you sure you want to delete this queen?')) {
+        const { error } = await supabase.from('queens').delete().eq('id', id).eq('user_id', userId)
+        if (error) {
+          toast.error('Failed to delete queen. She may be referenced by other records.')
+        } else {
+          toast.success('Queen deleted successfully.')
+          fetchQueens()
+        }
+      }
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -466,6 +498,9 @@ export default function QueensPage() {
 
     if (!matchesSearch) return false
 
+    // Apply status filter
+    if (statusFilter !== 'all' && q.status !== statusFilter) return false
+
     // Apply assignment filter
     if (assignmentFilter === 'assigned' && !q.hives?.id) return false
     if (assignmentFilter === 'unassigned' && q.hives?.id) return false
@@ -481,12 +516,12 @@ export default function QueensPage() {
     }
   })
 
-  // Summary stats (computed from filtered queens to match visible data)
-  const activeQueens = filteredQueens.filter(q => q.status === 'active').length
-  const retiredQueens = filteredQueens.filter(q => q.status === 'retired').length
-  const deadQueens = filteredQueens.filter(q => q.status === 'dead').length
+  // Summary stats (computed from ALL queens so user can see what's hidden by filters)
+  const activeQueens = queens.filter(q => q.status === 'active').length
+  const retiredQueens = queens.filter(q => q.status === 'retired').length
+  const deadQueens = queens.filter(q => q.status === 'dead').length
   const avgAgeMonths = (() => {
-    const activeWithDates = filteredQueens.filter(q => q.status === 'active' && q.birth_date)
+    const activeWithDates = queens.filter(q => q.status === 'active' && q.birth_date)
     if (activeWithDates.length === 0) return 0
     const totalDays = activeWithDates.reduce((sum, q) => {
       return sum + Math.floor((Date.now() - new Date(q.birth_date).getTime()) / (1000 * 60 * 60 * 24))
@@ -786,6 +821,16 @@ export default function QueensPage() {
               <option value="all">All Queens</option>
             </select>
           )}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'active' | 'retired' | 'dead' | 'all')}
+            className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
+          >
+            <option value="active">Active</option>
+            <option value="retired">Retired</option>
+            <option value="dead">Dead</option>
+            <option value="all">All Statuses</option>
+          </select>
           <select
             value={assignmentFilter}
             onChange={(e) => setAssignmentFilter(e.target.value as 'all' | 'assigned' | 'unassigned')}
