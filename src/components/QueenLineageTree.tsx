@@ -82,25 +82,28 @@ const QueenCard = ({ queen, label, isMain = false }: { queen: QueenNode | null; 
 export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenLineageTreeProps) {
   const [lineage, setLineage] = useState<LineageData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchLineage = useCallback(async () => {
     if (!queenId) return
     setLoading(true)
+    setError(null)
 
     try {
-      // Fetch the queen with mother and father
+      // Fetch the queen with mother and father (use column name hints for self-referencing joins)
       const { data: queen, error: queenError } = await supabase
         .from('queens')
         .select(`
           id, queen_number, marking_color, status, birth_date, mother_id, father_id,
-          mother:queens!queens_mother_id_fkey(id, queen_number, marking_color, status, mother_id, father_id),
-          father:queens!queens_father_id_fkey(id, queen_number, marking_color, status)
+          mother:queens!mother_id(id, queen_number, marking_color, status, mother_id, father_id),
+          father:queens!father_id(id, queen_number, marking_color, status)
         `)
         .eq('id', queenId)
         .single()
 
       if (queenError || !queen) {
         console.error('Error fetching queen:', queenError)
+        setError('Failed to load lineage data')
         setLoading(false)
         return
       }
@@ -187,8 +190,9 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
         children: (childrenData as QueenNode[]) || [],
         siblings,
       })
-    } catch (error) {
-      console.error('Error fetching lineage:', error)
+    } catch (err) {
+      console.error('Error fetching lineage:', err)
+      setError('Failed to load lineage data')
     } finally {
       setLoading(false)
     }
@@ -313,6 +317,8 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
                 </div>
               )}
             </div>
+          ) : error ? (
+            <div className="py-8 text-center text-red-600 dark:text-red-400">{error}</div>
           ) : (
             <div className="py-8 text-center text-text-secondary">No lineage data available</div>
           )}
