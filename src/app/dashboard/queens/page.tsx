@@ -376,20 +376,33 @@ export default function QueensPage() {
     setDeleting(true)
 
     try {
-      // Check for offspring before allowing delete
-      const { count, error: countError } = await supabase
-        .from('queens')
-        .select('id', { count: 'exact', head: true })
-        .or(`mother_id.eq.${id},father_id.eq.${id}`)
+      // Check all FK references that would block deletion (NO ACTION constraints)
+      const [offspringResult, configHistoryResult, batchResult] = await Promise.all([
+        supabase.from('queens').select('id', { count: 'exact', head: true }).or(`mother_id.eq.${id},father_id.eq.${id}`),
+        supabase.from('hive_configuration_history').select('id', { count: 'exact', head: true }).eq('queen_id', id),
+        supabase.from('rearing_batches').select('id', { count: 'exact', head: true }).eq('mother_queen_id', id),
+      ])
 
-      if (countError) {
-        toast.error('Failed to check queen lineage. Please try again.')
+      if (offspringResult.error || configHistoryResult.error || batchResult.error) {
+        toast.error('Failed to check queen references. Please try again.')
         return
       }
 
-      if (count && count > 0) {
+      const offspringCount = offspringResult.count ?? 0
+      const configHistoryCount = configHistoryResult.count ?? 0
+      const batchCount = batchResult.count ?? 0
+
+      if (offspringCount > 0) {
         toast.warning(
-          `This queen has ${count} offspring in the lineage tree. Consider retiring her instead to preserve breeding records.`,
+          `This queen has ${offspringCount} offspring in the lineage tree. Consider retiring her instead to preserve breeding records.`,
+          8000
+        )
+        return
+      }
+
+      if (configHistoryCount > 0 || batchCount > 0) {
+        toast.warning(
+          'This queen has hive history or batch records. Consider retiring her instead to preserve historical data.',
           8000
         )
         return
