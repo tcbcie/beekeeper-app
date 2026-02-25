@@ -1,27 +1,34 @@
-# Fix Missing Vegetation Info Data
+# Fix Queen Lineage Tree Not Showing Data
 
-## Root Cause
-7 vegetation types in `dropdown_values` had no corresponding row in `vegetation_info`. The auto-populate trigger (`handle_new_vegetation_type` → edge function) likely wasn't active when these were added. The popup queries by `vegetation_type_id` and shows "No information available" when no row exists.
+## Problem
+The Queen Lineage tree on the queens page shows "No lineage data available" even when a queen has valid mother/offspring relationships in the database. E.g., queen 36-DA has mother 1B and 4 daughters (8B, 9B, 14B, 15B), but the lineage tree shows nothing.
+
+## Root Cause Analysis
+The `QueenLineageTree` component's Supabase query uses FK constraint name hints (`queens!queens_mother_id_fkey`) for self-referencing joins, while the **working** `useQueenDetail` hook uses column name hints (`queens!mother_id`). The query fails silently — the error is caught and logged to console only, leaving the `lineage` state as `null`, which renders the "No lineage data available" message.
 
 ## Tasks
-- [x] 1. Insert missing `vegetation_info` rows for all 7 types
+
+- [x] 1. Fix the Supabase query in `QueenLineageTree.tsx` to use column name FK hints
+- [x] 2. Add user-visible error state to QueenLineageTree so failures aren't silent
+- [ ] 3. Prompt user to test the fix
+- [x] 4. Update/create feature documentation in docs/features
+
+## Files Changed
+- `src/components/QueenLineageTree.tsx` — fixed query + added error state
 
 ## Review
 
-### Summary
-Inserted `vegetation_info` rows for the 7 vegetation types that were missing data:
+### Changes Made
+1. **Fixed self-referencing join hints** in `QueenLineageTree.tsx`:
+   - `queens!queens_mother_id_fkey(...)` → `queens!mother_id(...)`
+   - `queens!queens_father_id_fkey(...)` → `queens!father_id(...)`
+   - This matches the working pattern used in `useQueenDetail.ts`
 
-| Vegetation | Scientific Name | Nectar | Pollen |
-|---|---|---|---|
-| Alder trees (Alnus glutinosa) | Alnus_glutinosa | 1 | 4 |
-| Elderberry | Sambucus_nigra | 2 | 3 |
-| Hellebore | Helleborus | 2 | 3 |
-| Marsh-Marigold | Caltha_palustris | 2 | 3 |
-| Thistle | Cirsium | 5 | 3 |
-| Viburnum tinus | Viburnum_tinus | 2 | 2 |
-| Winter Heliotrope | Petasites_fragrans | 3 | 2 |
+2. **Added error visibility**: New `error` state shows a red error message to the user instead of the misleading "No lineage data available" when the query fails.
 
-### No code changes — data-only fix via direct SQL INSERT.
+3. **Created feature documentation**: `docs/features/queen-lineage.md`
 
-### Verification
-- Click Hellebore, Viburnum tinus, Winter Heliotrope etc. in the GDD tracker — popup should now show full info with Wikipedia image.
+### Impact
+- Only `QueenLineageTree.tsx` modified — minimal change, 3 lines of query syntax + ~5 lines for error handling
+- No database changes required
+- No changes to other components
