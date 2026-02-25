@@ -1,34 +1,27 @@
-# Fix Queen Lineage Tree Not Showing Data
-
-## Problem
-The Queen Lineage tree on the queens page shows "No lineage data available" even when a queen has valid mother/offspring relationships in the database. E.g., queen 36-DA has mother 1B and 4 daughters (8B, 9B, 14B, 15B), but the lineage tree shows nothing.
-
-## Root Cause Analysis
-The `QueenLineageTree` component's Supabase query uses FK constraint name hints (`queens!queens_mother_id_fkey`) for self-referencing joins, while the **working** `useQueenDetail` hook uses column name hints (`queens!mother_id`). The query fails silently — the error is caught and logged to console only, leaving the `lineage` state as `null`, which renders the "No lineage data available" message.
+# Protect Queen Lineage Data from Deletion
 
 ## Tasks
-
-- [x] 1. Fix the Supabase query in `QueenLineageTree.tsx` to use column name FK hints
-- [x] 2. Add user-visible error state to QueenLineageTree so failures aren't silent
-- [ ] 3. Prompt user to test the fix
-- [x] 4. Update/create feature documentation in docs/features
-
-## Files Changed
-- `src/components/QueenLineageTree.tsx` — fixed query + added error state
+- [x] 1. Add `statusFilter` state (default `'active'`) to the queens page
+- [x] 2. Add status filter logic to `filteredQueens` — filter by status before assignment filter
+- [x] 3. Add status filter dropdown (Active / Retired / Dead / All) to the filter bar UI
+- [x] 4. Replace `handleDelete` with lineage-aware version — check for offspring before allowing delete
+- [x] 5. Update `docs/features/queen-lineage.md` with lineage protection notes
 
 ## Review
 
-### Changes Made
-1. **Fixed self-referencing join hints** in `QueenLineageTree.tsx`:
-   - `queens!queens_mother_id_fkey(...)` → `queens!mother_id(...)`
-   - `queens!queens_father_id_fkey(...)` → `queens!father_id(...)`
-   - This matches the working pattern used in `useQueenDetail.ts`
+### Files Changed
+- `src/app/dashboard/queens/page.tsx` — added status filter + lineage-aware delete
+- `docs/features/queen-lineage.md` — added Lineage Protection section
 
-2. **Added error visibility**: New `error` state shows a red error message to the user instead of the misleading "No lineage data available" when the query fails.
+### Summary of Changes
+1. **Status filter state**: Added `statusFilter` useState (defaults to `'active'`)
+2. **Filter logic**: One line added to `filteredQueens` — skips queens whose status doesn't match the filter
+3. **Status dropdown**: New `<select>` added before the assignment filter, same styling — options: Active, Retired, Dead, All Statuses
+4. **Lineage-aware delete**: `handleDelete` now queries for offspring count before allowing delete. If offspring exist, shows a warning toast with the count and suggests retirement. If no offspring, shows confirm dialog then success/error toast. Also catches other FK errors with a fallback error toast.
+5. **Docs**: Added "Lineage Protection" section to `docs/features/queen-lineage.md`
 
-3. **Created feature documentation**: `docs/features/queen-lineage.md`
-
-### Impact
-- Only `QueenLineageTree.tsx` modified — minimal change, 3 lines of query syntax + ~5 lines for error handling
-- No database changes required
-- No changes to other components
+### What Didn't Change
+- No database migrations
+- No changes to QueenLineageTree component
+- No changes to queen types or hooks
+- No changes to queen detail page

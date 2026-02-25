@@ -27,6 +27,12 @@ The free-text `lineage` column stores human-readable breeding notation (e.g., `R
 
 Unknown ancestors show an "Unknown" placeholder card. Queens are colour-coded by marking colour (international standard).
 
+## Lineage Protection
+Queens with offspring (referenced via `mother_id` or `father_id`) are protected from deletion:
+- **Delete attempt**: A pre-flight query counts offspring. If any exist, a warning toast is shown with the count and a suggestion to retire the queen instead. The delete is blocked.
+- **No offspring**: The standard confirm dialog is shown, followed by a success or error toast.
+- **Status filter**: The queens list defaults to showing only "Active" queens. Retired and dead queens are hidden by default but can be viewed via the status filter dropdown (Active / Retired / Dead / All). This keeps the list uncluttered while preserving lineage data.
+
 ## Technical Notes
 - Self-referencing Supabase joins use **column name hints** (`queens!mother_id`, `queens!father_id`) — not FK constraint name hints
 - RLS access is controlled by `can_access_queen()` function (SECURITY DEFINER)
