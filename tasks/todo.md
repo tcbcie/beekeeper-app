@@ -1,34 +1,27 @@
-# Fix Group Member Visibility + Improve List UX
+# Fix Missing Vegetation Info Data
+
+## Root Cause
+7 vegetation types in `dropdown_values` had no corresponding row in `vegetation_info`. The auto-populate trigger (`handle_new_vegetation_type` → edge function) likely wasn't active when these were added. The popup queries by `vegetation_type_id` and shows "No information available" when no row exists.
 
 ## Tasks
-- [x] 1. Apply RLS migration — add policy on `profiles` for rearing group co-members
-- [x] 2. Update `DistributeGraftModal.tsx` — add filter input + scrollable list for group members
+- [x] 1. Insert missing `vegetation_info` rows for all 7 types
 
 ## Review
 
 ### Summary
-Two changes to fix group member visibility in the distribute graft modal:
+Inserted `vegetation_info` rows for the 7 vegetation types that were missing data:
 
-**1. RLS Policy (root cause fix)**
-- Added `"Users can view rearing group member profiles"` SELECT policy on `profiles`
-- Uses same join pattern as the existing team member policy: joins `rearing_group_members` to itself to find co-members
-- Without this, the Supabase query silently filtered out group members the current user couldn't "see"
+| Vegetation | Scientific Name | Nectar | Pollen |
+|---|---|---|---|
+| Alder trees (Alnus glutinosa) | Alnus_glutinosa | 1 | 4 |
+| Elderberry | Sambucus_nigra | 2 | 3 |
+| Hellebore | Helleborus | 2 | 3 |
+| Marsh-Marigold | Caltha_palustris | 2 | 3 |
+| Thistle | Cirsium | 5 | 3 |
+| Viburnum tinus | Viburnum_tinus | 2 | 2 |
+| Winter Heliotrope | Petasites_fragrans | 3 | 2 |
 
-**2. Modal UX improvements**
-- Added `groupFilter` state and a search/filter input (only shown when 6+ members) above the group member list
-- Filters by name or email as user types
-- Added `max-h-48 overflow-y-auto` to the list container so large groups don't push the form off-screen
-- Clears filter when switching recipient mode tabs
-- Matches the existing App User search dropdown styling (same `max-h-48 overflow-y-auto` classes)
-
-### Files Changed
-| File | Change |
-|------|--------|
-| Migration | New RLS policy `"Users can view rearing group member profiles"` on `profiles` |
-| `src/components/batches/DistributeGraftModal.tsx` | +1 state, +filter input, +scroll cap, filter cleared on mode switch |
+### No code changes — data-only fix via direct SQL INSERT.
 
 ### Verification
-- User should run `npm run build` to check for errors
-- Open distribute modal → Group Member tab → all group members should now appear
-- Groups with 6+ members show a filter input
-- List scrolls when content exceeds height
+- Click Hellebore, Viburnum tinus, Winter Heliotrope etc. in the GDD tracker — popup should now show full info with Wikipedia image.

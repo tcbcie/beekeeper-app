@@ -324,7 +324,7 @@ export default function DistributeGraftModal({
                     .filter((user) => {
                       if (!groupFilter.trim()) return true
                       const q = groupFilter.toLowerCase()
-                      return (user.full_name || '').toLowerCase().includes(q) || user.email.toLowerCase().includes(q)
+                      return (user.full_name || '').toLowerCase().includes(q) || (user.email || '').toLowerCase().includes(q)
                     })
                     .map((user) => (
                       <button
