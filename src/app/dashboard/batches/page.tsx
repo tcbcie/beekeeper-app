@@ -800,7 +800,7 @@ export default function BatchesPage() {
       {activeTab === 'planning' && (
         <>
           {showForm && (
-            <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-border">
+            <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-4 sm:p-6 border border-border overflow-hidden">
               <h3 className="text-xl font-semibold mb-4 text-foreground">
                 {editingBatch ? 'Edit Batch' : 'Create New Batch'}
               </h3>
@@ -1018,13 +1018,13 @@ export default function BatchesPage() {
             )}
 
             {/* Batch Quantities - Grouped Vertically */}
-            <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border">
+            <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border overflow-hidden">
               <h4 className="text-sm font-semibold text-foreground mb-3">Batch Quantities</h4>
               <div className="space-y-3">
                 {/* Frame Layout: Rows × Cells per Row */}
                 <div className="p-3 rounded-lg border-2 border-amber-600 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 space-y-3">
                 <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Grafting Frame Layout</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-text-secondary mb-1">Rows</label>
                     <div className="flex items-center gap-2">
