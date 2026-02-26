@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Calendar, Bell } from 'lucide-react'
 import Link from 'next/link'
+import Panel from '@/components/ui/Panel'
 
 interface UpcomingEvent {
   id: string
@@ -124,30 +125,30 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+      <Panel>
         <div className="flex items-center gap-2 mb-4">
           <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
           <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
         </div>
         <p className="text-text-secondary text-sm">Loading...</p>
-      </div>
+      </Panel>
     )
   }
 
   if (events.length === 0) {
     return (
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+      <Panel>
         <div className="flex items-center gap-2 mb-4">
           <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
           <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
         </div>
         <p className="text-text-secondary text-sm">No events in the next 7 days</p>
-      </div>
+      </Panel>
     )
   }
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+    <Panel>
       <div className="flex items-center gap-2 mb-4">
         <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
         <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
@@ -184,6 +185,6 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
           </Link>
         ))}
       </div>
-    </div>
+    </Panel>
   )
 }

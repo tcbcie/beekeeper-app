@@ -1,5 +1,10 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { Globe2, Mail } from 'lucide-react'
+import AppIcon from '@/components/icons/AppIcon'
+import Panel from '@/components/ui/Panel'
+import PageHeader from '@/components/ui/PageHeader'
+import { aboutFeatureIcons } from '@/lib/iconography'
 
 export const metadata: Metadata = {
   title: 'About - HiveCraic',
@@ -8,42 +13,42 @@ export const metadata: Metadata = {
 
 const features = [
   {
-    icon: '🏠',
+    icon: aboutFeatureIcons.apiaryManagement,
     title: 'Apiary Management',
     description: 'Track all your bee yards and hives in one place with detailed records.',
   },
   {
-    icon: '👑',
+    icon: aboutFeatureIcons.queenTracking,
     title: 'Queen Tracking',
     description: 'Monitor queen age, lineage, performance, and breeding records.',
   },
   {
-    icon: '📋',
+    icon: aboutFeatureIcons.inspectionLogging,
     title: 'Inspection Logging',
     description: 'Record detailed inspections with automatic weather data integration.',
   },
   {
-    icon: '🔬',
+    icon: aboutFeatureIcons.varroaMonitoring,
     title: 'Varroa Monitoring',
     description: 'Track mite counts, treatment schedules, and colony health.',
   },
   {
-    icon: '🐣',
+    icon: aboutFeatureIcons.queenRearing,
     title: 'Queen Rearing',
     description: 'Manage breeding batches with timeline tracking and mating nucs.',
   },
   {
-    icon: '🤖',
+    icon: aboutFeatureIcons.aiAssistant,
     title: 'AI Assistant',
     description: 'Get intelligent help from Mel with access to your hive data.',
   },
   {
-    icon: '📚',
+    icon: aboutFeatureIcons.knowledgeBase,
     title: 'Knowledge Base',
     description: 'AI-powered answers sourced from beekeeping literature.',
   },
   {
-    icon: '📱',
+    icon: aboutFeatureIcons.mobileApp,
     title: 'Mobile App',
     description: 'Install as a PWA on your phone for easy field access.',
   },
@@ -60,160 +65,133 @@ const techStack = [
 
 export default function AboutPage() {
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800" />
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 sm:py-32">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-900 dark:text-amber-300 text-sm font-medium mb-6">
-              <span>🍯</span>
-              <span>Modern Beekeeping Management</span>
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white mb-6">
-              Welcome to{' '}
-              <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
-                HiveCraic
-              </span>
-            </h1>
-
-            <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto mb-10">
-              A comprehensive beekeeping management application designed to help beekeepers
-              of all experience levels track and manage their apiaries, hives, queens, and beekeeping activities.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/login"
-                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full hover:from-amber-600 hover:to-amber-700 transition-all font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 text-lg"
-              >
-                Get Started Free
-              </Link>
-              <Link
-                href="#features"
-                className="px-8 py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-semibold border border-slate-200 dark:border-slate-700 text-lg"
-              >
-                Learn More
-              </Link>
-            </div>
+    <div className="space-y-8 sm:space-y-10">
+      <Panel padding="lg" className="relative overflow-hidden">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-100/70 via-transparent to-forest-100/40 dark:from-amber-900/15 dark:to-forest-900/10" />
+        <div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 h-40 w-40 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-500/10" />
+        <div className="relative">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-amber-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+            <span aria-hidden="true">Honey Season Tools</span>
           </div>
-        </div>
-      </section>
 
-      {/* Features Section */}
-      <section id="features" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            Everything You Need
-          </h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Powerful features to help you manage your beekeeping operation efficiently.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300"
-            >
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-                {feature.icon}
+          <PageHeader
+            eyebrow="About HiveCraic"
+            title="A Practical Field Journal for Modern Beekeeping"
+            description="HiveCraic helps beekeepers track apiaries, hives, queens, inspections, treatments, and team collaboration with a mobile-friendly workflow designed for real field use."
+            actions={
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link href="/login" className="fj-btn bg-forest-600 text-white hover:bg-forest-700">
+                  Get Started
+                </Link>
+                <a href="#features" className="fj-chip fj-chip-sm fj-chip-neutral">
+                  Explore Features
+                </a>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
-                {feature.description}
-              </p>
+            }
+          />
+        </div>
+      </Panel>
+
+      <Panel padding="lg" className="scroll-mt-24" >
+        <div id="features" className="mb-8">
+          <PageHeader
+            eyebrow="Capabilities"
+            title="Everything You Need"
+            description="A single place to record field activity, monitor colony health, and coordinate work across seasons."
+            className="[&_h1]:text-2xl [&_h1]:sm:text-3xl"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => (
+            <div
+              key={feature.title}
+              className="group rounded-xl border border-border bg-surface/70 p-5 transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-lg"
+            >
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/20 group-hover:scale-105 transition-transform">
+                <AppIcon icon={feature.icon} size="lg" className="text-amber-700 dark:text-amber-300" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-foreground">{feature.title}</h3>
+              <p className="text-sm text-text-secondary">{feature.description}</p>
             </div>
           ))}
         </div>
-      </section>
+      </Panel>
 
-      {/* Technology Section */}
-      <section className="bg-slate-50 dark:bg-slate-800/50 py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-              Built with Modern Technology
-            </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              Fast, reliable, and secure experience powered by cutting-edge tech.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {techStack.map((tech, index) => (
-              <div
-                key={index}
-                className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-center"
-              >
-                <p className="font-semibold text-slate-900 dark:text-white text-sm mb-1">
-                  {tech.name}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {tech.description}
-                </p>
-              </div>
-            ))}
-          </div>
+      <Panel padding="lg">
+        <div className="mb-8">
+          <PageHeader
+            eyebrow="Technology"
+            title="Built for Reliability"
+            description="A modern web stack with offline support, strong typing, and AI-assisted workflows where useful."
+            className="[&_h1]:text-2xl [&_h1]:sm:text-3xl"
+          />
         </div>
-      </section>
 
-      {/* Credits Section */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 sm:p-12 text-center text-white">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {techStack.map((tech) => (
+            <div
+              key={tech.name}
+              className="rounded-xl border border-border bg-surface/70 p-4 text-center"
+            >
+              <p className="mb-1 text-sm font-semibold text-foreground">{tech.name}</p>
+              <p className="text-xs text-text-secondary">{tech.description}</p>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel padding="lg" className="relative overflow-hidden border border-amber-300/70 dark:border-amber-800/70">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-500/15 via-transparent to-orange-500/10 dark:from-amber-500/10 dark:to-orange-500/10" />
+        <div className="relative text-center">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
+            Credits
+          </p>
+          <h2 className="mb-4 font-serif text-2xl sm:text-3xl text-foreground">
             Crafted with Honeyed Hearts
           </h2>
-          <p className="text-amber-100 text-lg mb-6 max-w-2xl mx-auto">
-            Built by <strong>tcbc.ie</strong>, alongside the buzzing minds of{' '}
-            <strong>Tribes Beekeepers Association</strong> and <strong>Tribes QRBG</strong>.
+          <p className="mx-auto mb-6 max-w-2xl text-base text-text-secondary">
+            Built by <strong className="text-foreground">tcbc.ie</strong>, alongside the buzzing minds of{' '}
+            <strong className="text-foreground">Tribes Beekeepers Association</strong> and{' '}
+            <strong className="text-foreground">Tribes QRBG</strong>.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/login"
-              className="px-8 py-3 bg-white text-amber-600 rounded-full hover:bg-amber-50 transition-all font-semibold"
-            >
+          <div className="flex justify-center">
+            <Link href="/login" className="fj-btn bg-forest-600 text-white hover:bg-forest-700">
               Start Managing Your Hives
             </Link>
           </div>
         </div>
-      </section>
+      </Panel>
 
-      {/* Contact Section */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-            Questions or Feedback?
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            We&apos;d love to hear from you. Reach out anytime.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <Panel padding="lg">
+        <div className="text-center">
+          <PageHeader
+            eyebrow="Contact"
+            title="Questions or Feedback?"
+            description="We’d love to hear from you. Reach out anytime."
+            className="justify-center text-center [&>div]:mx-auto [&>div]:max-w-xl [&_h1]:text-2xl"
+          />
+
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
               href="mailto:support@tcbc.ie"
-              className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
+              className="fj-chip fj-chip-sm fj-chip-neutral"
             >
-              <span>📧</span>
+              <Mail className="h-4 w-4" />
               <span>support@tcbc.ie</span>
             </a>
             <a
               href="https://tcbc.ie"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
+              className="fj-chip fj-chip-sm fj-chip-neutral"
             >
-              <span>🌐</span>
+              <Globe2 className="h-4 w-4" />
               <span>tcbc.ie</span>
             </a>
           </div>
         </div>
-      </section>
+      </Panel>
     </div>
   )
 }

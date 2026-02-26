@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Calendar, Edit2, Save, Download, X, Trash2, Phone, Palette, Scale, Users, Crown, ChevronRight } from 'lucide-react'
+import { User, Calendar, Edit2, Save, Download, Trash2, Phone, Palette, Scale, Users, Crown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
@@ -12,6 +12,12 @@ import { ThemeSwitcher } from '@/components/theme-switcher'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import Panel from '@/components/ui/Panel'
+import ModalShell from '@/components/ui/ModalShell'
+import FormActionRow from '@/components/ui/FormActionRow'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
 
 interface UserProfile {
   id: string
@@ -546,7 +552,7 @@ export default function ProfilePage() {
           {!editingProfile && (
             <button
               onClick={() => setEditingProfile(true)}
-              className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2"
+              className="fj-btn fj-btn-success text-sm"
             >
               <Edit2 size={16} />
               Edit Profile
@@ -563,47 +569,38 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  First Name
-                </label>
-                <input
+                <FieldLabel>First Name</FieldLabel>
+                <TextInput
                   type="text"
                   value={profileFormData.first_name}
                   onChange={(e) =>
                     setProfileFormData({ ...profileFormData, first_name: e.target.value })
                   }
                   placeholder="Enter your first name"
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Last Name
-                </label>
-                <input
+                <FieldLabel>Last Name</FieldLabel>
+                <TextInput
                   type="text"
                   value={profileFormData.last_name}
                   onChange={(e) =>
                     setProfileFormData({ ...profileFormData, last_name: e.target.value })
                   }
                   placeholder="Enter your last name"
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Mobile Number
-                </label>
-                <input
+                <FieldLabel>Mobile Number</FieldLabel>
+                <TextInput
                   type="tel"
                   value={profileFormData.mobile_number}
                   onChange={(e) =>
                     setProfileFormData({ ...profileFormData, mobile_number: e.target.value })
                   }
                   placeholder="Enter your mobile number"
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
 
@@ -613,18 +610,17 @@ export default function ProfilePage() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                    <FieldLabel className="mb-1">
                       Local Beekeeping Association
                       <span className="ml-2 text-xs text-text-tertiary font-normal">
                         (If you are a member of a local association, select from list below)
                       </span>
-                    </label>
-                    <select
+                    </FieldLabel>
+                    <SelectField
                       value={profileFormData.association_id || ''}
                       onChange={(e) =>
                         setProfileFormData({ ...profileFormData, association_id: e.target.value || null })
                       }
-                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent bg-surface dark:bg-surface-elevated"
                       disabled={loadingAssociations}
                     >
                       <option value="">Not a member of any local association</option>
@@ -633,7 +629,7 @@ export default function ProfilePage() {
                           {assoc.name} - {assoc.county_area} ({assoc.jurisdiction})
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
 
                   <div>
@@ -692,7 +688,7 @@ export default function ProfilePage() {
               <button
                 onClick={updateUserProfile}
                 disabled={savingProfile}
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
+                className="fj-btn fj-btn-success disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingProfile ? (
                   <>
@@ -709,7 +705,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleCancelProfileEdit}
                 disabled={savingProfile}
-                className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-medium disabled:opacity-50 transition-all"
+                className="fj-btn fj-btn-neutral disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -780,7 +776,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Manage Section */}
-      <div className="bg-surface dark:bg-surface border border-border rounded-lg shadow p-6">
+      <Panel>
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-xl font-semibold text-foreground">Manage</h2>
         </div>
@@ -804,10 +800,10 @@ export default function ProfilePage() {
             </Link>
           ))}
         </div>
-      </div>
+      </Panel>
 
       {/* Theme Preferences */}
-      <div className="bg-surface dark:bg-surface border border-border rounded-lg shadow p-6">
+      <Panel>
         <div className="flex items-center gap-3 mb-6">
           <Palette size={24} className="text-forest-600 dark:text-forest-400" />
           <h2 className="text-xl font-semibold text-foreground">Theme Preferences</h2>
@@ -816,7 +812,7 @@ export default function ProfilePage() {
           Choose your preferred theme. Light mode is optimized for outdoor field work, while dark mode is ideal for evening planning.
         </p>
         <ThemeSwitcher />
-      </div>
+      </Panel>
 
       {/* Subscription Management */}
       <div className="space-y-6">
@@ -835,7 +831,7 @@ export default function ProfilePage() {
 
       {/* Data Export - Only visible for users with active subscription */}
       {subscriptionStatus?.is_active && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+        <Panel>
           <h2 className="text-xl font-semibold text-foreground mb-4">My Data Export</h2>
           <p className="text-sm text-text-tertiary mb-4">
             Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
@@ -850,7 +846,7 @@ export default function ProfilePage() {
             <button
               onClick={exportMyDataAsJSON}
               disabled={exportingMyData}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
+              className="fj-btn fj-btn-success disabled:cursor-not-allowed disabled:opacity-50"
             >
               {exportingMyData ? (
                 <>
@@ -867,7 +863,7 @@ export default function ProfilePage() {
             <button
               onClick={exportMyDataAsCSV}
               disabled={exportingMyData}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all"
+              className="fj-btn fj-btn-success disabled:cursor-not-allowed disabled:opacity-50"
             >
               {exportingMyData ? (
                 <>
@@ -882,10 +878,10 @@ export default function ProfilePage() {
               )}
             </button>
           </div>
-        </div>
+        </Panel>
       )}
       {/* Additional Settings */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+      <Panel>
         <h2 className="text-xl font-semibold text-foreground mb-4">Additional Settings</h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
@@ -895,7 +891,7 @@ export default function ProfilePage() {
             </div>
             <button
               onClick={() => setShowChangePasswordModal(true)}
-              className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+              className="fj-btn fj-btn-success text-sm"
             >
               Change Password
             </button>
@@ -1050,10 +1046,10 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </div>
+      </Panel>
 
       {/* Danger Zone */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-red-300 dark:border-red-800">
+      <Panel className="border border-red-300 dark:border-red-800">
         <h2 className="text-xl font-semibold text-red-900 dark:text-red-100 mb-4">Danger Zone</h2>
         <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
           <div>
@@ -1062,20 +1058,29 @@ export default function ProfilePage() {
           </div>
           <button
             onClick={() => setShowDeleteAccountModal(true)}
-            className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+            className="fj-btn fj-btn-danger text-sm"
           >
             <Trash2 size={16} />
             Delete Account
           </button>
         </div>
-      </div>
-
+      </Panel>
       {/* Change Password Modal */}
       {showChangePasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full">
-            <div className="border-b border-border px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-foreground">Change Password</h3>
+        <ModalShell
+          title="Change Password"
+          titleClassName="text-xl"
+          closeDisabled={changingPassword}
+          onClose={() => {
+            setShowChangePasswordModal(false)
+            setCurrentPassword('')
+            setNewPassword('')
+            setConfirmPassword('')
+            setPasswordError('')
+          }}
+          bodyClassName="p-6 space-y-4"
+          footer={(
+            <FormActionRow bordered padding="md">
               <button
                 onClick={() => {
                   setShowChangePasswordModal(false)
@@ -1085,180 +1090,103 @@ export default function ProfilePage() {
                   setPasswordError('')
                 }}
                 disabled={changingPassword}
-                className="text-text-tertiary hover:text-text-secondary disabled:opacity-50"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {passwordError && (
-                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                  <p className="text-red-800 dark:text-red-200 text-sm">{passwordError}</p>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Current Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 disabled:bg-sage-100 dark:disabled:bg-slate-800"
-                  placeholder="Enter current password"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  New Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 disabled:bg-sage-100 dark:disabled:bg-slate-800"
-                  placeholder="Enter new password (min 8 characters)"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Confirm New Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={changingPassword}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 disabled:bg-sage-100 dark:disabled:bg-slate-800"
-                  placeholder="Confirm new password"
-                />
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1">Password Requirements:</p>
-                <ul className="text-blue-800 dark:text-blue-200 text-xs space-y-1">
-                  <li>• At least 8 characters long</li>
-                  <li>• Different from your current password</li>
-                  <li>• Both new password fields must match</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="border-t border-border px-6 py-4 flex gap-3">
-              <button
-                onClick={() => {
-                  setShowChangePasswordModal(false)
-                  setCurrentPassword('')
-                  setNewPassword('')
-                  setConfirmPassword('')
-                  setPasswordError('')
-                }}
-                disabled={changingPassword}
-                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="fj-btn fj-btn-neutral flex-1 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleChangePassword}
                 disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
+                className="fj-btn fj-btn-success flex-1 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {changingPassword ? 'Changing...' : 'Change Password'}
               </button>
+            </FormActionRow>
+          )}
+        >
+          {passwordError && (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <p className="text-red-800 dark:text-red-200 text-sm">{passwordError}</p>
             </div>
+          )}
+
+          <div>
+            <FieldLabel required>Current Password</FieldLabel>
+            <TextInput
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={changingPassword}
+              placeholder="Enter current password"
+            />
           </div>
-        </div>
+
+          <div>
+            <FieldLabel required>New Password</FieldLabel>
+            <TextInput
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={changingPassword}
+              placeholder="Enter new password (min 8 characters)"
+            />
+          </div>
+
+          <div>
+            <FieldLabel required>Confirm New Password</FieldLabel>
+            <TextInput
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={changingPassword}
+              placeholder="Confirm new password"
+            />
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1">Password Requirements:</p>
+            <ul className="list-disc pl-4 text-blue-800 dark:text-blue-200 text-xs space-y-1">
+              <li>At least 8 characters long</li>
+              <li>Different from your current password</li>
+              <li>Both new password fields must match</li>
+            </ul>
+          </div>
+        </ModalShell>
       )}
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteAccountModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full max-h-[85vh] flex flex-col">
-            {/* Header - Sticky */}
-            <div className="flex-shrink-0 border-b border-border p-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-red-900 flex items-center gap-2">
-                <Trash2 size={20} className="text-red-600" />
-                Delete Account
-              </h3>
+        <ModalShell
+          title={(
+            <span className="inline-flex items-center gap-2">
+              <Trash2 size={20} className="text-red-600" />
+              Delete Account
+            </span>
+          )}
+          titleClassName="text-red-900 dark:text-red-100"
+          closeDisabled={deletingAccount}
+          onClose={() => {
+            setShowDeleteAccountModal(false)
+            setDeleteConfirmText('')
+          }}
+          shellClassName="max-h-[85vh] flex flex-col"
+          bodyClassName="flex-1 overflow-y-auto p-4 space-y-3"
+          footer={(
+            <FormActionRow bordered padding="sm" className="flex-shrink-0">
               <button
                 onClick={() => {
                   setShowDeleteAccountModal(false)
                   setDeleteConfirmText('')
                 }}
                 disabled={deletingAccount}
-                className="text-text-tertiary hover:text-text-secondary disabled:opacity-50"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {/* What Happens */}
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1.5">What Happens:</p>
-                <ul className="text-blue-800 dark:text-blue-200 text-xs space-y-1">
-                  <li>• Account deactivated immediately</li>
-                  <li>• Data retained for 12 months</li>
-                  <li>• Reactivation available anytime</li>
-                </ul>
-              </div>
-
-              {/* After 12 Months */}
-              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                <p className="text-red-900 dark:text-red-100 font-semibold text-sm mb-1.5">⚠️ After 12 Months:</p>
-                <p className="text-red-800 dark:text-red-200 text-xs">
-                  All data permanently deleted. Cannot be recovered.
-                </p>
-              </div>
-
-              {/* Export Recommendation */}
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                <p className="text-amber-900 dark:text-amber-100 font-semibold text-sm mb-1.5">💡 Recommended:</p>
-                <p className="text-amber-800 dark:text-amber-200 text-xs">
-                  Export your data first (JSON/CSV options above)
-                </p>
-              </div>
-
-              {/* Confirmation Input */}
-              <div className="pt-2">
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                  Type <span className="font-mono bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded text-red-600 dark:text-red-400 text-xs">DELETE</span> to confirm:
-                </label>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE here"
-                  disabled={deletingAccount}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-sage-100 dark:disabled:bg-slate-800 disabled:cursor-not-allowed"
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-
-            {/* Footer - Sticky */}
-            <div className="flex-shrink-0 border-t border-border p-4 flex gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteAccountModal(false)
-                  setDeleteConfirmText('')
-                }}
-                disabled={deletingAccount}
-                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="fj-btn fj-btn-neutral flex-1 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deletingAccount || deleteConfirmText !== 'DELETE'}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="fj-btn fj-btn-danger flex-1 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deletingAccount ? (
                   <>
@@ -1272,9 +1200,48 @@ export default function ProfilePage() {
                   </>
                 )}
               </button>
-            </div>
+            </FormActionRow>
+          )}
+        >
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1.5">What Happens:</p>
+            <ul className="list-disc pl-4 text-blue-800 dark:text-blue-200 text-xs space-y-1">
+              <li>Account deactivated immediately</li>
+              <li>Data retained for 12 months</li>
+              <li>Reactivation available anytime</li>
+            </ul>
           </div>
-        </div>
+
+          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+            <p className="text-red-900 dark:text-red-100 font-semibold text-sm mb-1.5">After 12 Months:</p>
+            <p className="text-red-800 dark:text-red-200 text-xs">
+              All data permanently deleted. Cannot be recovered.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <p className="text-amber-900 dark:text-amber-100 font-semibold text-sm mb-1.5">Recommended:</p>
+            <p className="text-amber-800 dark:text-amber-200 text-xs">
+              Export your data first (JSON/CSV options above)
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <FieldLabel className="text-xs mb-1.5">
+              Type <span className="font-mono bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded text-red-600 dark:text-red-400 text-xs">DELETE</span> to confirm:
+            </FieldLabel>
+            <TextInput
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Type DELETE here"
+              disabled={deletingAccount}
+              danger
+              className="text-sm"
+              autoComplete="off"
+            />
+          </div>
+        </ModalShell>
       )}
 
       {/* Renew Subscription Modal */}

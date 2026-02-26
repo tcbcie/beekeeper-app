@@ -59,7 +59,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     return `flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-200 touch-manipulation min-h-[48px] ${
       isActive
         ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
-        : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 active:bg-sage-200 dark:active:bg-slate-700 hover:text-foreground'
+        : 'text-text-secondary hover:bg-surface-elevated active:bg-surface-elevated hover:text-foreground'
     }`
   }
 
@@ -76,7 +76,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
       {/* Drawer */}
       <aside
-        className={`fixed top-0 left-0 h-full w-72 bg-surface dark:bg-surface shadow-xl z-[70] transform transition-transform duration-300 ease-in-out md:hidden border-r border-border ${
+        className={`fixed top-0 left-0 z-[70] h-full w-72 border-r border-border bg-surface/95 backdrop-blur-xl transform transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -86,7 +86,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             <h2 className="text-lg font-semibold text-foreground">Menu</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-sage-100 dark:hover:bg-slate-800 text-text-secondary hover:text-foreground touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
+              className="fj-icon-btn p-2 touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
               aria-label="Close menu"
             >
               <X size={24} />

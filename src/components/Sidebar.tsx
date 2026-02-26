@@ -68,16 +68,16 @@ export default function Sidebar() {
     return `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
       isActive
         ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
-        : 'text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 hover:text-foreground'
+        : 'text-text-secondary hover:bg-surface-elevated hover:text-foreground'
     } ${isCollapsed ? 'justify-center px-2' : ''}`
   }
 
   return (
-    <aside className={`hidden md:block sticky top-4 self-start bg-surface dark:bg-surface rounded-xl shadow-lg p-4 h-fit border border-border transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`hidden md:block sticky top-4 self-start field-journal-panel p-4 h-fit transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Collapse Toggle */}
       <button
         onClick={toggleCollapsed}
-        className="w-full flex items-center justify-center p-2 mb-2 rounded-lg text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-800 hover:text-foreground transition-colors"
+        className="fj-icon-btn mb-2 w-full p-2"
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}

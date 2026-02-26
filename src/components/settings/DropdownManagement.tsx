@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Edit2, Trash2, X, Save } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
+import TextAreaField from '@/components/ui/TextAreaField'
 
 interface DropdownCategory {
   id: string
@@ -210,14 +214,14 @@ export default function DropdownManagement() {
                 setEditingValue({ categoryId: '__new__', value: null })
                 setValueFormData({ value: '', display_order: 0 })
               }}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+              className="fj-btn fj-btn-success"
             >
               <Plus size={16} />
               Add Value
             </button>
             <button
               onClick={() => setShowCategoryForm(!showCategoryForm)}
-              className="px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 font-medium flex items-center gap-2"
+              className="fj-btn fj-btn-success"
             >
               {showCategoryForm ? <X size={16} /> : <Plus size={16} />}
               {showCategoryForm ? 'Cancel' : 'Add Category'}
@@ -232,28 +236,27 @@ export default function DropdownManagement() {
             </h3>
             <form onSubmit={handleCategorySubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Category Name *
-                </label>
-                <input
+                <FieldLabel required>
+                  Category Name
+                </FieldLabel>
+                <TextInput
                   type="text"
                   value={categoryFormData.category_name}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, category_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
                   placeholder="e.g., Queen Marking Colors"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Category Key * (used in code)
-                </label>
-                <input
+                <FieldLabel required>
+                  Category Key (used in code)
+                </FieldLabel>
+                <TextInput
                   type="text"
                   value={categoryFormData.category_key}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, category_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                  className="w-full px-3 py-2 border border-border rounded-md font-mono text-sm"
+                  className="font-mono text-sm"
                   placeholder="e.g., queen_marking_colors"
                   required
                   disabled={!!editingCategory}
@@ -262,13 +265,12 @@ export default function DropdownManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
+                <FieldLabel>
                   Description
-                </label>
-                <textarea
+                </FieldLabel>
+                <TextAreaField
                   value={categoryFormData.description}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
                   placeholder="Brief description of this dropdown category"
                   rows={2}
                 />
@@ -277,14 +279,14 @@ export default function DropdownManagement() {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700"
+                  className="fj-btn fj-btn-success"
                 >
                   {editingCategory ? 'Update' : 'Add'} Category
                 </button>
                 <button
                   type="button"
                   onClick={resetCategoryForm}
-                  className="px-6 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
+                  className="fj-btn fj-btn-neutral"
                 >
                   Cancel
                 </button>
@@ -296,16 +298,16 @@ export default function DropdownManagement() {
         {/* Category Filter */}
         <div className="mb-4 flex items-center gap-4">
           <label className="text-sm font-medium text-text-secondary">Filter by Category:</label>
-          <select
+          <SelectField
             value={selectedCategoryFilter}
             onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-            className="px-3 py-2 border border-border rounded-md text-sm"
+            className="fj-control-inline text-sm"
           >
             <option value="all">All Categories</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>{cat.category_name}</option>
             ))}
-          </select>
+          </SelectField>
           <span className="text-sm text-text-tertiary">
             {(() => {
               const filtered = categories.flatMap(c =>
@@ -326,13 +328,13 @@ export default function DropdownManagement() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Category *
-                </label>
-                <select
+                <FieldLabel required>
+                  Category
+                </FieldLabel>
+                <SelectField
                   value={editingValue.categoryId === '__new__' ? '' : editingValue.categoryId}
                   onChange={(e) => setEditingValue({ ...editingValue, categoryId: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md text-sm"
+                  className="text-sm"
                   required
                   disabled={!!editingValue.value}
                 >
@@ -340,30 +342,30 @@ export default function DropdownManagement() {
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>{cat.category_name}</option>
                   ))}
-                </select>
+                </SelectField>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Value *
-                </label>
-                <input
+                <FieldLabel required>
+                  Value
+                </FieldLabel>
+                <TextInput
                   type="text"
                   value={valueFormData.value}
                   onChange={(e) => setValueFormData({ ...valueFormData, value: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md text-sm"
+                  className="text-sm"
                   placeholder="Enter value"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
+                <FieldLabel>
                   Display Order
-                </label>
-                <input
+                </FieldLabel>
+                <TextInput
                   type="number"
                   value={valueFormData.display_order}
                   onChange={(e) => setValueFormData({ ...valueFormData, display_order: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-border rounded-md text-sm"
+                  className="text-sm"
                   placeholder="0"
                 />
               </div>
@@ -371,7 +373,7 @@ export default function DropdownManagement() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 text-sm"
+                className="fj-btn fj-btn-success fj-btn-sm"
               >
                 <Save size={14} className="inline mr-1" />
                 {editingValue.value ? 'Update' : 'Add'} Value
@@ -382,7 +384,7 @@ export default function DropdownManagement() {
                   setEditingValue({ categoryId: '', value: null })
                   setValueFormData({ value: '', display_order: 0 })
                 }}
-                className="px-4 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border text-sm"
+                className="fj-btn fj-btn-neutral fj-btn-sm"
               >
                 Cancel
               </button>
@@ -441,11 +443,11 @@ export default function DropdownManagement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {value.is_active ? (
-                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          <span className="fj-badge fj-badge-green">
                             Active
                           </span>
                         ) : (
-                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                          <span className="fj-badge fj-badge-red">
                             Inactive
                           </span>
                         )}
@@ -454,21 +456,21 @@ export default function DropdownManagement() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleEditValue(category.id, value)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
                             title="Edit"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleToggleValueStatus(value.id, value.is_active)}
-                            className={value.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
+                            className={value.is_active ? 'fj-icon-btn fj-icon-btn-amber fj-icon-btn-xs' : 'fj-icon-btn fj-icon-btn-green fj-icon-btn-xs'}
                             title={value.is_active ? 'Deactivate' : 'Activate'}
                           >
                             {value.is_active ? <X size={16} /> : <Plus size={16} />}
                           </button>
                           <button
                             onClick={() => handleDeleteValue(value.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
                             title="Delete"
                           >
                             <Trash2 size={16} />
@@ -494,7 +496,7 @@ export default function DropdownManagement() {
           <h3 className="text-lg font-semibold text-foreground mb-4">Manage Categories</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {categories.map((category) => (
-              <div key={category.id} className="border border-border rounded-lg p-4 hover:border-indigo-300 transition-colors">
+              <div key={category.id} className="border border-border rounded-lg p-4 hover:border-accent-primary transition-colors">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <h4 className="font-medium text-foreground">{category.category_name}</h4>
@@ -503,14 +505,14 @@ export default function DropdownManagement() {
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleEditCategory(category)}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
                       title="Edit Category"
                     >
                       <Edit2 size={14} />
                     </button>
                     <button
                       onClick={() => handleDeleteCategory(category.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
                       title="Delete Category"
                     >
                       <Trash2 size={14} />

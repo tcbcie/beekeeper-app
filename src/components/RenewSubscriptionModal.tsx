@@ -2,7 +2,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { ActivateSubscriptionResponse } from '@/types/subscription'
-import { X, Check, AlertCircle, CreditCard, Tag, Loader2 } from 'lucide-react'
+import { Check, AlertCircle, CreditCard, Tag, Loader2 } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
+import InfoPanel from '@/components/ui/InfoPanel'
+import { RadioChoiceGroup, RadioChoiceOption } from '@/components/ui/RadioChoiceGroup'
+import AlertPanel from '@/components/ui/AlertPanel'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import FormActionRow from '@/components/ui/FormActionRow'
 
 interface RenewSubscriptionModalProps {
   isOpen: boolean
@@ -268,37 +275,26 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-foreground">Renew Subscription</h3>
-            <p className="text-sm text-text-secondary mt-1">
-              Choose your payment method
-            </p>
-          </div>
-          <button
-            onClick={handleClose}
-            className="text-text-tertiary hover:text-foreground transition-colors"
-            disabled={loading}
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <ModalShell
+      title="Renew Subscription"
+      onClose={handleClose}
+      closeDisabled={loading}
+      overlayClassName="dark:bg-black/70"
+    >
+        <p className="text-sm text-text-secondary mb-4">
+          Choose your payment method
+        </p>
 
         {success ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md">
-              <Check className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-green-900 dark:text-green-200">
-                  Subscription activated successfully!
-                </p>
-                <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                  Your subscription has been extended
-                </p>
-              </div>
-            </div>
+            <AlertPanel
+              tone="success"
+              icon={<Check className="w-6 h-6 text-green-600 dark:text-green-400" />}
+              title="Subscription activated successfully!"
+              bodyClassName="text-xs"
+            >
+              <p>Your subscription has been extended</p>
+            </AlertPanel>
 
             <div className="bg-sage-50 dark:bg-slate-800/50 rounded-md p-4 space-y-2">
               <div className="flex justify-between text-sm">
@@ -316,60 +312,54 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
         ) : (
           <div className="space-y-4">
             {/* Payment Method Selector */}
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('code')}
-                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-lg border-2 transition-all ${
-                  paymentMethod === 'code'
-                    ? 'border-forest-500 dark:border-forest-400 bg-forest-50 dark:bg-forest-950/30 text-forest-700 dark:text-forest-300'
-                    : 'border-border bg-surface dark:bg-surface text-text-secondary hover:border-forest-300 dark:hover:border-forest-600'
-                }`}
-              >
-                <Tag className="w-5 h-5" />
-                <span className="font-medium text-xs">Individual Code</span>
-                <span className="text-xs text-text-tertiary">Free</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-lg border-2 transition-all ${
-                  paymentMethod === 'card'
-                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
-                    : 'border-border bg-surface dark:bg-surface text-text-secondary hover:border-blue-300 dark:hover:border-blue-600'
-                }`}
-              >
-                <CreditCard className="w-5 h-5" />
-                <span className="font-medium text-xs">Card Payment</span>
-                <span className="text-xs text-text-tertiary">€24</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('association_code')}
-                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-lg border-2 transition-all ${
-                  paymentMethod === 'association_code'
-                    ? 'border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300'
-                    : 'border-border bg-surface dark:bg-surface text-text-secondary hover:border-purple-300 dark:hover:border-purple-600'
-                }`}
-              >
-                <Tag className="w-5 h-5" />
-                <span className="font-medium text-xs text-center">Association Code</span>
-                <span className="text-xs text-text-tertiary">€12</span>
-              </button>
-            </div>
+            <RadioChoiceGroup className="sm:grid-cols-3 gap-2">
+              <RadioChoiceOption
+                name="payment_method"
+                value="code"
+                tone="green"
+                checked={paymentMethod === 'code'}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                icon={<Tag className="w-4 h-4 text-current" />}
+                title="Individual Code"
+                description="Free"
+                className="min-h-[72px]"
+              />
+              <RadioChoiceOption
+                name="payment_method"
+                value="card"
+                tone="blue"
+                checked={paymentMethod === 'card'}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                icon={<CreditCard className="w-4 h-4 text-current" />}
+                title="Card Payment"
+                description="EUR 24"
+                className="min-h-[72px]"
+              />
+              <RadioChoiceOption
+                name="payment_method"
+                value="association_code"
+                tone="purple"
+                checked={paymentMethod === 'association_code'}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                icon={<Tag className="w-4 h-4 text-current" />}
+                title="Association Code"
+                description="EUR 12"
+                className="min-h-[72px]"
+              />
+            </RadioChoiceGroup>
 
             {/* Code Payment Form */}
             {paymentMethod === 'code' && (
               <form onSubmit={handleCodeSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <FieldLabel className="mb-2 text-foreground">
                     Subscription Code
-                  </label>
-                  <input
+                  </FieldLabel>
+                  <TextInput
                     type="text"
                     value={code}
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-md font-mono text-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400 focus:border-forest-500 dark:focus:border-forest-400"
+                    className="font-mono text-lg"
                     placeholder="Enter code"
                     autoComplete="off"
                     autoFocus
@@ -382,23 +372,25 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
-                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-                  </div>
+                  <AlertPanel
+                    tone="error"
+                    icon={<AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}
+                  >
+                    <p className="text-sm">{error}</p>
+                  </AlertPanel>
                 )}
 
-                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md p-3">
-                  <p className="text-xs text-blue-900 dark:text-blue-200">
-                    <strong>Tip:</strong> If your subscription is still active, the new code will extend from your current expiration date. If expired, it will start from today.
+                <InfoPanel tone="blue" title="Tip:" className="p-3" contentClassName="text-xs">
+                  <p>
+                    If your subscription is still active, the new code will extend from your current expiration date. If expired, it will start from today.
                   </p>
-                </div>
+                </InfoPanel>
 
-                <div className="flex gap-3 pt-2">
+                <FormActionRow className="pt-2">
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="flex-1 py-2 px-4 bg-sage-100 dark:bg-slate-700 text-foreground rounded-md hover:bg-sage-200 dark:hover:bg-slate-600 transition-colors font-medium"
+                    className="fj-btn fj-btn-neutral flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loading}
                   >
                     Cancel
@@ -406,7 +398,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   <button
                     type="submit"
                     disabled={loading || !code.trim()}
-                    className="flex-1 py-2 px-4 bg-forest-600 dark:bg-forest-500 text-white rounded-md hover:bg-forest-700 dark:hover:bg-forest-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="fj-btn fj-btn-success flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -417,7 +409,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                       'Activate Subscription'
                     )}
                   </button>
-                </div>
+                </FormActionRow>
               </form>
             )}
 
@@ -425,37 +417,37 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
             {paymentMethod === 'card' && (
               <form onSubmit={handleCardPayment} className="space-y-4">
                 {/* Pricing Display */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <InfoPanel tone="blue" className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-foreground">Annual Subscription</p>
                       <p className="text-xs text-text-secondary mt-0.5">12 months of access</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">€24</p>
+                      <p className="text-2xl font-bold fj-text-info">EUR 24</p>
                       <p className="text-xs text-text-secondary">per year</p>
                     </div>
                   </div>
-                </div>
+                </InfoPanel>
 
                 {error && (
-                  <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
-                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-                  </div>
+                  <AlertPanel
+                    tone="error"
+                    icon={<AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}
+                  >
+                    <p className="text-sm">{error}</p>
+                  </AlertPanel>
                 )}
 
-                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md p-3">
-                  <p className="text-xs text-blue-900 dark:text-blue-200">
-                    <strong>Secure Payment:</strong> You&apos;ll be redirected to Stripe for secure card payment processing.
-                  </p>
-                </div>
+                <InfoPanel tone="blue" title="Secure Payment:" className="p-3" contentClassName="text-xs">
+                  <p>You&apos;ll be redirected to Stripe for secure card payment processing.</p>
+                </InfoPanel>
 
-                <div className="flex gap-3 pt-2">
+                <FormActionRow className="pt-2">
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="flex-1 py-2 px-4 bg-sage-100 dark:bg-slate-700 text-foreground rounded-md hover:bg-sage-200 dark:hover:bg-slate-600 transition-colors font-medium"
+                    className="fj-btn fj-btn-neutral flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loading}
                   >
                     Cancel
@@ -463,7 +455,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-2 px-4 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="fj-btn fj-btn-blue flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -474,7 +466,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                       'Pay €24 with Card'
                     )}
                   </button>
-                </div>
+                </FormActionRow>
               </form>
             )}
 
@@ -482,28 +474,29 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
             {paymentMethod === 'association_code' && (
               <form onSubmit={handleAssociationCodePayment} className="space-y-4">
                 {/* Pricing Display */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/40 dark:to-pink-900/40 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                <InfoPanel tone="purple" className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-foreground">Association Member Rate</p>
                       <p className="text-xs text-text-secondary mt-0.5">12 months of access + code required</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">€12</p>
+                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">EUR 12</p>
                       <p className="text-xs text-text-secondary">per year</p>
                     </div>
                   </div>
-                </div>
+                </InfoPanel>
 
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Association Code <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  <FieldLabel required className="mb-2 text-foreground">
+                    Association Code
+                  </FieldLabel>
+                  <TextInput
                     type="text"
                     value={associationCode}
                     onChange={(e) => setAssociationCode(e.target.value.toUpperCase())}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-md font-mono text-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400"
+                    className="font-mono text-lg"
+                    tone="purple"
                     placeholder="Enter association code"
                     autoComplete="off"
                     required
@@ -515,23 +508,23 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                 </div>
 
                 {error && (
-                  <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
-                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-                  </div>
+                  <AlertPanel
+                    tone="error"
+                    icon={<AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />}
+                  >
+                    <p className="text-sm">{error}</p>
+                  </AlertPanel>
                 )}
 
-                <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-md p-3">
-                  <p className="text-xs text-purple-900 dark:text-purple-200">
-                    <strong>Association Member Benefit:</strong> After validating your code, you&apos;ll pay €12 (50% off) instead of the standard €24 rate.
-                  </p>
-                </div>
+                <InfoPanel tone="purple" title="Association Member Benefit:" className="p-3" contentClassName="text-xs">
+                  <p>After validating your code, you&apos;ll pay EUR 12 (50% off) instead of the standard EUR 24 rate.</p>
+                </InfoPanel>
 
-                <div className="flex gap-3 pt-2">
+                <FormActionRow className="pt-2">
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="flex-1 py-2 px-4 bg-sage-100 dark:bg-slate-700 text-foreground rounded-md hover:bg-sage-200 dark:hover:bg-slate-600 transition-colors font-medium"
+                    className="fj-btn fj-btn-neutral flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loading}
                   >
                     Cancel
@@ -539,7 +532,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   <button
                     type="submit"
                     disabled={loading || !associationCode.trim()}
-                    className="flex-1 py-2 px-4 bg-purple-600 dark:bg-purple-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="fj-btn fj-btn-purple flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -550,12 +543,11 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                       'Validate & Pay €12'
                     )}
                   </button>
-                </div>
+                </FormActionRow>
               </form>
             )}
           </div>
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }

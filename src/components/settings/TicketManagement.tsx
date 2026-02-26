@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import FieldLabel from '@/components/ui/FieldLabel'
+import SelectField from '@/components/ui/SelectField'
+import TextAreaField from '@/components/ui/TextAreaField'
+import InfoPanel from '@/components/ui/InfoPanel'
 
 interface SupportTicket {
   id: string
@@ -197,10 +201,10 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
             <button
               key={filter}
               onClick={() => setTicketFilter(filter)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`fj-btn fj-btn-sm ${
                 ticketFilter === filter
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-surface-elevated dark:bg-surface-elevated text-text-secondary hover:bg-surface dark:hover:bg-surface'
+                  ? 'fj-btn-blue'
+                  : 'fj-btn-neutral'
               }`}
             >
               {filter.replace('_', ' ').toUpperCase()}
@@ -236,7 +240,7 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                         {new Date(ticket.created_at).toLocaleString()}
                       </p>
                       <div className="flex gap-2 mb-3">
-                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-600">
+                        <span className="fj-badge fj-badge-blue">
                           {ticket.ticket_type.toUpperCase()}
                         </span>
                       </div>
@@ -249,52 +253,52 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                     <h4 className="font-semibold text-foreground mt-2">Update Ticket</h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                        <FieldLabel>
                           Status
-                        </label>
-                        <select
+                        </FieldLabel>
+                        <SelectField
                           value={editingTicket.status}
                           onChange={(e) =>
                             setEditingTicket({ ...editingTicket, status: e.target.value as 'open' | 'in_progress' | 'resolved' | 'closed' })
                           }
-                          className="w-full px-3 py-2 border border-border rounded-md"
+                          tone="purple"
                         >
                           <option value="open">Open</option>
                           <option value="in_progress">In Progress</option>
                           <option value="resolved">Resolved</option>
                           <option value="closed">Closed</option>
-                        </select>
+                        </SelectField>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                        <FieldLabel>
                           Priority
-                        </label>
-                        <select
+                        </FieldLabel>
+                        <SelectField
                           value={editingTicket.priority}
                           onChange={(e) =>
                             setEditingTicket({ ...editingTicket, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent' })
                           }
-                          className="w-full px-3 py-2 border border-border rounded-md"
+                          tone="purple"
                         >
                           <option value="low">Low</option>
                           <option value="normal">Normal</option>
                           <option value="high">High</option>
                           <option value="urgent">Urgent</option>
-                        </select>
+                        </SelectField>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-1">
+                      <FieldLabel>
                         Admin Notes (visible to user)
-                      </label>
-                      <textarea
+                      </FieldLabel>
+                      <TextAreaField
                         value={editingTicket.admin_notes || ''}
                         onChange={(e) =>
                           setEditingTicket({ ...editingTicket, admin_notes: e.target.value })
                         }
                         rows={3}
-                        className="w-full px-3 py-2 border border-border rounded-md"
+                        tone="purple"
                         placeholder="Response to the user..."
                       />
                     </div>
@@ -308,13 +312,13 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                             admin_notes: editingTicket.admin_notes || undefined,
                           })
                         }
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        className="fj-btn fj-btn-blue"
                       >
                         Save Changes
                       </button>
                       <button
                         onClick={() => setEditingTicket(null)}
-                        className="px-4 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
+                        className="fj-btn fj-btn-neutral"
                       >
                         Cancel
                       </button>
@@ -338,13 +342,13 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                       <div className="flex gap-2">
                         <button
                           onClick={() => setEditingTicket(ticket)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+                          className="fj-btn fj-btn-blue fj-btn-xs"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteTicket(ticket.id)}
-                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium"
+                          className="fj-btn fj-btn-danger fj-btn-xs"
                         >
                           Delete
                         </button>
@@ -353,36 +357,36 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
 
                     <div className="flex flex-wrap gap-2 mb-3">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
+                        className={`fj-badge ${
                           ticket.status === 'open'
-                            ? 'bg-blue-100 text-blue-800'
+                            ? 'fj-badge-blue'
                             : ticket.status === 'in_progress'
-                            ? 'bg-yellow-100 text-yellow-800'
+                            ? 'fj-badge-amber'
                             : ticket.status === 'resolved'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
+                            ? 'fj-badge-green'
+                            : 'fj-badge-neutral'
                         }`}
                       >
                         {ticket.status.replace('_', ' ').toUpperCase()}
                       </span>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
+                        className={`fj-badge ${
                           ticket.priority === 'urgent'
-                            ? 'bg-red-100 text-red-600'
+                            ? 'fj-badge-red'
                             : ticket.priority === 'high'
-                            ? 'bg-orange-100 text-orange-600'
+                            ? 'fj-badge-amber'
                             : ticket.priority === 'normal'
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'bg-surface-elevated dark:bg-surface-elevated text-text-tertiary'
+                            ? 'fj-badge-blue'
+                            : 'fj-badge-neutral'
                         }`}
                       >
                         {ticket.priority.toUpperCase()}
                       </span>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
+                        className={`fj-badge ${
                           ticket.ticket_type === 'problem'
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-blue-100 text-blue-600'
+                            ? 'fj-badge-red'
+                            : 'fj-badge-blue'
                         }`}
                       >
                         {ticket.ticket_type.toUpperCase()}
@@ -394,14 +398,11 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                     </p>
 
                     {ticket.admin_notes && (
-                      <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-2">
-                        <p className="text-sm font-semibold text-blue-900 mb-1">
-                          Your Response:
-                        </p>
-                        <p className="text-sm text-blue-800 whitespace-pre-wrap">
+                      <InfoPanel tone="blue" title="Your Response:" className="mb-2 p-3" contentClassName="text-sm">
+                        <p className="whitespace-pre-wrap">
                           {ticket.admin_notes}
                         </p>
-                      </div>
+                      </InfoPanel>
                     )}
 
                     {ticket.resolved_by && ticket.resolved_at && (
@@ -426,19 +427,19 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
               <span className="ml-2 font-bold">{tickets.length}</span>
             </div>
             <div>
-              <span className="text-blue-600">Open:</span>
+              <span className="fj-text-info">Open:</span>
               <span className="ml-2 font-bold">
                 {tickets.filter((t) => t.status === 'open').length}
               </span>
             </div>
             <div>
-              <span className="text-yellow-600">In Progress:</span>
+              <span className="fj-text-warning">In Progress:</span>
               <span className="ml-2 font-bold">
                 {tickets.filter((t) => t.status === 'in_progress').length}
               </span>
             </div>
             <div>
-              <span className="text-green-600">Resolved:</span>
+              <span className="fj-text-success">Resolved:</span>
               <span className="ml-2 font-bold">
                 {tickets.filter((t) => t.status === 'resolved').length}
               </span>

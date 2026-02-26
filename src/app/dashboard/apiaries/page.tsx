@@ -6,6 +6,13 @@ import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'luci
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
+import ModalShell from '@/components/ui/ModalShell'
+import FormActionRow from '@/components/ui/FormActionRow'
+import FieldLabel from '@/components/ui/FieldLabel'
+import SelectField from '@/components/ui/SelectField'
+import TextInput from '@/components/ui/TextInput'
+import TextAreaField from '@/components/ui/TextAreaField'
+import CheckboxInput from '@/components/ui/CheckboxInput'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 
@@ -621,7 +628,7 @@ export default function ApiariesPage() {
         <h1 className="text-3xl font-bold text-foreground">Apiaries 📍</h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-medium flex items-center gap-2 min-h-[48px]"
+          className="fj-btn fj-btn-success min-h-[48px]"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
           {showForm ? 'Cancel' : 'Add Apiary'}
@@ -635,20 +642,20 @@ export default function ApiariesPage() {
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary Name *</label>
-              <input
+              <FieldLabel>Apiary Name *</FieldLabel>
+              <TextInput
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="e.g., Home Garden, North Field"
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                className="rounded-md"
                 required
               />
             </div>
 
             {/* Apiary Image */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Apiary Photo</label>
+              <FieldLabel className="mb-2">Apiary Photo</FieldLabel>
               {imagePreview ? (
                 <div className="relative max-w-xs group">
                   <div className="relative w-full h-48">
@@ -670,14 +677,14 @@ export default function ApiariesPage() {
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
+                    className="absolute top-2 right-2 fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs bg-surface/90 dark:bg-surface-elevated/90 z-10"
                     title="Remove image"
                   >
                     <X size={16} />
                   </button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full max-w-xs h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-forest-500 hover:bg-sage-50 dark:hover:bg-slate-800 transition-colors">
+                <label className="flex flex-col items-center justify-center w-full max-w-xs h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-accent-primary hover:bg-surface-elevated/70 transition-colors">
                   <div className="flex flex-col items-center justify-center py-4">
                     <Camera size={24} className="text-text-tertiary mb-2" />
                     <p className="text-sm text-text-tertiary">Click to upload photo</p>
@@ -701,44 +708,42 @@ export default function ApiariesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Location</label>
-                <input
+                <FieldLabel>Location</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
                   placeholder="e.g., North Field, Back Garden"
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                  className="rounded-md"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">City</label>
-                <input
+                <FieldLabel>City</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.city}
                   onChange={(e) => setFormData({...formData, city: e.target.value})}
                   placeholder="e.g., Dublin, Cork"
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                  className="rounded-md"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Eircode (Postcode)</label>
-              <input
+              <FieldLabel>Eircode (Postcode)</FieldLabel>
+              <TextInput
                 type="text"
                 value={formData.eircode}
                 onChange={(e) => setFormData({...formData, eircode: e.target.value.toUpperCase()})}
                 placeholder={formData.is_uk_ni ? "e.g., BT1 5GS" : "e.g., D02 XY45"}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                className="rounded-md uppercase"
               />
               <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="checkbox"
+                <CheckboxInput
                   id="is_uk_ni"
                   checked={formData.is_uk_ni}
                   onChange={(e) => setFormData({...formData, is_uk_ni: e.target.checked})}
-                  className="w-4 h-4 text-forest-600 bg-surface border-border rounded focus:ring-forest-500 focus:ring-2"
                 />
                 <label htmlFor="is_uk_ni" className="text-sm text-text-secondary cursor-pointer">
                   UK/NI Postcode
@@ -748,7 +753,7 @@ export default function ApiariesPage() {
             </div>
 
             {/* GPS Coordinates */}
-            <div className="bg-sage-50 dark:bg-slate-800/50 p-4 rounded-lg border border-sage-200 dark:border-slate-700">
+            <div className="field-journal-panel p-4">
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-medium text-text-secondary flex items-center gap-2">
                   <MapPin size={16} />
@@ -758,7 +763,7 @@ export default function ApiariesPage() {
                   <button
                     type="button"
                     onClick={() => setShowMapPicker(!showMapPicker)}
-                    className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                    className="fj-btn fj-btn-blue fj-btn-sm"
                   >
                     <Map size={14} />
                     {showMapPicker ? 'Hide Map' : 'Pick on Map'}
@@ -767,7 +772,7 @@ export default function ApiariesPage() {
                     type="button"
                     onClick={handleLookupCoordinates}
                     disabled={geocoding || (!formData.city && !formData.eircode)}
-                    className="text-sm px-3 py-1 bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    className="fj-btn fj-btn-success fj-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {geocoding ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
                     Get Coordinates
@@ -793,7 +798,7 @@ export default function ApiariesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-text-tertiary mb-1">Latitude</label>
-                  <input
+                  <TextInput
                     type="text"
                     value={formData.latitude}
                     onChange={(e) => {
@@ -802,12 +807,12 @@ export default function ApiariesPage() {
                       lookupGridReference(val, formData.longitude)
                     }}
                     placeholder="e.g., 53.2744"
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                    className="rounded-md text-sm"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-text-tertiary mb-1">Longitude</label>
-                  <input
+                  <TextInput
                     type="text"
                     value={formData.longitude}
                     onChange={(e) => {
@@ -816,29 +821,29 @@ export default function ApiariesPage() {
                       lookupGridReference(formData.latitude, val)
                     }}
                     placeholder="e.g., -9.0490"
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                    className="rounded-md text-sm"
                   />
                 </div>
               </div>
               {formData.elevation && (
                 <div className="mt-3">
                   <label className="block text-xs text-text-tertiary mb-1">Elevation (metres above sea level)</label>
-                  <input
+                  <TextInput
                     type="text"
                     value={`${formData.elevation} m`}
                     readOnly
-                    className="w-32 px-3 py-2 border border-border rounded-md bg-sage-100 dark:bg-slate-700 text-foreground text-sm cursor-default"
+                    className="w-32 rounded-md text-sm cursor-default"
                   />
                 </div>
               )}
               {formData.grid_reference && (
                 <div className="mt-3">
                   <label className="block text-xs text-text-tertiary mb-1">Irish Grid (10km square)</label>
-                  <input
+                  <TextInput
                     type="text"
                     value={formData.grid_reference}
                     readOnly
-                    className="w-32 px-3 py-2 border border-border rounded-md bg-sage-100 dark:bg-slate-700 text-foreground text-sm cursor-default"
+                    className="w-32 rounded-md text-sm cursor-default"
                   />
                 </div>
               )}
@@ -846,22 +851,21 @@ export default function ApiariesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-              <textarea
+              <FieldLabel>Notes</FieldLabel>
+              <TextAreaField
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows={3}
                 placeholder="Access instructions, nearby forage, etc..."
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                className="rounded-md"
               />
             </div>
 
             {/* Mating Apiary Option */}
-            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <div className="fj-panel-purple p-4">
               <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.is_mating_apiary}
+                  <CheckboxInput
+                    checked={formData.is_mating_apiary}
                   onChange={(e) => {
                     const checked = e.target.checked
                     setFormData({
@@ -872,8 +876,9 @@ export default function ApiariesPage() {
                       is_conservation_area: checked ? false : formData.is_conservation_area,
                     })
                   }}
-                  className="mt-1 h-4 w-4 text-purple-600 border-border rounded focus:ring-purple-500"
-                />
+                    tone="purple"
+                    className="mt-1"
+                  />
                 <div>
                   <span className="text-sm font-medium text-text-primary">Mating Location (Apiary)</span>
                   <p className="text-xs text-text-tertiary mt-1">
@@ -885,10 +890,9 @@ export default function ApiariesPage() {
 
             {/* Share Location Option — hidden for mating locations */}
             {!formData.is_mating_apiary && (
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="fj-panel-blue p-4">
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
+                  <CheckboxInput
                     checked={formData.share_location}
                     onChange={(e) => {
                       const checked = e.target.checked
@@ -899,7 +903,7 @@ export default function ApiariesPage() {
                         is_conservation_area: checked ? formData.is_conservation_area : false,
                       })
                     }}
-                    className="mt-1 h-4 w-4 text-forest-600 border-border rounded focus:ring-forest-500"
+                    className="mt-1"
                   />
                   <div>
                     <span className="text-sm font-medium text-text-primary">Share apiary location publicly</span>
@@ -914,13 +918,13 @@ export default function ApiariesPage() {
 
             {/* Conservation Area Option — only when sharing is enabled */}
             {formData.share_location && (
-              <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800">
+              <div className="fj-panel-teal p-4">
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
+                  <CheckboxInput
                     checked={formData.is_conservation_area}
                     onChange={(e) => setFormData({...formData, is_conservation_area: e.target.checked})}
-                    className="mt-1 h-4 w-4 text-teal-600 border-border rounded focus:ring-teal-500"
+                    tone="teal"
+                    className="mt-1"
                   />
                   <div>
                     <span className="text-sm font-medium text-text-primary">Declare as NIHBS Conservation Area</span>
@@ -932,32 +936,33 @@ export default function ApiariesPage() {
                 {formData.is_conservation_area && (
                   <div className="mt-3 ml-7">
                     <label className="block text-xs font-medium text-text-secondary mb-1">Conservation area radius (km)</label>
-                    <input
-                      type="number"
-                      min="0.5"
+                      <TextInput
+                        type="number"
+                        min="0.5"
                       max="50"
-                      step="0.5"
-                      value={formData.ca_radius_km}
-                      onChange={(e) => setFormData({...formData, ca_radius_km: e.target.value})}
-                      className="w-32 px-3 py-1.5 border border-teal-300 dark:border-teal-700 rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    />
+                        step="0.5"
+                        value={formData.ca_radius_km}
+                        onChange={(e) => setFormData({...formData, ca_radius_km: e.target.value})}
+                        tone="teal"
+                        className="w-32 rounded-md text-sm border-teal-300 dark:border-teal-700"
+                      />
                   </div>
                 )}
               </div>
             )}
 
             <div className="flex gap-3 flex-wrap">
-              <button type="submit" className="px-6 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 min-h-[48px]">
+              <button type="submit" className="fj-btn fj-btn-success min-h-[48px] px-6">
                 {editingApiary ? 'Update' : 'Add'} Apiary
               </button>
-              <button type="button" onClick={resetForm} className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[48px]">
+              <button type="button" onClick={resetForm} className="fj-btn fj-btn-neutral min-h-[48px] px-6">
                 Cancel
               </button>
               {editingApiary && !formData.is_mating_apiary && (
                 <button
                   type="button"
                   onClick={openTransferModal}
-                  className="px-6 py-2 bg-purple-600 dark:bg-purple-900/30 text-white dark:text-purple-300 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-900/50 min-h-[48px] flex items-center gap-2"
+                  className="fj-btn fj-btn-purple min-h-[48px] px-6"
                 >
                   <UserPlus size={16} />
                   Transfer Ownership
@@ -970,54 +975,23 @@ export default function ApiariesPage() {
 
       {/* Transfer Ownership Modal */}
       {showTransferModal && editingApiary && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-xl max-w-md w-full p-6 border border-border">
-            <h3 className="text-xl font-semibold mb-4 text-foreground">Transfer Apiary Ownership</h3>
-
-            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-gray-900 dark:text-amber-200">
-                <strong>Warning:</strong> Transferring &quot;{editingApiary.name}&quot; will give the new owner full control. You will lose access to this apiary and all its hives.
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Select New Owner
-              </label>
-              {loadingUsers ? (
-                <div className="flex items-center gap-2 text-text-tertiary">
-                  <Loader2 size={16} className="animate-spin" />
-                  Loading users...
-                </div>
-              ) : (
-                <select
-                  value={transferTargetUser}
-                  onChange={(e) => setTransferTargetUser(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
-                >
-                  <option value="">Select a user...</option>
-                  {availableUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.first_name && user.last_name
-                        ? `${user.first_name} ${user.last_name} (${user.email})`
-                        : user.email}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div className="flex gap-3 justify-end">
+        <ModalShell
+          title="Transfer Apiary Ownership"
+          titleClassName="text-xl"
+          onClose={() => setShowTransferModal(false)}
+          bodyClassName="p-6"
+          footer={(
+            <FormActionRow className="justify-end">
               <button
                 onClick={() => setShowTransferModal(false)}
-                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                className="fj-btn fj-btn-neutral"
               >
                 Cancel
               </button>
               <button
                 onClick={handleTransferOwnership}
                 disabled={!transferTargetUser || transferring}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="fj-btn fj-btn-blue disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {transferring ? (
                   <>
@@ -1031,24 +1005,54 @@ export default function ApiariesPage() {
                   </>
                 )}
               </button>
-            </div>
+            </FormActionRow>
+          )}
+        >
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+            <p className="text-sm text-foreground dark:text-amber-200">
+              <strong>Warning:</strong> Transferring &quot;{editingApiary.name}&quot; will give the new owner full control. You will lose access to this apiary and all its hives.
+            </p>
           </div>
-        </div>
+
+          <div>
+            <FieldLabel className="mb-2">Select New Owner</FieldLabel>
+            {loadingUsers ? (
+              <div className="flex items-center gap-2 text-text-tertiary">
+                <Loader2 size={16} className="animate-spin" />
+                Loading users...
+              </div>
+            ) : (
+              <SelectField
+                value={transferTargetUser}
+                onChange={(e) => setTransferTargetUser(e.target.value)}
+              >
+                <option value="">Select a user...</option>
+                {availableUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name && user.last_name
+                      ? `${user.first_name} ${user.last_name} (${user.email})`
+                      : user.email}
+                  </option>
+                ))}
+              </SelectField>
+            )}
+          </div>
+        </ModalShell>
       )}
 
       {/* Category filter and summary stats */}
       {apiaries.length > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <select
+          <SelectField
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
-            className="px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-forest-500 focus:border-forest-500 w-full sm:w-auto"
+            className="fj-control-inline rounded-md text-sm w-full sm:w-auto"
           >
             <option value="all">All Apiaries</option>
             <option value="own">My Apiaries</option>
             {isTeamMember && <option value="shared">Shared Apiaries</option>}
             <option value="mating">Mating Location (Apiary)</option>
-          </select>
+          </SelectField>
           <p className="text-sm text-text-secondary">
             {filteredApiaries.length} Apiar{filteredApiaries.length !== 1 ? 'ies' : 'y'} | {filteredApiaries.reduce((sum, a) => sum + (a.hive_count || 0), 0)} Total Hives
           </p>

@@ -5,6 +5,13 @@ import { supabase } from '@/lib/supabase'
 import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter, ClipboardList, Printer } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import ModalShell from '@/components/ui/ModalShell'
+import FormActionRow from '@/components/ui/FormActionRow'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
+import TextAreaField from '@/components/ui/TextAreaField'
+import CheckboxInput from '@/components/ui/CheckboxInput'
 
 interface TaskEvent {
   id: string
@@ -461,12 +468,18 @@ export default function TasksEventsPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 dark:bg-red-950/30 text-gray-900 dark:text-red-300 border-red-200 dark:border-red-800'
-      case 'high': return 'bg-orange-100 dark:bg-orange-950/30 text-gray-900 dark:text-orange-300 border-orange-200 dark:border-orange-800'
-      case 'normal': return 'bg-blue-100 dark:bg-blue-950/30 text-gray-900 dark:text-blue-300 border-blue-200 dark:border-blue-800'
-      case 'low': return 'bg-sage-100 dark:bg-slate-700 text-text-secondary border-border'
-      default: return 'bg-sage-100 dark:bg-slate-700 text-text-secondary border-border'
+      case 'urgent': return 'fj-badge fj-badge-red'
+      case 'high': return 'fj-badge fj-badge-amber'
+      case 'normal': return 'fj-badge fj-badge-blue'
+      case 'low': return 'fj-badge fj-badge-neutral'
+      default: return 'fj-badge fj-badge-neutral'
     }
+  }
+
+  const getTaskCardAccentClass = (task: TaskEvent) => {
+    if (task.completed) return 'fj-border-accent-green opacity-60'
+    if (task.is_team_task) return 'fj-border-accent-purple'
+    return 'fj-border-accent-blue'
   }
 
   const getTypeLabel = (type: string) => {
@@ -519,7 +532,7 @@ export default function TasksEventsPage() {
         <h1 className="text-responsive-3xl font-bold text-foreground">Tasks & Events 📅</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
+          className="fj-btn fj-btn-success"
         >
           <Plus size={20} />
           <span className="hidden sm:inline">Add Task/Event</span>
@@ -535,25 +548,23 @@ export default function TasksEventsPage() {
         </div>
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isTeamMember ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-4`}>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
-            <select
+            <FieldLabel>Type</FieldLabel>
+            <SelectField
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Types</option>
               <option value="task">Tasks</option>
               <option value="event">Events</option>
               <option value="reminder">Reminders</option>
-            </select>
+            </SelectField>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
-            <select
+            <FieldLabel>Category</FieldLabel>
+            <SelectField
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Categories</option>
               <option value="inspection">Inspection</option>
@@ -564,63 +575,59 @@ export default function TasksEventsPage() {
               <option value="maintenance">Maintenance</option>
               <option value="general">General</option>
               <option value="other">Other</option>
-            </select>
+            </SelectField>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Status</label>
-            <select
+            <FieldLabel>Status</FieldLabel>
+            <SelectField
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="completed">Completed</option>
-            </select>
+            </SelectField>
           </div>
 
           {isTeamMember && (
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Ownership</label>
-              <select
+              <FieldLabel>Ownership</FieldLabel>
+              <SelectField
                 value={filterOwnership}
                 onChange={(e) => setFilterOwnership(e.target.value as 'all' | 'my' | 'team')}
-                className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
               >
                 <option value="all">All Tasks</option>
                 <option value="my">My Tasks</option>
                 <option value="team">Team Tasks</option>
-              </select>
+              </SelectField>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
-            <select
+            <FieldLabel>Hive</FieldLabel>
+            <SelectField
               value={filterHive}
               onChange={(e) => setFilterHive(e.target.value)}
-              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Hives</option>
               {hives.map(hive => (
                 <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-            <select
+            <FieldLabel>Apiary</FieldLabel>
+            <SelectField
               value={filterApiary}
               onChange={(e) => setFilterApiary(e.target.value)}
-              className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
             >
               <option value="all">All Apiaries</option>
               {apiaries.map(apiary => (
                 <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
         </div>
 
@@ -629,7 +636,7 @@ export default function TasksEventsPage() {
           <div className="mt-4 pt-4 border-t border-border">
             <button
               onClick={() => setShowChecklist(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
+              className="fj-btn fj-btn-success"
             >
               <ClipboardList size={18} />
               Visit Checklist
@@ -650,11 +657,7 @@ export default function TasksEventsPage() {
           {filteredTasks.map(task => (
             <div
               key={task.id}
-              className={`bg-surface dark:bg-surface rounded-lg shadow border border-border p-4 border-l-4 ${
-                task.completed ? 'border-green-500 opacity-60' :
-                task.is_team_task ? 'border-purple-500' :
-                'border-blue-500'
-              }`}
+              className={`bg-surface dark:bg-surface rounded-lg shadow border border-border p-4 border-l-4 ${getTaskCardAccentClass(task)}`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -677,29 +680,29 @@ export default function TasksEventsPage() {
                       <h3 className={`font-semibold text-foreground ${task.completed ? 'line-through' : ''}`}>
                         {task.title}
                       </h3>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getPriorityColor(task.priority)}`}>
+                      <span className={`${getPriorityColor(task.priority)} text-xs`}>
                         {task.priority}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-sage-100 dark:bg-slate-700 text-foreground border border-border">
+                      <span className="fj-badge fj-badge-neutral">
                         {getTypeLabel(task.event_type)}
                       </span>
                       {task.category && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-gray-900 dark:text-forest-300 border border-forest-200 dark:border-forest-800">
+                        <span className="fj-badge fj-badge-green">
                           {getCategoryLabel(task.category)}
                         </span>
                       )}
                       {task.reminder_enabled && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-950/30 text-gray-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <span className="fj-badge fj-badge-amber">
                           📧 Email Reminder
                         </span>
                       )}
                       {task.is_team_task && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-950/30 text-gray-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                        <span className="fj-badge fj-badge-purple">
                           Team Task
                         </span>
                       )}
                       {task.user_id !== userId && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-gray-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        <span className="fj-badge fj-badge-blue">
                           Created by {task.creator_name || task.creator_email || 'team member'}
                         </span>
                       )}
@@ -710,7 +713,7 @@ export default function TasksEventsPage() {
                     )}
 
                     {task.equipment_needed && (
-                      <div className="text-sm text-amber-700 dark:text-amber-400 mb-2 flex items-start gap-1">
+                      <div className="fj-text-warning text-sm mb-2 flex items-start gap-1">
                         <span className="font-medium">Equipment:</span>
                         <span>{task.equipment_needed}</span>
                       </div>
@@ -740,17 +743,17 @@ export default function TasksEventsPage() {
                     {(task.hive_id || task.apiary_id || task.batch_id) && (
                       <div className="flex items-center gap-2 mt-2 text-xs text-text-secondary flex-wrap">
                         {task.hive_id && (
-                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-700 rounded border border-border">
+                          <span className="fj-chip fj-chip-xs fj-chip-neutral">
                             Hive: {hives.find(h => h.id === task.hive_id)?.hive_number || 'Unknown'}
                           </span>
                         )}
                         {task.apiary_id && (
-                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-700 rounded border border-border">
+                          <span className="fj-chip fj-chip-xs fj-chip-neutral">
                             Apiary: {apiaries.find(a => a.id === task.apiary_id)?.name || 'Unknown'}
                           </span>
                         )}
                         {task.batch_id && (
-                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-700 rounded border border-border">
+                          <span className="fj-chip fj-chip-xs fj-chip-neutral">
                             Batch: {batches.find(b => b.id === task.batch_id)?.batch_name || 'Unknown'}
                           </span>
                         )}
@@ -763,14 +766,14 @@ export default function TasksEventsPage() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleEdit(task)}
-                    className="p-2 text-text-tertiary hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    className="fj-icon-btn p-2"
                     title="Edit"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(task.id)}
-                    className="p-2 text-text-tertiary hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="fj-icon-btn p-2"
                     title="Delete"
                   >
                     <Trash2 size={16} />
@@ -784,39 +787,33 @@ export default function TasksEventsPage() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">
-                {editingTask ? 'Edit Task/Event' : 'Create Task/Event'}
-              </h2>
-              <button onClick={resetForm} className="text-text-tertiary hover:text-foreground">
-                <X size={24} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <ModalShell
+          title={editingTask ? 'Edit Task/Event' : 'Create Task/Event'}
+          titleClassName="text-xl"
+          maxWidthClassName="max-w-2xl"
+          shellClassName="max-h-[90vh] overflow-y-auto"
+          headerClassName="sticky top-0 bg-surface-elevated dark:bg-surface-elevated z-10"
+          bodyClassName="p-0"
+          onClose={resetForm}
+        >
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Title <span className="text-red-500">*</span>
-                </label>
-                <input
+                <FieldLabel required>Title</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   required
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
-                <textarea
+                <FieldLabel>Description</FieldLabel>
+                <TextAreaField
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   rows={3}
                 />
               </div>
@@ -824,27 +821,23 @@ export default function TasksEventsPage() {
               {/* Type, Category, Priority */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
-                    Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
+                  <FieldLabel required>Type</FieldLabel>
+                  <SelectField
                     value={formData.event_type}
                     onChange={(e) => setFormData({ ...formData, event_type: e.target.value as 'task' | 'event' | 'reminder' })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     required
                   >
                     <option value="task">Task</option>
                     <option value="event">Event</option>
                     <option value="reminder">Reminder</option>
-                  </select>
+                  </SelectField>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
-                  <select
+                  <FieldLabel>Category</FieldLabel>
+                  <SelectField
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="">None</option>
                     <option value="inspection">Inspection</option>
@@ -855,46 +848,41 @@ export default function TasksEventsPage() {
                     <option value="maintenance">Maintenance</option>
                     <option value="general">General</option>
                     <option value="other">Other</option>
-                  </select>
+                  </SelectField>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Priority</label>
-                  <select
+                  <FieldLabel>Priority</FieldLabel>
+                  <SelectField
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent' })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="low">Low</option>
                     <option value="normal">Normal</option>
                     <option value="high">High</option>
                     <option value="urgent">Urgent</option>
-                  </select>
+                  </SelectField>
                 </div>
               </div>
 
               {/* Start Date and Time */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  <FieldLabel required>Start Date</FieldLabel>
+                  <TextInput
                     type="date"
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Start Time</label>
-                  <input
+                  <FieldLabel>Start Time</FieldLabel>
+                  <TextInput
                     type="time"
                     value={formData.start_time}
                     onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     disabled={formData.all_day}
                   />
                 </div>
@@ -903,22 +891,20 @@ export default function TasksEventsPage() {
               {/* End Date and Time */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">End Date</label>
-                  <input
+                  <FieldLabel>End Date</FieldLabel>
+                  <TextInput
                     type="date"
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">End Time</label>
-                  <input
+                  <FieldLabel>End Time</FieldLabel>
+                  <TextInput
                     type="time"
                     value={formData.end_time}
                     onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                     disabled={formData.all_day}
                   />
                 </div>
@@ -926,12 +912,10 @@ export default function TasksEventsPage() {
 
               {/* All Day */}
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <CheckboxInput
                   id="all_day"
                   checked={formData.all_day}
                   onChange={(e) => setFormData({ ...formData, all_day: e.target.checked })}
-                  className="w-4 h-4 text-forest-600 dark:text-blue-600 border-border rounded focus:ring-forest-500 dark:focus:ring-forest-400"
                 />
                 <label htmlFor="all_day" className="text-sm font-medium text-text-secondary">
                   All day event
@@ -941,8 +925,8 @@ export default function TasksEventsPage() {
               {/* Associations */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
-                  <select
+                  <FieldLabel>Hive</FieldLabel>
+                  <SelectField
                     value={formData.hive_id}
                     onChange={(e) => {
                       const selectedHiveId = e.target.value
@@ -953,7 +937,6 @@ export default function TasksEventsPage() {
                         apiary_id: selectedHive?.apiary_id || ''
                       })
                     }}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="">None</option>
                     {hives.filter(h => !h.is_shared).length > 0 && (
@@ -970,15 +953,14 @@ export default function TasksEventsPage() {
                         ))}
                       </optgroup>
                     )}
-                  </select>
+                  </SelectField>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-                  <select
+                  <FieldLabel>Apiary</FieldLabel>
+                  <SelectField
                     value={formData.apiary_id}
                     onChange={(e) => setFormData({ ...formData, apiary_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   >
                     <option value="">None</option>
                     {apiaries.filter(a => !a.is_shared).length > 0 && (
@@ -995,34 +977,29 @@ export default function TasksEventsPage() {
                         ))}
                       </optgroup>
                     )}
-                  </select>
+                  </SelectField>
                 </div>
               </div>
 
               {/* Reminder */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <input
-                    type="checkbox"
+                  <CheckboxInput
                     id="reminder_enabled"
                     checked={formData.reminder_enabled}
                     onChange={(e) => setFormData({ ...formData, reminder_enabled: e.target.checked })}
-                    className="w-4 h-4 text-forest-600 dark:text-blue-600 border-border rounded focus:ring-forest-500 dark:focus:ring-forest-400"
                   />
                   <label htmlFor="reminder_enabled" className="text-sm font-semibold text-foreground">
-                    Enable reminder <span className="text-amber-600 dark:text-amber-400">(required for email notifications)</span>
+                    Enable reminder <span className="fj-text-warning">(required for email notifications)</span>
                   </label>
                 </div>
                 {formData.reminder_enabled && (
                   <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-1">
-                      Remind me (minutes before)
-                    </label>
-                    <input
+                    <FieldLabel>Remind me (minutes before)</FieldLabel>
+                    <TextInput
                       type="number"
                       value={formData.reminder_minutes_before}
                       onChange={(e) => { const val = parseInt(e.target.value); setFormData({ ...formData, reminder_minutes_before: Number.isNaN(val) ? 60 : val }) }}
-                      className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                       min="0"
                     />
                   </div>
@@ -1031,51 +1008,48 @@ export default function TasksEventsPage() {
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-                <textarea
+                <FieldLabel>Notes</FieldLabel>
+                <TextAreaField
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   rows={3}
                 />
               </div>
 
               {/* Equipment/Parts Needed */}
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Equipment/Parts Needed</label>
-                <textarea
+                <FieldLabel>Equipment/Parts Needed</FieldLabel>
+                <TextAreaField
                   value={formData.equipment_needed}
                   onChange={(e) => setFormData({ ...formData, equipment_needed: e.target.value })}
-                  className="w-full px-3 py-2 border border-border bg-surface dark:bg-surface text-foreground rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-forest-400"
                   rows={2}
                   placeholder="e.g., New frames, queen excluder, smoker fuel..."
                 />
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4">
+              <FormActionRow className="pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
+                  className="fj-btn fj-btn-success flex-1"
                 >
                   {editingTask ? 'Update' : 'Create'}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border transition-colors"
+                  className="fj-btn fj-btn-neutral"
                 >
                   Cancel
                 </button>
-              </div>
+              </FormActionRow>
             </form>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {/* Visit Checklist Modal */}
       {showChecklist && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 print:bg-white print:p-0">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:bg-white print:p-0">
           <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none">
             {/* Header */}
             <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-white print:border-b-2 print:border-black">
@@ -1087,7 +1061,7 @@ export default function TasksEventsPage() {
               </div>
               <button
                 onClick={() => setShowChecklist(false)}
-                className="text-text-tertiary hover:text-foreground print:hidden"
+                className="fj-icon-btn p-1 print:hidden"
               >
                 <X size={24} />
               </button>
@@ -1104,10 +1078,7 @@ export default function TasksEventsPage() {
                     <ul className="space-y-2">
                       {getEquipmentList().map((item, index) => (
                         <li key={index} className="flex items-center gap-3 text-foreground">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-forest-600 border-border rounded focus:ring-forest-500 print:border-black"
-                          />
+                          <CheckboxInput className="print:border-black" />
                           <span>{item}</span>
                         </li>
                       ))}
@@ -1128,10 +1099,9 @@ export default function TasksEventsPage() {
                     <ul className="space-y-3">
                       {filteredTasks.map(task => (
                         <li key={task.id} className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
+                          <CheckboxInput
                             defaultChecked={task.completed}
-                            className="w-4 h-4 mt-1 text-forest-600 border-border rounded focus:ring-forest-500 print:border-black"
+                            className="mt-1 print:border-black"
                           />
                           <div className="flex-1">
                             <span className={`text-foreground ${task.completed ? 'line-through text-text-tertiary' : ''}`}>
@@ -1167,21 +1137,21 @@ export default function TasksEventsPage() {
             </div>
 
             {/* Actions */}
-            <div className="sticky bottom-0 bg-surface-elevated dark:bg-surface-elevated border-t border-border px-6 py-4 flex gap-3 print:hidden">
+            <FormActionRow bordered padding="md" className="sticky bottom-0 bg-surface-elevated dark:bg-surface-elevated print:hidden">
               <button
                 onClick={() => window.print()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 transition-colors"
+                className="fj-btn fj-btn-success flex-1"
               >
                 <Printer size={18} />
                 Print Checklist
               </button>
               <button
                 onClick={() => setShowChecklist(false)}
-                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border transition-colors"
+                className="fj-btn fj-btn-neutral"
               >
                 Close
               </button>
-            </div>
+            </FormActionRow>
           </div>
         </div>
       )}

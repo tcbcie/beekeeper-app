@@ -3,9 +3,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Trash2, X, Link2, Link2Off, Printer, QrCode } from 'lucide-react'
+import { Plus, Trash2, Link2, Link2Off, Printer, QrCode } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import ModalShell from '@/components/ui/ModalShell'
+import FormActionRow from '@/components/ui/FormActionRow'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
 import { generateTagCode } from '@/lib/qr-tags'
 import { QRCodeSVG } from 'qrcode.react'
 
@@ -439,47 +444,41 @@ export default function QrTagsPage() {
 
       {/* Generate Modal */}
       {showGenerateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowGenerateModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full border border-border" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Generate QR Tags</h2>
-              <button onClick={() => setShowGenerateModal(false)} className="text-text-tertiary hover:text-foreground">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Quantity (1–50)</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={generateQuantity}
-                  onChange={e => setGenerateQuantity(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Label prefix (optional)</label>
-                <input
-                  type="text"
-                  value={generateLabel}
-                  onChange={e => setGenerateLabel(e.target.value)}
-                  placeholder="e.g. Apiary A"
-                  maxLength={50}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
-                />
-              </div>
-              <button
-                onClick={handleGenerate}
-                disabled={generating}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
-              >
-                {generating ? 'Generating...' : `Generate ${generateQuantity} Tag${generateQuantity > 1 ? 's' : ''}`}
-              </button>
-            </div>
+        <ModalShell
+          title="Generate QR Tags"
+          maxWidthClassName="max-w-sm"
+          onClose={() => setShowGenerateModal(false)}
+          closeOnBackdrop
+          bodyClassName="p-6 space-y-4"
+        >
+          <div>
+            <FieldLabel>Quantity (1-50)</FieldLabel>
+            <TextInput
+              type="number"
+              min={1}
+              max={50}
+              value={generateQuantity}
+              onChange={e => setGenerateQuantity(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+            />
           </div>
-        </div>
+          <div>
+            <FieldLabel>Label prefix (optional)</FieldLabel>
+            <TextInput
+              type="text"
+              value={generateLabel}
+              onChange={e => setGenerateLabel(e.target.value)}
+              placeholder="e.g. Apiary A"
+              maxLength={50}
+            />
+          </div>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="fj-btn fj-btn-blue w-full disabled:opacity-50"
+          >
+            {generating ? 'Generating...' : `Generate ${generateQuantity} Tag${generateQuantity > 1 ? 's' : ''}`}
+          </button>
+        </ModalShell>
       )}
 
       {/* Assign Modal */}
@@ -507,53 +506,46 @@ export default function QrTagsPage() {
       </div>
 
       {showAssignModal && assigningTag && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setShowAssignModal(false); setAssigningTag(null) }}>
-          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full border border-border" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">
-                {assigningTag.hive_id ? 'Reassign' : 'Assign'} Tag {assigningTag.code}
-              </h2>
-              <button onClick={() => { setShowAssignModal(false); setAssigningTag(null) }} className="text-text-tertiary hover:text-foreground">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Select Hive</label>
-                <select
-                  value={selectedHiveId}
-                  onChange={e => setSelectedHiveId(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
-                >
-                  <option value="">— Unassigned —</option>
-                  {hives.filter(h => {
-                    // Exclude hives already assigned to another tag
-                    const taken = tags.some(t => t.hive_id === h.id && t.id !== assigningTag?.id)
-                    return !taken
-                  }).map(h => (
-                    <option key={h.id} value={h.id}>
-                      Hive {h.hive_number}{h.apiary_name ? ` (${h.apiary_name})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAssign}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
-                >
-                  {selectedHiveId ? 'Assign' : 'Unassign'}
-                </button>
-                <button
-                  onClick={() => { setShowAssignModal(false); setAssigningTag(null) }}
-                  className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+        <ModalShell
+          title={`${assigningTag.hive_id ? 'Reassign' : 'Assign'} Tag ${assigningTag.code}`}
+          maxWidthClassName="max-w-sm"
+          onClose={() => { setShowAssignModal(false); setAssigningTag(null) }}
+          closeOnBackdrop
+          bodyClassName="p-6 space-y-4"
+        >
+          <div>
+            <FieldLabel>Select Hive</FieldLabel>
+            <SelectField
+              value={selectedHiveId}
+              onChange={e => setSelectedHiveId(e.target.value)}
+            >
+              <option value="">Unassigned</option>
+              {hives.filter(h => {
+                // Exclude hives already assigned to another tag
+                const taken = tags.some(t => t.hive_id === h.id && t.id !== assigningTag?.id)
+                return !taken
+              }).map(h => (
+                <option key={h.id} value={h.id}>
+                  Hive {h.hive_number}{h.apiary_name ? ` (${h.apiary_name})` : ''}
+                </option>
+              ))}
+            </SelectField>
           </div>
-        </div>
+          <FormActionRow>
+            <button
+              onClick={handleAssign}
+              className="fj-btn fj-btn-blue fj-btn-sm flex-1"
+            >
+              {selectedHiveId ? 'Assign' : 'Unassign'}
+            </button>
+            <button
+              onClick={() => { setShowAssignModal(false); setAssigningTag(null) }}
+              className="fj-btn fj-btn-neutral fj-btn-sm flex-1"
+            >
+              Cancel
+            </button>
+          </FormActionRow>
+        </ModalShell>
       )}
     </div>
   )

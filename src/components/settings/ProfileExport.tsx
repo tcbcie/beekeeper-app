@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import InfoPanel from '@/components/ui/InfoPanel'
 
 interface ProfileExportProps {
   isAdmin: boolean
@@ -183,20 +184,17 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
             Download your personal beekeeping data including apiaries, hives, queens, inspections, tasks, events, and more in SQL format.
           </p>
         ) : (
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800 font-medium">
-              Data export is available to users with an active subscription.
-            </p>
-            <p className="text-xs text-amber-700 mt-1">
+          <InfoPanel tone="amber" title="Data export is available to users with an active subscription.">
+            <p className="text-xs mt-1">
               Please renew your subscription to export your beekeeping data.
             </p>
-          </div>
+          </InfoPanel>
         )}
         {(isAdmin || hasActiveSubscription) && (
           <button
             onClick={exportDatabase}
             disabled={exporting}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 font-medium flex items-center gap-2"
+            className="fj-btn fj-btn-success disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download size={16} />
             {exporting ? 'Exporting...' : isAdmin ? 'Export Complete Database (All Users)' : 'Export My Data'}

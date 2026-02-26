@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import PageShell from '@/components/ui/PageShell'
+import Panel from '@/components/ui/Panel'
 
 export default function PublicLayout({
   children,
@@ -7,87 +9,99 @@ export default function PublicLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white dark:from-slate-900 dark:to-slate-950">
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-amber-200 dark:border-slate-700 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="w-10 h-10" />
-            <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 dark:from-amber-400 dark:to-amber-600 bg-clip-text text-transparent">
-              HiveCraic
-            </span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/about"
-              className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-            >
-              About
-            </Link>
-          </nav>
+    <PageShell className="min-h-screen" innerClassName="min-h-screen flex flex-col">
+      <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <Panel padding="sm" className="bg-background/70">
+            <div className="flex items-center justify-between gap-4">
+              <Link href="/" className="group flex items-center gap-3">
+                <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="h-10 w-10" />
+                <div className="leading-tight">
+                  <span className="block font-serif text-xl text-foreground">HiveCraic</span>
+                  <span className="block text-xs uppercase tracking-[0.14em] text-text-tertiary">
+                    Field Journal
+                  </span>
+                </div>
+              </Link>
+
+              <nav className="flex items-center gap-2">
+                <Link
+                  href="/about"
+                  className="fj-chip fj-chip-sm fj-chip-neutral"
+                >
+                  About
+                </Link>
+                <Link
+                  href="/login"
+                  className="fj-btn fj-btn-sm bg-forest-600 text-white hover:bg-forest-700"
+                >
+                  Login
+                </Link>
+              </nav>
+            </div>
+          </Panel>
         </div>
       </header>
 
-      {/* Page content */}
-      <main className="flex-1">
-        {children}
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-6xl">
+          {children}
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 dark:bg-slate-950 text-white mt-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Image src="/logo_trans.png" alt="HiveCraic" width={32} height={32} className="w-8 h-8" />
-                <span className="text-lg font-bold text-white">HiveCraic</span>
+      <footer className="px-4 pb-6 sm:px-6 sm:pb-8">
+        <div className="mx-auto max-w-6xl">
+          <Panel padding="lg" className="bg-surface/80">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <Image src="/logo_trans.png" alt="HiveCraic" width={32} height={32} className="h-8 w-8" />
+                  <span className="font-serif text-lg text-foreground">HiveCraic</span>
+                </div>
+                <p className="text-sm text-text-secondary">
+                  Modern beekeeping management for beekeepers of all levels.
+                </p>
               </div>
-              <p className="text-slate-400 text-sm">
-                Modern beekeeping management for beekeepers of all levels.
+
+              <div>
+                <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-text-tertiary">Quick Links</h4>
+                <ul className="space-y-2 text-sm">
+                  <li>
+                    <Link href="/about" className="text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors">
+                      About Us
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-text-tertiary">Legal</h4>
+                <ul className="space-y-2 text-sm">
+                  <li>
+                    <Link href="/privacy" className="text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors">
+                      Privacy Policy
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/terms" className="text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors">
+                      Terms of Service
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
+              <p className="text-sm text-text-tertiary">
+                &copy; {new Date().getFullYear()} HiveCraic. All rights reserved.
+              </p>
+              <p className="text-sm text-text-tertiary">
+                Crafted by <span className="font-medium text-amber-700 dark:text-amber-300">tcbc.ie</span>
               </p>
             </div>
-
-            {/* Links */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link href="/about" className="text-slate-400 hover:text-amber-400 transition-colors">
-                    About Us
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link href="/privacy" className="text-slate-400 hover:text-amber-400 transition-colors">
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terms" className="text-slate-400 hover:text-amber-400 transition-colors">
-                    Terms of Service
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-800 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-slate-500 text-sm">
-              &copy; {new Date().getFullYear()} HiveCraic. All rights reserved.
-            </p>
-            <p className="text-slate-500 text-sm">
-              Crafted by <span className="text-amber-400">tcbc.ie</span>
-            </p>
-          </div>
+          </Panel>
         </div>
       </footer>
-    </div>
+    </PageShell>
   )
 }

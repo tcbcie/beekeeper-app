@@ -12,6 +12,57 @@ Implemented 8 of the 10 design review priorities (P1 Typography and P5 Micro-ani
 
 ---
 
+## 2026-02-26 Follow-up (Field Journal + Iconography Rollout)
+
+### Summary
+
+A later implementation pass extended the original review work into a broader visual-system standardization effort. This follow-up:
+
+- Unified public + app surfaces under the **Field Journal** visual direction
+- Standardized card iconography (Lucide + semantic icon mappings) and removed emoji-based dashboard/about card icons
+- Introduced reusable UI primitives for modals, form controls, radio choice cards, info panels, and alert panels
+- Reduced hardcoded color utility usage across dashboard/settings/admin surfaces through shared `fj-*` utilities
+
+### Key Additions (New Primitives)
+
+- `src/components/ui/PageShell.tsx`
+- `src/components/ui/PageHeader.tsx`
+- `src/components/ui/Panel.tsx`
+- `src/components/ui/ModalShell.tsx`
+- `src/components/ui/FormActionRow.tsx`
+- `src/components/ui/FieldLabel.tsx`
+- `src/components/ui/TextInput.tsx`
+- `src/components/ui/SelectField.tsx`
+- `src/components/ui/TextAreaField.tsx`
+- `src/components/ui/CheckboxInput.tsx`
+- `src/components/ui/RadioInput.tsx`
+- `src/components/ui/RadioChoiceGroup.tsx`
+- `src/components/ui/InfoPanel.tsx`
+- `src/components/ui/AlertPanel.tsx`
+- `src/components/icons/AppIcon.tsx`
+- `src/lib/iconography.ts`
+
+### Major Surface Rollouts
+
+- Login + dashboard overview visual alignment (`Field Journal`)
+- Public pages (`/about`, `/privacy`, `/terms`) and auth/supporting invitation flows
+- Dashboard clusters (`profile`, `records`, `tasks`, `apiaries`, `settings`)
+- Shell-adjacent shared UI (`Navbar`, `Sidebar`, `MobileDrawer`, `BottomNavBar`, `VersionDisplay`)
+- Settings/admin components (`AssociationManagement`, `DropdownManagement`, `RegistrationCodeManagement`, `TreatmentManagement`, `TicketManagement`, etc.)
+
+### Iconography Standardization (Completed)
+
+- `StatCard` migrated from emoji/string icons to component-based icons
+- Dashboard stat/shared cards and About feature cards migrated to Lucide icons via semantic mappings
+- `AppIcon` updated to support Lucide `forwardRef` components during prerender
+
+### Notes
+
+- Lint passed incrementally across touched files during rollout
+- Local `next build` verification was intermittently blocked by a `.next`/OneDrive filesystem cache issue (environment-specific, not attributed to UI code changes)
+
+---
+
 ## Phase 1: CSS-Only Quick Wins
 
 ### P7 — Glassmorphism
