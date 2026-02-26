@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin, isPowerUserOrAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Trash2, X, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Hexagon, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, UserPlus, Loader2 } from 'lucide-react'
+import { Trash2, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Hexagon, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, UserPlus, Loader2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager'
 import ConservationAreaManager from '@/components/admin/ConservationAreaManager'
@@ -19,6 +19,11 @@ import RegistrationCodeManagement from '@/components/settings/RegistrationCodeMa
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/Toast'
 import { setImpersonationData } from '@/components/ImpersonationBanner'
+import ModalShell from '@/components/ui/ModalShell'
+import FormActionRow from '@/components/ui/FormActionRow'
+import FieldLabel from '@/components/ui/FieldLabel'
+import SelectField from '@/components/ui/SelectField'
+import TextInput from '@/components/ui/TextInput'
 
 interface UserProfile {
   id: string
@@ -1021,58 +1026,62 @@ export default function SettingsPage() {
               {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary" size={20} />
-                <input
+                <TextInput
                   type="text"
                   placeholder="Search users by email or ID..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  tone="purple"
+                  className="pl-10 pr-4"
                 />
               </div>
 
               {/* Filter Row */}
               <div className="flex flex-wrap items-center gap-3">
                 {/* Role Filter */}
-                <select
+                <SelectField
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value as 'all' | 'User' | 'Power User' | 'Admin')}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                  tone="purple"
+                  className="fj-control-inline text-sm"
                 >
                   <option value="all">All Roles</option>
                   <option value="User">Users</option>
                   <option value="Power User">Power Users</option>
                   <option value="Admin">Admins</option>
-                </select>
+                </SelectField>
 
                 {/* Account Status Filter */}
-                <select
+                <SelectField
                   value={accountStatusFilter}
                   onChange={(e) => setAccountStatusFilter(e.target.value as 'all' | 'active' | 'disabled')}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                  tone="purple"
+                  className="fj-control-inline text-sm"
                 >
                   <option value="all">All Accounts</option>
                   <option value="active">Active</option>
                   <option value="disabled">Disabled</option>
-                </select>
+                </SelectField>
 
                 {/* Subscription Filter */}
-                <select
+                <SelectField
                   value={subscriptionFilter}
                   onChange={(e) => setSubscriptionFilter(e.target.value as 'all' | 'active' | 'expiring' | 'expired' | 'none')}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                  tone="purple"
+                  className="fj-control-inline text-sm"
                 >
                   <option value="all">All Subscriptions</option>
                   <option value="active">Active</option>
                   <option value="expiring">Expiring Soon</option>
                   <option value="expired">Expired</option>
                   <option value="none">No Subscription</option>
-                </select>
+                </SelectField>
 
                 {/* Refresh Button */}
                 <button
                   onClick={() => showDeletedUsers ? fetchDeletedUsers() : fetchUsers()}
                   disabled={loadingUsers}
-                  className="ml-auto px-4 py-2 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded-lg hover:bg-surface dark:hover:bg-surface disabled:opacity-50 flex items-center gap-2"
+                  className="fj-btn fj-btn-neutral ml-auto disabled:opacity-50"
                 >
                   {loadingUsers ? 'Loading...' : 'Refresh'}
                 </button>
@@ -1240,22 +1249,23 @@ export default function SettingsPage() {
                               ) : (
                                 <>
                                   {/* Role Selector */}
-                                  <select
+                                  <SelectField
                                     value={user.role}
                                     onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Power User' | 'Admin')}
-                                    className="px-2 py-0.5 border border-border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    tone="purple"
+                                    className="fj-control-inline px-2 py-0.5 rounded text-xs"
                                   >
                                     <option value="User">User</option>
                                     <option value="Power User">Power User</option>
                                     <option value="Admin">Admin</option>
-                                  </select>
+                                  </SelectField>
 
                                   {/* Impersonate Button - Only for non-Admin users */}
                                   {user.role !== 'Admin' && !showDeletedUsers && (
                                     <button
                                       onClick={() => handleImpersonateUser(user.id, user.email || 'Unknown')}
                                       disabled={impersonatingUserId === user.id}
-                                      className="px-2 py-0.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs disabled:opacity-50"
+                                      className="fj-btn fj-btn-purple fj-btn-xs disabled:opacity-50"
                                       title="Impersonate this user"
                                     >
                                       {impersonatingUserId === user.id ? '...' : 'Imp'}
@@ -1268,7 +1278,7 @@ export default function SettingsPage() {
                                       <button
                                         onClick={() => handleRestoreUser(user.id, user.email || 'Unknown')}
                                         disabled={restoringUserId === user.id}
-                                        className="px-2 py-0.5 bg-green-600 text-white rounded hover:bg-green-700 text-xs disabled:opacity-50"
+                                        className="fj-btn fj-btn-success fj-btn-xs disabled:opacity-50"
                                         title="Restore user account"
                                       >
                                         {restoringUserId === user.id ? 'Restoring...' : 'Restore'}
@@ -1277,7 +1287,7 @@ export default function SettingsPage() {
                                       {/* Hard Delete Button for Deleted Users */}
                                       <button
                                         onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="p-0.5 bg-foreground dark:bg-foreground text-background dark:text-background rounded hover:bg-text-primary dark:hover:bg-text-primary"
+                                        className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
                                         title="Permanently Delete (CANNOT BE UNDONE)"
                                       >
                                         <Trash2 size={12} className="text-red-500" />
@@ -1288,8 +1298,8 @@ export default function SettingsPage() {
                                       {/* Enable/Disable Button */}
                                       <button
                                         onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
-                                        className={`px-2 py-0.5 text-white rounded hover:opacity-90 text-xs ${
-                                          user.is_active !== false ? 'bg-orange-600' : 'bg-green-600'
+                                        className={`fj-btn fj-btn-xs ${
+                                          user.is_active !== false ? 'fj-btn-amber' : 'fj-btn-success'
                                         }`}
                                         title={user.is_active !== false ? 'Disable' : 'Enable'}
                                       >
@@ -1299,7 +1309,7 @@ export default function SettingsPage() {
                                       {/* Soft Delete Button */}
                                       <button
                                         onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="p-0.5 bg-red-600 text-white rounded hover:bg-red-700"
+                                        className="fj-btn fj-btn-danger fj-btn-xs"
                                         title="Soft Delete (Recoverable)"
                                       >
                                         <Trash2 size={12} />
@@ -1308,7 +1318,7 @@ export default function SettingsPage() {
                                       {/* Hard Delete Button */}
                                       <button
                                         onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="p-0.5 bg-foreground dark:bg-foreground text-background dark:text-background rounded hover:bg-text-primary dark:hover:bg-text-primary"
+                                        className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
                                         title="Hard Delete (PERMANENT)"
                                       >
                                         <Trash2 size={12} className="text-red-500" />
@@ -1388,11 +1398,12 @@ export default function SettingsPage() {
                               <div>
                                 <span className="text-text-tertiary block mb-1">Expires</span>
                                 <div className="flex flex-col gap-1">
-                                  <input
+                                  <TextInput
                                     type="date"
                                     value={user.subscription_expires_at ? new Date(user.subscription_expires_at).toISOString().split('T')[0] : ''}
                                     onChange={(e) => handleExpiryDateChange(user.id, e.target.value)}
-                                    className="px-2 py-1 border border-border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    tone="purple"
+                                    className="fj-control-inline px-2 py-1 rounded text-xs"
                                   />
                                   {user.days_remaining !== undefined && user.subscription_expires_at && (
                                     <p className={`text-xs font-medium ${
@@ -1593,14 +1604,14 @@ export default function SettingsPage() {
                             <div className="flex gap-2 flex-shrink-0">
                               <button
                                 onClick={() => handleApproveReactivation(request.id, request.original_email)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium text-sm transition-colors"
+                                className="fj-btn fj-btn-success fj-btn-sm rounded-md"
                                 title="Approve and restore account"
                               >
                                 ✓ Approve
                               </button>
                               <button
                                 onClick={() => handleRejectReactivation(request.id, request.original_email)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium text-sm transition-colors"
+                                className="fj-btn fj-btn-danger fj-btn-sm rounded-md"
                                 title="Reject request"
                               >
                                 ✗ Reject
@@ -1665,107 +1676,93 @@ export default function SettingsPage() {
 
       {/* Admin Apiary Transfer Modal */}
       {showApiaryTransferModal && selectedUserForTransfer && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-xl max-w-lg w-full p-6 border border-border">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-foreground">
-                Manage Apiaries - {selectedUserForTransfer.first_name} {selectedUserForTransfer.last_name}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowApiaryTransferModal(false)
-                  setSelectedUserForTransfer(null)
-                }}
-                className="text-text-tertiary hover:text-foreground"
-              >
-                <X size={24} />
-              </button>
+        <ModalShell
+          title={`Manage Apiaries - ${selectedUserForTransfer.first_name} ${selectedUserForTransfer.last_name}`}
+          titleClassName="text-xl"
+          maxWidthClassName="max-w-lg"
+          onClose={() => {
+            setShowApiaryTransferModal(false)
+            setSelectedUserForTransfer(null)
+          }}
+          bodyClassName="p-6"
+        >
+          <p className="text-sm text-text-secondary mb-4">
+            Transfer apiaries owned by this user to another user.
+          </p>
+
+          {loadingApiaries ? (
+            <div className="flex items-center gap-2 text-text-tertiary py-4">
+              <Loader2 size={16} className="animate-spin" />
+              Loading apiaries...
             </div>
-
-            <p className="text-sm text-text-secondary mb-4">
-              Transfer apiaries owned by this user to another user.
-            </p>
-
-            {loadingApiaries ? (
-              <div className="flex items-center gap-2 text-text-tertiary py-4">
-                <Loader2 size={16} className="animate-spin" />
-                Loading apiaries...
+          ) : userApiaries.length === 0 ? (
+            <p className="text-text-tertiary py-4">This user has no apiaries.</p>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <FieldLabel className="mb-2">Select Apiary to Transfer</FieldLabel>
+                <SelectField
+                  value={selectedApiaryId}
+                  onChange={(e) => setSelectedApiaryId(e.target.value)}
+                >
+                  <option value="">Select an apiary...</option>
+                  {userApiaries.map((apiary) => (
+                    <option key={apiary.id} value={apiary.id}>
+                      {apiary.name} {apiary.city ? `(${apiary.city})` : ''} - {apiary.hives_count || 0} hives
+                    </option>
+                  ))}
+                </SelectField>
               </div>
-            ) : userApiaries.length === 0 ? (
-              <p className="text-text-tertiary py-4">This user has no apiaries.</p>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Select Apiary to Transfer
-                  </label>
-                  <select
-                    value={selectedApiaryId}
-                    onChange={(e) => setSelectedApiaryId(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500"
-                  >
-                    <option value="">Select an apiary...</option>
-                    {userApiaries.map((apiary) => (
-                      <option key={apiary.id} value={apiary.id}>
-                        {apiary.name} {apiary.city ? `(${apiary.city})` : ''} - {apiary.hives_count || 0} hives
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Transfer To
-                  </label>
-                  <select
-                    value={selectedNewOwnerId}
-                    onChange={(e) => setSelectedNewOwnerId(e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500"
-                    disabled={!selectedApiaryId}
-                  >
-                    <option value="">Select new owner...</option>
-                    {transferTargetUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.first_name && user.last_name
-                          ? `${user.first_name} ${user.last_name} (${user.email})`
-                          : user.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex gap-3 justify-end pt-4">
-                  <button
-                    onClick={() => {
-                      setShowApiaryTransferModal(false)
-                      setSelectedUserForTransfer(null)
-                    }}
-                    className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
-                  >
-                    Close
-                  </button>
-                  <button
-                    onClick={handleAdminTransferApiary}
-                    disabled={!selectedApiaryId || !selectedNewOwnerId || transferring}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {transferring ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Transferring...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus size={16} />
-                        Transfer
-                      </>
-                    )}
-                  </button>
-                </div>
+              <div>
+                <FieldLabel className="mb-2">Transfer To</FieldLabel>
+                <SelectField
+                  value={selectedNewOwnerId}
+                  onChange={(e) => setSelectedNewOwnerId(e.target.value)}
+                  disabled={!selectedApiaryId}
+                >
+                  <option value="">Select new owner...</option>
+                  {transferTargetUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.first_name && user.last_name
+                        ? `${user.first_name} ${user.last_name} (${user.email})`
+                        : user.email}
+                    </option>
+                  ))}
+                </SelectField>
               </div>
-            )}
-          </div>
-        </div>
+
+              <FormActionRow className="justify-end pt-4">
+                <button
+                  onClick={() => {
+                    setShowApiaryTransferModal(false)
+                    setSelectedUserForTransfer(null)
+                  }}
+                  className="fj-btn fj-btn-neutral"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleAdminTransferApiary}
+                  disabled={!selectedApiaryId || !selectedNewOwnerId || transferring}
+                  className="fj-btn fj-btn-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {transferring ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Transferring...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={16} />
+                      Transfer
+                    </>
+                  )}
+                </button>
+              </FormActionRow>
+            </div>
+          )}
+        </ModalShell>
       )}
 
       {/* Conservation Areas Section */}

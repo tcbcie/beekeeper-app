@@ -5,6 +5,11 @@ import { supabase } from '@/lib/supabase'
 import { Plus, X, Edit2, Trash2, Save, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
+import TextAreaField from '@/components/ui/TextAreaField'
+import CheckboxInput from '@/components/ui/CheckboxInput'
 
 interface Association {
   id: string
@@ -252,7 +257,7 @@ export default function AssociationManagement() {
           </p>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+            className="fj-btn fj-btn-success"
           >
             {showAddForm ? <X size={16} /> : <Plus size={16} />}
             {showAddForm ? 'Cancel' : 'Add Association'}
@@ -263,28 +268,30 @@ export default function AssociationManagement() {
         <div className="flex flex-wrap gap-4 items-center bg-surface dark:bg-background p-4 rounded-lg">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-text-secondary">County/Area:</label>
-            <select
+            <SelectField
               value={countyFilter}
               onChange={(e) => { setCountyFilter(e.target.value); setCurrentPage(1) }}
-              className="px-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              tone="purple"
+              className="fj-control-inline py-1.5 rounded-md text-sm"
             >
               <option value="all">All Counties/Areas</option>
               {Array.from(new Set(associations.map(a => a.county_area))).sort().map(county => (
                 <option key={county} value={county}>{county}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
 
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-text-secondary">Search:</label>
             <div className="relative">
               <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
-              <input
+              <TextInput
                 type="text"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
                 placeholder="Name, email, county..."
-                className="pl-8 pr-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-52"
+                tone="purple"
+                className="pl-8 pr-3 py-1.5 rounded-md text-sm w-52"
               />
             </div>
           </div>
@@ -296,7 +303,7 @@ export default function AssociationManagement() {
                 setSearchQuery('')
                 setCurrentPage(1)
               }}
-              className="ml-auto px-3 py-1.5 text-sm text-text-tertiary hover:text-foreground border border-border rounded-md hover:bg-surface-elevated dark:hover:bg-surface-elevated"
+              className="fj-btn fj-btn-neutral fj-btn-sm ml-auto"
             >
               Clear Filters
             </button>
@@ -312,79 +319,75 @@ export default function AssociationManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Association Name *</label>
-                <input
+                <FieldLabel>Association Name *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">County/Area *</label>
-                <input
+                <FieldLabel>County/Area *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.county_area}
                   onChange={(e) => setFormData({ ...formData, county_area: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   placeholder="e.g., County Antrim, Dublin"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
-                <input
+                <FieldLabel>Email</FieldLabel>
+                <TextInput
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   placeholder="contact@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Phone</label>
-                <input
+                <FieldLabel>Phone</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   placeholder="+353 1 234 5678"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Source</label>
-                <input
+                <FieldLabel>Source</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.source}
                   onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   placeholder="Data source URL"
                 />
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                  <CheckboxInput
                     id="is_active"
                     checked={formData.is_active}
                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="h-4 w-4 text-forest-600 border-border rounded"
                   />
                   <label htmlFor="is_active" className="text-sm font-medium text-text-secondary">Active</label>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                  <CheckboxInput
                     id="contacted"
                     checked={formData.contacted}
                     onChange={(e) => setFormData({ ...formData, contacted: e.target.checked })}
-                    className="h-4 w-4 text-forest-600 border-border rounded"
                   />
                   <label htmlFor="contacted" className="text-sm font-medium text-text-secondary">Contacted</label>
                 </div>
@@ -392,11 +395,11 @@ export default function AssociationManagement() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Comments</label>
-              <textarea
+              <FieldLabel>Comments</FieldLabel>
+              <TextAreaField
                 value={formData.comments}
                 onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md"
+                className="rounded-md"
                 placeholder="Additional notes or comments"
                 rows={3}
               />
@@ -405,7 +408,7 @@ export default function AssociationManagement() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                className="fj-btn fj-btn-success px-6"
               >
                 <Save size={16} />
                 {editing ? 'Update' : 'Add'} Association
@@ -413,7 +416,7 @@ export default function AssociationManagement() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
+                className="fj-btn fj-btn-neutral px-6"
               >
                 Cancel
               </button>
@@ -479,14 +482,14 @@ export default function AssociationManagement() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleEdit(association)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
                             title="Edit"
                           >
                             <Edit2 size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(association.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
                             title="Delete"
                           >
                             <Trash2 size={18} />
@@ -497,7 +500,7 @@ export default function AssociationManagement() {
                       <td className="px-4 py-3 text-sm text-foreground">{association.county_area}</td>
                       <td className="px-4 py-3 text-sm text-foreground">
                         {association.email ? (
-                          <a href={`mailto:${association.email}`} className="text-blue-600 hover:underline">
+                          <a href={`mailto:${association.email}`} className="fj-link fj-link-info">
                             {association.email}
                           </a>
                         ) : '-'}

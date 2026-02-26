@@ -1,9 +1,14 @@
 import Link from 'next/link'
+import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
+import AppIcon from '@/components/icons/AppIcon'
+
+type StatCardIcon = LucideIcon | ReactNode
 
 interface StatCardProps {
   label: string
   value: number
-  icon: string
+  icon: StatCardIcon
   color: string
   href?: string
   className?: string
@@ -16,8 +21,8 @@ export default function StatCard({ label, value, icon, color, href, className = 
         <p className="text-sm font-medium text-text-secondary">{label}</p>
         <p className="text-3xl font-bold text-foreground mt-2">{value}</p>
       </div>
-      <div className={`text-4xl ${color} w-16 h-16 rounded-full flex items-center justify-center`}>
-        {icon}
+      <div className={`${color} w-16 h-16 rounded-full flex items-center justify-center`}>
+        <AppIcon icon={icon} size="xl" />
       </div>
     </div>
   )

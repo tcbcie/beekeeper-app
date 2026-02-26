@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { Plus, X, Edit2, Trash2, Save } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import TextAreaField from '@/components/ui/TextAreaField'
 
 interface VarroaTreatment {
   id: string
@@ -171,7 +174,7 @@ export default function TreatmentManagement() {
           </p>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2"
+            className="fj-btn fj-btn-success"
           >
             {showAddForm ? <X size={16} /> : <Plus size={16} />}
             {showAddForm ? 'Cancel' : 'Add Treatment'}
@@ -187,105 +190,89 @@ export default function TreatmentManagement() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Product Name *
-                </label>
-                <input
+                <FieldLabel>Product Name *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.product_name}
                   onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Active Ingredients *
-                </label>
-                <input
+                <FieldLabel>Active Ingredients *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.active_ingredients}
                   onChange={(e) => setFormData({ ...formData, active_ingredients: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Application Method *
-                </label>
-                <input
+                <FieldLabel>Application Method *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.application_method}
                   onChange={(e) => setFormData({ ...formData, application_method: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Treatment Duration *
-                </label>
-                <input
+                <FieldLabel>Treatment Duration *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.treatment_duration}
                   onChange={(e) => setFormData({ ...formData, treatment_duration: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Temperature Range *
-                </label>
-                <input
+                <FieldLabel>Temperature Range *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.temperature_range}
                   onChange={(e) => setFormData({ ...formData, temperature_range: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Honey Flow Restrictions *
-                </label>
-                <input
+                <FieldLabel>Honey Flow Restrictions *</FieldLabel>
+                <TextInput
                   type="text"
                   value={formData.honey_flow_restrictions}
                   onChange={(e) => setFormData({ ...formData, honey_flow_restrictions: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Withdrawal Period (days) *
-                </label>
-                <input
+                <FieldLabel>Withdrawal Period (days) *</FieldLabel>
+                <TextInput
                   type="number"
                   value={formData.withdrawal_period_days}
                   onChange={(e) => setFormData({ ...formData, withdrawal_period_days: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   min="0"
                   required
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Notes
-                </label>
-                <textarea
+                <FieldLabel>Notes</FieldLabel>
+                <TextAreaField
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-md"
+                  className="rounded-md"
                   rows={3}
                 />
               </div>
@@ -294,7 +281,7 @@ export default function TreatmentManagement() {
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                className="fj-btn fj-btn-success px-6"
               >
                 <Save size={16} />
                 {editing ? 'Update' : 'Add'} Treatment
@@ -302,7 +289,7 @@ export default function TreatmentManagement() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-2 bg-surface-elevated dark:bg-surface-elevated rounded-lg hover:bg-surface dark:hover:bg-surface border border-border"
+                className="fj-btn fj-btn-neutral px-6"
               >
                 Cancel
               </button>
@@ -363,14 +350,14 @@ export default function TreatmentManagement() {
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={handleSubmit}
-                              className="text-green-600 hover:text-green-900"
+                              className="fj-icon-btn fj-icon-btn-green fj-icon-btn-xs"
                               title="Save"
                             >
                               <Save size={18} />
                             </button>
                             <button
                               onClick={resetForm}
-                              className="text-text-tertiary hover:text-foreground"
+                              className="fj-icon-btn fj-icon-btn-xs"
                               title="Cancel"
                             >
                               <X size={18} />
@@ -378,68 +365,68 @@ export default function TreatmentManagement() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <TextInput
                             type="text"
                             value={formData.product_name}
                             onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                             placeholder="Product name"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <TextInput
                             type="text"
                             value={formData.active_ingredients}
                             onChange={(e) => setFormData({ ...formData, active_ingredients: e.target.value })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <TextInput
                             type="text"
                             value={formData.application_method}
                             onChange={(e) => setFormData({ ...formData, application_method: e.target.value })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <TextInput
                             type="text"
                             value={formData.treatment_duration}
                             onChange={(e) => setFormData({ ...formData, treatment_duration: e.target.value })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <TextInput
                             type="text"
                             value={formData.temperature_range}
                             onChange={(e) => setFormData({ ...formData, temperature_range: e.target.value })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <TextInput
                             type="text"
                             value={formData.honey_flow_restrictions}
                             onChange={(e) => setFormData({ ...formData, honey_flow_restrictions: e.target.value })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input
+                          <TextInput
                             type="number"
                             value={formData.withdrawal_period_days}
                             onChange={(e) => setFormData({ ...formData, withdrawal_period_days: parseInt(e.target.value) })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                             min="0"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <textarea
+                          <TextAreaField
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            className="w-full px-2 py-1 text-sm border border-border rounded"
+                            className="w-full px-2 py-1 text-sm rounded"
                             rows={2}
                           />
                         </td>
@@ -451,14 +438,14 @@ export default function TreatmentManagement() {
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => handleEdit(treatment)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
                               title="Edit"
                             >
                               <Edit2 size={16} />
                             </button>
                             <button
                               onClick={() => handleDelete(treatment.id)}
-                              className="text-red-600 hover:text-red-900"
+                              className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
                               title="Delete"
                             >
                               <Trash2 size={16} />

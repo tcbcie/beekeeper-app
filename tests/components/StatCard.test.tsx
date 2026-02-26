@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { Bug, ClipboardList, Crown, House, CheckCircle2 } from 'lucide-react'
 import StatCard from '@/components/ui/StatCard'
 
 describe('StatCard', () => {
-  it('should render with label and value', () => {
+  it('renders with label and value', () => {
     render(
       <StatCard
         label="Total Hives"
         value={25}
-        icon="🐝"
+        icon={Bug}
         color="text-yellow-500"
       />
     )
@@ -17,39 +18,39 @@ describe('StatCard', () => {
     expect(screen.getByText('25')).toBeInTheDocument()
   })
 
-  it('should display icon correctly', () => {
+  it('renders the icon accessibly using the card label', () => {
     render(
       <StatCard
         label="Active Colonies"
         value={18}
-        icon="🏠"
+        icon={House}
         color="text-green-500"
       />
     )
 
-    expect(screen.getByText('🏠')).toBeInTheDocument()
+    expect(screen.getByLabelText('Active Colonies')).toBeInTheDocument()
   })
 
-  it('should apply correct color class', () => {
-    const { container } = render(
+  it('applies the color class to the rendered icon', () => {
+    render(
       <StatCard
         label="Queens"
         value={10}
-        icon="👑"
+        icon={Crown}
         color="text-purple-500"
       />
     )
 
-    const iconElement = screen.getByText('👑')
+    const iconElement = screen.getByLabelText('Queens')
     expect(iconElement.className).toContain('text-purple-500')
   })
 
-  it('should handle zero value', () => {
+  it('handles zero values', () => {
     render(
       <StatCard
         label="Inspections Due"
         value={0}
-        icon="📋"
+        icon={ClipboardList}
         color="text-blue-500"
       />
     )
@@ -57,12 +58,12 @@ describe('StatCard', () => {
     expect(screen.getByText('0')).toBeInTheDocument()
   })
 
-  it('should handle large numbers', () => {
+  it('handles large values', () => {
     render(
       <StatCard
         label="Total Inspections"
         value={1234}
-        icon="✓"
+        icon={CheckCircle2}
         color="text-green-600"
       />
     )
@@ -70,12 +71,12 @@ describe('StatCard', () => {
     expect(screen.getByText('1234')).toBeInTheDocument()
   })
 
-  it('should render multiple stat cards independently', () => {
+  it('renders independently when rerendered', () => {
     const { rerender } = render(
       <StatCard
         label="Card 1"
         value={10}
-        icon="A"
+        icon={Bug}
         color="text-red-500"
       />
     )
@@ -87,7 +88,7 @@ describe('StatCard', () => {
       <StatCard
         label="Card 2"
         value={20}
-        icon="B"
+        icon={Bug}
         color="text-blue-500"
       />
     )

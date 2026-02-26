@@ -1,9 +1,15 @@
 'use client'
+
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { AlertCircle, CheckCircle, Mail } from 'lucide-react'
+import Link from 'next/link'
 import Image from 'next/image'
+import { AlertCircle, CheckCircle, Mail, ArrowLeft } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageShell from '@/components/ui/PageShell'
+import Panel from '@/components/ui/Panel'
+import PageHeader from '@/components/ui/PageHeader'
 
 function ReactivateForm() {
   const searchParams = useSearchParams()
@@ -11,7 +17,6 @@ function ReactivateForm() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
-  // Pre-fill email from URL parameter
   useEffect(() => {
     const emailParam = searchParams.get('email')
     if (emailParam) {
@@ -26,7 +31,7 @@ function ReactivateForm() {
 
     try {
       const { data, error } = await supabase.rpc('request_account_reactivation', {
-        p_email: email
+        p_email: email,
       })
 
       if (error) throw error
@@ -52,127 +57,123 @@ function ReactivateForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-amber-900 mb-2 flex items-center justify-center gap-2">
-            <Image src="/logo.png" alt="HiveCraic" width={48} height={48} className="w-12 h-12" />
-            HiveCraic
-          </h1>
-          <p className="text-text-secondary">Account Reactivation</p>
-        </div>
+    <PageShell centered className="px-4">
+      <div className="mx-auto w-full max-w-md py-6 sm:py-10">
+        <Panel padding="lg">
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="mx-auto mb-4 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface-elevated/70 px-4 py-3">
+                <Image src="/logo.png" alt="HiveCraic" width={44} height={44} className="h-11 w-11" />
+                <span className="font-serif text-2xl text-forest-700 dark:text-forest-300">HiveCraic</span>
+              </div>
 
-        {/* Main Card */}
-        <div className="bg-surface dark:bg-surface rounded-2xl shadow-xl p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-              <Mail className="text-forest-600 dark:text-amber-600" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Request Account Reactivation</h2>
-              <p className="text-sm text-text-tertiary">Restore your deleted account</p>
-            </div>
-          </div>
-
-          {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-900">
-              If your account was deleted, you can request to have it reactivated.
-              Enter the email address associated with your account, and an administrator
-              will review your request.
-            </p>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                required
-                disabled={status === 'loading'}
+              <PageHeader
+                eyebrow="Account Recovery"
+                title="Request Reactivation"
+                description="If your account was deactivated, submit a request and an administrator will review it."
+                className="text-center [&>div]:mx-auto [&>div]:max-w-sm [&_h1]:text-2xl [&_h1]:sm:text-3xl"
               />
             </div>
 
-            {/* Status Messages */}
-            {status === 'success' && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-                <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-green-900 mb-1">Request Submitted</p>
-                  <p className="text-sm text-green-800">{message}</p>
-                </div>
+            <Panel padding="sm" className="border border-blue-200 bg-blue-50/80 dark:border-blue-900 dark:bg-blue-950/20">
+              <div className="flex items-start gap-3">
+                <Mail className="mt-0.5 h-5 w-5 text-blue-700 dark:text-blue-300" />
+                <p className="text-sm text-blue-900 dark:text-blue-200">
+                  Enter the email address associated with your deleted account. We’ll send the request to an administrator for review.
+                </p>
               </div>
-            )}
+            </Panel>
 
-            {status === 'error' && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-red-900 mb-1">Error</p>
-                  <p className="text-sm text-red-800">{message}</p>
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-text-secondary">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="block min-h-[48px] w-full rounded-lg border border-border bg-surface px-4 py-3 text-foreground placeholder:text-text-tertiary focus:border-forest-500 focus:ring-2 focus:ring-forest-500/30 dark:bg-surface-elevated"
+                  required
+                  disabled={status === 'loading'}
+                />
               </div>
-            )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={status === 'loading' || !email}
-              className="w-full py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
-            >
-              {status === 'loading' ? 'Submitting...' : 'Submit Reactivation Request'}
-            </button>
-          </form>
+              {status === 'success' && (
+                <div className="rounded-lg border border-forest-200 bg-forest-50 p-4 dark:border-forest-900 dark:bg-forest-950/30">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-forest-700 dark:text-forest-300" />
+                    <div>
+                      <p className="mb-1 text-sm font-semibold text-forest-900 dark:text-forest-200">Request Submitted</p>
+                      <p className="text-sm text-forest-800 dark:text-forest-300">{message}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          {/* Help Text */}
-          <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-xs text-text-tertiary text-center">
-              Once your request is submitted, an administrator will review it and contact you via email.
-              This process typically takes 1-2 business days.
-            </p>
+              {status === 'error' && (
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-700 dark:text-red-300" />
+                    <div>
+                      <p className="mb-1 text-sm font-semibold text-red-900 dark:text-red-200">Error</p>
+                      <p className="text-sm text-red-800 dark:text-red-300">{message}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={status === 'loading' || !email}
+                className="fj-btn w-full bg-amber-600 text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {status === 'loading' ? 'Submitting...' : 'Submit Reactivation Request'}
+              </button>
+            </form>
+
+            <Panel padding="sm" className="border-border/80 bg-surface/60">
+              <p className="text-center text-xs text-text-tertiary">
+                Once submitted, an administrator will review your request and contact you by email. This typically takes 1-2 business days.
+              </p>
+            </Panel>
+
+            <div className="flex flex-col items-center gap-3 text-center">
+              <Link href="/login" className="fj-chip fj-chip-sm fj-chip-neutral">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Login
+              </Link>
+              <p className="text-sm text-text-tertiary">
+                Need help?{' '}
+                <a href="mailto:support@tcbc.ie" className="text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200">
+                  support@tcbc.ie
+                </a>
+              </p>
+            </div>
           </div>
-
-          {/* Back to Login */}
-          <div className="mt-4 text-center">
-            <a
-              href="/login"
-              className="text-sm text-forest-600 dark:text-amber-600 hover:text-amber-700 font-medium"
-            >
-              ← Back to Login
-            </a>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-text-tertiary">
-            Need help? Contact{' '}
-            <a href="mailto:support@tcbc.ie" className="text-forest-600 dark:text-amber-600 hover:text-amber-700">
-              support@tcbc.ie
-            </a>
-          </p>
-        </div>
+        </Panel>
       </div>
-    </div>
+    </PageShell>
+  )
+}
+
+function ReactivateFallback() {
+  return (
+    <PageShell centered className="px-4">
+      <div className="mx-auto w-full max-w-md py-6 sm:py-10">
+        <Panel padding="lg">
+          <LoadingSpinner text="Loading reactivation form..." size="sm" className="p-2" />
+        </Panel>
+      </div>
+    </PageShell>
   )
 }
 
 export default function ReactivateAccountPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center p-4">
-        <div className="text-xl">Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<ReactivateFallback />}>
       <ReactivateForm />
     </Suspense>
   )

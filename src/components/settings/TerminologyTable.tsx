@@ -6,6 +6,7 @@ import { Search, BookText, Plus, Edit2, Trash2, Save, X, ChevronLeft, ChevronRig
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
+import TextInput from '@/components/ui/TextInput'
 
 const ITEMS_PER_PAGE = 15
 
@@ -190,7 +191,7 @@ export default function TerminologyTable() {
             setShowAddForm(!showAddForm)
             setEditingTerm(null)
           }}
-          className="flex items-center gap-2 px-3 py-2 bg-forest-600 hover:bg-forest-700 text-white rounded-lg transition-colors text-sm"
+          className="fj-btn fj-btn-success fj-btn-sm"
         >
           <Plus size={16} />
           Add Term
@@ -202,25 +203,25 @@ export default function TerminologyTable() {
         <div className="bg-muted/30 dark:bg-muted/10 rounded-lg p-4 border border-border">
           <h4 className="font-medium text-foreground mb-3">Add New Term</h4>
           <div className="flex flex-col sm:flex-row gap-3">
-            <input
+            <TextInput
               type="text"
               placeholder="English term"
               value={newTerm.english_term}
               onChange={(e) => setNewTerm(prev => ({ ...prev, english_term: e.target.value }))}
-              className="flex-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-forest-500"
+              className="flex-1"
             />
-            <input
+            <TextInput
               type="text"
               placeholder="German term"
               value={newTerm.german_term}
               onChange={(e) => setNewTerm(prev => ({ ...prev, german_term: e.target.value }))}
-              className="flex-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-forest-500"
+              className="flex-1"
             />
             <div className="flex gap-2">
               <button
                 onClick={handleAdd}
                 disabled={saving}
-                className="flex items-center gap-1 px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                className="fj-btn fj-btn-success fj-btn-sm disabled:opacity-50"
               >
                 <Save size={16} />
                 Save
@@ -230,7 +231,7 @@ export default function TerminologyTable() {
                   setShowAddForm(false)
                   setNewTerm({ english_term: '', german_term: '' })
                 }}
-                className="flex items-center gap-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                className="fj-btn fj-btn-neutral fj-btn-sm"
               >
                 <X size={16} />
                 Cancel
@@ -243,12 +244,12 @@ export default function TerminologyTable() {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary" size={18} />
-        <input
+        <TextInput
           type="text"
           placeholder="Search terms..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-surface text-foreground placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500"
+          className="pl-10 pr-4"
         />
       </div>
 
@@ -281,7 +282,7 @@ export default function TerminologyTable() {
                   {editingTerm?.id === term.id ? (
                     <>
                       <td className="px-4 py-2">
-                        <input
+                        <TextInput
                           type="text"
                           value={editingTerm.english_term}
                           onChange={(e) => setEditingTerm(prev => prev ? { ...prev, english_term: e.target.value } : null)}
@@ -289,11 +290,11 @@ export default function TerminologyTable() {
                             if (e.key === 'Enter') handleUpdate()
                             else if (e.key === 'Escape') cancelEdit()
                           }}
-                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+                          className="px-2 py-1"
                         />
                       </td>
                       <td className="px-4 py-2">
-                        <input
+                        <TextInput
                           type="text"
                           value={editingTerm.german_term}
                           onChange={(e) => setEditingTerm(prev => prev ? { ...prev, german_term: e.target.value } : null)}
@@ -301,7 +302,7 @@ export default function TerminologyTable() {
                             if (e.key === 'Enter') handleUpdate()
                             else if (e.key === 'Escape') cancelEdit()
                           }}
-                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+                          className="px-2 py-1"
                         />
                       </td>
                       <td className="px-4 py-2 text-right">
@@ -309,14 +310,14 @@ export default function TerminologyTable() {
                           <button
                             onClick={handleUpdate}
                             disabled={saving}
-                            className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors disabled:opacity-50"
+                            className="fj-icon-btn fj-icon-btn-green p-1.5 disabled:opacity-50"
                             title="Save"
                           >
                             <Save size={16} />
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="p-1.5 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-900/30 rounded transition-colors"
+                            className="fj-icon-btn p-1.5"
                             title="Cancel"
                           >
                             <X size={16} />
@@ -332,14 +333,14 @@ export default function TerminologyTable() {
                         <div className="flex justify-end gap-1">
                           <button
                             onClick={() => startEdit(term)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
+                            className="fj-icon-btn fj-icon-btn-blue p-1.5"
                             title="Edit"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(term.id, term.english_term)}
-                            className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                            className="fj-icon-btn fj-icon-btn-danger p-1.5"
                             title="Delete"
                           >
                             <Trash2 size={16} />
@@ -361,7 +362,7 @@ export default function TerminologyTable() {
           <button
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="flex items-center gap-1 px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="fj-btn fj-btn-neutral fj-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={16} />
             Previous
@@ -372,7 +373,7 @@ export default function TerminologyTable() {
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="flex items-center gap-1 px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="fj-btn fj-btn-neutral fj-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
             <ChevronRight size={16} />

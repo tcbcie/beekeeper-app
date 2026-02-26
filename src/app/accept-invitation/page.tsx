@@ -3,8 +3,8 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { InvitationLoadingShell, InvitationResponseShell } from '@/components/invitations/InvitationResponseShell'
 
 function AcceptInvitationContent() {
   const searchParams = useSearchParams()
@@ -180,16 +180,15 @@ function AcceptInvitationContent() {
   }, [checkedAuth, userId, searchParams, router])
 
   if (loading) {
-    return <LoadingSpinner text="Processing invitation..." />
+    return <InvitationLoadingShell text="Processing invitation..." />
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-surface dark:bg-surface rounded-lg shadow-xl p-8 max-w-md w-full">
-        <div className="text-center">
+    <InvitationResponseShell title="Team Invitation" subtitle="Accept Invitation">
+      <div className="text-center">
           {status === 'success' && (
             <>
-              <CheckCircle size={64} className="mx-auto text-green-500 mb-4" />
+              <CheckCircle size={64} className="mx-auto mb-4 text-green-500" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Success!</h1>
               <p className="text-text-secondary mb-4">{message}</p>
               <p className="text-sm text-text-tertiary">Redirecting to dashboard...</p>
@@ -203,7 +202,7 @@ function AcceptInvitationContent() {
               <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="fj-btn fj-btn-blue"
               >
                 Go to Dashboard
               </button>
@@ -217,9 +216,9 @@ function AcceptInvitationContent() {
               <p className="text-text-secondary mb-4">
                 You&apos;ve been invited to join <strong>{teamName}</strong>!
               </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left mb-4">
+              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-left text-sm dark:border-blue-900 dark:bg-blue-950/20">
                 <p className="font-medium text-blue-900 mb-2">To accept this invitation:</p>
-                <ol className="list-decimal list-inside space-y-1 text-blue-800">
+                <ol className="list-inside list-decimal space-y-1 text-blue-800 dark:text-blue-200">
                   <li>Sign up for an account using: <strong>{invitedEmail}</strong></li>
                   <li>Check your email and confirm your account</li>
                   <li>Return to this invitation link to join the team</li>
@@ -231,13 +230,13 @@ function AcceptInvitationContent() {
               <div className="space-y-3">
                 <button
                   onClick={() => router.push(`/login?signup=true&email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
-                  className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="fj-btn fj-btn-blue w-full"
                 >
                   Sign Up
                 </button>
                 <button
                   onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
-                  className="w-full px-6 py-2 bg-sage-100 dark:bg-slate-700 text-text-secondary rounded-lg hover:bg-sage-200 dark:hover:bg-slate-600 font-medium"
+                  className="fj-btn w-full border border-border bg-surface text-foreground hover:bg-surface-elevated dark:bg-surface-elevated"
                 >
                   Already have an account? Sign In
                 </button>
@@ -255,7 +254,7 @@ function AcceptInvitationContent() {
               </p>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="fj-btn fj-btn-blue"
               >
                 Go to Dashboard
               </button>
@@ -269,21 +268,20 @@ function AcceptInvitationContent() {
               <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="fj-btn fj-btn-blue"
               >
                 Go to Dashboard
               </button>
             </>
           )}
-        </div>
       </div>
-    </div>
+    </InvitationResponseShell>
   )
 }
 
 export default function AcceptInvitationPage() {
   return (
-    <Suspense fallback={<LoadingSpinner text="Loading..." />}>
+    <Suspense fallback={<InvitationLoadingShell text="Loading invitation..." />}>
       <AcceptInvitationContent />
     </Suspense>
   )

@@ -90,7 +90,7 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
   }
 
   return (
-    <nav className="bg-white/80 dark:bg-surface/80 backdrop-blur-xl shadow-lg border-b border-border sticky top-0 z-30">
+    <nav className="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl shadow-lg border-b border-border sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
                 e.stopPropagation()
                 onMenuClick?.()
               }}
-              className="hidden p-2 rounded-lg hover:bg-sage-100 dark:hover:bg-slate-800 active:bg-sage-200 dark:active:bg-slate-700 text-text-secondary hover:text-foreground touch-manipulation min-h-[48px] min-w-[48px] items-center justify-center"
+              className="fj-icon-btn hidden p-2 touch-manipulation min-h-[48px] min-w-[48px] items-center justify-center"
               aria-label="Open menu"
               type="button"
             >
@@ -120,12 +120,21 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
               {/* Profile incompleteness indicator */}
               {!hasProfileName && (
                 <div className="relative group">
-                  <AlertCircle
-                    className="w-5 h-5 cursor-pointer text-amber-600 dark:text-amber-400"
+                  <span
+                    className="inline-flex"
+                    tabIndex={0}
+                    role="img"
                     aria-label="Profile incomplete"
-                  />
+                    aria-describedby="navbar-profile-incomplete-tooltip"
+                  >
+                    <AlertCircle className="w-5 h-5 cursor-pointer text-amber-600 dark:text-amber-400" />
+                  </span>
                   {/* Tooltip */}
-                  <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-white dark:bg-slate-800 border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div
+                    id="navbar-profile-incomplete-tooltip"
+                    role="tooltip"
+                    className="pointer-events-none absolute right-0 top-full mt-2 w-64 p-3 bg-surface-elevated border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50"
+                  >
                     <p className="text-sm text-text-primary">
                       Please complete your profile by adding your name. This helps team members identify you when working on shared tasks and hives.
                     </p>
@@ -136,20 +145,31 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
             {/* Subscription status indicator */}
             {subscriptionStatus && subscriptionStatus.status !== 'active' && (
               <div className="relative group">
-                <AlertCircle
-                  className={`w-5 h-5 cursor-pointer ${
-                    subscriptionStatus.status === 'no_subscription'
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : subscriptionStatus.status === 'expiring_soon'
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : subscriptionStatus.status === 'expiring_very_soon'
-                      ? 'text-orange-600 dark:text-orange-400'
-                      : 'text-red-600 dark:text-red-400'
-                  }`}
+                <span
+                  className="inline-flex"
+                  tabIndex={0}
+                  role="img"
                   aria-label="Subscription status"
-                />
+                  aria-describedby="navbar-subscription-status-tooltip"
+                >
+                  <AlertCircle
+                    className={`w-5 h-5 cursor-pointer ${
+                      subscriptionStatus.status === 'no_subscription'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : subscriptionStatus.status === 'expiring_soon'
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : subscriptionStatus.status === 'expiring_very_soon'
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : 'text-red-600 dark:text-red-400'
+                    }`}
+                  />
+                </span>
                 {/* Tooltip */}
-                <div className="absolute right-0 top-full mt-2 w-72 p-3 bg-white dark:bg-slate-800 border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div
+                  id="navbar-subscription-status-tooltip"
+                  role="tooltip"
+                  className="pointer-events-none absolute right-0 top-full mt-2 w-72 p-3 bg-surface-elevated border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50"
+                >
                   <p className="text-sm text-text-primary">
                     {subscriptionStatus.status === 'no_subscription'
                       ? 'Support the app and the Irish beekeeping community by getting a valid subscription via the profile section.'
@@ -164,7 +184,7 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
             )}
             <button
               onClick={handleLogout}
-              className="px-3 py-2 sm:px-4 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 active:bg-red-800 flex items-center gap-2 touch-manipulation min-h-[48px]"
+              className="fj-btn fj-btn-danger min-h-[48px] px-3 text-sm touch-manipulation sm:px-4"
               aria-label="Logout"
             >
               <LogOut size={16} />

@@ -3,13 +3,16 @@ import { useEffect, useState, useMemo } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
+import AppIcon from '@/components/icons/AppIcon'
 import { SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
+import Panel from '@/components/ui/Panel'
 import UpcomingEvents from '@/components/UpcomingEvents'
 import Link from 'next/link'
 import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RecentActivityRecord } from '@/types/dashboard'
+import { dashboardCardIcons, iconography } from '@/lib/iconography'
 
 export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -75,28 +78,28 @@ export default function DashboardPage() {
   const isRearingGroupMember = useMemo(() => ownedRearingGroups.length > 0 || memberRearingGroups.length > 0, [ownedRearingGroups, memberRearingGroups])
 
   const statCards = useMemo(() => [
-    { label: 'My Apiaries', value: stats.apiaries, icon: '📍', color: 'bg-green-50 dark:bg-green-900/30 text-gray-900 dark:text-green-300', href: '/dashboard/apiaries' },
-    { label: 'My Hives', value: stats.hives, icon: '🐝', color: 'bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-amber-300', href: '/dashboard/hives' },
-    { label: 'Inspections (7d)', value: stats.recentInspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300', href: '/dashboard/records' },
-    { label: 'Active Queens', value: stats.queens, icon: '👑', color: 'bg-purple-50 dark:bg-purple-900/30 text-gray-900 dark:text-purple-300', href: '/dashboard/queens' },
-    { label: 'Active Tasks', value: stats.activeTasks, icon: '✅', color: 'bg-teal-50 dark:bg-teal-900/30 text-gray-900 dark:text-teal-300', href: '/dashboard/tasks' },
+    { label: 'My Apiaries', value: stats.apiaries, icon: dashboardCardIcons.apiaries, color: 'bg-green-50 dark:bg-green-900/30 text-gray-900 dark:text-green-300', href: '/dashboard/apiaries' },
+    { label: 'My Hives', value: stats.hives, icon: dashboardCardIcons.hives, color: 'bg-amber-50 dark:bg-amber-900/30 text-gray-900 dark:text-amber-300', href: '/dashboard/hives' },
+    { label: 'Inspections (7d)', value: stats.recentInspections, icon: dashboardCardIcons.inspections, color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300', href: '/dashboard/records' },
+    { label: 'Active Queens', value: stats.queens, icon: dashboardCardIcons.queens, color: 'bg-purple-50 dark:bg-purple-900/30 text-gray-900 dark:text-purple-300', href: '/dashboard/queens' },
+    { label: 'Active Tasks', value: stats.activeTasks, icon: dashboardCardIcons.tasks, color: 'bg-teal-50 dark:bg-teal-900/30 text-gray-900 dark:text-teal-300', href: '/dashboard/tasks' },
   ], [stats])
 
   const hasMySharedData = useMemo(() => mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0, [mySharedStats])
   const hasSharedWithMeData = useMemo(() => sharedWithMeStats.hives > 0 || sharedWithMeStats.queens > 0 || sharedWithMeStats.inspections > 0, [sharedWithMeStats])
 
   const mySharedCards = useMemo(() => hasMySharedData ? [
-    { label: 'Queens I Shared', value: mySharedStats.queens, icon: '👑', color: 'bg-purple-100 text-gray-900 border-2 border-purple-300' },
-    { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: '✨', color: 'bg-green-100 text-gray-900 border-2 border-green-300' },
-    { label: 'Hives I Shared', value: mySharedStats.hives, icon: '🐝', color: 'bg-amber-100 text-gray-900 border-2 border-amber-300' },
-    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: '📋', color: 'bg-indigo-100 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
+    { label: 'Queens I Shared', value: mySharedStats.queens, icon: iconography.queen, color: 'bg-purple-100 text-gray-900 border-2 border-purple-300' },
+    { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: iconography.highlight, color: 'bg-green-100 text-gray-900 border-2 border-green-300' },
+    { label: 'Hives I Shared', value: mySharedStats.hives, icon: iconography.hive, color: 'bg-amber-100 text-gray-900 border-2 border-amber-300' },
+    { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: iconography.inspection, color: 'bg-indigo-100 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
   ] : [], [hasMySharedData, mySharedStats])
 
   const sharedWithMeCards = useMemo(() => hasSharedWithMeData ? [
-    { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: '👑', color: 'bg-purple-50 text-gray-900 border-2 border-purple-200' },
-    { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: '✨', color: 'bg-green-50 text-gray-900 border-2 border-green-200' },
-    { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: '🐝', color: 'bg-amber-50 text-gray-900 border-2 border-amber-200' },
-    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: '📋', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
+    { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: iconography.queen, color: 'bg-purple-50 text-gray-900 border-2 border-purple-200' },
+    { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: iconography.highlight, color: 'bg-green-50 text-gray-900 border-2 border-green-200' },
+    { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: iconography.hive, color: 'bg-amber-50 text-gray-900 border-2 border-amber-200' },
+    { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: iconography.inspection, color: 'bg-indigo-50 dark:bg-indigo-900/30 text-gray-900 dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
   ] : [], [hasSharedWithMeData, sharedWithMeStats])
 
   if (loading) return (
@@ -121,8 +124,9 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-tertiary">Dashboard</p>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
+            <h1 className="font-serif text-3xl sm:text-4xl leading-tight text-foreground">Dashboard Overview</h1>
             {userRole === 'Admin' && (
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1 bg-purple-900/50 dark:bg-purple-900/30 text-purple-300 dark:text-purple-200 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-700 dark:border-purple-600">
@@ -168,6 +172,9 @@ export default function DashboardPage() {
               </a>
             )}
           </div>
+          <p className="text-sm sm:text-base text-text-secondary">
+            A quick field-journal summary of your apiaries, hive activity, and shared work.
+          </p>
         </div>
       </div>
 
@@ -202,7 +209,7 @@ export default function DashboardPage() {
           <Link
             key={action.label}
             href={action.href}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
+            className="fj-chip fj-chip-sm fj-chip-neutral"
           >
             {action.icon}
             {action.label}
@@ -219,19 +226,19 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             {alerts.overdueInspections > 0 && (
-              <Link href="/dashboard/hives" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors">
+              <Link href="/dashboard/hives" className="fj-chip fj-chip-xs fj-chip-amber">
                 <ClipboardList size={12} />
                 {alerts.overdueInspections} hive{alerts.overdueInspections !== 1 ? 's' : ''} overdue inspection (14+ days)
               </Link>
             )}
             {alerts.oldQueens > 0 && (
-              <Link href="/dashboard/queens" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors">
+              <Link href="/dashboard/queens" className="fj-chip fj-chip-xs fj-chip-amber">
                 <Crown size={12} />
                 {alerts.oldQueens} queen{alerts.oldQueens !== 1 ? 's' : ''} over 2 years old
               </Link>
             )}
             {alerts.highVarroa > 0 && (
-              <Link href="/dashboard/records?type=varroa_check" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors">
+              <Link href="/dashboard/records?type=varroa_check" className="fj-chip fj-chip-xs fj-chip-amber">
                 <Bug size={12} />
                 {alerts.highVarroa} high varroa check{alerts.highVarroa !== 1 ? 's' : ''} (&gt;3%)
               </Link>
@@ -242,7 +249,7 @@ export default function DashboardPage() {
 
       {/* Team Statistics Cards - Shared by Me */}
       {isTeamMember && hasMySharedData && (
-        <div className="bg-surface dark:bg-surface rounded-xl shadow-lg p-4 border border-blue-600 dark:border-blue-800">
+        <Panel padding="sm" className="border border-blue-600 dark:border-blue-800">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
               <Users size={18} className="text-blue-600 dark:text-blue-400" />
@@ -255,21 +262,21 @@ export default function DashboardPage() {
                 }
                 setShowMySharedDetails(!showMySharedDetails)
               }}
-              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium min-h-[36px]"
+              className="fj-btn fj-btn-sm fj-btn-blue"
             >
               {showMySharedDetails ? 'Hide' : 'Show'} Details
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {mySharedCards.map((card) => (
-              <div key={card.label} className="flex flex-col">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-lg">{card.icon}</span>
-                  <span className="text-xs text-text-tertiary">{card.label}</span>
-                </div>
-                <span className="text-2xl font-bold text-foreground">{card.value}</span>
-              </div>
-            ))}
+                {mySharedCards.map((card) => (
+                  <div key={card.label} className="flex flex-col">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <AppIcon icon={card.icon} size="md" className="text-text-secondary" />
+                      <span className="text-xs text-text-tertiary">{card.label}</span>
+                    </div>
+                    <span className="text-2xl font-bold text-foreground">{card.value}</span>
+                  </div>
+                ))}
           </div>
 
           {/* Team Members Detail View */}
@@ -291,11 +298,11 @@ export default function DashboardPage() {
                         <p className="text-xs text-text-secondary truncate">{member.profiles?.email}</p>
                       </div>
                       <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                        <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">
+                        <span className="fj-badge fj-badge-blue">
                           {member.teams?.name || 'Unknown'}
                         </span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                          member.role === 'owner' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' : 'bg-sage-100 dark:bg-slate-700 text-text-primary'
+                        <span className={`fj-badge ${
+                          member.role === 'owner' ? 'fj-badge-amber' : 'fj-badge-neutral'
                         }`}>
                           {member.role}
                         </span>
@@ -308,12 +315,12 @@ export default function DashboardPage() {
               )}
             </div>
           )}
-        </div>
+        </Panel>
       )}
 
       {/* Team Statistics Cards - Shared with Me */}
       {isTeamMember && hasSharedWithMeData && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border-2 border-green-600 dark:border-green-700">
+        <Panel padding="sm" className="border-2 border-green-600 dark:border-green-700">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
               <Users size={18} className="text-green-600 dark:text-green-400" />
@@ -321,17 +328,17 @@ export default function DashboardPage() {
             </h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {sharedWithMeCards.map((card) => (
-              <div key={card.label} className="flex flex-col">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-lg">{card.icon}</span>
-                  <span className="text-xs text-text-tertiary">{card.label}</span>
-                </div>
-                <span className="text-2xl font-bold text-foreground">{card.value}</span>
-              </div>
-            ))}
+                {sharedWithMeCards.map((card) => (
+                  <div key={card.label} className="flex flex-col">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <AppIcon icon={card.icon} size="md" className="text-text-secondary" />
+                      <span className="text-xs text-text-tertiary">{card.label}</span>
+                    </div>
+                    <span className="text-2xl font-bold text-foreground">{card.value}</span>
+                  </div>
+                ))}
           </div>
-        </div>
+        </Panel>
       )}
 
       {/* Upcoming Events */}
@@ -383,7 +390,7 @@ interface RecentActivitySectionProps {
 
 function RecentActivitySection({ recentActivity, dashboardError, onRetry }: RecentActivitySectionProps) {
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+    <Panel>
       <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
       <div className="space-y-3">
         {recentActivity.map((record) => {
@@ -478,7 +485,7 @@ function RecentActivitySection({ recentActivity, dashboardError, onRetry }: Rece
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   )
 }
 
@@ -493,7 +500,7 @@ interface TeamsSectionProps {
 
 function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, hasMySharedData, hasSharedWithMeData }: TeamsSectionProps) {
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+    <Panel>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Users size={24} className="text-blue-600 dark:text-blue-400" />
@@ -501,7 +508,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
         </div>
         <Link
           href="/dashboard/apiary-team"
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium"
+          className="fj-btn fj-btn-blue text-sm"
         >
           Manage Teams
         </Link>
@@ -525,7 +532,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
                   <div key={team.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-foreground text-sm">{team.name}</h4>
-                      <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs rounded font-medium">
+                      <span className="fj-badge fj-badge-amber">
                         Owner
                       </span>
                     </div>
@@ -553,7 +560,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
                   <div key={team.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-green-300 dark:hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-foreground text-sm">{team.name}</h4>
-                      <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs rounded font-medium capitalize">
+                      <span className="fj-badge fj-badge-green capitalize">
                         {team.user_role}
                       </span>
                     </div>
@@ -581,7 +588,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
           )}
         </div>
       )}
-    </div>
+    </Panel>
   )
 }
 
@@ -593,7 +600,7 @@ interface RearingGroupsSectionProps {
 
 function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loadingRearingGroups }: RearingGroupsSectionProps) {
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+    <Panel>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Egg size={24} className="text-amber-600 dark:text-amber-400" />
@@ -601,7 +608,7 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
         </div>
         <Link
           href="/dashboard/rearing-team"
-          className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium"
+          className="fj-btn fj-btn-amber text-sm"
         >
           Manage Groups
         </Link>
@@ -625,7 +632,7 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
                   <div key={group.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
-                      <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs rounded font-medium">
+                      <span className="fj-badge fj-badge-amber">
                         Owner
                       </span>
                     </div>
@@ -653,7 +660,7 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
                   <div key={group.id} className="flex items-center justify-between border border-border rounded-lg p-2.5 hover:border-green-300 dark:hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-foreground text-sm">{group.name}</h4>
-                      <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs rounded font-medium">
+                      <span className="fj-badge fj-badge-green">
                         Member
                       </span>
                     </div>
@@ -670,6 +677,6 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
           )}
         </div>
       )}
-    </div>
+    </Panel>
   )
 }

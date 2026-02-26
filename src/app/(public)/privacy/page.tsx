@@ -1,13 +1,36 @@
 import { Metadata } from 'next'
+import {
+  BarChart3,
+  BadgeCheck,
+  Calendar,
+  CreditCard,
+  Cookie,
+  Handshake,
+  Lock,
+  Mail,
+  Scale,
+  ShieldCheck,
+  Users,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import AppIcon from '@/components/icons/AppIcon'
+import Panel from '@/components/ui/Panel'
+import PageHeader from '@/components/ui/PageHeader'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy - HiveCraic',
   description: 'Privacy policy for HiveCraic beekeeping management application',
 }
 
-const sections = [
+type PrivacySection = {
+  icon: LucideIcon
+  title: string
+  items: { label: string; desc: string }[]
+}
+
+const sections: PrivacySection[] = [
   {
-    icon: '📊',
+    icon: BarChart3,
     title: 'Information We Collect',
     items: [
       { label: 'Account Information', desc: 'Email address, password (encrypted), and user profile data' },
@@ -17,7 +40,7 @@ const sections = [
     ],
   },
   {
-    icon: '🎯',
+    icon: BadgeCheck,
     title: 'How We Use Your Information',
     items: [
       { label: 'Service Provision', desc: 'Providing and maintaining the HiveCraic service' },
@@ -28,7 +51,7 @@ const sections = [
     ],
   },
   {
-    icon: '🔒',
+    icon: Lock,
     title: 'Data Storage & Security',
     items: [
       { label: 'Encryption', desc: 'All passwords are encrypted using industry-standard hashing' },
@@ -38,7 +61,7 @@ const sections = [
     ],
   },
   {
-    icon: '🤝',
+    icon: Handshake,
     title: 'Data Sharing',
     items: [
       { label: 'No Selling', desc: 'We do not sell, trade, or share your personal information' },
@@ -48,7 +71,7 @@ const sections = [
     ],
   },
   {
-    icon: '💳',
+    icon: CreditCard,
     title: 'Payment Processing',
     items: [
       { label: 'Stripe', desc: 'Payments processed securely through PCI-compliant Stripe' },
@@ -57,7 +80,7 @@ const sections = [
     ],
   },
   {
-    icon: '⚖️',
+    icon: Scale,
     title: 'Your Rights',
     items: [
       { label: 'Access', desc: 'Access your personal data stored in HiveCraic' },
@@ -69,129 +92,122 @@ const sections = [
   },
 ]
 
+function BulletList({ items, dotClassName }: { items: { label: string; desc: string }[]; dotClassName?: string }) {
+  return (
+    <ul className="space-y-4">
+      {items.map((item) => (
+        <li key={item.label} className="flex gap-3">
+          <div className={`mt-2.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${dotClassName ?? 'bg-amber-500'}`} />
+          <div>
+            <span className="font-medium text-foreground">{item.label}:</span>{' '}
+            <span className="text-text-secondary">{item.desc}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default function PrivacyPage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-      {/* Header */}
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-900 dark:text-blue-300 text-sm font-medium mb-4">
-          <span>🔐</span>
-          <span>Your Privacy Matters</span>
+    <div className="mx-auto max-w-4xl space-y-8 py-4 sm:py-6">
+      <Panel padding="lg">
+        <div className="text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-300/70 bg-blue-100/80 px-4 py-2 text-sm font-medium text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
+            <ShieldCheck className="h-4 w-4" />
+            <span>Your Privacy Matters</span>
+          </div>
+          <PageHeader
+            title="Privacy Policy"
+            eyebrow="Legal"
+            description="How HiveCraic collects, uses, and protects your personal information."
+            className="justify-center text-center [&>div]:mx-auto [&>div]:max-w-2xl [&_h1]:text-3xl [&_h1]:sm:text-4xl"
+          />
+          <p className="mt-4 text-sm text-text-tertiary">Last updated: January 2026</p>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-          Privacy Policy
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400">
-          Last Updated: January 2026
-        </p>
-      </div>
+      </Panel>
 
-      {/* Introduction */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 sm:p-8 mb-8 border border-blue-100 dark:border-blue-800">
-        <p className="text-slate-700 dark:text-slate-300 text-lg">
+      <Panel padding="lg" className="border border-blue-200 bg-blue-50/60 dark:border-blue-900 dark:bg-blue-950/20">
+        <p className="text-base sm:text-lg text-blue-900 dark:text-blue-100">
           This privacy policy explains how HiveCraic collects, uses, and protects your personal information.
           We are committed to ensuring your data is handled securely and transparently.
         </p>
-      </div>
+      </Panel>
 
-      {/* Sections */}
-      <div className="space-y-8">
-        {sections.map((section, index) => (
-          <div
-            key={index}
-            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
-          >
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3">
-                <span className="text-2xl">{section.icon}</span>
+      <div className="space-y-6">
+        {sections.map((section) => (
+          <Panel key={section.title} padding="none" className="overflow-hidden">
+            <div className="border-b border-border bg-surface-elevated/70 px-6 py-4">
+              <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100/80 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                  <AppIcon icon={section.icon} size="md" />
+                </span>
                 {section.title}
               </h2>
             </div>
             <div className="p-6">
-              <ul className="space-y-4">
-                {section.items.map((item, itemIndex) => (
-                  <li key={itemIndex} className="flex gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-slate-900 dark:text-white">{item.label}:</span>{' '}
-                      <span className="text-slate-600 dark:text-slate-400">{item.desc}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <BulletList items={section.items} />
             </div>
-          </div>
+          </Panel>
         ))}
       </div>
 
-      {/* Additional Sections */}
-      <div className="mt-8 space-y-6">
-        {/* Multi-User Access */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
-            <span className="text-2xl">👥</span>
+      <div className="space-y-6">
+        <Panel padding="lg">
+          <h2 className="mb-4 flex items-center gap-3 text-xl font-semibold text-foreground">
+            <Users className="h-5 w-5 text-blue-700 dark:text-blue-300" />
             Multi-User Access
           </h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
+          <p className="text-text-secondary">
             In multi-user environments, users can only see and access their own beekeeping data.
             Administrators can view system-wide statistics but cannot access individual user&apos;s detailed records.
           </p>
-        </div>
+        </Panel>
 
-        {/* Cookies */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
-            <span className="text-2xl">🍪</span>
+        <Panel padding="lg">
+          <h2 className="mb-4 flex items-center gap-3 text-xl font-semibold text-foreground">
+            <Cookie className="h-5 w-5 text-amber-700 dark:text-amber-300" />
             Cookies & Tracking
           </h2>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-text-secondary">
             HiveCraic uses essential cookies for maintaining your logged-in session and remembering your preferences.
             We do not use tracking cookies or analytics for advertising purposes.
           </p>
-        </div>
+        </Panel>
 
-        {/* Data Retention */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
-            <span className="text-2xl">📅</span>
+        <Panel padding="lg">
+          <h2 className="mb-4 flex items-center gap-3 text-xl font-semibold text-foreground">
+            <Calendar className="h-5 w-5 text-forest-700 dark:text-forest-300" />
             Data Retention
           </h2>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-text-secondary">
             Your data is retained as long as your account is active. If you delete your account,
             all associated data will be permanently removed from our systems within 30 days.
           </p>
-        </div>
+        </Panel>
 
-        {/* GDPR */}
-        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-800">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3 mb-4">
-            <span className="text-2xl">🇪🇺</span>
+        <Panel padding="lg" className="border border-forest-200 bg-forest-50/50 dark:border-forest-900 dark:bg-forest-950/20">
+          <h2 className="mb-4 flex items-center gap-3 text-xl font-semibold text-foreground">
+            <BadgeCheck className="h-5 w-5 text-forest-700 dark:text-forest-300" />
             GDPR Compliance
           </h2>
-          <p className="text-slate-600 dark:text-slate-400">
-            For users in the European Union, HiveCraic is committed to compliance with the General
-            Data Protection Regulation (GDPR). You have additional rights including data portability
-            and the right to lodge a complaint with a supervisory authority.
+          <p className="text-text-secondary">
+            For users in the European Union, HiveCraic is committed to compliance with the General Data Protection Regulation (GDPR).
+            You have additional rights including data portability and the right to lodge a complaint with a supervisory authority.
           </p>
-        </div>
+        </Panel>
       </div>
 
-      {/* Contact */}
-      <div className="mt-12 bg-slate-900 dark:bg-slate-800 rounded-2xl p-8 text-center">
-        <h2 className="text-xl font-semibold text-white mb-4">
-          Questions About Your Privacy?
-        </h2>
-        <p className="text-slate-400 mb-6">
+      <Panel padding="lg" className="text-center">
+        <h2 className="mb-4 font-serif text-2xl text-foreground">Questions About Your Privacy?</h2>
+        <p className="mb-6 text-text-secondary">
           If you have questions or concerns about this privacy policy, please contact us.
         </p>
-        <a
-          href="mailto:support@tcbc.ie"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors font-medium"
-        >
-          <span>📧</span>
-          <span>support@tcbc.ie</span>
+        <a href="mailto:support@tcbc.ie" className="fj-btn bg-forest-600 text-white hover:bg-forest-700">
+          <Mail className="h-4 w-4" />
+          support@tcbc.ie
         </a>
-      </div>
+      </Panel>
     </div>
   )
 }

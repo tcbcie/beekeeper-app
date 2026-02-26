@@ -3,8 +3,8 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { InvitationLoadingShell, InvitationResponseShell } from '@/components/invitations/InvitationResponseShell'
 
 function DeclineInvitationContent() {
   const searchParams = useSearchParams()
@@ -103,13 +103,12 @@ function DeclineInvitationContent() {
   }, [searchParams, router])
 
   if (loading) {
-    return <LoadingSpinner text="Processing your response..." />
+    return <InvitationLoadingShell text="Processing your response..." />
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-surface dark:bg-surface rounded-lg shadow-xl p-8 max-w-md w-full">
-        <div className="text-center">
+    <InvitationResponseShell title="Team Invitation" subtitle="Decline Invitation">
+      <div className="text-center">
           {status === 'success' && (
             <>
               <CheckCircle size={64} className="mx-auto text-blue-500 mb-4" />
@@ -129,7 +128,7 @@ function DeclineInvitationContent() {
               <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="fj-btn fj-btn-blue"
               >
                 Go to Dashboard
               </button>
@@ -146,7 +145,7 @@ function DeclineInvitationContent() {
               </p>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="fj-btn fj-btn-blue"
               >
                 Go to Dashboard
               </button>
@@ -160,21 +159,20 @@ function DeclineInvitationContent() {
               <p className="text-text-secondary mb-4">{message}</p>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="fj-btn fj-btn-blue"
               >
                 Go to Dashboard
               </button>
             </>
           )}
-        </div>
       </div>
-    </div>
+    </InvitationResponseShell>
   )
 }
 
 export default function DeclineInvitationPage() {
   return (
-    <Suspense fallback={<LoadingSpinner text="Loading..." />}>
+    <Suspense fallback={<InvitationLoadingShell text="Loading invitation..." />}>
       <DeclineInvitationContent />
     </Suspense>
   )

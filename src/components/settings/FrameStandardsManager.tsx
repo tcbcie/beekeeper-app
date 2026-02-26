@@ -6,6 +6,7 @@ import { Ruler, Plus, Edit2, Trash2, Save, X } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
+import TextInput from '@/components/ui/TextInput'
 
 interface FrameStandard {
   id: string
@@ -173,7 +174,7 @@ export default function FrameStandardsManager() {
             setShowAddForm(!showAddForm)
             setEditingStandard(null)
           }}
-          className="flex items-center gap-2 px-3 py-2 bg-forest-600 hover:bg-forest-700 text-white rounded-lg transition-colors text-sm"
+          className="fj-btn fj-btn-success fj-btn-sm"
         >
           <Plus size={16} />
           Add Standard
@@ -189,34 +190,34 @@ export default function FrameStandardsManager() {
         <div className="bg-muted/30 dark:bg-muted/10 rounded-lg p-4 border border-border">
           <h4 className="font-medium text-foreground mb-3">Add New Frame Standard</h4>
           <div className="flex flex-col sm:flex-row gap-3">
-            <input
+            <TextInput
               type="text"
               placeholder="Label (e.g., Langstroth Deep)"
               value={newStandard.label}
               onChange={(e) => setNewStandard(prev => ({ ...prev, label: e.target.value }))}
-              className="flex-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-forest-500"
+              className="flex-1"
             />
-            <input
+            <TextInput
               type="number"
               placeholder="Width (mm)"
               value={newStandard.width_mm || ''}
               onChange={(e) => setNewStandard(prev => ({ ...prev, width_mm: parseInt(e.target.value) || 0 }))}
-              className="w-32 px-3 py-2 border border-border rounded-lg bg-surface text-foreground placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-forest-500"
+              className="w-32"
               min="1"
             />
-            <input
+            <TextInput
               type="number"
               placeholder="Height (mm)"
               value={newStandard.height_mm || ''}
               onChange={(e) => setNewStandard(prev => ({ ...prev, height_mm: parseInt(e.target.value) || 0 }))}
-              className="w-32 px-3 py-2 border border-border rounded-lg bg-surface text-foreground placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-forest-500"
+              className="w-32"
               min="1"
             />
             <div className="flex gap-2">
               <button
                 onClick={handleAdd}
                 disabled={saving}
-                className="flex items-center gap-1 px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                className="fj-btn fj-btn-success disabled:opacity-50"
               >
                 <Save size={16} />
                 Save
@@ -226,7 +227,7 @@ export default function FrameStandardsManager() {
                   setShowAddForm(false)
                   setNewStandard({ label: '', width_mm: 0, height_mm: 0 })
                 }}
-                className="flex items-center gap-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                className="fj-btn fj-btn-neutral"
               >
                 <X size={16} />
                 Cancel
@@ -260,28 +261,28 @@ export default function FrameStandardsManager() {
                   {editingStandard?.id === standard.id ? (
                     <>
                       <td className="px-4 py-2">
-                        <input
+                        <TextInput
                           type="text"
                           value={editingStandard.label}
                           onChange={(e) => setEditingStandard(prev => prev ? { ...prev, label: e.target.value } : null)}
-                          className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+                          className="w-full px-2 py-1 rounded"
                         />
                       </td>
                       <td className="px-4 py-2">
-                        <input
+                        <TextInput
                           type="number"
                           value={editingStandard.width_mm}
                           onChange={(e) => setEditingStandard(prev => prev ? { ...prev, width_mm: parseInt(e.target.value) || 0 } : null)}
-                          className="w-24 px-2 py-1 border border-border rounded bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+                          className="w-24 px-2 py-1 rounded"
                           min="1"
                         />
                       </td>
                       <td className="px-4 py-2">
-                        <input
+                        <TextInput
                           type="number"
                           value={editingStandard.height_mm}
                           onChange={(e) => setEditingStandard(prev => prev ? { ...prev, height_mm: parseInt(e.target.value) || 0 } : null)}
-                          className="w-24 px-2 py-1 border border-border rounded bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+                          className="w-24 px-2 py-1 rounded"
                           min="1"
                         />
                       </td>
@@ -290,14 +291,14 @@ export default function FrameStandardsManager() {
                           <button
                             onClick={handleUpdate}
                             disabled={saving}
-                            className="p-1.5 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded transition-colors disabled:opacity-50"
+                            className="fj-icon-btn fj-icon-btn-green p-1.5 disabled:opacity-50"
                             title="Save"
                           >
                             <Save size={16} />
                           </button>
                           <button
                             onClick={cancelEdit}
-                            className="p-1.5 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-900/30 rounded transition-colors"
+                            className="fj-icon-btn p-1.5"
                             title="Cancel"
                           >
                             <X size={16} />
@@ -314,14 +315,14 @@ export default function FrameStandardsManager() {
                         <div className="flex justify-end gap-1">
                           <button
                             onClick={() => startEdit(standard)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
+                            className="fj-icon-btn fj-icon-btn-blue p-1.5"
                             title="Edit"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(standard.id, standard.label)}
-                            className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                            className="fj-icon-btn fj-icon-btn-danger p-1.5"
                             title="Delete"
                           >
                             <Trash2 size={16} />

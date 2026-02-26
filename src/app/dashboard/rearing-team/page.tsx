@@ -8,6 +8,7 @@ import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RearingGroup, RearingGroupMember } from '@/hooks/useRearingGroups'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import AlertPanel from '@/components/ui/AlertPanel'
 
 export default function RearingTeamPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -704,25 +705,25 @@ export default function RearingTeamPage() {
                                 {rgAcceptedInvitations.map((invitation, index) => {
                                   const acceptedDate = invitation.accepted_at ? new Date(invitation.accepted_at) : null
                                   return (
-                                    <div key={`rg-accepted-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                                      <div className="flex items-center gap-3 flex-1">
-                                        <User size={16} className="text-green-600 dark:text-green-400" />
-                                        <div className="flex-1">
-                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
-                                          <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
-                                            <Clock size={12} />
-                                            {acceptedDate ? (
-                                              <span>Accepted on {acceptedDate.toLocaleDateString()} at {acceptedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                            ) : (
-                                              <span>Accepted</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <span className="px-2 py-1 text-xs rounded font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
-                                          Accepted
-                                        </span>
+                                    <AlertPanel
+                                      key={`rg-accepted-${invitation.id || index}`}
+                                      tone="success"
+                                      icon={<User size={16} className="text-green-600 dark:text-green-400" />}
+                                      title={invitation.email}
+                                      titleClassName="text-foreground"
+                                      bodyClassName="text-xs text-text-tertiary"
+                                      endSlot={<span className="fj-badge fj-badge-green">Accepted</span>}
+                                      endSlotClassName="self-center"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <Clock size={12} />
+                                        {acceptedDate ? (
+                                          <span>Accepted on {acceptedDate.toLocaleDateString()} at {acceptedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        ) : (
+                                          <span>Accepted</span>
+                                        )}
                                       </div>
-                                    </div>
+                                    </AlertPanel>
                                   )
                                 })}
                               </div>
@@ -740,25 +741,25 @@ export default function RearingTeamPage() {
                                 {rgDeclinedInvitations.map((invitation, index) => {
                                   const declinedDate = invitation.declined_at ? new Date(invitation.declined_at) : null
                                   return (
-                                    <div key={`rg-declined-${invitation.id || index}`} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
-                                      <div className="flex items-center gap-3 flex-1">
-                                        <X size={16} className="text-red-600" />
-                                        <div className="flex-1">
-                                          <div className="text-sm font-medium text-foreground">{invitation.email}</div>
-                                          <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
-                                            <Clock size={12} />
-                                            {declinedDate ? (
-                                              <span>Declined on {declinedDate.toLocaleDateString()} at {declinedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                            ) : (
-                                              <span>Declined</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <span className="px-2 py-1 text-xs rounded font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
-                                          Declined
-                                        </span>
+                                    <AlertPanel
+                                      key={`rg-declined-${invitation.id || index}`}
+                                      tone="error"
+                                      icon={<X size={16} className="text-red-600 dark:text-red-400" />}
+                                      title={invitation.email}
+                                      titleClassName="text-foreground"
+                                      bodyClassName="text-xs text-text-tertiary"
+                                      endSlot={<span className="fj-badge fj-badge-red">Declined</span>}
+                                      endSlotClassName="self-center"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <Clock size={12} />
+                                        {declinedDate ? (
+                                          <span>Declined on {declinedDate.toLocaleDateString()} at {declinedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        ) : (
+                                          <span>Declined</span>
+                                        )}
                                       </div>
-                                    </div>
+                                    </AlertPanel>
                                   )
                                 })}
                               </div>
@@ -1048,21 +1049,28 @@ export default function RearingTeamPage() {
                 <h4 className="font-semibold text-foreground mb-3">Pending Invitations ({rgPendingInvitations.length})</h4>
                 <div className="space-y-2">
                   {rgPendingInvitations.map((invitation) => (
-                    <div key={invitation.id} className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                      <div>
-                        <div className="font-medium text-foreground">{invitation.email}</div>
-                        <div className="text-xs text-text-tertiary">
-                          Invited {new Date(invitation.invited_at).toLocaleDateString()}
-                          {' \u2022 Expires '}{new Date(invitation.expires_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleCancelRgInvitation(invitation.id, invitation.email)}
-                        className="px-3 py-1 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded hover:bg-sage-300 dark:hover:bg-slate-600"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    <AlertPanel
+                      key={invitation.id}
+                      tone="warning"
+                      icon={<Clock size={16} className="text-amber-600 dark:text-amber-300" />}
+                      title={invitation.email}
+                      titleClassName="text-foreground"
+                      bodyClassName="text-xs text-text-tertiary"
+                      endSlot={
+                        <button
+                          onClick={() => handleCancelRgInvitation(invitation.id, invitation.email)}
+                          className="fj-btn fj-btn-neutral fj-btn-xs"
+                        >
+                          Cancel
+                        </button>
+                      }
+                      endSlotClassName="self-center"
+                    >
+                      <p>
+                        Invited {new Date(invitation.invited_at).toLocaleDateString()}
+                        {' \u2022 Expires '}{new Date(invitation.expires_at).toLocaleDateString()}
+                      </p>
+                    </AlertPanel>
                   ))}
                 </div>
               </div>

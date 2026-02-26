@@ -5,6 +5,14 @@ import { supabase } from '@/lib/supabase'
 import { Plus, X, Edit, Trash2, Shield, Check } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
+import TextAreaField from '@/components/ui/TextAreaField'
+import ModalShell from '@/components/ui/ModalShell'
+import FormActionRow from '@/components/ui/FormActionRow'
+import { RadioChoiceGroup, RadioChoiceOption } from '@/components/ui/RadioChoiceGroup'
+import InfoPanel from '@/components/ui/InfoPanel'
 
 interface RegistrationCode {
   id: string
@@ -58,6 +66,22 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
     code_type: 'individual' as 'individual' | 'association',
     association_id: '',
   })
+
+  const resetNewCodeForm = useCallback(() => {
+    setNewCodeData({
+      code: '',
+      description: '',
+      max_uses: '',
+      subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      code_type: 'individual',
+      association_id: '',
+    })
+  }, [])
+
+  const closeAddModal = useCallback(() => {
+    setShowAddModal(false)
+    resetNewCodeForm()
+  }, [resetNewCodeForm])
 
   const fetchCodes = useCallback(async () => {
     setLoading(true)
@@ -140,15 +164,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
       if (error) throw error
 
       toast.success('Subscription code created successfully!')
-      setShowAddModal(false)
-      setNewCodeData({
-        code: '',
-        description: '',
-        max_uses: '',
-        subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-        code_type: 'individual',
-        association_id: '',
-      })
+      closeAddModal()
       fetchCodes()
     } catch (error) {
       console.error('Error creating registration code:', error)
@@ -245,13 +261,13 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-100 rounded-lg">
-              <Shield size={24} className="text-indigo-600" />
+            <div className="fj-panel-purple p-3">
+              <Shield size={24} className="text-purple-700 dark:text-purple-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-foreground">Subscription Codes</h2>
-                <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full flex items-center gap-1">
+                <span className="fj-badge fj-badge-purple gap-1">
                   <Shield size={12} />
                   Admin Only
                 </span>
@@ -261,7 +277,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 flex items-center gap-2"
+            className="fj-btn fj-btn-success"
           >
             <Plus size={16} />
             Add Code
@@ -270,17 +286,14 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
       </div>
 
       <div className="px-6 pb-6 border-t border-border pt-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <p className="text-sm text-blue-900 font-medium mb-2">
-            How Subscription Codes Work:
-          </p>
-          <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+        <InfoPanel tone="blue" title="How Subscription Codes Work:" className="mb-4">
+          <ul className="text-sm space-y-1 list-disc list-inside">
             <li><strong>New User Registration:</strong> Users enter a code during sign-up to create their account and receive initial subscription</li>
             <li><strong>Subscription Renewal:</strong> Existing users can enter codes to extend their subscription from the Profile page</li>
             <li><strong>Subscription Duration:</strong> How many days of subscription time the code grants when activated (30, 90, 180, or 365 days)</li>
             <li><strong>Code Management:</strong> Codes remain active until you manually deactivate them - no automatic expiration</li>
           </ul>
-        </div>
+        </InfoPanel>
 
         {loading ? (
           <div className="text-center py-8">
@@ -311,7 +324,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                   const isLifetime = expiryDate.getFullYear() > new Date().getFullYear() + 50
 
                   return (
-                    <tr key={code.id} className="hover:bg-surface dark:bg-background">
+                    <tr key={code.id} className="hover:bg-surface-elevated/60">
                       <td className="px-4 py-4 text-sm font-mono font-bold text-foreground">
                         {code.code}
                       </td>
@@ -320,12 +333,12 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                       </td>
                       <td className="px-4 py-4 text-sm text-text-tertiary">
                         {code.code_type === 'individual' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="fj-badge fj-badge-blue">
                             Individual
                           </span>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            <span className="fj-badge fj-badge-purple">
                               Association
                             </span>
                             {code.association && (
@@ -338,16 +351,16 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                       </td>
                       <td className="px-4 py-4 text-sm text-text-tertiary">
                         {editingCodeId === code.id ? (
-                          <input
+                          <TextInput
                             type="date"
                             value={editingCodeData.subscription_expires_at}
                             onChange={(e) => setEditingCodeData({...editingCodeData, subscription_expires_at: e.target.value})}
-                            className="px-2 py-1 border border-border rounded text-sm"
+                            className="fj-control-inline px-2 py-1 text-sm"
                             min={new Date().toISOString().split('T')[0]}
                           />
                         ) : isLifetime ? (
                           <div className="flex flex-col">
-                            <span className="font-semibold text-indigo-600">Never</span>
+                            <span className="font-semibold fj-text-info">Never</span>
                             <span className="text-xs text-text-tertiary">Lifetime access</span>
                           </div>
                         ) : (
@@ -361,29 +374,31 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                         {editingCodeId === code.id ? (
                           <div className="flex items-center gap-2">
                             <span className="text-text-tertiary">{code.current_uses} /</span>
-                            <input
+                            <TextInput
                               type="number"
                               value={editingCodeData.max_uses}
                               onChange={(e) => setEditingCodeData({...editingCodeData, max_uses: e.target.value})}
-                              className="w-20 px-2 py-1 border border-border rounded text-sm"
+                              className="fj-control-inline w-20 px-2 py-1 text-sm"
                               min="0"
-                              placeholder="∞"
+                              placeholder="Unlimited"
                             />
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span>{code.current_uses} / {code.max_uses === null ? '∞' : code.max_uses}</span>
+                            <span>{code.current_uses} / {code.max_uses === null ? 'Unlimited' : code.max_uses}</span>
                             {isMaxedOut && (
-                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">Maxed</span>
+                              <span className="fj-badge fj-badge-amber">Maxed</span>
                             )}
                           </div>
                         )}
                       </td>
                       <td className="px-4 py-4 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        <span className={`fj-badge ${
                           code.is_active && !isMaxedOut
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
+                            ? 'fj-badge-green'
+                            : isMaxedOut
+                              ? 'fj-badge-amber'
+                              : 'fj-badge-neutral'
                         }`}>
                           {code.is_active ? (isMaxedOut ? 'Maxed Out' : 'Active') : 'Disabled'}
                         </span>
@@ -393,7 +408,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleSaveCodeEdit(code.id)}
-                              className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                              className="fj-btn fj-btn-success fj-btn-xs"
                               title="Save changes"
                             >
                               <Check size={14} />
@@ -401,7 +416,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                             </button>
                             <button
                               onClick={handleCancelCodeEdit}
-                              className="px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded hover:bg-surface dark:hover:bg-surface border border-border flex items-center gap-1"
+                              className="fj-icon-btn fj-icon-btn-xs"
                               title="Cancel editing"
                             >
                               <X size={14} />
@@ -411,15 +426,15 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleEditCode(code)}
-                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                              className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
                               title="Edit code"
                             >
                               <Edit size={14} />
                             </button>
                             <button
                               onClick={() => handleToggleCodeActive(code.id, code.is_active)}
-                              className={`px-2 py-1 text-white rounded hover:opacity-90 flex items-center gap-1 ${
-                                code.is_active ? 'bg-orange-600' : 'bg-green-600'
+                              className={`fj-btn fj-btn-xs ${
+                                code.is_active ? 'fj-btn-amber' : 'fj-btn-success'
                               }`}
                               title={code.is_active ? 'Deactivate code' : 'Activate code'}
                             >
@@ -427,7 +442,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                             </button>
                             <button
                               onClick={() => handleDeleteCode(code.id, code.code)}
-                              className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                              className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
                               title="Delete code"
                             >
                               <Trash2 size={14} />
@@ -456,39 +471,23 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
 
       {/* Add Code Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-foreground">Create Subscription Code</h3>
-              <button
-                onClick={() => {
-                  setShowAddModal(false)
-                  setNewCodeData({
-                    code: '',
-                    description: '',
-                    max_uses: '',
-                    subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-                    code_type: 'individual',
-                    association_id: '',
-                  })
-                }}
-                className="text-text-tertiary hover:text-text-tertiary"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateCode} className="space-y-4">
+        <ModalShell
+          title="Create Subscription Code"
+          onClose={closeAddModal}
+          maxWidthClassName="max-w-xl"
+        >
+          <form onSubmit={handleCreateCode} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Code <span className="text-red-500">*</span>
-                </label>
-                <input
+                <FieldLabel required>
+                  Code
+                </FieldLabel>
+                <TextInput
                   type="text"
                   value={newCodeData.code}
                   onChange={(e) => setNewCodeData({ ...newCodeData, code: e.target.value.toUpperCase() })}
                   placeholder="e.g., BEEKEEPER2025"
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+                  className="font-mono"
+                  tone="purple"
                   required
                   autoComplete="off"
                 />
@@ -496,36 +495,32 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Code Type <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="code_type"
-                      value="individual"
-                      checked={newCodeData.code_type === 'individual'}
-                      onChange={(e) => setNewCodeData({ ...newCodeData, code_type: e.target.value as 'individual' | 'association', association_id: '' })}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-text-secondary">Individual</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="code_type"
-                      value="association"
-                      checked={newCodeData.code_type === 'association'}
-                      onChange={(e) => {
-                        setNewCodeData({ ...newCodeData, code_type: e.target.value as 'individual' | 'association' })
-                        if (!associations.length) fetchAssociationsForCodes()
-                      }}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-text-secondary">Association Member</span>
-                  </label>
-                </div>
+                <FieldLabel required>Code Type</FieldLabel>
+                <RadioChoiceGroup className="sm:grid-cols-2">
+                  <RadioChoiceOption
+                    name="code_type"
+                    value="individual"
+                    tone="purple"
+                    checked={newCodeData.code_type === 'individual'}
+                    onChange={(e) =>
+                      setNewCodeData({ ...newCodeData, code_type: e.target.value as 'individual' | 'association', association_id: '' })
+                    }
+                    title="Individual"
+                    description="Direct user subscription code"
+                  />
+                  <RadioChoiceOption
+                    name="code_type"
+                    value="association"
+                    tone="purple"
+                    checked={newCodeData.code_type === 'association'}
+                    onChange={(e) => {
+                      setNewCodeData({ ...newCodeData, code_type: e.target.value as 'individual' | 'association' })
+                      if (!associations.length) fetchAssociationsForCodes()
+                    }}
+                    title="Association Member"
+                    description="Restrict to selected association"
+                  />
+                </RadioChoiceGroup>
                 <p className="mt-1 text-xs text-text-tertiary">
                   {newCodeData.code_type === 'individual' ? 'For direct user subscriptions' : 'For beekeeping association members'}
                 </p>
@@ -533,13 +528,11 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
 
               {newCodeData.code_type === 'association' && (
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
-                    Association <span className="text-red-500">*</span>
-                  </label>
-                  <select
+                  <FieldLabel required>Association</FieldLabel>
+                  <SelectField
                     value={newCodeData.association_id}
                     onChange={(e) => setNewCodeData({ ...newCodeData, association_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    tone="purple"
                     required={newCodeData.code_type === 'association'}
                   >
                     <option value="">Select an association...</option>
@@ -548,7 +541,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                         {assoc.name} ({assoc.jurisdiction})
                       </option>
                     ))}
-                  </select>
+                  </SelectField>
                   {loadingAssociations && (
                     <p className="mt-1 text-xs text-text-tertiary">Loading associations...</p>
                   )}
@@ -556,43 +549,41 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
               )}
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
-                <textarea
+                <FieldLabel>Description</FieldLabel>
+                <TextAreaField
                   value={newCodeData.description}
                   onChange={(e) => setNewCodeData({ ...newCodeData, description: e.target.value })}
                   placeholder="Optional description for internal reference"
                   rows={2}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  tone="purple"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Max Uses</label>
-                <input
+                <FieldLabel>Max Uses</FieldLabel>
+                <TextInput
                   type="number"
                   value={newCodeData.max_uses}
                   onChange={(e) => setNewCodeData({ ...newCodeData, max_uses: e.target.value })}
                   placeholder="Leave empty for unlimited"
                   min="1"
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  tone="purple"
                 />
                 <p className="mt-1 text-xs text-text-tertiary">Leave empty for unlimited uses</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Subscription Expiration Date <span className="text-red-500">*</span>
-                </label>
-                <input
+                <FieldLabel required>Subscription Expiration Date</FieldLabel>
+                <TextInput
                   type="date"
                   value={newCodeData.subscription_expires_at}
                   onChange={(e) => setNewCodeData({ ...newCodeData, subscription_expires_at: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  tone="purple"
                   required
                 />
                 <p className="mt-1 text-xs text-text-tertiary">Fixed date when subscriptions activated with this code will expire</p>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -600,7 +591,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                       date.setMonth(date.getMonth() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded hover:bg-surface dark:hover:bg-surface"
+                    className="fj-btn fj-btn-neutral fj-btn-xs"
                   >
                     +1 month
                   </button>
@@ -611,7 +602,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                       date.setMonth(date.getMonth() + 6)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded hover:bg-surface dark:hover:bg-surface"
+                    className="fj-btn fj-btn-neutral fj-btn-xs"
                   >
                     +6 months
                   </button>
@@ -622,7 +613,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                       date.setFullYear(date.getFullYear() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded hover:bg-surface dark:hover:bg-surface"
+                    className="fj-btn fj-btn-neutral fj-btn-xs"
                   >
                     +1 year
                   </button>
@@ -633,41 +624,30 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                       date.setFullYear(date.getFullYear() + 100)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+                    className="fj-btn fj-btn-purple fj-btn-xs"
                   >
                     Lifetime
                   </button>
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <FormActionRow className="pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAddModal(false)
-                    setNewCodeData({
-                      code: '',
-                      description: '',
-                      max_uses: '',
-                      subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-                      code_type: 'individual',
-                      association_id: ''
-                    })
-                  }}
-                  className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-secondary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                  onClick={closeAddModal}
+                  className="fj-btn fj-btn-neutral flex-1"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700"
+                  className="fj-btn fj-btn-success flex-1"
                 >
                   Create Code
                 </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              </FormActionRow>
+          </form>
+        </ModalShell>
       )}
     </div>
   )

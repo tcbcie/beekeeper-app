@@ -7,6 +7,11 @@ import { Home, X, ClipboardList } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
+import FormActionRow from '@/components/ui/FormActionRow'
+import ModalShell from '@/components/ui/ModalShell'
+import FieldLabel from '@/components/ui/FieldLabel'
+import SelectField from '@/components/ui/SelectField'
+import TextAreaField from '@/components/ui/TextAreaField'
 import { useToast } from '@/components/ui/Toast'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
@@ -930,7 +935,7 @@ export default function RecordsPage() {
 
         {/* Form Section */}
         {showForm && (
-          <div ref={formRef} className="mb-6 bg-surface rounded-xl p-4 border border-border shadow-sm">
+          <div ref={formRef} className="field-journal-panel mb-6 p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-foreground">
                 {formType === 'inspection' && (editingInspection ? 'Edit Inspection' : 'New Inspection')}
@@ -942,7 +947,7 @@ export default function RecordsPage() {
               </h2>
               <button
                 onClick={resetForm}
-                className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
+                className="fj-icon-btn p-2"
                 aria-label="Close form"
               >
                 <X size={20} />
@@ -1016,57 +1021,54 @@ export default function RecordsPage() {
             {formType === 'archive' && (
               <form onSubmit={handleArchiveSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Hive</label>
-                  <select
+                  <FieldLabel>Hive</FieldLabel>
+                  <SelectField
                     value={archiveData.hive_id}
                     onChange={(e) => setArchiveData({ ...archiveData, hive_id: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                     required
                   >
                     <option value="">Select hive...</option>
                     {hives.filter(h => !h.archived_at).map(hive => (
                       <option key={hive.id} value={hive.id}>{hive.hive_number}</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Reason</label>
-                  <select
+                  <FieldLabel>Reason</FieldLabel>
+                  <SelectField
                     value={archiveData.archive_reason_id}
                     onChange={(e) => setArchiveData({ ...archiveData, archive_reason_id: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                   >
                     <option value="">Select reason...</option>
                     {archiveReasons.map(reason => (
                       <option key={reason.id} value={reason.id}>{reason.value}</option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
-                  <textarea
+                  <FieldLabel>Notes</FieldLabel>
+                  <TextAreaField
                     value={archiveData.archive_notes}
                     onChange={(e) => setArchiveData({ ...archiveData, archive_notes: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground"
                     rows={3}
                     placeholder="Optional notes..."
                   />
                 </div>
-                <div className="flex gap-3">
+                <FormActionRow>
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground hover:bg-surface-elevated transition-colors"
+                    className="fj-btn fj-btn-neutral flex-1"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    className="fj-btn fj-btn-danger flex-1"
                   >
                     Archive Hive
                   </button>
-                </div>
+                </FormActionRow>
               </form>
             )}
           </div>
@@ -1159,32 +1161,27 @@ export default function RecordsPage() {
 
         {/* IPM Tips Modal */}
         {showIpmTips && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-surface rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">IPM Tips for Varroa Control</h3>
-                <button
-                  onClick={() => setShowIpmTips(false)}
-                  className="p-2 hover:bg-surface-elevated rounded-lg transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="space-y-4 text-sm text-text-secondary">
-                <p><strong>Integrated Pest Management (IPM)</strong> combines multiple strategies:</p>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li><strong>Drone Comb Trapping:</strong> Insert drone foundation frames, allow bees to build and queen to lay, then remove and freeze before drones emerge.</li>
-                  <li><strong>Brood Breaks:</strong> Cage the queen or create splits to interrupt the mite reproduction cycle.</li>
-                  <li><strong>Screened Bottom Boards:</strong> Allow mites to fall through and away from the colony.</li>
-                  <li><strong>Powdered Sugar Dusting:</strong> Encourages grooming behavior.</li>
-                  <li><strong>Regular Monitoring:</strong> Check mite levels every 4-6 weeks during the active season.</li>
-                </ul>
-                <p className="text-amber-800 dark:text-amber-400 font-medium">
-                  Note: Always follow treatment product instructions and respect withdrawal periods before harvesting honey.
-                </p>
-              </div>
+          <ModalShell
+            title="IPM Tips for Varroa Control"
+            onClose={() => setShowIpmTips(false)}
+            maxWidthClassName="max-w-lg"
+            shellClassName="max-h-[80vh] flex flex-col"
+            bodyClassName="flex-1 overflow-y-auto p-6"
+          >
+            <div className="space-y-4 text-sm text-text-secondary">
+              <p><strong>Integrated Pest Management (IPM)</strong> combines multiple strategies:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li><strong>Drone Comb Trapping:</strong> Insert drone foundation frames, allow bees to build and queen to lay, then remove and freeze before drones emerge.</li>
+                <li><strong>Brood Breaks:</strong> Cage the queen or create splits to interrupt the mite reproduction cycle.</li>
+                <li><strong>Screened Bottom Boards:</strong> Allow mites to fall through and away from the colony.</li>
+                <li><strong>Powdered Sugar Dusting:</strong> Encourages grooming behavior.</li>
+                <li><strong>Regular Monitoring:</strong> Check mite levels every 4-6 weeks during the active season.</li>
+              </ul>
+              <p className="text-amber-800 dark:text-amber-400 font-medium">
+                Note: Always follow treatment product instructions and respect withdrawal periods before harvesting honey.
+              </p>
             </div>
-          </div>
+          </ModalShell>
         )}
 
         {/* Image Modal */}
