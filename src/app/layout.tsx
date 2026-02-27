@@ -9,6 +9,29 @@ import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
 
+const themeBootstrapScript = `
+(() => {
+  try {
+    const saved = localStorage.getItem('theme');
+    const theme = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
+    const hour = new Date().getHours();
+    const resolved = theme === 'auto' ? (hour >= 6 && hour < 20 ? 'light' : 'dark') : theme;
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(resolved);
+    root.style.colorScheme = resolved;
+    const themeColour = resolved === 'dark' ? '#0a0f1a' : '#faf8f5';
+    let metaThemeColour = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColour) {
+      metaThemeColour = document.createElement('meta');
+      metaThemeColour.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaThemeColour);
+    }
+    metaThemeColour.setAttribute('content', themeColour);
+  } catch {}
+})();
+`;
+
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
@@ -61,6 +84,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          id="theme-bootstrap"
+          dangerouslySetInnerHTML={{ __html: themeBootstrapScript }}
+        />
+      </head>
       <body
         className={`${dmSans.variable} ${dmSerif.variable} ${geistMono.variable} antialiased`}
       >

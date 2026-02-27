@@ -624,10 +624,10 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                     <span className="text-text-tertiary">Marked Colour:</span>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       hive.queens.marking_color === 'White' ? 'bg-surface-secondary text-text-primary' :
-                      hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
-                      hive.queens.marking_color === 'Red' ? 'bg-red-200 text-red-900' :
-                      hive.queens.marking_color === 'Green' ? 'bg-green-200 text-green-900' :
-                      hive.queens.marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
+                      hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200' :
+                      hive.queens.marking_color === 'Red' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200' :
+                      hive.queens.marking_color === 'Green' ? 'bg-green-200 dark:bg-green-900/40 text-green-900 dark:text-green-200' :
+                      hive.queens.marking_color === 'Blue' ? 'bg-blue-200 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200' :
                       'bg-surface-secondary text-text-primary'
                     }`}>
                       {hive.queens.marking_color}
@@ -658,10 +658,10 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                     <span className="text-text-tertiary">Marked Colour:</span>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       hive.queen_marking_color === 'White' ? 'bg-surface-secondary text-text-primary' :
-                      hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
-                      hive.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
-                      hive.queen_marking_color === 'Green' ? 'bg-green-200 text-green-900' :
-                      hive.queen_marking_color === 'Blue' ? 'bg-blue-200 text-blue-900' :
+                      hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200' :
+                      hive.queen_marking_color === 'Red' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200' :
+                      hive.queen_marking_color === 'Green' ? 'bg-green-200 dark:bg-green-900/40 text-green-900 dark:text-green-200' :
+                      hive.queen_marking_color === 'Blue' ? 'bg-blue-200 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200' :
                       'bg-surface-secondary text-text-primary'
                     }`}>
                       {hive.queen_marking_color}

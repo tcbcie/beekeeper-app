@@ -232,7 +232,7 @@ export default function SupportPage() {
                   onClick={() => setFormData({ ...formData, ticket_type: 'problem' })}
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'problem'
-                      ? 'border-red-500 bg-red-50'
+                      ? 'border-red-500 bg-red-50 dark:border-red-700 dark:bg-red-950/30'
                       : 'border-border hover:border border-border'
                   }`}
                   disabled={!!editingTicket}
@@ -248,7 +248,7 @@ export default function SupportPage() {
                   onClick={() => setFormData({ ...formData, ticket_type: 'suggestion' })}
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'suggestion'
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-blue-500 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
                       : 'border-border hover:border border-border'
                   }`}
                   disabled={!!editingTicket}
@@ -264,7 +264,7 @@ export default function SupportPage() {
                   onClick={() => setFormData({ ...formData, ticket_type: 'subscription' })}
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
                     formData.ticket_type === 'subscription'
-                      ? 'border-amber-500 bg-amber-50'
+                      ? 'border-amber-500 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30'
                       : 'border-border hover:border border-border'
                   }`}
                   disabled={!!editingTicket}
@@ -385,7 +385,7 @@ export default function SupportPage() {
                   >
                     {ticket.priority.toUpperCase()} PRIORITY
                   </span>
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-600">
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
                     {ticket.ticket_type.toUpperCase()}
                   </span>
                 </div>
@@ -393,9 +393,9 @@ export default function SupportPage() {
                 <p className="text-text-secondary mb-3 whitespace-pre-wrap">{ticket.description}</p>
 
                 {ticket.admin_notes && (
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3">
-                    <p className="text-sm font-semibold text-blue-900 mb-1">Admin Response:</p>
-                    <p className="text-sm text-blue-800 whitespace-pre-wrap">{ticket.admin_notes}</p>
+                  <div className="bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500 dark:border-blue-700 p-3 mb-3">
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">Admin Response:</p>
+                    <p className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{ticket.admin_notes}</p>
                   </div>
                 )}
 

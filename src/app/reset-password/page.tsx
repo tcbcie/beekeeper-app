@@ -136,14 +136,14 @@ export default function ResetPassword() {
             </div>
 
             {message && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-700 text-sm">{message}</p>
+              <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-green-700 dark:text-green-300 text-sm">{message}</p>
               </div>
             )}
 
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm">{error}</p>
+              <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
               </div>
             )}
 
@@ -160,8 +160,8 @@ export default function ResetPassword() {
         ) : (
           <div className="space-y-6">
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm">{error}</p>
+              <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
               </div>
             )}
             <Link

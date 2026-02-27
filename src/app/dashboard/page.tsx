@@ -90,16 +90,16 @@ export default function DashboardPage() {
  const hasSharedWithMeData = useMemo(() => sharedWithMeStats.hives > 0 || sharedWithMeStats.queens > 0 || sharedWithMeStats.inspections > 0, [sharedWithMeStats])
 
  const mySharedCards = useMemo(() => hasMySharedData ? [
- { label: 'Queens I Shared', value: mySharedStats.queens, icon: iconography.queen, color: 'bg-purple-100 text-foreground border-2 border-purple-300' },
- { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: iconography.highlight, color: 'bg-green-100 text-foreground border-2 border-green-300' },
- { label: 'Hives I Shared', value: mySharedStats.hives, icon: iconography.hive, color: 'bg-amber-100 text-foreground border-2 border-amber-300' },
+ { label: 'Queens I Shared', value: mySharedStats.queens, icon: iconography.queen, color: 'bg-purple-100 dark:bg-purple-900/30 text-foreground dark:text-purple-300 border-2 border-purple-300 dark:border-purple-700' },
+ { label: 'Active Queens Shared', value: mySharedStats.activeQueens, icon: iconography.highlight, color: 'bg-green-100 dark:bg-green-900/30 text-foreground dark:text-green-300 border-2 border-green-300 dark:border-green-700' },
+ { label: 'Hives I Shared', value: mySharedStats.hives, icon: iconography.hive, color: 'bg-amber-100 dark:bg-amber-900/30 text-foreground dark:text-amber-300 border-2 border-amber-300 dark:border-amber-700' },
  { label: 'My Shared Inspections (7d)', value: mySharedStats.inspections, icon: iconography.inspection, color: 'bg-indigo-100 dark:bg-indigo-900/30 text-foreground dark:text-indigo-300 border-2 border-indigo-300 dark:border-indigo-700' },
  ] : [], [hasMySharedData, mySharedStats])
 
  const sharedWithMeCards = useMemo(() => hasSharedWithMeData ? [
- { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: iconography.queen, color: 'bg-purple-50 text-foreground border-2 border-purple-200' },
- { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: iconography.highlight, color: 'bg-green-50 text-foreground border-2 border-green-200' },
- { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: iconography.hive, color: 'bg-amber-50 text-foreground border-2 border-amber-200' },
+ { label: 'Queens Shared with Me', value: sharedWithMeStats.queens, icon: iconography.queen, color: 'bg-purple-50 dark:bg-purple-900/20 text-foreground dark:text-purple-300 border-2 border-purple-200 dark:border-purple-800' },
+ { label: 'Active Queens Available', value: sharedWithMeStats.activeQueens, icon: iconography.highlight, color: 'bg-green-50 dark:bg-green-900/20 text-foreground dark:text-green-300 border-2 border-green-200 dark:border-green-800' },
+ { label: 'Hives Shared with Me', value: sharedWithMeStats.hives, icon: iconography.hive, color: 'bg-amber-50 dark:bg-amber-900/20 text-foreground dark:text-amber-300 border-2 border-amber-200 dark:border-amber-800' },
  { label: 'Team Inspections (7d)', value: sharedWithMeStats.inspections, icon: iconography.inspection, color: 'bg-indigo-50 dark:bg-indigo-900/30 text-foreground dark:text-indigo-300 border-2 border-indigo-200 dark:border-indigo-800' },
  ] : [], [hasSharedWithMeData, sharedWithMeStats])
 

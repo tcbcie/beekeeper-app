@@ -12,80 +12,103 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
-  resolvedTheme: 'light', // Default to light (field work)
+  theme: 'auto',
+  resolvedTheme: 'light',
   setTheme: () => {},
 })
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light')
-  const [mounted, setMounted] = useState(false)
+const THEME_STORAGE_KEY = 'theme'
+const LIGHT_THEME_COLOUR = '#faf8f5'
+const DARK_THEME_COLOUR = '#0a0f1a'
 
-  // Auto-switch based on time: 6am-8pm = light (field work), 8pm-6am = dark (evening planning)
-  const getAutoTheme = (): ResolvedTheme => {
-    const hour = new Date().getHours()
-    return (hour >= 6 && hour < 20) ? 'light' : 'dark'
+const isTheme = (value: string | null): value is Theme => {
+  return value === 'light' || value === 'dark' || value === 'auto'
+}
+
+// Auto-switch based on time: 6am-8pm = light (field work), 8pm-6am = dark (evening planning)
+const getAutoTheme = (): ResolvedTheme => {
+  const hour = new Date().getHours()
+  return hour >= 6 && hour < 20 ? 'light' : 'dark'
+}
+
+const resolveTheme = (value: Theme): ResolvedTheme => {
+  return value === 'auto' ? getAutoTheme() : value
+}
+
+const readStoredTheme = (): Theme => {
+  if (typeof window === 'undefined') {
+    return 'auto'
   }
 
-  // Load saved preference and determine resolved theme
-  useEffect(() => {
-    setMounted(true)
+  try {
+    const saved = window.localStorage.getItem(THEME_STORAGE_KEY)
+    return isTheme(saved) ? saved : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
 
-    // Load saved preference from localStorage
-    const saved = localStorage.getItem('theme') as Theme | null
-    if (saved && ['light', 'dark', 'auto'].includes(saved)) {
-      setTheme(saved)
-    }
+const applyDocumentTheme = (theme: ResolvedTheme) => {
+  if (typeof document === 'undefined') return
 
-    // Determine initial resolved theme
-    const resolveInitialTheme = () => {
-      if (saved === 'light' || saved === 'dark') {
-        return saved
-      }
-      // Auto mode or first time user
-      return getAutoTheme()
-    }
+  const root = document.documentElement
+  root.classList.remove('light', 'dark')
+  root.classList.add(theme)
+  root.style.colorScheme = theme
 
-    setResolvedTheme(resolveInitialTheme())
-  }, [])
+  const themeColour = theme === 'dark' ? DARK_THEME_COLOUR : LIGHT_THEME_COLOUR
+  let meta = document.querySelector('meta[name="theme-color"]')
+  if (!meta) {
+    meta = document.createElement('meta')
+    meta.setAttribute('name', 'theme-color')
+    document.head.appendChild(meta)
+  }
+  meta.setAttribute('content', themeColour)
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(() => readStoredTheme())
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => resolveTheme(readStoredTheme()))
 
   // Update resolved theme when theme changes or time changes
   useEffect(() => {
     const updateResolvedTheme = () => {
-      if (theme === 'auto') {
-        setResolvedTheme(getAutoTheme())
-      } else {
-        setResolvedTheme(theme)
-      }
+      setResolvedTheme(resolveTheme(theme))
     }
 
     updateResolvedTheme()
 
     // Check every minute if in auto mode to catch 6am and 8pm transitions
     if (theme === 'auto') {
-      const interval = setInterval(updateResolvedTheme, 60000) // Check every minute
+      const interval = window.setInterval(updateResolvedTheme, 60000)
       return () => clearInterval(interval)
     }
   }, [theme])
 
   // Apply theme to document
   useEffect(() => {
-    if (!mounted) return
+    applyDocumentTheme(resolvedTheme)
+  }, [resolvedTheme])
 
-    const root = document.documentElement
-    root.classList.remove('light', 'dark')
-    root.classList.add(resolvedTheme)
-  }, [resolvedTheme, mounted])
+  // Sync theme across tabs/windows.
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== THEME_STORAGE_KEY) return
+      if (!isTheme(event.newValue)) return
+      setTheme(event.newValue)
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   const updateTheme = (newTheme: Theme) => {
     setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-  }
-
-  // Prevent flash of wrong theme on SSR
-  if (!mounted) {
-    return <>{children}</>
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, newTheme)
+    } catch {
+      // Ignore storage write errors and keep the in-memory selection.
+    }
   }
 
   return (

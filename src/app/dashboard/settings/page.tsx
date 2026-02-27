@@ -1558,9 +1558,9 @@ export default function SettingsPage() {
                       <div
                         key={request.id}
                         className={`bg-surface dark:bg-surface border-2 rounded-lg p-4 ${
-                          request.status === 'pending' ? 'border-yellow-200 bg-yellow-50' :
-                          request.status === 'approved' ? 'border-green-200 bg-green-50' :
-                          'border-red-200 bg-red-50'
+                          request.status === 'pending' ? 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20' :
+                          request.status === 'approved' ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20' :
+                          'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
                         }`}
                       >
                         <div className="flex justify-between items-start gap-4">
@@ -1568,9 +1568,9 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-3 mb-2">
                               <h4 className="font-semibold text-foreground text-lg">{request.original_email}</h4>
                               <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
-                                request.status === 'pending' ? 'bg-yellow-200 text-yellow-900' :
-                                request.status === 'approved' ? 'bg-green-200 text-green-900' :
-                                'bg-red-200 text-red-900'
+                                request.status === 'pending' ? 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200' :
+                                request.status === 'approved' ? 'bg-green-200 text-green-900 dark:bg-green-900/40 dark:text-green-200' :
+                                'bg-red-200 text-red-900 dark:bg-red-900/40 dark:text-red-200'
                               }`}>
                                 {request.status}
                               </span>
