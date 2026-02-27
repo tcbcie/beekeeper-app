@@ -741,7 +741,9 @@ export default function BatchesPage() {
 
  if (loading) return <LoadingSpinner text="Loading Queen Rearing..." />
 
- const stepperButtonClassName = 'border border-border bg-surface dark:bg-surface-elevated'
+ const stepperButtonClassName = 'w-10 h-10 shrink-0 border border-border bg-surface dark:bg-surface-elevated'
+ const stepperRowClassName = 'grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2'
+ const stepperInputClassName = 'w-full min-w-0 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center'
  const timePeriodButtonClassName = 'min-h-[44px] text-sm touch-manipulation'
  const weightButtonClassName = 'w-10 h-10 !min-h-10 !px-0 !py-0 rounded-md font-semibold transition-all'
 
@@ -1029,7 +1031,7 @@ export default function BatchesPage() {
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  <div>
  <label className="block text-xs font-medium text-text-secondary mb-1">Rows</label>
- <div className="flex items-center gap-2">
+ <div className={stepperRowClassName}>
  <IconButton
  type="button"
  onClick={() => {
@@ -1054,7 +1056,7 @@ export default function BatchesPage() {
  const total = rows * cols
  setFormData({...formData, frame_rows: rows.toString(), cell_count: total > 0 ? total.toString() : ''})
  }}
- className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+ className={stepperInputClassName}
  min="0"
  placeholder="0"
  />
@@ -1075,7 +1077,7 @@ export default function BatchesPage() {
  </div>
  <div>
  <label className="block text-xs font-medium text-text-secondary mb-1">Cells per Row</label>
- <div className="flex items-center gap-2">
+ <div className={stepperRowClassName}>
  <IconButton
  type="button"
  onClick={() => {
@@ -1100,7 +1102,7 @@ export default function BatchesPage() {
  const total = rows * cols
  setFormData({...formData, cells_per_row: cols.toString(), cell_count: total > 0 ? total.toString() : ''})
  }}
- className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+ className={stepperInputClassName}
  min="0"
  placeholder="0"
  />
@@ -1123,7 +1125,7 @@ export default function BatchesPage() {
  {/* Total Grafts (auto-calculated but editable) */}
  <div>
  <label className="block text-xs font-medium text-text-secondary mb-1">Total Grafts</label>
- <div className="flex items-center gap-2">
+ <div className={stepperRowClassName}>
  <IconButton
  type="button"
  onClick={() => {
@@ -1139,7 +1141,7 @@ export default function BatchesPage() {
  type="number"
  value={formData.cell_count}
  onChange={(e) => setFormData({...formData, cell_count: e.target.value})}
- className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+ className={stepperInputClassName}
  min="0"
  placeholder="0"
  />
@@ -1161,7 +1163,7 @@ export default function BatchesPage() {
  {/* Grafts Accepted */}
  <div>
  <label className="block text-xs font-medium text-text-secondary mb-1">Grafts Accepted</label>
- <div className="flex items-center gap-2">
+ <div className={stepperRowClassName}>
  <IconButton
  type="button"
  onClick={() => {
@@ -1177,7 +1179,7 @@ export default function BatchesPage() {
  type="number"
  value={formData.grafts_accepted}
  onChange={(e) => setFormData({...formData, grafts_accepted: e.target.value})}
- className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+ className={stepperInputClassName}
  min="0"
  placeholder="0"
  />
@@ -1198,7 +1200,7 @@ export default function BatchesPage() {
  {/* Queens Hatched */}
  <div>
  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Hatched</label>
- <div className="flex items-center gap-2">
+ <div className={stepperRowClassName}>
  <IconButton
  type="button"
  onClick={() => {
@@ -1214,7 +1216,7 @@ export default function BatchesPage() {
  type="number"
  value={formData.queens_hatched}
  onChange={(e) => setFormData({...formData, queens_hatched: e.target.value})}
- className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+ className={stepperInputClassName}
  min="0"
  placeholder="0"
  />
@@ -1235,7 +1237,7 @@ export default function BatchesPage() {
  {/* Queens Mated */}
  <div>
  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Mated</label>
- <div className="flex items-center gap-2">
+ <div className={stepperRowClassName}>
  <IconButton
  type="button"
  onClick={() => {
@@ -1251,7 +1253,7 @@ export default function BatchesPage() {
  type="number"
  value={formData.queens_mated}
  onChange={(e) => setFormData({...formData, queens_mated: e.target.value})}
- className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+ className={stepperInputClassName}
  min="0"
  placeholder="0"
  />
@@ -1272,7 +1274,7 @@ export default function BatchesPage() {
  {/* Queens Showing Hybridised Offspring */}
  <div>
  <label className="block text-xs font-medium text-text-secondary mb-1">Queens Showing Hybridised Offspring</label>
- <div className="flex items-center gap-2">
+ <div className={stepperRowClassName}>
  <IconButton
  type="button"
  onClick={() => {
@@ -1288,7 +1290,7 @@ export default function BatchesPage() {
  type="number"
  value={formData.queens_hybridised}
  onChange={(e) => setFormData({...formData, queens_hybridised: e.target.value})}
- className="flex-1 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center"
+ className={stepperInputClassName}
  min="0"
  placeholder="0"
  />
