@@ -32,6 +32,9 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   // Frame selection state
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkStatusDraft, setBulkStatusDraft] = useState('')
+  const [bulkDateDraft, setBulkDateDraft] = useState('')
+  const [savingFrameBulkEdits, setSavingFrameBulkEdits] = useState(false)
 
   // Table selection state
   const [tableSelectMode, setTableSelectMode] = useState(false)
@@ -331,7 +334,15 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   const selectAll = useCallback(() => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id))), [grafts])
   const deselectAll = useCallback(() => setSelectedIds(new Set()), [])
-  const exitSelectMode = useCallback(() => { setSelectMode(false); setSelectedIds(new Set()) }, [])
+  const clearFrameBulkDrafts = useCallback(() => {
+    setBulkStatusDraft('')
+    setBulkDateDraft('')
+  }, [])
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false)
+    setSelectedIds(new Set())
+    clearFrameBulkDrafts()
+  }, [clearFrameBulkDrafts])
 
   // --- Table selection helpers ---
 
@@ -361,41 +372,43 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   // --- Bulk handlers (frame) ---
 
-  const handleBulkStatusChange = useCallback(async (newStatus: string) => {
-    const ids = Array.from(selectedIds)
-    if (ids.length === 0) return
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const { error } = await supabase
-        .from('batch_grafts')
-        .update({ status: newStatus, status_date: today })
-        .in('id', ids)
-      if (error) throw error
-      toast.success(`${ids.length} grafts updated to ${newStatus}`)
-      fetchGrafts()
-      setSelectedIds(new Set())
-    } catch (error) {
-      console.error('Error bulk updating grafts:', error)
-      toast.error('Failed to update grafts')
-    }
-  }, [selectedIds, toast, fetchGrafts])
+  const handleBulkStatusChange = useCallback((newStatus: string) => {
+    setBulkStatusDraft(newStatus)
+  }, [])
 
-  const handleBulkDateChange = useCallback(async (date: string) => {
+  const handleBulkDateChange = useCallback((date: string) => {
+    setBulkDateDraft(date)
+  }, [])
+
+  const commitFrameBulkChanges = useCallback(async (): Promise<'saved' | 'noop' | 'error'> => {
     const ids = Array.from(selectedIds)
-    if (ids.length === 0) return
+    if (ids.length === 0) return 'noop'
+
+    const updates: { status?: string; status_date?: string | null } = {}
+    if (bulkStatusDraft) updates.status = bulkStatusDraft
+    if (bulkDateDraft) updates.status_date = bulkDateDraft
+    if (!updates.status && !updates.status_date) return 'noop'
+
     try {
+      setSavingFrameBulkEdits(true)
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ status_date: date || null })
+        .update(updates)
         .in('id', ids)
       if (error) throw error
-      toast.success(`${ids.length} graft dates updated`)
-      fetchGrafts()
+
+      toast.success(`${ids.length} graft${ids.length === 1 ? '' : 's'} updated`)
+      clearFrameBulkDrafts()
+      await fetchGrafts()
+      return 'saved'
     } catch (error) {
-      console.error('Error bulk updating graft dates:', error)
-      toast.error('Failed to update graft dates')
+      console.error('Error committing frame bulk updates:', error)
+      toast.error('Failed to update selected grafts')
+      return 'error'
+    } finally {
+      setSavingFrameBulkEdits(false)
     }
-  }, [selectedIds, toast, fetchGrafts])
+  }, [selectedIds, bulkStatusDraft, bulkDateDraft, toast, clearFrameBulkDrafts, fetchGrafts])
 
   const handleBulkDelete = useCallback(async () => {
     const ids = Array.from(selectedIds)
@@ -515,6 +528,9 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     selectMode,
     setSelectMode,
     selectedIds,
+    bulkStatusDraft,
+    bulkDateDraft,
+    savingFrameBulkEdits,
     tableSelectMode,
     setTableSelectMode,
     tableSelectedIds,
@@ -551,6 +567,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     selectAll,
     deselectAll,
     exitSelectMode,
+    commitFrameBulkChanges,
 
     // Table selection
     toggleTableSelect,

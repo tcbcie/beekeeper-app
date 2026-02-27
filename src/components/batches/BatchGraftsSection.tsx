@@ -25,6 +25,19 @@ interface BatchGraftsSectionProps {
 export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, onCountsChange }: BatchGraftsSectionProps) {
   const hook = useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, onCountsChange })
 
+  const handleFrameBulkButtonClick = async () => {
+    if (hook.selectMode) {
+      const result = await hook.commitFrameBulkChanges()
+      if (result !== 'error') {
+        hook.exitSelectMode()
+      }
+      return
+    }
+
+    hook.exitTableSelectMode()
+    hook.setSelectMode(true)
+  }
+
   if (hook.loading) {
     return <div className="text-sm text-text-secondary">Loading grafts...</div>
   }
@@ -49,7 +62,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           {hook.grafts.length > 0 && (
             <Button
               type="button"
-              onClick={() => { if (hook.selectMode) { hook.exitSelectMode() } else { hook.exitTableSelectMode(); hook.setSelectMode(true) } }}
+              onClick={handleFrameBulkButtonClick}
+              disabled={hook.savingFrameBulkEdits}
               tone={hook.selectMode ? 'success' : 'neutral'}
               size="sm"
               className={`inline-flex items-center gap-1 ${
@@ -59,7 +73,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
               }`}
             >
               <CheckSquare size={14} />
-              {hook.selectMode ? 'Done' : 'Bulk Actions'}
+              {hook.savingFrameBulkEdits ? 'Saving...' : hook.selectMode ? 'Done' : 'Bulk Actions'}
             </Button>
           )}
           <Button
@@ -98,6 +112,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         setFrameCollapsed={hook.setFrameCollapsed}
         selectMode={hook.selectMode}
         selectedIds={hook.selectedIds}
+        bulkStatusDraft={hook.bulkStatusDraft}
+        bulkDateDraft={hook.bulkDateDraft}
         toggleSelect={hook.toggleSelect}
         selectAll={hook.selectAll}
         deselectAll={hook.deselectAll}
