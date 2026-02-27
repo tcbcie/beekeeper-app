@@ -8,6 +8,8 @@ import Button from '@/components/ui/Button'
 import NucInspectionPanel from './NucInspectionPanel'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { CreateDistributionData } from '@/hooks/useGraftDistributions'
+import { useMatingNucBulk } from '@/hooks/useMatingNucBulk'
+import type { AvailableSealedGraft, MatingNucBulkRun, MatingNucBulkMode } from '@/hooks/useMatingNucBulk'
 import DistributeGraftModal from './DistributeGraftModal'
 
 interface Batch {
@@ -34,6 +36,8 @@ interface Queen {
 interface MatingNuc {
  id: string
  nuc_number: string
+ reference_code?: string | null
+ creation_batch_id?: string | null
  graft_id: string | null
  batch_id: string | null
  queen_id: string | null
@@ -85,6 +89,10 @@ const formatDateIrish = (dateString: string | null): string => {
 }
 
 const NUC_DISTRIBUTABLE_STATUSES = ['virgin', 'mating', 'laying']
+const BULK_MODES: { value: MatingNucBulkMode; label: string }[] = [
+ { value: 'numbered', label: 'Numbered Nucs' },
+ { value: 'unnumbered', label: 'Unnumbered from Sealed Cells' },
+]
 
 const getNucDistributionType = (status: string): 'virgin_queen' | 'mated_queen' => {
  if (status === 'laying') return 'mated_queen'
@@ -106,6 +114,13 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [historyNucNumber, setHistoryNucNumber] = useState<string | null>(null)
  const [historyData, setHistoryData] = useState<MatingNuc[]>([])
  const [distributeNuc, setDistributeNuc] = useState<MatingNuc | null>(null)
+ const [showBulkForm, setShowBulkForm] = useState(false)
+ const [bulkLoading, setBulkLoading] = useState(false)
+ const [bulkRuns, setBulkRuns] = useState<MatingNucBulkRun[]>([])
+ const [bulkRunsLoading, setBulkRunsLoading] = useState(false)
+ const [activeBulkBatchId, setActiveBulkBatchId] = useState<string | null>(null)
+ const [availableBulkGrafts, setAvailableBulkGrafts] = useState<AvailableSealedGraft[]>([])
+ const [bulkCellSearch, setBulkCellSearch] = useState('')
 
  const {
  createDistribution,
@@ -113,6 +128,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  fetchRecipientApiaries,
  fetchRecipientHives,
  } = useGraftDistributions()
+
+ const {
+ fetchBulkRuns,
+ fetchAvailableSealedGrafts,
+ createBulkNucs,
+ } = useMatingNucBulk()
 
  // Form state
  const [formData, setFormData] = useState({
@@ -123,6 +144,17 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  mating_location: '',
  status: 'setup',
  notes: '',
+ })
+
+ const [bulkFormData, setBulkFormData] = useState({
+ source_batch_id: '',
+ mode: 'numbered' as MatingNucBulkMode,
+ nuc_numbers_text: '',
+ selected_graft_ids: [] as string[],
+ auto_assign_cells: true,
+ mating_location: '',
+ notes: '',
+ status: 'setup',
  })
 
  const fetchNucs = useCallback(async () => {
@@ -138,6 +170,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  query = query.is('retired_at', null)
  }
 
+ if (activeBulkBatchId) {
+ query = query.eq('creation_batch_id', activeBulkBatchId)
+ }
+
  const { data, error } = await query.order('created_at', { ascending: false })
 
  if (error) {
@@ -146,7 +182,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  setNucs(data)
  }
  setLoading(false)
- }, [userId, showRetired])
+ }, [userId, showRetired, activeBulkBatchId])
 
  const fetchBatches = useCallback(async () => {
  const { data } = await supabase
@@ -179,12 +215,26 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (data) setQueens(data)
  }, [userId])
 
+ const loadBulkRuns = useCallback(async () => {
+ try {
+ setBulkRunsLoading(true)
+ const data = await fetchBulkRuns(userId)
+ setBulkRuns(data)
+ } catch (error) {
+ console.error('Error loading mating nuc bulk runs:', error)
+ toast.error('Failed to load bulk nuc runs')
+ } finally {
+ setBulkRunsLoading(false)
+ }
+ }, [fetchBulkRuns, userId, toast])
+
  useEffect(() => {
  fetchNucs()
  fetchBatches()
  fetchGrafts()
  fetchQueens()
- }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens])
+ loadBulkRuns()
+ }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, loadBulkRuns])
 
  // Filter grafts by selected batch
  useEffect(() => {
@@ -196,6 +246,21 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
  }, [formData.batch_id, grafts])
 
+ useEffect(() => {
+ if (!bulkFormData.source_batch_id) {
+ setAvailableBulkGrafts([])
+ return
+ }
+
+ fetchAvailableSealedGrafts(userId, bulkFormData.source_batch_id)
+ .then((data) => setAvailableBulkGrafts(data))
+ .catch((error) => {
+ console.error('Error loading sealed cells for bulk creation:', error)
+ toast.error('Failed to load available sealed cells')
+ setAvailableBulkGrafts([])
+ })
+ }, [bulkFormData.source_batch_id, fetchAvailableSealedGrafts, userId, toast])
+
  const handleBatchChange = (batchId: string) => {
  const selectedBatch = batches.find((b) => b.id === batchId)
  setFormData((prev) => ({
@@ -204,6 +269,97 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  graft_id: '',
  queen_id: selectedBatch?.mother_queen_id || '',
  }))
+ }
+
+ const handleBulkBatchChange = (batchId: string) => {
+ setBulkFormData((prev) => ({
+ ...prev,
+ source_batch_id: batchId,
+ selected_graft_ids: [],
+ }))
+ setBulkCellSearch('')
+ }
+
+ const toggleBulkGraftSelection = (graftId: string) => {
+ setBulkFormData((prev) => {
+ const exists = prev.selected_graft_ids.includes(graftId)
+ return {
+ ...prev,
+ selected_graft_ids: exists
+ ? prev.selected_graft_ids.filter((id) => id !== graftId)
+ : [...prev.selected_graft_ids, graftId],
+ }
+ })
+ }
+
+ const selectAllFilteredBulkCells = () => {
+ const filteredIds = availableBulkGrafts
+ .filter((g) => `Cell #${g.cell_number}`.toLowerCase().includes(bulkCellSearch.toLowerCase()))
+ .map((g) => g.id)
+ setBulkFormData((prev) => ({ ...prev, selected_graft_ids: Array.from(new Set([...prev.selected_graft_ids, ...filteredIds])) }))
+ }
+
+ const clearAllBulkCells = () => {
+ setBulkFormData((prev) => ({ ...prev, selected_graft_ids: [] }))
+ }
+
+ const resetBulkForm = () => {
+ setBulkFormData({
+ source_batch_id: '',
+ mode: 'numbered',
+ nuc_numbers_text: '',
+ selected_graft_ids: [],
+ auto_assign_cells: true,
+ mating_location: '',
+ notes: '',
+ status: 'setup',
+ })
+ setBulkCellSearch('')
+ setShowBulkForm(false)
+ }
+
+ const parseBulkNucNumbers = (text: string): string[] =>
+ text
+ .split(/[\n,]+/)
+ .map((value) => value.trim())
+ .filter((value) => value.length > 0)
+
+ const handleCreateBulkNucs = async () => {
+ if (!bulkFormData.source_batch_id) {
+ toast.error('Select a source batch')
+ return
+ }
+
+ const inputNumbers = bulkFormData.mode === 'numbered'
+ ? parseBulkNucNumbers(bulkFormData.nuc_numbers_text)
+ : []
+
+ try {
+ setBulkLoading(true)
+ const result = await createBulkNucs({
+ userId,
+ sourceBatchId: bulkFormData.source_batch_id,
+ mode: bulkFormData.mode,
+ nucNumbers: inputNumbers,
+ selectedGraftIds: bulkFormData.selected_graft_ids,
+ autoAssignSealedCells: bulkFormData.auto_assign_cells,
+ matingLocation: bulkFormData.mating_location,
+ notes: bulkFormData.notes,
+ status: bulkFormData.status,
+ })
+
+ toast.success(`Created ${result.createdCount} of ${result.requestedCount} nuc entries`)
+ setActiveBulkBatchId(result.batchId)
+ await fetchNucs()
+ await fetchGrafts()
+ await loadBulkRuns()
+ resetBulkForm()
+ } catch (error) {
+ console.error('Error creating bulk mating nucs:', error)
+ toast.error(error instanceof Error ? error.message : 'Failed to create bulk mating nucs')
+ } finally {
+ setBulkLoading(false)
+ }
  }
 
  const resetForm = () => {
@@ -365,6 +521,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  return statusConfig?.color || 'bg-surface-secondary text-text-secondary border border-border'
  }
 
+ const bulkVisibleGrafts = availableBulkGrafts.filter((g) =>
+ `Cell #${g.cell_number}`.toLowerCase().includes(bulkCellSearch.toLowerCase())
+ )
+
  if (loading) {
  return <div className="text-center py-8 text-text-secondary">Loading mating nucs...</div>
  }
@@ -387,11 +547,24 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {showRetired ? 'Hide Retired' : 'Show Retired'}
  </Button>
  <Button
- onClick={() => setShowForm(!showForm)}
+ onClick={() => {
+ setShowForm(!showForm)
+ if (!showForm) setShowBulkForm(false)
+ }}
  className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 flex items-center gap-2"
  >
  {showForm ? <X size={16} /> : <Plus size={16} />}
  {showForm ? 'Cancel' : 'New Nuc'}
+ </Button>
+ <Button
+ onClick={() => {
+ setShowBulkForm(!showBulkForm)
+ if (!showBulkForm) setShowForm(false)
+ }}
+ className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+ >
+ {showBulkForm ? <X size={16} /> : <Plus size={16} />}
+ {showBulkForm ? 'Cancel Bulk' : 'Bulk Nucs'}
  </Button>
  </div>
  </div>
@@ -519,10 +692,228 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </div>
  )}
 
+ {/* Bulk Create Form */}
+ {showBulkForm && (
+ <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-border space-y-4">
+ <h3 className="text-lg font-semibold text-foreground">Bulk Create Mating Nucs</h3>
+
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Source Batch *</label>
+ <select
+ value={bulkFormData.source_batch_id}
+ onChange={(e) => handleBulkBatchChange(e.target.value)}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ >
+ <option value="">Select batch</option>
+ {batches.map((b) => (
+ <option key={b.id} value={b.id}>
+ {b.batch_name} ({formatDateIrish(b.graft_date)})
+ </option>
+ ))}
+ </select>
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Bulk Mode</label>
+ <select
+ value={bulkFormData.mode}
+ onChange={(e) => setBulkFormData((prev) => ({ ...prev, mode: e.target.value as MatingNucBulkMode, selected_graft_ids: [] }))}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ >
+ {BULK_MODES.map((mode) => (
+ <option key={mode.value} value={mode.value}>{mode.label}</option>
+ ))}
+ </select>
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Status</label>
+ <select
+ value={bulkFormData.status}
+ onChange={(e) => setBulkFormData((prev) => ({ ...prev, status: e.target.value }))}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ >
+ {NUC_STATUSES.map(s => (
+ <option key={s.value} value={s.value}>{s.label}</option>
+ ))}
+ </select>
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Mating Location</label>
+ <input
+ type="text"
+ value={bulkFormData.mating_location}
+ onChange={(e) => setBulkFormData((prev) => ({ ...prev, mating_location: e.target.value }))}
+ placeholder="Applied to all created nucs"
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ />
+ </div>
+ </div>
+
+ {bulkFormData.mode === 'numbered' && (
+ <div className="space-y-3">
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Nuc Numbers *</label>
+ <textarea
+ value={bulkFormData.nuc_numbers_text}
+ onChange={(e) => setBulkFormData((prev) => ({ ...prev, nuc_numbers_text: e.target.value }))}
+ rows={4}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ placeholder={'Enter one per line or comma separated (e.g. N1, N2, N3)'}
+ />
+ </div>
+ <label className="inline-flex items-center gap-2 text-sm text-foreground">
+ <input
+ type="checkbox"
+ checked={bulkFormData.auto_assign_cells}
+ onChange={(e) => setBulkFormData((prev) => ({ ...prev, auto_assign_cells: e.target.checked, selected_graft_ids: [] }))}
+ />
+ Auto-assign sealed cells by cell number
+ </label>
+ </div>
+ )}
+
+ {bulkFormData.source_batch_id && (
+ <div className="border border-border rounded-md p-3 space-y-3">
+ <div className="flex flex-wrap items-center justify-between gap-2">
+ <h4 className="text-sm font-semibold text-foreground">Sealed Cells</h4>
+ <span className="text-xs text-text-secondary">
+ Available: {availableBulkGrafts.length} | Selected: {bulkFormData.selected_graft_ids.length}
+ </span>
+ </div>
+
+ {(bulkFormData.mode === 'unnumbered' || !bulkFormData.auto_assign_cells) ? (
+ <>
+ <div className="flex flex-wrap items-center gap-2">
+ <input
+ type="text"
+ value={bulkCellSearch}
+ onChange={(e) => setBulkCellSearch(e.target.value)}
+ placeholder="Search by cell number"
+ className="px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+ />
+ <Button type="button" onClick={selectAllFilteredBulkCells} className="text-xs">Select Filtered</Button>
+ <Button type="button" onClick={clearAllBulkCells} className="text-xs">Clear</Button>
+ </div>
+ <div className="max-h-48 overflow-y-auto border border-border rounded-md p-2 space-y-1">
+ {bulkVisibleGrafts.length === 0 ? (
+ <p className="text-xs text-text-secondary px-1 py-2">No sealed cells available.</p>
+ ) : bulkVisibleGrafts.map((g) => (
+ <label key={g.id} className="flex items-center gap-2 text-sm text-foreground px-1 py-1 rounded hover:bg-surface-secondary">
+ <input
+ type="checkbox"
+ checked={bulkFormData.selected_graft_ids.includes(g.id)}
+ onChange={() => toggleBulkGraftSelection(g.id)}
+ />
+ Cell #{g.cell_number}
+ </label>
+ ))}
+ </div>
+ </>
+ ) : (
+ <p className="text-sm text-text-secondary">
+ Cells will be auto-assigned from the available sealed pool in ascending cell order.
+ </p>
+ )}
+ </div>
+ )}
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
+ <textarea
+ value={bulkFormData.notes}
+ onChange={(e) => setBulkFormData((prev) => ({ ...prev, notes: e.target.value }))}
+ rows={2}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ placeholder="Optional notes for this bulk run"
+ />
+ </div>
+
+ <div className="flex gap-3">
+ <Button
+ type="button"
+ onClick={handleCreateBulkNucs}
+ className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+ disabled={bulkLoading}
+ >
+ {bulkLoading ? 'Creating...' : 'Create Bulk Nucs'}
+ </Button>
+ <Button
+ type="button"
+ onClick={resetBulkForm}
+ className="px-6 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated"
+ >
+ Cancel
+ </Button>
+ </div>
+ </div>
+ )}
+
+ {/* Bulk Runs Table */}
+ <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border space-y-3">
+ <div className="flex items-center justify-between gap-2 flex-wrap">
+ <h3 className="text-base font-semibold text-foreground">Bulk Nuc Runs</h3>
+ {activeBulkBatchId && (
+ <Button
+ type="button"
+ onClick={() => setActiveBulkBatchId(null)}
+ className="text-xs px-3 py-1 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded"
+ >
+ Clear Batch Filter
+ </Button>
+ )}
+ </div>
+
+ {bulkRunsLoading ? (
+ <p className="text-sm text-text-secondary">Loading bulk runs...</p>
+ ) : bulkRuns.length === 0 ? (
+ <p className="text-sm text-text-secondary">No bulk runs created yet.</p>
+ ) : (
+ <div className="overflow-x-auto">
+ <table className="w-full text-sm">
+ <thead>
+ <tr className="text-left border-b border-border">
+ <th className="py-2 pr-3 text-text-secondary">Date</th>
+ <th className="py-2 pr-3 text-text-secondary">Batch</th>
+ <th className="py-2 pr-3 text-text-secondary">Mode</th>
+ <th className="py-2 pr-3 text-text-secondary">Requested</th>
+ <th className="py-2 pr-3 text-text-secondary">Created</th>
+ <th className="py-2 text-text-secondary">Actions</th>
+ </tr>
+ </thead>
+ <tbody>
+ {bulkRuns.map((run) => (
+ <tr key={run.id} className="border-b border-border last:border-b-0">
+ <td className="py-2 pr-3 text-foreground">{formatDateIrish(run.created_at)}</td>
+ <td className="py-2 pr-3 text-foreground">{run.rearing_batches?.batch_name || 'Unknown batch'}</td>
+ <td className="py-2 pr-3 text-foreground">{run.mode === 'numbered' ? 'Numbered' : 'Unnumbered'}</td>
+ <td className="py-2 pr-3 text-foreground">{run.requested_count}</td>
+ <td className="py-2 pr-3 text-foreground">{run.created_count}</td>
+ <td className="py-2">
+ <Button
+ type="button"
+ onClick={() => setActiveBulkBatchId(run.id)}
+ className="text-xs px-2 py-1 bg-surface-secondary text-foreground rounded hover:bg-surface-elevated"
+ >
+ View Nucs
+ </Button>
+ </td>
+ </tr>
+ ))}
+ </tbody>
+ </table>
+ </div>
+ )}
+ </div>
+
  {/* Nucs List */}
  {nucs.length === 0 ? (
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-8 text-center border border-border">
- <p className="text-text-secondary">No mating nucs yet. Create your first nuc above.</p>
+ <p className="text-text-secondary">
+ {activeBulkBatchId ? 'No nucs found for the selected bulk run.' : 'No mating nucs yet. Create your first nuc above.'}
+ </p>
  </div>
  ) : (
  <div className="space-y-2">
@@ -543,7 +934,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {/* Main Content */}
  <div className="flex-1 min-w-0">
  <div className="flex items-center flex-wrap gap-2 mb-2">
- <span className="font-semibold text-foreground text-lg">{nuc.nuc_number}</span>
+ <span className="font-semibold text-foreground text-lg">{nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}</span>
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(nuc.status)}`}>
  {NUC_STATUSES.find(s => s.value === nuc.status)?.label}
  </span>
@@ -589,7 +980,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </Button>
  )}
  <Button
- onClick={() => fetchHistory(nuc.nuc_number)}
+ onClick={() => nuc.nuc_number ? fetchHistory(nuc.nuc_number) : null}
+ disabled={!nuc.nuc_number}
  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
  title="View History"
  >
@@ -619,7 +1011,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {expandedNucId === nuc.id && (
  <NucInspectionPanel
  nucId={nuc.id}
- nucNumber={nuc.nuc_number}
+ nucNumber={nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}
  userId={userId}
  onInspectionChange={fetchNucs}
  />
