@@ -260,8 +260,8 @@ export default function SubscriptionHistoryPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                           record.payment_method === 'credit_card'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
+                            ? 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300'
+                            : 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300'
                         }`}>
                           {record.payment_method === 'credit_card' ? (
                             <>
@@ -288,7 +288,7 @@ export default function SubscriptionHistoryPage() {
                       <td className="px-6 py-4 text-sm">
                         {record.stripe_payment_intent_id ? (
                           <div className="flex items-center gap-2">
-                            <code className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                            <code className="text-xs text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded">
                               {record.stripe_payment_intent_id.slice(0, 20)}...
                             </code>
                             <TextLink

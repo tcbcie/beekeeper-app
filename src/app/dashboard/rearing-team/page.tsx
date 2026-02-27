@@ -677,15 +677,15 @@ export default function RearingTeamPage() {
                                           <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {isExpired ? (
-                                              <span className="text-red-600 font-medium">Expired</span>
+                                              <span className="text-red-600 dark:text-red-400 font-medium">Expired</span>
                                             ) : isExpiringSoon ? (
-                                              <span className="text-orange-600 font-medium">Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</span>
+                                              <span className="text-orange-600 dark:text-orange-300 font-medium">Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</span>
                                             ) : (
                                               <span>Expires in {daysLeft} days</span>
                                             )}
                                           </div>
                                         </div>
-                                        <span className="px-2 py-1 text-xs rounded font-medium bg-orange-100 text-orange-900">
+                                        <span className="px-2 py-1 text-xs rounded font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-200">
                                           Pending
                                         </span>
                                       </div>
