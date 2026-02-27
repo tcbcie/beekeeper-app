@@ -57,6 +57,11 @@ Compact card component that:
 - Weight loss: red text
 - Low battery (<20%): red indicator
 
+### Dark Mode Header Readability
+- Hive number text in card headers now uses explicit high-contrast colour pairs by scale type (`amber` for BEEP, `blue` for Wolf).
+- Scale name metadata in the header now uses matching secondary colours so labels stay readable without competing with the hive number.
+- The same hive-number contrast treatment is applied to both normal and error card headers for consistency.
+
 ## Data Flow
 
 ### Hive Query (ScaleOverviewTab)

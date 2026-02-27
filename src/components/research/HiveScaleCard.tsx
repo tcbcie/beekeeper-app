@@ -242,6 +242,12 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const headerBg = isBeep
  ? 'bg-amber-50 dark:bg-amber-900/20'
  : 'bg-blue-50 dark:bg-blue-900/20'
+ const headerTitleColour = isBeep
+ ? 'text-amber-950 dark:text-amber-100'
+ : 'text-blue-950 dark:text-blue-100'
+ const headerMetaColour = isBeep
+ ? 'text-amber-800 dark:text-amber-200'
+ : 'text-blue-800 dark:text-blue-200'
 
  const scaleType = isBeep ? 'BEEP' : 'Wolf'
  const scaleName = isBeep ? hive.beep_device_name : hive.wolf_scale_name
@@ -266,7 +272,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  <div className={`px-3 py-2 ${headerBg} flex items-center justify-between`}>
  <div className="flex items-center gap-2">
  <Scale size={16} className={isBeep ? 'text-amber-600' : 'text-blue-600'} />
- <span className="font-medium text-foreground">Hive #{hive.hive_number}</span>
+ <span className={`font-semibold ${headerTitleColour}`}>Hive #{hive.hive_number}</span>
  </div>
  </div>
  <div className="p-3">
@@ -292,9 +298,9 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  <div className="flex items-center gap-2 min-w-0">
  <Scale size={16} className={isBeep ? 'text-amber-600' : 'text-blue-600'} />
  <div className="min-w-0">
- <span className="font-medium text-foreground">Hive #{hive.hive_number}</span>
+ <span className={`font-semibold ${headerTitleColour}`}>Hive #{hive.hive_number}</span>
  {scaleName && (
- <span className="text-xs text-text-tertiary ml-1">({scaleName})</span>
+ <span className={`ml-1 text-xs ${headerMetaColour}`}>({scaleName})</span>
  )}
  </div>
  </div>
