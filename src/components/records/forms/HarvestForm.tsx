@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Harvest, Hive, Apiary } from '@/types/records'
+import Button from '@/components/ui/Button'
 
 interface HarvestFormProps {
   harvest: Harvest | null
@@ -70,21 +71,23 @@ export default function HarvestForm({
           {harvest?.id ? 'Edit Harvest' : 'Record New Harvest'}
         </h3>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button
+          <Button
             type="submit"
             form="harvest-form"
             disabled={submitting}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 active:bg-yellow-800 transition-all touch-manipulation font-medium disabled:opacity-50"
+            tone="amber"
+            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium disabled:opacity-50"
           >
             {submitting ? 'Saving...' : (harvest?.id ? 'Update' : 'Save')} Harvest
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onCancel}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+            tone="neutral"
+            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -38,7 +38,7 @@ export default function ReportTable<T = any>({
             {columns.map((col) => (
               <th
                 key={String(col.key)}
-                className={`px-4 py-3 text-left text-sm font-semibold text-foreground bg-sage-50 dark:bg-slate-800 ${col.className || ''}`}
+                className={`px-4 py-3 text-left text-sm font-semibold text-foreground bg-surface-secondary ${col.className || ''}`}
               >
                 {col.header}
               </th>
@@ -49,7 +49,7 @@ export default function ReportTable<T = any>({
           {data.map((row, idx) => (
             <tr
               key={idx}
-              className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-800/50"
+              className="border-b border-border hover:bg-surface-secondary"
             >
               {columns.map((col) => (
                 <td

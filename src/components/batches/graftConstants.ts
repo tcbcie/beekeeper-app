@@ -12,7 +12,7 @@ export interface Graft {
 }
 
 export const GRAFT_STATUSES = [
-  { value: 'grafted', label: 'Grafted', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  { value: 'grafted', label: 'Grafted', color: 'bg-surface-secondary text-text-secondary border border-border' },
   { value: 'accepted', label: 'Accepted', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
   { value: 'sealed', label: 'Sealed', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300' },
   { value: 'caged', label: 'Caged', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
@@ -24,7 +24,7 @@ export const GRAFT_STATUSES = [
 ]
 
 export const FRAME_STATUSES = [
-  { value: 'grafted', label: 'Grafted', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  { value: 'grafted', label: 'Grafted', color: 'bg-surface-secondary text-text-secondary border border-border' },
   { value: 'accepted', label: 'Accepted', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
   { value: 'sealed', label: 'Sealed', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300' },
   { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
@@ -45,7 +45,7 @@ export const FRAME_STATUS_VALUES = ['grafted', 'accepted']
 export const DISTRIBUTABLE_STATUSES = ['sealed', 'caged', 'emerged', 'in_nuc', 'mated']
 
 export const CUP_COLORS: Record<string, string> = {
-  grafted: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+  grafted: 'bg-surface-secondary text-text-secondary border border-border',
   accepted: 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200',
   sealed: 'bg-cyan-200 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200',
   caged: 'bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
@@ -63,7 +63,7 @@ export const TYPE_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export const COLOUR_DOTS: Record<string, string> = {
-  White: 'bg-gray-200 dark:bg-gray-400',
+  White: 'bg-surface-secondary border border-border',
   Yellow: 'bg-yellow-400',
   Red: 'bg-red-500',
   Green: 'bg-green-500',

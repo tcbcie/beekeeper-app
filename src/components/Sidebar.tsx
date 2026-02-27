@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import VersionDisplay from './VersionDisplay'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 import {
   getTopItems,
   getGroupedItems,
@@ -75,13 +77,13 @@ export default function Sidebar() {
   return (
     <aside className={`hidden md:block sticky top-4 self-start field-journal-panel p-4 h-fit transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Collapse Toggle */}
-      <button
+      <IconButton
         onClick={toggleCollapsed}
-        className="fj-icon-btn mb-2 w-full p-2"
+        className="mb-2 w-full"
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-      </button>
+      </IconButton>
 
       <nav className="space-y-1">
         {/* Top items (Overview) */}
@@ -98,16 +100,18 @@ export default function Sidebar() {
             const isGroupCollapsed = collapsedGroups.includes(group.id)
             return (
               <div key={group.id} className="pt-2">
-                <button
+                <Button
                   onClick={() => toggleGroup(group.id)}
-                  className="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary hover:text-text-secondary transition-colors"
+                  tone="neutral"
+                  size="xs"
+                  className="w-full justify-between px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary hover:text-text-secondary"
                 >
                   <span>{group.label}</span>
                   <ChevronDown
                     size={14}
                     className={`transition-transform duration-200 ${isGroupCollapsed ? '-rotate-90' : ''}`}
                   />
-                </button>
+                </Button>
                 {!isGroupCollapsed && (
                   <div className="space-y-1 mt-1">
                     {items.map(item => (

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { getSeasonalTasks } from '@/lib/tool-calculations'
@@ -11,16 +11,29 @@ export function SeasonalTaskGenerator() {
   const tasks = getSeasonalTasks(selectedMonth)
 
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ]
 
   return (
     <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-text-secondary mb-2">Select Month</label>
-        <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-          className="w-full px-4 py-2 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500">
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+          className="w-full px-4 py-2 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+        >
           {months.map((month, index) => (
             <option key={index} value={index + 1}>
               {month} {index + 1 === currentMonth && '(Current Month)'}
@@ -44,7 +57,8 @@ export function SeasonalTaskGenerator() {
         <ul className="space-y-2">
           {tasks.critical.map((task, i) => (
             <li key={i} className="flex items-start gap-2 text-red-800 dark:text-red-200">
-              <span className="font-bold">•</span><span>{task}</span>
+              <span className="font-bold">-</span>
+              <span>{task}</span>
             </li>
           ))}
         </ul>
@@ -58,7 +72,8 @@ export function SeasonalTaskGenerator() {
         <ul className="space-y-2">
           {tasks.recommended.map((task, i) => (
             <li key={i} className="flex items-start gap-2 text-blue-800 dark:text-blue-200">
-              <span className="font-bold">•</span><span>{task}</span>
+              <span className="font-bold">-</span>
+              <span>{task}</span>
             </li>
           ))}
         </ul>
@@ -72,13 +87,14 @@ export function SeasonalTaskGenerator() {
         <ul className="space-y-2">
           {tasks.optional.map((task, i) => (
             <li key={i} className="flex items-start gap-2 text-green-800 dark:text-green-200">
-              <span className="font-bold">•</span><span>{task}</span>
+              <span className="font-bold">-</span>
+              <span>{task}</span>
             </li>
           ))}
         </ul>
       </div>
 
-      <div className="bg-sage-50 dark:bg-slate-800/50 p-4 rounded-lg">
+      <div className="bg-surface-secondary p-4 rounded-lg">
         <p className="text-sm text-text-secondary text-center">
           Tasks are tailored for Ireland&apos;s climate. Adjust timing based on your local weather patterns.
         </p>

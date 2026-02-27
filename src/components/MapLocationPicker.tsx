@@ -5,6 +5,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { MapPin, Crosshair, X, Circle, Layers, Map, Satellite, Maximize2, Minimize2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
@@ -737,7 +738,7 @@ export default function MapLocationPicker({
   }
 
   return (
-    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-slate-900 p-4' : ''}`}>
+    <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-surface-elevated p-4' : ''}`}>
       {/* Header with instructions */}
       <div className={`flex items-center justify-between ${isFullscreen ? 'mb-4' : 'mb-2'}`}>
         <div className="flex items-center gap-2 text-sm text-text-secondary">
@@ -748,24 +749,24 @@ export default function MapLocationPicker({
           {isFullscreen && (
             <>
               <span className="text-xs text-text-tertiary hidden sm:inline">Press Esc to exit</span>
-              <button
+              <Button
                 type="button"
                 onClick={toggleFullscreen}
                 className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors"
                 title="Exit fullscreen"
               >
                 <X size={20} />
-              </button>
+              </Button>
             </>
           )}
           {onClose && !isFullscreen && (
-            <button
+            <Button
               type="button"
               onClick={onClose}
               className="p-1 text-text-tertiary hover:text-foreground rounded"
             >
               <X size={18} />
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -775,7 +776,7 @@ export default function MapLocationPicker({
         <div ref={mapContainer} className={`w-full ${isFullscreen ? 'h-full' : 'h-[300px] md:h-[400px]'}`} />
 
         {/* Flight radius dropdown */}
-        <div className="absolute top-4 left-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border">
+        <div className="absolute top-4 left-4 bg-surface-elevated rounded-lg shadow-lg border border-border">
           <div className="flex items-center gap-2 px-3 py-2">
             <Circle size={16} className="text-red-500" />
             <select
@@ -806,28 +807,28 @@ export default function MapLocationPicker({
         </div>
 
         {/* Map style toggle */}
-        <div className="absolute top-4 right-14 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex">
-          <button
+        <div className="absolute top-4 right-14 bg-surface-elevated rounded-lg shadow-lg border border-border flex">
+          <Button
             type="button"
             onClick={() => handleStyleChange('outdoors')}
-            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800' : 'hover:bg-surface-secondary'}`}
             title="Outdoors map"
           >
             <Map size={18} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => handleStyleChange('satellite')}
-            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'satellite' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'satellite' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800' : 'hover:bg-surface-secondary'}`}
             title="Satellite view"
           >
             <Satellite size={18} />
-          </button>
+          </Button>
         </div>
 
         {/* Overlap warning indicator */}
         {overlapInfo.totalOverlap > 0 && (
-          <div className="absolute top-16 left-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border px-3 py-2 max-w-[200px]">
+          <div className="absolute top-16 left-4 bg-surface-elevated rounded-lg shadow-lg border border-border px-3 py-2 max-w-[200px]">
             <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
               <Layers size={16} />
               <span className="text-sm font-medium">{overlapInfo.totalOverlap}% overlap</span>
@@ -844,10 +845,10 @@ export default function MapLocationPicker({
         {/* Bottom controls */}
         <div className="absolute bottom-4 right-4 flex gap-2">
           {/* Fullscreen toggle */}
-          <button
+          <Button
             type="button"
             onClick={toggleFullscreen}
-            className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border border-border"
+            className="bg-surface-elevated p-2 rounded-lg shadow-lg hover:bg-surface-secondary transition-colors border border-border"
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? (
@@ -855,21 +856,21 @@ export default function MapLocationPicker({
             ) : (
               <Maximize2 size={20} className="text-text-secondary" />
             )}
-          </button>
+          </Button>
 
           {/* Current location button */}
-          <button
+          <Button
             type="button"
             onClick={handleGetCurrentLocation}
             disabled={isLocating}
-            className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors border border-border"
+            className="bg-surface-elevated p-2 rounded-lg shadow-lg hover:bg-surface-secondary disabled:opacity-50 transition-colors border border-border"
             title="Use my current location"
           >
             <Crosshair
               size={20}
               className={`text-forest-600 ${isLocating ? 'animate-pulse' : ''}`}
             />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -885,3 +886,4 @@ export default function MapLocationPicker({
     </div>
   )
 }
+

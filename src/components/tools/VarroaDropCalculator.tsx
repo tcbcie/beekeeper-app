@@ -1,9 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { calculateVarroaDrop, type Season, type ScreenType } from '@/lib/tool-calculations'
 import { getTreatmentsByseason } from '@/lib/external-data'
 import { Bug, AlertTriangle, CheckCircle, Info } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 export function VarroaDropCalculator() {
   const [miteCount, setMiteCount] = useState(10)
@@ -34,131 +35,111 @@ export function VarroaDropCalculator() {
 
   return (
     <div className="space-y-6">
-      {/* Inputs */}
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
-            Mite Count (from sticky board)
-          </label>
+          <label className="block text-sm font-medium text-text-secondary mb-2">Mite Count (from sticky board)</label>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               onClick={() => setMiteCount(Math.max(0, miteCount - 1))}
-              className="px-4 py-2 rounded-lg bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700 font-bold text-lg"
+              tone="neutral"
+              className="px-4 py-2 bg-surface-secondary hover:bg-surface-elevated font-bold text-lg"
             >
-              −
-            </button>
+              -
+            </Button>
             <input
               type="number"
               min="0"
               value={miteCount}
               onChange={(e) => setMiteCount(Math.max(0, parseInt(e.target.value) || 0))}
-              className="flex-1 px-4 py-2 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground text-center focus:outline-none focus:ring-2 focus:ring-forest-500"
+              className="flex-1 px-4 py-2 rounded-lg border border-border bg-surface text-foreground text-center focus:outline-none focus:ring-2 focus:ring-forest-500"
             />
-            <button
+            <Button
               onClick={() => setMiteCount(miteCount + 1)}
-              className="px-4 py-2 rounded-lg bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700 font-bold text-lg"
+              tone="neutral"
+              className="px-4 py-2 bg-surface-secondary hover:bg-surface-elevated font-bold text-lg"
             >
               +
-            </button>
+            </Button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
-            Days Counted
-          </label>
+          <label className="block text-sm font-medium text-text-secondary mb-2">Days Counted</label>
           <div className="grid grid-cols-3 gap-2">
-            {[1, 3, 7].map(days => (
-              <button
+            {[1, 3, 7].map((days) => (
+              <Button
                 key={days}
                 onClick={() => setDaysCount(days)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  daysCount === days
-                    ? 'bg-forest-600 dark:bg-forest-700 text-white'
-                    : 'bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700'
-                }`}
+                tone={daysCount === days ? 'blue' : 'neutral'}
+                className={daysCount === days ? '' : 'bg-surface-secondary hover:bg-surface-elevated'}
               >
                 {days} day{days > 1 ? 's' : ''}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Screen Type */}
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-2">
-          Screen Type
-        </label>
+        <label className="block text-sm font-medium text-text-secondary mb-2">Screen Type</label>
         <div className="grid grid-cols-2 gap-3">
-          <button
+          <Button
             onClick={() => setScreenType('full')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              screenType === 'full'
-                ? 'bg-forest-600 dark:bg-forest-700 text-white'
-                : 'bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700'
-            }`}
+            tone={screenType === 'full' ? 'blue' : 'neutral'}
+            className={screenType === 'full' ? '' : 'bg-surface-secondary hover:bg-surface-elevated'}
           >
             Full Screen Board
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setScreenType('omf')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              screenType === 'omf'
-                ? 'bg-forest-600 dark:bg-forest-700 text-white'
-                : 'bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700'
-            }`}
+            tone={screenType === 'omf' ? 'blue' : 'neutral'}
+            className={screenType === 'omf' ? '' : 'bg-surface-secondary hover:bg-surface-elevated'}
           >
             Open Mesh Floor
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Season */}
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-2">
-          Season
-        </label>
+        <label className="block text-sm font-medium text-text-secondary mb-2">Season</label>
         <div className="grid grid-cols-4 gap-2">
-          {(['spring', 'summer', 'autumn', 'winter'] as const).map(s => (
-            <button
+          {(['spring', 'summer', 'autumn', 'winter'] as const).map((s) => (
+            <Button
               key={s}
               onClick={() => setSeason(s)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                season === s
-                  ? 'bg-forest-600 dark:bg-forest-700 text-white'
-                  : 'bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700'
-              }`}
+              tone={season === s ? 'blue' : 'neutral'}
+              className={`capitalize ${season === s ? '' : 'bg-surface-secondary hover:bg-surface-elevated'}`}
             >
               {s}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
-      {/* Results */}
       <div className={`p-6 rounded-lg border ${getResultColor()}`}>
         <div className="flex items-start gap-3 mb-4">
           {getIcon()}
           <div className="flex-1">
             <h4 className={`font-bold text-lg ${getTextColor()}`}>
-              {result.treatmentLevel === 'safe' ? 'Safe Levels' :
-               result.treatmentLevel === 'monitor' ? 'Monitor Closely' :
-               'Urgent Treatment Needed'}
+              {result.treatmentLevel === 'safe'
+                ? 'Safe Levels'
+                : result.treatmentLevel === 'monitor'
+                  ? 'Monitor Closely'
+                  : 'Urgent Treatment Needed'}
             </h4>
             <p className={`text-sm mt-1 ${getTextColor()}`}>{result.message}</p>
           </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <div className="bg-surface/70 p-4 rounded-lg">
             <div className="text-sm text-text-secondary mb-1">Daily Mite Drop</div>
             <div className="text-2xl font-bold text-foreground">
               {result.dailyDrop} <span className="text-sm font-normal">mites/day</span>
             </div>
           </div>
 
-          <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <div className="bg-surface/70 p-4 rounded-lg">
             <div className="text-sm text-text-secondary mb-1">Estimated Total Infestation</div>
             <div className="text-2xl font-bold text-foreground">
               ~{result.estimatedInfestation} <span className="text-sm font-normal">mites</span>
@@ -167,22 +148,21 @@ export function VarroaDropCalculator() {
         </div>
       </div>
 
-      {/* Treatment Options */}
       {result.treatmentLevel !== 'safe' && seasonalTreatments.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-sage-300 dark:border-slate-700">
+        <div className="bg-surface-elevated p-6 rounded-lg border border-border">
           <h4 className="font-semibold text-lg mb-4 text-foreground flex items-center gap-2">
             <Bug size={20} />
             Recommended Treatments for {season.charAt(0).toUpperCase() + season.slice(1)}
           </h4>
           <div className="space-y-3">
             {seasonalTreatments.map((treatment, i) => (
-              <div key={i} className="p-4 bg-sage-50 dark:bg-slate-700/50 rounded-lg">
+              <div key={i} className="p-4 bg-surface-secondary rounded-lg">
                 <div className="font-semibold text-foreground">{treatment.product}</div>
                 <div className="text-sm text-text-secondary mt-1">{treatment.activeIngredient}</div>
                 <div className="text-sm text-foreground mt-2">{treatment.notes}</div>
                 {treatment.minTemperature && (
                   <div className="text-xs text-text-secondary mt-2">
-                    Temperature range: {treatment.minTemperature}°C - {treatment.maxTemperature}°C
+                    Temperature range: {treatment.minTemperature}degC - {treatment.maxTemperature}degC
                   </div>
                 )}
               </div>
@@ -191,15 +171,14 @@ export function VarroaDropCalculator() {
         </div>
       )}
 
-      {/* Info Box */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
         <h5 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">How to Use:</h5>
         <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
-          <li>• Insert sticky board for 1, 3, or 7 days</li>
-          <li>• Count fallen mites (natural drop, not from treatment)</li>
-          <li>• Select your screen type (affects calculation accuracy)</li>
-          <li>• Choose current season (affects treatment thresholds)</li>
-          <li>• Repeat monthly to monitor infestation trends</li>
+          <li>- Insert sticky board for 1, 3, or 7 days</li>
+          <li>- Count fallen mites (natural drop, not from treatment)</li>
+          <li>- Select your screen type (affects calculation accuracy)</li>
+          <li>- Choose current season (affects treatment thresholds)</li>
+          <li>- Repeat monthly to monitor infestation trends</li>
         </ul>
       </div>
     </div>

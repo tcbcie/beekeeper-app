@@ -4,6 +4,7 @@ import { useNIHBSReport } from '@/hooks/useNIHBSReport'
 import type { ManualFields } from '@/hooks/useNIHBSReport'
 import type { RearingGroup } from '@/hooks/useRearingGroups'
 import { Download, Save } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 interface NIHBSMonthlyReturnProps {
   ownedGroups: RearingGroup[]
@@ -398,14 +399,16 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
             <option key={y} value={y}>{y}</option>
           ))}
         </select>
-        <button
+        <Button
           onClick={handleExportExcel}
           disabled={exporting || !reportData}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          tone="success"
+          size="sm"
+          className="text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download size={14} />
           {exporting ? 'Exporting...' : 'Export NIHBS Excel'}
-        </button>
+        </Button>
       </div>
 
       {loading ? (
@@ -441,7 +444,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
           {/* Monthly breakdown */}
           {reportData.months.map((md) => (
             <div key={md.month} className="border border-border rounded-lg overflow-hidden">
-              <div className="bg-sage-50 dark:bg-slate-800 px-4 py-3 flex items-center justify-between">
+              <div className="bg-surface-secondary px-4 py-3 flex items-center justify-between">
                 <h4 className="font-semibold text-foreground">{MONTH_NAMES[md.month - 1]} {md.year}</h4>
                 <div className="flex items-center gap-2">
                   {saveStatus?.month === md.month && (
@@ -449,14 +452,16 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       {saveStatus.success ? 'Saved' : 'Failed to save'}
                     </span>
                   )}
-                  <button
+                  <Button
                     onClick={() => handleSaveMonth(md.month)}
                     disabled={savingMonth === md.month}
-                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+                    tone="blue"
+                    size="xs"
+                    className="text-xs disabled:opacity-50"
                   >
                     <Save size={12} />
                     {savingMonth === md.month ? 'Saving...' : 'Save'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 

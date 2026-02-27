@@ -10,6 +10,12 @@ import TextInput from '@/components/ui/TextInput'
 import SelectField from '@/components/ui/SelectField'
 import TextAreaField from '@/components/ui/TextAreaField'
 import CheckboxInput from '@/components/ui/CheckboxInput'
+import TextLink from '@/components/ui/TextLink'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Card from '@/components/ui/Card'
+import Surface from '@/components/ui/Surface'
+import { TableBody, TableContainer, TableHeaderRow, TableRow } from '@/components/ui/TableStyles'
 
 interface Association {
   id: string
@@ -239,7 +245,7 @@ export default function AssociationManagement() {
   }
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow">
+    <Card padding="none">
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -255,17 +261,17 @@ export default function AssociationManagement() {
           <p className="text-sm text-text-tertiary">
             Beekeeping associations from Northern Ireland and the Republic of Ireland.
           </p>
-          <button
+          <Button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="fj-btn fj-btn-success"
+            tone="success"
           >
             {showAddForm ? <X size={16} /> : <Plus size={16} />}
             {showAddForm ? 'Cancel' : 'Add Association'}
-          </button>
+          </Button>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 items-center bg-surface dark:bg-background p-4 rounded-lg">
+        <Surface padded="sm" elevated={false} className="flex flex-wrap gap-4 items-center bg-surface dark:bg-background">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-text-secondary">County/Area:</label>
             <SelectField
@@ -297,22 +303,25 @@ export default function AssociationManagement() {
           </div>
 
           {(countyFilter !== 'all' || searchQuery) && (
-            <button
+            <Button
               onClick={() => {
                 setCountyFilter('all')
                 setSearchQuery('')
                 setCurrentPage(1)
               }}
-              className="fj-btn fj-btn-neutral fj-btn-sm ml-auto"
+              tone="neutral"
+              size="sm"
+              className="ml-auto"
             >
               Clear Filters
-            </button>
+            </Button>
           )}
-        </div>
+        </Surface>
 
         {/* Add/Edit Form */}
         {showAddForm && (
-          <form onSubmit={handleSubmit} className="bg-surface dark:bg-background p-6 rounded-lg space-y-4">
+          <Surface padded="md" elevated={false} className="bg-surface dark:bg-background">
+            <form onSubmit={handleSubmit} className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">
               {editing ? 'Edit Association' : 'Add New Association'}
             </h3>
@@ -406,22 +415,25 @@ export default function AssociationManagement() {
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="submit"
-                className="fj-btn fj-btn-success px-6"
+                tone="success"
+                className="px-6"
               >
                 <Save size={16} />
                 {editing ? 'Update' : 'Add'} Association
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={resetForm}
-                className="fj-btn fj-btn-neutral px-6"
+                tone="neutral"
+                className="px-6"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
-          </form>
+            </form>
+          </Surface>
         )}
 
         {/* Associations Table */}
@@ -439,13 +451,13 @@ export default function AssociationManagement() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <TableContainer>
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-surface-elevated dark:bg-surface-elevated border-b-2 border-border">
+                  <TableHeaderRow>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Actions</th>
                     <th
-                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface dark:hover:bg-background"
+                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('name')}
                     >
                       <div className="flex items-center gap-1">
@@ -454,7 +466,7 @@ export default function AssociationManagement() {
                       </div>
                     </th>
                     <th
-                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface dark:hover:bg-background"
+                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('county_area')}
                     >
                       <div className="flex items-center gap-1">
@@ -463,7 +475,7 @@ export default function AssociationManagement() {
                       </div>
                     </th>
                     <th
-                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface dark:hover:bg-background"
+                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer"
                       onClick={() => handleSort('email')}
                     >
                       <div className="flex items-center gap-1">
@@ -473,36 +485,38 @@ export default function AssociationManagement() {
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Contacted</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Comments</th>
-                  </tr>
+                  </TableHeaderRow>
                 </thead>
-                <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
+                <TableBody>
                   {paginatedAssociations.map((association) => (
-                    <tr key={association.id} className="hover:bg-surface dark:hover:bg-background">
+                    <TableRow key={association.id}>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
-                          <button
+                          <IconButton
                             onClick={() => handleEdit(association)}
-                            className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
+                            tone="blue"
+                            size="xs"
                             title="Edit"
                           >
                             <Edit2 size={18} />
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
                             onClick={() => handleDelete(association.id)}
-                            className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
+                            tone="danger"
+                            size="xs"
                             title="Delete"
                           >
                             <Trash2 size={18} />
-                          </button>
+                          </IconButton>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">{association.name}</td>
                       <td className="px-4 py-3 text-sm text-foreground">{association.county_area}</td>
                       <td className="px-4 py-3 text-sm text-foreground">
                         {association.email ? (
-                          <a href={`mailto:${association.email}`} className="fj-link fj-link-info">
+                          <TextLink href={`mailto:${association.email}`} tone="info">
                             {association.email}
-                          </a>
+                          </TextLink>
                         ) : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-center">
@@ -511,11 +525,11 @@ export default function AssociationManagement() {
                       <td className="px-4 py-3 text-sm text-foreground max-w-[200px] truncate" title={association.comments || ''}>
                         {association.comments || '-'}
                       </td>
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </table>
-            </div>
+            </TableContainer>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -524,43 +538,49 @@ export default function AssociationManagement() {
                   Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedAssociations.length)} of {filteredAndSortedAssociations.length} associations
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="px-3 py-1.5 text-sm border border-border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-elevated dark:hover:bg-surface-elevated"
+                    tone="neutral"
+                    size="xs"
+                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     First
-                  </button>
-                  <button
+                  </Button>
+                  <IconButton
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="p-1.5 border border-border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-elevated dark:hover:bg-surface-elevated"
+                    size="sm"
+                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft size={18} />
-                  </button>
+                  </IconButton>
                   <span className="px-3 py-1.5 text-sm">
                     Page {currentPage} of {totalPages}
                   </span>
-                  <button
+                  <IconButton
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="p-1.5 border border-border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-elevated dark:hover:bg-surface-elevated"
+                    size="sm"
+                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronRight size={18} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <Button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 text-sm border border-border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-elevated dark:hover:bg-surface-elevated"
+                    tone="neutral"
+                    size="xs"
+                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Last
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </>
         )}
       </div>
-    </div>
+    </Card>
   )
 }

@@ -7,6 +7,10 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import TextInput from '@/components/ui/TextInput'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Surface from '@/components/ui/Surface'
+import { TableBody, TableContainer, TableHeaderRow, TableRow } from '@/components/ui/TableStyles'
 
 interface FrameStandard {
   id: string
@@ -169,16 +173,17 @@ export default function FrameStandardsManager() {
             Frame Standards
           </h3>
         </div>
-        <button
+        <Button
           onClick={() => {
             setShowAddForm(!showAddForm)
             setEditingStandard(null)
           }}
-          className="fj-btn fj-btn-success fj-btn-sm"
+          tone="success"
+          size="sm"
         >
           <Plus size={16} />
           Add Standard
-        </button>
+        </Button>
       </div>
 
       <p className="text-sm text-text-secondary">
@@ -187,7 +192,7 @@ export default function FrameStandardsManager() {
 
       {/* Add Form */}
       {showAddForm && (
-        <div className="bg-muted/30 dark:bg-muted/10 rounded-lg p-4 border border-border">
+        <Surface padded="sm" elevated={false} className="bg-muted/30 dark:bg-muted/10">
           <h4 className="font-medium text-foreground mb-3">Add New Frame Standard</h4>
           <div className="flex flex-col sm:flex-row gap-3">
             <TextInput
@@ -214,41 +219,42 @@ export default function FrameStandardsManager() {
               min="1"
             />
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={handleAdd}
                 disabled={saving}
-                className="fj-btn fj-btn-success disabled:opacity-50"
+                tone="success"
+                className="disabled:opacity-50"
               >
                 <Save size={16} />
                 Save
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setShowAddForm(false)
                   setNewStandard({ label: '', width_mm: 0, height_mm: 0 })
                 }}
-                className="fj-btn fj-btn-neutral"
+                tone="neutral"
               >
                 <X size={16} />
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
+        </Surface>
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <TableContainer>
         <table className="w-full">
           <thead>
-            <tr className="bg-muted/50 dark:bg-muted/20">
+            <TableHeaderRow tone="muted">
               <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Label</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Width (mm)</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Height (mm)</th>
               <th className="px-4 py-3 text-right text-sm font-semibold text-foreground w-24">Actions</th>
-            </tr>
+            </TableHeaderRow>
           </thead>
-          <tbody className="divide-y divide-border">
+          <TableBody tone="muted">
             {standards.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-text-tertiary">
@@ -257,7 +263,7 @@ export default function FrameStandardsManager() {
               </tr>
             ) : (
               standards.map((standard) => (
-                <tr key={standard.id} className="hover:bg-muted/30 dark:hover:bg-muted/10 transition-colors">
+                <TableRow key={standard.id} tone="muted">
                   {editingStandard?.id === standard.id ? (
                     <>
                       <td className="px-4 py-2">
@@ -288,21 +294,23 @@ export default function FrameStandardsManager() {
                       </td>
                       <td className="px-4 py-2 text-right">
                         <div className="flex justify-end gap-1">
-                          <button
+                          <IconButton
                             onClick={handleUpdate}
                             disabled={saving}
-                            className="fj-icon-btn fj-icon-btn-green p-1.5 disabled:opacity-50"
+                            tone="green"
+                            size="sm"
+                            className="disabled:opacity-50"
                             title="Save"
                           >
                             <Save size={16} />
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
                             onClick={cancelEdit}
-                            className="fj-icon-btn p-1.5"
+                            size="sm"
                             title="Cancel"
                           >
                             <X size={16} />
-                          </button>
+                          </IconButton>
                         </div>
                       </td>
                     </>
@@ -313,30 +321,32 @@ export default function FrameStandardsManager() {
                       <td className="px-4 py-3 text-foreground">{standard.height_mm}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-1">
-                          <button
+                          <IconButton
                             onClick={() => startEdit(standard)}
-                            className="fj-icon-btn fj-icon-btn-blue p-1.5"
+                            tone="blue"
+                            size="sm"
                             title="Edit"
                           >
                             <Edit2 size={16} />
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
                             onClick={() => handleDelete(standard.id, standard.label)}
-                            className="fj-icon-btn fj-icon-btn-danger p-1.5"
+                            tone="danger"
+                            size="sm"
                             title="Delete"
                           >
                             <Trash2 size={16} />
-                          </button>
+                          </IconButton>
                         </div>
                       </td>
                     </>
                   )}
-                </tr>
+                </TableRow>
               ))
             )}
-          </tbody>
+          </TableBody>
         </table>
-      </div>
+      </TableContainer>
 
       <p className="text-xs text-text-tertiary">
         These frame standards appear in the Frame Cell Calculator dropdown. All authenticated users can view them in the calculator.

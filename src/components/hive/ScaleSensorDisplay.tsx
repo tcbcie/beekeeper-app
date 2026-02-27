@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Scale, Flame, Droplets, Battery, RefreshCw, Clock, TrendingUp, TrendingDown } from 'lucide-react'
 import type { BeepSensorReading } from '@/lib/beep-api'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface ScaleSensorDisplayProps {
   deviceId: string
@@ -63,10 +65,10 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
   if (loading) {
     return (
       <div className="animate-pulse space-y-3">
-        <div className="h-4 bg-sage-200 dark:bg-slate-700 rounded w-1/2"></div>
+        <div className="h-4 bg-surface-secondary rounded w-1/2"></div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="h-16 bg-sage-200 dark:bg-slate-700 rounded"></div>
-          <div className="h-16 bg-sage-200 dark:bg-slate-700 rounded"></div>
+          <div className="h-16 bg-surface-secondary rounded"></div>
+          <div className="h-16 bg-surface-secondary rounded"></div>
         </div>
       </div>
     )
@@ -76,13 +78,15 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
     return (
       <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
         <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        <button
+        <Button
           onClick={fetchSensorData}
-          className="mt-2 text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
+          tone="danger"
+          size="xs"
+          className="mt-2 inline-flex items-center gap-1"
         >
           <RefreshCw size={14} />
           Retry
-        </button>
+        </Button>
       </div>
     )
   }
@@ -131,19 +135,20 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
               {lastUpdated.toLocaleTimeString()}
             </span>
           )}
-          <button
+          <IconButton
             onClick={fetchSensorData}
-            className="p-1 text-text-tertiary hover:text-foreground rounded"
+            size="xs"
+            className="text-text-tertiary hover:text-foreground"
             title="Refresh data"
           >
             <RefreshCw size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       {/* Weight Section */}
       {(weight !== undefined || weightChange24h !== null || weightChange7d !== null || weightChange30d !== null) && (
-        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+        <div className="p-3 border border-border rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Current Weight */}
@@ -235,7 +240,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
 
       {/* Colony Section - Brood Temperature */}
       {temperature !== undefined && (
-        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+        <div className="p-3 border border-border rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
@@ -255,7 +260,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
 
       {/* Environmental Section - Humidity */}
       {humidity !== undefined && (
-        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+        <div className="p-3 border border-border rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded border border-cyan-200 dark:border-cyan-800">
@@ -275,7 +280,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
 
       {/* Technical Section - Battery */}
       {batteryInfo !== null && (
-        <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+        <div className="p-3 border border-border rounded-lg space-y-2">
           <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className={`p-2 rounded border ${

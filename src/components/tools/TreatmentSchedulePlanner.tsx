@@ -11,6 +11,7 @@ import {
 } from '@/lib/external-data'
 import { calculateTreatmentTiming } from '@/lib/tool-calculations'
 import { Calendar, AlertTriangle, CheckCircle, Info, Thermometer } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 export function TreatmentSchedulePlanner() {
   const [selectedTreatment, setSelectedTreatment] = useState<string>('')
@@ -92,7 +93,7 @@ export function TreatmentSchedulePlanner() {
           <select
             value={selectedTreatment}
             onChange={(e) => setSelectedTreatment(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+            className="w-full px-4 py-2 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
           >
             <option value="">Choose a treatment...</option>
             <optgroup label={`Recommended for ${season.charAt(0).toUpperCase() + season.slice(1)}`}>
@@ -117,25 +118,27 @@ export function TreatmentSchedulePlanner() {
             Number of Hives
           </label>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               onClick={() => setHiveCount(Math.max(1, hiveCount - 1))}
-              className="w-12 h-12 flex items-center justify-center rounded-lg bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700 font-bold text-xl"
+              tone="neutral"
+              className="w-12 h-12 p-0 bg-surface-secondary hover:bg-surface-elevated text-xl"
             >
-              −
-            </button>
+              -
+            </Button>
             <input
               type="number"
               min="1"
               value={hiveCount}
               onChange={(e) => setHiveCount(Math.max(1, parseInt(e.target.value) || 1))}
-              className="flex-1 px-4 py-3 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-forest-500"
+              className="flex-1 px-4 py-3 rounded-lg border border-border bg-surface text-foreground text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-forest-500"
             />
-            <button
+            <Button
               onClick={() => setHiveCount(hiveCount + 1)}
-              className="w-12 h-12 flex items-center justify-center rounded-lg bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700 font-bold text-xl"
+              tone="neutral"
+              className="w-12 h-12 p-0 bg-surface-secondary hover:bg-surface-elevated text-xl"
             >
               +
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -150,7 +153,7 @@ export function TreatmentSchedulePlanner() {
             type="date"
             value={lastTreatmentDate}
             onChange={(e) => setLastTreatmentDate(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+            className="w-full px-4 py-3 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
           />
         </div>
 
@@ -164,19 +167,19 @@ export function TreatmentSchedulePlanner() {
             value={currentTemp ?? ''}
             onChange={(e) => setCurrentTemp(e.target.value ? parseFloat(e.target.value) : null)}
             placeholder="e.g., 18"
-            className="w-full px-4 py-3 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+            className="w-full px-4 py-3 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
           />
         </div>
       </div>
 
       {/* Honey Super Toggle */}
-      <div className="flex items-center gap-3 p-4 bg-sage-50 dark:bg-slate-800/50 rounded-lg">
+      <div className="flex items-center gap-3 p-4 bg-surface-secondary rounded-lg">
         <input
           type="checkbox"
           id="honeySuper"
           checked={honeySuperPresent}
           onChange={(e) => setHoneySuperPresent(e.target.checked)}
-          className="w-5 h-5 rounded border-sage-300 dark:border-slate-600 text-forest-600 focus:ring-2 focus:ring-forest-500"
+          className="w-5 h-5 rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500"
         />
         <label htmlFor="honeySuper" className="text-foreground font-medium cursor-pointer">
           Honey supers are currently on the hive
@@ -185,7 +188,7 @@ export function TreatmentSchedulePlanner() {
 
       {/* Treatment Details */}
       {treatment && (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-sage-300 dark:border-slate-700 space-y-4">
+        <div className="bg-surface-elevated p-6 rounded-lg border border-border space-y-4">
           <div>
             <h3 className="text-xl font-bold text-foreground mb-2">{treatment.product}</h3>
             <p className="text-sm text-text-secondary">{treatment.activeIngredient}</p>
@@ -218,7 +221,7 @@ export function TreatmentSchedulePlanner() {
             </div>
           )}
 
-          <div className="p-3 bg-sage-50 dark:bg-slate-700/50 rounded-lg">
+          <div className="p-3 bg-surface-secondary rounded-lg">
             <div className="text-sm font-medium text-text-secondary mb-1">Application Notes</div>
             <div className="text-sm text-foreground">{treatment.notes}</div>
           </div>
@@ -300,7 +303,7 @@ export function TreatmentSchedulePlanner() {
 
           {/* Timeline */}
           {(timing.nextSafeTreatment || timing.withdrawalEnds) && (
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-sage-300 dark:border-slate-700">
+            <div className="bg-surface-elevated p-4 rounded-lg border border-border">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar size={20} className="text-forest-600 dark:text-forest-400" />
                 <h4 className="font-semibold text-foreground">Treatment Timeline</h4>
@@ -339,7 +342,7 @@ export function TreatmentSchedulePlanner() {
 
       {/* Empty State */}
       {!treatment && (
-        <div className="bg-sage-50 dark:bg-slate-800/50 p-8 rounded-lg text-center">
+        <div className="bg-surface-secondary p-8 rounded-lg text-center">
           <Calendar className="mx-auto mb-3 text-text-secondary" size={48} />
           <p className="text-text-secondary">
             Select a treatment above to view application details and timing recommendations

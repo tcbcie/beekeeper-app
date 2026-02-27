@@ -8,6 +8,7 @@ import WildColonyInspectionCard from './WildColonyInspectionCard'
 import WildColonyInspectionForm from './WildColonyInspectionForm'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import Button from '@/components/ui/Button'
 
 interface WildColonyInspectionPanelProps {
   colonyId: string
@@ -163,24 +164,26 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
 
   if (loading) {
     return (
-      <div className="p-6 bg-sage-50 dark:bg-slate-800/30">
+      <div className="p-6 bg-surface-secondary/30">
         <LoadingSpinner size="sm" />
       </div>
     )
   }
 
   return (
-    <div className="p-4 md:p-6 bg-sage-50 dark:bg-slate-800/30 border-t border-border">
+    <div className="p-4 md:p-6 bg-surface-secondary/30 border-t border-border">
       {/* Header */}
       <div className="flex items-center flex-wrap gap-3 mb-4">
         {!showForm && (
-          <button
+          <Button
             onClick={() => setShowForm(true)}
-            className="px-3 py-1.5 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium flex items-center gap-1.5 text-sm"
+            tone="amber"
+            size="sm"
+            className="inline-flex items-center gap-1.5"
           >
             <Plus size={16} />
             Add Inspection
-          </button>
+          </Button>
         )}
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <ClipboardList size={20} className="text-amber-600" />
@@ -190,7 +193,7 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
 
       {/* Form */}
       {showForm && (
-        <div className="mb-6 p-4 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-800">
+        <div className="mb-6 p-4 bg-surface-elevated rounded-lg border border-amber-200 dark:border-amber-800">
           <h4 className="text-md font-medium text-foreground mb-4">
             {editingInspection ? 'Edit Inspection' : 'New Inspection'}
           </h4>

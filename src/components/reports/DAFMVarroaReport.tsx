@@ -140,14 +140,14 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
       />
 
       {/* Official Report Document */}
-      <div ref={reportRef} className="print-container bg-white dark:bg-slate-900 rounded-lg border-2 border-[#006853] dark:border-[#00a67d] shadow-lg overflow-hidden">
+      <div ref={reportRef} className="print-container bg-surface-elevated rounded-lg border-2 border-[#006853] dark:border-[#00a67d] shadow-lg overflow-hidden">
 
         {/* Official Header with DAFM Branding */}
         <div className="bg-gradient-to-r from-[#006853] to-[#008060] text-white p-6 print-header">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               {/* DAFM Logo */}
-              <div className="flex-shrink-0 bg-white rounded-lg p-2 shadow-md">
+              <div className="flex-shrink-0 bg-surface rounded-lg p-2 shadow-md border border-border">
                 <Image
                   src="/dafm-logo.png"
                   alt="DAFM Logo"
@@ -177,7 +177,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
               </div>
             </div>
             <div className="text-right text-sm">
-              <div className="print-date-box bg-white/20 rounded-lg px-4 py-2 backdrop-blur-sm">
+              <div className="print-date-box bg-black/10 rounded-lg px-4 py-2 backdrop-blur-sm">
                 <p className="text-emerald-100 text-xs uppercase tracking-wider">Report Generated</p>
                 <p className="font-semibold">{new Date().toLocaleDateString('en-GB', {
                   day: 'numeric',
@@ -190,27 +190,27 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
         </div>
 
         {/* Beekeeper & Period Information */}
-        <div className="bg-gradient-to-b from-emerald-50 to-white dark:from-slate-800 dark:to-slate-900 p-6 border-b border-emerald-200 dark:border-slate-700">
+        <div className="bg-gradient-to-b from-emerald-50 to-surface p-6 border-b border-emerald-200 dark:border-emerald-900/40">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Beekeeper Details */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-emerald-100 dark:border-slate-700">
+            <div className="bg-surface-elevated rounded-lg p-4 shadow-sm border border-emerald-100 dark:border-emerald-900/40">
               <h3 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3">
                 Beekeeper Details
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">👤</span>
+                  
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Name</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{beekeeperName || 'Not specified'}</p>
+                    <p className="text-sm text-text-secondary">Name</p>
+                    <p className="font-semibold text-foreground">{beekeeperName || 'Not specified'}</p>
                   </div>
                 </div>
                 {profile?.email && (
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">📧</span>
+                    
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                      <p className="font-medium text-gray-700 dark:text-gray-300">{profile.email}</p>
+                      <p className="text-sm text-text-secondary">Email</p>
+                      <p className="font-medium text-text-secondary">{profile.email}</p>
                     </div>
                   </div>
                 )}
@@ -218,24 +218,24 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
             </div>
 
             {/* Reporting Period */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-emerald-100 dark:border-slate-700">
+            <div className="bg-surface-elevated rounded-lg p-4 shadow-sm border border-emerald-100 dark:border-emerald-900/40">
               <h3 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3">
                 Reporting Period
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">📅</span>
+                  
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Date Range</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{dateRange}</p>
+                    <p className="text-sm text-text-secondary">Date Range</p>
+                    <p className="font-semibold text-foreground">{dateRange}</p>
                   </div>
                 </div>
                 {selectedApiary && (
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">📍</span>
+                    
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Apiary</p>
-                      <p className="font-medium text-gray-700 dark:text-gray-300">
+                      <p className="text-sm text-text-secondary">Apiary</p>
+                      <p className="font-medium text-text-secondary">
                         {selectedApiary.name}
                         {selectedApiary.eircode && ` (${selectedApiary.eircode})`}
                       </p>
@@ -248,8 +248,8 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
         </div>
 
         {/* Summary Statistics */}
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+        <div className="p-6 border-b border-border">
+          <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-4">
             Treatment Summary
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -274,87 +274,87 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
 
         {/* Treatment Records Table */}
         <div className="p-6">
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+          <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-4">
             Treatment Records
           </h3>
 
           {dataLoading ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-text-secondary">
               <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
               Loading treatment records...
             </div>
           ) : treatments.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600">
-              <span className="text-4xl mb-4 block">🐝</span>
-              <p className="text-gray-500 dark:text-gray-400 font-medium">No varroa treatments found</p>
-              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Try adjusting your date range or apiary filter</p>
+            <div className="text-center py-12 bg-surface-secondary rounded-lg border-2 border-dashed border-border">
+              
+              <p className="text-text-secondary font-medium">No varroa treatments found</p>
+              <p className="text-text-tertiary text-sm mt-1">Try adjusting your date range or apiary filter</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-700">
+            <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full print-table">
                 <thead>
-                  <tr className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-700">
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider border-b-2 border-emerald-500">
+                  <tr className="bg-surface-secondary">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
                       Date
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
                       Hive
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
                       Apiary / Eircode
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
                       Product
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
                       Batch No.
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
                       Dosage
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
                       Method
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                <tbody className="divide-y divide-border">
                   {treatments.map((treatment, idx) => (
                     <tr
                       key={idx}
-                      className={`${idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50 dark:bg-slate-800/50'} hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors`}
+                      className={`${idx % 2 === 0 ? 'bg-surface-elevated' : 'bg-surface-secondary/50'} hover:bg-surface-secondary transition-colors`}
                     >
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                      <td className="px-4 py-3 text-sm font-medium text-foreground whitespace-nowrap">
                         {new Date(treatment.treatment_date).toLocaleDateString('en-GB', {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric'
                         })}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-4 py-3 text-sm text-text-secondary">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                           {treatment.hive_number}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-4 py-3 text-sm text-text-secondary">
                         <div>{treatment.apiary_name}</div>
                         {treatment.eircode && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{treatment.eircode}</div>
+                          <div className="text-xs text-text-secondary font-mono">{treatment.eircode}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-4 py-3 text-sm font-medium text-foreground">
                         {treatment.treatment_type}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono">
+                      <td className="px-4 py-3 text-sm text-text-secondary font-mono">
                         {treatment.batch_number || (
-                          <span className="text-gray-400 dark:text-gray-500 italic">—</span>
+                          <span className="text-text-tertiary italic">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-4 py-3 text-sm text-text-secondary">
                         {treatment.dosage}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-4 py-3 text-sm text-text-secondary">
                         {treatment.application_method || (
-                          <span className="text-gray-400 dark:text-gray-500 italic">—</span>
+                          <span className="text-text-tertiary italic">-</span>
                         )}
                       </td>
                     </tr>
@@ -366,13 +366,13 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 dark:bg-slate-800 px-6 py-4 border-t border-gray-200 dark:border-slate-700">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="bg-surface-secondary px-6 py-4 border-t border-border">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-text-secondary">
             <p>
               This record is maintained in accordance with DAFM requirements for varroa treatment documentation.
             </p>
             <p className="font-medium">
-              Generated by HiveCraic • {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              Generated by HiveCraic | {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
         </div>

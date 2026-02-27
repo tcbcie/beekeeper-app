@@ -134,7 +134,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               <button
                 ref={cancelBtnRef}
                 onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 min-h-[40px]"
+                className="px-4 py-2 text-sm font-medium bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated min-h-[40px]"
               >
                 {options.cancelLabel || 'Cancel'}
               </button>

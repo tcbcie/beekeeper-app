@@ -105,7 +105,7 @@ export default function HiveInspectionSummary({ userId }: HiveInspectionSummaryP
         {[1, 2, 3, 4, 5].map((n) => (
           <div
             key={n}
-            className={`w-3 h-3 rounded-full ${n <= rating ? colors[rating - 1] : 'bg-gray-200 dark:bg-gray-700'}`}
+            className={`w-3 h-3 rounded-full ${n <= rating ? colors[rating - 1] : 'bg-surface-secondary border border-border'}`}
           />
         ))}
       </div>

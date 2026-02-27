@@ -10,10 +10,11 @@ import Image from 'next/image'
 
 const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker'), {
   ssr: false,
-  loading: () => <div className="h-[300px] bg-sage-100 dark:bg-slate-800 rounded-lg animate-pulse flex items-center justify-center text-text-tertiary">Loading map...</div>
+  loading: () => <div className="h-[300px] bg-surface-secondary rounded-lg animate-pulse flex items-center justify-center text-text-tertiary">Loading map...</div>
 })
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
+import Button from '@/components/ui/Button'
 
 interface FormData {
   latitude: string
@@ -215,18 +216,18 @@ export default function SubmitColonyPage() {
             Thank you for reporting this wild colony sighting. A member of the team will review your submission soon.
           </p>
           <div className="flex gap-4 justify-center">
-            <button
+            <Button
               onClick={resetForm}
               className="px-6 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium min-h-[48px]"
             >
               Submit Another
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => router.push('/dashboard')}
-              className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-medium min-h-[48px]"
+              className="px-6 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium min-h-[48px]"
             >
               Back to Dashboard
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -250,20 +251,20 @@ export default function SubmitColonyPage() {
       <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 border border-border">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Map Location Picker */}
-          <div className="bg-sage-50 dark:bg-slate-800/50 p-4 rounded-lg border border-sage-200 dark:border-slate-700">
+          <div className="bg-surface-secondary/50 p-4 rounded-lg border border-border">
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-medium text-text-secondary flex items-center gap-2">
                 <MapPin size={16} />
                 Location *
               </label>
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowMapPicker(!showMapPicker)}
                 className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
               >
                 <MapPin size={14} />
                 {showMapPicker ? 'Hide Map' : 'Pick on Map'}
-              </button>
+              </Button>
             </div>
 
             {showMapPicker && (
@@ -390,13 +391,13 @@ export default function SubmitColonyPage() {
                       height={120}
                       className="w-30 h-30 object-cover rounded-lg border border-border"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={handleRemoveLocationImage}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                     >
                       <X size={14} />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
@@ -427,13 +428,13 @@ export default function SubmitColonyPage() {
                       height={120}
                       className="w-30 h-30 object-cover rounded-lg border border-border"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={handleRemoveColonyImage}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                     >
                       <X size={14} />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
@@ -452,16 +453,17 @@ export default function SubmitColonyPage() {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <button
+            <Button
               type="submit"
               disabled={submitting || locationUploading || colonyUploading}
               className="flex-1 px-6 py-3 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium min-h-[48px] disabled:opacity-50"
             >
               {submitting || locationUploading || colonyUploading ? 'Submitting...' : 'Submit Sighting'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
     </div>
   )
 }
+

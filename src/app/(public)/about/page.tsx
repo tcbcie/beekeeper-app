@@ -4,6 +4,7 @@ import { Globe2, Mail } from 'lucide-react'
 import AppIcon from '@/components/icons/AppIcon'
 import Panel from '@/components/ui/Panel'
 import PageHeader from '@/components/ui/PageHeader'
+import TextLink from '@/components/ui/TextLink'
 import { aboutFeatureIcons } from '@/lib/iconography'
 
 export const metadata: Metadata = {
@@ -83,9 +84,9 @@ export default function AboutPage() {
                 <Link href="/login" className="fj-btn bg-forest-600 text-white hover:bg-forest-700">
                   Get Started
                 </Link>
-                <a href="#features" className="fj-chip fj-chip-sm fj-chip-neutral">
+                <Link href="#features" className="fj-chip fj-chip-sm fj-chip-neutral">
                   Explore Features
-                </a>
+                </Link>
               </div>
             }
           />
@@ -173,22 +174,21 @@ export default function AboutPage() {
           />
 
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
+            <TextLink
               href="mailto:support@tcbc.ie"
               className="fj-chip fj-chip-sm fj-chip-neutral"
             >
               <Mail className="h-4 w-4" />
               <span>support@tcbc.ie</span>
-            </a>
-            <a
+            </TextLink>
+            <TextLink
               href="https://tcbc.ie"
-              target="_blank"
-              rel="noopener noreferrer"
+              external
               className="fj-chip fj-chip-sm fj-chip-neutral"
             >
               <Globe2 className="h-4 w-4" />
               <span>tcbc.ie</span>
-            </a>
+            </TextLink>
           </div>
         </div>
       </Panel>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Edit2, Trash2, MapPin, Map, Camera, Clock } from 'lucide-react'
 import type { Apiary } from '@/types/apiary'
+import Button from '@/components/ui/Button'
 
 interface ApiaryCardProps {
   apiary: Apiary
@@ -56,13 +57,15 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
             </p>
           )}
           {apiary.share_location && apiary.latitude && apiary.longitude && (
-            <button
+            <Button
               onClick={() => router.push('/dashboard/community-map')}
-              className="text-xs text-purple-800 dark:text-purple-400 mt-1 flex items-center gap-1 hover:underline"
+              tone="purple"
+              size="xs"
+              className="mt-1 inline-flex items-center gap-1"
             >
               <Map size={12} />
               View on community map
-            </button>
+            </Button>
           )}
         </div>
         {apiary.image_url && (
@@ -104,7 +107,7 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
             Inspected {daysSinceInspection}d ago
           </span>
         ) : apiary.hive_count && apiary.hive_count > 0 ? (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-sage-100 dark:bg-slate-700 text-text-secondary rounded-full border border-border">
+          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-surface-secondary text-text-secondary rounded-full border border-border">
             <Clock size={10} />
             Never inspected
           </span>
@@ -112,27 +115,29 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
       </div>
 
       {apiary.notes && (
-        <div className="mb-4 p-3 bg-sage-50 dark:bg-slate-800/50 rounded text-sm text-text-primary border border-sage-200 dark:border-slate-700">
+        <div className="mb-4 p-3 bg-surface-secondary/50 rounded text-sm text-text-primary border border-border">
           {apiary.notes}
         </div>
       )}
 
       {!isReadOnly && (
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => onEdit(apiary)}
-            className="flex-1 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
+            tone="blue"
+            className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-2"
           >
             <Edit2 size={16} />
             Edit
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => onDelete(apiary.id)}
-            className="flex-1 px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 font-medium flex items-center justify-center gap-2 min-h-[48px]"
+            tone="danger"
+            className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-2"
           >
             <Trash2 size={16} />
             Delete
-          </button>
+          </Button>
         </div>
       )}
     </div>

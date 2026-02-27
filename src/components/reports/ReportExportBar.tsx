@@ -1,6 +1,7 @@
 'use client'
 
 import { Download, Printer, Image as ImageIcon } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 interface ReportExportBarProps {
   onExportCSV: () => void
@@ -17,31 +18,34 @@ export default function ReportExportBar({
 }: ReportExportBarProps) {
   return (
     <div className="flex flex-wrap gap-2 no-print">
-      <button
+      <Button
         onClick={onExportCSV}
         disabled={disabled}
-        className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        tone="success"
+        className="inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Download size={18} />
         Export CSV
-      </button>
-      <button
+      </Button>
+      <Button
         onClick={onPrint}
         disabled={disabled}
-        className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-foreground rounded-lg hover:bg-sage-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        tone="neutral"
+        className="inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Printer size={18} />
         Print / PDF
-      </button>
+      </Button>
       {onExportImage && (
-        <button
+        <Button
           onClick={onExportImage}
           disabled={disabled}
-          className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-foreground rounded-lg hover:bg-sage-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          tone="neutral"
+          className="inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ImageIcon size={18} />
           Export Image
-        </button>
+        </Button>
       )}
     </div>
   )

@@ -5,6 +5,8 @@ import { Camera, X } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck, Hive, Apiary } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface VarroaCheckFormProps {
   check: VarroaCheck | null
@@ -231,21 +233,23 @@ export default function VarroaCheckForm({
           {check?.id ? 'Edit Varroa Check' : 'Record New Varroa Check'}
         </h3>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button
+          <Button
             type="submit"
             form="check-form"
             disabled={submitting}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 transition-all touch-manipulation font-medium disabled:opacity-50"
+            tone="amber"
+            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium disabled:opacity-50"
           >
             {submitting ? 'Saving...' : (check?.id ? 'Update' : 'Save')} Check
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleCancel}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+            tone="neutral"
+            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -433,14 +437,16 @@ export default function VarroaCheckForm({
                       <Camera size={16} className="text-white" />
                     </div>
                   </div>
-                  <button
+                  <IconButton
                     type="button"
                     onClick={handleRemoveImage}
-                    className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                    tone="danger"
+                    size="sm"
+                    className="absolute -top-2 -right-2 z-10 shadow-lg transition-all"
                     title="Remove image"
                   >
                     <X size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               )}
               <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all p-4">

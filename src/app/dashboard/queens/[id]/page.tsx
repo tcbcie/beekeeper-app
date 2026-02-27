@@ -6,6 +6,8 @@ import { ArrowLeft, Edit2, ExternalLink, AlertTriangle, CheckCircle, XCircle, Cl
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import QueenLineageTree from '@/components/QueenLineageTree'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 import { useQueenDetail } from '@/hooks'
 import { getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 
@@ -43,9 +45,9 @@ export default function QueenDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-text-secondary">Queen not found</p>
-        <button onClick={() => router.push('/dashboard/queens')} className="mt-4 text-forest-600 dark:text-forest-400 hover:underline">
+        <Button onClick={() => router.push('/dashboard/queens')} tone="neutral" size="sm" className="mt-4">
           Back to Queens
-        </button>
+        </Button>
       </div>
     )
   }
@@ -56,12 +58,12 @@ export default function QueenDetailPage() {
 
   const colorBadgeClass = (color: string) => {
     switch (color) {
-      case 'White': return 'bg-slate-100 dark:bg-slate-700 text-text-primary border-slate-300 dark:border-slate-600'
+      case 'White': return 'bg-surface-secondary text-text-primary border-border'
       case 'Yellow': return 'bg-yellow-200 text-yellow-900 border-yellow-400'
       case 'Red': return 'bg-red-200 text-red-900 border-red-400'
       case 'Green': return 'bg-green-200 text-green-900 border-green-400'
       case 'Blue': return 'bg-blue-200 text-blue-900 border-blue-400'
-      default: return 'bg-sage-100 dark:bg-slate-700 text-text-primary border-border'
+      default: return 'bg-surface-secondary text-text-primary border-border'
     }
   }
 
@@ -69,13 +71,13 @@ export default function QueenDetailPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
+        <IconButton
           onClick={() => router.push('/dashboard/queens')}
-          className="p-2 hover:bg-sage-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          className="hover:bg-surface-secondary"
           aria-label="Back to queens"
         >
           <ArrowLeft size={20} className="text-text-secondary" />
-        </button>
+        </IconButton>
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold text-foreground">{queen.queen_number}</h1>
@@ -87,7 +89,7 @@ export default function QueenDetailPage() {
             <span className={`px-2 py-0.5 text-xs font-medium rounded border ${
               queen.status === 'active'
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
-                : 'bg-sage-100 dark:bg-slate-700 text-text-secondary border-border'
+                : 'bg-surface-secondary text-text-secondary border-border'
             }`}>
               {queen.status}
             </span>
@@ -97,7 +99,7 @@ export default function QueenDetailPage() {
         {isOwner && (
           <Link
             href={`/dashboard/queens?id=${queen.id}&edit=true`}
-            className="p-2 hover:bg-sage-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-surface-secondary rounded-lg transition-colors"
             title="Edit Queen"
           >
             <Edit2 size={18} className="text-text-secondary" />
@@ -238,7 +240,7 @@ export default function QueenDetailPage() {
                 <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                   child.status === 'active'
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                    : 'bg-sage-100 dark:bg-slate-700 text-text-secondary'
+                    : 'bg-surface-secondary text-text-secondary'
                 }`}>
                   {child.status}
                 </span>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
+import IconButton from '@/components/ui/IconButton'
 import {
   getTopItems,
   getGroupedItems,
@@ -84,13 +85,13 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="text-lg font-semibold text-foreground">Menu</h2>
-            <button
+            <IconButton
               onClick={onClose}
-              className="fj-icon-btn p-2 touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
+              className="touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
               aria-label="Close menu"
             >
               <X size={24} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Navigation */}

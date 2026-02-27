@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { PurchaseItem, DropdownValue } from '@/types/records'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface PurchaseItemFormProps {
   item: PurchaseItem | null
@@ -53,7 +55,7 @@ export default function PurchaseItemForm({
   }
 
   const priorityOptions = [
-    { value: 'low', label: 'Low', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
+    { value: 'low', label: 'Low', color: 'bg-surface-secondary text-text-secondary' },
     { value: 'medium', label: 'Medium', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
     { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
     { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
@@ -65,13 +67,14 @@ export default function PurchaseItemForm({
         <h4 className="font-medium text-foreground">
           {item ? 'Edit Item' : 'Add Item'}
         </h4>
-        <button
+        <IconButton
           onClick={onCancel}
-          className="p-1 hover:bg-surface-secondary rounded"
+          size="sm"
+          className="hover:bg-surface-secondary"
           aria-label="Close form"
         >
           <X size={20} className="text-text-secondary" />
-        </button>
+        </IconButton>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,18 +118,19 @@ export default function PurchaseItemForm({
             </label>
             <div className="flex gap-1">
               {priorityOptions.map((opt) => (
-                <button
+                <Button
                   key={opt.value}
                   type="button"
                   onClick={() => setPriority(opt.value as typeof priority)}
-                  className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-colors ${
+                  size="xs"
+                  className={`flex-1 text-xs transition-colors ${
                     priority === opt.value
                       ? opt.color
                       : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'
                   }`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -221,22 +225,26 @@ export default function PurchaseItemForm({
 
         {/* Actions */}
         <div className="flex gap-2 justify-end">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             disabled={saving}
-            className="px-4 py-2 border border-border rounded-lg hover:bg-surface-secondary transition-colors"
+            tone="neutral"
+            size="sm"
+            className="hover:bg-surface-secondary transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={saving}
-            className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            tone="blue"
+            size="sm"
+            className="disabled:opacity-50"
           >
             {saving && <Loader2 size={16} className="animate-spin" />}
             {item ? 'Update' : 'Save'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

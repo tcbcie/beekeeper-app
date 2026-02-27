@@ -50,7 +50,7 @@ export default function SubscriptionHistoryTable() {
         <h3 className="text-lg font-semibold text-foreground mb-4">Subscription History</h3>
         <div className="animate-pulse space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-sage-200 dark:bg-slate-700 rounded"></div>
+            <div key={i} className="h-12 bg-surface-secondary rounded"></div>
           ))}
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function SubscriptionHistoryTable() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {isExpired ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sage-100 dark:bg-slate-700 text-text-secondary">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-secondary">
                         Expired
                       </span>
                     ) : isCurrent ? (
@@ -128,7 +128,7 @@ export default function SubscriptionHistoryTable() {
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sage-100 dark:bg-slate-700 text-text-secondary">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-secondary">
                         Past
                       </span>
                     )}

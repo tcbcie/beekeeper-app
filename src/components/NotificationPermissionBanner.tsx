@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { Bell, X, Check } from 'lucide-react'
 import { initializeNotifications } from '@/lib/notifications'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 export default function NotificationPermissionBanner() {
   const [show, setShow] = useState(false)
@@ -58,7 +60,7 @@ export default function NotificationPermissionBanner() {
     <div className="fixed bottom-20 md:bottom-4 right-4 left-4 md:left-auto md:w-96 z-50 animate-slide-up">
       <div className="bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 rounded-lg shadow-2xl p-4 text-white border-2 border-amber-400 dark:border-amber-500">
         <div className="flex items-start gap-3">
-          <div className="bg-white/20 p-2 rounded-full flex-shrink-0">
+          <div className="bg-black/10 p-2 rounded-full flex-shrink-0">
             <Bell className="w-6 h-6" />
           </div>
           <div className="flex-1">
@@ -67,19 +69,21 @@ export default function NotificationPermissionBanner() {
               Get notified about important queen rearing dates: acceptance checks, caging dates, and hatch days!
             </p>
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={handleEnable}
-                className="px-4 py-2 bg-white text-amber-600 rounded-lg font-semibold hover:bg-amber-50 transition-colors flex items-center gap-2 shadow-md"
+                tone="neutral"
+                className="inline-flex items-center gap-2 bg-surface text-amber-700 hover:bg-surface-elevated shadow-md"
               >
                 <Check size={16} />
                 Enable
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleDismiss}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-colors"
+                tone="neutral"
+                className="bg-black/10 text-white border-white/30 hover:bg-black/20"
               >
                 Later
-              </button>
+              </Button>
             </div>
             {permission === 'denied' && (
               <p className="text-xs text-amber-100 mt-2 bg-red-600/30 p-2 rounded">
@@ -87,13 +91,13 @@ export default function NotificationPermissionBanner() {
               </p>
             )}
           </div>
-          <button
+          <IconButton
             onClick={handleDismiss}
-            className="text-white/80 hover:text-white flex-shrink-0"
+            className="flex-shrink-0 border-white/30 text-white/80 hover:text-white"
             aria-label="Close"
           >
             <X size={20} />
-          </button>
+          </IconButton>
         </div>
       </div>
     </div>

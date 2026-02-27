@@ -12,6 +12,8 @@ import ModalShell from '@/components/ui/ModalShell'
 import FieldLabel from '@/components/ui/FieldLabel'
 import SelectField from '@/components/ui/SelectField'
 import TextAreaField from '@/components/ui/TextAreaField'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 import { useToast } from '@/components/ui/Toast'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
@@ -895,13 +897,13 @@ export default function RecordsPage() {
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 min-w-0">
-            <button
+            <IconButton
               onClick={() => router.push('/dashboard')}
-              className="p-2 rounded-lg hover:bg-surface-elevated transition-colors flex-shrink-0"
+              className="flex-shrink-0"
               aria-label="Back to dashboard"
             >
               <Home size={24} />
-            </button>
+            </IconButton>
             <h1 className="text-2xl font-bold text-foreground truncate">Records</h1>
           </div>
           <div className="flex-shrink-0">
@@ -945,13 +947,12 @@ export default function RecordsPage() {
                 {formType === 'harvest' && (editingHarvest?.id ? 'Edit Harvest' : 'New Harvest')}
                 {formType === 'archive' && 'Archive Hive'}
               </h2>
-              <button
+              <IconButton
                 onClick={resetForm}
-                className="fj-icon-btn p-2"
                 aria-label="Close form"
               >
                 <X size={20} />
-              </button>
+              </IconButton>
             </div>
 
             {formType === 'inspection' && (
@@ -1055,19 +1056,21 @@ export default function RecordsPage() {
                   />
                 </div>
                 <FormActionRow>
-                  <button
+                  <Button
                     type="button"
                     onClick={resetForm}
-                    className="fj-btn fj-btn-neutral flex-1"
+                    tone="neutral"
+                    className="flex-1"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="fj-btn fj-btn-danger flex-1"
+                    tone="danger"
+                    className="flex-1"
                   >
                     Archive Hive
-                  </button>
+                  </Button>
                 </FormActionRow>
               </form>
             )}

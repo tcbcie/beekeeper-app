@@ -3,6 +3,7 @@
 import { Edit2, Trash2, Search, Camera } from 'lucide-react'
 import Image from 'next/image'
 import type { Inspection, Hive } from '@/types/records'
+import IconButton from '@/components/ui/IconButton'
 
 interface InspectionCardProps {
   inspection: Inspection
@@ -86,20 +87,22 @@ export default function InspectionCard({
           </div>
         </div>
         <div className="flex gap-2 flex-shrink-0">
-          <button
+          <IconButton
             onClick={() => onEdit(inspection)}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-blue-800 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation"
+            tone="blue"
+            className="min-h-[44px] min-w-[44px] touch-manipulation"
             aria-label="Edit inspection"
           >
             <Edit2 size={20} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={() => onDelete(inspection.id)}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation"
+            tone="danger"
+            className="min-h-[44px] min-w-[44px] touch-manipulation"
             aria-label="Delete inspection"
           >
             <Trash2 size={20} />
-          </button>
+          </IconButton>
         </div>
       </div>
 

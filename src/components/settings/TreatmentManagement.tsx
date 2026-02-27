@@ -8,6 +8,11 @@ import { useToast } from '@/components/ui/Toast'
 import FieldLabel from '@/components/ui/FieldLabel'
 import TextInput from '@/components/ui/TextInput'
 import TextAreaField from '@/components/ui/TextAreaField'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Surface from '@/components/ui/Surface'
+import { TableBody, TableContainer, TableHeaderRow, TableRow } from '@/components/ui/TableStyles'
 
 interface VarroaTreatment {
   id: string
@@ -156,7 +161,7 @@ export default function TreatmentManagement() {
   }
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow">
+    <Card padding="none">
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -172,18 +177,19 @@ export default function TreatmentManagement() {
           <p className="text-sm text-text-tertiary">
             Reference data for approved varroa mite treatment products in Ireland.
           </p>
-          <button
+          <Button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="fj-btn fj-btn-success"
+            tone="success"
           >
             {showAddForm ? <X size={16} /> : <Plus size={16} />}
             {showAddForm ? 'Cancel' : 'Add Treatment'}
-          </button>
+          </Button>
         </div>
 
         {/* Add/Edit Form */}
         {showAddForm && (
-          <form onSubmit={handleSubmit} className="bg-surface dark:bg-background p-6 rounded-lg space-y-4">
+          <Surface padded="md" elevated={false} className="bg-surface dark:bg-background">
+            <form onSubmit={handleSubmit} className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">
               {editing ? 'Edit Treatment' : 'Add New Treatment'}
             </h3>
@@ -279,22 +285,25 @@ export default function TreatmentManagement() {
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="submit"
-                className="fj-btn fj-btn-success px-6"
+                tone="success"
+                className="px-6"
               >
                 <Save size={16} />
                 {editing ? 'Update' : 'Add'} Treatment
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={resetForm}
-                className="fj-btn fj-btn-neutral px-6"
+                tone="neutral"
+                className="px-6"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
-          </form>
+            </form>
+          </Surface>
         )}
 
         {/* Treatments Table */}
@@ -307,10 +316,10 @@ export default function TreatmentManagement() {
             No varroa treatments found. Add your first treatment above.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <TableContainer className="border-none rounded-none">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-surface-elevated dark:bg-surface-elevated border-b-2 border-border">
+                <TableHeaderRow>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
                     Actions
                   </th>
@@ -338,30 +347,31 @@ export default function TreatmentManagement() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                     Notes
                   </th>
-                </tr>
+                </TableHeaderRow>
               </thead>
-              <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
+              <TableBody>
                 {treatments.map((treatment) => (
-                  <tr key={treatment.id} className="hover:bg-surface dark:bg-background">
+                  <TableRow key={treatment.id}>
                     {editing?.id === treatment.id ? (
                       /* Inline Edit Mode */
                       <>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
-                            <button
+                            <IconButton
                               onClick={handleSubmit}
-                              className="fj-icon-btn fj-icon-btn-green fj-icon-btn-xs"
+                              tone="green"
+                              size="xs"
                               title="Save"
                             >
                               <Save size={18} />
-                            </button>
-                            <button
+                            </IconButton>
+                            <IconButton
                               onClick={resetForm}
-                              className="fj-icon-btn fj-icon-btn-xs"
+                              size="xs"
                               title="Cancel"
                             >
                               <X size={18} />
-                            </button>
+                            </IconButton>
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -436,20 +446,22 @@ export default function TreatmentManagement() {
                       <>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
-                            <button
+                            <IconButton
                               onClick={() => handleEdit(treatment)}
-                              className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
+                              tone="blue"
+                              size="xs"
                               title="Edit"
                             >
                               <Edit2 size={16} />
-                            </button>
-                            <button
+                            </IconButton>
+                            <IconButton
                               onClick={() => handleDelete(treatment.id)}
-                              className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
+                              tone="danger"
+                              size="xs"
                               title="Delete"
                             >
                               <Trash2 size={16} />
-                            </button>
+                            </IconButton>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-foreground">
@@ -480,13 +492,13 @@ export default function TreatmentManagement() {
                         </td>
                       </>
                     )}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
+              </TableBody>
             </table>
-          </div>
+          </TableContainer>
         )}
       </div>
-    </div>
+    </Card>
   )
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Bell, BellOff, Settings, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 
 export default function NotificationStatusCard() {
   const toast = useToast()
@@ -105,13 +106,15 @@ To enable notifications:
             {status.description}
           </p>
           {permission === 'denied' && (
-            <button
+            <Button
               onClick={handleOpenSettings}
-              className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              tone="blue"
+              size="xs"
+              className="inline-flex items-center gap-1"
             >
               <Settings size={12} />
               How to enable
-            </button>
+            </Button>
           )}
         </div>
         <div className="flex-shrink-0">

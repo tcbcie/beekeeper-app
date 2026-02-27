@@ -159,9 +159,9 @@ export default function ArchivedHivesReport({ userId }: ArchivedHivesReportProps
       >
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-slate-50 dark:bg-slate-950/30 p-4 rounded-lg">
-            <div className="text-2xl font-bold text-slate-700 dark:text-slate-300">{archivedHives.length}</div>
-            <div className="text-sm text-slate-600 dark:text-slate-400">Total Archived</div>
+          <div className="bg-surface-secondary p-4 rounded-lg border border-border">
+            <div className="text-2xl font-bold text-text-secondary">{archivedHives.length}</div>
+            <div className="text-sm text-text-secondary">Total Archived</div>
           </div>
           {topReasons.map(([reason, count]) => (
             <div key={reason} className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg">

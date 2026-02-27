@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react'
 import type { GraftDistribution } from '@/hooks/useGraftDistributions'
 import { Graft, TYPE_LABELS, formatDateIrish } from './graftConstants'
+import IconButton from '@/components/ui/IconButton'
 
 interface DistributionListProps {
   distributions: GraftDistribution[]
@@ -24,7 +25,7 @@ export default function DistributionList({
       <h4 className="text-sm font-semibold text-foreground mb-3">Distributions ({distributions.length})</h4>
       <div className="space-y-2">
         {distributions.map((dist) => {
-          const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell || { label: 'Unknown', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' }
+          const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell || { label: 'Unknown', color: 'bg-surface-secondary text-text-secondary border border-border' }
           const graft = grafts.find(g => g.id === dist.graft_id)
           const isExternal = !dist.recipient_user_id
           const recipientDisplay = isExternal
@@ -98,27 +99,29 @@ export default function DistributionList({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {dist.distribution_type !== 'mated_queen' && (
-                  <button
+                  <IconButton
                     type="button"
                     onClick={() => handleToggleMating(dist)}
+                    size="sm"
                     className={`p-2 rounded text-xs ${
                       dist.mating_confirmed
                         ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                        : 'bg-surface-secondary text-text-tertiary border border-border'
                     }`}
                     title={dist.mating_confirmed ? `Mating confirmed ${dist.mating_confirmed_date ? formatDateIrish(dist.mating_confirmed_date) : ''}`.trim() : 'Confirm mating'}
                   >
                     <Check size={14} />
-                  </button>
+                  </IconButton>
                 )}
-                <button
+                <IconButton
                   type="button"
                   onClick={() => handleDeleteDistribution(dist)}
-                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                  tone="danger"
+                  size="sm"
                   title="Remove distribution"
                 >
                   <X size={14} />
-                </button>
+                </IconButton>
               </div>
             </div>
           )

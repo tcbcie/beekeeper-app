@@ -6,6 +6,7 @@ import { getCurrentUserId } from '@/lib/auth'
 import { MessageCircle, Plus, Edit2, X, AlertCircle, Lightbulb, Clock, CheckCircle, XCircle, CreditCard } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 
 interface SupportTicket {
   id: string
@@ -162,7 +163,7 @@ export default function SupportPage() {
       open: 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300',
       in_progress: 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-300',
       resolved: 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300',
-      closed: 'bg-sage-100 dark:bg-slate-700 text-text-secondary',
+      closed: 'bg-surface-secondary text-text-secondary',
     }
     return badges[status as keyof typeof badges] || badges.open
   }
@@ -184,7 +185,7 @@ export default function SupportPage() {
 
   const getPriorityBadge = (priority: string) => {
     const badges = {
-      low: 'bg-sage-100 dark:bg-slate-700 text-text-secondary',
+      low: 'bg-surface-secondary text-text-secondary',
       normal: 'bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-300',
       high: 'bg-orange-100 dark:bg-orange-950/30 text-orange-600 dark:text-orange-300',
       urgent: 'bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-300',
@@ -201,13 +202,13 @@ export default function SupportPage() {
           <MessageCircle size={32} className="text-text-secondary" />
           <h1 className="text-3xl font-bold text-foreground">Support</h1>
         </div>
-        <button
+        <Button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium flex items-center gap-2"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
           {showForm ? 'Cancel' : 'New Ticket'}
-        </button>
+        </Button>
       </div>
 
       <p className="text-text-secondary">
@@ -226,7 +227,7 @@ export default function SupportPage() {
                 Ticket Type *
               </label>
               <div className="grid grid-cols-3 gap-3">
-                <button
+                <Button
                   type="button"
                   onClick={() => setFormData({ ...formData, ticket_type: 'problem' })}
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
@@ -241,8 +242,8 @@ export default function SupportPage() {
                     <div className="font-semibold">Problem</div>
                     <div className="text-xs text-text-tertiary">Report an issue</div>
                   </div>
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => setFormData({ ...formData, ticket_type: 'suggestion' })}
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
@@ -257,8 +258,8 @@ export default function SupportPage() {
                     <div className="font-semibold">Suggestion</div>
                     <div className="text-xs text-text-tertiary">Share an idea</div>
                   </div>
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => setFormData({ ...formData, ticket_type: 'subscription' })}
                   className={`p-4 border-2 rounded-lg transition-colors flex flex-col items-center gap-2 ${
@@ -273,7 +274,7 @@ export default function SupportPage() {
                     <div className="font-semibold">Subscription</div>
                     <div className="text-xs text-text-tertiary">Billing/subscription</div>
                   </div>
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -306,19 +307,19 @@ export default function SupportPage() {
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="submit"
                 className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
               >
                 {editingTicket ? 'Update Ticket' : 'Submit Ticket'}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-2 bg-sage-100 dark:bg-slate-700 rounded-lg hover:bg-sage-200 dark:hover:bg-slate-600"
+                className="px-6 py-2 bg-surface-secondary rounded-lg hover:bg-surface-elevated"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -334,7 +335,7 @@ export default function SupportPage() {
         ) : (
           <div className="divide-y divide-border">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="p-6 hover:bg-sage-50 dark:hover:bg-slate-800 transition-colors">
+              <div key={ticket.id} className="p-6 hover:bg-surface-secondary transition-colors">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
                     {ticket.ticket_type === 'problem' ? (
@@ -348,22 +349,22 @@ export default function SupportPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     {(ticket.status === 'open' || ticket.status === 'in_progress') && (
-                      <button
+                      <Button
                         onClick={() => handleEdit(ticket)}
                         className="text-blue-600 hover:text-blue-700 dark:hover:text-blue-200 flex items-center gap-1"
                       >
                         <Edit2 size={16} />
                         <span className="text-sm">Edit</span>
-                      </button>
+                      </Button>
                     )}
                     {ticket.status !== 'closed' && (
-                      <button
+                      <Button
                         onClick={() => handleCloseTicket(ticket.id)}
                         className="text-text-secondary hover:text-foreground flex items-center gap-1"
                       >
                         <XCircle size={16} />
                         <span className="text-sm">Close</span>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -410,3 +411,4 @@ export default function SupportPage() {
     </div>
   )
 }
+

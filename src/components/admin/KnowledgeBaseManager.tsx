@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Check, FileText, ExternalLink, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 
 type InputMode = 'text' | 'pdf' | 'url'
 type SortField = 'name' | 'author' | 'year' | 'chunks' | 'added' | 'updated'
@@ -503,23 +504,23 @@ export default function KnowledgeBaseManager() {
             {sources.length} sources ({totalChunks} chunks)
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowAddForm(!showAddForm)}
           className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 flex items-center gap-2"
         >
           <Plus size={16} />
           Add Content
-        </button>
+        </Button>
       </div>
 
       {/* Add Form */}
       {showAddForm && (
-        <div className="bg-surface-secondary dark:bg-slate-800 rounded-lg p-4 space-y-4 border border-border">
+        <div className="bg-surface-secondary rounded-lg p-4 space-y-4 border border-border">
           <h4 className="font-medium text-foreground">Add Beekeeping Knowledge</h4>
 
           {/* Input Mode Tabs */}
           <div className="flex gap-2 border-b border-border pb-2">
-            <button
+            <Button
               onClick={() => setInputMode('pdf')}
               className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-colors ${
                 inputMode === 'pdf'
@@ -529,8 +530,8 @@ export default function KnowledgeBaseManager() {
             >
               <Upload size={16} />
               PDF Upload
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setInputMode('url')}
               className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-colors ${
                 inputMode === 'url'
@@ -540,8 +541,8 @@ export default function KnowledgeBaseManager() {
             >
               <Link size={16} />
               URL
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setInputMode('text')}
               className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm transition-colors ${
                 inputMode === 'text'
@@ -551,7 +552,7 @@ export default function KnowledgeBaseManager() {
             >
               <FileType size={16} />
               Text
-            </button>
+            </Button>
           </div>
 
           <p className="text-sm text-text-tertiary">
@@ -684,7 +685,7 @@ export default function KnowledgeBaseManager() {
           )}
 
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={handleAdd}
               disabled={adding || (inputMode === 'text' && newContent.length < 100) || (inputMode === 'pdf' && !selectedFile) || (inputMode === 'url' && !newUrl.trim())}
               className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 flex items-center gap-2"
@@ -700,13 +701,13 @@ export default function KnowledgeBaseManager() {
                   Add to Knowledge Base
                 </>
               )}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowAddForm(false)}
               className="px-4 py-2 border border-border rounded-lg hover:bg-surface-secondary text-foreground"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -724,13 +725,13 @@ export default function KnowledgeBaseManager() {
               className="w-full pl-9 pr-9 py-2 border border-border rounded-lg bg-surface text-foreground text-sm"
             />
             {searchQuery && (
-              <button
+              <Button
                 onClick={() => { setSearchQuery(''); setCurrentPage(1) }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-foreground"
                 title="Clear search"
               >
                 <X size={16} />
-              </button>
+              </Button>
             )}
           </div>
           {availableYears.length > 0 && (
@@ -778,25 +779,25 @@ export default function KnowledgeBaseManager() {
               <option value="added">Sort: Recently Added</option>
               <option value="updated">Sort: Recently Edited</option>
             </select>
-            <button
+            <Button
               onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
               className="p-2 border border-border rounded-lg hover:bg-surface-secondary text-text-secondary"
               title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
             >
               <ArrowUpDown size={16} />
-            </button>
+            </Button>
           </div>
           {(searchQuery || yearFilter || typeFilter !== 'all' || missingFilter !== 'all') && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-text-tertiary">
                 {filteredSources.length} of {sources.length}
               </span>
-              <button
+              <Button
                 onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setMissingFilter('all'); setCurrentPage(1) }}
                 className="text-xs text-forest-600 hover:underline"
               >
                 Clear all
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -829,28 +830,28 @@ export default function KnowledgeBaseManager() {
                     <>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button
+                          <Button
                             onClick={() => risInputRef.current?.click()}
                             className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
                             title="Import from RIS citation"
                           >
                             <FileText size={16} />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={saveEditing}
                             disabled={saving}
                             className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                             title="Save"
                           >
                             {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={cancelEditing}
                             className="p-1.5 text-text-secondary hover:bg-surface-secondary rounded"
                             title="Cancel"
                           >
                             <X size={16} />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                       <td className="px-4 py-3" colSpan={4}>
@@ -926,20 +927,20 @@ export default function KnowledgeBaseManager() {
                     <>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button
+                          <Button
                             onClick={() => startEditing(source)}
                             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
                             title="Edit"
                           >
                             <Pencil size={16} />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleDeleteSource(source.id, source.name, source.chunks_count)}
                             className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                             title="Delete"
                           >
                             <Trash2 size={16} />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground font-medium">
@@ -975,12 +976,12 @@ export default function KnowledgeBaseManager() {
                   <td colSpan={6} className="px-4 py-8 text-center text-text-tertiary">
                     <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p>No sources match your filters</p>
-                    <button
+                    <Button
                       onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setMissingFilter('all'); setCurrentPage(1) }}
                       className="text-sm text-forest-600 hover:underline mt-1"
                     >
                       Clear filters
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               )}
@@ -994,25 +995,25 @@ export default function KnowledgeBaseManager() {
                 Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredSources.length)} of {filteredSources.length}
               </span>
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                   className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Previous page"
                 >
                   <ChevronLeft size={16} />
-                </button>
+                </Button>
                 <span className="text-sm text-foreground px-2">
                   Page {currentPage} of {totalPages}
                 </span>
-                <button
+                <Button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                   className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Next page"
                 >
                   <ChevronRight size={16} />
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -1021,3 +1022,4 @@ export default function KnowledgeBaseManager() {
     </div>
   )
 }
+

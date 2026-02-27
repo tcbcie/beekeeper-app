@@ -12,6 +12,7 @@ import {
 } from '@/types/wild-colonies'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 
 interface WildColonyInspectionFormProps {
   initialData?: Partial<WildColonyInspectionFormData>
@@ -49,7 +50,7 @@ const StarRatingInput = ({
       <label className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
       <div className="flex items-center gap-1">
         {Array.from({ length: max }).map((_, i) => (
-          <button
+          <Button
             key={i}
             type="button"
             onClick={() => onChange(value === i + 1 ? 0 : i + 1)}
@@ -57,18 +58,18 @@ const StarRatingInput = ({
           >
             <Star
               size={20}
-              className={i < value ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-gray-600 hover:text-amber-300'}
+              className={i < value ? 'fill-amber-400 text-amber-400' : 'text-text-muted hover:text-amber-300'}
             />
-          </button>
+          </Button>
         ))}
         {value > 0 && (
-          <button
+          <Button
             type="button"
             onClick={() => onChange(0)}
             className="ml-2 text-xs text-text-tertiary hover:text-red-500"
           >
             Clear
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -89,14 +90,14 @@ const CollapsibleSection = ({
 }) => {
   return (
     <div className="border border-border rounded-lg overflow-hidden">
-      <button
+      <Button
         type="button"
         onClick={onToggle}
-        className="w-full px-4 py-3 flex items-center justify-between bg-sage-50 dark:bg-slate-800/50 hover:bg-sage-100 dark:hover:bg-slate-800 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between bg-surface-secondary/50 hover:bg-surface-secondary transition-colors"
       >
         <span className="font-medium text-text-primary">{title}</span>
         {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-      </button>
+      </Button>
       {isOpen && <div className="p-4 space-y-4">{children}</div>}
     </div>
   )
@@ -475,13 +476,13 @@ export default function WildColonyInspectionForm({
                 height={120}
                 className="w-30 h-30 object-cover rounded-lg border border-border"
               />
-              <button
+              <Button
                 type="button"
                 onClick={handleRemoveImage}
                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
               >
                 <X size={14} />
-              </button>
+              </Button>
             </div>
           ) : (
             <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
@@ -500,21 +501,22 @@ export default function WildColonyInspectionForm({
 
       {/* Action Buttons */}
       <div className="flex gap-3 pt-2">
-        <button
+        <Button
           type="submit"
           disabled={submitting || uploading}
           className="px-6 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium min-h-[44px] disabled:opacity-50"
         >
           {submitting || uploading ? 'Saving...' : isEditing ? 'Update' : 'Save'} Inspection
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 font-medium min-h-[44px]"
+          className="px-6 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium min-h-[44px]"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )
 }
+

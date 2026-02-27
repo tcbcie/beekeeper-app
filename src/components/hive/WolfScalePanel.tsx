@@ -17,6 +17,8 @@ import {
 import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
 import type { WolfParsedReading } from '@/lib/wolf-waagen-api'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 // Register Chart.js components
 ChartJS.register(
@@ -267,13 +269,15 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
     return (
       <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
         <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        <button
+        <Button
           onClick={fetchData}
-          className="mt-2 text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
+          tone="danger"
+          size="xs"
+          className="mt-2 inline-flex items-center gap-1"
         >
           <RefreshCw size={14} />
           Retry
-        </button>
+        </Button>
       </div>
     )
   }
@@ -292,31 +296,34 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
               {lastUpdated.toLocaleTimeString()}
             </span>
           )}
-          <button
+          <IconButton
             onClick={fetchData}
             disabled={loading}
-            className="p-1 text-text-tertiary hover:text-foreground rounded disabled:opacity-50"
+            size="xs"
+            className="text-text-tertiary hover:text-foreground disabled:opacity-50"
             title="Refresh data"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       {/* Period selector */}
       <div className="flex gap-1 flex-wrap">
         {PERIODS.map(p => (
-          <button
+          <Button
             key={p.value}
             onClick={() => setPeriod(p.value)}
-            className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+            tone={period === p.value ? 'blue' : 'neutral'}
+            size="xs"
+            className={`${
               period === p.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                ? ''
+                : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
             }`}
           >
             {p.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -328,14 +335,14 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
             type="date"
             value={customStartDate}
             onChange={(e) => setCustomStartDate(e.target.value)}
-            className="px-2 py-1 text-sm rounded-lg border border-sage-200 dark:border-slate-600 bg-background text-foreground"
+            className="px-2 py-1 text-sm rounded-lg border border-border bg-background text-foreground"
           />
           <span className="text-text-tertiary">to</span>
           <input
             type="date"
             value={customEndDate}
             onChange={(e) => setCustomEndDate(e.target.value)}
-            className="px-2 py-1 text-sm rounded-lg border border-sage-200 dark:border-slate-600 bg-background text-foreground"
+            className="px-2 py-1 text-sm rounded-lg border border-border bg-background text-foreground"
           />
         </div>
       )}
@@ -343,17 +350,17 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
       {/* Stats Section */}
       {loading ? (
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-sage-200 dark:bg-slate-700 rounded w-1/2"></div>
+          <div className="h-4 bg-surface-secondary rounded w-1/2"></div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="h-16 bg-sage-200 dark:bg-slate-700 rounded"></div>
-            <div className="h-16 bg-sage-200 dark:bg-slate-700 rounded"></div>
+            <div className="h-16 bg-surface-secondary rounded"></div>
+            <div className="h-16 bg-surface-secondary rounded"></div>
           </div>
         </div>
       ) : stats ? (
         <div className="space-y-2">
           {/* Weight Section */}
           {(stats.currentWeight !== undefined || stats.yieldSum !== null) && (
-            <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+            <div className="p-3 border border-border rounded-lg space-y-2">
               <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {/* Current Weight */}
@@ -401,7 +408,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
 
           {/* Colony Section - Brood Temperature */}
           {stats.avgBroodTemp !== null && (
-            <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+            <div className="p-3 border border-border rounded-lg space-y-2">
               <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
@@ -421,7 +428,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
 
           {/* Environmental Section */}
           {(stats.avgTemp !== null || stats.avgHumidity !== null || stats.totalRain !== null || stats.avgWind !== null) && (
-            <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+            <div className="p-3 border border-border rounded-lg space-y-2">
               <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {/* Average Temperature */}
@@ -471,12 +478,12 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
 
                 {/* Average Wind Speed */}
                 {stats.avgWind !== null && (
-                  <div className="p-2 bg-slate-50 dark:bg-slate-900/20 rounded border border-slate-200 dark:border-slate-700">
+                  <div className="p-2 bg-surface-secondary rounded border border-border">
                     <div className="flex items-center gap-1.5">
-                      <Wind size={14} className="text-slate-600 shrink-0" />
+                      <Wind size={14} className="text-text-secondary shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] text-slate-600 dark:text-slate-400">Avg Wind</p>
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+                        <p className="text-[10px] text-text-secondary">Avg Wind</p>
+                        <p className="text-sm font-bold text-foreground truncate">
                           {stats.avgWind.toFixed(0)} km/h
                         </p>
                       </div>
@@ -506,7 +513,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
           {typeof stats.batteryVoltage === 'number' && (() => {
             const { Icon, color, percent } = getBatteryInfo(stats.batteryVoltage)
             return (
-              <div className="p-3 border border-sage-200 dark:border-slate-700 rounded-lg space-y-2">
+              <div className="p-3 border border-border rounded-lg space-y-2">
                 <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className={`p-2 rounded border ${
@@ -554,7 +561,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
         </p>
         <div className="h-64 relative">
           {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-sage-50 dark:bg-slate-800 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-surface-secondary rounded-lg">
               <div className="animate-spin h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full"></div>
             </div>
           ) : error ? (
@@ -562,13 +569,13 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
               <div className="text-center p-4">
                 <AlertCircle size={24} className="mx-auto mb-2 text-red-500" />
                 <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-                <button onClick={fetchData} className="mt-2 text-sm text-red-600 hover:text-red-700">
+                <Button onClick={fetchData} tone="danger" size="xs" className="mt-2">
                   Retry
-                </button>
+                </Button>
               </div>
             </div>
           ) : history.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-sage-50 dark:bg-slate-800 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-surface-secondary rounded-lg">
               <p className="text-text-tertiary">No data available for this period</p>
             </div>
           ) : (

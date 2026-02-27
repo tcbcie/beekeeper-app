@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { History, User, ChevronDown, ChevronUp } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 interface HiveConfiguration {
   brood_boxes?: number
@@ -349,9 +350,9 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
   return (
     <div className="space-y-3">
       {/* Collapsible Header */}
-      <button
+      <Button
         onClick={() => setIsSectionExpanded(!isSectionExpanded)}
-        className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left font-medium text-forest-700 dark:text-forest-300 hover:bg-sage-50 dark:hover:bg-slate-800 rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-all"
+        className="w-full justify-between px-4 py-3 text-left text-forest-700 dark:text-forest-300 hover:bg-surface-secondary hover:border-forest-500 dark:hover:border-forest-400 transition-all"
       >
         <div className="flex items-center gap-2">
           <History size={18} className="flex-shrink-0" />
@@ -361,7 +362,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
           )}
         </div>
         {isSectionExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-      </button>
+      </Button>
 
       {/* Expanded Content */}
       {isSectionExpanded && (
@@ -427,7 +428,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
                 {allChanges.map((change, idx) => (
                   <div
                     key={idx}
-                    className="text-xs bg-sage-50 dark:bg-slate-800/50 px-3 py-2 rounded border border-border"
+                    className="text-xs bg-surface-secondary/50 px-3 py-2 rounded border border-border"
                   >
                     <span className="font-medium text-text-primary">{change.field}:</span>
                     {change.before !== '-' && (
@@ -438,7 +439,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-text-tertiary italic bg-slate-50 dark:bg-slate-800/30 px-3 py-2 rounded border border-border">
+              <div className="text-xs text-text-tertiary italic bg-surface-secondary px-3 py-2 rounded border border-border">
                 No changes detected (configuration may have been saved without modifications)
               </div>
             )}
@@ -447,9 +448,9 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
       })}
 
               {history.length > 3 && (
-                <button
+                <Button
                   onClick={() => setIsShowingMore(!isShowingMore)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-forest-600 dark:text-forest-400 hover:bg-sage-50 dark:hover:bg-slate-800 rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-all"
+                  className="w-full text-sm text-forest-600 dark:text-forest-400 hover:bg-surface-secondary hover:border-forest-500 dark:hover:border-forest-400 transition-all"
                 >
                   {isShowingMore ? (
                     <>
@@ -462,7 +463,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
                       Show More ({history.length - 3} older)
                     </>
                   )}
-                </button>
+                </Button>
               )}
             </>
           )}

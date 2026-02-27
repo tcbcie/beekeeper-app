@@ -24,6 +24,13 @@ import FormActionRow from '@/components/ui/FormActionRow'
 import FieldLabel from '@/components/ui/FieldLabel'
 import SelectField from '@/components/ui/SelectField'
 import TextInput from '@/components/ui/TextInput'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Badge from '@/components/ui/Badge'
+import Card from '@/components/ui/Card'
+import Surface from '@/components/ui/Surface'
+import TextLink from '@/components/ui/TextLink'
+import NavTabButton from '@/components/ui/NavTabButton'
 
 interface UserProfile {
   id: string
@@ -765,7 +772,7 @@ export default function SettingsPage() {
   if (accessDenied) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface dark:bg-background">
-        <div className="max-w-md w-full bg-surface dark:bg-surface shadow-lg rounded-lg p-8 text-center border border-border">
+        <Card padding="lg" className="max-w-md w-full text-center">
           <div className="flex justify-center mb-4">
             <Shield size={64} className="text-red-500" />
           </div>
@@ -773,13 +780,13 @@ export default function SettingsPage() {
           <p className="text-text-tertiary mb-6">
             You need Power User or Admin privileges to access the Settings page.
           </p>
-          <button
+          <Button
             onClick={() => router.push('/dashboard')}
-            className="px-6 py-2 bg-forest-600 dark:bg-emerald-600 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-emerald-700 font-medium"
+            tone="success"
           >
             Return to Dashboard
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     )
   }
@@ -809,37 +816,35 @@ export default function SettingsPage() {
       <div className="flex items-center gap-3">
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
         {userIsAdmin && (
-          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-300 dark:border-purple-700">
+          <Badge tone="purple" className="inline-flex items-center gap-1 text-sm">
             <Shield size={14} />
             Admin
-          </span>
+          </Badge>
         )}
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow">
+      <Card padding="none">
         <div className="border-b border-border">
           <nav className="flex flex-wrap -mb-px">
             {sections.map((section) => {
               const Icon = section.icon
               return (
-                <button
+                <NavTabButton
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeSection === section.id
-                      ? 'border-forest-600 dark:border-emerald-500 text-forest-600 dark:text-emerald-500'
-                      : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border'
-                  }`}
+                  size="lg"
+                  tone="forest"
+                  active={activeSection === section.id}
                 >
                   <Icon size={16} />
                   {section.label}
-                </button>
+                </NavTabButton>
               )
             })}
           </nav>
         </div>
-      </div>
+      </Card>
 
       {/* Profile & Export Section */}
       {activeSection === 'profile' && userId && (
@@ -863,20 +868,20 @@ export default function SettingsPage() {
 
       {/* User Management Section */}
       {activeSection === 'users' && (
-      <div className="bg-surface dark:bg-surface rounded-lg shadow">
+      <Card padding="none">
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
+              <Surface tone="purple" padded="sm" elevated={false} className="rounded-lg">
                 <Users size={24} className="text-purple-600" />
-              </div>
+              </Surface>
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold text-foreground">User Management</h2>
-                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full flex items-center gap-1 border border-purple-300 dark:border-purple-700">
+                  <Badge tone="purple" className="inline-flex items-center gap-1">
                     <Shield size={12} />
                     Admin Only
-                  </span>
+                  </Badge>
                 </div>
                 <p className="text-sm text-text-tertiary">Manage user accounts and roles</p>
               </div>
@@ -889,39 +894,39 @@ export default function SettingsPage() {
             {/* Legend and Role Descriptions */}
             <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {/* Role Descriptions */}
-              <div className="bg-surface-elevated dark:bg-surface rounded-lg p-4 border border-border">
+              <Surface padded="sm" elevated={false} className="bg-surface-elevated dark:bg-surface">
                 <p className="font-semibold text-foreground mb-2">Role Descriptions</p>
                 <ul className="space-y-1 text-text-secondary">
                   <li className="flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded text-xs font-medium mt-0.5">User</span>
+                    <Badge tone="neutral" className="mt-0.5">User</Badge>
                     <span>Standard access to their own beekeeping data</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs font-medium mt-0.5 border border-blue-300 dark:border-blue-700">Power</span>
+                    <Badge tone="blue" className="mt-0.5">Power</Badge>
                     <span>Enhanced access with additional features and data management</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded text-xs font-medium mt-0.5 flex items-center gap-0.5 border border-purple-300 dark:border-purple-700">
+                    <Badge tone="purple" className="mt-0.5 inline-flex items-center gap-0.5">
                       <Shield size={10} />Admin
-                    </span>
+                    </Badge>
                     <span>Full access including user management and settings</span>
                   </li>
                 </ul>
-              </div>
+              </Surface>
 
               {/* Status Legend */}
-              <div className="bg-surface-elevated dark:bg-surface rounded-lg p-4 border border-border">
+              <Surface padded="sm" elevated={false} className="bg-surface-elevated dark:bg-surface">
                 <p className="font-semibold text-foreground mb-2">Status Symbols</p>
                 <div className="space-y-2 text-text-secondary">
                   <div>
                     <p className="font-medium text-xs text-text-tertiary mb-1">Account Status:</p>
                     <div className="flex items-center gap-3 ml-2">
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded text-xs font-medium border border-green-300 dark:border-green-700">●</span>
+                        <Badge tone="green">●</Badge>
                         Active
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded text-xs font-medium border border-red-300 dark:border-red-700">○</span>
+                        <Badge tone="red">○</Badge>
                         Disabled
                       </span>
                     </div>
@@ -930,29 +935,29 @@ export default function SettingsPage() {
                     <p className="font-medium text-xs text-text-tertiary mb-1">Subscription Status:</p>
                     <div className="grid grid-cols-2 gap-1 ml-2 text-xs">
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded font-medium border border-green-300 dark:border-green-700">✓</span>
+                        <Badge tone="green">✓</Badge>
                         Active
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded font-medium border border-yellow-300 dark:border-yellow-700">7d</span>
+                        <Badge tone="amber">7d</Badge>
                         Expiring soon
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded font-medium border border-orange-300 dark:border-orange-700">3d!</span>
+                        <Badge tone="amber">3d!</Badge>
                         Expiring very soon
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded font-medium border border-red-300 dark:border-red-700">✗</span>
+                        <Badge tone="red">✗</Badge>
                         Expired
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground rounded font-medium border border-border">−</span>
+                        <Badge tone="neutral">−</Badge>
                         No subscription
                       </span>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Surface>
             </div>
 
             <p className="text-sm text-text-tertiary mb-4">
@@ -961,62 +966,53 @@ export default function SettingsPage() {
 
             {/* Tabs for Active/Deleted Users/Reactivation Requests/Subscription History */}
             <div className="mb-4 flex gap-2 border-b border-border">
-              <button
+              <NavTabButton
                 onClick={() => {
                   setShowDeletedUsers(false)
                   setShowReactivationRequests(false)
                   setShowSubscriptionHistory(false)
                   fetchUsers()
                 }}
-                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  !showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-text-tertiary hover:text-text-secondary'
-                }`}
+                tone="purple"
+                active={!showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory}
               >
                 Active Users ({users.length})
-              </button>
-              <button
+              </NavTabButton>
+              <NavTabButton
                 onClick={() => {
                   setShowDeletedUsers(true)
                   setShowReactivationRequests(false)
                   setShowSubscriptionHistory(false)
                   fetchDeletedUsers()
                 }}
-                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-text-tertiary hover:text-text-secondary'
-                }`}
+                tone="purple"
+                active={showDeletedUsers && !showReactivationRequests && !showSubscriptionHistory}
               >
                 Deleted Users ({deletedUsers.length})
-              </button>
-              <button
+              </NavTabButton>
+              <NavTabButton
                 onClick={() => {
                   setShowDeletedUsers(false)
                   setShowReactivationRequests(true)
                   setShowSubscriptionHistory(false)
                   fetchReactivationRequests()
                 }}
-                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                  showReactivationRequests && !showSubscriptionHistory
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-text-tertiary hover:text-text-secondary'
-                }`}
+                tone="purple"
+                active={showReactivationRequests && !showSubscriptionHistory}
               >
                 Reactivation Requests{reactivationRequestsFetched ? ` (${reactivationRequests.filter(r => r.status === 'pending').length})` : ''}
-              </button>
-              <button
+              </NavTabButton>
+              <NavTabButton
                 onClick={async () => {
                   if (!subscriptionHistoryFetched) {
                     await fetchSubscriptionHistory()
                   }
                   router.push('/dashboard/settings/subscription-history')
                 }}
-                className="px-4 py-2 font-medium text-sm border-b-2 border-transparent text-text-tertiary hover:text-text-secondary transition-colors"
+                tone="purple"
               >
                 Subscription History{subscriptionHistoryFetched ? ` (${subscriptionHistory.length})` : ''}
-              </button>
+              </NavTabButton>
             </div>
 
             {/* Search and Filters - Only show for Active/Deleted Users tabs */}
@@ -1078,13 +1074,14 @@ export default function SettingsPage() {
                 </SelectField>
 
                 {/* Refresh Button */}
-                <button
+                <Button
                   onClick={() => showDeletedUsers ? fetchDeletedUsers() : fetchUsers()}
                   disabled={loadingUsers}
-                  className="fj-btn fj-btn-neutral ml-auto disabled:opacity-50"
+                  tone="neutral"
+                  className="ml-auto disabled:opacity-50"
                 >
                   {loadingUsers ? 'Loading...' : 'Refresh'}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1153,29 +1150,30 @@ export default function SettingsPage() {
                       const isExpanded = expandedUserId === user.id
 
                       return (
-                      <div key={user.id} className="bg-surface dark:bg-surface border border-border rounded hover:border-border transition-all">
+                      <Card key={user.id} padding="none" className="hover:border-border transition-all">
                         {/* Compact Single Line */}
                         <div className="px-3 py-2">
                           <div className="flex items-center gap-4 flex-wrap">
                             {/* Expand Button */}
-                            <button
+                            <IconButton
                               onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
-                              className="flex-shrink-0 p-1 text-text-tertiary hover:text-text-tertiary rounded hover:bg-surface-elevated dark:hover:bg-surface-elevated"
+                              size="sm"
+                              className="flex-shrink-0 text-text-tertiary hover:text-text-tertiary hover:bg-surface-elevated dark:hover:bg-surface-elevated"
                               title={isExpanded ? 'Hide details' : 'Show details'}
                             >
                               <ChevronDown
                                 size={16}
                                 className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                               />
-                            </button>
+                            </IconButton>
 
                             {/* Email and Stats */}
                             <div className="min-w-0 flex items-center gap-2 flex-1 max-w-md">
                               <span className="text-sm font-medium text-foreground truncate">{user.email || 'No email'}</span>
                               {user.id === userId && (
-                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded flex-shrink-0">
+                                <Badge tone="blue" className="flex-shrink-0">
                                   You
-                                </span>
+                                </Badge>
                               )}
                               {/* Apiary & Hive Counts */}
                               <div className="flex items-center gap-2 text-xs text-text-tertiary flex-shrink-0">
@@ -1193,44 +1191,35 @@ export default function SettingsPage() {
                             {/* Status Badges */}
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               {/* Role Badge */}
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                user.role === 'Admin'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : user.role === 'Power User'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
-                              }`}>
-                                {user.role === 'Admin' && <Shield size={10} className="inline mr-0.5" />}
+                              <Badge
+                                tone={user.role === 'Admin' ? 'purple' : user.role === 'Power User' ? 'blue' : 'neutral'}
+                                className="inline-flex items-center gap-1"
+                              >
+                                {user.role === 'Admin' && <Shield size={10} />}
                                 {user.role === 'Power User' ? 'Power' : user.role}
-                              </span>
+                              </Badge>
 
                               {/* Account Status */}
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                user.is_active !== false
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
+                              <Badge tone={user.is_active !== false ? 'green' : 'red'}>
                                 {user.is_active !== false ? '●' : '○'}
-                              </span>
+                              </Badge>
 
                               {/* Subscription Status */}
                               {user.subscription_status && (
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                <Badge tone={
                                   user.subscription_status === 'active'
-                                    ? 'bg-green-100 text-green-800'
-                                    : user.subscription_status === 'expiring_soon'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : user.subscription_status === 'expiring_very_soon'
-                                    ? 'bg-orange-100 text-orange-800'
+                                    ? 'green'
                                     : user.subscription_status === 'expired'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground'
-                                }`}>
+                                    ? 'red'
+                                    : user.subscription_status === 'expiring_soon' || user.subscription_status === 'expiring_very_soon'
+                                    ? 'amber'
+                                    : 'neutral'
+                                }>
                                   {user.subscription_status === 'active' ? '✓' :
                                    user.subscription_status === 'expiring_soon' ? `${user.days_remaining}d` :
                                    user.subscription_status === 'expiring_very_soon' ? `${user.days_remaining}d!` :
                                    user.subscription_status === 'expired' ? '✗' : '−'}
-                                </span>
+                                </Badge>
                               )}
 
                               {/* Last Active */}
@@ -1262,67 +1251,73 @@ export default function SettingsPage() {
 
                                   {/* Impersonate Button - Only for non-Admin users */}
                                   {user.role !== 'Admin' && !showDeletedUsers && (
-                                    <button
+                                    <Button
                                       onClick={() => handleImpersonateUser(user.id, user.email || 'Unknown')}
                                       disabled={impersonatingUserId === user.id}
-                                      className="fj-btn fj-btn-purple fj-btn-xs disabled:opacity-50"
+                                      tone="purple"
+                                      size="xs"
+                                      className="disabled:opacity-50"
                                       title="Impersonate this user"
                                     >
                                       {impersonatingUserId === user.id ? '...' : 'Imp'}
-                                    </button>
+                                    </Button>
                                   )}
 
                                   {showDeletedUsers ? (
                                     <>
                                       {/* Restore Button for Deleted Users */}
-                                      <button
+                                      <Button
                                         onClick={() => handleRestoreUser(user.id, user.email || 'Unknown')}
                                         disabled={restoringUserId === user.id}
-                                        className="fj-btn fj-btn-success fj-btn-xs disabled:opacity-50"
+                                        tone="success"
+                                        size="xs"
+                                        className="disabled:opacity-50"
                                         title="Restore user account"
                                       >
                                         {restoringUserId === user.id ? 'Restoring...' : 'Restore'}
-                                      </button>
+                                      </Button>
 
                                       {/* Hard Delete Button for Deleted Users */}
-                                      <button
+                                      <IconButton
                                         onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
+                                        tone="danger"
+                                        size="xs"
                                         title="Permanently Delete (CANNOT BE UNDONE)"
                                       >
                                         <Trash2 size={12} className="text-red-500" />
-                                      </button>
+                                      </IconButton>
                                     </>
                                   ) : (
                                     <>
                                       {/* Enable/Disable Button */}
-                                      <button
+                                      <Button
                                         onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
-                                        className={`fj-btn fj-btn-xs ${
-                                          user.is_active !== false ? 'fj-btn-amber' : 'fj-btn-success'
-                                        }`}
+                                        tone={user.is_active !== false ? 'amber' : 'success'}
+                                        size="xs"
                                         title={user.is_active !== false ? 'Disable' : 'Enable'}
                                       >
                                         {user.is_active !== false ? 'Off' : 'On'}
-                                      </button>
+                                      </Button>
 
                                       {/* Soft Delete Button */}
-                                      <button
+                                      <Button
                                         onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="fj-btn fj-btn-danger fj-btn-xs"
+                                        tone="danger"
+                                        size="xs"
                                         title="Soft Delete (Recoverable)"
                                       >
                                         <Trash2 size={12} />
-                                      </button>
+                                      </Button>
 
                                       {/* Hard Delete Button */}
-                                      <button
+                                      <IconButton
                                         onClick={() => handleHardDeleteUser(user.id, user.email || 'Unknown')}
-                                        className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
+                                        tone="danger"
+                                        size="xs"
                                         title="Hard Delete (PERMANENT)"
                                       >
                                         <Trash2 size={12} className="text-red-500" />
-                                      </button>
+                                      </IconButton>
                                     </>
                                   )}
                                 </>
@@ -1379,14 +1374,14 @@ export default function SettingsPage() {
                                       <p className="font-mono text-xs text-blue-600 break-all" title={user.latest_transaction_id}>
                                         {user.latest_transaction_id}
                                       </p>
-                                      <a
+                                      <TextLink
                                         href={`https://dashboard.stripe.com/payments/${user.latest_transaction_id}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs text-blue-500 hover:text-blue-700 underline mt-1 inline-block"
+                                        external
+                                        tone="info"
+                                        className="text-xs mt-1 inline-block"
                                       >
                                         View in Stripe →
-                                      </a>
+                                      </TextLink>
                                     </div>
                                   ) : (
                                     <p className="text-text-tertiary italic text-xs">No transaction</p>
@@ -1431,13 +1426,15 @@ export default function SettingsPage() {
                                     {user.apiaries_count !== undefined ? user.apiaries_count : '−'}
                                   </p>
                                   {user.apiaries_count !== undefined && user.apiaries_count > 0 && (
-                                    <button
+                                    <Button
                                       onClick={() => openApiaryTransferModal(user)}
-                                      className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50 flex items-center gap-1"
+                                      tone="purple"
+                                      size="xs"
+                                      className="gap-1"
                                     >
                                       <MapPin size={10} />
                                       Manage
-                                    </button>
+                                    </Button>
                                   )}
                                 </div>
                               </div>
@@ -1500,7 +1497,7 @@ export default function SettingsPage() {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </Card>
                     )
                   })}
                   </div>
@@ -1526,30 +1523,34 @@ export default function SettingsPage() {
                   <div className="space-y-3">
                     {/* Filter tabs for pending/approved/rejected */}
                     <div className="flex gap-2 text-sm">
-                      <button
+                      <Button
                         onClick={() => {/* Could add status filtering here */}}
-                        className="px-3 py-1 bg-surface-elevated dark:bg-surface-elevated text-text-secondary rounded"
+                        tone="neutral"
+                        size="xs"
                       >
                         All ({reactivationRequests.length})
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => {/* Could add status filtering here */}}
-                        className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded"
+                        tone="amber"
+                        size="xs"
                       >
                         Pending ({reactivationRequests.filter(r => r.status === 'pending').length})
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => {/* Could add status filtering here */}}
-                        className="px-3 py-1 bg-green-100 text-green-800 rounded"
+                        tone="success"
+                        size="xs"
                       >
                         Approved ({reactivationRequests.filter(r => r.status === 'approved').length})
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => {/* Could add status filtering here */}}
-                        className="px-3 py-1 bg-red-100 text-red-800 rounded"
+                        tone="danger"
+                        size="xs"
                       >
                         Rejected ({reactivationRequests.filter(r => r.status === 'rejected').length})
-                      </button>
+                      </Button>
                     </div>
 
                     {/* Requests list */}
@@ -1602,20 +1603,24 @@ export default function SettingsPage() {
                           {/* Action buttons for pending requests */}
                           {request.status === 'pending' && (
                             <div className="flex gap-2 flex-shrink-0">
-                              <button
+                              <Button
                                 onClick={() => handleApproveReactivation(request.id, request.original_email)}
-                                className="fj-btn fj-btn-success fj-btn-sm rounded-md"
+                                tone="success"
+                                size="sm"
+                                className="rounded-md"
                                 title="Approve and restore account"
                               >
                                 ✓ Approve
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 onClick={() => handleRejectReactivation(request.id, request.original_email)}
-                                className="fj-btn fj-btn-danger fj-btn-sm rounded-md"
+                                tone="danger"
+                                size="sm"
+                                className="rounded-md"
                                 title="Reject request"
                               >
                                 ✗ Reject
-                              </button>
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -1627,7 +1632,7 @@ export default function SettingsPage() {
             )}
           </div>
         )}
-      </div>
+      </Card>
       )}
 
       {/* Subscription Codes Section */}
@@ -1642,36 +1647,36 @@ export default function SettingsPage() {
 
       {/* AI Knowledge Base Section */}
       {activeSection === 'knowledge' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+        <Card padding="md">
           <KnowledgeBaseManager />
-        </div>
+        </Card>
       )}
 
       {/* News Articles Section */}
       {activeSection === 'news' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+        <Card padding="md">
           <NewsArticlesManager />
-        </div>
+        </Card>
       )}
 
       {/* AI Tool Suggestions Section */}
       {activeSection === 'tool_suggestions' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+        <Card padding="md">
           <ToolSuggestionsManager />
-        </div>
+        </Card>
       )}
 
       {/* Terminology Section */}
       {activeSection === 'terminology' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+        <Card padding="md">
           <TerminologyTable />
-        </div>
+        </Card>
       )}
 
       {activeSection === 'frame_standards' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+        <Card padding="md">
           <FrameStandardsManager />
-        </div>
+        </Card>
       )}
 
       {/* Admin Apiary Transfer Modal */}
@@ -1733,19 +1738,20 @@ export default function SettingsPage() {
               </div>
 
               <FormActionRow className="justify-end pt-4">
-                <button
+                <Button
                   onClick={() => {
                     setShowApiaryTransferModal(false)
                     setSelectedUserForTransfer(null)
                   }}
-                  className="fj-btn fj-btn-neutral"
+                  tone="neutral"
                 >
                   Close
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleAdminTransferApiary}
                   disabled={!selectedApiaryId || !selectedNewOwnerId || transferring}
-                  className="fj-btn fj-btn-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                  tone="blue"
+                  className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {transferring ? (
                     <>
@@ -1758,7 +1764,7 @@ export default function SettingsPage() {
                       Transfer
                     </>
                   )}
-                </button>
+                </Button>
               </FormActionRow>
             </div>
           )}
@@ -1767,9 +1773,9 @@ export default function SettingsPage() {
 
       {/* Conservation Areas Section */}
       {activeSection === 'conservation_areas' && (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+        <Card padding="md">
           <ConservationAreaManager />
-        </div>
+        </Card>
       )}
     </div>
   )

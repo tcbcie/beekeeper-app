@@ -6,6 +6,8 @@ import { getCurrentUserId } from '@/lib/auth'
 import { Scale, Link2, Unlink } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import Button from '@/components/ui/Button'
+import TextLink from '@/components/ui/TextLink'
 
 export default function ScalesPage() {
   const router = useRouter()
@@ -281,8 +283,8 @@ export default function ScalesPage() {
 
         <p className="text-sm text-text-secondary mb-4">
           Connect your BEEP account to display hive scale data (weight, temperature, humidity) on your hive pages.
-          Visit <a href="https://app.beep.nl" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">app.beep.nl</a> to create an account.
-          Don&apos;t have a scale? <a href="https://beep.nl/index.php/home-english" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Purchase from BEEP</a>.
+          Visit <TextLink href="https://app.beep.nl" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">app.beep.nl</TextLink> to create an account.
+          Don&apos;t have a scale? <TextLink href="https://beep.nl/index.php/home-english" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Purchase from BEEP</TextLink>.
         </p>
 
         {beepConnected ? (
@@ -300,14 +302,14 @@ export default function ScalesPage() {
                   )}
                 </p>
               </div>
-              <button
+              <Button
                 onClick={handleDisconnectBeep}
                 disabled={disconnectingBeep}
                 className="px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded-lg hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-2 disabled:opacity-50"
               >
                 <Unlink size={16} />
                 {disconnectingBeep ? 'Disconnecting...' : 'Disconnect'}
-              </button>
+              </Button>
             </div>
             <p className="text-sm text-text-tertiary">
               To assign a scale to a hive, go to the hive detail page and click &quot;Connect Scale&quot;.
@@ -339,14 +341,14 @@ export default function ScalesPage() {
                 />
               </div>
             </div>
-            <button
+            <Button
               type="submit"
               disabled={connectingBeep || !beepEmail || !beepPassword}
               className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 flex items-center gap-2 disabled:opacity-50"
             >
               <Link2 size={16} />
               {connectingBeep ? 'Connecting...' : 'Connect BEEP Account'}
-            </button>
+            </Button>
           </form>
         )}
       </div>
@@ -361,7 +363,7 @@ export default function ScalesPage() {
         <p className="text-sm text-text-secondary mb-4">
           Connect your Wolf Waagen ApiGraph scale to display hive data (weight, temperature, humidity) on your hive pages.
           Contact Wolf Waagen support to obtain your API token.
-          Don&apos;t have a scale? <a href="https://wolf-waagen.de/en/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Purchase from Wolf Waagen</a>.
+          Don&apos;t have a scale? <TextLink href="https://wolf-waagen.de/en/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Purchase from Wolf Waagen</TextLink>.
         </p>
 
         {wolfConnected ? (
@@ -379,14 +381,14 @@ export default function ScalesPage() {
                   )}
                 </p>
               </div>
-              <button
+              <Button
                 onClick={handleDisconnectWolf}
                 disabled={disconnectingWolf}
                 className="px-4 py-2 text-sm bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded-lg hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-2 disabled:opacity-50"
               >
                 <Unlink size={16} />
                 {disconnectingWolf ? 'Disconnecting...' : 'Disconnect'}
-              </button>
+              </Button>
             </div>
             <p className="text-sm text-text-tertiary">
               To assign a scale to a hive, go to the hive detail page and click &quot;Connect Wolf Scale&quot;.
@@ -408,17 +410,18 @@ export default function ScalesPage() {
                 API tokens are provided by Wolf Waagen support for ApiGraph 4.0 and Junior scales.
               </p>
             </div>
-            <button
+            <Button
               type="submit"
               disabled={connectingWolf || !wolfApiToken}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
             >
               <Link2 size={16} />
               {connectingWolf ? 'Connecting...' : 'Connect Wolf Waagen'}
-            </button>
+            </Button>
           </form>
         )}
       </div>
     </div>
   )
 }
+

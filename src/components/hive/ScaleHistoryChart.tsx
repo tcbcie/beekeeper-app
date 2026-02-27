@@ -17,6 +17,8 @@ import {
 import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
 import type { BeepSensorReading } from '@/lib/beep-api'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 // Register Chart.js components
 ChartJS.register(
@@ -256,30 +258,33 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         <p className="text-sm font-medium text-text-secondary">
           {deviceName ? `${deviceName} History` : 'Scale History'}
         </p>
-        <button
+        <IconButton
           onClick={fetchHistory}
           disabled={loading}
-          className="p-1 text-text-tertiary hover:text-foreground rounded disabled:opacity-50"
+          size="xs"
+          className="text-text-tertiary hover:text-foreground disabled:opacity-50"
           title="Refresh data"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Period selector */}
       <div className="flex gap-1 flex-wrap">
         {PERIODS.map(p => (
-          <button
+          <Button
             key={p.value}
             onClick={() => setPeriod(p.value)}
-            className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+            tone={period === p.value ? 'amber' : 'neutral'}
+            size="xs"
+            className={`${
               period === p.value
-                ? 'bg-amber-600 text-white'
-                : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                ? ''
+                : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
             }`}
           >
             {p.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -291,14 +296,14 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
             type="date"
             value={customStartDate}
             onChange={(e) => setCustomStartDate(e.target.value)}
-            className="px-2 py-1 text-sm rounded-lg border border-sage-200 dark:border-slate-600 bg-background text-foreground"
+            className="px-2 py-1 text-sm rounded-lg border border-border bg-background text-foreground"
           />
           <span className="text-text-tertiary">to</span>
           <input
             type="date"
             value={customEndDate}
             onChange={(e) => setCustomEndDate(e.target.value)}
-            className="px-2 py-1 text-sm rounded-lg border border-sage-200 dark:border-slate-600 bg-background text-foreground"
+            className="px-2 py-1 text-sm rounded-lg border border-border bg-background text-foreground"
           />
         </div>
       )}
@@ -306,7 +311,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
       {/* Chart container */}
       <div className="h-64 relative">
         {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-sage-50 dark:bg-slate-800 rounded-lg">
+          <div className="absolute inset-0 flex items-center justify-center bg-surface-secondary rounded-lg">
             <div className="animate-spin h-8 w-8 border-2 border-amber-600 border-t-transparent rounded-full"></div>
           </div>
         ) : error ? (
@@ -314,16 +319,18 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
             <div className="text-center p-4">
               <AlertCircle size={24} className="mx-auto mb-2 text-red-500" />
               <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-              <button
+              <Button
                 onClick={fetchHistory}
-                className="mt-2 text-sm text-red-600 hover:text-red-700"
+                tone="danger"
+                size="xs"
+                className="mt-2"
               >
                 Retry
-              </button>
+              </Button>
             </div>
           </div>
         ) : history.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-sage-50 dark:bg-slate-800 rounded-lg">
+          <div className="absolute inset-0 flex items-center justify-center bg-surface-secondary rounded-lg">
             <p className="text-text-tertiary">No data available for this period</p>
           </div>
         ) : (

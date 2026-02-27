@@ -5,6 +5,7 @@ import { Plus, ClipboardList } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import NucInspectionCard from './NucInspectionCard'
+import Button from '@/components/ui/Button'
 
 interface NucInspection {
   id: string
@@ -187,24 +188,26 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, onInspect
 
   if (loading) {
     return (
-      <div className="p-6 bg-sage-50 dark:bg-slate-800/30">
+      <div className="p-6 bg-surface-secondary/30">
         <p className="text-sm text-text-secondary">Loading inspections...</p>
       </div>
     )
   }
 
   return (
-    <div className="p-4 md:p-6 bg-sage-50 dark:bg-slate-800/30 border-t border-border">
+    <div className="p-4 md:p-6 bg-surface-secondary/30 border-t border-border">
       {/* Header */}
       <div className="flex items-center flex-wrap gap-3 mb-4">
         {!showForm && (
-          <button
+          <Button
             onClick={() => setShowForm(true)}
-            className="px-3 py-1.5 bg-forest-600 text-white rounded-lg hover:bg-forest-700 font-medium flex items-center gap-1.5 text-sm"
+            tone="success"
+            size="sm"
+            className="inline-flex items-center gap-1.5"
           >
             <Plus size={16} />
             Add Inspection
-          </button>
+          </Button>
         )}
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <ClipboardList size={20} className="text-forest-600" />
@@ -214,7 +217,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, onInspect
 
       {/* Form */}
       {showForm && (
-        <div className="mb-6 p-4 bg-white dark:bg-slate-800 rounded-lg border border-forest-200 dark:border-forest-800">
+        <div className="mb-6 p-4 bg-surface-elevated rounded-lg border border-forest-200 dark:border-forest-800">
           <h4 className="text-md font-medium text-foreground mb-4">
             {editingInspection ? 'Edit Inspection' : 'New Inspection'}
           </h4>
@@ -316,19 +319,21 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, onInspect
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="submit"
-                className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700"
+                tone="success"
+                size="sm"
               >
                 {editingInspection ? 'Update' : 'Save'} Inspection
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-foreground rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                tone="neutral"
+                size="sm"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         </div>

@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface NavbarProps {
   currentUser: User | null
@@ -95,18 +97,18 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
         <div className="flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             {/* Hamburger menu for mobile */}
-            <button
+            <IconButton
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
                 onMenuClick?.()
               }}
-              className="fj-icon-btn hidden p-2 touch-manipulation min-h-[48px] min-w-[48px] items-center justify-center"
+              className="hidden touch-manipulation min-h-[48px] min-w-[48px] items-center justify-center"
               aria-label="Open menu"
               type="button"
             >
               <Menu size={24} />
-            </button>
+            </IconButton>
             <h1 className="text-xl sm:text-2xl font-bold text-forest-600 dark:text-forest-400 whitespace-nowrap flex items-center gap-2">
               <Image src="/logo.png" alt="HiveCraic" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
               HiveCraic
@@ -182,14 +184,16 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
                 </div>
               </div>
             )}
-            <button
+            <Button
               onClick={handleLogout}
-              className="fj-btn fj-btn-danger min-h-[48px] px-3 text-sm touch-manipulation sm:px-4"
+              tone="danger"
+              size="sm"
+              className="min-h-[48px] px-3 touch-manipulation sm:px-4"
               aria-label="Logout"
             >
               <LogOut size={16} />
               <span className="hidden sm:inline">Logout</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>

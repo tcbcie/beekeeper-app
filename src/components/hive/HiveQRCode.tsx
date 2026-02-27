@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Download, Printer } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 interface HiveQRCodeProps {
   tagCode: string
@@ -108,20 +109,24 @@ export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
       <p className="text-sm text-text-tertiary font-medium">www.hivecraic.com</p>
       <p className="text-sm font-bold text-foreground tracking-wider">{tagCode}</p>
       <div className="flex gap-3">
-        <button
+        <Button
           onClick={downloadQrCode}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+          tone="blue"
+          size="sm"
+          className="inline-flex items-center gap-2"
         >
           <Download size={16} />
           Download PNG
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={printQrCode}
-          className="flex items-center gap-2 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-foreground rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 text-sm border border-border"
+          tone="neutral"
+          size="sm"
+          className="inline-flex items-center gap-2 bg-surface-secondary hover:bg-surface-elevated"
         >
           <Printer size={16} />
           Print
-        </button>
+        </Button>
       </div>
     </div>
   )

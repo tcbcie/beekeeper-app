@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import Button from '@/components/ui/Button'
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
@@ -146,13 +147,15 @@ export default function ResetPassword() {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-amber-500 text-white py-3 rounded-lg font-semibold hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              tone="amber"
+              fullWidth
+              className="py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Updating...' : 'Update Password'}
-            </button>
+            </Button>
           </form>
         ) : (
           <div className="space-y-6">

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { X, Download, Smartphone } from 'lucide-react'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -105,7 +107,7 @@ export default function InstallPrompt() {
   return (
     <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg animate-slide-up">
       <div className="max-w-lg mx-auto flex items-center gap-3">
-        <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+        <div className="flex-shrink-0 w-12 h-12 bg-black/10 rounded-xl flex items-center justify-center">
           <Smartphone size={24} className="text-white" />
         </div>
 
@@ -119,21 +121,23 @@ export default function InstallPrompt() {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
+          <Button
             onClick={handleInstallClick}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white text-amber-600 rounded-lg font-medium text-sm hover:bg-amber-50 active:bg-amber-100 transition-colors touch-manipulation"
+            tone="neutral"
+            size="sm"
+            className="touch-manipulation inline-flex items-center gap-1.5 bg-surface text-amber-700 hover:bg-surface-elevated active:bg-surface-elevated"
           >
             <Download size={16} />
             Install
-          </button>
+          </Button>
 
-          <button
+          <IconButton
             onClick={handleDismiss}
-            className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors touch-manipulation"
+            className="touch-manipulation text-white/80 hover:text-white hover:bg-black/10 border-white/20"
             aria-label="Dismiss"
           >
             <X size={20} />
-          </button>
+          </IconButton>
         </div>
       </div>
     </div>

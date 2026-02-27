@@ -1,6 +1,7 @@
 import { Dispatch, SetStateAction } from 'react'
 import { Trash2, CheckSquare, Square, ChevronDown, ChevronUp, Grid3X3 } from 'lucide-react'
 import { Graft, GRAFT_STATUSES, FRAME_STATUSES, FRAME_STATUS_VALUES, CUP_COLORS } from './graftConstants'
+import Button from '@/components/ui/Button'
 
 interface CellFrameProps {
   grafts: Graft[]
@@ -71,13 +72,13 @@ export default function CellFrame({
       {selectMode && (
         <div className="flex flex-wrap items-center gap-2 p-3 bg-forest-50 dark:bg-forest-950/30 rounded-lg border border-forest-200 dark:border-forest-800 mb-4">
           <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
-          <button type="button" onClick={selectAll} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
+          <Button type="button" onClick={selectAll} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
             Select All
-          </button>
+          </Button>
           {selectedIds.size > 0 && (
-            <button type="button" onClick={deselectAll} className="text-xs text-text-secondary hover:underline">
+            <Button type="button" onClick={deselectAll} className="text-xs text-text-secondary hover:underline">
               Deselect All
-            </button>
+            </Button>
           )}
           <span className="text-border">|</span>
           <select
@@ -96,28 +97,28 @@ export default function CellFrame({
             className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
             title="Change date for selected"
           />
-          <button
+          <Button
             type="button"
             onClick={handleBulkDelete}
             className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
           >
             <Trash2 size={12} />
             Delete
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Frame Header */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-medium text-text-secondary uppercase tracking-wide">Cell Frame</span>
-        <button
+        <Button
           type="button"
           onClick={() => setFrameCollapsed(prev => !prev)}
           className="flex items-center gap-1 px-2 py-1.5 text-xs text-text-tertiary hover:text-foreground rounded"
         >
           {frameCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           {frameCollapsed ? 'Show' : 'Hide'}
-        </button>
+        </Button>
       </div>
 
       {/* Frame Visualisation */}
@@ -160,11 +161,11 @@ export default function CellFrame({
                             </div>
                           )}
                           {/* Cup */}
-                          <button
+                          <Button
                             type="button"
                             onClick={selectMode && isFrameStage ? () => toggleSelect(graft.id) : undefined}
                             className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                              CUP_COLORS[graft.status] || 'bg-gray-200 text-gray-700'
+                              CUP_COLORS[graft.status] || 'bg-surface-secondary text-text-secondary border border-border'
                             } ${selectMode && isFrameStage ? 'cursor-pointer' : ''} ${
                               selectedIds.has(graft.id)
                                 ? 'ring-2 ring-forest-500 ring-offset-1'
@@ -173,7 +174,7 @@ export default function CellFrame({
                             title={`#${graft.cell_number} - ${GRAFT_STATUSES.find(s => s.value === graft.status)?.label || graft.status}`}
                           >
                             {graft.cell_number}
-                          </button>
+                          </Button>
                           {/* Status dropdown + delete (frame-stage grafts only) */}
                           {!selectMode && isFrameStage && (
                             <div className="flex flex-col items-center mt-1 gap-0.5">
@@ -196,14 +197,14 @@ export default function CellFrame({
                                 className="w-16 px-0 py-0.5 text-[10px] rounded border border-border bg-surface text-foreground text-center"
                               />
                               <div className="flex gap-0.5">
-                                <button
+                                <Button
                                   type="button"
                                   onClick={() => deleteGraft(graft.id)}
                                   className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                                   title="Delete"
                                 >
                                   <Trash2 size={10} />
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           )}
@@ -220,3 +221,4 @@ export default function CellFrame({
     </div>
   )
 }
+

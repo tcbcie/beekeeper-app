@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import IconButton from '@/components/ui/IconButton'
 
 interface GraftHelpBannerProps {
   show: boolean
@@ -10,17 +11,18 @@ export default function GraftHelpBanner({ show, onClose }: GraftHelpBannerProps)
 
   return (
     <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 relative">
-      <button
+      <IconButton
         type="button"
         onClick={onClose}
-        className="absolute top-2 right-2 p-1 text-blue-400 hover:text-blue-600 dark:hover:text-blue-300"
+        size="xs"
+        className="absolute top-2 right-2 text-blue-400 hover:text-blue-600 dark:hover:text-blue-300"
       >
         <X size={14} />
-      </button>
+      </IconButton>
       <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">How Graft Tracking Works</h5>
       <div className="text-xs text-blue-700 dark:text-blue-300 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 font-medium">Grafted</span>
+          <span className="px-2 py-0.5 rounded bg-surface-secondary border border-border font-medium">Grafted</span>
           <span>&rarr;</span>
           <span className="px-2 py-0.5 rounded bg-green-200 dark:bg-green-900 font-medium">Accepted</span>
           <span>&rarr;</span>

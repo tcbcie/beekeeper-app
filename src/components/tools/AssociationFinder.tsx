@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Users, MapPin, Globe, Mail } from 'lucide-react'
+import TextLink from '@/components/ui/TextLink'
+import Button from '@/components/ui/Button'
 
 interface Association {
   id: string
@@ -77,23 +79,32 @@ export function AssociationFinder() {
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-3 gap-3">
-        <button onClick={() => handleFilterTypeChange('all')}
-          className={`px-4 py-2 rounded-lg font-medium ${filterType === 'all' ? 'bg-forest-600 text-white' : 'bg-sage-100 dark:bg-slate-800 text-foreground'}`}>
+        <Button
+          onClick={() => handleFilterTypeChange('all')}
+          tone={filterType === 'all' ? 'blue' : 'neutral'}
+          className={filterType === 'all' ? '' : 'bg-surface-secondary'}
+        >
           All Associations
-        </button>
-        <button onClick={() => handleFilterTypeChange('county')}
-          className={`px-4 py-2 rounded-lg font-medium ${filterType === 'county' ? 'bg-forest-600 text-white' : 'bg-sage-100 dark:bg-slate-800 text-foreground'}`}>
+        </Button>
+        <Button
+          onClick={() => handleFilterTypeChange('county')}
+          tone={filterType === 'county' ? 'blue' : 'neutral'}
+          className={filterType === 'county' ? '' : 'bg-surface-secondary'}
+        >
           By County
-        </button>
-        <button onClick={() => handleFilterTypeChange('region')}
-          className={`px-4 py-2 rounded-lg font-medium ${filterType === 'region' ? 'bg-forest-600 text-white' : 'bg-sage-100 dark:bg-slate-800 text-foreground'}`}>
+        </Button>
+        <Button
+          onClick={() => handleFilterTypeChange('region')}
+          tone={filterType === 'region' ? 'blue' : 'neutral'}
+          className={filterType === 'region' ? '' : 'bg-surface-secondary'}
+        >
           By Region
-        </button>
+        </Button>
       </div>
 
       {filterType === 'county' && (
         <select value={selectedCounty} onChange={(e) => setSelectedCounty(e.target.value)}
-          className="w-full px-4 py-2 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500">
+          className="w-full px-4 py-2 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500">
           <option value="">Select a county...</option>
           {counties.map(county => (<option key={county} value={county}>{county}</option>))}
         </select>
@@ -102,10 +113,15 @@ export function AssociationFinder() {
       {filterType === 'region' && (
         <div className="grid grid-cols-4 gap-2">
           {regions.map(region => (
-            <button key={region} onClick={() => setSelectedRegion(region)}
-              className={`px-3 py-2 rounded-lg font-medium ${selectedRegion === region ? 'bg-forest-600 text-white' : 'bg-sage-100 dark:bg-slate-800 text-foreground'}`}>
+            <Button
+              key={region}
+              onClick={() => setSelectedRegion(region)}
+              size="sm"
+              tone={selectedRegion === region ? 'blue' : 'neutral'}
+              className={selectedRegion === region ? '' : 'bg-surface-secondary'}
+            >
               {region}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -119,7 +135,7 @@ export function AssociationFinder() {
 
       <div className="space-y-4">
         {filteredAssociations.map((assoc) => (
-          <div key={assoc.id} className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-sage-300 dark:border-slate-700 hover:border-forest-400 dark:hover:border-forest-600 transition-colors">
+          <div key={assoc.id} className="bg-surface-elevated p-5 rounded-lg border border-border hover:border-forest-400 dark:hover:border-forest-600 transition-colors">
             <h4 className="font-bold text-lg text-foreground mb-2">{assoc.name}</h4>
 
             <div className="flex items-center gap-2 text-sm text-text-secondary mb-2">
@@ -133,18 +149,23 @@ export function AssociationFinder() {
 
             <div className="flex flex-wrap gap-3">
               {assoc.website && (
-                <a href={assoc.website} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-forest-600 dark:text-forest-400 hover:underline">
+                <TextLink
+                  href={assoc.website}
+                  external
+                  className="inline-flex items-center gap-1 text-sm text-forest-600 dark:text-forest-400"
+                >
                   <Globe size={14} />
                   <span>Website</span>
-                </a>
+                </TextLink>
               )}
               {assoc.email && (
-                <a href={`mailto:${assoc.email}`}
-                  className="inline-flex items-center gap-1 text-sm text-forest-600 dark:text-forest-400 hover:underline">
+                <TextLink
+                  href={`mailto:${assoc.email}`}
+                  className="inline-flex items-center gap-1 text-sm text-forest-600 dark:text-forest-400"
+                >
                   <Mail size={14} />
                   <span>{assoc.email}</span>
-                </a>
+                </TextLink>
               )}
             </div>
           </div>

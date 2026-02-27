@@ -13,13 +13,14 @@ import SelectField from '@/components/ui/SelectField'
 import TextInput from '@/components/ui/TextInput'
 import TextAreaField from '@/components/ui/TextAreaField'
 import CheckboxInput from '@/components/ui/CheckboxInput'
+import Button from '@/components/ui/Button'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 
 // Dynamic import to avoid SSR issues with Mapbox
 const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker'), {
   ssr: false,
-  loading: () => <div className="h-[300px] bg-sage-100 dark:bg-slate-800 rounded-lg animate-pulse flex items-center justify-center text-text-tertiary">Loading map...</div>
+  loading: () => <div className="h-[300px] bg-surface-secondary rounded-lg animate-pulse flex items-center justify-center text-text-tertiary">Loading map...</div>
 })
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
@@ -626,13 +627,13 @@ export default function ApiariesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Apiaries 📍</h1>
-        <button
+        <Button
           onClick={() => setShowForm(!showForm)}
           className="fj-btn fj-btn-success min-h-[48px]"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
           {showForm ? 'Cancel' : 'Add Apiary'}
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -674,14 +675,14 @@ export default function ApiariesPage() {
                   >
                     <Camera size={24} className="text-white" />
                   </div>
-                  <button
+                  <Button
                     type="button"
                     onClick={handleRemoveImage}
                     className="absolute top-2 right-2 fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs bg-surface/90 dark:bg-surface-elevated/90 z-10"
                     title="Remove image"
                   >
                     <X size={16} />
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <label className="flex flex-col items-center justify-center w-full max-w-xs h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-accent-primary hover:bg-surface-elevated/70 transition-colors">
@@ -760,15 +761,15 @@ export default function ApiariesPage() {
                   GPS Coordinates
                 </label>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setShowMapPicker(!showMapPicker)}
                     className="fj-btn fj-btn-blue fj-btn-sm"
                   >
                     <Map size={14} />
                     {showMapPicker ? 'Hide Map' : 'Pick on Map'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={handleLookupCoordinates}
                     disabled={geocoding || (!formData.city && !formData.eircode)}
@@ -776,7 +777,7 @@ export default function ApiariesPage() {
                   >
                     {geocoding ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
                     Get Coordinates
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -952,21 +953,21 @@ export default function ApiariesPage() {
             )}
 
             <div className="flex gap-3 flex-wrap">
-              <button type="submit" className="fj-btn fj-btn-success min-h-[48px] px-6">
+              <Button type="submit" className="fj-btn fj-btn-success min-h-[48px] px-6">
                 {editingApiary ? 'Update' : 'Add'} Apiary
-              </button>
-              <button type="button" onClick={resetForm} className="fj-btn fj-btn-neutral min-h-[48px] px-6">
+              </Button>
+              <Button type="button" onClick={resetForm} className="fj-btn fj-btn-neutral min-h-[48px] px-6">
                 Cancel
-              </button>
+              </Button>
               {editingApiary && !formData.is_mating_apiary && (
-                <button
+                <Button
                   type="button"
                   onClick={openTransferModal}
                   className="fj-btn fj-btn-purple min-h-[48px] px-6"
                 >
                   <UserPlus size={16} />
                   Transfer Ownership
-                </button>
+                </Button>
               )}
             </div>
           </form>
@@ -982,13 +983,13 @@ export default function ApiariesPage() {
           bodyClassName="p-6"
           footer={(
             <FormActionRow className="justify-end">
-              <button
+              <Button
                 onClick={() => setShowTransferModal(false)}
                 className="fj-btn fj-btn-neutral"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleTransferOwnership}
                 disabled={!transferTargetUser || transferring}
                 className="fj-btn fj-btn-blue disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1004,7 +1005,7 @@ export default function ApiariesPage() {
                     Transfer
                   </>
                 )}
-              </button>
+              </Button>
             </FormActionRow>
           )}
         >
@@ -1095,3 +1096,4 @@ export default function ApiariesPage() {
     </div>
   )
 }
+

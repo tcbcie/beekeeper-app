@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import PageShell from '@/components/ui/PageShell'
 import Panel from '@/components/ui/Panel'
 import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -94,13 +95,15 @@ export default function ForgotPassword() {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className="fj-btn w-full bg-forest-600 text-white hover:bg-forest-700 disabled:cursor-not-allowed disabled:opacity-50"
+                tone="success"
+                fullWidth
+                className="disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? 'Sending...' : 'Send Reset Instructions'}
-              </button>
+              </Button>
             </form>
 
             <div className="text-center">

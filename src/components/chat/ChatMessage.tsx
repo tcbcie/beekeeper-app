@@ -78,7 +78,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         className={`max-w-[80%] rounded-lg px-4 py-2 ${
           isUser
             ? 'bg-forest-600 dark:bg-forest-700 text-white'
-            : 'bg-surface-secondary dark:bg-slate-700 text-text-primary'
+            : 'bg-surface-secondary text-text-primary'
         }`}
       >
         <p className="text-sm whitespace-pre-wrap break-words">

@@ -62,7 +62,7 @@ export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
         {[1, 2, 3, 4, 5].map((n) => (
           <div
             key={n}
-            className={`w-3 h-3 rounded-full ${n <= rating ? colors[rating - 1] : 'bg-gray-200 dark:bg-gray-700'}`}
+            className={`w-3 h-3 rounded-full ${n <= rating ? colors[rating - 1] : 'bg-surface-secondary border border-border'}`}
           />
         ))}
       </div>
@@ -78,7 +78,7 @@ export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
         <span className={`px-2 py-1 rounded text-xs font-medium ${
           row.status === 'active'
             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+            : 'bg-surface-secondary text-text-secondary border border-border'
         }`}>
           {row.status}
         </span>

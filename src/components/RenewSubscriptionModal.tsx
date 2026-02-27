@@ -10,6 +10,8 @@ import AlertPanel from '@/components/ui/AlertPanel'
 import FieldLabel from '@/components/ui/FieldLabel'
 import TextInput from '@/components/ui/TextInput'
 import FormActionRow from '@/components/ui/FormActionRow'
+import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 
 interface RenewSubscriptionModalProps {
   isOpen: boolean
@@ -296,14 +298,14 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
               <p>Your subscription has been extended</p>
             </AlertPanel>
 
-            <div className="bg-sage-50 dark:bg-slate-800/50 rounded-md p-4 space-y-2">
+            <Card padding="sm" className="bg-surface-secondary/50 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">New expiration date:</span>
                 <span className="font-medium text-foreground">
                   {success.expires_at && formatDate(success.expires_at)}
                 </span>
               </div>
-            </div>
+            </Card>
 
             <p className="text-xs text-center text-text-tertiary">
               Refreshing subscription status...
@@ -387,18 +389,21 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                 </InfoPanel>
 
                 <FormActionRow className="pt-2">
-                  <button
-                    type="button"
+                  <Button
                     onClick={handleClose}
-                    className="fj-btn fj-btn-neutral flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    tone="neutral"
+                    fullWidth
                     disabled={loading}
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={loading || !code.trim()}
-                    className="fj-btn fj-btn-success flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    tone="success"
+                    fullWidth
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -408,7 +413,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                     ) : (
                       'Activate Subscription'
                     )}
-                  </button>
+                  </Button>
                 </FormActionRow>
               </form>
             )}
@@ -444,18 +449,21 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                 </InfoPanel>
 
                 <FormActionRow className="pt-2">
-                  <button
-                    type="button"
+                  <Button
                     onClick={handleClose}
-                    className="fj-btn fj-btn-neutral flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    tone="neutral"
+                    fullWidth
                     disabled={loading}
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={loading}
-                    className="fj-btn fj-btn-blue flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    tone="blue"
+                    fullWidth
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -465,7 +473,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                     ) : (
                       'Pay €24 with Card'
                     )}
-                  </button>
+                  </Button>
                 </FormActionRow>
               </form>
             )}
@@ -521,18 +529,21 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                 </InfoPanel>
 
                 <FormActionRow className="pt-2">
-                  <button
-                    type="button"
+                  <Button
                     onClick={handleClose}
-                    className="fj-btn fj-btn-neutral flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    tone="neutral"
+                    fullWidth
                     disabled={loading}
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={loading || !associationCode.trim()}
-                    className="fj-btn fj-btn-purple flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    tone="purple"
+                    fullWidth
+                    className="disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -542,7 +553,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                     ) : (
                       'Validate & Pay €12'
                     )}
-                  </button>
+                  </Button>
                 </FormActionRow>
               </form>
             )}

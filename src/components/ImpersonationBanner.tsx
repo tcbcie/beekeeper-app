@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { UserX } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 const IMPERSONATION_KEY = 'hivecraic_impersonation'
 
@@ -86,13 +87,15 @@ export default function ImpersonationBanner() {
             )}
           </span>
         </div>
-        <button
+        <Button
           onClick={handleExit}
           disabled={exiting}
-          className="px-3 py-1 bg-white text-red-600 rounded text-sm font-medium hover:bg-gray-100 disabled:opacity-50"
+          tone="neutral"
+          size="sm"
+          className="bg-surface text-red-700 hover:bg-surface-elevated disabled:opacity-50"
         >
           {exiting ? 'Exiting...' : 'Exit Impersonation'}
-        </button>
+        </Button>
       </div>
     </div>
   )

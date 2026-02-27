@@ -6,6 +6,7 @@ import { ChatMessage as ChatMessageType } from '@/types/chat'
 import ChatMessage from './ChatMessage'
 import ChatInput from './ChatInput'
 import { supabase } from '@/lib/supabase'
+import IconButton from '@/components/ui/IconButton'
 
 interface ChatDialogProps {
   isOpen: boolean
@@ -112,22 +113,23 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
                    z-50 w-full md:w-96 h-[70vh] md:h-[500px] md:max-h-[70vh]
                    bg-surface rounded-t-2xl md:rounded-2xl shadow-2xl
                    flex flex-col overflow-hidden
-                   border border-border dark:border-slate-700"
+                   border border-border"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-secondary dark:bg-slate-800">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-500" />
-            <h2 className="font-semibold text-text-primary">Mel your Virtual Assistant</h2>
-          </div>
-          <button
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-secondary">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-amber-500" />
+          <h2 className="font-semibold text-text-primary">Mel your Virtual Assistant</h2>
+        </div>
+          <IconButton
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-surface transition-colors"
+            size="xs"
+            className="hover:bg-surface"
             aria-label="Close chat"
           >
             <X className="w-5 h-5 text-text-secondary" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Messages */}
@@ -141,7 +143,7 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
               <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-4 h-4 text-white animate-pulse" />
               </div>
-              <div className="bg-surface-secondary dark:bg-slate-700 rounded-lg px-4 py-2">
+              <div className="bg-surface-secondary rounded-lg px-4 py-2">
                 <div className="flex gap-1">
                   <span className="w-2 h-2 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-2 h-2 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

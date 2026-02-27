@@ -140,7 +140,7 @@ export function getEntryTypeColor(type: string): string {
     case 'documentation':
       return 'text-purple-600';
     default:
-      return 'text-gray-600';
+      return 'text-text-secondary';
   }
 }
 

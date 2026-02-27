@@ -6,6 +6,8 @@ import { ArrowLeft, MapPin, Map, Plus, Clock, Search } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 import { useApiaryDetail } from '@/hooks'
 
 export default function ApiaryDetailPage() {
@@ -39,9 +41,9 @@ export default function ApiaryDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-text-secondary">Apiary not found</p>
-        <button onClick={() => router.push('/dashboard/apiaries')} className="mt-4 text-forest-600 dark:text-forest-400 hover:underline">
+        <Button onClick={() => router.push('/dashboard/apiaries')} tone="neutral" size="sm" className="mt-4">
           Back to Apiaries
-        </button>
+        </Button>
       </div>
     )
   }
@@ -54,13 +56,13 @@ export default function ApiaryDetailPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
+        <IconButton
           onClick={() => router.push('/dashboard/apiaries')}
-          className="p-2 hover:bg-sage-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          className="hover:bg-surface-secondary"
           aria-label="Back to apiaries"
         >
           <ArrowLeft size={20} className="text-text-secondary" />
-        </button>
+        </IconButton>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">{apiary.name}</h1>
           <p className="text-sm text-text-secondary">
@@ -206,7 +208,7 @@ export default function ApiaryDetailPage() {
                       ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700'
                       : hive.status === 'queenless'
                       ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700'
-                      : 'bg-sage-100 dark:bg-slate-700 text-text-primary border border-border'
+                      : 'bg-surface-secondary text-text-primary border border-border'
                   }`}>
                     {hive.archived_at ? 'Archived' : hive.status}
                   </span>

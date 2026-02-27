@@ -12,6 +12,12 @@ import TextInput from '@/components/ui/TextInput'
 import SelectField from '@/components/ui/SelectField'
 import TextAreaField from '@/components/ui/TextAreaField'
 import CheckboxInput from '@/components/ui/CheckboxInput'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Badge from '@/components/ui/Badge'
+import Chip from '@/components/ui/Chip'
+import Card from '@/components/ui/Card'
+import Surface from '@/components/ui/Surface'
 
 interface TaskEvent {
   id: string
@@ -466,13 +472,13 @@ export default function TasksEventsPage() {
     return timeString.substring(0, 5)
   }
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityBadgeTone = (priority: string): 'red' | 'amber' | 'blue' | 'neutral' => {
     switch (priority) {
-      case 'urgent': return 'fj-badge fj-badge-red'
-      case 'high': return 'fj-badge fj-badge-amber'
-      case 'normal': return 'fj-badge fj-badge-blue'
-      case 'low': return 'fj-badge fj-badge-neutral'
-      default: return 'fj-badge fj-badge-neutral'
+      case 'urgent': return 'red'
+      case 'high': return 'amber'
+      case 'normal': return 'blue'
+      case 'low': return 'neutral'
+      default: return 'neutral'
     }
   }
 
@@ -530,18 +536,18 @@ export default function TasksEventsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-responsive-3xl font-bold text-foreground">Tasks & Events 📅</h1>
-        <button
+        <Button
           onClick={() => setShowForm(true)}
-          className="fj-btn fj-btn-success"
+          tone="success"
         >
           <Plus size={20} />
           <span className="hidden sm:inline">Add Task/Event</span>
           <span className="sm:hidden">Add</span>
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-4 mb-6">
+      <Card padding="sm" className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Filter size={18} className="text-text-tertiary" />
           <h2 className="font-semibold text-foreground">Filters</h2>
@@ -634,45 +640,47 @@ export default function TasksEventsPage() {
         {/* Visit Checklist Button - shown when apiary is selected */}
         {filterApiary !== 'all' && (
           <div className="mt-4 pt-4 border-t border-border">
-            <button
+            <Button
               onClick={() => setShowChecklist(true)}
-              className="fj-btn fj-btn-success"
+              tone="success"
             >
               <ClipboardList size={18} />
               Visit Checklist
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
-        <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-8 text-center">
+        <Card padding="lg" className="text-center">
           <Calendar size={48} className="mx-auto text-text-tertiary mb-4" />
           <p className="text-text-tertiary mb-2">No tasks or events found</p>
           <p className="text-sm text-text-tertiary">Create your first task or event to get started</p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-3">
           {filteredTasks.map(task => (
-            <div
+            <Card
               key={task.id}
-              className={`bg-surface dark:bg-surface rounded-lg shadow border border-border p-4 border-l-4 ${getTaskCardAccentClass(task)}`}
+              padding="sm"
+              className={`border-l-4 ${getTaskCardAccentClass(task)}`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   {/* Completion checkbox */}
-                  <button
+                  <IconButton
                     onClick={() => toggleComplete(task)}
                     className="mt-1 flex-shrink-0"
                     disabled={togglingIds.has(task.id)}
+                    aria-label={task.completed ? 'Mark as incomplete' : 'Mark as complete'}
                   >
                     {task.completed ? (
                       <CheckCircle2 size={20} className="text-green-600" />
                     ) : (
                       <Circle size={20} className="text-text-tertiary hover:text-text-tertiary" />
                     )}
-                  </button>
+                  </IconButton>
 
                   {/* Task content */}
                   <div className="flex-1 min-w-0">
@@ -680,31 +688,29 @@ export default function TasksEventsPage() {
                       <h3 className={`font-semibold text-foreground ${task.completed ? 'line-through' : ''}`}>
                         {task.title}
                       </h3>
-                      <span className={`${getPriorityColor(task.priority)} text-xs`}>
+                      <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
                         {task.priority}
-                      </span>
-                      <span className="fj-badge fj-badge-neutral">
-                        {getTypeLabel(task.event_type)}
-                      </span>
+                      </Badge>
+                      <Badge tone="neutral">{getTypeLabel(task.event_type)}</Badge>
                       {task.category && (
-                        <span className="fj-badge fj-badge-green">
+                        <Badge tone="green">
                           {getCategoryLabel(task.category)}
-                        </span>
+                        </Badge>
                       )}
                       {task.reminder_enabled && (
-                        <span className="fj-badge fj-badge-amber">
+                        <Badge tone="amber">
                           📧 Email Reminder
-                        </span>
+                        </Badge>
                       )}
                       {task.is_team_task && (
-                        <span className="fj-badge fj-badge-purple">
+                        <Badge tone="purple">
                           Team Task
-                        </span>
+                        </Badge>
                       )}
                       {task.user_id !== userId && (
-                        <span className="fj-badge fj-badge-blue">
+                        <Badge tone="blue">
                           Created by {task.creator_name || task.creator_email || 'team member'}
-                        </span>
+                        </Badge>
                       )}
                     </div>
 
@@ -743,19 +749,19 @@ export default function TasksEventsPage() {
                     {(task.hive_id || task.apiary_id || task.batch_id) && (
                       <div className="flex items-center gap-2 mt-2 text-xs text-text-secondary flex-wrap">
                         {task.hive_id && (
-                          <span className="fj-chip fj-chip-xs fj-chip-neutral">
+                          <Chip size="xs" tone="neutral">
                             Hive: {hives.find(h => h.id === task.hive_id)?.hive_number || 'Unknown'}
-                          </span>
+                          </Chip>
                         )}
                         {task.apiary_id && (
-                          <span className="fj-chip fj-chip-xs fj-chip-neutral">
+                          <Chip size="xs" tone="neutral">
                             Apiary: {apiaries.find(a => a.id === task.apiary_id)?.name || 'Unknown'}
-                          </span>
+                          </Chip>
                         )}
                         {task.batch_id && (
-                          <span className="fj-chip fj-chip-xs fj-chip-neutral">
+                          <Chip size="xs" tone="neutral">
                             Batch: {batches.find(b => b.id === task.batch_id)?.batch_name || 'Unknown'}
-                          </span>
+                          </Chip>
                         )}
                       </div>
                     )}
@@ -764,23 +770,22 @@ export default function TasksEventsPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
+                  <IconButton
                     onClick={() => handleEdit(task)}
-                    className="fj-icon-btn p-2"
                     title="Edit"
                   >
                     <Edit2 size={16} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
                     onClick={() => handleDelete(task.id)}
-                    className="fj-icon-btn p-2"
+                    tone="danger"
                     title="Delete"
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -1029,19 +1034,16 @@ export default function TasksEventsPage() {
 
               {/* Actions */}
               <FormActionRow className="pt-4">
-                <button
-                  type="submit"
-                  className="fj-btn fj-btn-success flex-1"
-                >
+                <Button type="submit" tone="success" fullWidth>
                   {editingTask ? 'Update' : 'Create'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={resetForm}
-                  className="fj-btn fj-btn-neutral"
+                  tone="neutral"
                 >
                   Cancel
-                </button>
+                </Button>
               </FormActionRow>
             </form>
         </ModalShell>
@@ -1049,22 +1051,26 @@ export default function TasksEventsPage() {
 
       {/* Visit Checklist Modal */}
       {showChecklist && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:bg-white print:p-0">
-          <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:bg-background print:p-0">
+          <Card
+            padding="none"
+            className="max-w-lg w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none"
+          >
             {/* Header */}
-            <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-white print:border-b-2 print:border-black">
+            <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-background print:border-b-2 print:border-black">
               <div>
                 <h2 className="text-xl font-semibold text-foreground">Apiary Visit Checklist</h2>
                 <p className="text-sm text-text-secondary">
                   {getSelectedApiaryName()} - {new Date().toLocaleDateString('en-IE', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </p>
               </div>
-              <button
+              <IconButton
                 onClick={() => setShowChecklist(false)}
-                className="fj-icon-btn p-1 print:hidden"
+                size="sm"
+                className="print:hidden"
               >
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="p-6 space-y-6">
@@ -1074,7 +1080,7 @@ export default function TasksEventsPage() {
                   <span>📦</span> Equipment Needed
                 </h3>
                 {getEquipmentList().length > 0 ? (
-                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                  <Surface tone="amber" padded="sm">
                     <ul className="space-y-2">
                       {getEquipmentList().map((item, index) => (
                         <li key={index} className="flex items-center gap-3 text-foreground">
@@ -1083,7 +1089,7 @@ export default function TasksEventsPage() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </Surface>
                 ) : (
                   <p className="text-text-tertiary italic">No equipment specified for these tasks</p>
                 )}
@@ -1095,7 +1101,7 @@ export default function TasksEventsPage() {
                   <span>✅</span> Tasks to Complete
                 </h3>
                 {filteredTasks.length > 0 ? (
-                  <div className="bg-sage-50 dark:bg-slate-800 border border-border rounded-lg p-4">
+                  <Surface padded="sm" className="bg-surface-secondary">
                     <ul className="space-y-3">
                       {filteredTasks.map(task => (
                         <li key={task.id} className="flex items-start gap-3">
@@ -1119,7 +1125,7 @@ export default function TasksEventsPage() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </Surface>
                 ) : (
                   <p className="text-text-tertiary italic">No tasks for this apiary</p>
                 )}
@@ -1130,29 +1136,30 @@ export default function TasksEventsPage() {
                 <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                   <span>📝</span> Notes
                 </h3>
-                <div className="bg-sage-50 dark:bg-slate-800 border border-border rounded-lg p-4 min-h-[80px] print:min-h-[150px] print:border-dashed">
+                <Surface padded="sm" className="bg-surface-secondary min-h-[80px] print:min-h-[150px] print:border-dashed">
                   <p className="text-text-tertiary text-sm print:hidden">Space for field notes...</p>
-                </div>
+                </Surface>
               </div>
             </div>
 
             {/* Actions */}
             <FormActionRow bordered padding="md" className="sticky bottom-0 bg-surface-elevated dark:bg-surface-elevated print:hidden">
-              <button
+              <Button
                 onClick={() => window.print()}
-                className="fj-btn fj-btn-success flex-1"
+                tone="success"
+                fullWidth
               >
                 <Printer size={18} />
                 Print Checklist
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setShowChecklist(false)}
-                className="fj-btn fj-btn-neutral"
+                tone="neutral"
               >
                 Close
-              </button>
+              </Button>
             </FormActionRow>
-          </div>
+          </Card>
         </div>
       )}
     </div>

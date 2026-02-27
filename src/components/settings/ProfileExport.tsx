@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import InfoPanel from '@/components/ui/InfoPanel'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
 
 interface ProfileExportProps {
   isAdmin: boolean
@@ -169,7 +171,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
   }
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow p-6">
+    <Card padding="md">
       <h2 className="text-2xl font-bold text-foreground mb-6">Profile & Data Export</h2>
 
       {/* Export Database Section */}
@@ -191,16 +193,17 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
           </InfoPanel>
         )}
         {(isAdmin || hasActiveSubscription) && (
-          <button
+          <Button
             onClick={exportDatabase}
             disabled={exporting}
-            className="fj-btn fj-btn-success disabled:opacity-50 disabled:cursor-not-allowed"
+            tone="success"
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download size={16} />
             {exporting ? 'Exporting...' : isAdmin ? 'Export Complete Database (All Users)' : 'Export My Data'}
-          </button>
+          </Button>
         )}
       </div>
-    </div>
+    </Card>
   )
 }

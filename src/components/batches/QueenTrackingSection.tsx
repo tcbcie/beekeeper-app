@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction } from 'react'
 import { Trash2, Send, CheckSquare, Square, Lock, LockOpen } from 'lucide-react'
+import Button from '@/components/ui/Button'
 import {
   Graft,
   GRAFT_STATUSES,
@@ -75,7 +76,7 @@ export default function QueenTrackingSection({
     <div className="pt-4 border-t border-border">
       <div className="flex justify-between items-center mb-1">
         <h4 className="text-sm font-semibold text-foreground">Queen Tracking ({tableGrafts.length})</h4>
-        <button
+        <Button
           type="button"
           onClick={() => { if (tableSelectMode) { exitTableSelectMode() } else { exitSelectMode(); setTableSelectMode(true) } }}
           className={`px-3 py-1.5 text-sm rounded font-medium flex items-center gap-1 ${
@@ -86,7 +87,7 @@ export default function QueenTrackingSection({
         >
           <CheckSquare size={14} />
           {tableSelectMode ? 'Done' : 'Bulk Actions'}
-        </button>
+        </Button>
       </div>
 
       {/* Marking Colour Note */}
@@ -103,13 +104,13 @@ export default function QueenTrackingSection({
       {tableSelectMode && (
         <div className="flex flex-wrap items-center gap-2 p-3 mb-3 bg-forest-50 dark:bg-forest-950/30 rounded-lg border border-forest-200 dark:border-forest-800">
           <span className="text-sm font-medium text-foreground">{tableSelectedIds.size} selected</span>
-          <button type="button" onClick={selectAllTable} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
+          <Button type="button" onClick={selectAllTable} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
             Select All
-          </button>
+          </Button>
           {tableSelectedIds.size > 0 && (
-            <button type="button" onClick={deselectAllTable} className="text-xs text-text-secondary hover:underline">
+            <Button type="button" onClick={deselectAllTable} className="text-xs text-text-secondary hover:underline">
               Deselect All
-            </button>
+            </Button>
           )}
           <span className="text-border">|</span>
           <select
@@ -122,27 +123,27 @@ export default function QueenTrackingSection({
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
-          <button
+          <Button
             type="button"
             onClick={() => handleTableBulkQueenMarked(true)}
             disabled={tableSelectedIds.size === 0}
             className="px-2 py-1 text-xs bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50"
           >
             Mark All
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => handleTableBulkQueenMarked(false)}
             disabled={tableSelectedIds.size === 0}
-            className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-foreground rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+            className="px-2 py-1 text-xs bg-surface-secondary text-foreground rounded hover:bg-surface-elevated disabled:opacity-50"
           >
             Unmark All
-          </button>
+          </Button>
           {tableSelectedIds.size > 0 && Array.from(tableSelectedIds).every(id => {
             const g = grafts.find(gr => gr.id === id)
             return g && DISTRIBUTABLE_STATUSES.includes(g.status)
           }) && (
-            <button
+            <Button
               type="button"
               onClick={() => {
                 const selected = grafts.filter(g => tableSelectedIds.has(g.id))
@@ -152,9 +153,9 @@ export default function QueenTrackingSection({
             >
               <Send size={12} />
               Distribute
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
             onClick={handleTableBulkDelete}
             disabled={tableSelectedIds.size === 0}
@@ -162,14 +163,14 @@ export default function QueenTrackingSection({
           >
             <Trash2 size={12} />
             Delete
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Desktop Table */}
       <div className="hidden md:block">
         <table className="min-w-full divide-y divide-border">
-          <thead className="bg-sage-50 dark:bg-slate-800">
+          <thead className="bg-surface-secondary">
             <tr>
               {tableSelectMode && <th className="px-2 py-2 w-8" />}
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
@@ -186,16 +187,16 @@ export default function QueenTrackingSection({
               const isLockedByFailed = graft.status === 'failed'
               const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
               return (
-                <tr key={graft.id} className={`hover:bg-sage-50 dark:hover:bg-slate-800 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
+                <tr key={graft.id} className={`hover:bg-surface-secondary ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
                   {tableSelectMode && (
                     <td className="px-2 py-2">
                       {!isLocked && (
-                        <button type="button" onClick={() => toggleTableSelect(graft.id)}>
+                        <Button type="button" onClick={() => toggleTableSelect(graft.id)}>
                           {tableSelectedIds.has(graft.id)
                             ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
                             : <Square size={16} className="text-text-tertiary" />
                           }
-                        </button>
+                        </Button>
                       )}
                     </td>
                   )}
@@ -267,7 +268,7 @@ export default function QueenTrackingSection({
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-1 justify-end items-center">
                       {(isDistributed || isLockedByFailed) && (
-                        <button
+                        <Button
                           type="button"
                           onClick={() => setUnlockedGraftIds(prev => {
                             const next = new Set(prev)
@@ -275,31 +276,31 @@ export default function QueenTrackingSection({
                             else next.add(graft.id)
                             return next
                           })}
-                          className="p-1.5 text-text-tertiary hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                          className="p-1.5 text-text-tertiary hover:text-foreground hover:bg-surface-secondary rounded"
                           title={isLocked ? 'Unlock row' : 'Lock row'}
                         >
                           {isLocked ? <Lock size={14} /> : <LockOpen size={14} />}
-                        </button>
+                        </Button>
                       )}
                       {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
-                        <button
+                        <Button
                           type="button"
                           onClick={() => setDistributeGraft(graft)}
                           className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
                           title="Distribute"
                         >
                           <Send size={14} />
-                        </button>
+                        </Button>
                       )}
                       {!isLocked && (
-                        <button
+                        <Button
                           type="button"
                           onClick={() => deleteGraft(graft.id)}
                           className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                           title="Delete"
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </td>
@@ -322,12 +323,12 @@ export default function QueenTrackingSection({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   {tableSelectMode && !isLocked && (
-                    <button type="button" onClick={() => toggleTableSelect(graft.id)}>
+                    <Button type="button" onClick={() => toggleTableSelect(graft.id)}>
                       {tableSelectedIds.has(graft.id)
                         ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
                         : <Square size={16} className="text-text-tertiary" />
                       }
-                    </button>
+                    </Button>
                   )}
                   <span className="text-sm font-medium text-foreground">Cell #{graft.cell_number}</span>
                 </div>
@@ -400,7 +401,7 @@ export default function QueenTrackingSection({
               )}
               <div className="flex flex-wrap gap-1 pt-1 border-t border-border items-center">
                 {(isDistributed || isLockedByFailed) && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setUnlockedGraftIds(prev => {
                       const next = new Set(prev)
@@ -408,31 +409,31 @@ export default function QueenTrackingSection({
                       else next.add(graft.id)
                       return next
                     })}
-                    className="px-2 py-1 text-xs text-text-tertiary hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-800 rounded flex items-center gap-1"
+                    className="px-2 py-1 text-xs text-text-tertiary hover:text-foreground hover:bg-surface-secondary rounded flex items-center gap-1"
                   >
                     {isLocked ? <Lock size={12} /> : <LockOpen size={12} />}
                     {isLocked ? 'Unlock' : 'Lock'}
-                  </button>
+                  </Button>
                 )}
                 {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setDistributeGraft(graft)}
                     className="px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded flex items-center gap-1"
                   >
                     <Send size={12} />
                     Distribute
-                  </button>
+                  </Button>
                 )}
                 {!isLocked && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => deleteGraft(graft.id)}
                     className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex items-center gap-1"
                   >
                     <Trash2 size={12} />
                     Delete
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -442,3 +443,4 @@ export default function QueenTrackingSection({
     </div>
   )
 }
+

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Trash2, Loader2, Lightbulb, Code, CheckCircle, XCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface ToolSuggestion {
   id: string
@@ -116,12 +118,13 @@ export default function ToolSuggestionsManager() {
           <span className="text-sm text-muted-foreground">({suggestions.length})</span>
         </div>
         {suggestions.length > 0 && (
-          <button
+          <Button
             onClick={handleClearAll}
-            className="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            tone="danger"
+            size="sm"
           >
             Clear All
-          </button>
+          </Button>
         )}
       </div>
 
@@ -157,10 +160,12 @@ export default function ToolSuggestionsManager() {
                   </div>
                   <p className="font-medium text-foreground">{suggestion.query}</p>
                 </div>
-                <button
+                <IconButton
                   onClick={() => handleDelete(suggestion.id)}
                   disabled={deleting === suggestion.id}
-                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0"
+                  tone="danger"
+                  size="sm"
+                  className="flex-shrink-0"
                   title="Delete"
                 >
                   {deleting === suggestion.id ? (
@@ -168,7 +173,7 @@ export default function ToolSuggestionsManager() {
                   ) : (
                     <Trash2 className="w-4 h-4" />
                   )}
-                </button>
+                </IconButton>
               </div>
 
               {suggestion.generated_sql && (
@@ -177,7 +182,7 @@ export default function ToolSuggestionsManager() {
                     <Code className="w-3 h-3" />
                     View generated SQL
                   </summary>
-                  <pre className="mt-2 p-3 bg-slate-100 dark:bg-slate-800 rounded text-xs overflow-x-auto whitespace-pre-wrap break-all">
+                  <pre className="mt-2 p-3 bg-surface-secondary rounded text-xs overflow-x-auto whitespace-pre-wrap break-all">
                     {suggestion.generated_sql}
                   </pre>
                 </details>

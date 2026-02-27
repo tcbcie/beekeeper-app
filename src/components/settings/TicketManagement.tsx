@@ -8,6 +8,10 @@ import FieldLabel from '@/components/ui/FieldLabel'
 import SelectField from '@/components/ui/SelectField'
 import TextAreaField from '@/components/ui/TextAreaField'
 import InfoPanel from '@/components/ui/InfoPanel'
+import Card from '@/components/ui/Card'
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
+import Badge from '@/components/ui/Badge'
 
 interface SupportTicket {
   id: string
@@ -188,7 +192,7 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
   }
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow">
+    <Card padding="none">
       <div className="p-6">
         <h2 className="text-2xl font-bold text-foreground">Support Ticket Management</h2>
         <p className="text-text-tertiary mt-2">Manage and respond to user support tickets</p>
@@ -198,17 +202,14 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
         {/* Filter Buttons */}
         <div className="flex flex-wrap gap-2">
           {(['all', 'open', 'in_progress', 'resolved', 'closed'] as const).map((filter) => (
-            <button
+            <Button
               key={filter}
               onClick={() => setTicketFilter(filter)}
-              className={`fj-btn fj-btn-sm ${
-                ticketFilter === filter
-                  ? 'fj-btn-blue'
-                  : 'fj-btn-neutral'
-              }`}
+              tone={ticketFilter === filter ? 'blue' : 'neutral'}
+              size="sm"
             >
               {filter.replace('_', ' ').toUpperCase()}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -224,12 +225,12 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
         ) : (
           <div className="space-y-4">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="border rounded-lg p-4 bg-surface dark:bg-background">
+              <Card key={ticket.id} padding="sm" className="bg-surface dark:bg-background">
                 {editingTicket?.id === ticket.id ? (
                   /* Edit Form */
                   <div className="space-y-3">
                     {/* Ticket Header - Read Only */}
-                    <div className="bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg">
+                    <Surface padded="sm" elevated={false} className="bg-surface-elevated dark:bg-surface-elevated">
                       <h3 className="text-lg font-semibold text-foreground mb-2">
                         {ticket.subject}
                       </h3>
@@ -240,14 +241,14 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                         {new Date(ticket.created_at).toLocaleString()}
                       </p>
                       <div className="flex gap-2 mb-3">
-                        <span className="fj-badge fj-badge-blue">
+                        <Badge tone="blue">
                           {ticket.ticket_type.toUpperCase()}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="text-text-secondary whitespace-pre-wrap">
                         {ticket.description}
                       </p>
-                    </div>
+                    </Surface>
 
                     {/* Edit Fields */}
                     <h4 className="font-semibold text-foreground mt-2">Update Ticket</h4>
@@ -304,7 +305,7 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                     </div>
 
                     <div className="flex gap-2">
-                      <button
+                      <Button
                         onClick={() =>
                           handleTicketUpdate(ticket.id, {
                             status: editingTicket.status,
@@ -312,16 +313,16 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                             admin_notes: editingTicket.admin_notes || undefined,
                           })
                         }
-                        className="fj-btn fj-btn-blue"
+                        tone="blue"
                       >
                         Save Changes
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setEditingTicket(null)}
-                        className="fj-btn fj-btn-neutral"
+                        tone="neutral"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -340,57 +341,49 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <button
+                        <Button
                           onClick={() => setEditingTicket(ticket)}
-                          className="fj-btn fj-btn-blue fj-btn-xs"
+                          tone="blue"
+                          size="xs"
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleDeleteTicket(ticket.id)}
-                          className="fj-btn fj-btn-danger fj-btn-xs"
+                          tone="danger"
+                          size="xs"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <span
-                        className={`fj-badge ${
-                          ticket.status === 'open'
-                            ? 'fj-badge-blue'
-                            : ticket.status === 'in_progress'
-                            ? 'fj-badge-amber'
-                            : ticket.status === 'resolved'
-                            ? 'fj-badge-green'
-                            : 'fj-badge-neutral'
-                        }`}
-                      >
+                      <Badge tone={
+                        ticket.status === 'open'
+                          ? 'blue'
+                          : ticket.status === 'in_progress'
+                          ? 'amber'
+                          : ticket.status === 'resolved'
+                          ? 'green'
+                          : 'neutral'
+                      }>
                         {ticket.status.replace('_', ' ').toUpperCase()}
-                      </span>
-                      <span
-                        className={`fj-badge ${
-                          ticket.priority === 'urgent'
-                            ? 'fj-badge-red'
-                            : ticket.priority === 'high'
-                            ? 'fj-badge-amber'
-                            : ticket.priority === 'normal'
-                            ? 'fj-badge-blue'
-                            : 'fj-badge-neutral'
-                        }`}
-                      >
+                      </Badge>
+                      <Badge tone={
+                        ticket.priority === 'urgent'
+                          ? 'red'
+                          : ticket.priority === 'high'
+                          ? 'amber'
+                          : ticket.priority === 'normal'
+                          ? 'blue'
+                          : 'neutral'
+                      }>
                         {ticket.priority.toUpperCase()}
-                      </span>
-                      <span
-                        className={`fj-badge ${
-                          ticket.ticket_type === 'problem'
-                            ? 'fj-badge-red'
-                            : 'fj-badge-blue'
-                        }`}
-                      >
+                      </Badge>
+                      <Badge tone={ticket.ticket_type === 'problem' ? 'red' : 'blue'}>
                         {ticket.ticket_type.toUpperCase()}
-                      </span>
+                      </Badge>
                     </div>
 
                     <p className="text-text-secondary mb-3 whitespace-pre-wrap">
@@ -413,13 +406,13 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                     )}
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
         )}
 
         {/* Statistics */}
-        <div className="bg-surface dark:bg-background border border-border rounded-lg p-4 mt-4">
+        <Surface padded="sm" elevated={false} className="bg-surface dark:bg-background mt-4">
           <h4 className="font-semibold text-foreground mb-2">Ticket Statistics</h4>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div>
@@ -451,8 +444,8 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
               </span>
             </div>
           </div>
-        </div>
+        </Surface>
       </div>
-    </div>
+    </Card>
   )
 }

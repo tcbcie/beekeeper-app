@@ -54,7 +54,7 @@ export default function ChangelogDisplay({ versionLimit = 5 }: ChangelogDisplayP
 
   if (changelog.length === 0) {
     return (
-      <div className="bg-sage-50 dark:bg-slate-800 border border-border rounded-lg p-6 text-text-secondary text-center">
+      <div className="bg-surface-secondary border border-border rounded-lg p-6 text-text-secondary text-center">
         <p>No changelog entries found.</p>
       </div>
     );
@@ -68,7 +68,7 @@ export default function ChangelogDisplay({ versionLimit = 5 }: ChangelogDisplayP
             <span className={`px-2 py-1 text-xs rounded font-semibold ${
               index === 0
                 ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-sage-100 dark:bg-slate-700 text-text-secondary'
+                : 'bg-surface-secondary text-text-secondary'
             }`}>
               v{versionGroup.version}
             </span>

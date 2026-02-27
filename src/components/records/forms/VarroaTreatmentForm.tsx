@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { HelpCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface VarroaTreatmentFormProps {
   treatment: VarroaTreatment | null
@@ -151,31 +153,34 @@ export default function VarroaTreatmentForm({
           <h3 className="text-xl font-semibold">
             {treatment?.id ? 'Edit Varroa Treatment' : 'Record New Varroa Treatment'}
           </h3>
-          <button
+          <IconButton
             type="button"
             onClick={onShowIpmTips}
-            className="text-amber-600 hover:text-amber-700 transition-colors"
+            tone="amber"
+            size="sm"
             title="View IPM Tips"
           >
             <HelpCircle size={20} />
-          </button>
+          </IconButton>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button
+          <Button
             type="submit"
             form="treatment-form"
             disabled={submitting}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 transition-all touch-manipulation font-medium disabled:opacity-50"
+            tone="danger"
+            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium disabled:opacity-50"
           >
             {submitting ? 'Saving...' : (treatment?.id ? 'Update' : 'Save')} Treatment
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onCancel}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+            tone="neutral"
+            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
 

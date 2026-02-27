@@ -9,6 +9,7 @@ import WildColoniesTab from '@/components/research/WildColoniesTab'
 import DiagnosisImagesTab from '@/components/research/DiagnosisImagesTab'
 import ScaleOverviewTab from '@/components/research/ScaleOverviewTab'
 import GDDDataTab from '@/components/research/GDDDataTab'
+import NavTabButton from '@/components/ui/NavTabButton'
 
 type ResearchSection = 'wild-colonies' | 'diagnosis-images' | 'scale-overview' | 'gdd-data'
 
@@ -78,18 +79,16 @@ export default function ResearchPage() {
             {sections.map((section) => {
               const Icon = section.icon
               return (
-                <button
+                <NavTabButton
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeSection === section.id
-                      ? 'border-amber-600 text-amber-600'
-                      : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border'
-                  }`}
+                  active={activeSection === section.id}
+                  tone="blue"
+                  className="px-6 py-3"
                 >
                   <Icon size={16} />
                   {section.label}
-                </button>
+                </NavTabButton>
               )
             })}
           </nav>
