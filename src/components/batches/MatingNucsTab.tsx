@@ -14,6 +14,7 @@ interface Batch {
  id: string
  batch_name: string
  graft_date: string
+ mother_queen_id: string | null
 }
 
 interface Graft {
@@ -150,7 +151,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const fetchBatches = useCallback(async () => {
  const { data } = await supabase
  .from('rearing_batches')
- .select('id, batch_name, graft_date')
+ .select('id, batch_name, graft_date, mother_queen_id')
  .eq('user_id', userId)
  .order('graft_date', { ascending: false })
 
@@ -194,6 +195,16 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  setFilteredGrafts([])
  }
  }, [formData.batch_id, grafts])
+
+ const handleBatchChange = (batchId: string) => {
+ const selectedBatch = batches.find((b) => b.id === batchId)
+ setFormData((prev) => ({
+ ...prev,
+ batch_id: batchId,
+ graft_id: '',
+ queen_id: selectedBatch?.mother_queen_id || '',
+ }))
+ }
 
  const resetForm = () => {
  setFormData({
@@ -408,7 +419,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <label className="block text-sm font-medium text-text-secondary mb-1">Batch</label>
  <select
  value={formData.batch_id}
- onChange={(e) => setFormData({ ...formData, batch_id: e.target.value, graft_id: '' })}
+ onChange={(e) => handleBatchChange(e.target.value)}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  >
  <option value="">Select batch (optional)</option>

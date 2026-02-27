@@ -1,27 +1,26 @@
-# Task: Frame Bulk Date Picker Default to Today
+# Task: Auto-Populate "Grafted from" from Selected Batch
 **Date:** 27/02/2026
 **Status:** Completed
 
 ## 1. Objective
-Always pre-populate the frame bulk date picker with the current date when entering frame bulk mode.
+When creating or editing a mating nuc, selecting a batch should auto-populate the `Grafted from` dropdown with the breeder queen from that batch.
 
 ## 2. Impact Analysis
 * **Files to Modify:**
-  * `src/hooks/useBatchGrafts.ts`
-  * `src/components/batches/BatchGraftsSection.tsx`
-  * `docs/features/queen-rearing.md`
+  * `src/components/batches/MatingNucsTab.tsx`
+  * `docs/features/mating-nucs.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep the existing bulk workflow unchanged and only initialise the existing date draft with today's date when bulk mode is entered.
+* **Simplicity Check:** Keep changes local to the mating nuc form by using existing batch data (`mother_queen_id`) and setting the existing `queen_id` form field on batch selection.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Add a dedicated frame select-mode entry handler in `useBatchGrafts` that sets `selectMode` and initialises `bulkDateDraft` to today when empty.
-- [x] **Step 2:** Update `BatchGraftsSection` to use the new entry handler instead of directly calling `setSelectMode(true)`.
-- [x] **Step 3:** Update documentation in `docs/features/queen-rearing.md`.
+- [x] **Step 1:** Extend batch fetch in `MatingNucsTab.tsx` to include `mother_queen_id`.
+- [x] **Step 2:** Add a batch change handler that sets `batch_id`, resets `graft_id`, and auto-populates `queen_id` from the selected batch breeder queen.
+- [x] **Step 3:** Update documentation in `docs/features/mating-nucs.md`.
 - [x] **Step 4:** Prompt user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The frame bulk date draft was initialised as empty and only changed after user input, so the bulk date picker had no default value when entering bulk mode.
-* **Summary of Changes:** Added an `enterSelectMode` handler in `useBatchGrafts` to initialise the frame bulk date draft to today's date and reset staged status/date state for each bulk session. Updated `BatchGraftsSection` to call this handler when entering frame bulk mode. Added a guard so default date prefill does not cause accidental save when no real change is staged.
-* **Notes for User:** Build/tests were not run (per project instruction). Please test the frame bulk bar and confirm the date picker is pre-populated with today's date each time you enter bulk mode.
+* **Root Cause Found (if applicable):** Batch selection only set `batch_id` and cleared `graft_id`; it did not map the selected batch's breeder queen into the `queen_id` field.
+* **Summary of Changes:** Added `mother_queen_id` to fetched batch data and implemented `handleBatchChange()` in `MatingNucsTab` to auto-set `queen_id` from the selected batch. Updated mating nuc documentation to reflect the new behaviour.
+* **Notes for User:** Build/tests were not run (per project instruction). Please test by selecting different batches in the mating nuc form and confirming `Grafted from` updates to the batch breeder queen automatically.
