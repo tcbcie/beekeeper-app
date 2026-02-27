@@ -70,7 +70,7 @@ interface YearlyAccumulation {
 
 interface MonthlyTemperature {
   month: string
-  avgTemp: number
+  avgTemp: number | null
 }
 
 interface YearlyMonthlyTemps {
@@ -405,7 +405,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
             results[year] = monthlyData.map((data, idx) => ({
               month: monthNames[idx],
-              avgTemp: data.count > 0 ? Math.round((data.sum / data.count) * 10) / 10 : 0
+              avgTemp: data.count > 0 ? Math.round((data.sum / data.count) * 10) / 10 : null
             }))
           }
         }
@@ -713,17 +713,29 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     // Add monthly temperature dataset if enabled (use current year's data for accumulation chart)
     const currentYearTemps = monthlyTemps[currentYear] || []
     if (showTemperature && currentYearTemps.length > 0) {
-      // Map monthly temps to chart x-axis positions (middle of each month)
-      const tempData = dayNumbers.map(dayNum => {
-        const date = new Date(2024, 0, dayNum)
-        const month = date.getMonth()
-        const dayOfMonth = date.getDate()
-        // Show temperature point around mid-month (days 14-16)
-        if (dayOfMonth >= 14 && dayOfMonth <= 16) {
-          const temp = currentYearTemps[month]
-          return temp && temp.avgTemp !== 0 ? temp.avgTemp : null
+      // Place one temperature point per month at the nearest sampled day to mid-month.
+      const tempData: Array<number | null> = Array(dayNumbers.length).fill(null)
+
+      currentYearTemps.forEach((temp, monthIdx) => {
+        if (temp.avgTemp === null) return
+
+        let targetIndex = -1
+        let bestDistance = Number.POSITIVE_INFINITY
+
+        dayNumbers.forEach((dayNum, idx) => {
+          const date = new Date(2024, 0, dayNum)
+          if (date.getMonth() !== monthIdx) return
+
+          const distanceToMidMonth = Math.abs(date.getDate() - 15)
+          if (distanceToMidMonth < bestDistance) {
+            bestDistance = distanceToMidMonth
+            targetIndex = idx
+          }
+        })
+
+        if (targetIndex >= 0) {
+          tempData[targetIndex] = temp.avgTemp
         }
-        return null
       })
 
       datasets.push({
@@ -1188,7 +1200,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                           const colorIdx = idx % YEAR_COLORS.length
                           return {
                             label: String(year),
-                            data: yearTemps.map(t => t.avgTemp || null),
+                            data: yearTemps.map(t => t.avgTemp),
                             backgroundColor: YEAR_COLORS[colorIdx].bg,
                             borderColor: YEAR_COLORS[colorIdx].border,
                             borderWidth: 1,

@@ -84,6 +84,16 @@ if (avgTemp > 0) {
 }
 ```
 
+### Average Temperature Indicator (Accumulation Chart)
+The red `Avg Temp` series in accumulation view is derived and plotted as follows:
+
+1. Daily `temperature_2m_max` and `temperature_2m_min` values are fetched from Open-Meteo for the first apiary coordinates.
+2. A daily average is calculated: `(tMax + tMin) / 2`.
+3. A monthly average is calculated from all available daily averages in that month, rounded to 1 decimal place.
+4. Months with no source days are stored as `null` (not `0`) so future or missing months are not plotted.
+5. On the accumulation chart, exactly one temperature point is placed per month at the nearest sampled x-position to mid-month, so points move predictably month-to-month.
+6. The series is rendered on the right-hand `y1` axis and tooltip values are displayed in degrees C to 1 decimal place.
+
 ---
 
 ## Current GDD Reference Line
