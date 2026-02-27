@@ -1,8 +1,0 @@
-[mcpServers.supabase]
-command = "npx"
-args = [
-  "-y",
-  "@supabase/mcp-server",
-  "--project-ref", "tbhofdmfzwibysnnssnx",
-  "--access-token", "sbp_81e4612f2dbe6e58555b5c7674a5da78999fa4c2"
-]
