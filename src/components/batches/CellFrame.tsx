@@ -11,6 +11,8 @@ interface CellFrameProps {
   setFrameCollapsed: Dispatch<SetStateAction<boolean>>
   selectMode: boolean
   selectedIds: Set<string>
+  bulkStatusDraft: string
+  bulkDateDraft: string
   toggleSelect: (id: string) => void
   selectAll: () => void
   deselectAll: () => void
@@ -30,6 +32,8 @@ export default function CellFrame({
   setFrameCollapsed,
   selectMode,
   selectedIds,
+  bulkStatusDraft,
+  bulkDateDraft,
   toggleSelect,
   selectAll,
   deselectAll,
@@ -82,18 +86,19 @@ export default function CellFrame({
           )}
           <span className="text-border">|</span>
           <select
-            onChange={(e) => { if (e.target.value) { handleBulkStatusChange(e.target.value); e.target.value = '' } }}
-            defaultValue=""
+            value={bulkStatusDraft}
+            onChange={(e) => handleBulkStatusChange(e.target.value)}
             className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
           >
-            <option value="" disabled>Change Status...</option>
+            <option value="">Change Status...</option>
             {FRAME_STATUSES.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
           <input
             type="date"
-            onChange={(e) => { if (e.target.value) { handleBulkDateChange(e.target.value); e.target.value = '' } }}
+            value={bulkDateDraft}
+            onChange={(e) => handleBulkDateChange(e.target.value)}
             className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
             title="Change date for selected"
           />
