@@ -22,6 +22,7 @@ Batch (graft date, mother queen)
 ### Core Mating Nucs
 - Create/edit mating nucs with nuc number, batch, cell, location, status
 - Link nuc to specific batch and graft/cell
+- `Cell/Graft` dropdown only lists `sealed` cells from the selected batch
 - Track nuc through statuses: setup → cell_introduced → virgin → mating → laying/failed/sold/merged
 - Auto-update nuc status based on inspection queen status
 
