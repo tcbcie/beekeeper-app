@@ -33,6 +33,12 @@ interface Queen {
  status: string
 }
 
+interface MatingLocationOption {
+ id: string
+ name: string
+ is_shared: boolean
+}
+
 interface MatingNuc {
  id: string
  nuc_number: string
@@ -121,6 +127,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [activeBulkBatchId, setActiveBulkBatchId] = useState<string | null>(null)
  const [availableBulkGrafts, setAvailableBulkGrafts] = useState<AvailableSealedGraft[]>([])
  const [bulkCellSearch, setBulkCellSearch] = useState('')
+ const [matingLocationOptions, setMatingLocationOptions] = useState<MatingLocationOption[]>([])
 
  const {
  createDistribution,
@@ -142,7 +149,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  graft_id: '',
  queen_id: '',
  mating_location: '',
- status: 'setup',
+ status: 'cell_introduced',
  notes: '',
  })
 
@@ -215,6 +222,67 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (data) setQueens(data)
  }, [userId])
 
+ const fetchMatingLocationOptions = useCallback(async () => {
+ try {
+ const { data: ownApiaries, error: ownApiariesError } = await supabase
+ .from('apiaries')
+ .select('id, name, user_id')
+ .eq('user_id', userId)
+ .order('name')
+
+ if (ownApiariesError) throw ownApiariesError
+
+ const { data: teamMemberships, error: teamMembershipsError } = await supabase
+ .from('team_members')
+ .select('team_id')
+ .eq('user_id', userId)
+
+ if (teamMembershipsError) throw teamMembershipsError
+
+ const teamIds = (teamMemberships || []).map((membership) => membership.team_id)
+ let sharedApiaries: MatingLocationOption[] = []
+
+ if (teamIds.length > 0) {
+ const { data: teamApiaryData, error: teamApiaryError } = await supabase
+ .from('team_apiaries')
+ .select('apiary_id, apiaries(id, name, user_id)')
+ .in('team_id', teamIds)
+
+ if (teamApiaryError) throw teamApiaryError
+
+ sharedApiaries = (teamApiaryData || [])
+ .map((entry) => {
+ const relatedApiary = Array.isArray(entry.apiaries) ? entry.apiaries[0] : entry.apiaries
+ if (!relatedApiary) return null
+
+ return {
+ id: relatedApiary.id as string,
+ name: relatedApiary.name as string,
+ is_shared: (relatedApiary.user_id as string) !== userId,
+ }
+ })
+ .filter((apiary): apiary is MatingLocationOption => Boolean(apiary && apiary.is_shared))
+ }
+
+ const ownApiaryOptions: MatingLocationOption[] = (ownApiaries || []).map((apiary) => ({
+ id: apiary.id,
+ name: apiary.name,
+ is_shared: false,
+ }))
+
+ const allOptions = [...ownApiaryOptions, ...sharedApiaries]
+ const uniqueOptions = Array.from(
+ new Map(allOptions.map((apiary) => [apiary.id, apiary])).values()
+ ).sort((a, b) => a.name.localeCompare(b.name))
+
+ setMatingLocationOptions(uniqueOptions)
+ } catch (error) {
+ console.error('Error fetching mating location options:', error)
+ toast.error('Failed to load apiary options')
+ setMatingLocationOptions([])
+ }
+ }, [userId, toast])
+
  const loadBulkRuns = useCallback(async () => {
  try {
  setBulkRunsLoading(true)
@@ -233,8 +301,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  fetchBatches()
  fetchGrafts()
  fetchQueens()
+ fetchMatingLocationOptions()
  loadBulkRuns()
- }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, loadBulkRuns])
+ }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, fetchMatingLocationOptions, loadBulkRuns])
 
  // Filter grafts by selected batch
  useEffect(() => {
@@ -369,7 +438,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  graft_id: '',
  queen_id: '',
  mating_location: '',
- status: 'setup',
+ status: 'cell_introduced',
  notes: '',
  })
  setEditingNuc(null)
@@ -524,6 +593,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const bulkVisibleGrafts = availableBulkGrafts.filter((g) =>
  `Cell #${g.cell_number}`.toLowerCase().includes(bulkCellSearch.toLowerCase())
  )
+ const selectedMatingLocationOptionId = matingLocationOptions.find((apiary) => apiary.name === formData.mating_location)?.id || ''
 
  if (loading) {
  return <div className="text-center py-8 text-text-secondary">Loading mating nucs...</div>
@@ -640,13 +710,29 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Mating Location</label>
+ <select
+ value={selectedMatingLocationOptionId}
+ onChange={(e) => {
+ const selectedApiary = matingLocationOptions.find((apiary) => apiary.id === e.target.value)
+ setFormData({ ...formData, mating_location: selectedApiary?.name || '' })
+ }}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ >
+ <option value="">Select apiary (optional)</option>
+ {matingLocationOptions.map((apiary) => (
+ <option key={apiary.id} value={apiary.id}>
+ {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+ </option>
+ ))}
+ </select>
  <input
  type="text"
  value={formData.mating_location}
  onChange={(e) => setFormData({ ...formData, mating_location: e.target.value })}
- placeholder="e.g., Home Apiary, Mating Yard A"
- className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ placeholder="Or enter a custom location (optional)"
+ className="w-full mt-2 px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  />
+ <p className="mt-1 text-xs text-text-tertiary">Choose an apiary from the list or enter a custom location.</p>
  </div>
 
  <div>
