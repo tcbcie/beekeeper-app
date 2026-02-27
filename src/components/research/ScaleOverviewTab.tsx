@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Scale, RefreshCw } from 'lucide-react'
 import HiveScaleCard from './HiveScaleCard'
+import Button from '@/components/ui/Button'
 
 interface ScaleOverviewTabProps {
   userId: string
@@ -89,13 +90,15 @@ export default function ScaleOverviewTab({ userId }: ScaleOverviewTabProps) {
               </span>
             )}
           </div>
-          <button
+          <Button
             onClick={handleRefreshAll}
-            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 flex items-center gap-1.5"
+            tone="neutral"
+            size="sm"
+            className="inline-flex items-center gap-1.5 bg-surface-secondary hover:bg-surface-elevated"
           >
             <RefreshCw size={14} />
             Refresh All
-          </button>
+          </Button>
         </div>
       </div>
 

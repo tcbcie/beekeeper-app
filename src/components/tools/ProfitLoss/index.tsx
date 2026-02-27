@@ -8,6 +8,7 @@ import { FinancialRecord, DropdownValue } from '@/types/records'
 import FinancialRecordForm from './FinancialRecordForm'
 import FinancialRecordCard from './FinancialRecordCard'
 import FinancialSummary from './FinancialSummary'
+import Button from '@/components/ui/Button'
 
 type TimePeriod = 'month' | 'year' | 'all'
 
@@ -268,41 +269,46 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           <h3 className="font-semibold text-foreground">P&L Tracker</h3>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={handleExport}
-            className="flex items-center gap-2 px-3 py-2 border border-border text-text-secondary rounded-lg hover:bg-surface-secondary transition-colors"
+            tone="neutral"
+            size="sm"
+            className="text-text-secondary hover:bg-surface-secondary transition-colors"
             title="Export to CSV"
           >
             <Download size={18} />
             Export
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => {
               setEditingRecord(null)
               setShowForm(true)
             }}
-            className="flex items-center gap-2 px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
+            tone="blue"
+            size="sm"
           >
             <Plus size={18} />
             Add Record
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Time Period Filter */}
       <div className="flex gap-2">
         {(['month', 'year', 'all'] as TimePeriod[]).map((period) => (
-          <button
+          <Button
             key={period}
             onClick={() => setTimePeriod(period)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            size="xs"
+            tone={timePeriod === period ? 'blue' : 'neutral'}
+            className={`text-sm ${
               timePeriod === period
-                ? 'bg-forest-600 text-white'
+                ? ''
                 : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'
             }`}
           >
             {period === 'month' ? 'This Month' : period === 'year' ? 'This Year' : 'All Time'}
-          </button>
+          </Button>
         ))}
       </div>
 

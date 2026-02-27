@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Surface from '@/components/ui/Surface'
 
 type PanelPadding = 'sm' | 'md' | 'lg' | 'none'
 
@@ -8,22 +9,14 @@ interface PanelProps {
   padding?: PanelPadding
 }
 
-const paddingClasses: Record<PanelPadding, string> = {
-  none: '',
-  sm: 'p-4',
-  md: 'p-6',
-  lg: 'p-8',
-}
-
 export default function Panel({
   children,
   className = '',
   padding = 'md',
 }: PanelProps) {
   return (
-    <div className={`field-journal-panel ${paddingClasses[padding]} ${className}`.trim()}>
+    <Surface className={className} padded={padding}>
       {children}
-    </div>
+    </Surface>
   )
 }
-

@@ -5,6 +5,8 @@ import { Camera, X, CheckCircle, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface DiagnosisUploaderProps {
   userId: string
@@ -176,14 +178,16 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
                     <Camera size={16} className="text-white" />
                   </div>
                 </div>
-                <button
+                <IconButton
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                  tone="danger"
+                  size="sm"
+                  className="absolute -top-2 -right-2 rounded-full shadow-lg transition-all z-10"
                   title="Remove image"
                 >
                   <X size={16} />
-                </button>
+                </IconButton>
               </div>
             )}
             <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-all p-4">
@@ -212,13 +216,15 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
         )}
 
         {/* Submit Button */}
-        <button
+        <Button
           type="submit"
           disabled={submitting || uploading || !imageFile}
-          className="w-full px-6 py-3 min-h-[48px] bg-forest-600 text-white rounded-lg hover:bg-forest-700 active:bg-forest-800 transition-all touch-manipulation font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          tone="blue"
+          fullWidth
+          className="min-h-[48px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting || uploading ? 'Uploading...' : 'Upload for Diagnosis'}
-        </button>
+        </Button>
       </form>
 
       {/* Info Note */}

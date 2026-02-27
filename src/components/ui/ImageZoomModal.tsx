@@ -93,28 +93,28 @@ export default function ImageZoomModal({ isOpen, imageUrl, onClose }: ImageZoomM
       >
         <button
           onClick={handleZoomIn}
-          className="p-2 bg-gray-800/80 text-white rounded-full hover:bg-gray-700 transition-colors border border-gray-600"
+          className="p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
           title="Zoom In"
         >
           <ZoomIn size={20} />
         </button>
         <button
           onClick={handleZoomOut}
-          className="p-2 bg-gray-800/80 text-white rounded-full hover:bg-gray-700 transition-colors border border-gray-600"
+          className="p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
           title="Zoom Out"
         >
           <ZoomOut size={20} />
         </button>
         <button
           onClick={onClose}
-          className="p-2 bg-gray-800/80 text-white rounded-full hover:bg-red-900/80 hover:text-red-100 transition-colors border border-gray-600 ml-2"
+          className="p-2 bg-black/70 text-white rounded-full hover:bg-red-900/80 hover:text-red-100 transition-colors border border-white/20 ml-2"
           title="Close"
         >
           <X size={20} />
         </button>
       </div>
 
-      <div className="absolute top-4 left-4 z-[110] px-4 py-2 bg-gray-800/60 rounded-full text-white text-sm font-medium border border-gray-600 pointer-events-none">
+      <div className="absolute top-4 left-4 z-[110] px-4 py-2 bg-black/60 rounded-full text-white text-sm font-medium border border-white/20 pointer-events-none">
           {Math.round(scale * 100)}%
       </div>
 
@@ -147,7 +147,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, onClose }: ImageZoomM
       </div>
       
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-white/70 text-sm pointer-events-none bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">
-         {scale === 1 ? 'Double-click to zoom' : 'Drag to pan • Double-click to reset'}
+         {scale === 1 ? 'Double-click to zoom' : 'Drag to pan - Double-click to reset'}
       </div>
     </div>
   )

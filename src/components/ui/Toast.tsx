@@ -66,7 +66,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       <p className="flex-1 text-sm text-foreground">{toast.message}</p>
       <button
         onClick={onClose}
-        className="flex-shrink-0 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+        className="flex-shrink-0 p-1 rounded hover:bg-black/10 dark:hover:bg-black/10 transition-colors"
         aria-label="Close notification"
       >
         <X size={16} className="text-text-tertiary" />

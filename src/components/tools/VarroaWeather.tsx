@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Cloud, Loader2, MapPin, Info, Droplets, Wind, Thermometer, ArrowDown, ArrowUp, Plus, Circle, Minus, Ban } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 interface Apiary {
   id: string
@@ -314,14 +315,14 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
       case 'not_recommended':
         return (
           <div className="flex items-center justify-center" title="Not recommended (ineffective with brood)">
-            <Ban className="text-gray-400 dark:text-gray-500" size={16} />
+            <Ban className="text-text-tertiary" size={16} />
           </div>
         )
       case 'na':
       default:
         return (
           <div className="flex items-center justify-center" title="Select broodless for winter treatments">
-            <Minus className="text-gray-400" size={16} />
+            <Minus className="text-text-tertiary" size={16} />
           </div>
         )
     }
@@ -394,9 +395,10 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           Colony Status
         </label>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => setBroodStatus('brood')}
-            className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+            tone="neutral"
+            className={`flex-1 min-h-[3.25rem] border-2 text-sm transition-all ${
               broodStatus === 'brood'
                 ? 'border-forest-500 bg-forest-50 dark:bg-forest-900/30 text-forest-700 dark:text-forest-300'
                 : 'border-border bg-surface dark:bg-surface-elevated text-text-secondary hover:border-forest-300'
@@ -404,10 +406,11 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           >
             <div className="font-semibold">Brood Present</div>
             <div className="text-xs mt-1 opacity-75">Active season</div>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setBroodStatus('broodless')}
-            className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+            tone="neutral"
+            className={`flex-1 min-h-[3.25rem] border-2 text-sm transition-all ${
               broodStatus === 'broodless'
                 ? 'border-forest-500 bg-forest-50 dark:bg-forest-900/30 text-forest-700 dark:text-forest-300'
                 : 'border-border bg-surface dark:bg-surface-elevated text-text-secondary hover:border-forest-300'
@@ -415,7 +418,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           >
             <div className="font-semibold">Broodless</div>
             <div className="text-xs mt-1 opacity-75">Winter cluster</div>
-          </button>
+          </Button>
         </div>
         <p className="text-xs text-text-secondary mt-2">
           {broodStatus === 'brood'
@@ -441,16 +444,16 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
       {forecast.length > 0 && treatments.length > 0 && !loadingForecast && (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse bg-white dark:bg-slate-900 rounded-lg border border-border">
+            <table className="w-full border-collapse bg-surface-elevated rounded-lg border border-border">
               <thead>
-                <tr className="bg-sage-100 dark:bg-slate-700">
-                  <th className="text-left p-3 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[160px]">
+                <tr className="bg-surface-secondary">
+                  <th className="text-left p-3 text-sm font-semibold text-foreground border-b border-border min-w-[160px]">
                     Treatment
                   </th>
                   {forecast.map((day) => (
-                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[60px]">
+                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-foreground border-b border-border min-w-[60px]">
                       <div>{day.dayName}</div>
-                      <div className="text-xs font-normal text-gray-600 dark:text-gray-300">
+                      <div className="text-xs font-normal text-text-secondary">
                         {new Date(day.date).toLocaleDateString('en-IE', { day: 'numeric', month: 'short' })}
                       </div>
                     </th>
@@ -459,10 +462,10 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
               </thead>
               <tbody>
                 {treatments.map((treatment) => (
-                  <tr key={treatment.id} className="border-b border-border bg-white dark:bg-slate-900 hover:bg-sage-50 dark:hover:bg-slate-700/50">
+                  <tr key={treatment.id} className="border-b border-border bg-surface-elevated hover:bg-surface-secondary">
                     <td className="p-3">
-                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{treatment.product_name}</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">{treatment.temperature_range}</div>
+                      <div className="font-medium text-foreground text-sm">{treatment.product_name}</div>
+                      <div className="text-xs text-text-secondary">{treatment.temperature_range}</div>
                     </td>
                     {forecast.map((day) => (
                       <td key={`${treatment.id}-${day.date}`} className="p-2 text-center">
@@ -477,14 +480,14 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
 
           {/* Weather Details Table */}
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse bg-white dark:bg-slate-900 rounded-lg border border-border">
+            <table className="w-full border-collapse bg-surface-elevated rounded-lg border border-border">
               <thead>
-                <tr className="bg-sage-100 dark:bg-slate-700">
-                  <th className="text-left p-3 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[120px]">
+                <tr className="bg-surface-secondary">
+                  <th className="text-left p-3 text-sm font-semibold text-foreground border-b border-border min-w-[120px]">
                     Weather
                   </th>
                   {forecast.map((day) => (
-                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-border min-w-[60px]">
+                    <th key={day.date} className="text-center p-2 text-sm font-semibold text-foreground border-b border-border min-w-[60px]">
                       {day.dayName}
                     </th>
                   ))}
@@ -492,63 +495,63 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
               </thead>
               <tbody>
                 {/* Conditions */}
-                <tr className="border-b border-border bg-white dark:bg-slate-900">
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+                <tr className="border-b border-border bg-surface-elevated">
+                  <td className="p-3 text-sm text-text-secondary">
                     <Cloud size={14} className="inline mr-1" />
                     Conditions
                   </td>
                   {forecast.map((day) => (
-                    <td key={day.date} className="p-2 text-center text-xs text-gray-900 dark:text-gray-100">
+                    <td key={day.date} className="p-2 text-center text-xs text-foreground">
                       {getWeatherDescription(day.weatherCode)}
                     </td>
                   ))}
                 </tr>
                 {/* Temperature */}
-                <tr className="border-b border-border bg-white dark:bg-slate-900">
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+                <tr className="border-b border-border bg-surface-elevated">
+                  <td className="p-3 text-sm text-text-secondary">
                     <Thermometer size={14} className="inline mr-1" />
                     Temp (°C)
                   </td>
                   {forecast.map((day) => (
                     <td key={day.date} className="p-2 text-center text-sm">
                       <span className="text-blue-600 dark:text-blue-400">{Math.round(day.tempMin)}</span>
-                      <span className="text-gray-500 dark:text-gray-400 mx-1">/</span>
+                      <span className="text-text-tertiary mx-1">/</span>
                       <span className="text-red-600 dark:text-red-400">{Math.round(day.tempMax)}</span>
                     </td>
                   ))}
                 </tr>
                 {/* Humidity */}
-                <tr className="border-b border-border bg-white dark:bg-slate-900">
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+                <tr className="border-b border-border bg-surface-elevated">
+                  <td className="p-3 text-sm text-text-secondary">
                     <Droplets size={14} className="inline mr-1" />
                     Humidity (%)
                   </td>
                   {forecast.map((day) => (
-                    <td key={day.date} className="p-2 text-center text-sm text-gray-900 dark:text-gray-100">
+                    <td key={day.date} className="p-2 text-center text-sm text-foreground">
                       {Math.round(day.humidity)}%
                     </td>
                   ))}
                 </tr>
                 {/* Precipitation */}
-                <tr className="border-b border-border bg-white dark:bg-slate-900">
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+                <tr className="border-b border-border bg-surface-elevated">
+                  <td className="p-3 text-sm text-text-secondary">
                     <Droplets size={14} className="inline mr-1" />
                     Rain (mm)
                   </td>
                   {forecast.map((day) => (
-                    <td key={day.date} className="p-2 text-center text-sm text-gray-900 dark:text-gray-100">
+                    <td key={day.date} className="p-2 text-center text-sm text-foreground">
                       {day.precipitation.toFixed(1)}
                     </td>
                   ))}
                 </tr>
                 {/* Wind */}
-                <tr className="border-b border-border bg-white dark:bg-slate-900">
-                  <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+                <tr className="border-b border-border bg-surface-elevated">
+                  <td className="p-3 text-sm text-text-secondary">
                     <Wind size={14} className="inline mr-1" />
                     Wind (km/h)
                   </td>
                   {forecast.map((day) => (
-                    <td key={day.date} className="p-2 text-center text-sm text-gray-900 dark:text-gray-100">
+                    <td key={day.date} className="p-2 text-center text-sm text-foreground">
                       {Math.round(day.windSpeed)}
                     </td>
                   ))}
@@ -558,35 +561,35 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
           </div>
 
           {/* Legend */}
-          <div className="bg-sage-50 dark:bg-slate-700 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Legend</h4>
+          <div className="bg-surface-secondary rounded-lg p-4">
+            <h4 className="font-semibold text-foreground mb-3">Legend</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div className="flex items-center gap-2">
                 <Plus className="text-green-600 dark:text-green-400" size={18} strokeWidth={3} />
-                <span className="text-gray-900 dark:text-gray-100">Optimal conditions</span>
+                <span className="text-foreground">Optimal conditions</span>
               </div>
               <div className="flex items-center gap-2">
                 <Circle className="text-green-600 dark:text-green-400 fill-green-600 dark:fill-green-400" size={10} />
-                <span className="text-gray-900 dark:text-gray-100">Favorable conditions</span>
+                <span className="text-foreground">Favorable conditions</span>
               </div>
               <div className="flex items-center gap-2">
                 <Circle className="text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" size={10} />
-                <span className="text-gray-900 dark:text-gray-100">Less effective</span>
+                <span className="text-foreground">Less effective</span>
               </div>
               <div className="flex items-center gap-2">
                 <ArrowDown className="text-blue-600 dark:text-blue-400" size={18} strokeWidth={3} />
-                <span className="text-gray-900 dark:text-gray-100">Too cold</span>
+                <span className="text-foreground">Too cold</span>
               </div>
               <div className="flex items-center gap-2">
                 <ArrowUp className="text-red-600 dark:text-red-400" size={18} strokeWidth={3} />
-                <span className="text-gray-900 dark:text-gray-100">Too hot</span>
+                <span className="text-foreground">Too hot</span>
               </div>
               <div className="flex items-center gap-2">
-                <Ban className="text-gray-400 dark:text-gray-500" size={16} />
-                <span className="text-gray-900 dark:text-gray-100">Not recommended</span>
+                <Ban className="text-text-tertiary" size={16} />
+                <span className="text-foreground">Not recommended</span>
               </div>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mt-3">
+            <p className="text-xs text-text-secondary mt-3">
               Recommendations vary based on colony status. Oxalic acid is most effective during broodless periods. Thymol treatments need active bees to spread the product.
             </p>
           </div>

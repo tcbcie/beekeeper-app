@@ -8,6 +8,7 @@ import { PurchaseItem, DropdownValue } from '@/types/records'
 import PurchaseItemForm from './PurchaseItemForm'
 import PurchaseItemCard from './PurchaseItemCard'
 import PurchaseSummary from './PurchaseSummary'
+import Button from '@/components/ui/Button'
 
 type StatusFilter = 'pending' | 'purchased' | 'all'
 
@@ -217,32 +218,35 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
           <ShoppingCart className="w-5 h-5 text-forest-600" />
           <h3 className="font-semibold text-foreground">Purchase List</h3>
         </div>
-        <button
+        <Button
           onClick={() => {
             setEditingItem(null)
             setShowForm(true)
           }}
-          className="flex items-center gap-2 px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
+          tone="blue"
+          size="sm"
         >
           <Plus size={18} />
           Add Item
-        </button>
+        </Button>
       </div>
 
       {/* Status Filter */}
       <div className="flex gap-2">
         {(['pending', 'purchased', 'all'] as StatusFilter[]).map((status) => (
-          <button
+          <Button
             key={status}
             onClick={() => setStatusFilter(status)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            size="xs"
+            tone={statusFilter === status ? 'blue' : 'neutral'}
+            className={`text-sm ${
               statusFilter === status
-                ? 'bg-forest-600 text-white'
+                ? ''
                 : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'
             }`}
           >
             {status === 'pending' ? 'Pending' : status === 'purchased' ? 'Purchased' : 'All'}
-          </button>
+          </Button>
         ))}
       </div>
 

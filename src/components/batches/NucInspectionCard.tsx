@@ -1,6 +1,7 @@
 'use client'
 
 import { Edit2, Trash2, Calendar, Crown, Egg } from 'lucide-react'
+import IconButton from '@/components/ui/IconButton'
 
 interface NucInspection {
   id: string
@@ -31,7 +32,7 @@ const getQueenStatusBadge = (status: string | null) => {
     missing: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
     dead: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   }
-  return styles[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+  return styles[status] || 'bg-surface-elevated text-text-secondary border border-border'
 }
 
 const getPopulationBadge = (population: string | null) => {
@@ -41,7 +42,7 @@ const getPopulationBadge = (population: string | null) => {
     moderate: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
     weak: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   }
-  return styles[population] || 'bg-gray-100 text-gray-800'
+  return styles[population] || 'bg-surface-elevated text-text-secondary border border-border'
 }
 
 const getTemperamentBadge = (temperament: string | null) => {
@@ -51,7 +52,7 @@ const getTemperamentBadge = (temperament: string | null) => {
     nervous: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
     aggressive: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   }
-  return styles[temperament] || 'bg-gray-100 text-gray-800'
+  return styles[temperament] || 'bg-surface-elevated text-text-secondary border border-border'
 }
 
 export default function NucInspectionCard({ inspection, onEdit, onDelete }: NucInspectionCardProps) {
@@ -64,24 +65,26 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete }: NucI
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-border p-3 md:p-4 hover:shadow-md transition-shadow">
+    <div className="bg-surface-elevated rounded-lg border border-border p-3 md:p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-2 md:gap-3">
         {/* Left Side: Actions */}
         <div className="flex flex-col gap-1 shrink-0">
-          <button
+          <IconButton
             onClick={onEdit}
-            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+            tone="blue"
+            size="sm"
             title="Edit"
           >
             <Edit2 size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={onDelete}
-            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+            tone="danger"
+            size="sm"
             title="Delete"
           >
             <Trash2 size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Main Content */}
@@ -140,7 +143,7 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete }: NucI
 
           {/* Notes */}
           {inspection.notes && (
-            <div className="mt-2 p-2 bg-sage-50 dark:bg-slate-700/50 rounded text-sm text-text-secondary">
+            <div className="mt-2 p-2 bg-surface-secondary rounded text-sm text-text-secondary">
               {inspection.notes}
             </div>
           )}

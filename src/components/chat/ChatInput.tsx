@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2 } from 'lucide-react'
+import IconButton from '@/components/ui/IconButton'
 
 interface ChatInputProps {
   onSend: (message: string) => void
@@ -50,16 +51,15 @@ export default function ChatInput({ onSend, isLoading, disabled }: ChatInputProp
                    px-3 py-2 text-sm text-text-primary placeholder:text-text-muted
                    focus:outline-none focus:ring-2 focus:ring-forest-500
                    disabled:opacity-50 disabled:cursor-not-allowed
-                   dark:bg-slate-700 dark:border-slate-600"
+                   dark:bg-surface-elevated dark:border-border"
         maxLength={2000}
       />
-      <button
+      <IconButton
         onClick={handleSubmit}
         disabled={!message.trim() || isLoading || disabled}
-        className="flex-shrink-0 h-10 w-10 rounded-lg bg-forest-600 hover:bg-forest-700
-                   disabled:opacity-50 disabled:cursor-not-allowed
-                   flex items-center justify-center transition-colors
-                   dark:bg-forest-600 dark:hover:bg-forest-700"
+        size="sm"
+        className="flex-shrink-0 h-10 w-10 bg-forest-600 hover:bg-forest-700
+                   disabled:opacity-50 disabled:cursor-not-allowed dark:bg-forest-600 dark:hover:bg-forest-700"
         aria-label="Send message"
       >
         {isLoading ? (
@@ -67,7 +67,7 @@ export default function ChatInput({ onSend, isLoading, disabled }: ChatInputProp
         ) : (
           <Send className="w-5 h-5 text-white" />
         )}
-      </button>
+      </IconButton>
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Grid3X3 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Button from '@/components/ui/Button'
 
 interface FrameStandard {
   id: string
@@ -162,7 +163,7 @@ export default function FrameCellCalculator() {
             step="0.1"
           />
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => setCellSize(5.4)}
               className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
                 cellSize === 5.4
@@ -171,8 +172,8 @@ export default function FrameCellCalculator() {
               }`}
             >
               5.4mm (Standard)
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setCellSize(4.9)}
               className={`px-3 py-1 text-sm rounded-lg border transition-colors ${
                 cellSize === 4.9
@@ -181,7 +182,7 @@ export default function FrameCellCalculator() {
               }`}
             >
               4.9mm (Small Cell)
-            </button>
+            </Button>
           </div>
         </div>
         <p className="text-xs text-text-tertiary mt-1">
@@ -195,7 +196,7 @@ export default function FrameCellCalculator() {
           Count Sides
         </label>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => setSides(1)}
             className={`px-4 py-2 rounded-lg border transition-colors ${
               sides === 1
@@ -204,8 +205,8 @@ export default function FrameCellCalculator() {
             }`}
           >
             One Side
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setSides(2)}
             className={`px-4 py-2 rounded-lg border transition-colors ${
               sides === 2
@@ -214,7 +215,7 @@ export default function FrameCellCalculator() {
             }`}
           >
             Both Sides
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -249,3 +250,4 @@ export default function FrameCellCalculator() {
     </div>
   )
 }
+

@@ -1,6 +1,7 @@
 'use client'
 
 import type { Hive, Apiary, OwnershipFilter, RecordType, TimePeriod } from '@/types/records'
+import Button from '@/components/ui/Button'
 
 interface RecordFiltersBarProps {
   // Filter values
@@ -142,7 +143,7 @@ export default function RecordFiltersBar({
 
       {/* Time Period Filter */}
       <div className="flex flex-wrap gap-2">
-        <button
+        <Button
           onClick={() => onTimePeriodChange('all')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === 'all'
@@ -151,8 +152,8 @@ export default function RecordFiltersBar({
           }`}
         >
           All Time {timePeriodCounts && `(${timePeriodCounts.all})`}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onTimePeriodChange('3months')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === '3months'
@@ -161,8 +162,8 @@ export default function RecordFiltersBar({
           }`}
         >
           3 Months {timePeriodCounts && `(${timePeriodCounts.threeMonths})`}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onTimePeriodChange('6months')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === '6months'
@@ -171,8 +172,8 @@ export default function RecordFiltersBar({
           }`}
         >
           6 Months {timePeriodCounts && `(${timePeriodCounts.sixMonths})`}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onTimePeriodChange('1year')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === '1year'
@@ -181,8 +182,8 @@ export default function RecordFiltersBar({
           }`}
         >
           1 Year {timePeriodCounts && `(${timePeriodCounts.oneYear})`}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onTimePeriodChange('custom')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === 'custom'
@@ -191,7 +192,7 @@ export default function RecordFiltersBar({
           }`}
         >
           Custom {timePeriodCounts && `(${timePeriodCounts.custom})`}
-        </button>
+        </Button>
       </div>
 
       {/* Custom Date Range */}
@@ -220,3 +221,4 @@ export default function RecordFiltersBar({
     </div>
   )
 }
+

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData } from '@/types/records'
 import { getDefaultInspectionFormData } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import Button from '@/components/ui/Button'
 
 interface InspectionFormProps {
   initialData: InspectionFormData | null
@@ -102,28 +103,28 @@ export default function InspectionForm({
     <div>
       <div className="flex items-center justify-between mb-2">
         <label className="text-sm font-medium text-text-secondary">{label}</label>
-        <button
+        <Button
           type="button"
           onClick={() => onChange(0)}
           className="text-xs text-text-tertiary hover:text-red-600 dark:hover:text-red-400 transition-colors"
         >
           Clear
-        </button>
+        </Button>
       </div>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
-          <button
+          <Button
             key={star}
             type="button"
             onClick={() => onChange(star)}
             className={`min-h-[40px] min-w-[40px] rounded-lg text-xl transition-all ${
               value >= star
                 ? 'bg-yellow-400 text-white'
-                : 'bg-surface dark:bg-surface-elevated border border-border hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                : 'bg-surface-elevated border border-border hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
             }`}
           >
             ★
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -137,30 +138,30 @@ export default function InspectionForm({
       </label>
       <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-          <button
+          <Button
             key={num}
             type="button"
             onClick={() => onChange(num)}
             className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
               value === num
                 ? `bg-${color}-600 text-white shadow-lg ring-2 ring-${color}-300`
-                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
+                : 'bg-surface-elevated text-foreground hover:bg-surface-secondary active:bg-surface-secondary border border-border'
             }`}
           >
             {num}
-          </button>
+          </Button>
         ))}
-        <button
+        <Button
           type="button"
           onClick={() => onChange(null)}
           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
             value === null
-              ? 'bg-sage-300 dark:bg-slate-600 text-foreground shadow-lg ring-2 ring-sage-400 dark:ring-slate-400'
-              : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 active:bg-surface-elevated dark:active:bg-slate-500 border border-border'
+              ? 'bg-surface-secondary text-foreground shadow-lg ring-2 ring-border'
+              : 'bg-surface-elevated text-foreground hover:bg-surface-secondary active:bg-surface-secondary border border-border'
           }`}
         >
           Clear
-        </button>
+        </Button>
       </div>
     </div>
   ), [])
@@ -175,22 +176,22 @@ export default function InspectionForm({
     removedAll: boolean,
     onRemovedAllChange: (val: boolean) => void
   ) => (
-    <div className="bg-sage-100 dark:bg-slate-700 p-3 rounded-lg">
+    <div className="bg-surface-secondary p-3 rounded-lg">
       <div className="flex items-center gap-2 mb-3">
         <label className="text-sm font-medium text-text-secondary">{title}</label>
         <div className="flex gap-2 ml-auto">
-          <button
+          <Button
             type="button"
             onClick={() => onPresentChange(true)}
             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
               present === true
                 ? 'bg-green-600 text-white shadow-lg'
-                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
+                : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
             }`}
           >
             <span>✓</span> YES
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => {
               onPresentChange(false)
@@ -200,11 +201,11 @@ export default function InspectionForm({
             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
               present === false
                 ? 'bg-red-600 text-white shadow-lg'
-                : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
+                : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
             }`}
           >
             <span>✕</span> NO
-          </button>
+          </Button>
         </div>
       </div>
       {present && (
@@ -212,13 +213,13 @@ export default function InspectionForm({
           <div>
             <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => onCountChange(Math.max(0, count - 1))}
-                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
+                className="px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
               >
                 −
-              </button>
+              </Button>
               <input
                 type="number"
                 value={count}
@@ -226,40 +227,40 @@ export default function InspectionForm({
                 className="w-20 px-3 py-2 border rounded text-center"
                 min="0"
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => onCountChange(count + 1)}
-                className="px-3 py-2 bg-sage-200 dark:bg-slate-700 hover:bg-sage-300 dark:hover:bg-slate-600 rounded font-bold border border-border text-text-primary"
+                className="px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
               >
                 +
-              </button>
+              </Button>
             </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => onRemovedAllChange(true)}
                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                   removedAll === true
                     ? 'bg-green-600 text-white shadow-lg'
-                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
+                    : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
                 }`}
               >
                 YES
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => onRemovedAllChange(false)}
                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
                   removedAll === false
                     ? 'bg-red-600 text-white shadow-lg'
-                    : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
+                    : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
                 }`}
               >
                 NO
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -268,27 +269,27 @@ export default function InspectionForm({
   ), [])
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
+    <div className="bg-surface rounded-lg shadow border border-border p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <h3 className="text-xl font-semibold text-foreground">
           {initialData?.hive_id ? 'Edit Inspection' : 'Record New Inspection'}
         </h3>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button
+          <Button
             type="submit"
             form="inspection-form"
             disabled={submitting || fetchingWeather}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
+            className="px-6 py-3 sm:py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
           >
             {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : initialData?.hive_id ? 'Update' : 'Save'} Inspection
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleCancel}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 border border-border active:bg-sage-400 dark:active:bg-slate-500 touch-manipulation font-medium"
+            className="px-6 py-3 sm:py-2 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -305,7 +306,7 @@ export default function InspectionForm({
                   setFormApiaryId(e.target.value)
                   setFormData(prev => ({ ...prev, hive_id: '' }))
                 }}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
               >
                 <option value="">All Apiaries</option>
                 {apiaries.map((apiary) => (
@@ -321,7 +322,7 @@ export default function InspectionForm({
               <select
                 value={formData.hive_id}
                 onChange={(e) => handleHiveSelect(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
                 required
               >
                 <option value="">Select hive</option>
@@ -337,7 +338,7 @@ export default function InspectionForm({
                 type="date"
                 value={formData.inspection_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, inspection_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
                 required
               />
             </div>
@@ -348,7 +349,7 @@ export default function InspectionForm({
                 type="time"
                 value={formData.inspection_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, inspection_time: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
                 required
               />
             </div>
@@ -360,7 +361,7 @@ export default function InspectionForm({
                 step="0.1"
                 value={formData.weight ?? ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value ? parseFloat(e.target.value) : null }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
                 placeholder="Optional"
               />
             </div>
@@ -372,7 +373,7 @@ export default function InspectionForm({
           <h4 className="text-sm font-semibold text-foreground mb-4">Queen & Brood</h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <label className="flex items-center gap-3 p-3 bg-surface dark:bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border border-purple-200 dark:border-purple-800">
+            <label className="flex items-center gap-3 p-3 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
               <input
                 type="checkbox"
                 checked={formData.queen_seen}
@@ -382,7 +383,7 @@ export default function InspectionForm({
               <span className="text-sm font-medium text-text-secondary">Queen Seen</span>
             </label>
 
-            <label className="flex items-center gap-3 p-3 bg-surface dark:bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-sage-100 dark:hover:bg-slate-700 active:bg-sage-200 dark:active:bg-slate-600 border border-purple-200 dark:border-purple-800">
+            <label className="flex items-center gap-3 p-3 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
               <input
                 type="checkbox"
                 checked={formData.eggs_present}
@@ -408,14 +409,14 @@ export default function InspectionForm({
 
           {/* Queen Cells Subsection - Collapsible */}
           <div className="mt-4 rounded-lg border border-border">
-            <button
+            <Button
               type="button"
               onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
-              className="w-full p-3 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-t-lg"
+              className="w-full p-3 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-t-lg"
             >
               <h5 className="text-sm font-semibold text-foreground">Queen Cells</h5>
               {queenCellsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </button>
+            </Button>
 
             {queenCellsExpanded && (
               <div className="p-4 pt-0 space-y-4">
@@ -474,14 +475,14 @@ export default function InspectionForm({
 
         {/* Drones Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
-          <button
+          <Button
             type="button"
             onClick={() => setDronesExpanded(!dronesExpanded)}
-            className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-lg"
+            className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
           >
             <h4 className="text-sm font-semibold text-foreground">Drones</h4>
             {dronesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
+          </Button>
           {dronesExpanded && (
             <div className="p-4 pt-0 space-y-4">
               <div>
@@ -493,22 +494,22 @@ export default function InspectionForm({
                     { value: 2, label: 'High' },
                     { value: 3, label: 'Extreme' }
                   ].map((option) => (
-                    <button
+                    <Button
                       key={option.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, drones_present: option.value }))}
                       className={`min-h-[48px] rounded-lg font-semibold transition-all ${
                         formData.drones_present === option.value
                           ? 'bg-amber-600 text-white shadow-lg'
-                          : 'bg-surface dark:bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-slate-600 border border-border'
+                          : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
                       }`}
                     >
                       {option.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
-              <label className="flex items-center gap-3 p-3 bg-surface dark:bg-surface rounded-lg cursor-pointer border border-border">
+              <label className="flex items-center gap-3 p-3 bg-surface rounded-lg cursor-pointer border border-border">
                 <input
                   type="checkbox"
                   checked={formData.drone_brood_present === true}
@@ -523,14 +524,14 @@ export default function InspectionForm({
 
         {/* Given/Taken Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
-          <button
+          <Button
             type="button"
             onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
-            className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-lg"
+            className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
           >
             <h4 className="text-sm font-semibold text-foreground">Frames Given/Taken</h4>
             {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
+          </Button>
           {givenTakenExpanded && (
             <div className="p-4 pt-0 grid grid-cols-2 md:grid-cols-3 gap-4">
               {[
@@ -547,7 +548,7 @@ export default function InspectionForm({
                     type="number"
                     value={formData[field.key as keyof InspectionFormData] as number}
                     onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
                     min="0"
                   />
                 </div>
@@ -558,14 +559,14 @@ export default function InspectionForm({
 
         {/* Disease Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
-          <button
+          <Button
             type="button"
             onClick={() => setDiseaseExpanded(!diseaseExpanded)}
-            className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-lg"
+            className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
           >
             <h4 className="text-sm font-semibold text-foreground">Disease Indicators</h4>
             {diseaseExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
+          </Button>
           {diseaseExpanded && (
             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {renderStarRating(formData.afb_disease, (val) => setFormData(prev => ({ ...prev, afb_disease: val })), 'AFB')}
@@ -580,14 +581,14 @@ export default function InspectionForm({
 
         {/* Hygienic Behaviour Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
-          <button
+          <Button
             type="button"
             onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
-            className="w-full p-4 flex items-center justify-between hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors rounded-lg"
+            className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
           >
             <h4 className="text-sm font-semibold text-foreground">Hygienic Behaviour</h4>
             {hygienicBehaviourExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
+          </Button>
           {hygienicBehaviourExpanded && (
             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-3 gap-6">
               {renderStarRating(formData.recapping, (val) => setFormData(prev => ({ ...prev, recapping: val })), 'Recapping')}
@@ -603,7 +604,7 @@ export default function InspectionForm({
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
             rows={4}
             placeholder="Optional notes about the inspection"
           />
@@ -632,14 +633,14 @@ export default function InspectionForm({
                       <Camera size={16} className="text-white" />
                     </div>
                   </div>
-                  <button
+                  <Button
                     type="button"
                     onClick={handleRemoveImage}
                     className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
                     title="Remove image"
                   >
                     <X size={16} />
-                  </button>
+                  </Button>
                 </div>
               )}
               <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all p-4">
@@ -664,3 +665,4 @@ export default function InspectionForm({
     </div>
   )
 }
+

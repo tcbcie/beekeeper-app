@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { X, Scale, Check, AlertCircle, Unlink } from 'lucide-react'
 import type { WolfScale } from '@/lib/wolf-waagen-api'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface EnrichedScale extends WolfScale {
   assigned_to: {
@@ -104,12 +106,13 @@ export default function WolfScaleSelectionModal({
               Select Wolf Scale for Hive {hiveNumber}
             </h2>
           </div>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-1 text-text-tertiary hover:text-foreground rounded"
+            size="xs"
+            className="text-text-tertiary hover:text-foreground"
           >
             <X size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
@@ -117,7 +120,7 @@ export default function WolfScaleSelectionModal({
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
-                <div key={i} className="animate-pulse h-16 bg-sage-200 dark:bg-slate-700 rounded-lg"></div>
+                <div key={i} className="animate-pulse h-16 bg-surface-secondary rounded-lg"></div>
               ))}
             </div>
           ) : error ? (
@@ -139,10 +142,12 @@ export default function WolfScaleSelectionModal({
             <div className="space-y-2">
               {/* Option to remove current assignment */}
               {currentScaleId && (
-                <button
+                <Button
                   onClick={() => handleSelect(null)}
                   disabled={selecting !== null}
-                  className="w-full p-4 rounded-lg border-2 border-dashed border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-left transition-colors disabled:opacity-50"
+                  tone="danger"
+                  fullWidth
+                  className="h-auto justify-start rounded-lg border-2 border-dashed border-red-300 p-4 text-left transition-colors disabled:opacity-50 dark:border-red-700"
                 >
                   <div className="flex items-center gap-3">
                     <Unlink size={20} className="text-red-500" />
@@ -153,7 +158,7 @@ export default function WolfScaleSelectionModal({
                       </p>
                     </div>
                   </div>
-                </button>
+                </Button>
               )}
 
               {/* Scale list */}
@@ -162,11 +167,13 @@ export default function WolfScaleSelectionModal({
                 const isAssignedElsewhere = scale.assigned_to && scale.assigned_to.hiveId !== hiveId
 
                 return (
-                  <button
+                  <Button
                     key={scale.scale_id}
                     onClick={() => handleSelect(scale)}
                     disabled={selecting !== null}
-                    className={`w-full p-4 rounded-lg border-2 text-left transition-colors disabled:opacity-50 ${
+                    tone="neutral"
+                    fullWidth
+                    className={`h-auto justify-start rounded-lg border-2 p-4 text-left transition-colors disabled:opacity-50 ${
                       isCurrentScale
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                         : 'border-border hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/10'
@@ -201,7 +208,7 @@ export default function WolfScaleSelectionModal({
                         <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
                       )}
                     </div>
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -209,7 +216,7 @@ export default function WolfScaleSelectionModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border bg-sage-50 dark:bg-slate-800/50">
+        <div className="p-4 border-t border-border bg-surface-secondary/50">
           <p className="text-xs text-text-tertiary text-center">
             Scales are managed by Wolf Waagen
           </p>

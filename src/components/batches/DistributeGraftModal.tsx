@@ -5,6 +5,7 @@ import { X, Search, User, Users, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData, BulkDistributionData } from '@/hooks/useGraftDistributions'
 import { TYPE_LABELS } from './graftConstants'
+import Button from '@/components/ui/Button'
 
 interface DistributeGraftModalProps {
   graftId: string
@@ -225,9 +226,9 @@ export default function DistributeGraftModal({
           <h3 className="text-lg font-semibold text-foreground">
             {isBulk ? `Distribute ${bulkGrafts.length} Grafts` : `Distribute Cell #${cellNumber}`}
           </h3>
-          <button onClick={onClose} className="p-2 text-text-secondary hover:text-foreground rounded">
+          <Button onClick={onClose} className="p-2 text-text-secondary hover:text-foreground rounded">
             <X size={20} />
-          </button>
+          </Button>
         </div>
 
         <div className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
@@ -246,7 +247,7 @@ export default function DistributeGraftModal({
             {/* Mode toggles */}
             <div className="flex rounded-lg border border-border overflow-hidden text-xs font-medium mb-3">
               {hasGroup && (
-                <button
+                <Button
                   type="button"
                   onClick={() => switchMode('group')}
                   className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 transition-colors ${
@@ -255,9 +256,9 @@ export default function DistributeGraftModal({
                 >
                   <Users size={12} />
                   Group Member
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 type="button"
                 onClick={() => switchMode('app_user')}
                 className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 transition-colors ${
@@ -266,8 +267,8 @@ export default function DistributeGraftModal({
               >
                 <User size={12} />
                 App User
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => switchMode('external')}
                 className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 transition-colors ${
@@ -276,7 +277,7 @@ export default function DistributeGraftModal({
               >
                 <UserPlus size={12} />
                 Other Beekeeper
-              </button>
+              </Button>
             </div>
 
             {/* Selected app / group user chip */}
@@ -294,13 +295,13 @@ export default function DistributeGraftModal({
                     Group
                   </span>
                 )}
-                <button
+                <Button
                   type="button"
                   onClick={() => { setSelectedUser(null); setApiaries([]); setHives([]) }}
                   className="p-1 text-text-tertiary hover:text-foreground"
                 >
                   <X size={14} />
-                </button>
+                </Button>
               </div>
             )}
 
@@ -327,7 +328,7 @@ export default function DistributeGraftModal({
                       return (user.full_name || '').toLowerCase().includes(q) || (user.email || '').toLowerCase().includes(q)
                     })
                     .map((user) => (
-                      <button
+                      <Button
                         key={user.id}
                         type="button"
                         onClick={() => handleSelectUser(user)}
@@ -342,7 +343,7 @@ export default function DistributeGraftModal({
                             <div className="text-xs text-text-tertiary truncate">{user.email}</div>
                           </div>
                         </div>
-                      </button>
+                      </Button>
                     ))}
                 </div>
               </div>
@@ -368,7 +369,7 @@ export default function DistributeGraftModal({
                       <div className="p-3 text-sm text-text-tertiary text-center">Searching...</div>
                     ) : (
                       searchResults.map((user) => (
-                        <button
+                        <Button
                           key={user.id}
                           type="button"
                           onClick={() => handleSelectUser(user)}
@@ -387,7 +388,7 @@ export default function DistributeGraftModal({
                               </span>
                             )}
                           </div>
-                        </button>
+                        </Button>
                       ))
                     )}
                   </div>
@@ -506,24 +507,25 @@ export default function DistributeGraftModal({
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
-            <button
+            <Button
               type="button"
               onClick={handleSubmit}
               disabled={!canSubmit || saving}
               className="flex-1 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
               {saving ? 'Saving...' : 'Distribute'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-foreground rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+              className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated text-sm"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       </div>
     </div>
   )
 }
+

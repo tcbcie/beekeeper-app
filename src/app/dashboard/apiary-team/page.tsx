@@ -7,6 +7,9 @@ import { User, Mail, Edit2, Users, Plus, X, Trash2, UserPlus, Clock, Send, MapPi
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import AlertPanel from '@/components/ui/AlertPanel'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface Team {
   id: string
@@ -752,13 +755,13 @@ export default function ApiaryTeamPage() {
             <Users size={24} className="text-blue-600" />
             <h2 className="text-xl font-semibold text-foreground">Team Management</h2>
           </div>
-          <button
+          <Button
             onClick={() => setShowCreateTeamModal(true)}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2 font-medium"
+            tone="success"
           >
             <Plus size={16} />
             Create Team
-          </button>
+          </Button>
         </div>
 
         <p className="text-sm text-text-tertiary mb-6">
@@ -786,7 +789,7 @@ export default function ApiaryTeamPage() {
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <button
+                          <Button
                             onClick={() => {
                               if (expandedTeamId === team.id) {
                                 setExpandedTeamId(null)
@@ -796,53 +799,58 @@ export default function ApiaryTeamPage() {
                                 fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
+                            tone="neutral"
+                            size="xs"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
                             <span className="sm:hidden">Members</span>
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => {
                               setSelectedTeam(team)
                               setShowInviteMemberModal(true)
                               fetchTeamDetails(team.id)
                             }}
-                            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                            tone="success"
+                            size="xs"
                           >
                             <UserPlus size={14} />
                             Invite
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => {
                               setSelectedTeam(team)
                               setShowShareApiaryModal(true)
                               setSelectedApiaryId('')
                             }}
-                            className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
+                            tone="purple"
+                            size="xs"
                           >
                             <Share2 size={14} />
                             <span className="hidden sm:inline">Share Apiary</span>
                             <span className="sm:hidden">Share</span>
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => {
                               setSelectedTeam(team)
                               setRenameTeamName(team.name)
                               setShowRenameTeamModal(true)
                             }}
-                            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                            tone="blue"
+                            size="xs"
                           >
                             <Edit2 size={14} />
                             Rename
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleDeleteTeam(team.id, team.name)}
-                            className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                            tone="danger"
+                            size="xs"
                           >
                             <Trash2 size={14} />
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </div>
                       <div className="text-sm text-text-tertiary">
@@ -887,14 +895,16 @@ export default function ApiaryTeamPage() {
                                     </span>
                                   </div>
                                   {member.role !== 'owner' && (
-                                    <button
+                                    <Button
                                       onClick={() => handleRemoveMember(member.id, member.user_email || 'this member')}
-                                      className="ml-3 px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                      tone="danger"
+                                      size="xs"
+                                      className="ml-3"
                                       title="Remove member"
                                     >
                                       <Trash2 size={12} />
                                       Remove
-                                    </button>
+                                    </Button>
                                   )}
                                 </div>
                               ))}
@@ -939,14 +949,16 @@ export default function ApiaryTeamPage() {
                                           Pending
                                         </span>
                                       </div>
-                                      <button
+                                      <Button
                                         onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
-                                        className="ml-3 px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                        tone="danger"
+                                        size="xs"
+                                        className="ml-3"
                                         title="Cancel invitation"
                                       >
                                         <X size={12} />
                                         Cancel
-                                      </button>
+                                      </Button>
                                     </div>
                                   )
                                 })}
@@ -973,7 +985,7 @@ export default function ApiaryTeamPage() {
                                       title={invitation.email}
                                       titleClassName="text-foreground"
                                       bodyClassName="text-xs text-text-tertiary"
-                                      endSlot={<span className="fj-badge fj-badge-green">Accepted</span>}
+                                      endSlot={<Badge tone="green">Accepted</Badge>}
                                       endSlotClassName="self-center"
                                     >
                                       <div className="flex items-center gap-2">
@@ -1010,7 +1022,7 @@ export default function ApiaryTeamPage() {
                                       title={invitation.email}
                                       titleClassName="text-foreground"
                                       bodyClassName="text-xs text-text-tertiary"
-                                      endSlot={<span className="fj-badge fj-badge-red">Declined</span>}
+                                      endSlot={<Badge tone="red">Declined</Badge>}
                                       endSlotClassName="self-center"
                                     >
                                       <div className="flex items-center gap-2">
@@ -1051,19 +1063,21 @@ export default function ApiaryTeamPage() {
                                         </div>
                                       </div>
                                     </div>
-                                    <button
+                                    <Button
                                       onClick={() => handleUnshareApiary(
                                         ta.id,
                                         ta.apiary?.name
                                           ? `${ta.apiary.name} - ${ta.apiary.eircode}`
                                           : (ta.apiary?.eircode || 'this apiary')
                                       )}
-                                      className="ml-3 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                      tone="danger"
+                                      size="xs"
+                                      className="ml-3"
                                       title="Remove apiary from team"
                                     >
                                       <X size={12} />
                                       Remove
-                                    </button>
+                                    </Button>
                                   </div>
                                 ))}
                               </div>
@@ -1091,12 +1105,12 @@ export default function ApiaryTeamPage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{team.name}</h4>
-                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-800 text-text-primary text-xs rounded font-medium capitalize">
+                          <span className="px-2 py-1 bg-surface-secondary text-text-primary text-xs rounded font-medium capitalize">
                             {team.user_role}
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <button
+                          <Button
                             onClick={() => {
                               if (expandedTeamId === team.id) {
                                 setExpandedTeamId(null)
@@ -1106,18 +1120,20 @@ export default function ApiaryTeamPage() {
                                 fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
+                            tone="neutral"
+                            size="xs"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedTeamId === team.id ? 'Hide' : 'View'} Members</span>
                             <span className="sm:hidden">Members</span>
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleLeaveTeam(team.id, team.name)}
-                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded hover:bg-sage-300 dark:hover:bg-slate-600"
+                            tone="neutral"
+                            size="xs"
                           >
                             Leave Team
-                          </button>
+                          </Button>
                         </div>
                       </div>
                       <div className="text-sm text-text-tertiary">
@@ -1180,12 +1196,12 @@ export default function ApiaryTeamPage() {
               <div className="text-center py-12 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <Users size={48} className="mx-auto text-text-tertiary mb-3" />
                 <p className="text-text-tertiary mb-4">You haven&apos;t created or joined any teams yet.</p>
-                <button
+                <Button
                   onClick={() => setShowCreateTeamModal(true)}
-                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+                  tone="success"
                 >
                   Create Your First Team
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -1198,15 +1214,16 @@ export default function ApiaryTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Create New Team</h3>
-              <button
+              <IconButton
                 onClick={() => {
                   setShowCreateTeamModal(false)
                   setNewTeamName('')
                 }}
+                size="sm"
                 className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
             <p className="text-sm text-text-tertiary mb-4">
               Give your team a name. You&apos;ll be able to invite members after creating the team.
@@ -1225,20 +1242,21 @@ export default function ApiaryTeamPage() {
               />
             </div>
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 onClick={() => {
                   setShowCreateTeamModal(false)
                   setNewTeamName('')
                 }}
-                className="px-4 py-2 text-text-secondary border border-border rounded-lg hover:bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50"
+                tone="neutral"
                 disabled={creatingTeam}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateTeam}
                 disabled={creatingTeam || !newTeamName.trim()}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
+                tone="success"
+                className="disabled:cursor-not-allowed"
               >
                 {creatingTeam ? (
                   <>
@@ -1248,7 +1266,7 @@ export default function ApiaryTeamPage() {
                 ) : (
                   'Create Team'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1260,7 +1278,7 @@ export default function ApiaryTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Manage Team: {selectedTeam.name}</h3>
-              <button
+              <IconButton
                 onClick={() => {
                   setShowInviteMemberModal(false)
                   setSelectedTeam(null)
@@ -1268,10 +1286,11 @@ export default function ApiaryTeamPage() {
                   setTeamMembers([])
                   setTeamInvitations([])
                 }}
+                size="sm"
                 className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
 
             {/* Invite New Member Section */}
@@ -1291,10 +1310,11 @@ export default function ApiaryTeamPage() {
                   placeholder="email@example.com"
                   className="flex-1 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
-                <button
+                <Button
                   onClick={handleSendInvite}
                   disabled={sendingInvite || !inviteEmail.trim()}
-                  className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-surface-elevated dark:disabled:bg-surface-elevated disabled:text-text-tertiary disabled:cursor-not-allowed flex items-center gap-2"
+                  tone="success"
+                  className="disabled:cursor-not-allowed"
                 >
                   {sendingInvite ? (
                     <>
@@ -1307,7 +1327,7 @@ export default function ApiaryTeamPage() {
                       Invite
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1336,12 +1356,13 @@ export default function ApiaryTeamPage() {
                           {member.role}
                         </span>
                         {member.role !== 'owner' && (
-                          <button
+                          <Button
                             onClick={() => handleRemoveMember(member.id, member.user_email || 'Unknown')}
-                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                            tone="danger"
+                            size="xs"
                           >
                             Remove
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -1366,12 +1387,13 @@ export default function ApiaryTeamPage() {
                       titleClassName="text-foreground"
                       bodyClassName="text-xs text-text-tertiary"
                       endSlot={
-                        <button
+                        <Button
                           onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
-                          className="fj-btn fj-btn-neutral fj-btn-xs"
+                          tone="neutral"
+                          size="xs"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       }
                       endSlotClassName="self-center"
                     >
@@ -1386,7 +1408,7 @@ export default function ApiaryTeamPage() {
             )}
 
             <div className="mt-6 flex justify-end">
-              <button
+              <Button
                 onClick={() => {
                   setShowInviteMemberModal(false)
                   setSelectedTeam(null)
@@ -1394,10 +1416,10 @@ export default function ApiaryTeamPage() {
                   setTeamMembers([])
                   setTeamInvitations([])
                 }}
-                className="px-6 py-2.5 bg-surface-elevated dark:bg-surface-elevated text-foreground border border-border rounded-lg hover:bg-surface dark:hover:bg-surface font-medium"
+                tone="neutral"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1409,16 +1431,17 @@ export default function ApiaryTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Share Apiary with {selectedTeam.name}</h3>
-              <button
+              <IconButton
                 onClick={() => {
                   setShowShareApiaryModal(false)
                   setSelectedTeam(null)
                   setSelectedApiaryId('')
                 }}
+                size="sm"
                 className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
 
             <p className="text-sm text-text-tertiary mb-4">
@@ -1449,20 +1472,21 @@ export default function ApiaryTeamPage() {
             </div>
 
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 onClick={() => {
                   setShowShareApiaryModal(false)
                   setSelectedTeam(null)
                   setSelectedApiaryId('')
                 }}
-                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                tone="neutral"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleShareApiary}
                 disabled={sharingApiary || !selectedApiaryId}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
+                tone="purple"
+                className="disabled:cursor-not-allowed"
               >
                 {sharingApiary ? (
                   <>
@@ -1475,7 +1499,7 @@ export default function ApiaryTeamPage() {
                     Share Apiary
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1487,16 +1511,17 @@ export default function ApiaryTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Rename Team</h3>
-              <button
+              <IconButton
                 onClick={() => {
                   setShowRenameTeamModal(false)
                   setSelectedTeam(null)
                   setRenameTeamName('')
                 }}
+                size="sm"
                 className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="mb-4">
@@ -1517,20 +1542,23 @@ export default function ApiaryTeamPage() {
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
                 onClick={() => {
                   setShowRenameTeamModal(false)
                   setSelectedTeam(null)
                   setRenameTeamName('')
                 }}
-                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                tone="neutral"
+                fullWidth
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleRenameTeam}
                 disabled={renamingTeam || !renameTeamName.trim()}
-                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                tone="success"
+                fullWidth
+                className="disabled:cursor-not-allowed"
               >
                 {renamingTeam ? (
                   <>
@@ -1543,7 +1571,7 @@ export default function ApiaryTeamPage() {
                     Rename Team
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

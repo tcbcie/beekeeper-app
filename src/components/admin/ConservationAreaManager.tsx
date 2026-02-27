@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, Pencil, X, Loader2, MapPin } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 
 interface ConservationArea {
   id: string
@@ -194,13 +195,13 @@ export default function ConservationAreaManager() {
             <p className="text-sm text-text-tertiary">Manage NIHBS AMM conservation areas shown on the community map</p>
           </div>
         </div>
-        <button
+        <Button
           onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2 bg-teal-600 dark:bg-teal-700 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 text-sm font-medium"
         >
           <Plus size={16} />
           Add Land CA
-        </button>
+        </Button>
       </div>
 
       <div className="bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800 rounded-lg p-3 text-sm text-teal-900 dark:text-teal-200">
@@ -237,7 +238,7 @@ export default function ConservationAreaManager() {
                   <td className="px-4 py-3 text-text-secondary">{area.country}</td>
                   <td className="px-4 py-3 text-text-secondary">{area.radius_km}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${area.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${area.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-surface-secondary text-text-tertiary border border-border'}`}>
                       {area.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
@@ -246,21 +247,21 @@ export default function ConservationAreaManager() {
                       {/* Only land-type CAs are editable/deletable here */}
                       {area.type === 'land' ? (
                         <>
-                          <button
+                          <Button
                             onClick={() => openEdit(area)}
                             className="p-1.5 text-text-tertiary hover:text-forest-600 dark:hover:text-forest-400 rounded"
                             title="Edit"
                           >
                             <Pencil size={15} />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleDelete(area.id, area.name)}
                             disabled={deletingId === area.id}
                             className="p-1.5 text-text-tertiary hover:text-red-600 dark:hover:text-red-400 rounded disabled:opacity-50"
                             title="Delete"
                           >
                             {deletingId === area.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-                          </button>
+                          </Button>
                         </>
                       ) : (
                         <span className="text-xs text-text-tertiary italic">Owner only</span>
@@ -282,9 +283,9 @@ export default function ConservationAreaManager() {
               <h3 className="text-lg font-semibold text-foreground">
                 {editingArea ? 'Edit Conservation Area' : 'Add Land Conservation Area'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-text-tertiary hover:text-foreground">
+              <Button onClick={() => setShowModal(false)} className="text-text-tertiary hover:text-foreground">
                 <X size={20} />
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-4">
@@ -395,20 +396,20 @@ export default function ConservationAreaManager() {
             </div>
 
             <div className="flex gap-3 justify-end mt-6">
-              <button
+              <Button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600 text-sm"
+                className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated text-sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSave}
                 disabled={saving}
                 className="px-4 py-2 bg-teal-600 dark:bg-teal-700 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 text-sm flex items-center gap-2 disabled:opacity-50"
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : null}
                 {editingArea ? 'Update' : 'Add'} Conservation Area
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -416,3 +417,4 @@ export default function ConservationAreaManager() {
     </div>
   )
 }
+

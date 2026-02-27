@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import { AlertCircle, X, Calendar } from 'lucide-react'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 export default function SubscriptionWarningBanner() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatusResponse | null>(null)
@@ -95,21 +97,24 @@ export default function SubscriptionWarningBanner() {
         </div>
         <div className="flex items-center gap-2">
           {subscriptionStatus.status !== 'no_subscription' && (
-            <button
+            <Button
               onClick={() => router.push('/dashboard/profile')}
-              className="px-4 py-1.5 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors font-medium flex items-center gap-1.5 whitespace-nowrap"
+              tone="amber"
+              size="sm"
+              className="whitespace-nowrap inline-flex items-center gap-1.5"
             >
               <Calendar className="w-4 h-4" />
               Renew Now
-            </button>
+            </Button>
           )}
-          <button
+          <IconButton
             onClick={() => setDismissed(true)}
-            className={`p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${getTextColor()}`}
+            size="xs"
+            className={`hover:bg-black/5 dark:hover:bg-black/10 ${getTextColor()}`}
             aria-label="Dismiss banner"
           >
             <X className="w-5 h-5" />
-          </button>
+          </IconButton>
         </div>
       </div>
     </div>

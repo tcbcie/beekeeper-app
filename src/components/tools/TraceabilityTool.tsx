@@ -10,6 +10,7 @@ import { generateBatchCode } from '@/lib/batch-code'
 import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
 import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, OriginPercentage } from '@/types/traceability'
+import Button from '@/components/ui/Button'
 
 type TabType = 'containers' | 'batches'
 
@@ -825,7 +826,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           <Package size={24} className="text-forest-600 dark:text-forest-400" />
           <h2 className="text-xl font-semibold text-foreground">Honey Provenance</h2>
         </div>
-        <button
+        <Button
           onClick={() => activeTab === 'containers' ? setShowContainerForm(true) : setShowBatchForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
         >
@@ -833,33 +834,33 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           <span className="hidden sm:inline">
             {activeTab === 'containers' ? 'New Bulk Honey' : 'New Batch'}
           </span>
-        </button>
+        </Button>
       </div>
 
       {/* Sub-tabs */}
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={() => setActiveTab('containers')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             activeTab === 'containers'
               ? 'bg-amber-600 text-white'
-              : 'bg-surface-elevated text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-700'
+              : 'bg-surface-elevated text-text-secondary hover:bg-surface-elevated/80'
           }`}
         >
           <Package size={18} />
           <span>Bulk Honey</span>
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setActiveTab('batches')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             activeTab === 'batches'
               ? 'bg-amber-600 text-white'
-              : 'bg-surface-elevated text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-700'
+              : 'bg-surface-elevated text-text-secondary hover:bg-surface-elevated/80'
           }`}
         >
           <Milk size={18} />
           <span>Batches</span>
-        </button>
+        </Button>
       </div>
 
       {/* Container Form */}
@@ -869,9 +870,9 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             <h3 className="text-lg font-semibold">
               {editingContainer ? 'Edit Bulk Honey' : 'New Bulk Honey'}
             </h3>
-            <button onClick={resetContainerForm} className="p-2 hover:bg-surface rounded-lg">
+            <Button onClick={resetContainerForm} className="p-2 hover:bg-surface rounded-lg">
               <X size={20} />
-            </button>
+            </Button>
           </div>
 
           <form onSubmit={handleContainerSubmit} className="space-y-4">
@@ -952,7 +953,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   <p className="text-sm text-text-secondary text-center py-2">No harvests available</p>
                 ) : (
                   availableHarvests.map(harvest => (
-                    <button
+                    <Button
                       key={harvest.id}
                       type="button"
                       onClick={() => !harvest.already_linked && toggleHarvest(harvest.id)}
@@ -961,7 +962,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         containerForm.harvest_ids.includes(harvest.id)
                           ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-500'
                           : harvest.already_linked
-                            ? 'bg-gray-100 dark:bg-gray-800 text-text-secondary cursor-not-allowed'
+                            ? 'bg-surface-secondary text-text-secondary cursor-not-allowed'
                             : 'hover:bg-surface'
                       }`}
                     >
@@ -983,26 +984,26 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                       {containerForm.harvest_ids.includes(harvest.id) && (
                         <Check size={18} className="text-amber-600" />
                       )}
-                    </button>
+                    </Button>
                   ))
                 )}
               </div>
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={resetContainerForm}
                 className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-surface-elevated transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="flex-1 px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
               >
                 {editingContainer ? 'Update' : 'Create'} Bulk Honey
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -1015,15 +1016,15 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             <h3 className="text-lg font-semibold">
               {editingBatch ? `Edit Batch ${editingBatch.batch_code}` : 'New Batch'}
             </h3>
-            <button onClick={resetBatchForm} className="p-2 hover:bg-surface rounded-lg">
+            <Button onClick={resetBatchForm} className="p-2 hover:bg-surface rounded-lg">
               <X size={20} />
-            </button>
+            </Button>
           </div>
 
           {/* QR Code Preview for existing public batches */}
           {editingBatch && editingBatch.trace_code && editingBatch.is_public && (
             <div className="flex items-center gap-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 mb-4">
-              <div className="bg-white p-2 rounded-lg">
+              <div className="bg-surface p-2 rounded-lg border border-border">
                 <QRCodeSVG
                   value={getTraceUrl(editingBatch.trace_code)}
                   size={64}
@@ -1170,7 +1171,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   </p>
                 ) : (
                   containers.map(container => (
-                    <button
+                    <Button
                       key={container.id}
                       type="button"
                       onClick={() => toggleContainer(container.id)}
@@ -1194,7 +1195,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                       {batchForm.container_ids.includes(container.id) && (
                         <Check size={18} className="text-amber-600" />
                       )}
-                    </button>
+                    </Button>
                   ))
                 )}
               </div>
@@ -1220,37 +1221,37 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   <div className="p-4 space-y-4">
                     {/* Editable Title */}
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Title</label>
+                      <label className="block text-xs font-medium text-text-secondary mb-1">Title</label>
                       <input
                         type="text"
                         value={batchForm.public_title}
                         onChange={(e) => setBatchForm(prev => ({ ...prev, public_title: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-center font-bold"
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-surface-elevated text-center font-bold"
                         placeholder="Pure Irish Honey"
                       />
                     </div>
 
                     {/* Editable Origin */}
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Origin Headline</label>
+                      <label className="block text-xs font-medium text-text-secondary mb-1">Origin Headline</label>
                       <input
                         type="text"
                         value={batchForm.public_origin}
                         onChange={(e) => setBatchForm(prev => ({ ...prev, public_origin: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-center"
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-surface-elevated text-center"
                         placeholder="Harvested in Meath, Ireland"
                       />
                     </div>
 
                     {/* Map Status */}
                     <div className="flex items-start gap-2 text-sm">
-                      <MapPin size={16} className={publicPreview.hasAnyLocationShared ? 'text-green-600' : 'text-slate-400'} />
+                      <MapPin size={16} className={publicPreview.hasAnyLocationShared ? 'text-green-600' : 'text-text-tertiary'} />
                       {publicPreview.hasAnyLocationShared ? (
                         <span className="text-green-700 dark:text-green-400">
                           Map will be shown (apiary location shared)
                         </span>
                       ) : (
-                        <span className="text-slate-500 flex items-center gap-1">
+                        <span className="text-text-secondary flex items-center gap-1">
                           <AlertCircle size={14} className="text-amber-500" />
                           No map - enable &quot;Share Location&quot; on apiary to show map
                         </span>
@@ -1259,14 +1260,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
                     {/* Apiary Image Option */}
                     {publicPreview.apiaryImageUrl && (
-                      <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
+                      <div className="border border-border rounded-lg p-3 bg-surface-elevated">
                         <div className="flex items-start gap-3">
                           <div className="relative w-16 h-16">
                             <Image
                               src={publicPreview.apiaryImageUrl}
                               alt="Apiary"
                               fill
-                              className="object-cover rounded-lg border border-slate-200 dark:border-slate-600"
+                              className="object-cover rounded-lg border border-border"
                               unoptimized
                             />
                           </div>
@@ -1280,7 +1281,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                               />
                               <span className="text-sm font-medium">Show apiary image on public page</span>
                             </label>
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-text-secondary mt-1">
                               Display this image below the map on the trace page
                             </p>
                           </div>
@@ -1289,7 +1290,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     )}
 
                     {/* Feedback Toggle */}
-                    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-800">
+                    <div className="border border-border rounded-lg p-3 bg-surface-elevated">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -1299,14 +1300,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         />
                         <span className="text-sm font-medium">Show feedback form on public page</span>
                       </label>
-                      <p className="text-xs text-slate-500 mt-1 ml-6">
+                      <p className="text-xs text-text-secondary mt-1 ml-6">
                         Allow customers to rate and comment on this honey
                       </p>
                     </div>
 
                     {/* Story Template Selector */}
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-2">Story Template</label>
+                      <label className="block text-xs font-medium text-text-secondary mb-2">Story Template</label>
                       <div className="space-y-1.5 mb-3">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -1341,37 +1342,37 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                             />
                             <div>
                               <span className="text-sm font-medium">{template.name}</span>
-                              <span className="text-xs text-slate-500 ml-1">- {template.description}</span>
+                              <span className="text-xs text-text-secondary ml-1">- {template.description}</span>
                             </div>
                           </label>
                         ))}
                       </div>
 
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Story Text</label>
+                      <label className="block text-xs font-medium text-text-secondary mb-1">Story Text</label>
                       <textarea
                         value={batchForm.public_story}
                         onChange={(e) => {
                           setBatchForm(prev => ({ ...prev, public_story: e.target.value }))
                           setSelectedTemplate('custom')
                         }}
-                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-sm font-mono"
+                        className="w-full px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-surface-elevated text-sm font-mono"
                         rows={4}
                         placeholder="Harvested by [name] from [apiary]. The bees foraged on [flowers]."
                       />
 
                       {/* Formatted Preview */}
                       {batchForm.public_story && (
-                        <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <div className="mt-2 p-3 bg-surface-secondary rounded-lg border border-border">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-medium text-slate-500">Preview:</p>
+                            <p className="text-xs font-medium text-text-secondary">Preview:</p>
                             <div className="flex items-center gap-3 text-xs">
                               <span className="flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                <span className="text-slate-500">Auto-filled</span>
+                                <span className="text-text-secondary">Auto-filled</span>
                               </span>
                               <span className="flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                <span className="text-slate-500">Needs input</span>
+                                <span className="text-text-secondary">Needs input</span>
                               </span>
                             </div>
                           </div>
@@ -1406,24 +1407,24 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     </div>
 
                     {/* Details Preview */}
-                    <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700 space-y-2 text-sm">
+                    <div className="bg-surface-elevated rounded-lg p-3 border border-border space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Net Weight</span>
+                        <span className="text-text-secondary">Net Weight</span>
                         <span className="font-medium">
                           {batchForm.jar_weight_g ? `${batchForm.jar_weight_g}g` : <span className="text-amber-500">Not set</span>}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Bottled</span>
+                        <span className="text-text-secondary">Bottled</span>
                         <span className="font-medium">{new Date(batchForm.batch_date).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                       </div>
                       {batchForm.best_before_date && (
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Best Before</span>
+                          <span className="text-text-secondary">Best Before</span>
                           <span className="font-medium">{new Date(batchForm.best_before_date).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-slate-400">
+                      <div className="flex justify-between text-text-tertiary">
                         <span>Batch</span>
                         <span className="font-mono text-xs">{editingBatch?.batch_code || 'L-YYYY-MM-NNN'}</span>
                       </div>
@@ -1432,14 +1433,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     {/* Origins */}
                     {publicPreview.origins.length > 0 && (
                       <div className="text-sm">
-                        <p className="text-slate-500 mb-2">Origins:</p>
+                        <p className="text-text-secondary mb-2">Origins:</p>
                         <div className="space-y-1">
                           {publicPreview.origins.map((origin, i) => (
-                            <div key={i} className="flex items-center justify-between bg-white dark:bg-slate-800 rounded px-3 py-2 border border-slate-200 dark:border-slate-700">
+                            <div key={i} className="flex items-center justify-between bg-surface-elevated rounded px-3 py-2 border border-border">
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-amber-500" />
                                 <span>{origin.name}</span>
-                                {origin.city && <span className="text-slate-400">({origin.city})</span>}
+                                {origin.city && <span className="text-text-tertiary">({origin.city})</span>}
                               </div>
                               <span className="font-bold text-amber-600">{origin.percentage}%</span>
                             </div>
@@ -1465,19 +1466,19 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             )}
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={resetBatchForm}
                 className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-surface-elevated transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="flex-1 px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
               >
                 {editingBatch ? 'Update' : 'Create'} Batch
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -1571,20 +1572,20 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     </div>
 
                     <div className="flex gap-2">
-                      <button
+                      <Button
                         onClick={() => handleEditContainer(container)}
                         className="p-2 hover:bg-surface rounded-lg transition-colors"
                         title="Edit"
                       >
                         <Edit2 size={18} />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleDeleteContainer(container.id)}
                         className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors"
                         title="Delete"
                       >
                         <Trash2 size={18} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1686,38 +1687,38 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   {/* Action buttons row */}
                   <div className="flex gap-2 pt-2 border-t border-border">
                     {feedback && feedback.feedback_count > 0 && (
-                      <button
+                      <Button
                         onClick={() => fetchFeedbackDetails(batch)}
                         className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
                         title="View Feedback"
                       >
                         <MessageSquare size={18} />
-                      </button>
+                      </Button>
                     )}
                     {batch.is_public && (
-                      <button
+                      <Button
                         onClick={() => setQrBatch(batch)}
                         className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 rounded-lg transition-colors"
                         title="QR Code"
                       >
                         <QrCode size={18} />
-                      </button>
+                      </Button>
                     )}
                     <div className="flex-1" />
-                    <button
+                    <Button
                       onClick={() => handleEditBatch(batch)}
                       className="p-2 hover:bg-surface rounded-lg transition-colors"
                       title="Edit"
                     >
                       <Edit2 size={18} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handleDeleteBatch(batch.id)}
                       className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors"
                       title="Delete"
                     >
                       <Trash2 size={18} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )
@@ -1732,12 +1733,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           <div className="bg-surface-elevated rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">QR Code</h3>
-              <button
+              <Button
                 onClick={() => setQrBatch(null)}
                 className="p-2 hover:bg-surface rounded-lg"
               >
                 <X size={20} />
-              </button>
+              </Button>
             </div>
 
             <div className="text-center">
@@ -1745,7 +1746,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 Scan to trace batch <span className="font-mono font-semibold">{qrBatch.batch_code}</span>
               </p>
 
-              <div className="bg-white p-4 rounded-xl inline-block mb-4">
+              <div className="bg-surface p-4 rounded-xl border border-border inline-block mb-4">
                 <QRCodeSVG
                   id="qr-code-svg"
                   value={getTraceUrl(qrBatch.trace_code)}
@@ -1759,13 +1760,13 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 {getTraceUrl(qrBatch.trace_code)}
               </p>
 
-              <button
+              <Button
                 onClick={() => downloadQrCode(qrBatch.trace_code)}
                 className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
               >
                 <Download size={18} />
                 Download PNG
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1780,12 +1781,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 <h3 className="text-lg font-semibold">Customer Feedback</h3>
                 <p className="text-sm text-text-secondary font-mono">{feedbackBatch.batch_code}</p>
               </div>
-              <button
+              <Button
                 onClick={() => setFeedbackBatch(null)}
                 className="p-2 hover:bg-surface rounded-lg"
               >
                 <X size={20} />
-              </button>
+              </Button>
             </div>
 
             {/* Summary */}
@@ -1824,7 +1825,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                           <Star
                             key={star}
                             size={14}
-                            className={star <= item.rating ? 'text-amber-500 fill-amber-500' : 'text-slate-300 dark:text-slate-600'}
+                            className={star <= item.rating ? 'text-amber-500 fill-amber-500' : 'text-text-tertiary'}
                           />
                         ))}
                       </div>
@@ -1845,3 +1846,4 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     </div>
   )
 }
+

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, Loader2, Link, Pencil, X, Check, ExternalLink, Search, Eye, EyeOff, DatabaseZap } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
+import TextLink from '@/components/ui/TextLink'
 
 interface NewsArticle {
   id: string
@@ -291,13 +293,13 @@ export default function NewsArticlesManager() {
             {articles.length} article{articles.length !== 1 ? 's' : ''} total
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowAddForm(!showAddForm)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 self-start"
         >
           {showAddForm ? <X size={18} /> : <Plus size={18} />}
           {showAddForm ? 'Cancel' : 'Add Article'}
-        </button>
+        </Button>
       </div>
 
       {/* Add Article Form */}
@@ -319,14 +321,14 @@ export default function NewsArticlesManager() {
                   onKeyDown={(e) => e.key === 'Enter' && handleAddArticle()}
                 />
               </div>
-              <button
+              <Button
                 onClick={handleAddArticle}
                 disabled={adding || !newUrl.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {adding ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
                 {adding ? 'Fetching...' : 'Add'}
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-text-tertiary mt-1">
               Metadata (title, description, image) will be automatically extracted from the URL
@@ -403,20 +405,20 @@ export default function NewsArticlesManager() {
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <button
+                    <Button
                       onClick={() => setEditingId(null)}
                       className="px-3 py-1.5 text-sm text-text-secondary hover:text-foreground"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={handleSaveEdit}
                       disabled={saving}
                       className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
                     >
                       {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                       Save
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -424,7 +426,7 @@ export default function NewsArticlesManager() {
                 <div className="flex">
                   {/* Image */}
                   {article.image_url && (
-                    <div className="w-32 h-24 flex-shrink-0 bg-sage-100 dark:bg-slate-800">
+                    <div className="w-32 h-24 flex-shrink-0 bg-surface-secondary">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={article.image_url}
@@ -454,7 +456,7 @@ export default function NewsArticlesManager() {
                       {/* Actions */}
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {article.kb_source_id && (
-                          <button
+                          <Button
                             onClick={() => handleRemoveFromKB(article)}
                             disabled={removingKbId === article.id}
                             className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 rounded flex items-center gap-1 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-900 dark:hover:text-red-300 transition-colors"
@@ -466,34 +468,34 @@ export default function NewsArticlesManager() {
                               <DatabaseZap size={12} />
                             )}
                             KB
-                          </button>
+                          </Button>
                         )}
-                        <button
+                        <Button
                           onClick={() => handleTogglePublished(article)}
-                          className={`p-1.5 rounded hover:bg-sage-100 dark:hover:bg-slate-700 ${
+                          className={`p-1.5 rounded hover:bg-surface-elevated ${
                             article.is_published ? 'text-green-600' : 'text-amber-500'
                           }`}
                           title={article.is_published ? 'Published (click to hide)' : 'Hidden (click to publish)'}
                         >
                           {article.is_published ? <Eye size={16} /> : <EyeOff size={16} />}
-                        </button>
-                        <a
+                        </Button>
+                        <TextLink
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 rounded hover:bg-sage-100 dark:hover:bg-slate-700 text-text-secondary"
+                          className="p-1.5 rounded hover:bg-surface-elevated text-text-secondary"
                           title="Open original"
                         >
                           <ExternalLink size={16} />
-                        </a>
-                        <button
+                        </TextLink>
+                        <Button
                           onClick={() => handleEdit(article)}
-                          className="p-1.5 rounded hover:bg-sage-100 dark:hover:bg-slate-700 text-text-secondary"
+                          className="p-1.5 rounded hover:bg-surface-elevated text-text-secondary"
                           title="Edit"
                         >
                           <Pencil size={16} />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleDelete(article)}
                           disabled={deletingId === article.id}
                           className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 disabled:opacity-50"
@@ -504,7 +506,7 @@ export default function NewsArticlesManager() {
                           ) : (
                             <Trash2 size={16} />
                           )}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -517,3 +519,4 @@ export default function NewsArticlesManager() {
     </div>
   )
 }
+

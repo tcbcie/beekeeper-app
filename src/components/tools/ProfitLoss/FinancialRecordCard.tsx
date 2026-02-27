@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react'
 import { FinancialRecord } from '@/types/records'
+import IconButton from '@/components/ui/IconButton'
 
 interface FinancialRecordCardProps {
   record: FinancialRecord
@@ -113,20 +114,22 @@ export default function FinancialRecordCard({
 
           {/* Actions */}
           <div className="flex items-center gap-1">
-            <button
+            <IconButton
               onClick={() => onEdit(record)}
-              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+              tone="blue"
+              size="sm"
               title="Edit"
             >
               <Pencil size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={() => onDelete(record)}
-              className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+              tone="danger"
+              size="sm"
               title="Delete"
             >
               <Trash2 size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>

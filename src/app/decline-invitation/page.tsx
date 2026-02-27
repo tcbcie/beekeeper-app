@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { InvitationLoadingShell, InvitationResponseShell } from '@/components/invitations/InvitationResponseShell'
+import Button from '@/components/ui/Button'
 
 function DeclineInvitationContent() {
   const searchParams = useSearchParams()
@@ -126,12 +127,12 @@ function DeclineInvitationContent() {
               <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Already Declined</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <button
+              <Button
                 onClick={() => router.push('/dashboard')}
-                className="fj-btn fj-btn-blue"
+                tone="blue"
               >
                 Go to Dashboard
-              </button>
+              </Button>
             </>
           )}
 
@@ -143,12 +144,12 @@ function DeclineInvitationContent() {
               <p className="text-sm text-text-tertiary mb-4">
                 This invitation is no longer valid.
               </p>
-              <button
+              <Button
                 onClick={() => router.push('/dashboard')}
-                className="fj-btn fj-btn-blue"
+                tone="blue"
               >
                 Go to Dashboard
-              </button>
+              </Button>
             </>
           )}
 
@@ -157,12 +158,12 @@ function DeclineInvitationContent() {
               <XCircle size={64} className="mx-auto text-red-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Error</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <button
+              <Button
                 onClick={() => router.push('/dashboard')}
-                className="fj-btn fj-btn-blue"
+                tone="blue"
               >
                 Go to Dashboard
-              </button>
+              </Button>
             </>
           )}
       </div>

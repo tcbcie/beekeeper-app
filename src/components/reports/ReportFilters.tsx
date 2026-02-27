@@ -2,6 +2,7 @@
 
 import type { Hive } from '@/types/records'
 import type { ApiaryWithEircode, TimePeriod } from '@/types/reports'
+import Button from '@/components/ui/Button'
 
 interface ReportFiltersProps {
   apiaryId: string
@@ -78,12 +79,14 @@ export default function ReportFilters({
       {/* Time Period Filters */}
       <div className="flex flex-wrap gap-2">
         {(['all', '3months', '6months', '1year', 'custom'] as TimePeriod[]).map((period) => (
-          <button
+          <Button
             key={period}
             onClick={() => onTimePeriodChange(period)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            tone={timePeriod === period ? 'success' : 'neutral'}
+            size="sm"
+            className={`${
               timePeriod === period
-                ? 'bg-forest-600 text-white'
+                ? ''
                 : 'bg-surface border border-border text-foreground hover:bg-forest-50 dark:hover:bg-forest-950/30'
             }`}
           >
@@ -92,7 +95,7 @@ export default function ReportFilters({
             {period === '6months' && '6 Months'}
             {period === '1year' && '1 Year'}
             {period === 'custom' && 'Custom'}
-          </button>
+          </Button>
         ))}
       </div>
 

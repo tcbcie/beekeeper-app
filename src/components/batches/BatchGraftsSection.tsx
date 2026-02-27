@@ -8,6 +8,8 @@ import CellFrame from './CellFrame'
 import QueenTrackingSection from './QueenTrackingSection'
 import DistributionList from './DistributionList'
 import DistributeGraftModal from './DistributeGraftModal'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 interface BatchGraftsSectionProps {
   batchId: string
@@ -33,38 +35,43 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       <div className="flex flex-wrap justify-between items-center gap-y-2">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-semibold text-foreground">Individual Cells/Grafts</h4>
-          <button
+          <IconButton
             type="button"
             onClick={() => hook.setShowHelp(!hook.showHelp)}
-            className={`p-1 rounded-full transition-colors ${hook.showHelp ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' : 'text-text-tertiary hover:text-blue-600'}`}
+            size="xs"
+            className={`transition-colors ${hook.showHelp ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' : 'text-text-tertiary hover:text-blue-600'}`}
             title="How this works"
           >
             <HelpCircle size={16} />
-          </button>
+          </IconButton>
         </div>
         <div className="flex gap-2">
           {hook.grafts.length > 0 && (
-            <button
+            <Button
               type="button"
               onClick={() => { if (hook.selectMode) { hook.exitSelectMode() } else { hook.exitTableSelectMode(); hook.setSelectMode(true) } }}
-              className={`px-3 py-1.5 text-sm rounded font-medium flex items-center gap-1 ${
+              tone={hook.selectMode ? 'success' : 'neutral'}
+              size="sm"
+              className={`inline-flex items-center gap-1 ${
                 hook.selectMode
-                  ? 'bg-forest-600 text-white hover:bg-forest-700'
+                  ? ''
                   : 'border border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30'
               }`}
             >
               <CheckSquare size={14} />
               {hook.selectMode ? 'Done' : 'Bulk Actions'}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
             onClick={hook.generateGrafts}
-            className="px-3 py-1.5 text-sm bg-forest-600 text-white rounded hover:bg-forest-700 flex items-center gap-1"
+            tone="success"
+            size="sm"
+            className="inline-flex items-center gap-1"
           >
             <Plus size={14} />
             Generate Cell Records
-          </button>
+          </Button>
         </div>
       </div>
 

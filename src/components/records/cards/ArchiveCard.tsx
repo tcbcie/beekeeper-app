@@ -9,11 +9,11 @@ interface ArchiveCardProps {
 
 export default function ArchiveCard({ archiveRecord }: ArchiveCardProps) {
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-sage-500 dark:border-slate-500">
+    <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6 border-l-4 border-forest-500 dark:border-forest-500">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-start gap-3 flex-1">
           {/* Icon Badge */}
-          <div className="w-12 h-12 flex-shrink-0 bg-sage-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 flex-shrink-0 bg-surface-secondary rounded-lg flex items-center justify-center">
             <Archive size={24} className="text-text-tertiary" />
           </div>
           <div className="flex-1 min-w-0">

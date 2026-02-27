@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2, Check, Calendar, Store } from 'lucide-react'
 import { PurchaseItem } from '@/types/records'
+import IconButton from '@/components/ui/IconButton'
 
 interface PurchaseItemCardProps {
   item: PurchaseItem
@@ -25,7 +26,7 @@ const priorityStyles = {
   },
   low: {
     border: 'border-l-gray-400',
-    badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    badge: 'bg-surface-secondary text-text-secondary'
   }
 }
 
@@ -121,28 +122,31 @@ export default function PurchaseItemCard({
           {/* Actions */}
           <div className="flex items-center gap-1">
             {!isPurchased && (
-              <button
+              <IconButton
                 onClick={() => onMarkPurchased(item)}
-                className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                tone="green"
+                size="sm"
                 title="Mark as purchased"
               >
                 <Check size={16} />
-              </button>
+              </IconButton>
             )}
-            <button
+            <IconButton
               onClick={() => onEdit(item)}
-              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+              tone="blue"
+              size="sm"
               title="Edit"
             >
               <Pencil size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={() => onDelete(item)}
-              className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+              tone="danger"
+              size="sm"
               title="Delete"
             >
               <Trash2 size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>

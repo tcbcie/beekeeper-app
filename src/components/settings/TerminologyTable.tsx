@@ -7,6 +7,10 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import TextInput from '@/components/ui/TextInput'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Surface from '@/components/ui/Surface'
+import { TableBody, TableContainer, TableHeaderRow, TableRow } from '@/components/ui/TableStyles'
 
 const ITEMS_PER_PAGE = 15
 
@@ -186,21 +190,22 @@ export default function TerminologyTable() {
             Beekeeping Terminology (English &lt;&gt; German)
           </h3>
         </div>
-        <button
+        <Button
           onClick={() => {
             setShowAddForm(!showAddForm)
             setEditingTerm(null)
           }}
-          className="fj-btn fj-btn-success fj-btn-sm"
+          tone="success"
+          size="sm"
         >
           <Plus size={16} />
           Add Term
-        </button>
+        </Button>
       </div>
 
       {/* Add Form */}
       {showAddForm && (
-        <div className="bg-muted/30 dark:bg-muted/10 rounded-lg p-4 border border-border">
+        <Surface padded="sm" elevated={false} className="bg-muted/30 dark:bg-muted/10">
           <h4 className="font-medium text-foreground mb-3">Add New Term</h4>
           <div className="flex flex-col sm:flex-row gap-3">
             <TextInput
@@ -218,27 +223,30 @@ export default function TerminologyTable() {
               className="flex-1"
             />
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={handleAdd}
                 disabled={saving}
-                className="fj-btn fj-btn-success fj-btn-sm disabled:opacity-50"
+                tone="success"
+                size="sm"
+                className="disabled:opacity-50"
               >
                 <Save size={16} />
                 Save
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setShowAddForm(false)
                   setNewTerm({ english_term: '', german_term: '' })
                 }}
-                className="fj-btn fj-btn-neutral fj-btn-sm"
+                tone="neutral"
+                size="sm"
               >
                 <X size={16} />
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
+        </Surface>
       )}
 
       {/* Search */}
@@ -260,16 +268,16 @@ export default function TerminologyTable() {
       </p>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <TableContainer>
         <table className="w-full">
           <thead>
-            <tr className="bg-muted/50 dark:bg-muted/20">
+            <TableHeaderRow tone="muted">
               <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">English</th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">German</th>
               <th className="px-4 py-3 text-right text-sm font-semibold text-foreground w-24">Actions</th>
-            </tr>
+            </TableHeaderRow>
           </thead>
-          <tbody className="divide-y divide-border">
+          <TableBody tone="muted">
             {paginatedTerms.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-text-tertiary">
@@ -278,7 +286,7 @@ export default function TerminologyTable() {
               </tr>
             ) : (
               paginatedTerms.map((term) => (
-                <tr key={term.id} className="hover:bg-muted/30 dark:hover:bg-muted/10 transition-colors">
+                <TableRow key={term.id} tone="muted">
                   {editingTerm?.id === term.id ? (
                     <>
                       <td className="px-4 py-2">
@@ -307,21 +315,23 @@ export default function TerminologyTable() {
                       </td>
                       <td className="px-4 py-2 text-right">
                         <div className="flex justify-end gap-1">
-                          <button
+                          <IconButton
                             onClick={handleUpdate}
                             disabled={saving}
-                            className="fj-icon-btn fj-icon-btn-green p-1.5 disabled:opacity-50"
+                            tone="green"
+                            size="sm"
+                            className="disabled:opacity-50"
                             title="Save"
                           >
                             <Save size={16} />
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
                             onClick={cancelEdit}
-                            className="fj-icon-btn p-1.5"
+                            size="sm"
                             title="Cancel"
                           >
                             <X size={16} />
-                          </button>
+                          </IconButton>
                         </div>
                       </td>
                     </>
@@ -331,53 +341,59 @@ export default function TerminologyTable() {
                       <td className="px-4 py-3 text-foreground">{term.german_term}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-1">
-                          <button
+                          <IconButton
                             onClick={() => startEdit(term)}
-                            className="fj-icon-btn fj-icon-btn-blue p-1.5"
+                            tone="blue"
+                            size="sm"
                             title="Edit"
                           >
                             <Edit2 size={16} />
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
                             onClick={() => handleDelete(term.id, term.english_term)}
-                            className="fj-icon-btn fj-icon-btn-danger p-1.5"
+                            tone="danger"
+                            size="sm"
                             title="Delete"
                           >
                             <Trash2 size={16} />
-                          </button>
+                          </IconButton>
                         </div>
                       </td>
                     </>
                   )}
-                </tr>
+                </TableRow>
               ))
             )}
-          </tbody>
+          </TableBody>
         </table>
-      </div>
+      </TableContainer>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
-          <button
+          <Button
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="fj-btn fj-btn-neutral fj-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            tone="neutral"
+            size="sm"
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft size={16} />
             Previous
-          </button>
+          </Button>
           <span className="text-sm text-text-tertiary">
             Page {currentPage} of {totalPages}
           </span>
-          <button
+          <Button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="fj-btn fj-btn-neutral fj-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            tone="neutral"
+            size="sm"
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
             <ChevronRight size={16} />
-          </button>
+          </Button>
         </div>
       )}
     </div>

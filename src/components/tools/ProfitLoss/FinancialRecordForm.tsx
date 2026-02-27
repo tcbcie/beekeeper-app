@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
+import Button from '@/components/ui/Button'
 
 interface FinancialRecordFormProps {
   record: FinancialRecord | null
@@ -72,13 +73,13 @@ export default function FinancialRecordForm({
         <h4 className="font-medium text-foreground">
           {record ? 'Edit Record' : 'Add Record'}
         </h4>
-        <button
+        <Button
           onClick={onCancel}
           className="p-1 hover:bg-surface-secondary rounded"
           aria-label="Close form"
         >
           <X size={20} className="text-text-secondary" />
-        </button>
+        </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,7 +89,7 @@ export default function FinancialRecordForm({
             Type *
           </label>
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => setRecordType('income')}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
@@ -98,8 +99,8 @@ export default function FinancialRecordForm({
               }`}
             >
               Income
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setRecordType('expense')}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
@@ -109,7 +110,7 @@ export default function FinancialRecordForm({
               }`}
             >
               Expense
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -194,24 +195,25 @@ export default function FinancialRecordForm({
 
         {/* Actions */}
         <div className="flex gap-2 justify-end">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             disabled={saving}
             className="px-4 py-2 border border-border rounded-lg hover:bg-surface-secondary transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={saving}
             className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {saving && <Loader2 size={16} className="animate-spin" />}
             {record ? 'Update' : 'Save'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
   )
 }
+

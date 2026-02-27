@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import PageShell from '@/components/ui/PageShell'
 import PageHeader from '@/components/ui/PageHeader'
 import Panel from '@/components/ui/Panel'
+import Button from '@/components/ui/Button'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -246,22 +247,24 @@ function LoginForm() {
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <button
+                <Button
                   type="submit"
                   onClick={() => setIsSignUp(false)}
                   disabled={loading}
-                  className="min-h-[48px] rounded-lg bg-forest-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-forest-700 disabled:opacity-50"
+                  tone="success"
+                  className="min-h-[48px] disabled:opacity-50"
                 >
                   {loading && !isSignUp ? 'Loading...' : 'Login'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   onClick={() => setIsSignUp(true)}
                   disabled={loading}
-                  className="min-h-[48px] rounded-lg border border-border bg-surface px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-elevated disabled:opacity-50 dark:bg-surface-elevated"
+                  tone="neutral"
+                  className="min-h-[48px] disabled:opacity-50"
                 >
                   {loading && isSignUp ? 'Loading...' : 'Sign Up'}
-                </button>
+                </Button>
               </div>
             </form>
 
@@ -288,11 +291,13 @@ function LoginForm() {
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-elevated disabled:opacity-50 dark:bg-surface-elevated"
+              tone="neutral"
+              fullWidth
+              className="min-h-[48px] inline-flex items-center justify-center gap-3 disabled:opacity-50"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -301,7 +306,7 @@ function LoginForm() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               <span className="font-medium text-foreground">Continue with Google</span>
-            </button>
+            </Button>
 
             <div className="flex items-center justify-center gap-2 text-xs text-text-tertiary">
               <span className="rounded-full border border-forest-200 bg-forest-50 px-2 py-1 font-mono text-forest-700 dark:border-forest-900 dark:bg-forest-950/30 dark:text-forest-300">

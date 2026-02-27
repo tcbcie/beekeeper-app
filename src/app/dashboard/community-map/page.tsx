@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import Button from '@/components/ui/Button'
 import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Flame, Calendar, TreeDeciduous } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -670,35 +671,35 @@ export default function CommunityMapPage() {
       {/* Top-left controls: Map Style + Terrain */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 max-w-[200px]">
         {/* Map Style Toggle */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex">
-          <button
+        <div className="bg-surface-elevated rounded-lg shadow-lg border border-border flex">
+          <Button
             type="button"
             onClick={() => handleStyleChange('outdoors')}
-            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
             title="Outdoors map"
           >
             <Map size={18} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => handleStyleChange('satellite')}
-            className={`p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
             title="Satellite view"
           >
             <Satellite size={18} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => handleStyleChange('terrain')}
-            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
             title="Terrain view"
           >
             <Mountain size={18} />
-          </button>
+          </Button>
         </div>
 
         {/* Flight Radius Control */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex items-center gap-1 px-2 py-1.5">
+        <div className="bg-surface-elevated rounded-lg shadow-lg border border-border flex items-center gap-1 px-2 py-1.5">
           <Circle size={14} className="text-purple-500" />
           <select
             value={flightRadius}
@@ -714,25 +715,25 @@ export default function CommunityMapPage() {
         </div>
 
         {/* Visibility Filters */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border p-1.5 space-y-0.5">
-          <button
+        <div className="bg-surface-elevated rounded-lg shadow-lg border border-border p-1.5 space-y-0.5">
+          <Button
             type="button"
             onClick={() => setShowUserApiaries(prev => !prev)}
             className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showUserApiaries ? 'text-green-600' : 'text-text-tertiary'}`}
           >
             {showUserApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
             <span>Your apiaries</span>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => setShowSharedApiaries(prev => !prev)}
             className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showSharedApiaries ? 'text-purple-600' : 'text-text-tertiary'}`}
           >
             {showSharedApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
             <span>Shared apiaries</span>
-          </button>
+          </Button>
           {isPowerUser && (
-            <button
+            <Button
               type="button"
               onClick={() => setShowWildColonies(prev => !prev)}
               className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showWildColonies ? 'text-amber-600' : 'text-text-tertiary'}`}
@@ -740,9 +741,9 @@ export default function CommunityMapPage() {
               {showWildColonies ? <Eye size={12} /> : <EyeOff size={12} />}
               <TreeDeciduous size={12} />
               <span>Wild colonies</span>
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
             onClick={() => setShowConservationAreas(prev => !prev)}
             className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showConservationAreas ? 'text-teal-600' : 'text-text-tertiary'}`}
@@ -750,8 +751,8 @@ export default function CommunityMapPage() {
             {showConservationAreas ? <Eye size={12} /> : <EyeOff size={12} />}
             <span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block flex-shrink-0" />
             <span>Conservation areas</span>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => setShowHeatMap(prev => !prev)}
             className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showHeatMap ? 'text-orange-600' : 'text-text-tertiary'}`}
@@ -759,7 +760,7 @@ export default function CommunityMapPage() {
           >
             <Flame size={12} />
             <span>Heat map</span>
-          </button>
+          </Button>
         </div>
 
         {/* Heat map info tooltip when active */}
@@ -772,7 +773,7 @@ export default function CommunityMapPage() {
         )}
 
         {/* Time Filter */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border flex items-center gap-1 px-2 py-1.5">
+        <div className="bg-surface-elevated rounded-lg shadow-lg border border-border flex items-center gap-1 px-2 py-1.5">
           <Calendar size={14} className="text-blue-500" />
           <select
             value={timeFilter}
@@ -791,7 +792,7 @@ export default function CommunityMapPage() {
       {/* Top-right: Stats Badge + Fullscreen */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         {/* Stats Badge */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-border px-3 py-2">
+        <div className="bg-surface-elevated rounded-lg shadow-lg border border-border px-3 py-2">
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-green-600 border border-white"></div>
@@ -821,25 +822,25 @@ export default function CommunityMapPage() {
         </div>
 
         {/* Fullscreen Toggle */}
-        <button
+        <Button
           type="button"
           onClick={toggleFullscreen}
-          className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border border-border"
+          className="bg-surface-elevated p-2 rounded-lg shadow-lg hover:bg-surface-secondary transition-colors border border-border"
           title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
         >
           {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-        </button>
+        </Button>
 
         {/* Close button in fullscreen */}
         {isFullscreen && (
-          <button
+          <Button
             type="button"
             onClick={toggleFullscreen}
             className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg shadow-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 text-red-800 dark:text-red-400"
             title="Exit fullscreen"
           >
             <X size={18} />
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -848,7 +849,7 @@ export default function CommunityMapPage() {
   // Fullscreen mode
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-white dark:bg-slate-900">
+      <div className="fixed inset-0 z-50 bg-surface-elevated">
         {mapContent}
       </div>
     )
@@ -942,3 +943,4 @@ export default function CommunityMapPage() {
     </div>
   )
 }
+

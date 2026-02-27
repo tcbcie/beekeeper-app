@@ -2,6 +2,7 @@
 
 import { Edit2, Trash2, Wheat } from 'lucide-react'
 import type { Feeding } from '@/types/records'
+import IconButton from '@/components/ui/IconButton'
 
 interface FeedingCardProps {
   feeding: Feeding
@@ -29,7 +30,7 @@ export default function FeedingCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/40 text-gray-900 dark:text-yellow-200 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/40 text-foreground dark:text-yellow-200 text-xs font-medium rounded">
                 Feeding
               </span>
               <h3 className="text-base font-bold">Hive: {feeding.hives?.hive_number || 'Unknown'}</h3>
@@ -56,20 +57,22 @@ export default function FeedingCard({
 
         {/* Action buttons */}
         <div className="flex gap-1 flex-shrink-0">
-          <button
+          <IconButton
             onClick={() => onEdit(feeding)}
-            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-blue-800 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/30 active:bg-blue-100 dark:active:bg-blue-900/50 rounded-lg touch-manipulation transition-colors"
+            tone="blue"
+            className="min-h-[40px] min-w-[40px] touch-manipulation"
             aria-label="Edit feeding"
           >
             <Edit2 size={18} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={() => onDelete(feeding)}
-            className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 active:bg-red-100 dark:active:bg-red-900/50 rounded-lg touch-manipulation transition-colors"
+            tone="danger"
+            className="min-h-[40px] min-w-[40px] touch-manipulation"
             aria-label="Delete feeding"
           >
             <Trash2 size={18} />
-          </button>
+          </IconButton>
         </div>
       </div>
 

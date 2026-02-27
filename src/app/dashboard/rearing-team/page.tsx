@@ -9,6 +9,9 @@ import type { RearingGroup, RearingGroupMember } from '@/hooks/useRearingGroups'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import AlertPanel from '@/components/ui/AlertPanel'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
 
 export default function RearingTeamPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -434,13 +437,14 @@ export default function RearingTeamPage() {
 
   const renderSkillLevelInfo = (targetId: string) => (
     <div className="relative">
-      <button
+      <IconButton
         onClick={() => setSkillLevelInfoTarget(skillLevelInfoTarget === targetId ? null : targetId)}
+        size="sm"
         className="text-text-tertiary hover:text-text-secondary"
         title="Skill level guide"
       >
         <HelpCircle size={16} />
-      </button>
+      </IconButton>
       {skillLevelInfoTarget === targetId && (
         <div className="absolute left-0 sm:left-0 right-auto top-6 z-50 w-72 max-w-[calc(100vw-2rem)] p-3 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg text-xs">
           <p className="font-semibold text-foreground mb-2">Experience Level Guide</p>
@@ -449,7 +453,7 @@ export default function RearingTeamPage() {
             <li><span className="font-medium text-foreground">Intermediate</span> — had some queen rearing experience prior to joining group</li>
             <li><span className="font-medium text-foreground">Novice</span> — no queen rearing experience prior to joining group</li>
           </ul>
-          <button onClick={() => setSkillLevelInfoTarget(null)} className="mt-2 text-amber-600 hover:text-amber-700 font-medium">Close</button>
+          <Button onClick={() => setSkillLevelInfoTarget(null)} tone="amber" size="xs" className="mt-2">Close</Button>
         </div>
       )}
     </div>
@@ -477,13 +481,13 @@ export default function RearingTeamPage() {
             <Crown size={24} className="text-amber-600" />
             <h2 className="text-xl font-semibold text-foreground">Queen Rearing Groups</h2>
           </div>
-          <button
+          <Button
             onClick={() => setShowCreateRgModal(true)}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2 font-medium"
+            tone="success"
           >
             <Plus size={16} />
             Create Group
-          </button>
+          </Button>
         </div>
 
         <p className="text-sm text-text-tertiary mb-6">
@@ -511,7 +515,7 @@ export default function RearingTeamPage() {
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <button
+                          <Button
                             onClick={() => {
                               if (expandedRgId === group.id) {
                                 setExpandedRgId(null)
@@ -522,53 +526,58 @@ export default function RearingTeamPage() {
                                 fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
+                            tone="neutral"
+                            size="xs"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedRgId === group.id ? 'Hide' : 'View'} Members</span>
                             <span className="sm:hidden">Members</span>
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => {
                               setSelectedRg(group)
                               setShowInviteRgModal(true)
                               fetchRearingGroupDetails(group.id)
                             }}
-                            className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                            tone="success"
+                            size="xs"
                           >
                             <UserPlus size={14} />
                             Invite
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => {
                               setSelectedRg(group)
                               setRenameRgName(group.name)
                               setShowRenameRgModal(true)
                             }}
-                            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                            tone="blue"
+                            size="xs"
                           >
                             <Edit2 size={14} />
                             Rename
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => {
                               setSelectedRg(group)
                               setTransferRgTargetUserId('')
                               setShowTransferRgModal(true)
                               fetchRearingGroupDetails(group.id)
                             }}
-                            className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 flex items-center gap-1"
+                            tone="amber"
+                            size="xs"
                           >
                             <Share2 size={14} />
                             Transfer
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleDeleteRg(group.id, group.name)}
-                            className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                            tone="danger"
+                            size="xs"
                           >
                             <Trash2 size={14} />
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </div>
                       <div className="text-sm text-text-tertiary">
@@ -626,14 +635,15 @@ export default function RearingTeamPage() {
                                       <option value="novice">Novice</option>
                                     </select>
                                     {member.role !== 'owner' && (
-                                      <button
+                                      <Button
                                         onClick={() => handleRemoveRgMember(member.id, member.user_email || 'this member')}
-                                        className="px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                        tone="danger"
+                                        size="xs"
                                         title="Remove member"
                                       >
                                         <Trash2 size={12} />
                                         Remove
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                 </div>
@@ -679,14 +689,16 @@ export default function RearingTeamPage() {
                                           Pending
                                         </span>
                                       </div>
-                                      <button
+                                      <Button
                                         onClick={() => handleCancelRgInvitation(invitation.id, invitation.email)}
-                                        className="ml-3 px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 flex items-center gap-1 border border-red-300 dark:border-red-700"
+                                        tone="danger"
+                                        size="xs"
+                                        className="ml-3"
                                         title="Cancel invitation"
                                       >
                                         <X size={12} />
                                         Cancel
-                                      </button>
+                                      </Button>
                                     </div>
                                   )
                                 })}
@@ -712,7 +724,7 @@ export default function RearingTeamPage() {
                                       title={invitation.email}
                                       titleClassName="text-foreground"
                                       bodyClassName="text-xs text-text-tertiary"
-                                      endSlot={<span className="fj-badge fj-badge-green">Accepted</span>}
+                                      endSlot={<Badge tone="green">Accepted</Badge>}
                                       endSlotClassName="self-center"
                                     >
                                       <div className="flex items-center gap-2">
@@ -748,7 +760,7 @@ export default function RearingTeamPage() {
                                       title={invitation.email}
                                       titleClassName="text-foreground"
                                       bodyClassName="text-xs text-text-tertiary"
-                                      endSlot={<span className="fj-badge fj-badge-red">Declined</span>}
+                                      endSlot={<Badge tone="red">Declined</Badge>}
                                       endSlotClassName="self-center"
                                     >
                                       <div className="flex items-center gap-2">
@@ -783,12 +795,12 @@ export default function RearingTeamPage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{group.name}</h4>
-                          <span className="px-2 py-1 bg-sage-100 dark:bg-slate-800 text-text-primary text-xs rounded font-medium capitalize">
+                          <span className="px-2 py-1 bg-surface-secondary text-text-primary text-xs rounded font-medium capitalize">
                             {group.user_role}
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <button
+                          <Button
                             onClick={() => {
                               if (expandedMemberRgId === group.id) {
                                 setExpandedMemberRgId(null)
@@ -799,18 +811,20 @@ export default function RearingTeamPage() {
                                 fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
                               }
                             }}
-                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary rounded hover:bg-sage-300 dark:hover:bg-slate-700 flex items-center gap-1"
+                            tone="neutral"
+                            size="xs"
                           >
                             <Users size={14} />
                             <span className="hidden sm:inline">{expandedMemberRgId === group.id ? 'Hide' : 'View'} Members</span>
                             <span className="sm:hidden">Members</span>
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleLeaveRg(group.id, group.name)}
-                            className="px-3 py-1.5 text-sm bg-sage-200 dark:bg-slate-700 text-text-primary border border-border rounded hover:bg-sage-300 dark:hover:bg-slate-600"
+                            tone="neutral"
+                            size="xs"
                           >
                             Leave Group
-                          </button>
+                          </Button>
                         </div>
                         {group.membership_id && (() => {
                           const membershipId = group.membership_id
@@ -885,12 +899,12 @@ export default function RearingTeamPage() {
               <div className="text-center py-12 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <Crown size={48} className="mx-auto text-text-tertiary mb-3" />
                 <p className="text-text-tertiary mb-4">You haven&apos;t created or joined any rearing groups yet.</p>
-                <button
+                <Button
                   onClick={() => setShowCreateRgModal(true)}
-                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+                  tone="success"
                 >
                   Create Your First Rearing Group
-                </button>
+                </Button>
               </div>
             )}
 
@@ -904,9 +918,9 @@ export default function RearingTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Create New Rearing Group</h3>
-              <button onClick={() => { setShowCreateRgModal(false); setNewRgName('') }} className="text-text-tertiary hover:text-text-secondary">
+              <IconButton onClick={() => { setShowCreateRgModal(false); setNewRgName('') }} size="sm" className="text-text-tertiary hover:text-text-secondary">
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
             <p className="text-sm text-text-tertiary mb-4">
               Give your rearing group a name. You&apos;ll be able to invite members after creating the group.
@@ -925,17 +939,18 @@ export default function RearingTeamPage() {
               />
             </div>
             <div className="flex justify-end gap-3">
-              <button
+              <Button
                 onClick={() => { setShowCreateRgModal(false); setNewRgName('') }}
-                className="px-4 py-2 text-text-secondary border border-border rounded-lg hover:bg-sage-50 dark:bg-surface dark:bg-surface-elevated/50"
+                tone="neutral"
                 disabled={creatingRg}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateRg}
                 disabled={creatingRg || !newRgName.trim()}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2"
+                tone="success"
+                className="disabled:cursor-not-allowed"
               >
                 {creatingRg ? (
                   <>
@@ -945,7 +960,7 @@ export default function RearingTeamPage() {
                 ) : (
                   'Create Group'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -957,12 +972,13 @@ export default function RearingTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Manage Group: {selectedRg.name}</h3>
-              <button
+              <IconButton
                 onClick={() => { setShowInviteRgModal(false); setSelectedRg(null); setRgInviteEmail('') }}
+                size="sm"
                 className="text-text-tertiary hover:text-text-secondary"
               >
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
 
             {/* Invite New Member Section */}
@@ -982,10 +998,11 @@ export default function RearingTeamPage() {
                   placeholder="email@example.com"
                   className="flex-1 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
-                <button
+                <Button
                   onClick={handleSendRgInvite}
                   disabled={sendingRgInvite || !rgInviteEmail.trim()}
-                  className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-surface-elevated dark:disabled:bg-surface-elevated disabled:text-text-tertiary disabled:cursor-not-allowed flex items-center gap-2"
+                  tone="success"
+                  className="disabled:cursor-not-allowed"
                 >
                   {sendingRgInvite ? (
                     <>
@@ -998,7 +1015,7 @@ export default function RearingTeamPage() {
                       Invite
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1027,12 +1044,13 @@ export default function RearingTeamPage() {
                           {member.role}
                         </span>
                         {member.role !== 'owner' && (
-                          <button
+                          <Button
                             onClick={() => handleRemoveRgMember(member.id, member.user_email || 'Unknown')}
-                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                            tone="danger"
+                            size="xs"
                           >
                             Remove
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -1057,12 +1075,13 @@ export default function RearingTeamPage() {
                       titleClassName="text-foreground"
                       bodyClassName="text-xs text-text-tertiary"
                       endSlot={
-                        <button
+                        <Button
                           onClick={() => handleCancelRgInvitation(invitation.id, invitation.email)}
-                          className="fj-btn fj-btn-neutral fj-btn-xs"
+                          tone="neutral"
+                          size="xs"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       }
                       endSlotClassName="self-center"
                     >
@@ -1077,12 +1096,12 @@ export default function RearingTeamPage() {
             )}
 
             <div className="mt-6 flex justify-end">
-              <button
+              <Button
                 onClick={() => { setShowInviteRgModal(false); setSelectedRg(null); setRgInviteEmail('') }}
-                className="px-6 py-2.5 bg-surface-elevated dark:bg-surface-elevated text-foreground border border-border rounded-lg hover:bg-surface dark:hover:bg-surface font-medium"
+                tone="neutral"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1094,9 +1113,9 @@ export default function RearingTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Rename Rearing Group</h3>
-              <button onClick={() => { setShowRenameRgModal(false); setSelectedRg(null); setRenameRgName('') }} className="text-text-tertiary hover:text-text-secondary">
+              <IconButton onClick={() => { setShowRenameRgModal(false); setSelectedRg(null); setRenameRgName('') }} size="sm" className="text-text-tertiary hover:text-text-secondary">
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -1113,16 +1132,19 @@ export default function RearingTeamPage() {
               />
             </div>
             <div className="flex gap-3">
-              <button
+              <Button
                 onClick={() => { setShowRenameRgModal(false); setSelectedRg(null); setRenameRgName('') }}
-                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                tone="neutral"
+                fullWidth
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleRenameRg}
                 disabled={renamingRg || !renameRgName.trim()}
-                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                tone="success"
+                fullWidth
+                className="disabled:cursor-not-allowed"
               >
                 {renamingRg ? (
                   <>
@@ -1135,7 +1157,7 @@ export default function RearingTeamPage() {
                     Rename Group
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1147,9 +1169,9 @@ export default function RearingTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Transfer Ownership</h3>
-              <button onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId('') }} className="text-text-tertiary hover:text-text-secondary">
+              <IconButton onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId('') }} size="sm" className="text-text-tertiary hover:text-text-secondary">
                 <X size={24} />
-              </button>
+              </IconButton>
             </div>
             <p className="text-sm text-text-secondary mb-4">
               Transfer ownership of <span className="font-semibold text-foreground">{selectedRg.name}</span> to another member. You will become a regular member.
@@ -1180,16 +1202,19 @@ export default function RearingTeamPage() {
               </>
             )}
             <div className="flex gap-3">
-              <button
+              <Button
                 onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId('') }}
-                className="flex-1 px-4 py-2 bg-sage-200 dark:bg-slate-700 text-text-primary rounded-lg hover:bg-sage-300 dark:hover:bg-slate-600"
+                tone="neutral"
+                fullWidth
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleTransferRgOwnership}
                 disabled={transferringRg || !transferRgTargetUserId}
-                className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:bg-sage-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                tone="amber"
+                fullWidth
+                className="disabled:cursor-not-allowed"
               >
                 {transferringRg ? (
                   <>
@@ -1202,7 +1227,7 @@ export default function RearingTeamPage() {
                     Transfer Ownership
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

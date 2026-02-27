@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { X, Flower2, Droplets, CircleDot, Loader2 } from 'lucide-react'
+import IconButton from '@/components/ui/IconButton'
 
 interface VegetationInfo {
   scientific_name: string
@@ -96,9 +97,9 @@ export default function VegetationInfoModal({
             <Flower2 className="w-5 h-5 text-green-600 dark:text-green-400" />
             <h3 className="text-lg font-semibold text-foreground">{vegetationName}</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted/20 text-muted">
+          <IconButton onClick={onClose} size="xs" className="hover:bg-muted/20 text-muted">
             <X className="w-5 h-5" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}

@@ -16,6 +16,7 @@ import {
 import RearingGroupReport from '@/components/rearing-groups/RearingGroupReport'
 import NIHBSMonthlyReturn from '@/components/rearing-groups/NIHBSMonthlyReturn'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
+import Button from '@/components/ui/Button'
 
 type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives' | 'rearing-report' | 'nihbs-returns'
 
@@ -90,18 +91,20 @@ export default function ReportsPage() {
       <nav className="border-b border-border pb-3 no-print">
         <div className="flex flex-wrap gap-2">
           {sections.map((section) => (
-            <button
+            <Button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              tone={effectiveSection === section.id ? 'success' : 'neutral'}
+              size="sm"
+              className={`inline-flex items-center gap-2 ${
                 effectiveSection === section.id
-                  ? 'bg-forest-600 text-white dark:bg-forest-500'
-                  : 'bg-sage-100 dark:bg-slate-700 text-text-secondary hover:bg-sage-200 dark:hover:bg-slate-600'
+                  ? ''
+                  : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
               }`}
             >
               <section.icon size={16} />
               {section.label}
-            </button>
+            </Button>
           ))}
         </div>
       </nav>

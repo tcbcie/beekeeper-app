@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, Pencil, Save, ChevronUp, ChevronDown, Layers } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
+import Button from '@/components/ui/Button'
 
 interface Apiary {
   id: string
@@ -384,23 +385,23 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
 
   // Render function (not a component) so React reconciles <tr> nodes via key, not via component identity
   const renderRecordRow = (record: GDDRecord) => (
-    <tr key={record.id} className="border-b border-border hover:bg-sage-50 dark:hover:bg-slate-700/50">
+    <tr key={record.id} className="border-b border-border hover:bg-surface-secondary">
       <td className="p-3 text-center">
         <div className="flex items-center justify-center gap-1">
-          <button
+          <Button
             onClick={() => handleEdit(record)}
             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
             title="Edit record"
           >
             <Pencil size={16} />
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleDelete(record.id)}
             className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
             title="Delete record"
           >
             <Trash2 size={16} />
-          </button>
+          </Button>
         </div>
       </td>
       <td className="p-3 text-foreground font-medium">{record.year}</td>
@@ -409,7 +410,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
         {groupByVegetation ? (
           <span>{record.dropdown_values?.value || '-'}</span>
         ) : (
-          <button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</button>
+          <Button type="button" className="hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</Button>
         )}
       </td>
       <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
@@ -420,7 +421,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
         {record.gdd_value !== null ? (
           <span className="font-semibold text-forest-700 dark:text-forest-400">{record.gdd_value}</span>
         ) : (
-          <button
+          <Button
             onClick={() => {
               const apiary = apiaries.find(a => a.id === record.apiary_id)
               if (apiary?.latitude && apiary?.longitude) {
@@ -438,21 +439,21 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
               <RefreshCw size={14} />
             )}
             Calculate
-          </button>
+          </Button>
         )}
       </td>
       <td className="p-3 text-center">
-        <button
+        <Button
           onClick={() => toggleSharing(record.id, record.is_shared)}
           className={`p-1.5 rounded-full transition-colors ${
             record.is_shared
               ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+              : 'bg-surface-secondary text-text-tertiary'
           }`}
           title={record.is_shared ? 'Sharing enabled' : 'Sharing disabled'}
         >
           <Share2 size={16} />
-        </button>
+        </Button>
       </td>
     </tr>
   )
@@ -473,26 +474,26 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
           GDD Tracker
         </h3>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => setGroupByVegetation(prev => !prev)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border text-sm ${
               groupByVegetation
                 ? 'bg-forest-100 dark:bg-forest-900/30 border-forest-300 dark:border-forest-700 text-forest-700 dark:text-forest-300'
-                : 'bg-surface border-border text-text-secondary hover:bg-sage-100 dark:hover:bg-slate-700'
+                : 'bg-surface border-border text-text-secondary hover:bg-surface-elevated'
             }`}
             title="Group by vegetation"
           >
             <Layers size={16} />
             <span className="hidden sm:inline">Group by Vegetation</span>
-          </button>
+          </Button>
           {!showForm && (
-            <button
+            <Button
               onClick={() => setShowForm(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-forest-600 hover:bg-forest-700 text-white"
             >
               <Plus size={18} />
               Add Record
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -585,7 +586,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
               id="share-data"
               checked={isShared}
               onChange={(e) => setIsShared(e.target.checked)}
-              className="mt-1 h-4 w-4 text-forest-600 rounded border-gray-300"
+              className="mt-1 h-4 w-4 text-forest-600 rounded border-border"
             />
             <div>
               <label htmlFor="share-data" className="font-medium text-amber-900 dark:text-amber-100 cursor-pointer">
@@ -598,33 +599,33 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
           </div>
 
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={handleSave}
               disabled={saving}
               className="flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 transition-colors"
             >
               {saving ? <Loader2 size={18} className="animate-spin" /> : editingId ? <Save size={18} /> : <Plus size={18} />}
               {editingId ? 'Update Record' : 'Save Record'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={resetForm}
-              className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-sage-100 dark:hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 border border-border text-foreground rounded-lg hover:bg-surface-elevated transition-colors"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Records Table */}
       {records.length > 0 ? (
-        <div className="overflow-x-auto bg-white dark:bg-slate-900 rounded-lg border border-border">
+        <div className="overflow-x-auto bg-surface-elevated rounded-lg border border-border">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-sage-100 dark:bg-slate-800 border-b border-border">
+              <tr className="bg-surface-secondary border-b border-border">
                 <th className="text-center p-3 text-sm font-semibold text-foreground w-20">Actions</th>
                 <th
-                  className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-sage-200 dark:hover:bg-slate-700 transition-colors group"
+                  className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-surface-elevated transition-colors group"
                   onClick={() => handleSort('year')}
                 >
                   <span className="flex items-center gap-1">Year <SortIndicator column="year" /></span>
@@ -632,14 +633,14 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Apiary</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Vegetation</th>
                 <th
-                  className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-sage-200 dark:hover:bg-slate-700 transition-colors group"
+                  className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-surface-elevated transition-colors group"
                   onClick={() => handleSort('start_date')}
                 >
                   <span className="flex items-center gap-1">Bloom Date <SortIndicator column="start_date" /></span>
                 </th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">End</th>
                 <th
-                  className="text-right p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-sage-200 dark:hover:bg-slate-700 transition-colors group"
+                  className="text-right p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-surface-elevated transition-colors group"
                   onClick={() => handleSort('gdd_value')}
                 >
                   <span className="flex items-center justify-end gap-1">GDD <SortIndicator column="gdd_value" /></span>
@@ -653,7 +654,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                   <Fragment key={`group-${group.name}`}>
                     <tr className="bg-forest-50 dark:bg-forest-900/20">
                       <td colSpan={8} className="p-3">
-                        <button
+                        <Button
                           type="button"
                           className="font-semibold text-forest-700 dark:text-forest-300 hover:text-green-700 dark:hover:text-green-400 hover:underline cursor-pointer flex items-center gap-2"
                           onClick={() => {
@@ -667,7 +668,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                         >
                           <Layers size={14} />
                           {group.name} ({group.records.length} {group.records.length === 1 ? 'record' : 'records'})
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                     {group.records.map(renderRecordRow)}
@@ -701,3 +702,4 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     </div>
   )
 }
+

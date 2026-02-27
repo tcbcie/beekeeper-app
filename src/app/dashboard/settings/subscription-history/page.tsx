@@ -5,6 +5,8 @@ import { ArrowLeft, Search, Calendar, CreditCard, Euro, ExternalLink } from 'luc
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
+import TextLink from '@/components/ui/TextLink'
 
 interface SubscriptionHistoryRecord {
   id: string
@@ -137,19 +139,21 @@ export default function SubscriptionHistoryPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <button
+          <Button
             onClick={() => router.push('/dashboard/settings?section=users')}
-            className="flex items-center gap-2 text-text-secondary hover:text-foreground mb-4"
+            tone="neutral"
+            size="sm"
+            className="mb-4 inline-flex items-center gap-2"
           >
             <ArrowLeft size={20} />
             Back to User Management
-          </button>
+          </Button>
           <h1 className="text-3xl font-bold text-foreground">Subscription History</h1>
           <p className="text-text-secondary mt-2">View all subscription activations and payments</p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-surface border border-border rounded-lg shadow-sm p-6 mb-6">
           <div className="space-y-4">
             {/* Search Bar */}
             <div className="relative">
@@ -159,7 +163,7 @@ export default function SubscriptionHistoryPage() {
                 placeholder="Search by email, code, or transaction ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent"
+                className="w-full fj-control pl-10 pr-4"
               />
             </div>
 
@@ -171,7 +175,7 @@ export default function SubscriptionHistoryPage() {
                 <select
                   value={paymentMethodFilter}
                   onChange={(e) => setPaymentMethodFilter(e.target.value as 'all' | 'credit_card' | 'registration_code')}
-                  className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent"
+                  className="fj-control"
                 >
                   <option value="all">All Payment Methods</option>
                   <option value="credit_card">Credit Card</option>
@@ -185,7 +189,7 @@ export default function SubscriptionHistoryPage() {
                 <select
                   value={dateRangeFilter}
                   onChange={(e) => setDateRangeFilter(e.target.value as 'all' | '30days' | '90days' | '1year')}
-                  className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-transparent"
+                  className="fj-control"
                 >
                   <option value="all">All Time</option>
                   <option value="30days">Last 30 Days</option>
@@ -208,7 +212,7 @@ export default function SubscriptionHistoryPage() {
             <LoadingSpinner />
           </div>
         ) : filteredRecords.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-surface border border-border rounded-lg shadow-sm p-12 text-center">
             <p className="text-text-tertiary">
               {subscriptionHistory.length === 0
                 ? 'No subscription history records found.'
@@ -216,7 +220,7 @@ export default function SubscriptionHistoryPage() {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-surface border border-border rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-surface dark:bg-background border-b border-border">
@@ -244,9 +248,9 @@ export default function SubscriptionHistoryPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-surface divide-y divide-border">
                   {filteredRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-surface dark:bg-background">
+                    <tr key={record.id} className="hover:bg-surface-secondary">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                         {record.user_email}
                       </td>
@@ -287,14 +291,12 @@ export default function SubscriptionHistoryPage() {
                             <code className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
                               {record.stripe_payment_intent_id.slice(0, 20)}...
                             </code>
-                            <a
+                            <TextLink
                               href={`https://dashboard.stripe.com/payments/${record.stripe_payment_intent_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800"
+                              external
                             >
                               <ExternalLink size={14} />
-                            </a>
+                            </TextLink>
                           </div>
                         ) : (
                           <span className="text-text-tertiary text-xs">-</span>

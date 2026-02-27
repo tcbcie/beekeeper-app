@@ -13,6 +13,11 @@ import ModalShell from '@/components/ui/ModalShell'
 import FormActionRow from '@/components/ui/FormActionRow'
 import { RadioChoiceGroup, RadioChoiceOption } from '@/components/ui/RadioChoiceGroup'
 import InfoPanel from '@/components/ui/InfoPanel'
+import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import Badge from '@/components/ui/Badge'
+import Card from '@/components/ui/Card'
+import Surface from '@/components/ui/Surface'
 
 interface RegistrationCode {
   id: string
@@ -257,31 +262,31 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
   }
 
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow">
+    <Card padding="none">
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="fj-panel-purple p-3">
+            <Surface tone="purple" padded="sm" elevated={false}>
               <Shield size={24} className="text-purple-700 dark:text-purple-300" />
-            </div>
+            </Surface>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-foreground">Subscription Codes</h2>
-                <span className="fj-badge fj-badge-purple gap-1">
+                <Badge tone="purple" className="gap-1">
                   <Shield size={12} />
                   Admin Only
-                </span>
+                </Badge>
               </div>
               <p className="text-sm text-text-tertiary">Manage codes for new user registration and subscription renewals</p>
             </div>
           </div>
-          <button
+          <Button
             onClick={() => setShowAddModal(true)}
-            className="fj-btn fj-btn-success"
+            tone="success"
           >
             <Plus size={16} />
             Add Code
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -333,14 +338,10 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                       </td>
                       <td className="px-4 py-4 text-sm text-text-tertiary">
                         {code.code_type === 'individual' ? (
-                          <span className="fj-badge fj-badge-blue">
-                            Individual
-                          </span>
+                          <Badge tone="blue">Individual</Badge>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            <span className="fj-badge fj-badge-purple">
-                              Association
-                            </span>
+                            <Badge tone="purple">Association</Badge>
                             {code.association && (
                               <span className="text-xs text-text-tertiary">
                                 {code.association.name}
@@ -387,66 +388,73 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                           <div className="flex items-center gap-2">
                             <span>{code.current_uses} / {code.max_uses === null ? 'Unlimited' : code.max_uses}</span>
                             {isMaxedOut && (
-                              <span className="fj-badge fj-badge-amber">Maxed</span>
+                              <Badge tone="amber">Maxed</Badge>
                             )}
                           </div>
                         )}
                       </td>
                       <td className="px-4 py-4 text-sm">
-                        <span className={`fj-badge ${
-                          code.is_active && !isMaxedOut
-                            ? 'fj-badge-green'
-                            : isMaxedOut
-                              ? 'fj-badge-amber'
-                              : 'fj-badge-neutral'
-                        }`}>
+                        <Badge
+                          tone={
+                            code.is_active && !isMaxedOut
+                              ? 'green'
+                              : isMaxedOut
+                                ? 'amber'
+                                : 'neutral'
+                          }
+                        >
                           {code.is_active ? (isMaxedOut ? 'Maxed Out' : 'Active') : 'Disabled'}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="px-4 py-4 text-sm">
                         {editingCodeId === code.id ? (
                           <div className="flex items-center gap-2">
-                            <button
+                            <Button
                               onClick={() => handleSaveCodeEdit(code.id)}
-                              className="fj-btn fj-btn-success fj-btn-xs"
+                              tone="success"
+                              size="xs"
                               title="Save changes"
                             >
                               <Check size={14} />
                               Save
-                            </button>
-                            <button
+                            </Button>
+                            <IconButton
                               onClick={handleCancelCodeEdit}
-                              className="fj-icon-btn fj-icon-btn-xs"
+                              size="xs"
                               title="Cancel editing"
+                              aria-label="Cancel editing"
                             >
                               <X size={14} />
-                            </button>
+                            </IconButton>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <button
+                            <IconButton
                               onClick={() => handleEditCode(code)}
-                              className="fj-icon-btn fj-icon-btn-blue fj-icon-btn-xs"
+                              tone="blue"
+                              size="xs"
                               title="Edit code"
+                              aria-label="Edit code"
                             >
                               <Edit size={14} />
-                            </button>
-                            <button
+                            </IconButton>
+                            <Button
                               onClick={() => handleToggleCodeActive(code.id, code.is_active)}
-                              className={`fj-btn fj-btn-xs ${
-                                code.is_active ? 'fj-btn-amber' : 'fj-btn-success'
-                              }`}
+                              tone={code.is_active ? 'amber' : 'success'}
+                              size="xs"
                               title={code.is_active ? 'Deactivate code' : 'Activate code'}
                             >
                               {code.is_active ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button
+                            </Button>
+                            <IconButton
                               onClick={() => handleDeleteCode(code.id, code.code)}
-                              className="fj-icon-btn fj-icon-btn-danger fj-icon-btn-xs"
+                              tone="danger"
+                              size="xs"
                               title="Delete code"
+                              aria-label="Delete code"
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </IconButton>
                           </div>
                         )}
                       </td>
@@ -584,71 +592,77 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                 />
                 <p className="mt-1 text-xs text-text-tertiary">Fixed date when subscriptions activated with this code will expire</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => {
                       const date = new Date()
                       date.setMonth(date.getMonth() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="fj-btn fj-btn-neutral fj-btn-xs"
+                    tone="neutral"
+                    size="xs"
                   >
                     +1 month
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => {
                       const date = new Date()
                       date.setMonth(date.getMonth() + 6)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="fj-btn fj-btn-neutral fj-btn-xs"
+                    tone="neutral"
+                    size="xs"
                   >
                     +6 months
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => {
                       const date = new Date()
                       date.setFullYear(date.getFullYear() + 1)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="fj-btn fj-btn-neutral fj-btn-xs"
+                    tone="neutral"
+                    size="xs"
                   >
                     +1 year
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => {
                       const date = new Date()
                       date.setFullYear(date.getFullYear() + 100)
                       setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
                     }}
-                    className="fj-btn fj-btn-purple fj-btn-xs"
+                    tone="purple"
+                    size="xs"
                   >
                     Lifetime
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <FormActionRow className="pt-2">
-                <button
+                <Button
                   type="button"
                   onClick={closeAddModal}
-                  className="fj-btn fj-btn-neutral flex-1"
+                  tone="neutral"
+                  fullWidth
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="fj-btn fj-btn-success flex-1"
+                  tone="success"
+                  fullWidth
                 >
                   Create Code
-                </button>
+                </Button>
               </FormActionRow>
           </form>
         </ModalShell>
       )}
-    </div>
+    </Card>
   )
 }

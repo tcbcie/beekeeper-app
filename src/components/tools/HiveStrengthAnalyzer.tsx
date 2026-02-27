@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { analyzeHivePerformance, InspectionData } from '@/lib/tool-calculations'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 interface Hive {
   id: string
@@ -105,7 +106,7 @@ export function HiveStrengthAnalyzer() {
           <select
             value={selectedHive}
             onChange={(e) => setSelectedHive(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-sage-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+            className="w-full px-4 py-2 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
           >
             <option value="">Choose a hive...</option>
             {hives.map(hive => (
@@ -123,17 +124,19 @@ export function HiveStrengthAnalyzer() {
           </label>
           <div className="grid grid-cols-4 gap-2">
             {[30, 60, 90, 180].map(days => (
-              <button
+              <Button
                 key={days}
                 onClick={() => setDateRange(days)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                size="sm"
+                tone={dateRange === days ? 'blue' : 'neutral'}
+                className={`${
                   dateRange === days
-                    ? 'bg-forest-600 dark:bg-forest-700 text-white'
-                    : 'bg-sage-100 dark:bg-slate-800 text-foreground hover:bg-sage-200 dark:hover:bg-slate-700'
+                    ? ''
+                    : 'bg-surface-secondary hover:bg-surface-elevated'
                 }`}
               >
                 {days}d
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -148,21 +151,21 @@ export function HiveStrengthAnalyzer() {
         <>
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-sage-300 dark:border-slate-700">
+            <div className="bg-surface-elevated p-4 rounded-lg border border-border">
               <div className="text-sm text-text-secondary mb-1">Avg Population</div>
               <div className="text-2xl font-bold text-foreground">
                 {analysis.avgPopulation.toFixed(1)}<span className="text-lg text-text-secondary">/5</span>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-sage-300 dark:border-slate-700">
+            <div className="bg-surface-elevated p-4 rounded-lg border border-border">
               <div className="text-sm text-text-secondary mb-1">Avg Brood</div>
               <div className="text-2xl font-bold text-foreground">
                 {analysis.avgBrood.toFixed(1)}<span className="text-lg text-text-secondary">/5</span>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-sage-300 dark:border-slate-700">
+            <div className="bg-surface-elevated p-4 rounded-lg border border-border">
               <div className="text-sm text-text-secondary mb-1">Trend</div>
               <div className="flex items-center gap-2 mt-1">
                 {getTrendIcon()}
@@ -172,7 +175,7 @@ export function HiveStrengthAnalyzer() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-sage-300 dark:border-slate-700">
+            <div className="bg-surface-elevated p-4 rounded-lg border border-border">
               <div className="text-sm text-text-secondary mb-1">Overall Score</div>
               <div className={`text-2xl font-bold ${getScoreColor(analysis.overallScore)}`}>
                 {analysis.overallScore}<span className="text-lg">/100</span>
@@ -181,14 +184,14 @@ export function HiveStrengthAnalyzer() {
           </div>
 
           {/* Inspection Count */}
-          <div className="bg-sage-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <div className="bg-surface-secondary p-4 rounded-lg">
             <div className="text-sm text-text-secondary">
               Analysis based on <strong>{inspectionData.length} inspections</strong> over the last {dateRange} days
             </div>
           </div>
 
           {/* Recommendations */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-sage-300 dark:border-slate-700">
+          <div className="bg-surface-elevated p-6 rounded-lg border border-border">
             <h4 className="font-semibold text-lg mb-4 text-foreground">Analysis & Recommendations</h4>
             <ul className="space-y-2">
               {analysis.recommendations.map((rec, i) => (
@@ -210,7 +213,7 @@ export function HiveStrengthAnalyzer() {
           </p>
         </div>
       ) : (
-        <div className="bg-sage-50 dark:bg-slate-800/50 p-8 rounded-lg text-center">
+        <div className="bg-surface-secondary p-8 rounded-lg text-center">
           <p className="text-text-secondary">
             Select a hive above to view strength analysis and recommendations
           </p>

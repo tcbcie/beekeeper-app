@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { InvitationLoadingShell, InvitationResponseShell } from '@/components/invitations/InvitationResponseShell'
+import Button from '@/components/ui/Button'
 
 function AcceptInvitationContent() {
   const searchParams = useSearchParams()
@@ -200,12 +201,12 @@ function AcceptInvitationContent() {
               <AlertCircle size={64} className="mx-auto text-blue-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Already a Member</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <button
+              <Button
                 onClick={() => router.push('/dashboard')}
-                className="fj-btn fj-btn-blue"
+                tone="blue"
               >
                 Go to Dashboard
-              </button>
+              </Button>
             </>
           )}
 
@@ -228,18 +229,20 @@ function AcceptInvitationContent() {
                 Important: You must use the email address <strong>{invitedEmail}</strong> when signing up.
               </p>
               <div className="space-y-3">
-                <button
+                <Button
                   onClick={() => router.push(`/login?signup=true&email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
-                  className="fj-btn fj-btn-blue w-full"
+                  tone="blue"
+                  fullWidth
                 >
                   Sign Up
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
-                  className="fj-btn w-full border border-border bg-surface text-foreground hover:bg-surface-elevated dark:bg-surface-elevated"
+                  tone="neutral"
+                  fullWidth
                 >
                   Already have an account? Sign In
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -252,12 +255,12 @@ function AcceptInvitationContent() {
               <p className="text-sm text-text-tertiary mb-4">
                 Please contact the team owner to send you a new invitation.
               </p>
-              <button
+              <Button
                 onClick={() => router.push('/dashboard')}
-                className="fj-btn fj-btn-blue"
+                tone="blue"
               >
                 Go to Dashboard
-              </button>
+              </Button>
             </>
           )}
 
@@ -266,12 +269,12 @@ function AcceptInvitationContent() {
               <XCircle size={64} className="mx-auto text-red-500 mb-4" />
               <h1 className="text-2xl font-bold text-foreground mb-2">Error</h1>
               <p className="text-text-secondary mb-4">{message}</p>
-              <button
+              <Button
                 onClick={() => router.push('/dashboard')}
-                className="fj-btn fj-btn-blue"
+                tone="blue"
               >
                 Go to Dashboard
-              </button>
+              </Button>
             </>
           )}
       </div>

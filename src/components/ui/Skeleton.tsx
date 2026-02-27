@@ -11,7 +11,7 @@ interface SkeletonProps {
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
     <div
-      className={`bg-sage-100 dark:bg-slate-800 rounded animate-shimmer ${className}`}
+      className={`bg-surface-secondary rounded animate-shimmer ${className}`}
       aria-hidden="true"
     />
   )

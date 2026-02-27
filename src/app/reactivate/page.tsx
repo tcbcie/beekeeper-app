@@ -10,6 +10,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import PageShell from '@/components/ui/PageShell'
 import Panel from '@/components/ui/Panel'
 import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import TextLink from '@/components/ui/TextLink'
 
 function ReactivateForm() {
   const searchParams = useSearchParams()
@@ -125,13 +127,15 @@ function ReactivateForm() {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={status === 'loading' || !email}
-                className="fj-btn w-full bg-amber-600 text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                tone="amber"
+                fullWidth
+                className="disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {status === 'loading' ? 'Submitting...' : 'Submit Reactivation Request'}
-              </button>
+              </Button>
             </form>
 
             <Panel padding="sm" className="border-border/80 bg-surface/60">
@@ -147,9 +151,9 @@ function ReactivateForm() {
               </Link>
               <p className="text-sm text-text-tertiary">
                 Need help?{' '}
-                <a href="mailto:support@tcbc.ie" className="text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200">
+                <TextLink href="mailto:support@tcbc.ie">
                   support@tcbc.ie
-                </a>
+                </TextLink>
               </p>
             </div>
           </div>

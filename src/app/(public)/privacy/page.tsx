@@ -16,6 +16,7 @@ import type { LucideIcon } from 'lucide-react'
 import AppIcon from '@/components/icons/AppIcon'
 import Panel from '@/components/ui/Panel'
 import PageHeader from '@/components/ui/PageHeader'
+import TextLink from '@/components/ui/TextLink'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy - HiveCraic',
@@ -203,10 +204,10 @@ export default function PrivacyPage() {
         <p className="mb-6 text-text-secondary">
           If you have questions or concerns about this privacy policy, please contact us.
         </p>
-        <a href="mailto:support@tcbc.ie" className="fj-btn bg-forest-600 text-white hover:bg-forest-700">
+        <TextLink href="mailto:support@tcbc.ie" className="fj-btn fj-btn-success">
           <Mail className="h-4 w-4" />
           support@tcbc.ie
-        </a>
+        </TextLink>
       </Panel>
     </div>
   )

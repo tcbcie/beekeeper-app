@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MessageCircle, X } from 'lucide-react'
 import ChatDialog from './ChatDialog'
+import IconButton from '@/components/ui/IconButton'
 
 export default function ChatButton() {
   const [isOpen, setIsOpen] = useState(false)
@@ -10,13 +11,13 @@ export default function ChatButton() {
   return (
     <>
       {/* Floating Action Button */}
-      <button
+      <IconButton
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed bottom-22 md:bottom-6 right-6 z-40 w-14 h-14 rounded-full
                     shadow-lg hover:shadow-xl transition-all duration-200
                     flex items-center justify-center
                     ${isOpen
-                      ? 'bg-slate-600 dark:bg-slate-700 rotate-0'
+                      ? 'bg-surface-elevated dark:bg-surface-elevated rotate-0'
                       : 'bg-forest-600 dark:bg-forest-600 hover:bg-forest-700'
                     }`}
         aria-label={isOpen ? 'Close Mel' : 'Open Mel'}
@@ -26,7 +27,7 @@ export default function ChatButton() {
         ) : (
           <MessageCircle className="w-6 h-6 text-white" />
         )}
-      </button>
+      </IconButton>
 
       {/* Chat Dialog */}
       <ChatDialog isOpen={isOpen} onClose={() => setIsOpen(false)} />

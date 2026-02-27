@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ChevronDown, ChevronRight, Crown } from 'lucide-react'
+import Button from '@/components/ui/Button'
 
 interface QueenNode {
   id: string
@@ -41,9 +42,9 @@ const getColorClass = (color: string): string => {
     case 'Blue':
       return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800'
     case 'White':
-      return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+      return 'bg-surface-secondary text-text-secondary border-border'
     default:
-      return 'bg-sage-100 dark:bg-slate-800/50 text-text-secondary border-border'
+      return 'bg-surface-secondary text-text-secondary border-border'
   }
 }
 
@@ -206,16 +207,17 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
 
   return (
     <div className="border border-border rounded-lg bg-surface-elevated/50 mt-4">
-      <button
+      <Button
         onClick={onToggle}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-sage-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
+        tone="neutral"
+        className="w-full justify-between px-4 py-3 text-left hover:bg-surface-secondary rounded-lg"
       >
         <span className="font-medium text-foreground flex items-center gap-2">
           <Crown size={16} className="text-amber-500" />
           Queen Lineage
         </span>
         {expanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-      </button>
+      </Button>
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-border">

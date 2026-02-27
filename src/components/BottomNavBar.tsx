@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Menu } from 'lucide-react'
 import { baseNavItems } from '@/lib/navigation'
+import Button from '@/components/ui/Button'
 
 interface BottomNavBarProps {
   onMoreClick: () => void
@@ -61,15 +62,17 @@ export default function BottomNavBar({ onMoreClick }: BottomNavBarProps) {
         </div>
 
         {/* Pinned More button */}
-        <button
+        <Button
           onClick={onMoreClick}
+          tone="neutral"
+          size="xs"
           aria-label="Open menu"
           aria-haspopup="true"
-          className="flex flex-col items-center justify-center gap-1 py-2 px-3 min-h-[48px] min-w-[48px] shrink-0 border-l border-border text-text-tertiary hover:text-foreground transition-colors touch-manipulation"
+          className="flex min-h-[48px] min-w-[48px] shrink-0 flex-col items-center justify-center gap-1 border-l border-border bg-transparent px-3 py-2 text-text-tertiary hover:text-foreground touch-manipulation"
         >
           <Menu size={22} />
           <span className="text-[10px] font-medium leading-none">More</span>
-        </button>
+        </Button>
       </div>
     </nav>
   )

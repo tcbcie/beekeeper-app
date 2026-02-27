@@ -33,7 +33,7 @@ export default function NumberSelector({
             className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
               value === num
                 ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-300'
-                : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+                : 'bg-surface-secondary text-foreground hover:bg-surface-elevated active:bg-surface-elevated'
             }`}
             aria-label={`Select ${num}`}
           >
@@ -45,8 +45,8 @@ export default function NumberSelector({
           onClick={() => onChange(null)}
           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
             value === null
-              ? 'bg-sage-400 dark:bg-slate-500 text-white shadow-lg ring-2 ring-sage-300 dark:ring-slate-400'
-              : 'bg-sage-100 dark:bg-slate-700 text-foreground hover:bg-sage-200 dark:hover:bg-slate-600 active:bg-sage-300 dark:active:bg-slate-500'
+              ? 'bg-forest-600 text-white shadow-lg ring-2 ring-forest-300'
+              : 'bg-surface-secondary text-foreground hover:bg-surface-elevated active:bg-surface-elevated'
           }`}
           aria-label="Clear selection"
         >
