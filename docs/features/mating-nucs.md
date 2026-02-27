@@ -27,6 +27,7 @@ Batch (graft date, mother queen)
 
 ### "Grafted from" Queen Selection
 - Optional dropdown to select which queen the cells were grafted from
+- When a batch is selected in the create/edit form, this field auto-populates with that batch's breeder queen (`mother_queen_id`)
 - Displays queen number in nuc list
 - Helps track lineage when not using batch system
 
