@@ -41,7 +41,7 @@ interface MatingLocationOption {
 
 interface MatingNuc {
  id: string
- nuc_number: string
+ nuc_number: string | null
  reference_code?: string | null
  creation_batch_id?: string | null
  graft_id: string | null
@@ -448,7 +448,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const handleEdit = (nuc: MatingNuc) => {
  setEditingNuc(nuc)
  setFormData({
- nuc_number: nuc.nuc_number,
+ nuc_number: nuc.nuc_number || '',
  batch_id: nuc.batch_id || '',
  graft_id: nuc.graft_id || '',
  queen_id: nuc.queen_id || '',
@@ -461,23 +461,26 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault()
+ const trimmedNucNumber = formData.nuc_number.trim()
 
- // Validate: check no active nuc with same number exists
+ // Validate: check no active nuc with same number exists when a number is provided
+ if (trimmedNucNumber) {
  const { data: existing } = await supabase
  .from('mating_nucs')
  .select('id')
  .eq('user_id', userId)
- .eq('nuc_number', formData.nuc_number)
+ .eq('nuc_number', trimmedNucNumber)
  .is('retired_at', null)
  .maybeSingle()
 
  if (existing && existing.id !== editingNuc?.id) {
- toast.error(`Nuc "${formData.nuc_number}" is already active. Retire it first to reuse this number.`)
+ toast.error(`Nuc "${trimmedNucNumber}" is already active. Retire it first to reuse this number.`)
  return
+ }
  }
 
  const nucData = {
- nuc_number: formData.nuc_number,
+ nuc_number: trimmedNucNumber || null,
  batch_id: formData.batch_id || null,
  graft_id: formData.graft_id || null,
  queen_id: formData.queen_id || null,
@@ -647,14 +650,13 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </h3>
  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div>
- <label className="block text-sm font-medium text-text-secondary mb-1">Nuc Number *</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Nuc Number</label>
  <input
  type="text"
  value={formData.nuc_number}
  onChange={(e) => setFormData({ ...formData, nuc_number: e.target.value })}
  placeholder="e.g., N1, N2, A-01"
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
- required
  />
  </div>
 
