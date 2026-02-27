@@ -1,29 +1,27 @@
-# Task: Queen Rearing Frame Bulk Status Date Fix
+# Task: Frame Bulk Date Picker Default to Today
 **Date:** 27/02/2026
 **Status:** Completed
 
 ## 1. Objective
-Fix frame bulk updates so selecting a bulk status does not immediately save with today’s date, and instead allows picking a date and saving all changes only when clicking `Done`.
+Always pre-populate the frame bulk date picker with the current date when entering frame bulk mode.
 
 ## 2. Impact Analysis
 * **Files to Modify:**
   * `src/hooks/useBatchGrafts.ts`
   * `src/components/batches/BatchGraftsSection.tsx`
-  * `src/components/batches/CellFrame.tsx`
   * `docs/features/queen-rearing.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep the existing frame selection workflow and controls, but convert status/date controls to staged values applied in one save action on `Done`, avoiding any broader redesign of batch, table, or distribution behaviour.
+* **Simplicity Check:** Keep the existing bulk workflow unchanged and only initialise the existing date draft with today's date when bulk mode is entered.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Add staged frame bulk edit state in `useBatchGrafts` (pending status and pending date), plus a single commit handler that applies selected staged fields to selected frame grafts.
-- [x] **Step 2:** Wire `BatchGraftsSection` so the `Done` button commits staged frame edits first (when present) and then exits select mode.
-- [x] **Step 3:** Update `CellFrame` bulk controls to edit staged values only (no immediate DB write on dropdown/date change), and clear drafts when leaving select mode.
-- [x] **Step 4:** Update documentation in `docs/features/queen-rearing.md`.
-- [x] **Step 5:** Prompt user to test the build.
+- [x] **Step 1:** Add a dedicated frame select-mode entry handler in `useBatchGrafts` that sets `selectMode` and initialises `bulkDateDraft` to today when empty.
+- [x] **Step 2:** Update `BatchGraftsSection` to use the new entry handler instead of directly calling `setSelectMode(true)`.
+- [x] **Step 3:** Update documentation in `docs/features/queen-rearing.md`.
+- [x] **Step 4:** Prompt user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** Frame bulk controls (`Change Status` and date input) were wired directly to DB update handlers (`handleBulkStatusChange` / `handleBulkDateChange`), so selecting a status immediately persisted updates and set `status_date` to the current date before the user could pick a date.
-* **Summary of Changes:** Converted frame bulk status/date into staged draft values in `useBatchGrafts`, added `commitFrameBulkChanges()` to persist selected drafts in one update, and changed the `Done` button flow in `BatchGraftsSection` to commit then exit select mode. Updated `CellFrame` bulk controls to controlled draft inputs (no immediate save), and updated queen rearing docs to reflect staged save behaviour.
-* **Notes for User:** Build/tests were not run (per project instruction). Please test in the batch frame UI: select cells, choose status, choose date, then click `Done` to confirm updates only apply at save time.
+* **Root Cause Found (if applicable):** The frame bulk date draft was initialised as empty and only changed after user input, so the bulk date picker had no default value when entering bulk mode.
+* **Summary of Changes:** Added an `enterSelectMode` handler in `useBatchGrafts` to initialise the frame bulk date draft to today's date and reset staged status/date state for each bulk session. Updated `BatchGraftsSection` to call this handler when entering frame bulk mode. Added a guard so default date prefill does not cause accidental save when no real change is staged.
+* **Notes for User:** Build/tests were not run (per project instruction). Please test the frame bulk bar and confirm the date picker is pre-populated with today's date each time you enter bulk mode.

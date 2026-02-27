@@ -35,7 +35,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     }
 
     hook.exitTableSelectMode()
-    hook.setSelectMode(true)
+    hook.enterSelectMode()
   }
 
   if (hook.loading) {

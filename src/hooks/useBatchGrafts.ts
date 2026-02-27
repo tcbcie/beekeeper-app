@@ -34,6 +34,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkStatusDraft, setBulkStatusDraft] = useState('')
   const [bulkDateDraft, setBulkDateDraft] = useState('')
+  const [bulkDateTouched, setBulkDateTouched] = useState(false)
   const [savingFrameBulkEdits, setSavingFrameBulkEdits] = useState(false)
 
   // Table selection state
@@ -334,9 +335,23 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   const selectAll = useCallback(() => setSelectedIds(new Set(grafts.filter(g => FRAME_STATUS_VALUES.includes(g.status)).map((g) => g.id))), [grafts])
   const deselectAll = useCallback(() => setSelectedIds(new Set()), [])
+  const getTodayDate = useCallback(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }, [])
+  const enterSelectMode = useCallback(() => {
+    setSelectMode(true)
+    setBulkStatusDraft('')
+    setBulkDateDraft(getTodayDate())
+    setBulkDateTouched(false)
+  }, [getTodayDate])
   const clearFrameBulkDrafts = useCallback(() => {
     setBulkStatusDraft('')
     setBulkDateDraft('')
+    setBulkDateTouched(false)
   }, [])
   const exitSelectMode = useCallback(() => {
     setSelectMode(false)
@@ -378,6 +393,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   const handleBulkDateChange = useCallback((date: string) => {
     setBulkDateDraft(date)
+    setBulkDateTouched(true)
   }, [])
 
   const commitFrameBulkChanges = useCallback(async (): Promise<'saved' | 'noop' | 'error'> => {
@@ -386,7 +402,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
     const updates: { status?: string; status_date?: string | null } = {}
     if (bulkStatusDraft) updates.status = bulkStatusDraft
-    if (bulkDateDraft) updates.status_date = bulkDateDraft
+    if (bulkDateDraft && (bulkStatusDraft !== '' || bulkDateTouched)) updates.status_date = bulkDateDraft
     if (!updates.status && !updates.status_date) return 'noop'
 
     try {
@@ -408,7 +424,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     } finally {
       setSavingFrameBulkEdits(false)
     }
-  }, [selectedIds, bulkStatusDraft, bulkDateDraft, toast, clearFrameBulkDrafts, fetchGrafts])
+  }, [selectedIds, bulkStatusDraft, bulkDateDraft, bulkDateTouched, toast, clearFrameBulkDrafts, fetchGrafts])
 
   const handleBulkDelete = useCallback(async () => {
     const ids = Array.from(selectedIds)
@@ -564,6 +580,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
     // Frame selection
     toggleSelect,
+    enterSelectMode,
     selectAll,
     deselectAll,
     exitSelectMode,
