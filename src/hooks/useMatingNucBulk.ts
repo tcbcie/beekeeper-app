@@ -26,6 +26,18 @@ export interface MatingNucBulkRun {
   } | null
 }
 
+interface MatingNucBulkRunRow {
+  id: string
+  user_id: string
+  source_rearing_batch_id: string | null
+  mode: string
+  requested_count: number
+  created_count: number
+  notes: string | null
+  created_at: string
+  rearing_batches?: { batch_name: string }[] | { batch_name: string } | null
+}
+
 export interface CreateMatingNucBulkInput {
   userId: string
   sourceBatchId: string
@@ -63,7 +75,25 @@ export function useMatingNucBulk() {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return (data || []) as MatingNucBulkRun[]
+
+    const rows = (data || []) as MatingNucBulkRunRow[]
+    return rows.map((row) => {
+      const relatedBatch = Array.isArray(row.rearing_batches)
+        ? (row.rearing_batches[0] || null)
+        : (row.rearing_batches || null)
+
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        source_rearing_batch_id: row.source_rearing_batch_id,
+        mode: row.mode === 'unnumbered' ? 'unnumbered' : 'numbered',
+        requested_count: row.requested_count,
+        created_count: row.created_count,
+        notes: row.notes,
+        created_at: row.created_at,
+        rearing_batches: relatedBatch ? { batch_name: relatedBatch.batch_name } : null,
+      }
+    })
   }, [])
 
   const fetchAvailableSealedGrafts = useCallback(async (userId: string, sourceBatchId: string): Promise<AvailableSealedGraft[]> => {
