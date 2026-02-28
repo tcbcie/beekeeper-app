@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera, X } from 'lucide-react'
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData } from '@/types/records'
@@ -20,6 +20,13 @@ interface InspectionFormProps {
   fetchingWeather?: boolean
 }
 
+const numberSelectorSelectedClasses = {
+  purple: 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-300',
+  forest: 'bg-forest-600 text-white shadow-lg ring-2 ring-forest-300'
+} as const
+
+type NumberSelectorTheme = keyof typeof numberSelectorSelectedClasses
+
 export default function InspectionForm({
   initialData,
   hives,
@@ -34,6 +41,7 @@ export default function InspectionForm({
   const [formData, setFormData] = useState<InspectionFormData>(initialData || getDefaultInspectionFormData())
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
+  const previousInitialDataRef = useRef<InspectionFormData | null>(initialData)
 
   // Collapsible section states
   const [queenCellsExpanded, setQueenCellsExpanded] = useState(false)
@@ -56,19 +64,26 @@ export default function InspectionForm({
 
   // Update form data when initialData changes
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData)
-      // Find apiary for selected hive
-      const hive = hives.find(h => h.id === initialData.hive_id)
-      if (hive?.apiary_id) {
-        setFormApiaryId(hive.apiary_id)
+    if (!initialData) {
+      if (previousInitialDataRef.current) {
+        setFormData(getDefaultInspectionFormData())
+        setFormApiaryId('')
+        resetImage()
       }
-      // Set image preview
-      if (initialData.image_url) {
-        setPreviewFromUrl(initialData.image_url)
-      }
+      previousInitialDataRef.current = null
+      return
     }
-  }, [initialData, hives, setPreviewFromUrl])
+
+    setFormData(initialData)
+    const hive = hives.find(h => h.id === initialData.hive_id)
+    setFormApiaryId(hive?.apiary_id ?? '')
+    if (initialData.image_url) {
+      setPreviewFromUrl(initialData.image_url)
+    } else {
+      resetImage()
+    }
+    previousInitialDataRef.current = initialData
+  }, [initialData, hives, setPreviewFromUrl, resetImage])
 
   const handleHiveSelect = async (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))
@@ -107,6 +122,7 @@ export default function InspectionForm({
           unstyled
           type="button"
           onClick={() => onChange(0)}
+          aria-label={`Clear ${label} rating`}
           className="min-h-[32px] px-3 rounded-md border border-border bg-surface-elevated text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
         >
           Clear
@@ -119,13 +135,15 @@ export default function InspectionForm({
             key={star}
             type="button"
             onClick={() => onChange(star)}
+            aria-label={`${label}: ${star} star${star === 1 ? '' : 's'}`}
+            aria-pressed={value === star}
             className={`min-h-[40px] min-w-[40px] rounded-lg text-xl transition-all ${
               value >= star
                 ? 'bg-yellow-400 text-white'
                 : 'bg-surface-elevated border border-border hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
             }`}
           >
-            ★
+            {'\u2605'}
           </Button>
         ))}
       </div>
@@ -133,7 +151,7 @@ export default function InspectionForm({
   ), [])
 
   // Render number selector (1-10)
-  const renderNumberSelector = useCallback((value: number | null, onChange: (val: number | null) => void, label: string, color: string = 'purple') => (
+  const renderNumberSelector = useCallback((value: number | null, onChange: (val: number | null) => void, label: string, color: NumberSelectorTheme = 'purple') => (
     <div className="mb-4">
       <label className="block text-sm font-medium text-text-secondary mb-3">
         {label} {value !== null ? `(${value})` : ''}
@@ -147,7 +165,7 @@ export default function InspectionForm({
             onClick={() => onChange(num)}
             className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] sm:min-w-[52px] rounded-lg font-semibold transition-all touch-manipulation text-base sm:text-lg ${
               value === num
-                ? `bg-${color}-600 text-white shadow-lg ring-2 ring-${color}-300`
+                ? numberSelectorSelectedClasses[color]
                 : 'bg-surface-elevated text-foreground hover:bg-surface-secondary active:bg-surface-secondary border border-border'
             }`}
           >
@@ -194,7 +212,7 @@ export default function InspectionForm({
                 : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
             }`}
           >
-            <span>✓</span> YES
+            YES
           </Button>
           <Button
           unstyled
@@ -210,7 +228,7 @@ export default function InspectionForm({
                 : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
             }`}
           >
-            <span>✕</span> NO
+            NO
           </Button>
         </div>
       </div>
@@ -225,7 +243,7 @@ export default function InspectionForm({
                 onClick={() => onCountChange(Math.max(0, count - 1))}
                 className="px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
               >
-                −
+                -
               </Button>
               <input
                 type="number"
