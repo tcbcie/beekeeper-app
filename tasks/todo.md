@@ -1,31 +1,31 @@
-# Task: Inspection Clear Button Visibility Improvement
+# Task: Global Button Style Conflict Fix
 **Date:** 28/02/2026
 **Status:** Completed
 
 ## 1. Objective
-Improve visibility and tap-target clarity of the `Clear` controls in the inspection Behaviour Ratings section so users do not miss them.
+Remove codebase-wide style conflicts where custom Tailwind button styles are overridden by default `Button` base/neutral classes.
 
 ## 2. Impact Analysis
 * **Files to Modify:**
-  * `src/components/records/forms/InspectionForm.tsx`
-  * `docs/features/inspection-clear-button-visibility-fix-plan.md`
+  * `src/app/globals.css`
+  * `docs/features/global-button-style-conflict-fix-plan.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep the change isolated to the `renderStarRating` clear control styling and layout, without changing form logic, data flow, or shared component defaults.
+* **Simplicity Check:** Apply one global CSS-specificity adjustment to existing `.fj-btn*` selectors so per-instance utility classes can reliably override defaults without refactoring dozens of component files.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Update the star-rating `Clear` button visual treatment (background/border/size/weight) so it remains noticeable in both light and dark themes.
-- [x] **Step 2:** Ensure the `Clear` control retains compact layout while meeting touch-target usability and does not interfere with existing label alignment.
-- [x] **Step 3:** Update documentation in `docs/features/inspection-clear-button-visibility-fix-plan.md`
+- [x] **Step 1:** Lower specificity of `.fj-btn` base/tone selectors in `globals.css` using `:where(...)` so custom utility classes win when explicitly provided.
+- [x] **Step 2:** Verify candidate affected button patterns across the codebase are covered by the global fix (custom `bg-*`, `text-*`, `hover:*`, and compact icon-style classes).
+- [x] **Step 3:** Update documentation in `docs/features/global-button-style-conflict-fix-plan.md`
 - [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The Behaviour `Clear` controls used a low-emphasis text-only style, which visually blended into the header row and was easy to miss beside the star buttons.
-* **Summary of Changes:** Updated the `renderStarRating` `Clear` button styling in `InspectionForm` to use a compact secondary-button treatment with border, elevated background, stronger text weight, and a defined minimum touch height.
-* **Notes for User:** No logic or database changes were made. Build/tests were not run locally per project instruction. Please run your normal build check and verify the Behaviour `Clear` controls are now clearly visible and easy to tap.
+* **Root Cause Found (if applicable):** Shared `.fj-btn` selectors had equal specificity with Tailwind utility classes, so default neutral/base styles could override explicit per-instance button styling across multiple screens.
+* **Summary of Changes:** Updated shared button selectors in `src/app/globals.css` to `:where(...)` for base, size, and tone variants (including hover rules), reducing specificity so explicit utility classes now win consistently without per-file refactors.
+* **Notes for User:** No database changes were made. Build/tests were not run locally per project instruction. Please run your normal build check and spot-check key screens with custom-styled buttons.
 
 ## Review
-* Improved visual prominence of the Behaviour `Clear` controls while keeping the form layout compact.
-* Preserved existing interaction behaviour and value-reset logic (`onChange(0)` unchanged).
-* Updated feature documentation at `docs/features/inspection-clear-button-visibility-fix-plan.md`.
+* Applied a global CSS fix instead of patching dozens of files individually.
+* Audited codebase usage and confirmed broad candidate coverage via selector-level specificity change.
+* Documented the implementation in `docs/features/global-button-style-conflict-fix-plan.md`.

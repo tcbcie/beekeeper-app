@@ -530,7 +530,7 @@ textarea::placeholder {
       0 10px 28px rgba(2, 6, 23, 0.35);
   }
 
-  .fj-btn {
+  :where(.fj-btn) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -547,14 +547,14 @@ textarea::placeholder {
       box-shadow 0.2s ease;
   }
 
-  .fj-btn-sm {
+  :where(.fj-btn-sm) {
     min-height: 2.25rem;
     padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
     line-height: 1rem;
   }
 
-  .fj-btn-xs {
+  :where(.fj-btn-xs) {
     min-height: 1.75rem;
     padding: 0.125rem 0.5rem;
     font-size: 0.75rem;
@@ -562,68 +562,68 @@ textarea::placeholder {
     border-radius: 0.375rem;
   }
 
-  .fj-btn-blue {
+  :where(.fj-btn-blue) {
     background: #2563eb;
     color: #ffffff;
   }
 
-  .fj-btn-blue:hover {
+  :where(.fj-btn-blue):hover {
     background: #1d4ed8;
   }
 
-  .dark .fj-btn-blue:hover {
+  .dark :where(.fj-btn-blue):hover {
     background: #2563eb;
   }
 
-  .fj-btn-purple {
+  :where(.fj-btn-purple) {
     background: #9333ea;
     color: #ffffff;
   }
 
-  .fj-btn-purple:hover {
+  :where(.fj-btn-purple):hover {
     background: #7e22ce;
   }
 
-  .dark .fj-btn-purple:hover {
+  .dark :where(.fj-btn-purple):hover {
     background: #9333ea;
   }
 
-  .fj-btn-success {
+  :where(.fj-btn-success) {
     background: #16a34a;
     color: #ffffff;
   }
 
-  .fj-btn-success:hover {
+  :where(.fj-btn-success):hover {
     background: #15803d;
   }
 
-  .dark .fj-btn-success:hover {
+  .dark :where(.fj-btn-success):hover {
     background: #16a34a;
   }
 
-  .fj-btn-amber {
+  :where(.fj-btn-amber) {
     background: #d97706;
     color: #ffffff;
   }
 
-  .fj-btn-amber:hover {
+  :where(.fj-btn-amber):hover {
     background: #b45309;
   }
 
-  .dark .fj-btn-amber:hover {
+  .dark :where(.fj-btn-amber):hover {
     background: #d97706;
   }
 
-  .fj-btn-danger {
+  :where(.fj-btn-danger) {
     background: #dc2626;
     color: #ffffff;
   }
 
-  .fj-btn-danger:hover {
+  :where(.fj-btn-danger):hover {
     background: #b91c1c;
   }
 
-  .dark .fj-btn-danger:hover {
+  .dark :where(.fj-btn-danger):hover {
     background: #dc2626;
   }
 
@@ -900,13 +900,13 @@ textarea::placeholder {
     color: var(--text-primary);
   }
 
-  .fj-btn-neutral {
+  :where(.fj-btn-neutral) {
     background: color-mix(in oklab, var(--surface-elevated) 85%, var(--surface));
     border-color: var(--border-color);
     color: var(--text-primary);
   }
 
-  .fj-btn-neutral:hover {
+  :where(.fj-btn-neutral):hover {
     background: color-mix(in oklab, var(--surface-elevated) 95%, var(--border-color));
   }
 
