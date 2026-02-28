@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useApiaryDetail } from '@/hooks'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 export default function ApiaryDetailPage() {
   const params = useParams()
@@ -51,6 +52,7 @@ export default function ApiaryDetailPage() {
   const daysSinceInspection = stats.lastInspectionDate
     ? Math.floor((Date.now() - new Date(stats.lastInspectionDate).getTime()) / (1000 * 60 * 60 * 24))
     : null
+  const normalisedImageUrl = normaliseStoragePublicUrl(apiary.image_url)
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -70,10 +72,10 @@ export default function ApiaryDetailPage() {
              apiary.city || apiary.location || 'No location specified'}
           </p>
         </div>
-        {apiary.image_url && (
+        {normalisedImageUrl && (
           <div className="relative w-16 h-16 flex-shrink-0">
             <Image
-              src={apiary.image_url}
+              src={normalisedImageUrl}
               alt={apiary.name}
               fill
               sizes="64px"

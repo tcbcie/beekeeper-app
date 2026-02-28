@@ -29,6 +29,7 @@ import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
 import { toIrishGridRef } from '@/lib/irish-grid'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 export default function ApiariesPage() {
   const toast = useToast()
@@ -72,7 +73,7 @@ export default function ApiariesPage() {
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
 
   const handleImageClick = (url: string) => {
-    setModalImageUrl(url)
+    setModalImageUrl(normaliseStoragePublicUrl(url))
     setImageModalOpen(true)
   }
 
@@ -322,6 +323,7 @@ export default function ApiariesPage() {
 
       const enriched = data.map(a => ({
         ...a,
+        image_url: normaliseStoragePublicUrl(a.image_url),
         hive_count: hiveCounts[a.id] || 0,
         last_inspection_date: lastInspections[a.id] || undefined,
         is_shared: a.user_id !== currentUserId,
@@ -501,7 +503,7 @@ export default function ApiariesPage() {
       is_mating_apiary: apiary.is_mating_apiary || false,
     })
     // Load existing image
-    setPreviewFromUrl(apiary.image_url)
+    setPreviewFromUrl(normaliseStoragePublicUrl(apiary.image_url))
     setShowForm(true)
   }
 
