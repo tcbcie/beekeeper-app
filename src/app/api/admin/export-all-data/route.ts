@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { buildInsertSql, DATABASE_EXPORT_TABLES } from '@/lib/database-export'
 
 // Create admin client with service role key to bypass RLS
 const supabaseAdmin = createClient(
@@ -12,6 +13,15 @@ const supabaseAdmin = createClient(
     }
   }
 )
+
+function buildTriggerToggleBlock(
+  tables: readonly string[],
+  action: 'DISABLE' | 'ENABLE'
+): string {
+  const tableArray = tables.map(table => `'${table}'`).join(', ')
+
+  return `DO $$\nDECLARE\n  table_name text;\nBEGIN\n  FOREACH table_name IN ARRAY ARRAY[${tableArray}]::text[] LOOP\n    BEGIN\n      EXECUTE format('ALTER TABLE public.%I ${action} TRIGGER ALL', table_name);\n    EXCEPTION\n      WHEN insufficient_privilege THEN\n        RAISE NOTICE 'Skipping trigger ${action.toLowerCase()} on %, insufficient privileges', table_name;\n      WHEN undefined_table THEN\n        RAISE NOTICE 'Skipping trigger ${action.toLowerCase()} on %, table not found', table_name;\n    END;\n  END LOOP;\nEND $$;\n`
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,76 +62,7 @@ export async function POST(request: NextRequest) {
 
     console.warn(`[AUDIT] Admin data export: admin=${user.id} status=started timestamp=${new Date().toISOString()}`)
 
-    // Get all table names from database
-    const { data: tablesData, error: tablesError } = await supabaseAdmin.rpc('exec_sql', {
-      query: `
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
-        AND table_type = 'BASE TABLE'
-        ORDER BY table_name
-      `
-    })
-
-    let tables: string[]
-    if (tablesError) {
-      console.error('Cannot fetch schema via RPC, using fallback list')
-      // Fallback: comprehensive list of all known tables
-      tables = [
-        'apiaries',
-        'batch_containers',
-        'batch_feedback',
-        'batch_grafts',
-        'batch_runs',
-        'beekeeping_associations',
-        'bulk_containers',
-        'changelog',
-        'colonies',
-        'colony_movements',
-        'container_harvests',
-        'del_user_profiles',
-        'diagnosis_images',
-        'diagnosis_image_comments',
-        'dropdown_categories',
-        'dropdown_values',
-        'feedings',
-        'financial_records',
-        'frame_standards',
-        'gdd_records',
-        'harvests',
-        'hive_configuration_history',
-        'hives',
-        'inspections',
-        'knowledge_base',
-        'knowledge_sources',
-        'mating_nuc_inspections',
-        'mating_nucs',
-        'news_articles',
-        'profiles',
-        'purchase_items',
-        'push_subscriptions',
-        'queens',
-        'reactivation_requests',
-        'rearing_batches',
-        'registration_codes',
-        'subscription_history',
-        'support_tickets',
-        'tasks_events',
-        'team_apiaries',
-        'team_invitations',
-        'team_members',
-        'teams',
-        'terminology',
-        'tool_suggestions',
-        'varroa_checks',
-        'varroa_treatment_products',
-        'varroa_treatments',
-        'wild_colonies',
-        'wild_colony_inspections'
-      ]
-    } else {
-      tables = tablesData.map((t: { table_name: string }) => t.table_name)
-    }
+    const tables = [...DATABASE_EXPORT_TABLES]
 
     // Build SQL export content
     let sqlContent = `-- =====================================================\n`
@@ -130,10 +71,18 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- Exported by Admin: ${user.email}\n`
     sqlContent += `-- =====================================================\n\n`
     sqlContent += `-- This export includes ALL data from ALL users\n`
-    sqlContent += `-- Use this for complete database backups and disaster recovery\n\n`
+    sqlContent += `-- Use this for complete database backups and disaster recovery\n`
+    sqlContent += `-- Restore prerequisite: database schema must already exist (run migrations first)\n`
+    sqlContent += `-- This export contains data only for public schema tables\n`
+    sqlContent += `-- Note: auth.users is not included in this export\n\n`
+    sqlContent += `BEGIN;\n\n`
+    sqlContent += `-- Best effort: disable triggers so inserts can load regardless of FK ordering\n`
+    sqlContent += buildTriggerToggleBlock(tables, 'DISABLE')
+    sqlContent += '\n'
 
     // Export data from each table using service role (bypasses RLS)
     const exportResults: Record<string, number> = {}
+    const exportErrors: Record<string, string> = {}
 
     for (const table of tables) {
       try {
@@ -145,6 +94,7 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error(`Error fetching ${table}:`, error)
           exportResults[table] = 0
+          exportErrors[table] = error.message
           continue
         }
 
@@ -156,27 +106,8 @@ export async function POST(request: NextRequest) {
           sqlContent += `-- Records: ${data.length}\n`
           sqlContent += `-- =====================================================\n\n`
 
-          // Get column names from first record
-          const columns = Object.keys(data[0])
-
           for (const row of data) {
-            const values = columns.map(col => {
-              const value = row[col]
-              if (value === null) return 'NULL'
-              if (typeof value === 'boolean') return value ? 'true' : 'false'
-              if (typeof value === 'number') return value.toString()
-              if (typeof value === 'string') {
-                // Escape single quotes
-                return `'${value.replace(/'/g, "''")}'`
-              }
-              if (typeof value === 'object') {
-                // Handle JSON/JSONB columns
-                return `'${JSON.stringify(value).replace(/'/g, "''")}'`
-              }
-              return `'${value}'`
-            }).join(', ')
-
-            sqlContent += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values});\n`
+            sqlContent += `${buildInsertSql('public', table, row as Record<string, unknown>)}\n`
           }
 
           sqlContent += '\n'
@@ -184,8 +115,13 @@ export async function POST(request: NextRequest) {
       } catch (tableError) {
         console.error(`Error exporting table ${table}:`, tableError)
         exportResults[table] = 0
+        exportErrors[table] = tableError instanceof Error ? tableError.message : 'Unknown export error'
       }
     }
+
+    sqlContent += `\n-- Best effort: re-enable triggers after data load\n`
+    sqlContent += buildTriggerToggleBlock(tables, 'ENABLE')
+    sqlContent += `\nCOMMIT;\n`
 
     sqlContent += `\n-- =====================================================\n`
     sqlContent += `-- EXPORT SUMMARY\n`
@@ -193,6 +129,14 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- Total tables: ${tables.length}\n`
     for (const [table, count] of Object.entries(exportResults)) {
       sqlContent += `-- ${table}: ${count} records\n`
+    }
+    if (Object.keys(exportErrors).length > 0) {
+      sqlContent += `-- -----------------------------------------------------\n`
+      sqlContent += `-- TABLES WITH EXPORT ERRORS\n`
+      sqlContent += `-- -----------------------------------------------------\n`
+      for (const [table, message] of Object.entries(exportErrors)) {
+        sqlContent += `-- ${table}: ${message.replace(/\n/g, ' ')}\n`
+      }
     }
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- END OF EXPORT\n`
