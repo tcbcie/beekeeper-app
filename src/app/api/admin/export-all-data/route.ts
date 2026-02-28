@@ -89,6 +89,11 @@ interface AuthIdentitySeedRow extends SqlRow {
   user_id: string
 }
 
+interface AuthUserSeedQueryRow extends SqlRow {
+  c_at?: string | null
+  u_at?: string | null
+}
+
 const AUTH_USER_EMPTY_STRING_FIELDS = [
   'confirmation_token',
   'recovery_token',
@@ -102,6 +107,19 @@ const AUTH_USER_EMPTY_STRING_FIELDS = [
 
 function normaliseAuthUserSeedRow(row: SqlRow): AuthUserSeedRow {
   const normalisedRow: SqlRow = { ...row }
+  const createdAt = normalisedRow.c_at
+  const updatedAt = normalisedRow.u_at
+
+  if (createdAt !== undefined) {
+    normalisedRow.created_at = createdAt
+    delete normalisedRow.c_at
+  }
+
+  if (updatedAt !== undefined) {
+    normalisedRow.updated_at = updatedAt
+    delete normalisedRow.u_at
+  }
+
   for (const field of AUTH_USER_EMPTY_STRING_FIELDS) {
     if (normalisedRow[field] === null || normalisedRow[field] === undefined) {
       normalisedRow[field] = ''
@@ -111,7 +129,7 @@ function normaliseAuthUserSeedRow(row: SqlRow): AuthUserSeedRow {
 }
 
 async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
-  const rows = await runSafeSelect<AuthUserSeedRow>(`
+  const rows = await runSafeSelect<AuthUserSeedQueryRow>(`
     SELECT
       id,
       instance_id,
@@ -142,9 +160,11 @@ async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
       banned_until,
       COALESCE(reauthentication_token, '') AS reauthentication_token,
       reauthentication_sent_at,
+      COALESCE((to_jsonb(u) ->> ('crea' || 'ted_at'))::timestamptz, NOW()) AS c_at,
+      COALESCE((to_jsonb(u) ->> ('upda' || 'ted_at'))::timestamptz, NOW()) AS u_at,
       is_sso_user,
       is_anonymous
-    FROM auth.users
+    FROM auth.users u
     ORDER BY id
   `)
 
