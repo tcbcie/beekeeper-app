@@ -39,6 +39,7 @@ Metadata and dependency verification use direct MCP queries for:
 
 ## 6. Implementation Notes
 * The admin export route now uses metadata queries via `execute_safe_query` to assemble schema SQL for all exported `public` tables.
+* Metadata/auth queries were adjusted to avoid `execute_safe_query` guard regex false-positives from query text substrings (for example `DROP` inside `dropdown_*` and `CREATE` inside `created_at`), preventing admin export 500 failures.
 * Export output now includes:
   * Extension guards (`uuid-ossp`, `pgcrypto`).
   * Sequence creation and ownership statements.

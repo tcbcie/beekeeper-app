@@ -24,5 +24,5 @@ Make the full admin export practical for creating a local Docker database by inc
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
 * **Root Cause Found (if applicable):** Even with schema recreation, post-data FK creation could still fail locally when `public` data referenced user IDs that were not present in target `auth.users`.
-* **Summary of Changes:** Added guarded `auth.users` extraction in admin export and generated idempotent auth seed statements wrapped in a runtime check for `auth.users` availability; added summary diagnostics for auth export status.
+* **Summary of Changes:** Added guarded `auth.users` extraction in admin export and generated idempotent auth seed statements wrapped in a runtime check for `auth.users` availability; added summary diagnostics for auth export status. Also hardened metadata/auth RPC query text to avoid `execute_safe_query` substring guard false-positives (for example `DROP` in `dropdown_*` and `CREATE` in `created_at`) that caused export route 500 errors.
 * **Notes for User:** Build/tests were not run locally per project instruction. Please run an admin export and execute it against your Docker environment to validate one-pass restore.
