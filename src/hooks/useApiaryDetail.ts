@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import type { Apiary } from '@/types/apiary'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 interface ApiaryHive {
   id: string
@@ -72,7 +73,10 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
 
       if (apiaryError) throw apiaryError
       if (!mountedRef.current) return
-      setApiary(apiaryData)
+      setApiary({
+        ...apiaryData,
+        image_url: normaliseStoragePublicUrl(apiaryData.image_url)
+      })
       setIsOwner(apiaryData.user_id === currentUserId)
 
       // Fetch hives in this apiary

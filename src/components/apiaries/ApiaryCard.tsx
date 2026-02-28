@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Edit2, Trash2, MapPin, Map, Camera, Clock } from 'lucide-react'
 import type { Apiary } from '@/types/apiary'
 import Button from '@/components/ui/Button'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 interface ApiaryCardProps {
   apiary: Apiary
@@ -16,6 +17,7 @@ interface ApiaryCardProps {
 
 export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isReadOnly }: ApiaryCardProps) {
   const router = useRouter()
+  const normalisedImageUrl = normaliseStoragePublicUrl(apiary.image_url)
 
   const daysSinceInspection = apiary.last_inspection_date
     ? Math.floor((Date.now() - new Date(apiary.last_inspection_date).getTime()) / (1000 * 60 * 60 * 24))
@@ -68,14 +70,14 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
             </Button>
           )}
         </div>
-        {apiary.image_url && (
+        {normalisedImageUrl && (
           <div
             className="relative w-20 h-20 flex-shrink-0 cursor-pointer group"
-            onClick={() => onImageClick(apiary.image_url!)}
+            onClick={() => onImageClick(normalisedImageUrl)}
             title="Click to enlarge"
           >
             <Image
-              src={apiary.image_url}
+              src={normalisedImageUrl}
               alt={apiary.name}
               fill
               sizes="160px"
