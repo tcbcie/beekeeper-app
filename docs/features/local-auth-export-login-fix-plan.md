@@ -36,3 +36,4 @@ No application schema migration is required. Export logic will continue using di
 * Auth user rows continue to be normalised for GoTrue-sensitive empty-string fields before SQL generation.
 * Additional compatibility fix: removed `deleted_at` from auth user export query because the safe-query keyword filter matches `DELETE` as a substring and rejects the whole `SELECT`.
 * Added guard to skip auth identities seeding whenever auth user export fails, preventing downstream FK violations against `auth.users`.
+* Additional restore fix: exporter now includes `public` function definitions via `pg_get_functiondef`, emitted before RLS policy creation so policy expressions that depend on helper functions (for example `can_access_apiary`) do not fail on fresh local resets.

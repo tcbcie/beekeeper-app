@@ -72,6 +72,12 @@ interface MetadataPolicyRow {
   with_check_expr: string | null
 }
 
+interface MetadataFunctionRow {
+  function_name: string
+  identity_arguments: string | null
+  function_def: string
+}
+
 type SqlRow = Record<string, unknown>
 
 interface AuthUserSeedRow extends SqlRow {
@@ -244,6 +250,20 @@ function buildSequenceResetStatement(sequence: MetadataSequenceRow): string {
 function buildCreateEnumTypeBlock(typeName: string, labels: string[]): string {
   const labelsSql = labels.map(label => `'${escapeSqlLiteral(label)}'`).join(', ')
   return `DO $$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM pg_type t\n    JOIN pg_namespace n ON n.oid = t.typnamespace\n    WHERE n.nspname = '${escapeSqlLiteral(PUBLIC_SCHEMA)}'\n      AND t.typname = '${escapeSqlLiteral(typeName)}'\n  ) THEN\n    CREATE TYPE ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(typeName)} AS ENUM (${labelsSql});\n  END IF;\nEND $$;\n`
+}
+
+function buildCreateFunctionStatement(functionDefinition: string): string {
+  const trimmed = functionDefinition.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  const withOrReplace = trimmed.replace(/^CREATE FUNCTION /i, 'CREATE OR REPLACE FUNCTION ')
+  if (withOrReplace.endsWith(';')) {
+    return `${withOrReplace}\n`
+  }
+
+  return `${withOrReplace};\n`
 }
 
 function toBoolean(value: boolean | string | null | undefined): boolean {
@@ -488,6 +508,18 @@ export async function POST(request: NextRequest) {
       ORDER BY tbl.relname, pol.polname
     `)
 
+    const functionMetadata = await runSafeSelect<MetadataFunctionRow>(`
+      SELECT
+        p.proname AS function_name,
+        pg_get_function_identity_arguments(p.oid) AS identity_arguments,
+        pg_get_functiondef(p.oid) AS function_def
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = '${PUBLIC_SCHEMA}'
+        AND p.prokind = 'f'
+      ORDER BY p.proname, pg_get_function_identity_arguments(p.oid)
+    `)
+
     let authUsers: AuthUserSeedRow[] = []
     let authUsersExportError: string | null = null
     let authIdentities: AuthIdentitySeedRow[] = []
@@ -513,6 +545,7 @@ export async function POST(request: NextRequest) {
     const filteredEnumMetadata = enumMetadata.filter(enumType => enumType.schema_name === PUBLIC_SCHEMA)
     const filteredRlsTableMetadata = rlsTableMetadata.filter(tableMeta => tableSet.has(tableMeta.table_name))
     const filteredPolicyMetadata = policyMetadata.filter(policy => tableSet.has(policy.table_name))
+    const filteredFunctionMetadata = functionMetadata.filter(fn => Boolean(fn.function_def))
 
     filteredConstraintMetadata.sort((a, b) => {
       const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
@@ -551,6 +584,12 @@ export async function POST(request: NextRequest) {
       const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
       if (tableSort !== 0) return tableSort
       return a.policy_name.localeCompare(b.policy_name)
+    })
+
+    filteredFunctionMetadata.sort((a, b) => {
+      const nameSort = a.function_name.localeCompare(b.function_name)
+      if (nameSort !== 0) return nameSort
+      return (a.identity_arguments || '').localeCompare(b.identity_arguments || '')
     })
 
     const columnsByTable = new Map<string, MetadataColumnRow[]>()
@@ -778,6 +817,16 @@ export async function POST(request: NextRequest) {
     }
     sqlContent += '\n'
 
+    if (filteredFunctionMetadata.length > 0) {
+      sqlContent += `-- =====================================================\n`
+      sqlContent += `-- POST-DATA FUNCTIONS (PUBLIC)\n`
+      sqlContent += `-- =====================================================\n`
+      for (const fn of filteredFunctionMetadata) {
+        sqlContent += buildCreateFunctionStatement(fn.function_def)
+        sqlContent += '\n'
+      }
+    }
+
     if (filteredPolicyMetadata.length > 0 || filteredRlsTableMetadata.length > 0) {
       sqlContent += `-- =====================================================\n`
       sqlContent += `-- POST-DATA ROW LEVEL SECURITY\n`
@@ -823,7 +872,7 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
-    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}\n`
+    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}\n`
     sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
