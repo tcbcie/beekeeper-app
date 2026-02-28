@@ -47,6 +47,24 @@ import type {
 } from '@/types/records'
 import { getDefaultArchiveFormData } from '@/types/records'
 
+interface NominatimResult {
+  lat: string
+  lon: string
+}
+
+interface OpenMeteoCurrent {
+  temperature_2m: number
+  relative_humidity_2m: number
+  weather_code: number
+  wind_speed_10m: number
+}
+
+interface OpenMeteoResponse {
+  current?: OpenMeteoCurrent | null
+}
+
+const WEATHER_REQUEST_TIMEOUT_MS = 8000
+
 export default function RecordsPage() {
   const router = useRouter()
   const toast = useToast()
@@ -297,6 +315,26 @@ export default function RecordsPage() {
 
 
   // Weather fetching
+  const fetchJsonWithTimeout = async <T,>(
+    url: string,
+    init: RequestInit = {},
+    timeoutMs: number = WEATHER_REQUEST_TIMEOUT_MS
+  ): Promise<T> => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal })
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`)
+      }
+
+      return await response.json() as T
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
+
   const fetchWeatherData = async (eircode: string, isUkNi: boolean = false) => {
     try {
       const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
@@ -305,20 +343,18 @@ export default function RecordsPage() {
       const fallbackLat = isUkNi ? '54.5973' : '53.3498'
       const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
 
-      const geocodeResponse = await fetch(
+      const geocodeData = await fetchJsonWithTimeout<NominatimResult[]>(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode)},${country}&format=json&limit=1`,
         { headers }
       )
-      const geocodeData = await geocodeResponse.json()
 
-      if (!geocodeData || geocodeData.length === 0) {
-        const altResponse = await fetch(
+      if (!Array.isArray(geocodeData) || geocodeData.length === 0) {
+        const altData = await fetchJsonWithTimeout<NominatimResult[]>(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode + ' ' + country)}&format=json&limit=1`,
           { headers }
         )
-        const altData = await altResponse.json()
 
-        if (!altData || altData.length === 0) {
+        if (!Array.isArray(altData) || altData.length === 0) {
           return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
         }
         return await getWeatherFromCoordinates(altData[0].lat, altData[0].lon)
@@ -334,12 +370,19 @@ export default function RecordsPage() {
 
   const getWeatherFromCoordinates = async (lat: string, lon: string) => {
     try {
-      const weatherResponse = await fetch(
+      const weatherData = await fetchJsonWithTimeout<OpenMeteoResponse>(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe/Dublin`
       )
-      const weatherData = await weatherResponse.json()
-
-      if (!weatherData.current) return null
+      const current = weatherData?.current
+      if (
+        !current ||
+        typeof current.temperature_2m !== 'number' ||
+        typeof current.relative_humidity_2m !== 'number' ||
+        typeof current.weather_code !== 'number' ||
+        typeof current.wind_speed_10m !== 'number'
+      ) {
+        return null
+      }
 
       const weatherCodeMap: { [key: number]: string } = {
         0: 'Clear', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
@@ -350,10 +393,10 @@ export default function RecordsPage() {
       }
 
       return {
-        temp: Math.round(weatherData.current.temperature_2m),
-        condition: weatherCodeMap[weatherData.current.weather_code] || 'Unknown',
-        humidity: weatherData.current.relative_humidity_2m,
-        wind_speed: Math.round(weatherData.current.wind_speed_10m)
+        temp: Math.round(current.temperature_2m),
+        condition: weatherCodeMap[current.weather_code] ?? 'Unknown',
+        humidity: current.relative_humidity_2m,
+        wind_speed: Math.round(current.wind_speed_10m)
       }
     } catch {
       return null
@@ -426,31 +469,35 @@ export default function RecordsPage() {
         imageUrl = uploadedUrl
       }
 
-      setFetchingWeather(true)
       let weatherData = null
-      const selectedHive = hives.find(h => h.id === formData.hive_id)
+      setFetchingWeather(true)
+      try {
+        const selectedHive = hives.find(h => h.id === formData.hive_id)
+        if (selectedHive?.apiary_id) {
+          const { data: apiaryData, error: apiaryError } = await supabase
+            .from('apiaries')
+            .select('eircode, is_uk_ni')
+            .eq('id', selectedHive.apiary_id)
+            .single()
 
-      if (selectedHive?.apiary_id) {
-        const { data: apiaryData } = await supabase
-          .from('apiaries')
-          .select('eircode, is_uk_ni')
-          .eq('id', selectedHive.apiary_id)
-          .single()
-
-        if (apiaryData?.eircode) {
-          weatherData = await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
+          if (apiaryError) {
+            console.error('Failed to fetch apiary weather metadata:', apiaryError)
+          } else if (apiaryData?.eircode) {
+            weatherData = await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
+          }
         }
+      } finally {
+        setFetchingWeather(false)
       }
-      setFetchingWeather(false)
 
       const submitData = {
         ...formData,
         drones_present: formData.drones_present === -1 ? null : formData.drones_present,
         image_url: imageUrl,
-        weather_temp: weatherData?.temp || null,
-        weather_condition: weatherData?.condition || null,
-        weather_humidity: weatherData?.humidity || null,
-        weather_wind_speed: weatherData?.wind_speed || null
+        weather_temp: weatherData?.temp ?? null,
+        weather_condition: weatherData?.condition ?? null,
+        weather_humidity: weatherData?.humidity ?? null,
+        weather_wind_speed: weatherData?.wind_speed ?? null
       }
 
       if (editingInspection?.id) {

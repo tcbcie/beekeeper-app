@@ -1,8 +1,23 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { Bell, BellOff, Settings, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
+
+type NotificationStatusColor = 'red' | 'green' | 'amber'
+
+interface NotificationStatusInfo {
+  icon: ReactNode
+  title: string
+  description: string
+  color: NotificationStatusColor
+}
+
+const statusBorderClasses: Record<NotificationStatusColor, string> = {
+  red: 'border-red-200 dark:border-red-800',
+  green: 'border-green-200 dark:border-green-800',
+  amber: 'border-amber-200 dark:border-amber-800'
+}
 
 export default function NotificationStatusCard() {
   const toast = useToast()
@@ -17,7 +32,7 @@ export default function NotificationStatusCard() {
     }
   }, [])
 
-  const getStatusInfo = () => {
+  const getStatusInfo = (): NotificationStatusInfo => {
     if (!isSupported) {
       return {
         icon: <XCircle className="w-5 h-5 text-red-500" />,
@@ -67,7 +82,7 @@ To enable notifications on Android:
 4. Toggle 'Allow notifications' ON
 
 Or go to:
-Settings → Apps → HiveCraic → Notifications
+Settings -> Apps -> HiveCraic -> Notifications
       `.trim()
     } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
       instructions = `
@@ -93,7 +108,7 @@ To enable notifications:
   const status = getStatusInfo()
 
   return (
-    <div className={`bg-surface dark:bg-surface rounded-lg border border-${status.color}-200 dark:border-${status.color}-800 p-4`}>
+    <div className={`bg-surface dark:bg-surface rounded-lg border p-4 ${statusBorderClasses[status.color]}`}>
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
           {status.icon}
