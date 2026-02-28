@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Serif_Display, DM_Sans, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "./providers/theme-provider";
@@ -31,22 +30,6 @@ const themeBootstrapScript = `
   } catch {}
 })();
 `;
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-});
-
-const dmSerif = DM_Serif_Display({
-  variable: "--font-dm-serif",
-  weight: "400",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -91,7 +74,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} ${dmSerif.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
       >
         <ThemeProvider>
           <ToastProvider>
