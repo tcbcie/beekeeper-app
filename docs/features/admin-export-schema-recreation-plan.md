@@ -48,7 +48,7 @@ Metadata and dependency verification use direct MCP queries for:
   * Data insert section.
   * Post-data foreign-key section with guarded handling for `auth.users` dependencies.
   * Post-data sequence alignment using `setval`.
-  * Guarded `auth.users` seed data section using idempotent `ON CONFLICT (id) DO NOTHING`, so local Supabase restores can recreate user-linked data and then apply `public -> auth.users` foreign keys in one pass.
+  * Guarded `auth.users` seed data section using **ID-only** idempotent inserts (`ON CONFLICT (id) DO NOTHING`), so local Supabase restores can satisfy user-linked foreign keys without writing generated/auth-managed columns.
 * MCP verification confirms:
   * `public` tables: 60
   * non-FK constraints: 141
@@ -56,6 +56,7 @@ Metadata and dependency verification use direct MCP queries for:
   * FK dependencies to `auth.users`: 37
   * owned sequences for `public` tables: 1
 * Remaining prerequisite: target environment still needs compatible Supabase/auth infrastructure if `auth`-related objects are expected; guarded FK blocks intentionally skip unavailable `auth.users`.
+* Compatibility note: changed from full-row auth seeding to ID-only seeding after restore failure on generated `auth.users` columns (for example `confirmed_at`) in local environments.
 
 ## 7. Local Restore Flow
 1. Start a local Supabase/Postgres Docker environment with `auth` schema available.

@@ -50,6 +50,9 @@ interface MetadataSequenceRow {
 }
 
 type SqlRow = Record<string, unknown>
+interface AuthUserSeedRow {
+  id: string
+}
 
 function escapeSqlLiteral(value: string): string {
   return value.replace(/'/g, "''")
@@ -216,6 +219,7 @@ export async function POST(request: NextRequest) {
       WHERE n.nspname = '${PUBLIC_SCHEMA}'
         AND c.relkind = 'r'
         AND a.attnum > 0
+        AND a.atttypid <> 0
       ORDER BY c.relname, a.attnum
     `)
 
@@ -273,11 +277,11 @@ export async function POST(request: NextRequest) {
       ORDER BY tbl.relname, seq.relname
     `)
 
-    let authUsers: SqlRow[] = []
+    let authUsers: AuthUserSeedRow[] = []
     let authUsersExportError: string | null = null
     try {
-      authUsers = await runSafeSelect<SqlRow>(`
-        SELECT *
+      authUsers = await runSafeSelect<AuthUserSeedRow>(`
+        SELECT id
         FROM auth.users
         ORDER BY id
       `)
@@ -340,12 +344,12 @@ export async function POST(request: NextRequest) {
     sqlContent += buildCreateExtensionsBlock()
     sqlContent += '\n'
 
-    sqlContent += `-- Auth users seed data (for local restore FK compatibility)\n`
+    sqlContent += `-- Auth users seed data (minimal IDs for public FK compatibility)\n`
     if (authUsersExportError) {
       sqlContent += `-- Skipping auth.users export due to source query error: ${authUsersExportError.replace(/\n/g, ' ')}\n\n`
     } else if (authUsers.length > 0) {
       const authInsertStatements = authUsers.map(userRow =>
-        buildInsertOnConflictDoNothingSql('auth', 'users', userRow, ['id'])
+        buildInsertOnConflictDoNothingSql('auth', 'users', { id: userRow.id }, ['id'])
       )
       sqlContent += `DO $$\nBEGIN\n  IF to_regclass('auth.users') IS NULL THEN\n    RAISE NOTICE 'Skipping auth.users seed data because auth.users is unavailable in target';\n  ELSE\n`
       for (const statement of authInsertStatements) {
@@ -502,7 +506,7 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}\n`
-    sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
+    sqlContent += `-- auth.users ids exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
     }
