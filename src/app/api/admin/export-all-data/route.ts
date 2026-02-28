@@ -55,12 +55,8 @@ function escapeSqlLiteral(value: string): string {
   return value.replace(/'/g, "''")
 }
 
-function tableArrayLiteral(tables: readonly string[]): string {
-  return `ARRAY[${tables.map(table => `'${escapeSqlLiteral(table)}'`).join(', ')}]::text[]`
-}
-
 async function runSafeSelect<T>(query: string): Promise<T[]> {
-  const { data, error } = await supabaseAdmin.rpc('execute_safe_query', { query_text: query })
+  const { data, error } = await supabaseAdmin.rpc('execute_safe_query', { query_text: query.trim() })
 
   if (error) {
     throw new Error(`Failed metadata query: ${error.message}`)
@@ -200,7 +196,8 @@ export async function POST(request: NextRequest) {
     console.warn(`[AUDIT] Admin data export: admin=${user.id} status=started timestamp=${new Date().toISOString()}`)
 
     const tables = [...DATABASE_EXPORT_TABLES]
-    const tableArray = tableArrayLiteral(tables)
+    const tableOrder = new Map<string, number>(tables.map((table, index) => [table, index]))
+    const tableSet = new Set(tables)
 
     const columnMetadata = await runSafeSelect<MetadataColumnRow>(`
       SELECT
@@ -219,9 +216,7 @@ export async function POST(request: NextRequest) {
       WHERE n.nspname = '${PUBLIC_SCHEMA}'
         AND c.relkind = 'r'
         AND a.attnum > 0
-        AND NOT a.attisdropped
-        AND c.relname = ANY(${tableArray})
-      ORDER BY array_position(${tableArray}, c.relname), a.attnum
+      ORDER BY c.relname, a.attnum
     `)
 
     const constraintMetadata = await runSafeSelect<MetadataConstraintRow>(`
@@ -238,9 +233,8 @@ export async function POST(request: NextRequest) {
       LEFT JOIN pg_class ref_tbl ON ref_tbl.oid = con.confrelid
       LEFT JOIN pg_namespace ref_ns ON ref_ns.oid = ref_tbl.relnamespace
       WHERE tbl_ns.nspname = '${PUBLIC_SCHEMA}'
-        AND tbl.relname = ANY(${tableArray})
         AND con.contype IN ('p', 'u', 'c', 'f', 'x')
-      ORDER BY array_position(${tableArray}, tbl.relname), con.contype, con.conname
+      ORDER BY tbl.relname, con.contype, con.conname
     `)
 
     const indexMetadata = await runSafeSelect<MetadataIndexRow>(`
@@ -253,14 +247,13 @@ export async function POST(request: NextRequest) {
       JOIN pg_index i ON i.indrelid = tbl.oid
       JOIN pg_class idx ON idx.oid = i.indexrelid
       WHERE ns.nspname = '${PUBLIC_SCHEMA}'
-        AND tbl.relname = ANY(${tableArray})
         AND NOT i.indisprimary
         AND NOT EXISTS (
           SELECT 1
           FROM pg_constraint c
           WHERE c.conindid = i.indexrelid
         )
-      ORDER BY array_position(${tableArray}, tbl.relname), idx.relname
+      ORDER BY tbl.relname, idx.relname
     `)
 
     const sequenceMetadata = await runSafeSelect<MetadataSequenceRow>(`
@@ -277,8 +270,7 @@ export async function POST(request: NextRequest) {
       JOIN pg_attribute col ON col.attrelid = tbl.oid AND col.attnum = dep.refobjsubid
       WHERE seq.relkind = 'S'
         AND tbl_ns.nspname = '${PUBLIC_SCHEMA}'
-        AND tbl.relname = ANY(${tableArray})
-      ORDER BY array_position(${tableArray}, tbl.relname), seq.relname
+      ORDER BY tbl.relname, seq.relname
     `)
 
     let authUsers: SqlRow[] = []
@@ -287,22 +279,48 @@ export async function POST(request: NextRequest) {
       authUsers = await runSafeSelect<SqlRow>(`
         SELECT *
         FROM auth.users
-        ORDER BY created_at NULLS LAST, id
+        ORDER BY id
       `)
     } catch (authError) {
       authUsersExportError = authError instanceof Error ? authError.message : 'Unknown auth.users export error'
       console.error('Error exporting auth.users:', authError)
     }
 
+    const filteredColumnMetadata = columnMetadata.filter(column => tableSet.has(column.table_name))
+    const filteredConstraintMetadata = constraintMetadata.filter(constraint => tableSet.has(constraint.table_name))
+    const filteredIndexMetadata = indexMetadata.filter(index => tableSet.has(index.table_name))
+    const filteredSequenceMetadata = sequenceMetadata.filter(sequence => tableSet.has(sequence.table_name))
+
+    filteredConstraintMetadata.sort((a, b) => {
+      const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
+      if (tableSort !== 0) return tableSort
+      if (a.constraint_type !== b.constraint_type) return a.constraint_type.localeCompare(b.constraint_type)
+      return a.constraint_name.localeCompare(b.constraint_name)
+    })
+
+    filteredIndexMetadata.sort((a, b) => {
+      const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
+      if (tableSort !== 0) return tableSort
+      return a.index_name.localeCompare(b.index_name)
+    })
+
+    filteredSequenceMetadata.sort((a, b) => {
+      const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
+      if (tableSort !== 0) return tableSort
+      const schemaSort = a.sequence_schema.localeCompare(b.sequence_schema)
+      if (schemaSort !== 0) return schemaSort
+      return a.sequence_name.localeCompare(b.sequence_name)
+    })
+
     const columnsByTable = new Map<string, MetadataColumnRow[]>()
-    for (const column of columnMetadata) {
+    for (const column of filteredColumnMetadata) {
       const existing = columnsByTable.get(column.table_name) || []
       existing.push(column)
       columnsByTable.set(column.table_name, existing)
     }
 
-    const nonForeignKeyConstraints = constraintMetadata.filter(constraint => constraint.constraint_type !== 'f')
-    const foreignKeyConstraints = constraintMetadata.filter(constraint => constraint.constraint_type === 'f')
+    const nonForeignKeyConstraints = filteredConstraintMetadata.filter(constraint => constraint.constraint_type !== 'f')
+    const foreignKeyConstraints = filteredConstraintMetadata.filter(constraint => constraint.constraint_type === 'f')
 
     // Build SQL export content
     let sqlContent = `-- =====================================================\n`
@@ -338,10 +356,10 @@ export async function POST(request: NextRequest) {
       sqlContent += `-- No auth.users rows found in source export\n\n`
     }
 
-    if (sequenceMetadata.length > 0) {
+    if (filteredSequenceMetadata.length > 0) {
       sqlContent += `-- Sequences\n`
       const seenSequences = new Set<string>()
-      for (const sequence of sequenceMetadata) {
+      for (const sequence of filteredSequenceMetadata) {
         const key = `${sequence.sequence_schema}.${sequence.sequence_name}`
         if (seenSequences.has(key)) {
           continue
@@ -364,10 +382,10 @@ export async function POST(request: NextRequest) {
       sqlContent += '\n'
     }
 
-    if (sequenceMetadata.length > 0) {
+    if (filteredSequenceMetadata.length > 0) {
       sqlContent += `-- Sequence ownership\n`
       const seenOwnership = new Set<string>()
-      for (const sequence of sequenceMetadata) {
+      for (const sequence of filteredSequenceMetadata) {
         const key = `${sequence.sequence_schema}.${sequence.sequence_name}:${sequence.table_name}.${sequence.column_name}`
         if (seenOwnership.has(key)) {
           continue
@@ -390,9 +408,9 @@ export async function POST(request: NextRequest) {
       sqlContent += '\n'
     }
 
-    if (indexMetadata.length > 0) {
+    if (filteredIndexMetadata.length > 0) {
       sqlContent += `-- Secondary indexes\n`
-      for (const index of indexMetadata) {
+      for (const index of filteredIndexMetadata) {
         sqlContent += buildCreateIndexStatement(index.index_def)
       }
       sqlContent += '\n'
@@ -464,12 +482,12 @@ export async function POST(request: NextRequest) {
     }
     sqlContent += '\n'
 
-    if (sequenceMetadata.length > 0) {
+    if (filteredSequenceMetadata.length > 0) {
       sqlContent += `-- =====================================================\n`
       sqlContent += `-- SEQUENCE ALIGNMENT\n`
       sqlContent += `-- =====================================================\n`
       const seenSequenceResets = new Set<string>()
-      for (const sequence of sequenceMetadata) {
+      for (const sequence of filteredSequenceMetadata) {
         const key = `${sequence.sequence_schema}.${sequence.sequence_name}`
         if (seenSequenceResets.has(key)) {
           continue
@@ -483,7 +501,7 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
-    sqlContent += `-- Metadata: columns=${columnMetadata.length}, constraints=${constraintMetadata.length}, indexes=${indexMetadata.length}, sequences=${sequenceMetadata.length}\n`
+    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}\n`
     sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
