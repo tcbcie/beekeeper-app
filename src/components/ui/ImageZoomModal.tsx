@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 interface ImageZoomModalProps {
   isOpen: boolean
@@ -14,6 +15,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, onClose }: ImageZoomM
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const normalisedImageUrl = normaliseStoragePublicUrl(imageUrl)
   
   useEffect(() => {
     if (isOpen) {
@@ -28,7 +30,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, onClose }: ImageZoomM
     }
   }, [isOpen])
 
-  if (!isOpen || !imageUrl) return null
+  if (!isOpen || !normalisedImageUrl) return null
 
   const handleZoomIn = (e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -137,7 +139,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, onClose }: ImageZoomM
         >
            {/* eslint-disable-next-line @next/next/no-img-element */}
            <img
-            src={imageUrl}
+            src={normalisedImageUrl}
             alt="Enlarged view"
             className="max-w-[90vw] max-h-[90vh] object-contain select-none"
             draggable={false}

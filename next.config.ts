@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -7,15 +7,53 @@ const packageJson = JSON.parse(
   readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
 );
 
+type RemotePattern = NonNullable<NonNullable<NextConfig['images']>['remotePatterns']>[number]
+
+function buildStorageRemotePatterns(): RemotePattern[] {
+  const patterns: RemotePattern[] = [
+    {
+      protocol: 'http',
+      hostname: '127.0.0.1',
+      port: '54321',
+      pathname: '/storage/v1/object/public/**'
+    }
+  ]
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (supabaseUrl) {
+    try {
+      const parsed = new URL(supabaseUrl)
+      const protocol = parsed.protocol.replace(':', '')
+      if (protocol === 'http' || protocol === 'https') {
+        const pattern: RemotePattern = {
+          protocol,
+          hostname: parsed.hostname,
+          pathname: '/storage/v1/object/public/**'
+        }
+        if (parsed.port) {
+          pattern.port = parsed.port
+        }
+        patterns.push(pattern)
+      }
+    } catch {
+      // Ignore malformed Supabase URL and keep fallback pattern.
+    }
+  }
+
+  const seen = new Set<string>()
+  return patterns.filter((pattern) => {
+    const key = `${pattern.protocol}//${pattern.hostname}:${pattern.port || ''}${pattern.pathname}`
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
+}
+
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'tbhofdmfzwibysnnssnx.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
-    ],
+    remotePatterns: buildStorageRemotePatterns()
   },
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,

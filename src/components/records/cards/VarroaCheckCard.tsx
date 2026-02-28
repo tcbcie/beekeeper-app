@@ -4,6 +4,7 @@ import { Edit2, Trash2, Bug, Camera } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 interface VarroaCheckCardProps {
   check: VarroaCheck
@@ -25,6 +26,7 @@ export default function VarroaCheckCard({
   onImageClick
 }: VarroaCheckCardProps) {
   const isNaturalDrop = check.method === 'Natural Mite Drop' || check.method === 'Screening Board'
+  const normalisedImageUrl = normaliseStoragePublicUrl(check.image_url)
 
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 border-l-4 border-orange-500">
@@ -36,14 +38,14 @@ export default function VarroaCheckCard({
           </div>
 
           {/* Image thumbnail */}
-          {userHasActiveSubscription && check.image_url && (
+          {userHasActiveSubscription && normalisedImageUrl && (
             <div
               className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
-              onDoubleClick={() => onImageClick(check.image_url!)}
+              onDoubleClick={() => onImageClick(normalisedImageUrl)}
               title="Double-click to enlarge"
             >
               <Image
-                src={check.image_url}
+                src={normalisedImageUrl}
                 alt="Varroa Check"
                 fill
                 className="object-cover rounded-lg border-2 border-border shadow-sm"
