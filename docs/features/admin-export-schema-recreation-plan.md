@@ -49,6 +49,9 @@ Metadata and dependency verification use direct MCP queries for:
   * Data insert section.
   * Data insert generation that excludes generated columns, so restore does not attempt writes to generated fields (for example `profiles.full_name`).
   * Post-data foreign-key section with guarded handling for `auth.users` dependencies.
+  * Post-data RLS recreation:
+    * Idempotent `CREATE POLICY` blocks for all exported `public` table policies.
+    * Table RLS state replay (`ENABLE`/`DISABLE` and `FORCE`/`NO FORCE`) to mirror source behaviour.
   * Post-data sequence alignment using `setval`.
   * Guarded `auth.users` seed data section using **ID-only** idempotent inserts (`ON CONFLICT (id) DO NOTHING`), so local Supabase restores can satisfy user-linked foreign keys without writing generated/auth-managed columns.
 * MCP verification confirms:
@@ -67,3 +70,4 @@ Metadata and dependency verification use direct MCP queries for:
 1. Start a local Supabase/Postgres Docker environment with `auth` schema available.
 2. Run the exported SQL file once.
 3. If your target does not include `auth.users`, run the export anyway to restore `public` schema/data; `auth` seeding and `auth`-dependent FK creation will be skipped with `NOTICE` messages.
+4. If restoring into an environment where `auth.users` is intentionally empty, seed or import required user IDs first, then re-run the export SQL to apply skipped `auth`-dependent foreign keys.

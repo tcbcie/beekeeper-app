@@ -56,6 +56,22 @@ interface MetadataEnumRow {
   enum_sort_order: number | string
 }
 
+interface MetadataRlsTableRow {
+  table_name: string
+  rls_enabled: boolean | string
+  rls_forced: boolean | string
+}
+
+interface MetadataPolicyRow {
+  table_name: string
+  policy_name: string
+  policy_permissive: boolean | string
+  policy_command_key: string
+  policy_roles: string | null
+  using_expr: string | null
+  with_check_expr: string | null
+}
+
 type SqlRow = Record<string, unknown>
 interface AuthUserSeedRow {
   id: string
@@ -146,6 +162,53 @@ function buildSequenceResetStatement(sequence: MetadataSequenceRow): string {
 function buildCreateEnumTypeBlock(typeName: string, labels: string[]): string {
   const labelsSql = labels.map(label => `'${escapeSqlLiteral(label)}'`).join(', ')
   return `DO $$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM pg_type t\n    JOIN pg_namespace n ON n.oid = t.typnamespace\n    WHERE n.nspname = '${escapeSqlLiteral(PUBLIC_SCHEMA)}'\n      AND t.typname = '${escapeSqlLiteral(typeName)}'\n  ) THEN\n    CREATE TYPE ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(typeName)} AS ENUM (${labelsSql});\n  END IF;\nEND $$;\n`
+}
+
+function toBoolean(value: boolean | string | null | undefined): boolean {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  if (value === null || value === undefined) {
+    return false
+  }
+
+  const normalised = String(value).toLowerCase().trim()
+  return normalised === 'true' || normalised === 't' || normalised === '1'
+}
+
+function mapPolicyCommand(commandKey: string): string {
+  switch (commandKey) {
+    case 'r':
+      return 'SELECT'
+    case 'a':
+      return 'INSERT'
+    case 'w':
+      return 'UPDATE'
+    case 'd':
+      return 'DELETE'
+    default:
+      return 'ALL'
+  }
+}
+
+function buildCreatePolicyBlock(policy: MetadataPolicyRow): string {
+  const policyMode = toBoolean(policy.policy_permissive) ? 'PERMISSIVE' : 'RESTRICTIVE'
+  const policyCommand = mapPolicyCommand(policy.policy_command_key)
+  const rolesClause = policy.policy_roles?.trim() ? ` TO ${policy.policy_roles.trim()}` : ''
+  const usingClause = policy.using_expr?.trim() ? ` USING (${policy.using_expr.trim()})` : ''
+  const withCheckClause = policy.with_check_expr?.trim() ? ` WITH CHECK (${policy.with_check_expr.trim()})` : ''
+
+  const createSql = `CREATE POLICY ${sqlIdentifier(policy.policy_name)} ON ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(policy.table_name)} AS ${policyMode} FOR ${policyCommand}${rolesClause}${usingClause}${withCheckClause};`
+  const existsSql = `SELECT 1 FROM pg_policy pol JOIN pg_class tbl ON tbl.oid = pol.polrelid JOIN pg_namespace ns ON ns.oid = tbl.relnamespace WHERE ns.nspname = '${escapeSqlLiteral(PUBLIC_SCHEMA)}' AND tbl.relname = '${escapeSqlLiteral(policy.table_name)}' AND pol.polname = '${escapeSqlLiteral(policy.policy_name)}'`
+
+  return `DO $$\nBEGIN\n  IF NOT EXISTS (${existsSql}) THEN\n    EXECUTE '${escapeSqlLiteral(createSql)}';\n  END IF;\nEND $$;\n`
+}
+
+function buildTableRlsStateBlock(tableName: string, rlsEnabled: boolean, rlsForced: boolean): string {
+  const rlsStateSql = rlsEnabled ? 'ENABLE' : 'DISABLE'
+  const forceStateSql = rlsForced ? 'FORCE' : 'NO FORCE'
+  return `ALTER TABLE ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(tableName)} ${rlsStateSql} ROW LEVEL SECURITY;\nALTER TABLE ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(tableName)} ${forceStateSql} ROW LEVEL SECURITY;\n`
 }
 
 function buildInsertOnConflictDoNothingSql(
@@ -302,6 +365,47 @@ export async function POST(request: NextRequest) {
       ORDER BY t.typname, e.enumsortorder
     `)
 
+    const rlsTableMetadata = await runSafeSelect<MetadataRlsTableRow>(`
+      SELECT
+        c.relname AS table_name,
+        c.relrowsecurity AS rls_enabled,
+        c.relforcerowsecurity AS rls_forced
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = '${PUBLIC_SCHEMA}'
+        AND c.relkind = 'r'
+      ORDER BY c.relname
+    `)
+
+    const policyMetadata = await runSafeSelect<MetadataPolicyRow>(`
+      SELECT
+        tbl.relname AS table_name,
+        pol.polname AS policy_name,
+        pol.polpermissive AS policy_permissive,
+        pol.polcmd AS policy_command_key,
+        (
+          SELECT string_agg(
+            CASE
+              WHEN role_oid = 0 THEN 'PUBLIC'
+              ELSE quote_ident(pg_get_userbyid(role_oid))
+            END,
+            ', '
+            ORDER BY CASE
+              WHEN role_oid = 0 THEN 'PUBLIC'
+              ELSE quote_ident(pg_get_userbyid(role_oid))
+            END
+          )
+          FROM unnest(pol.polroles) AS role_oid
+        ) AS policy_roles,
+        pg_get_expr(pol.polqual, pol.polrelid) AS using_expr,
+        pg_get_expr(pol.polwithcheck, pol.polrelid) AS with_check_expr
+      FROM pg_policy pol
+      JOIN pg_class tbl ON tbl.oid = pol.polrelid
+      JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+      WHERE ns.nspname = '${PUBLIC_SCHEMA}'
+      ORDER BY tbl.relname, pol.polname
+    `)
+
     let authUsers: AuthUserSeedRow[] = []
     let authUsersExportError: string | null = null
     try {
@@ -320,6 +424,8 @@ export async function POST(request: NextRequest) {
     const filteredIndexMetadata = indexMetadata.filter(index => tableSet.has(index.table_name))
     const filteredSequenceMetadata = sequenceMetadata.filter(sequence => tableSet.has(sequence.table_name))
     const filteredEnumMetadata = enumMetadata.filter(enumType => enumType.schema_name === PUBLIC_SCHEMA)
+    const filteredRlsTableMetadata = rlsTableMetadata.filter(tableMeta => tableSet.has(tableMeta.table_name))
+    const filteredPolicyMetadata = policyMetadata.filter(policy => tableSet.has(policy.table_name))
 
     filteredConstraintMetadata.sort((a, b) => {
       const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
@@ -346,6 +452,18 @@ export async function POST(request: NextRequest) {
       const typeSort = a.type_name.localeCompare(b.type_name)
       if (typeSort !== 0) return typeSort
       return Number(a.enum_sort_order) - Number(b.enum_sort_order)
+    })
+
+    filteredRlsTableMetadata.sort((a, b) => {
+      const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
+      if (tableSort !== 0) return tableSort
+      return a.table_name.localeCompare(b.table_name)
+    })
+
+    filteredPolicyMetadata.sort((a, b) => {
+      const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
+      if (tableSort !== 0) return tableSort
+      return a.policy_name.localeCompare(b.policy_name)
     })
 
     const columnsByTable = new Map<string, MetadataColumnRow[]>()
@@ -555,6 +673,32 @@ export async function POST(request: NextRequest) {
     }
     sqlContent += '\n'
 
+    if (filteredPolicyMetadata.length > 0 || filteredRlsTableMetadata.length > 0) {
+      sqlContent += `-- =====================================================\n`
+      sqlContent += `-- POST-DATA ROW LEVEL SECURITY\n`
+      sqlContent += `-- =====================================================\n`
+
+      if (filteredPolicyMetadata.length > 0) {
+        sqlContent += `-- Policies\n`
+        for (const policy of filteredPolicyMetadata) {
+          sqlContent += buildCreatePolicyBlock(policy)
+        }
+        sqlContent += '\n'
+      }
+
+      if (filteredRlsTableMetadata.length > 0) {
+        sqlContent += `-- Table RLS state\n`
+        for (const tableRls of filteredRlsTableMetadata) {
+          sqlContent += buildTableRlsStateBlock(
+            tableRls.table_name,
+            toBoolean(tableRls.rls_enabled),
+            toBoolean(tableRls.rls_forced)
+          )
+        }
+        sqlContent += '\n'
+      }
+    }
+
     if (filteredSequenceMetadata.length > 0) {
       sqlContent += `-- =====================================================\n`
       sqlContent += `-- SEQUENCE ALIGNMENT\n`
@@ -574,7 +718,7 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
-    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}\n`
+    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}\n`
     sqlContent += `-- auth.users ids exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
