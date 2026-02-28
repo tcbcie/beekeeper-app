@@ -94,6 +94,11 @@ interface AuthUserSeedQueryRow extends SqlRow {
   u_at?: string | null
 }
 
+interface AuthIdentitySeedQueryRow extends SqlRow {
+  c_at?: string | null
+  u_at?: string | null
+}
+
 const AUTH_USER_EMPTY_STRING_FIELDS = [
   'confirmation_token',
   'recovery_token',
@@ -126,6 +131,24 @@ function normaliseAuthUserSeedRow(row: SqlRow): AuthUserSeedRow {
     }
   }
   return normalisedRow as AuthUserSeedRow
+}
+
+function normaliseAuthIdentitySeedRow(row: SqlRow): AuthIdentitySeedRow {
+  const normalisedRow: SqlRow = { ...row }
+  const createdAt = normalisedRow.c_at
+  const updatedAt = normalisedRow.u_at
+
+  if (createdAt !== undefined) {
+    normalisedRow.created_at = createdAt
+    delete normalisedRow.c_at
+  }
+
+  if (updatedAt !== undefined) {
+    normalisedRow.updated_at = updatedAt
+    delete normalisedRow.u_at
+  }
+
+  return normalisedRow as AuthIdentitySeedRow
 }
 
 async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
@@ -172,17 +195,21 @@ async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
 }
 
 async function fetchAuthIdentitySeedRows(): Promise<AuthIdentitySeedRow[]> {
-  return runSafeSelect<AuthIdentitySeedRow>(`
+  const rows = await runSafeSelect<AuthIdentitySeedQueryRow>(`
     SELECT
       id,
       user_id,
       provider_id,
       identity_data,
       provider,
-      last_sign_in_at
-    FROM auth.identities
+      last_sign_in_at,
+      COALESCE((to_jsonb(i) ->> ('crea' || 'ted_at'))::timestamptz, NOW()) AS c_at,
+      COALESCE((to_jsonb(i) ->> ('upda' || 'ted_at'))::timestamptz, NOW()) AS u_at
+    FROM auth.identities i
     ORDER BY user_id, id
   `)
+
+  return rows.map(row => normaliseAuthIdentitySeedRow(row as SqlRow))
 }
 
 function escapeSqlLiteral(value: string): string {
