@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 :root {
+  --font-dm-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-dm-serif: Georgia, "Times New Roman", Times, serif;
+  --font-geist-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
   /* LIGHT THEME (Field Work - DEFAULT) */
   /* Optimized for outdoor work in bright sunlight */
   --background: #faf8f5;        /* Warm cream - reduces glare */

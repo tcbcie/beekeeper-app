@@ -1,28 +1,32 @@
-# Task: Admin Export RLS Recreation for Local Restore
+# Task: Local Login Credentials Failing After Restore
 **Date:** 28/02/2026
 **Status:** Completed
 
 ## 1. Objective
-Add row-level security export support to the full admin export so the generated SQL can recreate RLS policies and table-level RLS state in local Docker restores.
+Fix local login failures (`Invalid login credentials`) caused by incomplete auth export data, so restored local environments support password-based sign-in.
 
 ## 2. Impact Analysis
-* **Files to Modify:** 
+* **Files to Modify:**
   * `src/app/api/admin/export-all-data/route.ts`
-  * `docs/features/admin-export-schema-recreation-plan.md`
+  * `docs/features/local-auth-export-login-fix-plan.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep changes scoped to admin export SQL generation only, using existing metadata-query and SQL-builder patterns without touching unrelated routes or user-facing export paths.
+* **Simplicity Check:** Keep changes scoped to export generation logic only, preserving existing table export flow while extending auth export from ID-only seeding to login-capable auth user/identity seeding.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Add metadata extraction for table-level RLS flags (`relrowsecurity`, `relforcerowsecurity`) for exported `public` tables.
-- [x] **Step 2:** Add metadata extraction for `pg_policy` entries and assemble idempotent SQL policy creation blocks.
-- [x] **Step 3:** Emit post-data RLS SQL in restore-safe order (policies then table RLS state) after foreign keys.
-- [x] **Step 4:** Extend export summary metadata with RLS policy/state counts.
-- [x] **Step 5:** Update documentation in `docs/features/admin-export-schema-recreation-plan.md`.
-- [x] **Step 6:** Prompt user to test local restore/build flow.
+- [x] **Step 1:** Extend export metadata/types to include login-capable auth seed rows (`auth.users` core fields and `auth.identities`) instead of ID-only auth rows.
+- [x] **Step 2:** Generate idempotent auth seed SQL blocks that are restore-safe and guarded when `auth` schema objects are unavailable.
+- [x] **Step 3:** Update export summary/comments to reflect auth users and identities export counts and any auth export errors.
+- [x] **Step 4:** Update documentation in `docs/features/local-auth-export-login-fix-plan.md`.
+- [x] **Step 5:** Prompt user to regenerate export, restore locally, and test login offline.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** Admin export recreated schema/data but omitted RLS objects, so a fresh local restore could not fully mirror production access-control behaviour.
-* **Summary of Changes:** Implemented RLS metadata export in admin full export route, including policy metadata (`pg_policy`) and per-table RLS state flags (`pg_class`). Added post-data SQL emission for idempotent policy creation and table RLS state replay, then added RLS counts to export summary metadata. Updated feature documentation with RLS restore coverage and two-pass guidance when `auth` dependencies are intentionally deferred.
-* **Notes for User:** Build/tests were not run locally per project instruction. Please run your normal build and execute a fresh local restore from the generated admin export SQL.
+* **Root Cause Found (if applicable):** Admin full export seeded `auth.users` with ID-only rows. After restore, `auth/v1/token?grant_type=password` had no usable password credential data, causing `400 Invalid login credentials`.
+* **Summary of Changes:** Extended auth export to include login-capable `auth.users` fields and `auth.identities` rows, switched auth seed SQL from ID-only inserts to full-row idempotent inserts, and updated export summary metadata to report both auth users and identities counts/errors.
+* **Notes for User:** Build/tests were not run locally per project instruction. Regenerate the admin export SQL, restore into local Supabase, then test password login (for example `demo@hivecraic.com`).
+
+## Review
+* The export route now captures the data needed for local password authentication, not just foreign-key compatibility.
+* Auth seed restoration remains restore-safe and idempotent, with guards for missing `auth.users`/`auth.identities`.
+* Documentation was updated to reflect the implemented auth export behaviour and constraints.

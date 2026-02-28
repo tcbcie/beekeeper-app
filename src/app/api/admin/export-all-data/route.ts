@@ -73,8 +73,14 @@ interface MetadataPolicyRow {
 }
 
 type SqlRow = Record<string, unknown>
-interface AuthUserSeedRow {
+
+interface AuthUserSeedRow extends SqlRow {
   id: string
+}
+
+interface AuthIdentitySeedRow extends SqlRow {
+  id: string
+  user_id: string
 }
 
 function escapeSqlLiteral(value: string): string {
@@ -408,15 +414,70 @@ export async function POST(request: NextRequest) {
 
     let authUsers: AuthUserSeedRow[] = []
     let authUsersExportError: string | null = null
+    let authIdentities: AuthIdentitySeedRow[] = []
+    let authIdentitiesExportError: string | null = null
     try {
       authUsers = await runSafeSelect<AuthUserSeedRow>(`
-        SELECT id
+        SELECT
+          id,
+          instance_id,
+          aud,
+          role,
+          email,
+          encrypted_password,
+          email_confirmed_at,
+          invited_at,
+          COALESCE(confirmation_token, '') AS confirmation_token,
+          confirmation_sent_at,
+          COALESCE(recovery_token, '') AS recovery_token,
+          recovery_sent_at,
+          COALESCE(email_change_token_new, '') AS email_change_token_new,
+          COALESCE(email_change, '') AS email_change,
+          email_change_sent_at,
+          last_sign_in_at,
+          raw_app_meta_data,
+          raw_user_meta_data,
+          is_super_admin,
+          created_at,
+          updated_at,
+          phone,
+          phone_confirmed_at,
+          COALESCE(phone_change, '') AS phone_change,
+          COALESCE(phone_change_token, '') AS phone_change_token,
+          phone_change_sent_at,
+          COALESCE(email_change_token_current, '') AS email_change_token_current,
+          email_change_confirm_status,
+          banned_until,
+          COALESCE(reauthentication_token, '') AS reauthentication_token,
+          reauthentication_sent_at,
+          is_sso_user,
+          deleted_at,
+          is_anonymous
         FROM auth.users
         ORDER BY id
       `)
     } catch (authError) {
       authUsersExportError = authError instanceof Error ? authError.message : 'Unknown auth.users export error'
       console.error('Error exporting auth.users:', authError)
+    }
+
+    try {
+      authIdentities = await runSafeSelect<AuthIdentitySeedRow>(`
+        SELECT
+          id,
+          user_id,
+          provider_id,
+          identity_data,
+          provider,
+          last_sign_in_at,
+          created_at,
+          updated_at
+        FROM auth.identities
+        ORDER BY user_id, id
+      `)
+    } catch (authIdentityError) {
+      authIdentitiesExportError = authIdentityError instanceof Error ? authIdentityError.message : 'Unknown auth.identities export error'
+      console.error('Error exporting auth.identities:', authIdentityError)
     }
 
     const filteredColumnMetadata = columnMetadata.filter(column => tableSet.has(column.table_name))
@@ -517,12 +578,12 @@ export async function POST(request: NextRequest) {
       sqlContent += '\n'
     }
 
-    sqlContent += `-- Auth users seed data (minimal IDs for public FK compatibility)\n`
+    sqlContent += `-- Auth users seed data (login-capable)\n`
     if (authUsersExportError) {
       sqlContent += `-- Skipping auth.users export due to source query error: ${authUsersExportError.replace(/\n/g, ' ')}\n\n`
     } else if (authUsers.length > 0) {
       const authInsertStatements = authUsers.map(userRow =>
-        buildInsertOnConflictDoNothingSql('auth', 'users', { id: userRow.id }, ['id'])
+        buildInsertOnConflictDoNothingSql('auth', 'users', userRow, ['id'])
       )
       sqlContent += `DO $$\nBEGIN\n  IF to_regclass('auth.users') IS NULL THEN\n    RAISE NOTICE 'Skipping auth.users seed data because auth.users is unavailable in target';\n  ELSE\n`
       for (const statement of authInsertStatements) {
@@ -531,6 +592,22 @@ export async function POST(request: NextRequest) {
       sqlContent += `  END IF;\nEND $$;\n\n`
     } else {
       sqlContent += `-- No auth.users rows found in source export\n\n`
+    }
+
+    sqlContent += `-- Auth identities seed data (required for password and OAuth login)\n`
+    if (authIdentitiesExportError) {
+      sqlContent += `-- Skipping auth.identities export due to source query error: ${authIdentitiesExportError.replace(/\n/g, ' ')}\n\n`
+    } else if (authIdentities.length > 0) {
+      const authIdentityInsertStatements = authIdentities.map(identityRow =>
+        buildInsertOnConflictDoNothingSql('auth', 'identities', identityRow, ['id'])
+      )
+      sqlContent += `DO $$\nBEGIN\n  IF to_regclass('auth.identities') IS NULL THEN\n    RAISE NOTICE 'Skipping auth.identities seed data because auth.identities is unavailable in target';\n  ELSIF to_regclass('auth.users') IS NULL THEN\n    RAISE NOTICE 'Skipping auth.identities seed data because auth.users is unavailable in target';\n  ELSE\n`
+      for (const statement of authIdentityInsertStatements) {
+        sqlContent += `    EXECUTE '${escapeSqlLiteral(statement)}';\n`
+      }
+      sqlContent += `  END IF;\nEND $$;\n\n`
+    } else {
+      sqlContent += `-- No auth.identities rows found in source export\n\n`
     }
 
     if (filteredSequenceMetadata.length > 0) {
@@ -719,9 +796,13 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}\n`
-    sqlContent += `-- auth.users ids exported: ${authUsers.length}\n`
+    sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
+    }
+    sqlContent += `-- auth.identities rows exported: ${authIdentities.length}\n`
+    if (authIdentitiesExportError) {
+      sqlContent += `-- auth.identities export error: ${authIdentitiesExportError.replace(/\n/g, ' ')}\n`
     }
     sqlContent += `-- Total tables: ${tables.length}\n`
     for (const [table, count] of Object.entries(exportResults)) {
