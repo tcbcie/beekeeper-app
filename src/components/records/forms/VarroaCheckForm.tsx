@@ -199,6 +199,11 @@ export default function VarroaCheckForm({
     onCancel()
   }
 
+  const handleRemoveCurrentImage = () => {
+    handleRemoveImage()
+    setFormData(prev => ({ ...prev, image_url: null }))
+  }
+
   const filteredHives = hives
     .filter(h => !h.archived_at)
     .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
@@ -439,7 +444,7 @@ export default function VarroaCheckForm({
                   </div>
                   <IconButton
                     type="button"
-                    onClick={handleRemoveImage}
+                    onClick={handleRemoveCurrentImage}
                     tone="danger"
                     size="sm"
                     className="absolute -top-2 -right-2 z-10 shadow-lg transition-all"

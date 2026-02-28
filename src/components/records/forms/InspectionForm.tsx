@@ -107,6 +107,11 @@ export default function InspectionForm({
     onCancel()
   }
 
+  const handleRemoveCurrentImage = () => {
+    handleRemoveImage()
+    setFormData(prev => ({ ...prev, image_url: null }))
+  }
+
   const filteredHives = hives
     .filter(h => !h.archived_at)
     .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
@@ -672,7 +677,7 @@ export default function InspectionForm({
                   <Button
           unstyled
                     type="button"
-                    onClick={handleRemoveImage}
+                    onClick={handleRemoveCurrentImage}
                     className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
                     title="Remove image"
                   >
