@@ -34,3 +34,5 @@ No application schema migration is required. Export logic will continue using di
 * Follow-up fix: direct `supabaseAdmin.schema('auth')` reads were not portable in local environments where PostgREST only exposes `public` and `graphql_public`.
 * Final fix: auth extraction now uses `execute_safe_query` again but excludes `created_at`/`updated_at` columns so the RPC keyword guard does not reject the query text.
 * Auth user rows continue to be normalised for GoTrue-sensitive empty-string fields before SQL generation.
+* Additional compatibility fix: removed `deleted_at` from auth user export query because the safe-query keyword filter matches `DELETE` as a substring and rejects the whole `SELECT`.
+* Added guard to skip auth identities seeding whenever auth user export fails, preventing downstream FK violations against `auth.users`.

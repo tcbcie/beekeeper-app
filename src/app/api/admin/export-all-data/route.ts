@@ -137,7 +137,6 @@ async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
       COALESCE(reauthentication_token, '') AS reauthentication_token,
       reauthentication_sent_at,
       is_sso_user,
-      deleted_at,
       is_anonymous
     FROM auth.users
     ORDER BY id
@@ -622,7 +621,9 @@ export async function POST(request: NextRequest) {
     }
 
     sqlContent += `-- Auth identities seed data (required for password and OAuth login)\n`
-    if (authIdentitiesExportError) {
+    if (authUsersExportError) {
+      sqlContent += `-- Skipping auth.identities export because auth.users export failed\n\n`
+    } else if (authIdentitiesExportError) {
       sqlContent += `-- Skipping auth.identities export due to source query error: ${authIdentitiesExportError.replace(/\n/g, ' ')}\n\n`
     } else if (authIdentities.length > 0) {
       const authIdentityInsertStatements = authIdentities.map(identityRow =>
