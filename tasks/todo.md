@@ -1,32 +1,32 @@
-# Task: Local Login Credentials Failing After Restore
+# Task: Auth Export Safe-Query Guard Compatibility
 **Date:** 28/02/2026
 **Status:** Completed
 
 ## 1. Objective
-Fix local login failures (`Invalid login credentials`) caused by incomplete auth export data, so restored local environments support password-based sign-in.
+Fix admin export auth seeding when `execute_safe_query` rejects valid `SELECT` statements containing column names like `created_at` and `updated_at`, which resulted in zero auth rows being exported and downstream FK failures on restore.
 
 ## 2. Impact Analysis
 * **Files to Modify:**
   * `src/app/api/admin/export-all-data/route.ts`
   * `docs/features/local-auth-export-login-fix-plan.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep changes scoped to export generation logic only, preserving existing table export flow while extending auth export from ID-only seeding to login-capable auth user/identity seeding.
+* **Simplicity Check:** Keep the fix surgical by leaving metadata queries on the existing RPC path and only switching auth user/identity extraction to direct service-role auth schema reads.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Extend export metadata/types to include login-capable auth seed rows (`auth.users` core fields and `auth.identities`) instead of ID-only auth rows.
-- [x] **Step 2:** Generate idempotent auth seed SQL blocks that are restore-safe and guarded when `auth` schema objects are unavailable.
-- [x] **Step 3:** Update export summary/comments to reflect auth users and identities export counts and any auth export errors.
+- [x] **Step 1:** Replace auth export reads from `runSafeSelect` with direct `supabaseAdmin.schema('auth')` queries for `users` and `identities`.
+- [x] **Step 2:** Add pagination and row normalisation so exports remain reliable for larger datasets and preserve required empty-string auth fields.
+- [x] **Step 3:** Keep auth seed SQL emission and summary reporting unchanged in shape, now fed by successful direct auth queries.
 - [x] **Step 4:** Update documentation in `docs/features/local-auth-export-login-fix-plan.md`.
-- [x] **Step 5:** Prompt user to regenerate export, restore locally, and test login offline.
+- [x] **Step 5:** Prompt user to regenerate export and retry reset/import flow.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** Admin full export seeded `auth.users` with ID-only rows. After restore, `auth/v1/token?grant_type=password` had no usable password credential data, causing `400 Invalid login credentials`.
-* **Summary of Changes:** Extended auth export to include login-capable `auth.users` fields and `auth.identities` rows, switched auth seed SQL from ID-only inserts to full-row idempotent inserts, and updated export summary metadata to report both auth users and identities counts/errors.
-* **Notes for User:** Build/tests were not run locally per project instruction. Regenerate the admin export SQL, restore into local Supabase, then test password login (for example `demo@hivecraic.com`).
+* **Root Cause Found (if applicable):** `execute_safe_query` uses a simple forbidden-keyword regex (`CREATE|UPDATE|...`) against the entire query text, so auth `SELECT` statements containing `created_at`/`updated_at` were rejected and exported zero auth rows.
+* **Summary of Changes:** Added direct paginated auth schema fetch helpers for `auth.users` and `auth.identities`, including string-field normalisation for GoTrue compatibility. Rewired auth export to use those helpers while preserving existing seed SQL generation and summary output.
+* **Notes for User:** Build/tests were not run locally per project instruction. Please regenerate the export SQL and run your local reset/import again.
 
 ## Review
-* The export route now captures the data needed for local password authentication, not just foreign-key compatibility.
-* Auth seed restoration remains restore-safe and idempotent, with guards for missing `auth.users`/`auth.identities`.
-* Documentation was updated to reflect the implemented auth export behaviour and constraints.
+* Export now includes auth rows even when `execute_safe_query` keyword guards are strict.
+* FK creation to `auth.users` no longer fails because auth seeding is no longer silently skipped.
+* Existing metadata export flow and restore structure were left unchanged outside the auth query path.

@@ -83,6 +83,136 @@ interface AuthIdentitySeedRow extends SqlRow {
   user_id: string
 }
 
+const AUTH_USER_EMPTY_STRING_FIELDS = [
+  'confirmation_token',
+  'recovery_token',
+  'email_change_token_new',
+  'email_change',
+  'phone_change',
+  'phone_change_token',
+  'email_change_token_current',
+  'reauthentication_token'
+] as const
+
+function normaliseAuthUserSeedRow(row: SqlRow): AuthUserSeedRow {
+  const normalisedRow: SqlRow = { ...row }
+  for (const field of AUTH_USER_EMPTY_STRING_FIELDS) {
+    if (normalisedRow[field] === null || normalisedRow[field] === undefined) {
+      normalisedRow[field] = ''
+    }
+  }
+  return normalisedRow as AuthUserSeedRow
+}
+
+async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
+  const pageSize = 1000
+  const rows: AuthUserSeedRow[] = []
+  let from = 0
+
+  while (true) {
+    const { data, error } = await supabaseAdmin
+      .schema('auth')
+      .from('users')
+      .select(`
+        id,
+        instance_id,
+        aud,
+        role,
+        email,
+        encrypted_password,
+        email_confirmed_at,
+        invited_at,
+        confirmation_token,
+        confirmation_sent_at,
+        recovery_token,
+        recovery_sent_at,
+        email_change_token_new,
+        email_change,
+        email_change_sent_at,
+        last_sign_in_at,
+        raw_app_meta_data,
+        raw_user_meta_data,
+        is_super_admin,
+        created_at,
+        updated_at,
+        phone,
+        phone_confirmed_at,
+        phone_change,
+        phone_change_token,
+        phone_change_sent_at,
+        email_change_token_current,
+        email_change_confirm_status,
+        banned_until,
+        reauthentication_token,
+        reauthentication_sent_at,
+        is_sso_user,
+        deleted_at,
+        is_anonymous
+      `)
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1)
+
+    if (error) {
+      throw new Error(`Failed auth.users query: ${error.message}`)
+    }
+
+    const page = Array.isArray(data) ? data : []
+    for (const row of page) {
+      rows.push(normaliseAuthUserSeedRow(row as SqlRow))
+    }
+
+    if (page.length < pageSize) {
+      break
+    }
+
+    from += pageSize
+  }
+
+  return rows
+}
+
+async function fetchAuthIdentitySeedRows(): Promise<AuthIdentitySeedRow[]> {
+  const pageSize = 1000
+  const rows: AuthIdentitySeedRow[] = []
+  let from = 0
+
+  while (true) {
+    const { data, error } = await supabaseAdmin
+      .schema('auth')
+      .from('identities')
+      .select(`
+        id,
+        user_id,
+        provider_id,
+        identity_data,
+        provider,
+        last_sign_in_at,
+        created_at,
+        updated_at
+      `)
+      .order('user_id', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1)
+
+    if (error) {
+      throw new Error(`Failed auth.identities query: ${error.message}`)
+    }
+
+    const page = Array.isArray(data) ? data : []
+    for (const row of page) {
+      rows.push(row as AuthIdentitySeedRow)
+    }
+
+    if (page.length < pageSize) {
+      break
+    }
+
+    from += pageSize
+  }
+
+  return rows
+}
+
 function escapeSqlLiteral(value: string): string {
   return value.replace(/'/g, "''")
 }
@@ -417,64 +547,14 @@ export async function POST(request: NextRequest) {
     let authIdentities: AuthIdentitySeedRow[] = []
     let authIdentitiesExportError: string | null = null
     try {
-      authUsers = await runSafeSelect<AuthUserSeedRow>(`
-        SELECT
-          id,
-          instance_id,
-          aud,
-          role,
-          email,
-          encrypted_password,
-          email_confirmed_at,
-          invited_at,
-          COALESCE(confirmation_token, '') AS confirmation_token,
-          confirmation_sent_at,
-          COALESCE(recovery_token, '') AS recovery_token,
-          recovery_sent_at,
-          COALESCE(email_change_token_new, '') AS email_change_token_new,
-          COALESCE(email_change, '') AS email_change,
-          email_change_sent_at,
-          last_sign_in_at,
-          raw_app_meta_data,
-          raw_user_meta_data,
-          is_super_admin,
-          created_at,
-          updated_at,
-          phone,
-          phone_confirmed_at,
-          COALESCE(phone_change, '') AS phone_change,
-          COALESCE(phone_change_token, '') AS phone_change_token,
-          phone_change_sent_at,
-          COALESCE(email_change_token_current, '') AS email_change_token_current,
-          email_change_confirm_status,
-          banned_until,
-          COALESCE(reauthentication_token, '') AS reauthentication_token,
-          reauthentication_sent_at,
-          is_sso_user,
-          deleted_at,
-          is_anonymous
-        FROM auth.users
-        ORDER BY id
-      `)
+      authUsers = await fetchAuthUserSeedRows()
     } catch (authError) {
       authUsersExportError = authError instanceof Error ? authError.message : 'Unknown auth.users export error'
       console.error('Error exporting auth.users:', authError)
     }
 
     try {
-      authIdentities = await runSafeSelect<AuthIdentitySeedRow>(`
-        SELECT
-          id,
-          user_id,
-          provider_id,
-          identity_data,
-          provider,
-          last_sign_in_at,
-          created_at,
-          updated_at
-        FROM auth.identities
-        ORDER BY user_id, id
-      `)
+      authIdentities = await fetchAuthIdentitySeedRows()
     } catch (authIdentityError) {
       authIdentitiesExportError = authIdentityError instanceof Error ? authIdentityError.message : 'Unknown auth.identities export error'
       console.error('Error exporting auth.identities:', authIdentityError)
