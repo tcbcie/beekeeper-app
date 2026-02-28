@@ -41,11 +41,13 @@ Metadata and dependency verification use direct MCP queries for:
 * The admin export route now uses metadata queries via `execute_safe_query` to assemble schema SQL for all exported `public` tables.
 * Metadata/auth queries were adjusted to avoid `execute_safe_query` guard regex false-positives from query text substrings (for example `DROP` inside `dropdown_*` and `CREATE` inside `created_at`), preventing admin export 500 failures.
 * Export output now includes:
-  * Extension guards (`uuid-ossp`, `pgcrypto`).
+  * Extension guards (`uuid-ossp`, `pgcrypto`, `vector`).
+  * Public enum type recreation (`CREATE TYPE ... AS ENUM`) before table creation.
   * Sequence creation and ownership statements.
   * `CREATE TABLE IF NOT EXISTS` statements with defaults, generated, identity, and not-null metadata.
   * Non-foreign-key constraints and secondary indexes with idempotent guards.
   * Data insert section.
+  * Data insert generation that excludes generated columns, so restore does not attempt writes to generated fields (for example `profiles.full_name`).
   * Post-data foreign-key section with guarded handling for `auth.users` dependencies.
   * Post-data sequence alignment using `setval`.
   * Guarded `auth.users` seed data section using **ID-only** idempotent inserts (`ON CONFLICT (id) DO NOTHING`), so local Supabase restores can satisfy user-linked foreign keys without writing generated/auth-managed columns.
@@ -57,6 +59,9 @@ Metadata and dependency verification use direct MCP queries for:
   * owned sequences for `public` tables: 1
 * Remaining prerequisite: target environment still needs compatible Supabase/auth infrastructure if `auth`-related objects are expected; guarded FK blocks intentionally skip unavailable `auth.users`.
 * Compatibility note: changed from full-row auth seeding to ID-only seeding after restore failure on generated `auth.users` columns (for example `confirmed_at`) in local environments.
+* Compatibility note: added `vector` extension bootstrap after local restore failed on `knowledge_base.embedding vector(1536)` with `type "vector" does not exist`.
+* Compatibility note: added enum type bootstrap after local restore failed on `registration_codes.code_type subscription_code_type` with `type "subscription_code_type" does not exist`.
+* Compatibility note: data export now excludes generated columns after local restore failed on `profiles.full_name` (`cannot insert a non-DEFAULT value into column ... generated column`).
 
 ## 7. Local Restore Flow
 1. Start a local Supabase/Postgres Docker environment with `auth` schema available.

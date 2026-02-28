@@ -49,6 +49,13 @@ interface MetadataSequenceRow {
   column_name: string
 }
 
+interface MetadataEnumRow {
+  schema_name: string
+  type_name: string
+  enum_label: string
+  enum_sort_order: number | string
+}
+
 type SqlRow = Record<string, unknown>
 interface AuthUserSeedRow {
   id: string
@@ -73,7 +80,7 @@ async function runSafeSelect<T>(query: string): Promise<T[]> {
 }
 
 function buildCreateExtensionsBlock(): string {
-  return `-- Ensure required extensions exist for default expressions\nDO $$\nBEGIN\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping uuid-ossp extension create due to insufficient privileges';\n  END;\n\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "pgcrypto";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping pgcrypto extension create due to insufficient privileges';\n  END;\nEND $$;\n`
+  return `-- Ensure required extensions exist for default expressions and column types\nDO $$\nBEGIN\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping uuid-ossp extension create due to insufficient privileges';\n  END;\n\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "pgcrypto";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping pgcrypto extension create due to insufficient privileges';\n  END;\n\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "vector";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping vector extension create due to insufficient privileges';\n  END;\nEND $$;\n`
 }
 
 function buildCreateTableStatement(table: string, columns: MetadataColumnRow[]): string {
@@ -134,6 +141,11 @@ function buildCreateIndexStatement(indexDef: string): string {
 
 function buildSequenceResetStatement(sequence: MetadataSequenceRow): string {
   return `SELECT setval('${escapeSqlLiteral(`${sequence.sequence_schema}.${sequence.sequence_name}`)}'::regclass, GREATEST(COALESCE((SELECT MAX(${sqlIdentifier(sequence.column_name)}) FROM ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(sequence.table_name)}), 0) + 1, 1), false);\n`
+}
+
+function buildCreateEnumTypeBlock(typeName: string, labels: string[]): string {
+  const labelsSql = labels.map(label => `'${escapeSqlLiteral(label)}'`).join(', ')
+  return `DO $$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1\n    FROM pg_type t\n    JOIN pg_namespace n ON n.oid = t.typnamespace\n    WHERE n.nspname = '${escapeSqlLiteral(PUBLIC_SCHEMA)}'\n      AND t.typname = '${escapeSqlLiteral(typeName)}'\n  ) THEN\n    CREATE TYPE ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(typeName)} AS ENUM (${labelsSql});\n  END IF;\nEND $$;\n`
 }
 
 function buildInsertOnConflictDoNothingSql(
@@ -198,9 +210,9 @@ export async function POST(request: NextRequest) {
 
     console.warn(`[AUDIT] Admin data export: admin=${user.id} status=started timestamp=${new Date().toISOString()}`)
 
-    const tables = [...DATABASE_EXPORT_TABLES]
+    const tables: string[] = [...DATABASE_EXPORT_TABLES]
     const tableOrder = new Map<string, number>(tables.map((table, index) => [table, index]))
-    const tableSet = new Set(tables)
+    const tableSet = new Set<string>(tables)
 
     const columnMetadata = await runSafeSelect<MetadataColumnRow>(`
       SELECT
@@ -277,6 +289,19 @@ export async function POST(request: NextRequest) {
       ORDER BY tbl.relname, seq.relname
     `)
 
+    const enumMetadata = await runSafeSelect<MetadataEnumRow>(`
+      SELECT
+        n.nspname AS schema_name,
+        t.typname AS type_name,
+        e.enumlabel AS enum_label,
+        e.enumsortorder AS enum_sort_order
+      FROM pg_type t
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      JOIN pg_enum e ON e.enumtypid = t.oid
+      WHERE n.nspname = '${PUBLIC_SCHEMA}'
+      ORDER BY t.typname, e.enumsortorder
+    `)
+
     let authUsers: AuthUserSeedRow[] = []
     let authUsersExportError: string | null = null
     try {
@@ -294,6 +319,7 @@ export async function POST(request: NextRequest) {
     const filteredConstraintMetadata = constraintMetadata.filter(constraint => tableSet.has(constraint.table_name))
     const filteredIndexMetadata = indexMetadata.filter(index => tableSet.has(index.table_name))
     const filteredSequenceMetadata = sequenceMetadata.filter(sequence => tableSet.has(sequence.table_name))
+    const filteredEnumMetadata = enumMetadata.filter(enumType => enumType.schema_name === PUBLIC_SCHEMA)
 
     filteredConstraintMetadata.sort((a, b) => {
       const tableSort = (tableOrder.get(a.table_name) ?? Number.MAX_SAFE_INTEGER) - (tableOrder.get(b.table_name) ?? Number.MAX_SAFE_INTEGER)
@@ -316,11 +342,25 @@ export async function POST(request: NextRequest) {
       return a.sequence_name.localeCompare(b.sequence_name)
     })
 
+    filteredEnumMetadata.sort((a, b) => {
+      const typeSort = a.type_name.localeCompare(b.type_name)
+      if (typeSort !== 0) return typeSort
+      return Number(a.enum_sort_order) - Number(b.enum_sort_order)
+    })
+
     const columnsByTable = new Map<string, MetadataColumnRow[]>()
     for (const column of filteredColumnMetadata) {
       const existing = columnsByTable.get(column.table_name) || []
       existing.push(column)
       columnsByTable.set(column.table_name, existing)
+    }
+
+    const insertableColumnsByTable = new Map<string, string[]>()
+    for (const [tableName, columns] of columnsByTable.entries()) {
+      const insertableColumns = columns
+        .filter(column => (column.generated_kind || '').trim() !== 's')
+        .map(column => column.column_name)
+      insertableColumnsByTable.set(tableName, insertableColumns)
     }
 
     const nonForeignKeyConstraints = filteredConstraintMetadata.filter(constraint => constraint.constraint_type !== 'f')
@@ -343,6 +383,21 @@ export async function POST(request: NextRequest) {
     sqlContent += `CREATE SCHEMA IF NOT EXISTS ${sqlIdentifier(PUBLIC_SCHEMA)};\n\n`
     sqlContent += buildCreateExtensionsBlock()
     sqlContent += '\n'
+
+    if (filteredEnumMetadata.length > 0) {
+      sqlContent += `-- Custom enum types\n`
+      const labelsByType = new Map<string, string[]>()
+      for (const enumRow of filteredEnumMetadata) {
+        const existing = labelsByType.get(enumRow.type_name) || []
+        existing.push(enumRow.enum_label)
+        labelsByType.set(enumRow.type_name, existing)
+      }
+
+      for (const [typeName, labels] of labelsByType.entries()) {
+        sqlContent += buildCreateEnumTypeBlock(typeName, labels)
+      }
+      sqlContent += '\n'
+    }
 
     sqlContent += `-- Auth users seed data (minimal IDs for public FK compatibility)\n`
     if (authUsersExportError) {
@@ -454,8 +509,22 @@ export async function POST(request: NextRequest) {
           sqlContent += `-- Records: ${data.length}\n`
           sqlContent += `-- =====================================================\n\n`
 
+          const insertableColumns = insertableColumnsByTable.get(table) || []
+
           for (const row of data) {
-            sqlContent += `${buildInsertSql(PUBLIC_SCHEMA, table, row as Record<string, unknown>)}\n`
+            const sourceRow = row as Record<string, unknown>
+            const exportRow: Record<string, unknown> = {}
+            for (const columnName of insertableColumns) {
+              if (columnName in sourceRow) {
+                exportRow[columnName] = sourceRow[columnName]
+              }
+            }
+
+            if (Object.keys(exportRow).length === 0) {
+              continue
+            }
+
+            sqlContent += `${buildInsertSql(PUBLIC_SCHEMA, table, exportRow)}\n`
           }
 
           sqlContent += '\n'
@@ -505,7 +574,7 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
-    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}\n`
+    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}\n`
     sqlContent += `-- auth.users ids exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
