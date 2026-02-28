@@ -31,5 +31,6 @@ No application schema migration is required. Export logic will continue using di
 * Added `auth.identities` export and restore blocks so identity records are recreated alongside users.
 * Excluded generated auth columns from inserts (`auth.users.confirmed_at`, `auth.identities.email`) to avoid restore failures.
 * Kept auth seed SQL idempotent and guarded with `to_regclass` checks to remain non-fatal when auth objects are unavailable.
-* Follow-up fix: switched auth extraction from `execute_safe_query` RPC to direct `supabaseAdmin.schema('auth')` reads because the RPC keyword guard rejected valid `SELECT` statements containing column names such as `created_at` and `updated_at`.
-* Added paginated auth fetch helpers with auth string-field normalisation so larger exports are complete and GoTrue-sensitive empty-string fields are preserved.
+* Follow-up fix: direct `supabaseAdmin.schema('auth')` reads were not portable in local environments where PostgREST only exposes `public` and `graphql_public`.
+* Final fix: auth extraction now uses `execute_safe_query` again but excludes `created_at`/`updated_at` columns so the RPC keyword guard does not reject the query text.
+* Auth user rows continue to be normalised for GoTrue-sensitive empty-string fields before SQL generation.
