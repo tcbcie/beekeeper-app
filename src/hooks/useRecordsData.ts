@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 // Helper to compare string arrays (avoids unnecessary state updates)
 function arraysEqual(a: string[], b: string[]): boolean {
@@ -240,7 +241,13 @@ export function useRecordsData(): UseRecordsDataReturn {
       }
     }
 
-    if (data) setInspections(data as Inspection[])
+    if (data) {
+      const normalisedInspections = data.map((inspection) => ({
+        ...inspection,
+        image_url: normaliseStoragePublicUrl(inspection.image_url)
+      }))
+      setInspections(normalisedInspections as Inspection[])
+    }
     setLoading(false)
   }, [updateSharedHiveIds])
 
@@ -297,7 +304,13 @@ export function useRecordsData(): UseRecordsDataReturn {
       .order('check_date', { ascending: false })
       .limit(500)
 
-    if (data) setVarroaChecks(data as VarroaCheck[])
+    if (data) {
+      const normalisedChecks = data.map((check) => ({
+        ...check,
+        image_url: normaliseStoragePublicUrl(check.image_url)
+      }))
+      setVarroaChecks(normalisedChecks as VarroaCheck[])
+    }
   }, [updateSharedHiveIds])
 
   const fetchFeedings = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {

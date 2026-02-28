@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import {
   RecordFiltersBar,
   NewRecordDropdown,
@@ -818,7 +819,7 @@ export default function RecordsPage() {
   }
 
   const handleImageClick = (url: string) => {
-    setModalImageUrl(url)
+    setModalImageUrl(normaliseStoragePublicUrl(url))
     setImageModalOpen(true)
   }
 

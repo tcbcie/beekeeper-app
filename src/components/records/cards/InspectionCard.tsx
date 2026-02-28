@@ -4,6 +4,7 @@ import { Edit2, Trash2, Search, Camera } from 'lucide-react'
 import Image from 'next/image'
 import type { Inspection, Hive } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 interface InspectionCardProps {
   inspection: Inspection
@@ -32,6 +33,7 @@ export default function InspectionCard({
   onImageClick
 }: InspectionCardProps) {
   const hive = hives.find(h => h.id === inspection.hive_id)
+  const normalisedImageUrl = normaliseStoragePublicUrl(inspection.image_url)
 
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 md:p-6 border-l-4 border-blue-500">
@@ -41,14 +43,14 @@ export default function InspectionCard({
           <div className="w-12 h-12 flex-shrink-0 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
             <Search size={24} className="text-blue-800 dark:text-blue-400" />
           </div>
-          {userHasActiveSubscription && inspection.image_url && (
+          {userHasActiveSubscription && normalisedImageUrl && (
             <div
               className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
-              onDoubleClick={() => onImageClick(inspection.image_url!)}
+              onDoubleClick={() => onImageClick(normalisedImageUrl)}
               title="Double-click to enlarge"
             >
               <Image
-                src={inspection.image_url}
+                src={normalisedImageUrl}
                 alt="Inspection"
                 fill
                 className="object-cover rounded-lg border-2 border-border shadow-sm"
