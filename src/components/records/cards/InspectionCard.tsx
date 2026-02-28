@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Edit2, Trash2, Search, Camera } from 'lucide-react'
 import Image from 'next/image'
 import type { Inspection, Hive } from '@/types/records'
@@ -34,6 +35,11 @@ export default function InspectionCard({
 }: InspectionCardProps) {
   const hive = hives.find(h => h.id === inspection.hive_id)
   const normalisedImageUrl = normaliseStoragePublicUrl(inspection.image_url)
+  const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
+
+  useEffect(() => {
+    setThumbnailLoadFailed(false)
+  }, [normalisedImageUrl])
 
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 md:p-6 border-l-4 border-blue-500">
@@ -43,7 +49,7 @@ export default function InspectionCard({
           <div className="w-12 h-12 flex-shrink-0 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
             <Search size={24} className="text-blue-800 dark:text-blue-400" />
           </div>
-          {userHasActiveSubscription && normalisedImageUrl && (
+          {userHasActiveSubscription && normalisedImageUrl && !thumbnailLoadFailed && (
             <div
               className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
               onDoubleClick={() => onImageClick(normalisedImageUrl)}
@@ -55,10 +61,19 @@ export default function InspectionCard({
                 fill
                 className="object-cover rounded-lg border-2 border-border shadow-sm"
                 sizes="64px"
+                onError={() => setThumbnailLoadFailed(true)}
               />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
                 <Camera size={20} className="text-white" />
               </div>
+            </div>
+          )}
+          {userHasActiveSubscription && normalisedImageUrl && thumbnailLoadFailed && (
+            <div
+              className="w-16 h-16 flex-shrink-0 rounded-lg border-2 border-dashed border-border bg-surface-elevated flex items-center justify-center"
+              title="Image unavailable"
+            >
+              <Camera size={18} className="text-text-tertiary" />
             </div>
           )}
           <div className="flex-1 min-w-0">

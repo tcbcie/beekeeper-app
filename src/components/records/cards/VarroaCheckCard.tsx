@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Edit2, Trash2, Bug, Camera } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck } from '@/types/records'
@@ -27,6 +28,11 @@ export default function VarroaCheckCard({
 }: VarroaCheckCardProps) {
   const isNaturalDrop = check.method === 'Natural Mite Drop' || check.method === 'Screening Board'
   const normalisedImageUrl = normaliseStoragePublicUrl(check.image_url)
+  const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
+
+  useEffect(() => {
+    setThumbnailLoadFailed(false)
+  }, [normalisedImageUrl])
 
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 border-l-4 border-orange-500">
@@ -38,7 +44,7 @@ export default function VarroaCheckCard({
           </div>
 
           {/* Image thumbnail */}
-          {userHasActiveSubscription && normalisedImageUrl && (
+          {userHasActiveSubscription && normalisedImageUrl && !thumbnailLoadFailed && (
             <div
               className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
               onDoubleClick={() => onImageClick(normalisedImageUrl)}
@@ -50,10 +56,19 @@ export default function VarroaCheckCard({
                 fill
                 className="object-cover rounded-lg border-2 border-border shadow-sm"
                 sizes="64px"
+                onError={() => setThumbnailLoadFailed(true)}
               />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
                 <Camera size={20} className="text-white" />
               </div>
+            </div>
+          )}
+          {userHasActiveSubscription && normalisedImageUrl && thumbnailLoadFailed && (
+            <div
+              className="w-16 h-16 flex-shrink-0 rounded-lg border-2 border-dashed border-border bg-surface-elevated flex items-center justify-center"
+              title="Image unavailable"
+            >
+              <Camera size={18} className="text-text-tertiary" />
             </div>
           )}
 
