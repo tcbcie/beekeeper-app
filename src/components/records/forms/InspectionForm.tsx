@@ -116,19 +116,19 @@ export default function InspectionForm({
   // Render star rating component
   const renderStarRating = useCallback((value: number, onChange: (val: number) => void, label: string) => (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-text-secondary">{label}</label>
+      <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <label className="text-sm font-medium text-text-secondary sm:pr-2">{label}</label>
         <Button
           unstyled
           type="button"
           onClick={() => onChange(0)}
           aria-label={`Clear ${label} rating`}
-          className="min-h-[32px] px-3 rounded-md border border-border bg-surface-elevated text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+          className="min-h-[36px] w-full px-3 sm:min-h-[32px] sm:w-auto rounded-md border border-border bg-surface-elevated text-[11px] sm:text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
         >
           Clear
         </Button>
       </div>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap sm:flex-nowrap gap-1 sm:gap-1.5 max-w-full">
         {[1, 2, 3, 4, 5].map((star) => (
           <Button
           unstyled
@@ -137,7 +137,7 @@ export default function InspectionForm({
             onClick={() => onChange(star)}
             aria-label={`${label}: ${star} star${star === 1 ? '' : 's'}`}
             aria-pressed={value === star}
-            className={`min-h-[40px] min-w-[40px] rounded-lg text-xl transition-all ${
+            className={`min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px] rounded-lg text-lg sm:text-xl flex items-center justify-center transition-all touch-manipulation ${
               value >= star
                 ? 'bg-yellow-400 text-white'
                 : 'bg-surface-elevated border border-border hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
@@ -199,14 +199,14 @@ export default function InspectionForm({
     onRemovedAllChange: (val: boolean) => void
   ) => (
     <div className="bg-surface-secondary p-3 rounded-lg">
-      <div className="flex items-center gap-2 mb-3">
-        <label className="text-sm font-medium text-text-secondary">{title}</label>
-        <div className="flex gap-2 ml-auto">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label className="text-sm font-medium leading-tight text-text-secondary">{title}</label>
+        <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">
           <Button
           unstyled
             type="button"
             onClick={() => onPresentChange(true)}
-            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+            className={`min-h-[36px] w-full px-3 sm:w-auto sm:px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
               present === true
                 ? 'bg-green-600 text-white shadow-lg'
                 : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -222,7 +222,7 @@ export default function InspectionForm({
               onCountChange(0)
               onRemovedAllChange(false)
             }}
-            className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+            className={`min-h-[36px] w-full px-3 sm:w-auto sm:px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
               present === false
                 ? 'bg-red-600 text-white shadow-lg'
                 : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -236,12 +236,12 @@ export default function InspectionForm({
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
           unstyled
                 type="button"
                 onClick={() => onCountChange(Math.max(0, count - 1))}
-                className="px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
+                className="min-h-[36px] px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
               >
                 -
               </Button>
@@ -249,14 +249,14 @@ export default function InspectionForm({
                 type="number"
                 value={count}
                 onChange={(e) => onCountChange(parseInt(e.target.value) || 0)}
-                className="w-20 px-3 py-2 border rounded text-center"
+                className="h-[36px] w-20 px-3 py-2 border rounded text-center"
                 min="0"
               />
               <Button
           unstyled
                 type="button"
                 onClick={() => onCountChange(count + 1)}
-                className="px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
+                className="min-h-[36px] px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
               >
                 +
               </Button>
@@ -519,7 +519,7 @@ export default function InspectionForm({
             <div className="p-4 pt-0 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">Drone Population Level</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { value: 0, label: 'Low' },
                     { value: 1, label: 'Medium' },
@@ -531,7 +531,7 @@ export default function InspectionForm({
                       key={option.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, drones_present: option.value }))}
-                      className={`min-h-[48px] rounded-lg font-semibold transition-all ${
+                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-xs sm:text-sm leading-tight whitespace-nowrap transition-all ${
                         formData.drones_present === option.value
                           ? 'bg-amber-600 text-white shadow-lg'
                           : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
