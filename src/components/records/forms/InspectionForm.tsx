@@ -104,9 +104,10 @@ export default function InspectionForm({
       <div className="flex items-center justify-between mb-2">
         <label className="text-sm font-medium text-text-secondary">{label}</label>
         <Button
+          unstyled
           type="button"
           onClick={() => onChange(0)}
-          className="text-xs text-text-tertiary hover:text-red-600 dark:hover:text-red-400 transition-colors"
+          className="min-h-[32px] px-3 rounded-md border border-border bg-surface-elevated text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
         >
           Clear
         </Button>
@@ -114,6 +115,7 @@ export default function InspectionForm({
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Button
+          unstyled
             key={star}
             type="button"
             onClick={() => onChange(star)}
@@ -139,6 +141,7 @@ export default function InspectionForm({
       <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
           <Button
+          unstyled
             key={num}
             type="button"
             onClick={() => onChange(num)}
@@ -152,6 +155,7 @@ export default function InspectionForm({
           </Button>
         ))}
         <Button
+          unstyled
           type="button"
           onClick={() => onChange(null)}
           className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
@@ -181,6 +185,7 @@ export default function InspectionForm({
         <label className="text-sm font-medium text-text-secondary">{title}</label>
         <div className="flex gap-2 ml-auto">
           <Button
+          unstyled
             type="button"
             onClick={() => onPresentChange(true)}
             className={`min-h-[36px] px-4 rounded-lg font-semibold transition-all flex items-center gap-2 ${
@@ -192,6 +197,7 @@ export default function InspectionForm({
             <span>✓</span> YES
           </Button>
           <Button
+          unstyled
             type="button"
             onClick={() => {
               onPresentChange(false)
@@ -214,6 +220,7 @@ export default function InspectionForm({
             <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
             <div className="flex items-center gap-2">
               <Button
+          unstyled
                 type="button"
                 onClick={() => onCountChange(Math.max(0, count - 1))}
                 className="px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
@@ -228,6 +235,7 @@ export default function InspectionForm({
                 min="0"
               />
               <Button
+          unstyled
                 type="button"
                 onClick={() => onCountChange(count + 1)}
                 className="px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
@@ -240,6 +248,7 @@ export default function InspectionForm({
             <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
             <div className="flex gap-2">
               <Button
+          unstyled
                 type="button"
                 onClick={() => onRemovedAllChange(true)}
                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
@@ -251,6 +260,7 @@ export default function InspectionForm({
                 YES
               </Button>
               <Button
+          unstyled
                 type="button"
                 onClick={() => onRemovedAllChange(false)}
                 className={`flex-1 min-h-[36px] rounded-lg font-semibold transition-all ${
@@ -276,6 +286,7 @@ export default function InspectionForm({
         </h3>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Button
+          unstyled
             type="submit"
             form="inspection-form"
             disabled={submitting || fetchingWeather}
@@ -284,6 +295,7 @@ export default function InspectionForm({
             {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : initialData?.hive_id ? 'Update' : 'Save'} Inspection
           </Button>
           <Button
+          unstyled
             type="button"
             onClick={handleCancel}
             className="px-6 py-3 sm:py-2 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium"
@@ -410,6 +422,7 @@ export default function InspectionForm({
           {/* Queen Cells Subsection - Collapsible */}
           <div className="mt-4 rounded-lg border border-border">
             <Button
+          unstyled
               type="button"
               onClick={() => setQueenCellsExpanded(!queenCellsExpanded)}
               className="w-full p-3 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-t-lg"
@@ -476,6 +489,7 @@ export default function InspectionForm({
         {/* Drones Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
+          unstyled
             type="button"
             onClick={() => setDronesExpanded(!dronesExpanded)}
             className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
@@ -495,6 +509,7 @@ export default function InspectionForm({
                     { value: 3, label: 'Extreme' }
                   ].map((option) => (
                     <Button
+          unstyled
                       key={option.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, drones_present: option.value }))}
@@ -525,6 +540,7 @@ export default function InspectionForm({
         {/* Given/Taken Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
+          unstyled
             type="button"
             onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
             className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
@@ -560,6 +576,7 @@ export default function InspectionForm({
         {/* Disease Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
+          unstyled
             type="button"
             onClick={() => setDiseaseExpanded(!diseaseExpanded)}
             className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
@@ -582,6 +599,7 @@ export default function InspectionForm({
         {/* Hygienic Behaviour Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
+          unstyled
             type="button"
             onClick={() => setHygienicBehaviourExpanded(!hygienicBehaviourExpanded)}
             className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
@@ -634,6 +652,7 @@ export default function InspectionForm({
                     </div>
                   </div>
                   <Button
+          unstyled
                     type="button"
                     onClick={handleRemoveImage}
                     className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"

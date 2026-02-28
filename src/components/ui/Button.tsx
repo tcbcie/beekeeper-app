@@ -9,6 +9,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   tone?: ButtonTone
   size?: ButtonSize
   fullWidth?: boolean
+  unstyled?: boolean
 }
 
 const toneClasses: Record<ButtonTone, string> = {
@@ -27,18 +28,23 @@ const sizeClasses: Record<ButtonSize, string> = {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, tone = 'neutral', size = 'md', fullWidth = false, type = 'button', ...props },
+  { className, tone = 'neutral', size = 'md', fullWidth = false, unstyled = false, type = 'button', ...props },
   ref
 ) {
   return (
     <button
       ref={ref}
       type={type}
-      className={cn('fj-btn', toneClasses[tone], sizeClasses[size], fullWidth && 'w-full', className)}
+      className={cn(
+        !unstyled && 'fj-btn',
+        !unstyled && toneClasses[tone],
+        !unstyled && sizeClasses[size],
+        fullWidth && 'w-full',
+        className
+      )}
       {...props}
     />
   )
 })
 
 export default Button
-
