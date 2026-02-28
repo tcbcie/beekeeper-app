@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import InfoPanel from '@/components/ui/InfoPanel'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { buildInsertSql, DATABASE_EXPORT_TABLES } from '@/lib/database-export'
 
 interface ProfileExportProps {
   isAdmin: boolean
@@ -61,53 +62,19 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         toast.success('Complete database exported successfully!')
       } else {
         // Regular user: export only their own data
-        const tables = [
-          'apiaries',
-          'batch_containers',
-          'batch_feedback',
-          'batch_grafts',
-          'batch_runs',
-          'bulk_containers',
-          'colonies',
-          'colony_movements',
-          'container_harvests',
-          'diagnosis_images',
-          'diagnosis_image_comments',
-          'feedings',
-          'financial_records',
-          'frame_standards',
-          'gdd_records',
-          'harvests',
-          'hive_configuration_history',
-          'hives',
-          'inspections',
-          'mating_nuc_inspections',
-          'mating_nucs',
-          'profiles',
-          'purchase_items',
-          'push_subscriptions',
-          'queens',
-          'rearing_batches',
-          'subscription_history',
-          'support_tickets',
-          'tasks_events',
-          'team_apiaries',
-          'team_invitations',
-          'team_members',
-          'teams',
-          'varroa_checks',
-          'varroa_treatment_products',
-          'varroa_treatments',
-          'wild_colonies',
-          'wild_colony_inspections'
-        ]
+        const tables = [...DATABASE_EXPORT_TABLES]
+        const exportResults: Record<string, number> = {}
+        const exportErrors: Record<string, string> = {}
 
         let sqlContent = `-- =====================================================\n`
         sqlContent += `-- HiveCraic Personal Data Export\n`
         sqlContent += `-- Generated on: ${new Date().toISOString()}\n`
         sqlContent += `-- =====================================================\n\n`
         sqlContent += `-- This export includes YOUR data only\n`
+        sqlContent += `-- Restore prerequisite: database schema must already exist (run migrations first)\n`
+        sqlContent += `-- Data visibility depends on your row-level security permissions\n`
         sqlContent += `-- Tables: ${tables.join(', ')}\n\n`
+        sqlContent += `BEGIN;\n\n`
 
         // Fetch and export data from each table (RLS will filter to user's data)
         for (const table of tables) {
@@ -117,35 +84,42 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
 
           if (error) {
             console.error(`Error fetching ${table}:`, error)
+            exportResults[table] = 0
+            exportErrors[table] = error.message
             continue
           }
+
+          exportResults[table] = data?.length || 0
 
           if (data && data.length > 0) {
             sqlContent += `\n-- Table: ${table}\n`
             sqlContent += `-- Records: ${data.length}\n\n`
 
-            // Get column names from first record
-            const columns = Object.keys(data[0])
-
             for (const row of data) {
-              const values = columns.map(col => {
-                const value = row[col]
-                if (value === null) return 'NULL'
-                if (typeof value === 'boolean') return value ? 'true' : 'false'
-                if (typeof value === 'number') return value.toString()
-                if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`
-                if (typeof value === 'object') return `'${JSON.stringify(value).replace(/'/g, "''")}'`
-                return `'${value}'`
-              }).join(', ')
-
-              sqlContent += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values});\n`
+              sqlContent += `${buildInsertSql('public', table, row as Record<string, unknown>)}\n`
             }
 
             sqlContent += '\n'
           }
         }
 
+        sqlContent += `\nCOMMIT;\n`
         sqlContent += `\n-- =====================================================\n`
+        sqlContent += `-- EXPORT SUMMARY\n`
+        sqlContent += `-- =====================================================\n`
+        sqlContent += `-- Total tables: ${tables.length}\n`
+        for (const [table, count] of Object.entries(exportResults)) {
+          sqlContent += `-- ${table}: ${count} records\n`
+        }
+        if (Object.keys(exportErrors).length > 0) {
+          sqlContent += `-- -----------------------------------------------------\n`
+          sqlContent += `-- TABLES WITH EXPORT ERRORS\n`
+          sqlContent += `-- -----------------------------------------------------\n`
+          for (const [table, message] of Object.entries(exportErrors)) {
+            sqlContent += `-- ${table}: ${message.replace(/\n/g, ' ')}\n`
+          }
+        }
+        sqlContent += `-- =====================================================\n`
         sqlContent += `-- END OF EXPORT\n`
         sqlContent += `-- =====================================================\n`
 
