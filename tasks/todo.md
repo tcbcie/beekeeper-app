@@ -1,28 +1,28 @@
-# Task: Admin Export Local Docker Restore Compatibility
+# Task: Admin Export RLS Recreation for Local Restore
 **Date:** 28/02/2026
 **Status:** Completed
 
 ## 1. Objective
-Make the full admin export practical for creating a local Docker database by including user records needed for `public -> auth.users` foreign-key restoration.
+Add row-level security export support to the full admin export so the generated SQL can recreate RLS policies and table-level RLS state in local Docker restores.
 
 ## 2. Impact Analysis
 * **Files to Modify:** 
   * `src/app/api/admin/export-all-data/route.ts`
   * `docs/features/admin-export-schema-recreation-plan.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep this change scoped to admin export output only, add guarded auth seeding, and avoid touching personal export or unrelated modules.
+* **Simplicity Check:** Keep changes scoped to admin export SQL generation only, using existing metadata-query and SQL-builder patterns without touching unrelated routes or user-facing export paths.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Add admin-export query and capture logic for `auth.users` rows using existing safe query path.
-- [x] **Step 2:** Emit guarded `auth.users` seed SQL in export output with idempotent inserts (`ON CONFLICT DO NOTHING`).
-- [x] **Step 3:** Keep restore resilient when `auth.users` is unavailable in target environment (skip with notice instead of failing).
-- [x] **Step 4:** Extend export summary with auth export metrics/errors for troubleshooting.
+- [x] **Step 1:** Add metadata extraction for table-level RLS flags (`relrowsecurity`, `relforcerowsecurity`) for exported `public` tables.
+- [x] **Step 2:** Add metadata extraction for `pg_policy` entries and assemble idempotent SQL policy creation blocks.
+- [x] **Step 3:** Emit post-data RLS SQL in restore-safe order (policies then table RLS state) after foreign keys.
+- [x] **Step 4:** Extend export summary metadata with RLS policy/state counts.
 - [x] **Step 5:** Update documentation in `docs/features/admin-export-schema-recreation-plan.md`.
-- [x] **Step 6:** Prompt user to test the build and local restore flow.
+- [x] **Step 6:** Prompt user to test local restore/build flow.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** Even with schema recreation, post-data FK creation could still fail locally when `public` data referenced user IDs that were not present in target `auth.users`.
-* **Summary of Changes:** Added guarded `auth.users` extraction in admin export and generated **ID-only** idempotent auth seed statements (not full-row inserts) wrapped in a runtime check for `auth.users` availability; added summary diagnostics for auth export status. Also hardened metadata/auth RPC query text to avoid `execute_safe_query` substring guard false-positives (for example `DROP` in `dropdown_*` and `CREATE` in `created_at`) that caused export route 500 errors, excluded dropped physical columns from generated table DDL using `a.atttypid <> 0` after a local restore syntax failure (`........pg.dropped...`), added `vector` extension bootstrap to handle `knowledge_base.embedding vector(1536)`, added public enum type recreation before table DDL for custom types like `subscription_code_type`, and excluded generated columns from data insert statements (for example `profiles.full_name`) to prevent generated-column restore failures.
-* **Notes for User:** Build/tests were not run locally per project instruction. Please run an admin export and execute it against your Docker environment to validate one-pass restore.
+* **Root Cause Found (if applicable):** Admin export recreated schema/data but omitted RLS objects, so a fresh local restore could not fully mirror production access-control behaviour.
+* **Summary of Changes:** Implemented RLS metadata export in admin full export route, including policy metadata (`pg_policy`) and per-table RLS state flags (`pg_class`). Added post-data SQL emission for idempotent policy creation and table RLS state replay, then added RLS counts to export summary metadata. Updated feature documentation with RLS restore coverage and two-pass guidance when `auth` dependencies are intentionally deferred.
+* **Notes for User:** Build/tests were not run locally per project instruction. Please run your normal build and execute a fresh local restore from the generated admin export SQL.
