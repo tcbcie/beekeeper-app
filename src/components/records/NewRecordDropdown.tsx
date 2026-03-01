@@ -12,9 +12,11 @@ interface NewRecordDropdownProps {
 export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const itemBaseClass = 'w-full px-4 py-3 text-left bg-surface text-foreground dark:bg-surface dark:text-text-primary flex items-center justify-start gap-2 transition-colors'
-  const blueItemClass = 'hover:bg-blue-50 hover:text-blue-900 dark:hover:bg-blue-950/40 dark:hover:text-blue-100 active:bg-blue-100 active:text-blue-900 dark:active:bg-blue-900/60 dark:active:text-blue-100'
-  const indigoItemClass = 'hover:bg-indigo-50 hover:text-indigo-900 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-100 active:bg-indigo-100 active:text-indigo-900 dark:active:bg-indigo-900/60 dark:active:text-indigo-100'
+  const itemBaseClass = 'group w-full px-4 py-3 text-left bg-surface text-text-primary flex items-center justify-start gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60'
+  const blueItemClass = 'hover:bg-blue-100 hover:text-blue-950 focus-visible:bg-blue-100 focus-visible:text-blue-950 active:bg-blue-200 active:text-blue-950 dark:hover:bg-blue-900/80 dark:hover:text-blue-50 dark:focus-visible:bg-blue-900/80 dark:focus-visible:text-blue-50 dark:active:bg-blue-800 dark:active:text-white'
+  const indigoItemClass = 'hover:bg-indigo-100 hover:text-indigo-950 focus-visible:bg-indigo-100 focus-visible:text-indigo-950 active:bg-indigo-200 active:text-indigo-950 dark:hover:bg-indigo-900/80 dark:hover:text-indigo-50 dark:focus-visible:bg-indigo-900/80 dark:focus-visible:text-indigo-50 dark:active:bg-indigo-800 dark:active:text-white'
+  const blueIconClass = 'h-4 w-4 shrink-0 text-blue-700 group-hover:text-blue-900 group-focus-visible:text-blue-900 group-active:text-blue-950 dark:text-blue-300 dark:group-hover:text-blue-100 dark:group-focus-visible:text-blue-100 dark:group-active:text-white'
+  const indigoIconClass = 'h-4 w-4 shrink-0 text-indigo-700 group-hover:text-indigo-900 group-focus-visible:text-indigo-900 group-active:text-indigo-950 dark:text-indigo-300 dark:group-hover:text-indigo-100 dark:group-focus-visible:text-indigo-100 dark:group-active:text-white'
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -46,13 +48,13 @@ export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownPro
       </Button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-56 bg-surface dark:bg-surface rounded-lg shadow-lg border border-border z-10 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-56 bg-surface rounded-lg shadow-lg border border-border z-10 overflow-hidden">
           <Button
             unstyled
             onClick={() => handleSelect('inspection')}
             className={`${itemBaseClass} ${blueItemClass} rounded-t-lg`}
           >
-            <Plus size={16} />
+            <Plus className={blueIconClass} size={17} strokeWidth={2.25} />
             Hive Inspection
           </Button>
           <Button
@@ -60,7 +62,7 @@ export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownPro
             onClick={() => handleSelect('varroa_treatment')}
             className={`${itemBaseClass} ${blueItemClass}`}
           >
-            <Plus size={16} />
+            <Plus className={blueIconClass} size={17} strokeWidth={2.25} />
             Varroa Treatment
           </Button>
           <Button
@@ -68,7 +70,7 @@ export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownPro
             onClick={() => handleSelect('varroa_check')}
             className={`${itemBaseClass} ${blueItemClass}`}
           >
-            <Plus size={16} />
+            <Plus className={blueIconClass} size={17} strokeWidth={2.25} />
             Varroa Check
           </Button>
           <Button
@@ -76,7 +78,7 @@ export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownPro
             onClick={() => handleSelect('feeding')}
             className={`${itemBaseClass} ${indigoItemClass}`}
           >
-            <Plus size={16} />
+            <Plus className={indigoIconClass} size={17} strokeWidth={2.25} />
             Feeding
           </Button>
           <Button
@@ -84,7 +86,7 @@ export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownPro
             onClick={() => handleSelect('harvest')}
             className={`${itemBaseClass} ${indigoItemClass} rounded-b-lg`}
           >
-            <Plus size={16} />
+            <Plus className={indigoIconClass} size={17} strokeWidth={2.25} />
             Harvest
           </Button>
         </div>
