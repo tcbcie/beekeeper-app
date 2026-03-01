@@ -12,6 +12,9 @@ interface NewRecordDropdownProps {
 export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const itemBaseClass = 'w-full px-4 py-3 text-left bg-surface text-foreground dark:bg-surface dark:text-text-primary flex items-center justify-start gap-2 transition-colors'
+  const blueItemClass = 'hover:bg-blue-50 hover:text-blue-900 dark:hover:bg-blue-950/40 dark:hover:text-blue-100 active:bg-blue-100 active:text-blue-900 dark:active:bg-blue-900/60 dark:active:text-blue-100'
+  const indigoItemClass = 'hover:bg-indigo-50 hover:text-indigo-900 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-100 active:bg-indigo-100 active:text-indigo-900 dark:active:bg-indigo-900/60 dark:active:text-indigo-100'
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -43,38 +46,43 @@ export default function NewRecordDropdown({ onSelectType }: NewRecordDropdownPro
       </Button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-56 bg-surface dark:bg-surface rounded-lg shadow-lg border border-border z-10">
+        <div className="absolute right-0 mt-2 w-56 bg-surface dark:bg-surface rounded-lg shadow-lg border border-border z-10 overflow-hidden">
           <Button
+            unstyled
             onClick={() => handleSelect('inspection')}
-            className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 rounded-t-lg transition-colors"
+            className={`${itemBaseClass} ${blueItemClass} rounded-t-lg`}
           >
             <Plus size={16} />
             Hive Inspection
           </Button>
           <Button
+            unstyled
             onClick={() => handleSelect('varroa_treatment')}
-            className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 transition-colors"
+            className={`${itemBaseClass} ${blueItemClass}`}
           >
             <Plus size={16} />
             Varroa Treatment
           </Button>
           <Button
+            unstyled
             onClick={() => handleSelect('varroa_check')}
-            className="w-full px-4 py-3 text-left text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30 flex items-center gap-2 transition-colors"
+            className={`${itemBaseClass} ${blueItemClass}`}
           >
             <Plus size={16} />
             Varroa Check
           </Button>
           <Button
+            unstyled
             onClick={() => handleSelect('feeding')}
-            className="w-full px-4 py-3 text-left text-foreground hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2 transition-colors"
+            className={`${itemBaseClass} ${indigoItemClass}`}
           >
             <Plus size={16} />
             Feeding
           </Button>
           <Button
+            unstyled
             onClick={() => handleSelect('harvest')}
-            className="w-full px-4 py-3 text-left text-foreground hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-2 rounded-b-lg transition-colors"
+            className={`${itemBaseClass} ${indigoItemClass} rounded-b-lg`}
           >
             <Plus size={16} />
             Harvest
