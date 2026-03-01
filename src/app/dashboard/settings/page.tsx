@@ -1029,14 +1029,14 @@ export default function SettingsPage() {
             <div className="mb-4 space-y-3">
               {/* Search Bar */}
               <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" size={18} />
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" size={17} />
                 <TextInput
                   type="text"
                   placeholder="Search users by email or ID..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   tone="purple"
-                  className="pl-11 pr-4"
+                  className="!pl-11 pr-4"
                 />
               </div>
 
