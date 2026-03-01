@@ -1321,6 +1321,7 @@ export default function BatchesPage() {
  cellsPerRow={formData.cells_per_row ? parseInt(formData.cells_per_row) : null}
  groupId={editingBatch.rearing_group_id}
  emergenceDate={editingBatch.emergence_date}
+ graftDate={formData.graft_date || null}
  onCountsChange={(counts) => setFormData(prev => ({
  ...prev,
  grafts_accepted: counts.grafts_accepted.toString(),

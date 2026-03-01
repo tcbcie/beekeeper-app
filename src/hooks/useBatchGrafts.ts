@@ -14,10 +14,11 @@ interface UseBatchGraftsProps {
   cellCount: number | null
   groupId?: string | null
   emergenceDate?: string | null
+  graftDate?: string | null
   onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
 }
 
-export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, onCountsChange }: UseBatchGraftsProps) {
+export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange }: UseBatchGraftsProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
   const [loading, setLoading] = useState(true)
@@ -177,6 +178,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
         batch_id: batchId,
         cell_number: nextNumber + i,
         status: 'grafted',
+        status_date: graftDate || null,
         user_id: userId,
       })
     }
@@ -193,7 +195,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error creating grafts:', error)
       toast.error('Failed to create grafts')
     }
-  }, [cellCount, grafts, batchId, userId, toast, fetchGrafts])
+  }, [cellCount, grafts, batchId, userId, graftDate, toast, fetchGrafts])
 
   const updateGraftStatus = useCallback(async (graftId: string, newStatus: string) => {
     try {
