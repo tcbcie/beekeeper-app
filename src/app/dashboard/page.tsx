@@ -219,27 +219,27 @@ export default function DashboardPage() {
  </div>
 
  {/* Attention Needed Alerts */}
- {(alerts.overdueInspections > 0 || alerts.oldQueens > 0 || alerts.highVarroa > 0) && (
- <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg p-4">
+{(alerts.overdueInspections > 0 || alerts.oldQueens > 0 || alerts.highVarroa > 0) && (
+ <div className="fj-panel-amber p-4">
  <div className="flex items-center gap-2 mb-3">
- <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400" />
- <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Attention Needed</h2>
+ <AlertTriangle size={18} className="fj-text-warning" />
+ <h2 className="text-sm font-semibold fj-text-warning">Attention Needed</h2>
  </div>
  <div className="flex flex-wrap gap-3">
  {alerts.overdueInspections > 0 && (
- <Link href="/dashboard/hives" className="fj-chip fj-chip-xs fj-chip-amber">
+ <Link href="/dashboard/hives" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
  <ClipboardList size={12} />
  {alerts.overdueInspections} hive{alerts.overdueInspections !== 1 ? 's' : ''} overdue inspection (14+ days)
  </Link>
  )}
  {alerts.oldQueens > 0 && (
- <Link href="/dashboard/queens" className="fj-chip fj-chip-xs fj-chip-amber">
+ <Link href="/dashboard/queens" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
  <Crown size={12} />
  {alerts.oldQueens} queen{alerts.oldQueens !== 1 ? 's' : ''} over 2 years old
  </Link>
  )}
  {alerts.highVarroa > 0 && (
- <Link href="/dashboard/records?type=varroa_check" className="fj-chip fj-chip-xs fj-chip-amber">
+ <Link href="/dashboard/records?type=varroa_check" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
  <Bug size={12} />
  {alerts.highVarroa} high varroa check{alerts.highVarroa !== 1 ? 's' : ''} (&gt;3%)
  </Link>
