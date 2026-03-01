@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit2, Archive, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
+import { Plus, Edit2, Archive, Trash2, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
 import NucInspectionPanel from './NucInspectionPanel'
@@ -538,6 +538,24 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  } catch (error) {
  console.error('Error retiring nuc:', error)
  toast.error('Failed to retire mating nuc')
+ }
+ }
+
+ const handleDelete = async (id: string) => {
+ if (!confirm('Delete this nuc permanently? This will also delete all its inspections. This cannot be undone.')) return
+
+ try {
+ const { error } = await supabase
+ .from('mating_nucs')
+ .delete()
+ .eq('id', id)
+
+ if (error) throw error
+ toast.success('Nuc deleted')
+ fetchNucs()
+ } catch (error) {
+ console.error('Error deleting nuc:', error)
+ toast.error('Failed to delete mating nuc')
  }
  }
 
@@ -1089,6 +1107,13 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <Archive size={18} />
  </Button>
  )}
+ <Button
+ onClick={() => handleDelete(nuc.id)}
+ className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+ title="Delete"
+ >
+ <Trash2 size={18} />
+ </Button>
  </div>
  </div>
  </div>
