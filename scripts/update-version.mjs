@@ -148,7 +148,7 @@ const files = [
     path: join(ROOT_DIR, 'src/app/login/page.tsx'),
     updates: [
       {
-        search: /(<span className="px-2 py-1 bg-emerald-900\/30 text-forest-600 dark:text-emerald-400 rounded font-medium">)v[\d.]+(-[a-zA-Z0-9.]+)?(<\/span>)/,
+        search: /(<span className="rounded-full border border-forest-200 bg-forest-50 px-2 py-1 font-mono text-forest-700 dark:border-forest-900 dark:bg-forest-950\/30 dark:text-forest-300">\s*)v[\d.]+(-[a-zA-Z0-9.]+)?(\s*<\/span>)/,
         replace: `$1v${newVersion}$3`,
         description: 'Version badge'
       },
@@ -164,14 +164,9 @@ const files = [
     path: join(ROOT_DIR, 'src/app/dashboard/page.tsx'),
     updates: [
       {
-        search: /(<span className="font-bold text-indigo-700 dark:text-indigo-300">)v[\d.]+(-[a-zA-Z0-9.]+)?(<\/span>)/,
-        replace: `$1v${newVersion}$3`,
-        description: 'Version display'
-      },
-      {
-        search: /(<span className="font-semibold text-blue-700 dark:text-blue-400">)[A-Za-z]+ \d{1,2}, \d{4}(<\/span>)/,
-        replace: `$1${newDate}$2`,
-        description: 'Date display'
+        search: /(HiveCraic )v[\d.]+(-[a-zA-Z0-9.]+)?( &middot; )[A-Za-z]+ \d{1,2}, \d{4}( &middot;)/,
+        replace: `$1v${newVersion}$3${newDate}$4`,
+        description: 'Version and date display'
       }
     ]
   },
