@@ -1,31 +1,31 @@
-# Task: Subscription History Search Icon Alignment Fix
+# Task: Records New Record Dropdown Icon Contrast Fix
 **Date:** 01/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Fix the Subscription History search input so the magnifying-glass icon is correctly aligned and does not overlap or crowd the placeholder text.
+Improve icon and label contrast in the Records `New Record` dropdown so all options remain clearly readable in dark mode, including hover, focus, and active states.
 
 ## 2. Impact Analysis
 * **Files to Modify:**
-  * `src/app/dashboard/settings/subscription-history/page.tsx`
-  * `docs/features/subscription-history-search-icon-alignment-fix-plan.md`
+  * `src/components/records/NewRecordDropdown.tsx`
+  * `docs/features/records-new-record-dropdown-icon-contrast-fix-plan.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep this as a surgical styling-only fix for the existing search control by adjusting icon positioning and resilient left-padding, with no logic, API, or schema changes.
+* **Simplicity Check:** Keep this as a surgical styling-only update in the dropdown component by tightening row state classes and icon presentation, with no behavioural, API, or schema changes.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Update the search icon classes for stable visual centring and non-interactive overlay behaviour.
-- [x] **Step 2:** Replace fragile left-padding utility on the input with a forced override so icon spacing is not reset by `fj-control`.
-- [x] **Step 3:** Update documentation in `docs/features/subscription-history-search-icon-alignment-fix-plan.md`
+- [x] **Step 1:** Refine dropdown row state classes (default, hover, focus-visible, active) to enforce high-contrast foreground/background combinations in dark mode.
+- [x] **Step 2:** Increase icon legibility by using explicit icon classes (size/stroke/colour) that stay clear across interaction states.
+- [x] **Step 3:** Update documentation in `docs/features/records-new-record-dropdown-icon-contrast-fix-plan.md`
 - [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The search input relied on `pl-10`, but `.fj-control` applies shorthand padding (`padding: 0.5rem 0.75rem`) that can override directional utility padding and collapse reserved icon space.
-* **Summary of Changes:** Updated the search icon positioning/size classes and changed input padding to a forced override (`!pl-11`) so text and icon spacing remain correctly aligned.
-* **Notes for User:** No database or schema work was required. Build/tests were not run locally per project instruction; please run your normal build check and verify the Subscription History search bar alignment.
+* **Root Cause Found (if applicable):** The dropdown relied on mixed state classes where icon and text contrast could degrade in dark mode during interaction states, especially with small icon sizing and inherited colouring.
+* **Summary of Changes:** Updated dropdown row state classes to explicit high-contrast values for hover, focus-visible, and active states, and strengthened icon readability with explicit icon colour classes plus larger, heavier icons.
+* **Notes for User:** No database or schema changes were made. Build/tests were not run locally per project instruction; please run your normal build check and verify the `New Record` dropdown contrast in the Records page.
 
 ## Review
-* Implemented a surgical UI-only alignment fix in `src/app/dashboard/settings/subscription-history/page.tsx`.
-* Documented the implemented change in `docs/features/subscription-history-search-icon-alignment-fix-plan.md`.
-* Completed all checklist items and prompted user-side build verification.
+* Implemented a surgical UI-only contrast fix in `src/components/records/NewRecordDropdown.tsx`.
+* Updated feature documentation in `docs/features/records-new-record-dropdown-icon-contrast-fix-plan.md`.
+* Completed task checklist and prompted user-side build verification.
