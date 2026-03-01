@@ -43,6 +43,7 @@ next-env.d.ts
 
 # mcp servers
 .mcp.json
+supabase/.temp/cli-latest
 
 # Claude Code local settings
 .claude/settings.local.json

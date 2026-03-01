@@ -1,31 +1,31 @@
-# Task: New Record Dropdown Contrast Fix
+# Task: Dashboard Attention Contrast Fix
 **Date:** 01/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Fix low contrast in the Records page `New Record` dropdown items (specifically the inspection/treatment selection state shown in the screenshot), where light item backgrounds can pair with light text in dark theme.
+Fix low-contrast text/badge rendering in the Dashboard Overview `Attention Needed` block shown in the latest screenshot.
 
 ## 2. Impact Analysis
 * **Files to Modify:**
-  * `src/components/records/NewRecordDropdown.tsx`
-  * `docs/features/new-record-dropdown-contrast-fix-plan.md`
+  * `src/app/dashboard/page.tsx`
+  * `docs/features/dashboard-attention-contrast-fix-plan.md`
   * `tasks/todo.md`
-* **Simplicity Check:** Keep this as a local styling fix in the existing dropdown item buttons only, with no behaviour changes, no refactor, and no database impact.
+* **Simplicity Check:** Keep this as a local presentational update to existing dashboard alert classes only, with no logic/data changes and no global theme refactor.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Remove unintended inherited neutral-button visual styles from dropdown rows where they conflict with custom row background/text states.
-- [x] **Step 2:** Apply explicit high-contrast text and hover/focus/active colour classes for each dropdown row in both light and dark themes.
-- [x] **Step 3:** Update documentation in `docs/features/new-record-dropdown-contrast-fix-plan.md`
+- [x] **Step 1:** Replace the alert container styling with contrast-safe panel classes that stay readable in both light and dark themes.
+- [x] **Step 2:** Replace `Attention Needed` chip/link classes with explicit high-contrast amber styles instead of current low-contrast utility combination.
+- [x] **Step 3:** Update documentation in `docs/features/dashboard-attention-contrast-fix-plan.md`
 - [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** Dropdown items inherited `Button` neutral skin classes (`fj-btn` / `fj-btn-neutral`) while also applying custom row hover/active colours, creating conflicting state styling and low-contrast text on light interaction backgrounds in dark theme.
-* **Summary of Changes:** Updated `NewRecordDropdown` item buttons to `unstyled`, added explicit base/hover/active text and background classes per row colour group, and preserved existing dropdown behaviour.
-* **Notes for User:** No database or schema work was required. Build/tests were not run locally per project instruction; please run your normal build check and verify dropdown contrast in dark theme.
+* **Root Cause Found (if applicable):** The `Attention Needed` panel used Tailwind `dark:` utility classes for amber background/text, while other app theming relies on class-based semantic styles. This led to unstable contrast in the shown dark-theme context.
+* **Summary of Changes:** Updated the dashboard alert block to use `fj-panel-amber` and `fj-text-warning` for theme-aware contrast, and increased alert chip text weight for better readability.
+* **Notes for User:** No database or schema changes were made. Build/tests were not run locally per project instruction; please run your normal build check and verify the Dashboard `Attention Needed` section contrast.
 
 ## Review
-* Implemented a targeted contrast fix for Records `New Record` dropdown item states.
-* Kept impact minimal by changing only class composition in `NewRecordDropdown`.
-* Updated feature documentation in `docs/features/new-record-dropdown-contrast-fix-plan.md` and completed task tracking in this file.
+* Implemented a targeted contrast fix for the Dashboard Overview `Attention Needed` area.
+* Kept scope minimal by changing styling classes only in `src/app/dashboard/page.tsx`.
+* Updated feature documentation in `docs/features/dashboard-attention-contrast-fix-plan.md` and completed task tracking in this file.
