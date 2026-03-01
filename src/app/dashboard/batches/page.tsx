@@ -895,11 +895,11 @@ export default function BatchesPage() {
  </div>
 
  <div>
- <label className="flex items-center gap-2 text-sm font-medium text-text-secondary mb-1">
- Expected Day to Hatch
- <div className="group relative">
+ <label className="block text-sm font-medium text-text-secondary mb-1">
+ Expected Hatch
+ <div className="group relative inline-block ml-1 align-middle">
  <MessageCircle size={14} className="text-purple-600 dark:text-purple-300 cursor-help" />
- <div className="invisible group-hover:visible absolute left-0 top-6 w-64 p-2 bg-surface-elevated text-white text-xs rounded shadow-lg z-10">
+ <div className="invisible group-hover:visible absolute right-0 top-6 w-64 p-2 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded shadow-lg z-10">
  Assuming the larvae are approximately four days after the egg was laid, they should all be of the same age and ideally no more than 12 hours old at the time of grafting.
  </div>
  </div>
