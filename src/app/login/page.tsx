@@ -306,7 +306,7 @@ function LoginForm() {
 
             <div className="flex items-center justify-center gap-2 text-xs text-text-tertiary">
               <span className="rounded-full border border-forest-200 bg-forest-50 px-2 py-1 font-mono text-forest-700 dark:border-forest-900 dark:bg-forest-950/30 dark:text-forest-300">
-                v1.6.2
+                v1.6.3
               </span>
               <span aria-hidden="true">-</span>
               <span>March 1, 2026</span>
