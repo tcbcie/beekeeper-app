@@ -19,11 +19,12 @@ interface BatchGraftsSectionProps {
   cellsPerRow?: number | null
   groupId?: string | null
   emergenceDate?: string | null
+  graftDate?: string | null
   onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
 }
 
-export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, onCountsChange }: BatchGraftsSectionProps) {
-  const hook = useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, onCountsChange })
+export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, graftDate, onCountsChange }: BatchGraftsSectionProps) {
+  const hook = useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange })
 
   const handleFrameBulkButtonClick = async () => {
     if (hook.selectMode) {
