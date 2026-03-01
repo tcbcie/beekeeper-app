@@ -220,14 +220,12 @@ function LoginForm() {
               <div>
                 <div className="flex items-center justify-between">
                   <label className="block text-sm font-medium text-text-secondary">Password</label>
-                  {!isSignUp && (
-                    <Link
-                      href="/forgot-password"
-                      className="text-xs font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200"
-                    >
-                      Forgot Password?
-                    </Link>
-                  )}
+                  <Link
+                    href="/forgot-password"
+                    className={`text-xs font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200 ${isSignUp ? 'invisible' : ''}`}
+                  >
+                    Forgot Password?
+                  </Link>
                 </div>
                 <input
                   type="password"
@@ -240,11 +238,9 @@ function LoginForm() {
                 />
               </div>
 
-              {message && (
-                <div className={`rounded-lg p-3 text-center text-sm ${messageClasses}`}>
-                  {message}
-                </div>
-              )}
+              <div className={`rounded-lg px-3 py-2 text-center text-sm min-h-[32px] ${message ? messageClasses : 'invisible'}`}>
+                {message || '\u00A0'}
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <Button

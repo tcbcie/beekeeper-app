@@ -4,7 +4,7 @@ import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import StatCard from '@/components/ui/StatCard'
 import AppIcon from '@/components/icons/AppIcon'
-import { SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
 import UpcomingEvents from '@/components/UpcomingEvents'
@@ -113,6 +113,15 @@ export default function DashboardPage() {
  <SkeletonCard />
  <SkeletonCard />
  </div>
+ {/* Quick actions placeholder */}
+ <div className="flex flex-wrap gap-2">
+ {Array.from({ length: 6 }).map((_, i) => (
+ <Skeleton key={i} className="h-8 w-28" />
+ ))}
+ </div>
+ {/* Alerts placeholder */}
+ <Skeleton className="h-16 w-full" />
+ {/* Recent activity placeholder */}
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border space-y-3">
  <SkeletonRow />
  <SkeletonRow />
