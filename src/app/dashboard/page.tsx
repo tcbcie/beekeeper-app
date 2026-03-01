@@ -621,7 +621,7 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
  href="/dashboard/rearing-team"
  className="fj-btn fj-btn-amber text-sm"
  >
- Manage Groups
+ Manage Groups (Memberships)
  </Link>
  </div>
 
