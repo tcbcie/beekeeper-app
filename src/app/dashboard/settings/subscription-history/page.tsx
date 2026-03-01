@@ -157,13 +157,13 @@ export default function SubscriptionHistoryPage() {
           <div className="space-y-4">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary" size={20} />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" size={17} />
               <input
                 type="text"
                 placeholder="Search by email, code, or transaction ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full fj-control pl-10 pr-4"
+                className="w-full fj-control !pl-11 pr-4"
               />
             </div>
 
