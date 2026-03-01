@@ -74,7 +74,7 @@ export default function VarroaCheckCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-foreground dark:text-orange-200 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-orange-100 text-orange-900 dark:bg-orange-900/45 dark:text-orange-100 border border-orange-200 dark:border-orange-700/60 text-xs font-medium rounded">
                 Varroa Check
               </span>
               <h3 className="text-base font-bold">Hive: {check.hives?.hive_number || 'Unknown'}</h3>

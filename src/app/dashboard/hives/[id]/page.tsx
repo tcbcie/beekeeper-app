@@ -772,20 +772,40 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 task.priority === 'high' ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/30' :
                 task.priority === 'normal' ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/30' :
                 'border-border bg-surface-secondary'
+              const priorityTitleText =
+                task.priority === 'urgent' ? 'text-red-900 dark:text-red-100' :
+                task.priority === 'high' ? 'text-orange-900 dark:text-orange-100' :
+                task.priority === 'normal' ? 'text-blue-900 dark:text-blue-100' :
+                'text-foreground'
+              const priorityDescriptionText =
+                task.priority === 'urgent' ? 'text-red-800 dark:text-red-200' :
+                task.priority === 'high' ? 'text-orange-800 dark:text-orange-200' :
+                task.priority === 'normal' ? 'text-blue-800 dark:text-blue-200' :
+                'text-text-tertiary'
+              const priorityMetaText =
+                task.priority === 'urgent' ? 'text-red-900 dark:text-red-100' :
+                task.priority === 'high' ? 'text-orange-900 dark:text-orange-100' :
+                task.priority === 'normal' ? 'text-blue-900 dark:text-blue-100' :
+                'text-text-secondary'
+              const priorityCategoryChip =
+                task.priority === 'urgent' ? 'bg-red-200/80 text-red-900 border-red-300 dark:bg-red-900/60 dark:text-red-100 dark:border-red-700' :
+                task.priority === 'high' ? 'bg-orange-200/80 text-orange-900 border-orange-300 dark:bg-orange-900/60 dark:text-orange-100 dark:border-orange-700' :
+                task.priority === 'normal' ? 'bg-blue-200/80 text-blue-900 border-blue-300 dark:bg-blue-900/60 dark:text-blue-100 dark:border-blue-700' :
+                'bg-surface-secondary text-text-secondary border-border'
 
               return (
                 <div key={task.id} className={`border-l-4 ${priorityColor} p-3 rounded-r`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-foreground truncate">{task.title}</div>
+                      <div className={`font-medium text-sm truncate ${priorityTitleText}`}>{task.title}</div>
                       {task.description && (
-                        <div className="text-xs text-text-tertiary mt-1 line-clamp-1">{task.description}</div>
+                        <div className={`text-xs mt-1 line-clamp-1 ${priorityDescriptionText}`}>{task.description}</div>
                       )}
-                      <div className="flex items-center gap-2 mt-1 text-xs text-text-secondary">
+                      <div className={`flex items-center gap-2 mt-1 text-xs ${priorityMetaText}`}>
                         <Calendar size={12} />
                         <span>{new Date(task.start_date).toLocaleDateString()}</span>
                         {task.category && (
-                          <span className="px-1.5 py-0.5 bg-surface-secondary rounded border border-border text-text-secondary">
+                          <span className={`px-1.5 py-0.5 rounded border ${priorityCategoryChip}`}>
                             {task.category.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                           </span>
                         )}

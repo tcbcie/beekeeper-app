@@ -30,7 +30,7 @@ export default function TreatmentCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-foreground dark:text-red-200 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-red-100 text-red-900 dark:bg-red-900/45 dark:text-red-100 border border-red-200 dark:border-red-700/60 text-xs font-medium rounded">
                 Varroa Treatment
               </span>
               <h3 className="text-base font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>

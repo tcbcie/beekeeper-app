@@ -30,7 +30,7 @@ export default function HarvestCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-foreground dark:text-green-200 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-green-100 text-green-900 dark:bg-green-900/45 dark:text-green-100 border border-green-200 dark:border-green-700/60 text-xs font-medium rounded">
                 Harvest
               </span>
               <h3 className="text-base font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
