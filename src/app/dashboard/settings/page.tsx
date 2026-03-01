@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, isAdmin, isPowerUserOrAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Trash2, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, Building2, Hexagon, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, UserPlus, Loader2 } from 'lucide-react'
+import { Trash2, Shield, Users, Search, User, MessageCircle, Bug, List, ChevronDown, ChevronLeft, ChevronRight, Building2, Hexagon, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, UserPlus, Loader2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager'
 import ConservationAreaManager from '@/components/admin/ConservationAreaManager'
@@ -114,6 +114,8 @@ function formatLastActive(dateString: string | null | undefined): string {
   return `${Math.floor(diffDays / 365)}y ago`
 }
 
+const USERS_PER_PAGE = 15
+
 export default function SettingsPage() {
   const router = useRouter()
   const toast = useToast()
@@ -140,6 +142,7 @@ export default function SettingsPage() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'User' | 'Power User' | 'Admin'>('all')
   const [accountStatusFilter, setAccountStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
   const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'none'>('all')
+  const [currentUsersPage, setCurrentUsersPage] = useState(1)
   const [restoringUserId, setRestoringUserId] = useState<string | null>(null)
   const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null)
   const [showSubscriptionHistory, setShowSubscriptionHistory] = useState(false)
@@ -185,6 +188,11 @@ export default function SettingsPage() {
     }
     initUser()
   }, [router])
+
+  useEffect(() => {
+    setCurrentUsersPage(1)
+    setExpandedUserId(null)
+  }, [userSearch, roleFilter, accountStatusFilter, subscriptionFilter, showDeletedUsers])
 
   // User Management Functions
   const fetchUsers = useCallback(async () => {
@@ -1021,14 +1029,14 @@ export default function SettingsPage() {
             <div className="mb-4 space-y-3">
               {/* Search Bar */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary" size={20} />
+                <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" size={18} />
                 <TextInput
                   type="text"
                   placeholder="Search users by email or ID..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   tone="purple"
-                  className="pl-10 pr-4"
+                  className="pl-11 pr-4"
                 />
               </div>
 
@@ -1137,16 +1145,37 @@ export default function SettingsPage() {
 
                   return true
                 })
+              const totalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE))
+              const safeCurrentUsersPage = Math.min(currentUsersPage, totalPages)
 
               return (
                 <>
                   {/* Results Count */}
                   <div className="mb-3 text-sm text-text-tertiary">
-                    Showing {filteredUsers.length} of {sourceUsers.length} {showDeletedUsers ? 'deleted ' : ''}users
+                    {filteredUsers.length > 0 ? (
+                      <>
+                        Showing {Math.min((safeCurrentUsersPage - 1) * USERS_PER_PAGE + 1, filteredUsers.length)}-{Math.min(safeCurrentUsersPage * USERS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} {showDeletedUsers ? 'deleted ' : ''}users
+                      </>
+                    ) : (
+                      <>
+                        Showing 0 of {sourceUsers.length} {showDeletedUsers ? 'deleted ' : ''}users
+                      </>
+                    )}
+                    {filteredUsers.length !== sourceUsers.length && (
+                      <> (filtered from {sourceUsers.length})</>
+                    )}
                   </div>
 
+                  {filteredUsers.length === 0 ? (
+                    <div className="text-center py-8 text-text-tertiary">
+                      No users match your current search and filters.
+                    </div>
+                  ) : (
+                  <>
                   <div className="space-y-2">
-                    {filteredUsers.map((user) => {
+                    {filteredUsers
+                      .slice((safeCurrentUsersPage - 1) * USERS_PER_PAGE, safeCurrentUsersPage * USERS_PER_PAGE)
+                      .map((user) => {
                       const isExpanded = expandedUserId === user.id
 
                       return (
@@ -1501,6 +1530,37 @@ export default function SettingsPage() {
                     )
                   })}
                   </div>
+                  {totalPages > 1 && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-xs text-text-tertiary">
+                        Page {safeCurrentUsersPage} of {totalPages}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => setCurrentUsersPage(page => Math.max(1, Math.min(page, totalPages) - 1))}
+                          disabled={safeCurrentUsersPage === 1}
+                          tone="neutral"
+                          size="xs"
+                          className="gap-1 disabled:opacity-50"
+                        >
+                          <ChevronLeft size={12} />
+                          Previous
+                        </Button>
+                        <Button
+                          onClick={() => setCurrentUsersPage(page => Math.min(totalPages, Math.min(page, totalPages) + 1))}
+                          disabled={safeCurrentUsersPage >= totalPages}
+                          tone="neutral"
+                          size="xs"
+                          className="gap-1 disabled:opacity-50"
+                        >
+                          Next
+                          <ChevronRight size={12} />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  </>
+                  )}
                 </>
               )
             })()}
