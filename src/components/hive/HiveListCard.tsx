@@ -24,7 +24,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  : null
 
  return (
- <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border">
+ <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border min-h-[280px]">
  {/* Overview & Records Button - Top of Card */}
  <Button
  onClick={() => router.push(`/dashboard/hives/${hive.id}`)}
