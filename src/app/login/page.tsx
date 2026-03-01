@@ -313,7 +313,7 @@ function LoginForm() {
                 v1.6.0
               </span>
               <span aria-hidden="true">-</span>
-              <span>February 27, 2026</span>
+              <span>March 1, 2026</span>
             </div>
           </div>
         </Panel>
