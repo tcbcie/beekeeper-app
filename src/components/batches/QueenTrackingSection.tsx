@@ -31,6 +31,7 @@ interface QueenTrackingSectionProps {
   exitTableSelectMode: () => void
   // Table bulk
   handleTableBulkStatusChange: (newStatus: string, date?: string) => void
+  handleTableBulkDateChange: (date: string) => void
   handleTableBulkQueenMarked: (marked: boolean) => void
   handleTableBulkDelete: () => void
   setBulkDistributeGrafts: (grafts: Graft[] | null) => void
@@ -61,6 +62,7 @@ export default function QueenTrackingSection({
   exitSelectMode,
   exitTableSelectMode,
   handleTableBulkStatusChange,
+  handleTableBulkDateChange,
   handleTableBulkQueenMarked,
   handleTableBulkDelete,
   setBulkDistributeGrafts,
@@ -122,6 +124,14 @@ export default function QueenTrackingSection({
             onChange={(e) => setBulkDate(e.target.value)}
             className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
           />
+          <Button
+            type="button"
+            onClick={() => handleTableBulkDateChange(bulkDate)}
+            disabled={tableSelectedIds.size === 0}
+            className="px-2 py-1 text-xs bg-surface-secondary text-foreground rounded hover:bg-surface-elevated disabled:opacity-50"
+          >
+            Apply Date
+          </Button>
           <select
             onChange={(e) => { if (e.target.value) { handleTableBulkStatusChange(e.target.value, bulkDate); e.target.value = '' } }}
             defaultValue=""

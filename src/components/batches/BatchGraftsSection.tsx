@@ -145,6 +145,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         exitSelectMode={hook.exitSelectMode}
         exitTableSelectMode={hook.exitTableSelectMode}
         handleTableBulkStatusChange={hook.handleTableBulkStatusChange}
+        handleTableBulkDateChange={hook.handleTableBulkDateChange}
         handleTableBulkQueenMarked={hook.handleTableBulkQueenMarked}
         handleTableBulkDelete={hook.handleTableBulkDelete}
         setBulkDistributeGrafts={hook.setBulkDistributeGrafts}
