@@ -350,6 +350,26 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         r26.getCell(2).fill = yellowFill
         r26.getCell(2).border = thinBorder
         r26.getCell(2).alignment = { horizontal: 'center' }
+
+        // Row 27: blank
+        sheet.addRow([])
+
+        // Row 28: Sealed queen cells distributed (auto-calculated, excluded from hatched/mated above)
+        const r28 = sheet.addRow([])
+        r28.getCell(1).value = 'Sealed queen cells distributed'
+        r28.getCell(1).font = { bold: true, size: 11 }
+        r28.getCell(2).value = md.queen_cells_distributed
+        r28.getCell(2).fill = yellowFill
+        r28.getCell(2).border = thinBorder
+        r28.getCell(2).alignment = { horizontal: 'center' }
+        for (let i = 0; i < apiaryCount; i++) {
+          const cell = r28.getCell(3 + i)
+          const ma = exportData.mating_apiaries[i]
+          cell.value = (md.byApiary.get(ma.apiary_id)?.queen_cells_distributed as number) || 0
+          cell.fill = yellowFill
+          cell.border = thinBorder
+          cell.alignment = { horizontal: 'center' }
+        }
       }
 
       // Generate and download
@@ -501,6 +521,11 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       <td className="py-2 px-3 text-foreground">Queens mated within group</td>
                       <td className="py-2 px-3 text-right font-medium text-foreground">{md.total.queens_mated}</td>
                     </tr>
+                    <tr className="border-b border-border bg-blue-50 dark:bg-blue-950/20">
+                      <td className="py-2 px-3 text-text-tertiary">28</td>
+                      <td className="py-2 px-3 text-foreground">Sealed queen cells distributed</td>
+                      <td className="py-2 px-3 text-right font-medium text-foreground">{md.queen_cells_distributed}</td>
+                    </tr>
                     <tr className="border-b border-border bg-amber-50 dark:bg-amber-950/20">
                       <td className="py-2 px-3 text-text-tertiary">21</td>
                       <td className="py-2 px-3 text-foreground">Hybridised offspring</td>
@@ -575,6 +600,10 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                 <div className="flex justify-between text-sm">
                   <span className="text-text-tertiary">Queens mated:</span>
                   <span className="font-medium text-foreground">{md.total.queens_mated}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-tertiary">Sealed cells distributed:</span>
+                  <span className="font-medium text-foreground">{md.queen_cells_distributed}</span>
                 </div>
                 <div className="pt-2 border-t border-border space-y-2">
                   <div className="flex justify-between items-center text-sm">

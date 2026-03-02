@@ -127,8 +127,10 @@ On delete: graft status reverted to previous status (stored in `previous_graft_s
 ## NIHBS Report Integration
 
 The `useNIHBSReport` hook auto-calculates from distribution records:
-- **Virgins distributed external** = distributions where type is `queen_cell`/`virgin_queen` AND recipient is NOT a group member
+- **Virgins distributed external** = distributions where type is `virgin_queen` AND recipient is NOT a group member (queen_cell excluded — tracked separately)
 - **Virgins external mated** = same filter + `mating_confirmed = true`
+- **Sealed queen cells distributed** (row 28) = all `queen_cell` distributions (regardless of recipient), tracked per-apiary in the batch's emergence month
+- Queen cell distributions are subtracted from "queen cells hatched" (row 13) and "queens mated within group" (row 19) since distributed sealed cells have no hatching/mating tracking
 
 These auto-calculated values are used as defaults. Manual overrides saved in `nihbs_monthly_returns` take precedence.
 
