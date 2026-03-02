@@ -64,7 +64,7 @@ Modal form with:
    - **App User** — debounced search by name/email; shows "Group" badge for group members in results
    - **Other Beekeeper** — free-text fields: Name, Email, Mobile, Apiary/Mating Location (closest Eircode); submit enabled when at least one field is filled
 3. **Distribution date** — defaults to today
-4. **Recipient's apiary** — shown for virgin/mated queen types (app user mode only)
+4. **Recipient's apiary** — shown for queen cell, virgin queen, and mated queen types (app user mode only)
 5. **Recipient's hive** — shown for mated queen type when apiary selected (app user mode only)
 6. **Notes** — optional
 
