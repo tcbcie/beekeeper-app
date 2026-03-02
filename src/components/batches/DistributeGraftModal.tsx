@@ -87,6 +87,10 @@ export default function DistributeGraftModal({
   const [extPhone, setExtPhone] = useState('')
   const [extLocation, setExtLocation] = useState('')
 
+  // Mating location for app-user queen_cell distributions
+  const [matingLocation, setMatingLocation] = useState('')
+  const [locationError, setLocationError] = useState('')
+
   const today = new Date().toISOString().split('T')[0]
   const [distributionDate, setDistributionDate] = useState(today)
   const [notes, setNotes] = useState('')
@@ -101,6 +105,8 @@ export default function DistributeGraftModal({
     setSearchResults([])
     setSelectedApiaryId('')
     setSelectedHiveId('')
+    setMatingLocation('')
+    setLocationError('')
   }
 
   // Fetch group members when in group mode
@@ -174,8 +180,14 @@ export default function DistributeGraftModal({
 
   const handleSubmit = async () => {
     if (!canSubmit || saving || submittingRef.current) return
-    submittingRef.current = true
 
+    // For queen_cell app-user distributions, require either apiary or mating location
+    if (!isExternal && distributionType === 'queen_cell' && !selectedApiaryId && !matingLocation.trim()) {
+      setLocationError('Please select an apiary or enter a mating location')
+      return
+    }
+
+    submittingRef.current = true
     setSaving(true)
 
     let success: boolean | null
@@ -194,6 +206,7 @@ export default function DistributeGraftModal({
         external_recipient_email: isExternal ? (extEmail.trim() || null) : null,
         external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
         external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
+        mating_location: !isExternal ? (matingLocation.trim() || null) : null,
       }
       success = await onBulkSave(bulkData)
     } else {
@@ -212,6 +225,7 @@ export default function DistributeGraftModal({
         external_recipient_email: isExternal ? (extEmail.trim() || null) : null,
         external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
         external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
+        mating_location: !isExternal ? (matingLocation.trim() || null) : null,
       }
       success = await onSave(data)
     }
@@ -301,7 +315,7 @@ export default function DistributeGraftModal({
                 )}
                 <Button
                   type="button"
-                  onClick={() => { setSelectedUser(null); setApiaries([]); setHives([]) }}
+                  onClick={() => { setSelectedUser(null); setApiaries([]); setHives([]); setMatingLocation(''); setLocationError('') }}
                   className="p-1 text-text-tertiary hover:text-foreground"
                 >
                   <X size={14} />
@@ -467,7 +481,7 @@ export default function DistributeGraftModal({
               </label>
               <select
                 value={selectedApiaryId}
-                onChange={(e) => { setSelectedApiaryId(e.target.value); setSelectedHiveId('') }}
+                onChange={(e) => { setSelectedApiaryId(e.target.value); setSelectedHiveId(''); setLocationError('') }}
                 className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
               >
                 <option value="">Select apiary (optional)</option>
@@ -475,6 +489,25 @@ export default function DistributeGraftModal({
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* Mating Location — shown for queen_cell distributions to app users */}
+          {!isExternal && selectedUser && distributionType === 'queen_cell' && (
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">
+                Apiary / Mating Location (closest Eircode)
+              </label>
+              <input
+                type="text"
+                value={matingLocation}
+                onChange={(e) => { setMatingLocation(e.target.value); setLocationError('') }}
+                placeholder="e.g. D01 AB12"
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+              />
+              {locationError && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{locationError}</p>
+              )}
             </div>
           )}
 
