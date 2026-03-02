@@ -16,6 +16,7 @@ export interface MonthlyApiaryData {
   grafts_accepted: number
   queens_hatched: number
   queens_mated: number
+  queen_cells_distributed: number
 }
 
 export interface MonthlyData {
@@ -28,6 +29,7 @@ export interface MonthlyData {
   virgins_external_mated: number
   auto_virgins_distributed_external: number
   auto_virgins_external_mated: number
+  queen_cells_distributed: number
 }
 
 export interface NIHBSReportData {
@@ -98,13 +100,14 @@ export function useNIHBSReport() {
             monthlyMap.set(m, {
               month: m,
               year,
-              total: { apiary_id: 'total', batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 },
+              total: { apiary_id: 'total', batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0 },
               byApiary: new Map(),
               hybridised_offspring: 0,
               virgins_distributed_external: 0,
               virgins_external_mated: 0,
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
+              queen_cells_distributed: 0,
             })
           }
           return monthlyMap.get(m)!
@@ -113,7 +116,7 @@ export function useNIHBSReport() {
         // Helper: get or create a per-apiary bucket within a month
         const getApiary = (md: MonthlyData, apiaryId: string): MonthlyApiaryData => {
           if (!md.byApiary.has(apiaryId)) {
-            md.byApiary.set(apiaryId, { apiary_id: apiaryId, batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
+            md.byApiary.set(apiaryId, { apiary_id: apiaryId, batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0 })
           }
           return md.byApiary.get(apiaryId)!
         }
@@ -130,6 +133,9 @@ export function useNIHBSReport() {
           return { month: graft.getMonth() + 1, year: graft.getFullYear() }
         }
 
+        // Track each batch's emergence info for queen_cell distribution adjustments
+        const batchEmergenceInfo = new Map<string, { emergenceMonth: number; emergenceYear: number; apiaryId: string }>()
+
         for (const batch of (batches || [])) {
           const graftDate = batch.graft_date
           if (!graftDate) continue
@@ -141,6 +147,9 @@ export function useNIHBSReport() {
           const graftMonth = parseInt(graftDate.split('-')[1], 10)
           const emergence = getEmergenceMonthYear(batch)
           const apiaryId = batch.mating_apiary_id || 'unassigned'
+
+          // Store emergence info for later queen_cell distribution adjustments
+          batchEmergenceInfo.set(batch.id, { emergenceMonth: emergence.month, emergenceYear: emergence.year, apiaryId })
 
           // Graft-time metrics → graft month
           const graftMd = getMonth(graftMonth)
@@ -166,21 +175,48 @@ export function useNIHBSReport() {
           }
         }
 
-        // 2b. Fetch distributions and auto-calculate external distribution counts
+        // 2b. Fetch distributions for queen_cell adjustments and external distribution counts
         const batchIds = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
         if (batchIds.length > 0) {
           const { data: dists } = await supabase
             .from('graft_distributions')
-            .select('distribution_type, recipient_user_id, mating_confirmed, distribution_date')
+            .select('batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date')
             .in('batch_id', batchIds)
 
           if (dists) {
             const memberIdSet = new Set(userIds)
+
+            // Count queen_cell distributions per batch
+            const queenCellCountPerBatch = new Map<string, number>()
+            for (const d of dists) {
+              if (d.distribution_type === 'queen_cell') {
+                queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
+              }
+            }
+
+            // Subtract queen_cell distributions from queens_hatched/queens_mated and track on row 28
+            for (const [batchId, cellCount] of queenCellCountPerBatch) {
+              const info = batchEmergenceInfo.get(batchId)
+              if (!info || info.emergenceYear !== year) continue
+
+              const emergMd = getMonth(info.emergenceMonth)
+              emergMd.total.queens_hatched = Math.max(0, emergMd.total.queens_hatched - cellCount)
+              emergMd.total.queens_mated = Math.max(0, emergMd.total.queens_mated - cellCount)
+              emergMd.total.queen_cells_distributed += cellCount
+              emergMd.queen_cells_distributed += cellCount
+
+              const emergAd = getApiary(emergMd, info.apiaryId)
+              emergAd.queens_hatched = Math.max(0, emergAd.queens_hatched - cellCount)
+              emergAd.queens_mated = Math.max(0, emergAd.queens_mated - cellCount)
+              emergAd.queen_cells_distributed += cellCount
+            }
+
+            // Auto-calculate external distribution counts (virgin_queen only — queen_cell tracked separately on row 28)
             for (const d of dists) {
               // Only count external distributions (recipient not in the group)
               if (memberIdSet.has(d.recipient_user_id)) continue
-              // Only count queen_cell and virgin_queen types
-              if (d.distribution_type !== 'queen_cell' && d.distribution_type !== 'virgin_queen') continue
+              // Only count virgin_queen types (queen_cell excluded — tracked on row 28)
+              if (d.distribution_type !== 'virgin_queen') continue
 
               const distDate = d.distribution_date
               if (!distDate) continue
@@ -249,13 +285,14 @@ export function useNIHBSReport() {
             monthlyMap.set(r.month, {
               month: r.month,
               year,
-              total: { apiary_id: 'total', batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 },
+              total: { apiary_id: 'total', batch_count: 0, cell_count: 0, grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0 },
               byApiary: new Map(),
               hybridised_offspring: 0,
               virgins_distributed_external: 0,
               virgins_external_mated: 0,
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
+              queen_cells_distributed: 0,
             })
           }
           const md = monthlyMap.get(r.month)!

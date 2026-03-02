@@ -35,9 +35,12 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
   - Virgin queens distributed outside group (auto-calculated from distribution records)
   - Virgins distributed outside — successfully mated (auto-calculated from distribution records)
 - Auto-calculated distribution counts from `graft_distributions` records:
-  - External distributions = distributions where recipient is NOT a group member
+  - External distributions = virgin_queen distributions where recipient is NOT a group member (queen_cell distributions excluded — tracked separately on row 28)
   - Auto-calculated values used as defaults; manual overrides take precedence when saved
   - "Auto: X from records" indicator shown below manual fields
+- Sealed queen cell exclusion:
+  - Distributed sealed queen cells (distribution_type = 'queen_cell') are subtracted from "queen cells hatched" (row 13) and "queens mated within group" (row 19) since there is no tracking of whether they hatched or mated
+  - These are tracked separately on row 28 "Sealed queen cells distributed" with per-apiary breakdown
 
 ### Excel Export
 Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is available even when there is no monthly batch data for the selected year.
@@ -69,6 +72,7 @@ Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is 
 - "Outside your group" section header
 - Row 24: Number of virgin queens distributed outside the group (total only + NB note in red)
 - Row 26: Number of virgin queens distributed outside the group that were successfully mated
+- Row 28: Sealed queen cells distributed (auto-calculated from distribution records, per-apiary breakdown)
 
 **Dynamic Column Behaviour:**
 - Apiary columns are generated dynamically based on the actual mating apiaries referenced by batches

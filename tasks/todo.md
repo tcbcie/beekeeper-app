@@ -1,16 +1,29 @@
-# Add Mating Location Field for Queen Cell Distributions
+# NIHBS Report: Exclude Distributed Sealed Cells from Hatched/Mated Metrics
 
-## Todo
+## Problem
 
-- [x] 1. **Database** — Add `mating_location` nullable text column to `graft_distributions`
-- [x] 2. **Hook types** — Add `mating_location` to `GraftDistribution`, `CreateDistributionData`, and `BulkDistributionData` interfaces
-- [x] 3. **Hook insert logic** — Include `mating_location` in `createBulkDistributions` insert rows (`createDistribution` passes full object, so it gets it automatically)
-- [x] 4. **Hook fetch mapping** — Include `mating_location` in `fetchDistributions` mapped output
-- [x] 5. **Modal: state + input** — Add `matingLocation` state, show text input below apiary dropdown for queen_cell app-user distributions
-- [x] 6. **Modal: validation** — For queen_cell app-user distributions, require either apiary or mating location; show inline error if neither filled
-- [x] 7. **Modal: pass data** — Include `mating_location` in both `onSave` and `onBulkSave` data payloads
-- [x] 8. **Distribution list** — Show `mating_location` in distribution card when present
-- [x] 9. **Docs** — Update `docs/features/batch-distributions.md`
+When sealed queen cells are distributed from a batch, the batch counters (`queens_hatched`, `queens_mated`) still include those cells in the NIHBS report. These distributed sealed cells have no tracking of hatching or mating, so they should not appear under "queen cells hatched" (row 13) or "queens mated within group" (row 19).
+
+**Current data example:** Batch has `queens_hatched=4`, `queens_mated=4`, but all 4 are distributed as sealed cells on 02/03/2026 (before emergence date 05/03/2026). The report incorrectly shows 4 hatched and 4 mated.
+
+Additionally, queen_cell distributions are currently counted in rows 24/26 ("virgins distributed outside group") auto-calculation, which is also incorrect — they are sealed cells, not virgin queens.
+
+## Plan
+
+### 1. `useNIHBSReport.ts` — Data aggregation changes
+- [x] Count queen_cell distributions per batch (from the already-fetched `graft_distributions` data)
+- [x] Subtract queen_cell distribution count from `queens_hatched` and `queens_mated` per batch (floor at 0) before adding to monthly buckets
+- [x] Add new field `queen_cells_distributed` to `MonthlyApiaryData` and `MonthlyData` to track distributed sealed cells per month (bucketed by batch emergence month, same as hatched/mated)
+- [x] Remove `queen_cell` from the rows 24/26 auto-calculation filter (only count `virgin_queen` for external distributions)
+
+### 2. `NIHBSMonthlyReturn.tsx` — UI changes
+- [x] Add row 28 "Sealed queen cells distributed" in the desktop table (auto-calculated, read-only)
+- [x] Add row 28 in the mobile card view
+- [x] Add row 28 in the Excel export (after row 26, with blank row 27)
+
+### 3. Documentation
+- [x] Update `docs/features/nihbs-monthly-returns.md` to document row 28 and the exclusion logic
+- [x] Update `docs/features/batch-distributions.md` NIHBS integration section
 
 ## Review
 
@@ -18,13 +31,13 @@
 
 | File | Change |
 |------|--------|
-| Migration | Added nullable `mating_location text` column to `graft_distributions` |
-| `src/hooks/useGraftDistributions.ts` | Added `mating_location: string \| null` to 3 interfaces; added to bulk insert row mapping; added to fetch output mapping |
-| `src/components/batches/DistributeGraftModal.tsx` | Added `matingLocation` + `locationError` state; text input shown for queen_cell app-user distributions; validation blocks submit when neither apiary nor location filled; field passed in both single and bulk payloads |
-| `src/components/batches/DistributionList.tsx` | Shows "Mating location: ..." line for app-user distributions when field is populated |
-| `docs/features/batch-distributions.md` | Documented new column, new modal field, validation rule, and display in distribution list |
+| `src/hooks/useNIHBSReport.ts` | Added `queen_cells_distributed` to `MonthlyApiaryData` and `MonthlyData` interfaces. Added `batch_id` to distributions query. Count queen_cell distributions per batch, subtract from `queens_hatched`/`queens_mated` (floored at 0), track in new `queen_cells_distributed` field. Removed `queen_cell` from rows 24/26 auto-calculation filter. |
+| `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | Added row 28 "Sealed queen cells distributed" in desktop table (blue highlight, read-only), mobile card view, and Excel export (with per-apiary breakdown). |
+| `docs/features/nihbs-monthly-returns.md` | Documented row 28, exclusion logic, and updated external distribution filter description. |
+| `docs/features/batch-distributions.md` | Updated NIHBS integration section to reflect queen_cell exclusion from rows 24/26 and separate tracking on row 28. |
 
 ### Impact
-- 1 new DB column, 3 source files changed, 1 doc updated
-- No breaking changes — field is nullable, existing records unaffected
-- Validation only applies to queen_cell distributions to app users
+- 2 source files changed, 2 docs updated
+- No database changes needed — uses existing `graft_distributions` data
+- No breaking changes — new field defaults to 0, existing data unaffected
+- Queen cell distributions now correctly excluded from hatched/mated metrics
