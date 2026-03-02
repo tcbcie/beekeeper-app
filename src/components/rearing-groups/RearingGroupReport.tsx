@@ -91,6 +91,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                   <th className="text-right py-2 px-3 text-text-tertiary font-medium">Grafts Accepted</th>
                   <th className="text-right py-2 px-3 text-text-tertiary font-medium">Queens Hatched</th>
                   <th className="text-right py-2 px-3 text-text-tertiary font-medium">Queens Mated</th>
+                  <th className="text-right py-2 px-3 text-text-tertiary font-medium">Cells Distributed</th>
                 </tr>
               </thead>
               <tbody>
@@ -101,6 +102,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                       <td className="py-2 px-3 text-right text-foreground">{member.grafts_accepted}</td>
                       <td className="py-2 px-3 text-right text-foreground">{member.queens_hatched}</td>
                       <td className="py-2 px-3 text-right text-foreground">{member.queens_mated}</td>
+                      <td className="py-2 px-3 text-right text-foreground">{member.queen_cells_distributed}</td>
                     </tr>
                   ))}
                 <tr className="font-bold">
@@ -109,6 +111,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                   <td className="py-2 px-3 text-right text-foreground">{report.totals.grafts_accepted}</td>
                   <td className="py-2 px-3 text-right text-foreground">{report.totals.queens_hatched}</td>
                   <td className="py-2 px-3 text-right text-foreground">{report.totals.queens_mated}</td>
+                  <td className="py-2 px-3 text-right text-foreground">{report.totals.queen_cells_distributed}</td>
                 </tr>
               </tbody>
             </table>
@@ -128,6 +131,8 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                     <div className="text-right text-foreground">{member.queens_hatched}</div>
                     <div className="text-text-tertiary">Queens Mated:</div>
                     <div className="text-right text-foreground">{member.queens_mated}</div>
+                    <div className="text-text-tertiary">Cells Distributed:</div>
+                    <div className="text-right text-foreground">{member.queen_cells_distributed}</div>
                   </div>
                 </div>
               ))}
@@ -143,6 +148,8 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                 <div className="text-right text-foreground">{report.totals.queens_hatched}</div>
                 <div className="text-text-tertiary">Queens Mated:</div>
                 <div className="text-right text-foreground">{report.totals.queens_mated}</div>
+                <div className="text-text-tertiary">Cells Distributed:</div>
+                <div className="text-right text-foreground">{report.totals.queen_cells_distributed}</div>
               </div>
             </div>
           </div>
