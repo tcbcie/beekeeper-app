@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Minus, MessageCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
@@ -210,6 +210,7 @@ export default function BatchesPage() {
  })
  const [hiveScores, setHiveScores] = useState<HiveScore[]>([])
  const [loadingScores, setLoadingScores] = useState(false)
+ const [quantitiesOpen, setQuantitiesOpen] = useState(true)
  const [formData, setFormData] = useState<FormData>({
  batch_name: '',
  mother_queen_id: '',
@@ -1023,8 +1024,11 @@ export default function BatchesPage() {
 
  {/* Batch Quantities - Grouped Vertically */}
  <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border overflow-hidden">
- <h4 className="text-sm font-semibold text-foreground mb-3">Batch Quantities</h4>
- <div className="space-y-3">
+ <button type="button" onClick={() => setQuantitiesOpen(!quantitiesOpen)} className="w-full flex items-center justify-between">
+ <h4 className="text-sm font-semibold text-foreground">Batch Quantities</h4>
+ <ChevronDown size={16} className={`text-text-tertiary transition-transform ${quantitiesOpen ? 'rotate-180' : ''}`} />
+ </button>
+ {quantitiesOpen && <div className="space-y-3 mt-3">
  {/* Frame Layout: Rows × Cells per Row */}
  <div className="p-3 rounded-lg border-2 border-amber-600 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 space-y-3">
  <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Grafting Frame Layout</p>
@@ -1308,6 +1312,7 @@ export default function BatchesPage() {
  </div>
  </div>
  </div>
+ }
  </div>
 
  {/* Individual Grafts Section - Only show when editing existing batch */}
