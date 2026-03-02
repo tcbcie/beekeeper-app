@@ -1,24 +1,23 @@
-# Task: CLS (Cumulative Layout Shift) Fixes
-**Date:** 01/03/2026
-**Status:** Completed
+# Task: Match Sealed Cell Distribution to Virgin Queen Distribution
+**Date:** 02/03/2026
+**Status:** Complete
 
 ## 1. Objective
-Reduce CLS across 4 routes flagged by Vercel Speed Insights (dashboard, hives, login, records) with minimal, targeted changes.
+Show the Recipient's Apiary dropdown when distributing sealed cells (queen_cell type), matching the behaviour already available for virgin_queen and mated_queen distributions.
 
 ## 2. Execution Plan
 
-- [x] **Fix 1:** Remove `translateY` from `fade-in-up` keyframe in `globals.css` — keep opacity-only fade
-- [x] **Fix 2:** Add quick-actions and alerts skeleton placeholders to dashboard loading state
-- [x] **Fix 3a:** Always render "Forgot Password?" link on login, use `invisible` in sign-up mode
-- [x] **Fix 3b:** Always render message container on login with `min-h-[40px]`, use `invisible` when empty
-- [x] **Fix 4:** Add `min-h-[280px]` to HiveListCard container
+- [x] Update apiary dropdown condition in `DistributeGraftModal.tsx` line 459 to include `queen_cell`
+- [x] Verify `DistributionList.tsx` displays apiary details for `queen_cell` (confirmed — no type filter needed)
+- [x] Create/update feature doc in `docs/features/batch-distributions.md`
+- [ ] User tests the build
 
 ## 3. Post-Task Review
 
 **Summary of Changes:**
-- `src/app/globals.css` — Removed `transform: translateY(12px)` and `transform: translateY(0)` from `fade-in-up` keyframe. Elements now fade in without vertical movement, eliminating CLS from staggered animations on dashboard, tools, and other pages.
-- `src/app/dashboard/page.tsx` — Added `Skeleton` import and inserted quick-actions row (6 chip placeholders) and alerts bar placeholder between stat cards and recent activity in the loading skeleton, matching the real content layout.
-- `src/app/login/page.tsx` — "Forgot Password?" link now always renders with `invisible` class when in sign-up mode. Message container always renders with `min-h-[40px]` and `invisible` when empty, reserving space to prevent layout shift.
-- `src/components/hive/HiveListCard.tsx` — Added `min-h-[280px]` to card container for consistent grid row heights.
+- `src/components/batches/DistributeGraftModal.tsx` — Added `'queen_cell'` to the condition on line 459 that controls visibility of the Recipient's Apiary dropdown. Previously only `virgin_queen` and `mated_queen` showed the dropdown; now `queen_cell` does too.
+- `docs/features/batch-distributions.md` — Updated the modal field description to reflect that the apiary dropdown is now shown for all three distribution types.
 
-**Notes:** All changes are CSS/layout only — no logic, API, or schema changes. Deploy and monitor Vercel Speed Insights over the next few days.
+**No change needed in `DistributionList.tsx`** — it already displays apiary/location details for all distribution types without any type-based filtering.
+
+**Impact:** 1 line of logic changed. No schema, API, or other component changes.

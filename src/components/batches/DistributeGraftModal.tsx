@@ -455,8 +455,8 @@ export default function DistributeGraftModal({
             />
           </div>
 
-          {/* Recipient Apiary — shown for virgin_queen and mated_queen, app user only */}
-          {!isExternal && selectedUser && (distributionType === 'virgin_queen' || distributionType === 'mated_queen') && (
+          {/* Recipient Apiary — shown for queen_cell, virgin_queen and mated_queen, app user only */}
+          {!isExternal && selectedUser && (distributionType === 'queen_cell' || distributionType === 'virgin_queen' || distributionType === 'mated_queen') && (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 Recipient&apos;s Apiary
