@@ -201,7 +201,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         r1.getCell(2).value = exportData.group_name
         r1.getCell(2).fill = redFill
         r1.getCell(2).font = { bold: true, size: 14 }
-        if (lastCol > 2) sheet.mergeCells(1, 2, 1, lastCol)
+        sheet.mergeCells(1, 2, 1, Math.max(lastCol, 8))
 
         // Row 2: blank
         sheet.addRow([])
