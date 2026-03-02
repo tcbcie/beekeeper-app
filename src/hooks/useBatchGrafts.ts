@@ -450,14 +450,14 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   // --- Table bulk handlers ---
 
-  const handleTableBulkStatusChange = useCallback(async (newStatus: string) => {
+  const handleTableBulkStatusChange = useCallback(async (newStatus: string, date?: string) => {
     const ids = Array.from(tableSelectedIds)
     if (ids.length === 0) return
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const statusDate = date || new Date().toISOString().split('T')[0]
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ status: newStatus, status_date: today })
+        .update({ status: newStatus, status_date: statusDate })
         .in('id', ids)
       if (error) throw error
       toast.success(`${ids.length} grafts updated to ${newStatus}`)

@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { Trash2, Send, CheckSquare, Square, Lock, LockOpen } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import {
@@ -30,7 +30,7 @@ interface QueenTrackingSectionProps {
   exitSelectMode: () => void
   exitTableSelectMode: () => void
   // Table bulk
-  handleTableBulkStatusChange: (newStatus: string) => void
+  handleTableBulkStatusChange: (newStatus: string, date?: string) => void
   handleTableBulkQueenMarked: (marked: boolean) => void
   handleTableBulkDelete: () => void
   setBulkDistributeGrafts: (grafts: Graft[] | null) => void
@@ -73,6 +73,8 @@ export default function QueenTrackingSection({
 }: QueenTrackingSectionProps) {
   if (tableGrafts.length === 0) return null
 
+  const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split('T')[0])
+
   return (
     <div className="pt-4 border-t border-border">
       <div className="flex justify-between items-center mb-1">
@@ -114,8 +116,14 @@ export default function QueenTrackingSection({
             </Button>
           )}
           <span className="text-border">|</span>
+          <input
+            type="date"
+            value={bulkDate}
+            onChange={(e) => setBulkDate(e.target.value)}
+            className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+          />
           <select
-            onChange={(e) => { if (e.target.value) { handleTableBulkStatusChange(e.target.value); e.target.value = '' } }}
+            onChange={(e) => { if (e.target.value) { handleTableBulkStatusChange(e.target.value, bulkDate); e.target.value = '' } }}
             defaultValue=""
             className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
           >
