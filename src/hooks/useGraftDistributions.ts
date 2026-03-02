@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 
@@ -86,8 +86,10 @@ export function useGraftDistributions() {
   const toast = useToast()
   const [distributions, setDistributions] = useState<GraftDistribution[]>([])
   const [loading, setLoading] = useState(false)
+  const fetchCounter = useRef(0)
 
   const fetchDistributions = useCallback(async (batchId: string) => {
+    const requestId = ++fetchCounter.current
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -150,12 +152,13 @@ export function useGraftDistributions() {
         }
       })
 
+      if (requestId !== fetchCounter.current) return // stale response — discard
       setDistributions(mapped)
     } catch (err) {
       console.error('Error fetching distributions:', err)
-      setDistributions([])
+      if (requestId === fetchCounter.current) setDistributions([])
     } finally {
-      setLoading(false)
+      if (requestId === fetchCounter.current) setLoading(false)
     }
   }, [])
 
@@ -266,7 +269,7 @@ export function useGraftDistributions() {
       // Revert graft status
       const { error: revertError } = await supabase
         .from('batch_grafts')
-        .update({ status: previousStatus || 'mated' })
+        .update({ status: previousStatus ?? 'mated' })
         .eq('id', graftId)
 
       if (revertError) {

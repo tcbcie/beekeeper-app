@@ -279,13 +279,13 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     const success = await createDistribution(data)
     if (success === true) {
       toast.success('Distribution recorded')
+      fetchGrafts()
+      fetchDistributions(batchId)
     } else if (success === false) {
       toast.error('This graft has already been distributed')
     } else {
       toast.error('Failed to record distribution')
     }
-    fetchGrafts()
-    fetchDistributions(batchId)
     return success
   }, [createDistribution, toast, fetchGrafts, fetchDistributions, batchId])
 
