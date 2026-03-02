@@ -24,6 +24,8 @@ interface DistributeGraftModalProps {
   onBulkSave?: (data: BulkDistributionData) => Promise<boolean | null>
 }
 
+const STATUS_ORDER: string[] = ['accepted', 'sealed', 'caged', 'emerged', 'in_nuc', 'mated']
+
 const TYPE_FROM_GRAFT_STATUS: Record<string, 'queen_cell' | 'virgin_queen' | 'mated_queen'> = {
   accepted: 'queen_cell',
   sealed: 'queen_cell',
@@ -53,8 +55,7 @@ export default function DistributeGraftModal({
   const isBulk = bulkGrafts && bulkGrafts.length > 0
   const effectiveStatus = isBulk
     ? bulkGrafts.reduce((best, g) => {
-        const order = ['accepted', 'sealed', 'caged', 'emerged', 'in_nuc', 'mated']
-        return order.indexOf(g.status) > order.indexOf(best) ? g.status : best
+        return STATUS_ORDER.indexOf(g.status) > STATUS_ORDER.indexOf(best) ? g.status : best
       }, bulkGrafts[0].status)
     : graftStatus
   const distributionType = TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
@@ -90,6 +91,7 @@ export default function DistributeGraftModal({
   const [distributionDate, setDistributionDate] = useState(today)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const submittingRef = useRef(false)
 
   const switchMode = (mode: RecipientMode) => {
     setRecipientMode(mode)
@@ -171,7 +173,8 @@ export default function DistributeGraftModal({
   const canSubmit = isExternal ? !!externalHasData : !!selectedUser
 
   const handleSubmit = async () => {
-    if (!canSubmit || saving) return
+    if (!canSubmit || saving || submittingRef.current) return
+    submittingRef.current = true
 
     setSaving(true)
 
@@ -214,6 +217,7 @@ export default function DistributeGraftModal({
     }
 
     setSaving(false)
+    submittingRef.current = false
     if (success) onClose()
   }
 

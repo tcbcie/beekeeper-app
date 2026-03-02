@@ -131,6 +131,16 @@ These auto-calculated values are used as defaults. Manual overrides saved in `ni
 
 The UI shows "Auto: X from records" below the manual input fields when auto-calculated values exist.
 
+## Code Hardening (02/03/2026)
+
+The following defensive improvements were applied to the distribution code:
+
+- **Stale-fetch guard** — `fetchDistributions` uses a request counter ref to discard responses from superseded requests, preventing race conditions when batch ID changes rapidly
+- **Nullish coalescing for status revert** — `deleteDistribution` uses `??` instead of `||` for the `previousStatus` fallback, so empty strings are preserved rather than silently defaulting to `'mated'`
+- **Conditional refetch** — `handleDistributeSave` only refetches grafts and distributions on success, avoiding unnecessary network calls on failure
+- **Double-submit prevention** — `DistributeGraftModal` uses a synchronous ref guard alongside React state to prevent duplicate submissions before re-render
+- **Hoisted constant** — Status ordering array for bulk distribution type detection moved to module level to avoid per-iteration allocation
+
 ## Files
 
 | File | Description |

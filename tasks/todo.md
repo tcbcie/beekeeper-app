@@ -1,23 +1,59 @@
-# Task: Match Sealed Cell Distribution to Virgin Queen Distribution
+# Code Audit: Distribution Feature Hardening
 **Date:** 02/03/2026
 **Status:** Complete
 
-## 1. Objective
-Show the Recipient's Apiary dropdown when distributing sealed cells (queen_cell type), matching the behaviour already available for virgin_queen and mated_queen distributions.
+## Scope
+Files audited:
+- `src/hooks/useGraftDistributions.ts`
+- `src/hooks/useBatchGrafts.ts`
+- `src/components/batches/DistributeGraftModal.tsx`
+- `src/components/batches/DistributionList.tsx`
+- `src/components/batches/graftConstants.ts`
 
-## 2. Execution Plan
+---
 
-- [x] Update apiary dropdown condition in `DistributeGraftModal.tsx` line 459 to include `queen_cell`
-- [x] Verify `DistributionList.tsx` displays apiary details for `queen_cell` (confirmed — no type filter needed)
-- [x] Create/update feature doc in `docs/features/batch-distributions.md`
-- [ ] User tests the build
+## Findings & Fixes
 
-## 3. Post-Task Review
+### HIGH — Stale fetch race condition in `fetchDistributions`
+- [x] Added `fetchCounter` ref and stale-request guard to `useGraftDistributions.ts`
 
-**Summary of Changes:**
-- `src/components/batches/DistributeGraftModal.tsx` — Added `'queen_cell'` to the condition on line 459 that controls visibility of the Recipient's Apiary dropdown. Previously only `virgin_queen` and `mated_queen` showed the dropdown; now `queen_cell` does too.
-- `docs/features/batch-distributions.md` — Updated the modal field description to reflect that the apiary dropdown is now shown for all three distribution types.
+### HIGH — `deleteDistribution` falls back to `'mated'` on empty string
+- [x] Changed `previousStatus || 'mated'` to `previousStatus ?? 'mated'`
 
-**No change needed in `DistributionList.tsx`** — it already displays apiary/location details for all distribution types without any type-based filtering.
+### MEDIUM — `handleDistributeSave` refetches unconditionally on failure
+- [x] Moved `fetchGrafts()` and `fetchDistributions()` inside the `success === true` branch
 
-**Impact:** 1 line of logic changed. No schema, API, or other component changes.
+### MEDIUM — `order` array re-allocated on every reduce iteration in modal
+- [x] Hoisted to module-level `STATUS_ORDER` constant
+
+### MEDIUM — `handleSubmit` in modal lacks synchronous guard against double-fire
+- [x] Added `submittingRef` guard alongside `saving` state check
+
+---
+
+- [x] Updated `docs/features/batch-distributions.md` with audit notes
+- [x] Review summary
+
+## Review
+
+### Changes Made
+
+| File | Change | Lines |
+|------|--------|-------|
+| `src/hooks/useGraftDistributions.ts` | Added `useRef` import, `fetchCounter` ref, stale-request checks in `fetchDistributions` | 1, 89, 92, 155-160 |
+| `src/hooks/useGraftDistributions.ts` | Changed `\|\|` to `??` in `deleteDistribution` | 272 |
+| `src/hooks/useBatchGrafts.ts` | Moved refetch calls inside success branch of `handleDistributeSave` | 280-288 |
+| `src/components/batches/DistributeGraftModal.tsx` | Hoisted `STATUS_ORDER` to module level | 27 |
+| `src/components/batches/DistributeGraftModal.tsx` | Added `submittingRef` double-submit guard | 94, 176, 220 |
+| `docs/features/batch-distributions.md` | Added Code Hardening section documenting all fixes | New section |
+
+### Impact
+- 5 targeted fixes across 3 source files
+- No schema, API, or component structure changes
+- No new dependencies
+- All fixes are defensive improvements — no behaviour change for the happy path
+
+### Not Changed (reviewed and found acceptable)
+- `DistributionList.tsx` — read-only display, all access uses optional chaining, no issues found
+- `graftConstants.ts` — `formatDateIrish` has safe null check and length validation, no changes needed
+- `useBatchGrafts.ts` bulk handlers — error handling adequate, selection pruning correct
