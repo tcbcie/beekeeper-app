@@ -29,6 +29,7 @@ The NIHBS monthly report auto-calculates external distribution counts from these
 | external_recipient_email | TEXT | Free-text email for non-app recipients |
 | external_recipient_phone | TEXT | Free-text mobile for non-app recipients |
 | external_recipient_location | TEXT | Apiary / mating location (closest Eircode) for non-app recipients |
+| mating_location | TEXT | Apiary / mating location (closest Eircode) for app-user queen cell distributions |
 
 ### RLS Policies
 
@@ -65,8 +66,9 @@ Modal form with:
    - **Other Beekeeper** — free-text fields: Name, Email, Mobile, Apiary/Mating Location (closest Eircode); submit enabled when at least one field is filled
 3. **Distribution date** — defaults to today
 4. **Recipient's apiary** — shown for queen cell, virgin queen, and mated queen types (app user mode only)
-5. **Recipient's hive** — shown for mated queen type when apiary selected (app user mode only)
-6. **Notes** — optional
+5. **Apiary / Mating Location (closest Eircode)** — free-text field shown for queen cell distributions to app users; at least one of apiary or mating location must be filled before submission
+6. **Recipient's hive** — shown for mated queen type when apiary selected (app user mode only)
+7. **Notes** — optional
 
 ### Distribution List
 
@@ -74,6 +76,7 @@ Shown below the graft grid in `BatchGraftsSection`. Each card shows:
 - Cell number and type badge
 - "Distributed to [name] ([email])" — if only name or email is known, shows whichever is available; never shows "Unknown" for registered users. Recipient name resolved as: `full_name` → `first_name + last_name` → `email`
 - "to [Apiary Name][, Hive N] on DD/MM/YYYY" — or just "on DD/MM/YYYY" if no apiary was recorded
+- Mating location line (if set): `Mating location: D01 AB12` — shown for app-user distributions with a mating location
 - Apiary location line (if any location data present): `Grid: X1Y2 • Elev: 45m • 52.1234°, -6.5678°` — each part labelled and only shown if present
 - Queen info line (if set on the graft at time of distribution): `Queen marked • Queen #123`
 - Mating confirmed toggle (for queen cell/virgin queen distributions) — when confirmed, the confirmed date is shown in green ("Mated: DD/MM/YYYY"); toggling off clears the date

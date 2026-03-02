@@ -78,10 +78,19 @@ export default function DistributionList({
                       </div>
                     )}
                   </>
-                ) : locationParts.length > 0 && (
-                  <div className="text-xs text-text-tertiary mt-0.5">
-                    {locationParts.join(' \u2022 ')}
-                  </div>
+                ) : (
+                  <>
+                    {dist.mating_location && (
+                      <div className="text-xs text-text-tertiary mt-0.5">
+                        Mating location: {dist.mating_location}
+                      </div>
+                    )}
+                    {locationParts.length > 0 && (
+                      <div className="text-xs text-text-tertiary mt-0.5">
+                        {locationParts.join(' \u2022 ')}
+                      </div>
+                    )}
+                  </>
                 )}
                 {(graft?.queen_marked || graft?.queen_number) && (
                   <div className="text-xs text-text-tertiary mt-0.5">

@@ -31,6 +31,7 @@ export interface GraftDistribution {
   external_recipient_email: string | null
   external_recipient_phone: string | null
   external_recipient_location: string | null
+  mating_location: string | null
 }
 
 export interface RecipientUser {
@@ -64,6 +65,7 @@ export interface CreateDistributionData {
   external_recipient_email: string | null
   external_recipient_phone: string | null
   external_recipient_location: string | null
+  mating_location: string | null
 }
 
 export interface BulkDistributionData {
@@ -80,6 +82,7 @@ export interface BulkDistributionData {
   external_recipient_email: string | null
   external_recipient_phone: string | null
   external_recipient_location: string | null
+  mating_location: string | null
 }
 
 export function useGraftDistributions() {
@@ -149,6 +152,7 @@ export function useGraftDistributions() {
           external_recipient_email: d.external_recipient_email as string | null,
           external_recipient_phone: d.external_recipient_phone as string | null,
           external_recipient_location: d.external_recipient_location as string | null,
+          mating_location: d.mating_location as string | null,
         }
       })
 
@@ -218,6 +222,7 @@ export function useGraftDistributions() {
         external_recipient_email: data.external_recipient_email,
         external_recipient_phone: data.external_recipient_phone,
         external_recipient_location: data.external_recipient_location,
+        mating_location: data.mating_location,
       }))
 
       const { error } = await supabase

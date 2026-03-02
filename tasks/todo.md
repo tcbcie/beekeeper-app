@@ -1,59 +1,30 @@
-# Code Audit: Distribution Feature Hardening
-**Date:** 02/03/2026
-**Status:** Complete
+# Add Mating Location Field for Queen Cell Distributions
 
-## Scope
-Files audited:
-- `src/hooks/useGraftDistributions.ts`
-- `src/hooks/useBatchGrafts.ts`
-- `src/components/batches/DistributeGraftModal.tsx`
-- `src/components/batches/DistributionList.tsx`
-- `src/components/batches/graftConstants.ts`
+## Todo
 
----
-
-## Findings & Fixes
-
-### HIGH — Stale fetch race condition in `fetchDistributions`
-- [x] Added `fetchCounter` ref and stale-request guard to `useGraftDistributions.ts`
-
-### HIGH — `deleteDistribution` falls back to `'mated'` on empty string
-- [x] Changed `previousStatus || 'mated'` to `previousStatus ?? 'mated'`
-
-### MEDIUM — `handleDistributeSave` refetches unconditionally on failure
-- [x] Moved `fetchGrafts()` and `fetchDistributions()` inside the `success === true` branch
-
-### MEDIUM — `order` array re-allocated on every reduce iteration in modal
-- [x] Hoisted to module-level `STATUS_ORDER` constant
-
-### MEDIUM — `handleSubmit` in modal lacks synchronous guard against double-fire
-- [x] Added `submittingRef` guard alongside `saving` state check
-
----
-
-- [x] Updated `docs/features/batch-distributions.md` with audit notes
-- [x] Review summary
+- [x] 1. **Database** — Add `mating_location` nullable text column to `graft_distributions`
+- [x] 2. **Hook types** — Add `mating_location` to `GraftDistribution`, `CreateDistributionData`, and `BulkDistributionData` interfaces
+- [x] 3. **Hook insert logic** — Include `mating_location` in `createBulkDistributions` insert rows (`createDistribution` passes full object, so it gets it automatically)
+- [x] 4. **Hook fetch mapping** — Include `mating_location` in `fetchDistributions` mapped output
+- [x] 5. **Modal: state + input** — Add `matingLocation` state, show text input below apiary dropdown for queen_cell app-user distributions
+- [x] 6. **Modal: validation** — For queen_cell app-user distributions, require either apiary or mating location; show inline error if neither filled
+- [x] 7. **Modal: pass data** — Include `mating_location` in both `onSave` and `onBulkSave` data payloads
+- [x] 8. **Distribution list** — Show `mating_location` in distribution card when present
+- [x] 9. **Docs** — Update `docs/features/batch-distributions.md`
 
 ## Review
 
 ### Changes Made
 
-| File | Change | Lines |
-|------|--------|-------|
-| `src/hooks/useGraftDistributions.ts` | Added `useRef` import, `fetchCounter` ref, stale-request checks in `fetchDistributions` | 1, 89, 92, 155-160 |
-| `src/hooks/useGraftDistributions.ts` | Changed `\|\|` to `??` in `deleteDistribution` | 272 |
-| `src/hooks/useBatchGrafts.ts` | Moved refetch calls inside success branch of `handleDistributeSave` | 280-288 |
-| `src/components/batches/DistributeGraftModal.tsx` | Hoisted `STATUS_ORDER` to module level | 27 |
-| `src/components/batches/DistributeGraftModal.tsx` | Added `submittingRef` double-submit guard | 94, 176, 220 |
-| `docs/features/batch-distributions.md` | Added Code Hardening section documenting all fixes | New section |
+| File | Change |
+|------|--------|
+| Migration | Added nullable `mating_location text` column to `graft_distributions` |
+| `src/hooks/useGraftDistributions.ts` | Added `mating_location: string \| null` to 3 interfaces; added to bulk insert row mapping; added to fetch output mapping |
+| `src/components/batches/DistributeGraftModal.tsx` | Added `matingLocation` + `locationError` state; text input shown for queen_cell app-user distributions; validation blocks submit when neither apiary nor location filled; field passed in both single and bulk payloads |
+| `src/components/batches/DistributionList.tsx` | Shows "Mating location: ..." line for app-user distributions when field is populated |
+| `docs/features/batch-distributions.md` | Documented new column, new modal field, validation rule, and display in distribution list |
 
 ### Impact
-- 5 targeted fixes across 3 source files
-- No schema, API, or component structure changes
-- No new dependencies
-- All fixes are defensive improvements — no behaviour change for the happy path
-
-### Not Changed (reviewed and found acceptable)
-- `DistributionList.tsx` — read-only display, all access uses optional chaining, no issues found
-- `graftConstants.ts` — `formatDateIrish` has safe null check and length validation, no changes needed
-- `useBatchGrafts.ts` bulk handlers — error handling adequate, selection pruning correct
+- 1 new DB column, 3 source files changed, 1 doc updated
+- No breaking changes — field is nullable, existing records unaffected
+- Validation only applies to queen_cell distributions to app users
