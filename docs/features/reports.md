@@ -126,6 +126,36 @@ The Reports feature provides beekeepers with printable and exportable reports fo
 - Review reasons for hive removals
 - Compliance and audit records
 
+### 7. Monthly Rearing Report
+
+**Purpose:** Group-level summary of queen rearing activity for a selected month.
+
+**Visibility:** Only shown to rearing group owners.
+
+**Columns:**
+- Member name
+- Batches
+- Grafts Accepted
+- Queens Hatched
+- Queens Mated
+- Cells Distributed
+
+**Sealed queen cell exclusion:** Distributed sealed queen cells (`distribution_type = 'queen_cell'` in `graft_distributions`) are subtracted from Queens Hatched and Queens Mated per batch, since there is no tracking of whether those cells hatched or queens mated. The count of distributed cells is shown in a separate "Cells Distributed" column.
+
+**Filters:**
+- Rearing group selection
+- Month and year
+
+### 8. NIHBS Monthly Returns
+
+See [nihbs-monthly-returns.md](nihbs-monthly-returns.md) for full documentation.
+
+**Purpose:** Formalised monthly returns for the NIHBS Conservation and Queen Rearing Group Scheme.
+
+**Visibility:** Only shown to rearing group owners.
+
+**Key feature:** The same sealed queen cell exclusion applies — distributed queen cells are subtracted from rows 13 (hatched) and 19 (mated within group) and tracked separately on row 28.
+
 ## Export Options
 
 ### CSV Export
@@ -180,7 +210,9 @@ src/
 ├── components/records/forms/
 │   └── VarroaTreatmentForm.tsx       # Updated with batch_number field
 ├── hooks/
-│   └── useReportsData.ts             # Report data fetching
+│   ├── useReportsData.ts             # Report data fetching
+│   ├── useRearingGroupReport.ts      # Monthly rearing report data
+│   └── useNIHBSReport.ts             # NIHBS monthly returns data
 └── types/
     ├── reports.ts                    # Report-specific types
     └── records.ts                    # Updated VarroaTreatment interface
