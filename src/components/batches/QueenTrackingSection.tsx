@@ -71,9 +71,9 @@ export default function QueenTrackingSection({
   deleteGraft,
   setDistributeGraft,
 }: QueenTrackingSectionProps) {
-  if (tableGrafts.length === 0) return null
-
   const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split('T')[0])
+
+  if (tableGrafts.length === 0) return null
 
   return (
     <div className="pt-4 border-t border-border">
