@@ -109,7 +109,8 @@ Stores the manual-entry fields per group per month.
 | File | Description |
 |------|-------------|
 | `src/hooks/useNIHBSReport.ts` | Data aggregation hook for NIHBS report |
-| `src/hooks/useRearingGroupReport.ts` | Modified — added cell_count + mating_apiary_id |
+| `src/hooks/useRearingGroupReport.ts` | Modified — added cell_count + mating_apiary_id; queen_cell distribution subtraction from hatched/mated |
+| `src/components/rearing-groups/RearingGroupReport.tsx` | Monthly rearing report UI — includes Cells Distributed column |
 | `src/hooks/useRearingGroups.ts` | Modified — added experience_level to member interface |
 | `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | NIHBS report UI + Excel export component |
 | `src/app/dashboard/batches/page.tsx` | Modified — mating apiary dropdown on batch form |
