@@ -42,6 +42,8 @@ export const TABLE_STATUSES = [
 
 export const FRAME_STATUS_VALUES = ['grafted', 'accepted']
 
+export const MARKABLE_STATUSES = ['emerged', 'in_nuc', 'mated']
+
 export const DISTRIBUTABLE_STATUSES = ['sealed', 'caged', 'emerged', 'in_nuc', 'mated']
 
 export const CUP_COLORS: Record<string, string> = {

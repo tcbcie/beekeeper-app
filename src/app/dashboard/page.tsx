@@ -521,7 +521,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
  href="/dashboard/apiary-team"
  className="fj-btn fj-btn-blue text-sm"
  >
- Manage Teams
+ Manage Teams (Memberships)
  </Link>
  </div>
 

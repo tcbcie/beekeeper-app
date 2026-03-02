@@ -6,6 +6,7 @@ import {
   GRAFT_STATUSES,
   TABLE_STATUSES,
   DISTRIBUTABLE_STATUSES,
+  MARKABLE_STATUSES,
   COLOUR_DOTS,
   formatDateIrish,
 } from './graftConstants'
@@ -186,6 +187,7 @@ export default function QueenTrackingSection({
               const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
               const isLockedByFailed = graft.status === 'failed'
               const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
+              const canMark = MARKABLE_STATUSES.includes(graft.status)
               return (
                 <tr key={graft.id} className={`hover:bg-surface-secondary ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
                   {tableSelectMode && (
@@ -243,11 +245,11 @@ export default function QueenTrackingSection({
                       checked={graft.queen_marked}
                       onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
                       className="h-4 w-4 rounded border-border text-forest-600 focus:ring-forest-500"
-                      disabled={isLocked}
+                      disabled={isLocked || !canMark}
                     />
                   </td>
                   <td className="px-3 py-2">
-                    {isLocked ? (
+                    {(isLocked || !canMark) ? (
                       <span className="text-xs text-text-secondary">{graft.queen_number || '-'}</span>
                     ) : (
                       <input
@@ -318,6 +320,7 @@ export default function QueenTrackingSection({
           const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
           const isLockedByFailed = graft.status === 'failed'
           const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
+          const canMark = MARKABLE_STATUSES.includes(graft.status)
           return (
             <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
               <div className="flex items-center justify-between">
@@ -379,10 +382,12 @@ export default function QueenTrackingSection({
                       checked={graft.queen_marked}
                       onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
                       className="h-4 w-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                      disabled={!canMark}
                     />
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <label className="text-xs text-text-secondary shrink-0">Queen Number</label>
+                    {canMark ? (
                     <input
                       key={`${graft.id}-qn-${graft.queen_number ?? ''}`}
                       type="text"
@@ -396,6 +401,9 @@ export default function QueenTrackingSection({
                       placeholder="Enter number..."
                       className="w-24 sm:w-28 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
                     />
+                    ) : (
+                      <span className="text-xs text-text-secondary">{graft.queen_number || '-'}</span>
+                    )}
                   </div>
                 </div>
               )}
