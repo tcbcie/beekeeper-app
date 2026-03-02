@@ -8,7 +8,7 @@
  * Authentication: Bearer token (provided by Wolf Waagen)
  */
 
-const WOLF_API_BASE = 'https://new.app.wolf-waagen.de/api/v1'
+const WOLF_API_BASE = 'https://app.wolf-waagen.de/api/v1'
 
 // ============================================================================
 // Types
