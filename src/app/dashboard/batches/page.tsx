@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
@@ -1046,10 +1046,13 @@ export default function BatchesPage() {
 
  {/* Batch Quantities - Grouped Vertically */}
  <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border overflow-hidden">
- <button type="button" onClick={() => setQuantitiesOpen(!quantitiesOpen)} className="w-full flex items-center justify-between">
+ <div className="flex items-center justify-between">
  <h4 className="text-sm font-semibold text-foreground">Batch Quantities</h4>
- <ChevronDown size={16} className={`text-text-tertiary transition-transform ${quantitiesOpen ? 'rotate-180' : ''}`} />
+ <button type="button" onClick={() => setQuantitiesOpen(!quantitiesOpen)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-text-tertiary hover:text-foreground rounded">
+ {quantitiesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+ {quantitiesOpen ? 'Hide' : 'Show'}
  </button>
+ </div>
  {quantitiesOpen && <div className="space-y-3 mt-3">
  {/* Frame Layout: Rows × Cells per Row */}
  <div className="p-3 rounded-lg border-2 border-amber-600 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 space-y-3">
