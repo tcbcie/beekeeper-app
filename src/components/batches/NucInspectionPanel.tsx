@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, ClipboardList } from 'lucide-react'
+import { Plus, ClipboardList, Tag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
+import { getQueenColorFromYear } from '@/types/queen'
+import { COLOUR_DOTS } from './graftConstants'
 import NucInspectionCard from './NucInspectionCard'
 import Button from '@/components/ui/Button'
 
@@ -37,17 +39,20 @@ interface NucInspectionPanelProps {
   nucNumber: string
   userId: string
   graftId?: string | null
+  emergenceDate?: string | null
   onInspectionChange?: () => void
 }
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
 
-export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, onInspectionChange }: NucInspectionPanelProps) {
+export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange }: NucInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<NucInspection[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingInspection, setEditingInspection] = useState<NucInspection | null>(null)
+  const [showMarkForm, setShowMarkForm] = useState(false)
+  const [markQueenNumber, setMarkQueenNumber] = useState('')
   const [formData, setFormData] = useState<NucInspectionFormData>({
     inspection_date: new Date().toISOString().split('T')[0],
     queen_seen: false,
@@ -211,6 +216,32 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     }
   }
 
+  const markColour = emergenceDate ? getQueenColorFromYear(emergenceDate) : ''
+
+  const handleMarkQueen = async () => {
+    try {
+      if (graftId) {
+        await supabase
+          .from('batch_grafts')
+          .update({ queen_marked: true, queen_number: markQueenNumber || null })
+          .eq('id', graftId)
+      }
+
+      await supabase
+        .from('mating_nucs')
+        .update({ queen_marked_at: new Date().toISOString() })
+        .eq('id', nucId)
+
+      toast.success('Queen marked successfully')
+      setShowMarkForm(false)
+      setMarkQueenNumber('')
+      onInspectionChange?.()
+    } catch (error) {
+      console.error('Error marking queen:', error)
+      toast.error('Failed to mark queen')
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-6 bg-surface-secondary/30">
@@ -223,7 +254,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     <div className="p-4 md:p-6 bg-surface-secondary/30 border-t border-border">
       {/* Header */}
       <div className="flex items-center flex-wrap gap-3 mb-4">
-        {!showForm && (
+        {!showForm && !showMarkForm && (
           <Button
             onClick={() => setShowForm(true)}
             tone="success"
@@ -234,11 +265,68 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
             Add Inspection
           </Button>
         )}
+        {graftId && !showForm && !showMarkForm && (
+          <Button
+            onClick={() => setShowMarkForm(true)}
+            tone="neutral"
+            size="sm"
+            className="inline-flex items-center gap-1.5"
+          >
+            <Tag size={16} />
+            Mark Queen
+          </Button>
+        )}
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <ClipboardList size={20} className="text-forest-600" />
           Inspections for {nucNumber} ({inspections.length})
         </h3>
       </div>
+
+      {/* Mark Queen Form */}
+      {showMarkForm && (
+        <div className="mb-6 p-4 bg-surface-elevated rounded-lg border border-amber-200 dark:border-amber-800">
+          <h4 className="text-md font-medium text-foreground mb-3">Mark Queen</h4>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-text-secondary">Colour:</span>
+              {markColour && COLOUR_DOTS[markColour] ? (
+                <span className="flex items-center gap-1.5">
+                  <span className={`inline-block w-4 h-4 rounded-full ${COLOUR_DOTS[markColour]}`} />
+                  <span className="text-sm font-medium text-foreground">{markColour}</span>
+                </span>
+              ) : (
+                <span className="text-sm text-text-tertiary">Unknown</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-text-secondary">Queen #:</label>
+              <input
+                type="text"
+                value={markQueenNumber}
+                onChange={(e) => setMarkQueenNumber(e.target.value)}
+                placeholder="Optional"
+                className="w-32 px-2 py-1 text-sm border border-border rounded-md bg-surface text-foreground"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleMarkQueen}
+                tone="success"
+                size="sm"
+              >
+                Save
+              </Button>
+              <Button
+                onClick={() => { setShowMarkForm(false); setMarkQueenNumber('') }}
+                tone="neutral"
+                size="sm"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       {showForm && (
