@@ -140,45 +140,44 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
           .insert([inspectionData])
 
         if (error) throw error
-
-        // Auto-update nuc status and linked graft status based on queen status
-        const qs = formData.queen_status
-        const nucUpdate: Record<string, string> = {}
-        let graftStatus: string | null = null
-
-        const inspectionDate = formData.inspection_date
-
-        if (qs === 'virgin') {
-          nucUpdate.status = 'virgin'
-          nucUpdate.queen_emerged_at = inspectionDate
-          graftStatus = 'emerged'
-        } else if (qs === 'mated') {
-          nucUpdate.status = 'mating'
-          nucUpdate.mating_confirmed_at = inspectionDate
-          graftStatus = 'mated'
-        } else if (qs === 'laying') {
-          nucUpdate.status = 'laying'
-          nucUpdate.mating_confirmed_at = inspectionDate
-          graftStatus = 'mated'
-        } else if (qs === 'dead' || qs === 'missing') {
-          nucUpdate.status = 'failed'
-        }
-
-        if (Object.keys(nucUpdate).length > 0) {
-          await supabase
-            .from('mating_nucs')
-            .update(nucUpdate)
-            .eq('id', nucId)
-        }
-
-        if (graftStatus && graftId) {
-          await supabase
-            .from('batch_grafts')
-            .update({ status: graftStatus })
-            .eq('id', graftId)
-        }
-
         toast.success('Inspection recorded')
+      }
+
+      // Auto-update nuc status and linked graft status based on queen status
+      const qs = formData.queen_status
+      const nucUpdate: Record<string, string> = {}
+      let graftStatus: string | null = null
+
+      const inspectionDate = formData.inspection_date
+
+      if (qs === 'virgin') {
+        nucUpdate.status = 'virgin'
+        nucUpdate.queen_emerged_at = inspectionDate
+        graftStatus = 'emerged'
+      } else if (qs === 'mated') {
+        nucUpdate.status = 'mating'
+        nucUpdate.mating_confirmed_at = inspectionDate
+        graftStatus = 'mated'
+      } else if (qs === 'laying') {
+        nucUpdate.status = 'laying'
+        nucUpdate.mating_confirmed_at = inspectionDate
+        graftStatus = 'mated'
+      } else if (qs === 'dead' || qs === 'missing') {
+        nucUpdate.status = 'failed'
+      }
+
+      if (Object.keys(nucUpdate).length > 0) {
+        await supabase
+          .from('mating_nucs')
+          .update(nucUpdate)
+          .eq('id', nucId)
+      }
+
+      if (graftStatus && graftId) {
+        await supabase
+          .from('batch_grafts')
+          .update({ status: graftStatus })
+          .eq('id', graftId)
       }
 
       resetForm()
