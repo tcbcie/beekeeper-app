@@ -399,6 +399,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  return
  }
 
+ if (!bulkFormData.mating_location.trim()) {
+ toast.error('Mating location is required.')
+ return
+ }
+
  const inputNumbers = bulkFormData.mode === 'numbered'
  ? parseBulkNucNumbers(bulkFormData.nuc_numbers_text)
  : []
@@ -473,6 +478,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  if (existing && existing.id !== editingNuc?.id) {
  toast.error(`Nuc "${formData.nuc_number}" is already active. Retire it first to reuse this number.`)
+ return
+ }
+
+ if (!formData.mating_location.trim()) {
+ toast.error('Mating location is required. Select an apiary or enter a custom location.')
  return
  }
 
@@ -727,7 +737,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
 
  <div>
- <label className="block text-sm font-medium text-text-secondary mb-1">Mating Location</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Mating Location *</label>
  <select
  value={selectedMatingLocationOptionId}
  onChange={(e) => {
@@ -736,7 +746,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  >
- <option value="">Select apiary (optional)</option>
+ <option value="">Select apiary</option>
  {matingLocationOptions.map((apiary) => (
  <option key={apiary.id} value={apiary.id}>
  {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
@@ -747,7 +757,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  type="text"
  value={formData.mating_location}
  onChange={(e) => setFormData({ ...formData, mating_location: e.target.value })}
- placeholder="Or enter a custom location (optional)"
+ placeholder="Or enter a custom location"
  className="w-full mt-2 px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  />
  <p className="mt-1 text-xs text-text-tertiary">Choose an apiary from the list or enter a custom location.</p>
@@ -845,7 +855,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </div>
 
  <div>
- <label className="block text-sm font-medium text-text-secondary mb-1">Mating Location</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Mating Location *</label>
  <input
  type="text"
  value={bulkFormData.mating_location}
