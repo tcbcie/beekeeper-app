@@ -150,6 +150,10 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
 
       const inspectionDate = formData.inspection_date
 
+      if (formData.queen_seen) {
+        nucUpdate.queen_last_seen_at = inspectionDate
+      }
+
       if (qs === 'virgin') {
         nucUpdate.status = 'virgin'
         nucUpdate.queen_emerged_at = inspectionDate
