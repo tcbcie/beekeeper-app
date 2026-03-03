@@ -174,6 +174,7 @@ export default function BatchesPage() {
  const router = useRouter()
  const toast = useToast()
  const [batches, setBatches] = useState<Batch[]>([])
+ const [sealedCellCounts, setSealedCellCounts] = useState<Record<string, number>>({})
  const [queens, setQueens] = useState<Queen[]>([])
  const [apiaries, setApiaries] = useState<Apiary[]>([])
  const [hives, setHives] = useState<Hive[]>([])
@@ -257,6 +258,27 @@ export default function BatchesPage() {
  console.error('Error fetching batches:', error)
  } else if (data) {
  setBatches(data)
+
+ // Fetch sealed queen cell distribution counts per batch
+ const batchIds = data.map((b: Batch) => b.id)
+ if (batchIds.length > 0) {
+ const { data: distData } = await supabase
+   .from('graft_distributions')
+   .select('batch_id')
+   .eq('distribution_type', 'queen_cell')
+   .in('batch_id', batchIds)
+
+ const counts: Record<string, number> = {}
+ if (distData) {
+   for (const d of distData) {
+     const bId = d.batch_id as string
+     if (bId) counts[bId] = (counts[bId] || 0) + 1
+   }
+ }
+ setSealedCellCounts(counts)
+ } else {
+ setSealedCellCounts({})
+ }
  }
  setLoading(false)
  }, [userId])
@@ -1236,6 +1258,9 @@ export default function BatchesPage() {
  <Plus size={16} />
  </IconButton>
  </div>
+ {editingBatch && sealedCellCounts[editingBatch.id] > 0 && (
+ <p className="text-xs text-text-tertiary italic mt-1">{sealedCellCounts[editingBatch.id]} sealed cell{sealedCellCounts[editingBatch.id] > 1 ? 's' : ''} distributed — report shows {Math.max(0, parseInt(formData.queens_hatched || '0') - sealedCellCounts[editingBatch.id])}</p>
+ )}
  </div>
 
  {/* Queens Mated */}
@@ -1273,6 +1298,9 @@ export default function BatchesPage() {
  <Plus size={16} />
  </IconButton>
  </div>
+ {editingBatch && sealedCellCounts[editingBatch.id] > 0 && (
+ <p className="text-xs text-text-tertiary italic mt-1">{sealedCellCounts[editingBatch.id]} sealed cell{sealedCellCounts[editingBatch.id] > 1 ? 's' : ''} distributed — report shows {Math.max(0, parseInt(formData.queens_mated || '0') - sealedCellCounts[editingBatch.id])}</p>
+ )}
  </div>
 
  {/* Queens Showing Hybridised Offspring */}
@@ -1484,13 +1512,16 @@ export default function BatchesPage() {
  </div>
  <div>
  <span className="text-text-tertiary block">Hatched:</span>
- <span className="text-foreground font-medium">{batch.queens_hatched || '-'}</span>
+ <span className="text-foreground font-medium">{batch.queens_hatched ? Math.max(0, batch.queens_hatched - (sealedCellCounts[batch.id] || 0)) : '-'}</span>
  </div>
  <div>
  <span className="text-text-tertiary block">Mated:</span>
- <span className="text-foreground font-medium">{batch.queens_mated || '-'}</span>
+ <span className="text-foreground font-medium">{batch.queens_mated ? Math.max(0, batch.queens_mated - (sealedCellCounts[batch.id] || 0)) : '-'}</span>
  </div>
  </div>
+ {sealedCellCounts[batch.id] > 0 && (
+ <div className="text-xs text-text-tertiary italic pt-1">{sealedCellCounts[batch.id]} sealed cell{sealedCellCounts[batch.id] > 1 ? 's' : ''} distributed</div>
+ )}
  <div className="flex justify-between pt-2 border-t border-border">
  <span className="text-text-tertiary">Acceptance Check:</span>
  <span className="text-foreground">{formatDateIrish(batch.acceptance_check_date)}</span>
@@ -1535,8 +1566,14 @@ export default function BatchesPage() {
  <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
- <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
- <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
+ <td className="px-6 py-4 whitespace-nowrap">
+ {batch.queens_hatched ? Math.max(0, batch.queens_hatched - (sealedCellCounts[batch.id] || 0)) : '-'}
+ {sealedCellCounts[batch.id] > 0 && <span className="text-xs text-text-tertiary ml-1" title={`${sealedCellCounts[batch.id]} sealed cell(s) distributed`}>*</span>}
+ </td>
+ <td className="px-6 py-4 whitespace-nowrap">
+ {batch.queens_mated ? Math.max(0, batch.queens_mated - (sealedCellCounts[batch.id] || 0)) : '-'}
+ {sealedCellCounts[batch.id] > 0 && <span className="text-xs text-text-tertiary ml-1" title={`${sealedCellCounts[batch.id]} sealed cell(s) distributed`}>*</span>}
+ </td>
  <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.acceptance_check_date)}</td>
  </tr>
  ))}

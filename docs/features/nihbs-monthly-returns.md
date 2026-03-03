@@ -41,6 +41,7 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
 - Sealed queen cell exclusion:
   - Distributed sealed queen cells (distribution_type = 'queen_cell') are subtracted from "queen cells hatched" (row 13) and "queens mated within group" (row 19) since there is no tracking of whether they hatched or mated
   - These are tracked separately on row 28 "Sealed queen cells distributed" with per-apiary breakdown
+  - The same subtraction is also applied on the batches page: mobile card and desktop table display values show adjusted counts, and the batch edit form shows an info note with the distribution count and adjusted report value
 
 ### Excel Export
 Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is available even when there is no monthly batch data for the selected year.
