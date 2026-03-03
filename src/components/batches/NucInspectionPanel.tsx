@@ -36,12 +36,13 @@ interface NucInspectionPanelProps {
   nucId: string
   nucNumber: string
   userId: string
+  graftId?: string | null
   onInspectionChange?: () => void
 }
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
 
-export default function NucInspectionPanel({ nucId, nucNumber, userId, onInspectionChange }: NucInspectionPanelProps) {
+export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, onInspectionChange }: NucInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<NucInspection[]>([])
   const [loading, setLoading] = useState(true)
@@ -140,20 +141,39 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, onInspect
 
         if (error) throw error
 
-        // Auto-update nuc status based on queen status
-        if (formData.queen_status === 'laying') {
+        // Auto-update nuc status and linked graft status based on queen status
+        const qs = formData.queen_status
+        const nucUpdate: Record<string, string> = {}
+        let graftStatus: string | null = null
+
+        if (qs === 'virgin') {
+          nucUpdate.status = 'virgin'
+          nucUpdate.queen_emerged_at = new Date().toISOString()
+          graftStatus = 'emerged'
+        } else if (qs === 'mated') {
+          nucUpdate.status = 'mating'
+          nucUpdate.mating_confirmed_at = new Date().toISOString()
+          graftStatus = 'mated'
+        } else if (qs === 'laying') {
+          nucUpdate.status = 'laying'
+          nucUpdate.mating_confirmed_at = new Date().toISOString()
+          graftStatus = 'mated'
+        } else if (qs === 'dead' || qs === 'missing') {
+          nucUpdate.status = 'failed'
+        }
+
+        if (Object.keys(nucUpdate).length > 0) {
           await supabase
             .from('mating_nucs')
-            .update({
-              status: 'laying',
-              mating_confirmed_at: new Date().toISOString()
-            })
+            .update(nucUpdate)
             .eq('id', nucId)
-        } else if (formData.queen_status === 'dead' || formData.queen_status === 'missing') {
+        }
+
+        if (graftStatus && graftId) {
           await supabase
-            .from('mating_nucs')
-            .update({ status: 'failed' })
-            .eq('id', nucId)
+            .from('batch_grafts')
+            .update({ status: graftStatus })
+            .eq('id', graftId)
         }
 
         toast.success('Inspection recorded')

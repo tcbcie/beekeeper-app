@@ -1140,6 +1140,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  nucId={nuc.id}
  nucNumber={nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}
  userId={userId}
+ graftId={nuc.graft_id}
  onInspectionChange={fetchNucs}
  />
  )}

@@ -1,21 +1,24 @@
-# Task: Subtract Distributed Sealed Queen Cells from Batch Display
+# Task: Auto-sync nuc status and graft status from inspection queen_status
 **Date:** 03/03/2026
 **Status:** Completed
 
 ## 1. Objective
-On the batches page, "Queens Hatched" and "Queens Mated" show raw database values without subtracting distributed sealed queen cells (`distribution_type = 'queen_cell'`). The NIHBS report already does this subtraction — the batch page display should match.
+When a nuc inspection is saved with a `queen_status`, auto-update the nuc and linked batch graft status accordingly. Currently only `laying` and `dead/missing` trigger nuc updates, and graft status is never synced.
 
 ## 2. Impact Analysis
-* **Files to Modify:** `src/app/dashboard/batches/page.tsx`
-* **Simplicity Check:** Fetch queen_cell distribution counts alongside batches, then subtract from displayed values. No changes to database, forms, or other components.
+* **Files to Modify:** `NucInspectionPanel.tsx` (add graftId prop + expand status logic), `MatingNucsTab.tsx` (pass graftId prop)
+* **No database migration needed** — all columns and statuses already exist.
 
 ## 3. Execution Plan
-- [x] **Step 1:** In `fetchBatches()`, after fetching batches, also fetch `graft_distributions` where `distribution_type = 'queen_cell'` for those batches. Store a map of `{ batchId: sealedCellCount }`.
-- [x] **Step 2:** In the **mobile card view**, subtract the sealed cell count from `queens_hatched` and `queens_mated` display values using `Math.max(0, value - distributed)`. Added a note showing count of distributed sealed cells.
-- [x] **Step 3:** In the **desktop table view**, apply the same subtraction with a `*` indicator (hover for details).
-- [x] **Step 4:** In the **form counters**, added an info note below "Queens Hatched" and "Queens Mated" showing e.g. "4 sealed cells distributed — report shows 0". Form inputs remain raw/editable.
-- [x] **Step 5:** Prompt user to test the build.
+- [x] **Step 1:** Add `graftId` prop to `NucInspectionPanel` interface and component signature
+- [x] **Step 2:** Expand the auto-status block in `handleSubmit` to handle `virgin`, `mated`, `laying` with graft updates
+- [x] **Step 3:** Pass `graftId` from `MatingNucsTab` to `NucInspectionPanel`
+- [x] **Step 4:** Create feature documentation in `docs/features/`
+- [ ] **Step 5:** Prompt user to test
 
 ## 4. Post-Task Review
-* **Summary of Changes:** Modified `src/app/dashboard/batches/page.tsx` only. Added a `sealedCellCounts` state variable and a secondary query in `fetchBatches()` to count queen_cell distributions per batch. Applied `Math.max(0, raw - distributed)` to display values in both mobile cards and desktop table. Added info notes on the form counters so users understand the difference between raw and report values.
-* **Scope:** Single file change, ~30 lines added. No database, hook, or component changes.
+* **Summary of Changes:**
+  - `NucInspectionPanel.tsx` — Added optional `graftId` prop. Replaced the 2-branch `if/else` auto-status block with a 4-branch mapping (`virgin`→nuc `virgin` + graft `emerged`, `mated`→nuc `mating` + graft `mated`, `laying`→nuc `laying` + graft `mated`, `dead/missing`→nuc `failed`). Sets `queen_emerged_at` or `mating_confirmed_at` on the nuc as appropriate.
+  - `MatingNucsTab.tsx` — Added `graftId={nuc.graft_id}` to the `NucInspectionPanel` render call (1 line).
+  - Created `docs/features/nuc-inspection-status-sync.md`.
+* **Scope:** 2 component files touched, ~20 lines changed. No database migration. No new dependencies.
