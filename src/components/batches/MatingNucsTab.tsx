@@ -1170,6 +1170,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  >
  <History size={18} />
  </Button>
+ {nuc.status !== 'sold' && (
+ <>
  <Button
  onClick={() => handleEdit(nuc)}
  className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
@@ -1193,6 +1195,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  >
  <Trash2 size={18} />
  </Button>
+ </>
+ )}
  </div>
  </div>
  </div>
@@ -1206,6 +1210,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  graftId={nuc.graft_id}
  emergenceDate={nuc.rearing_batches?.emergence_date || null}
  onInspectionChange={fetchNucs}
+ readOnly={nuc.status === 'sold'}
  />
  )}
  </div>

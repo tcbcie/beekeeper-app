@@ -21,6 +21,7 @@ interface NucInspectionCardProps {
   inspection: NucInspection
   onEdit: () => void
   onDelete: () => void
+  readOnly?: boolean
 }
 
 const getQueenStatusBadge = (status: string | null) => {
@@ -55,7 +56,7 @@ const getTemperamentBadge = (temperament: string | null) => {
   return styles[temperament] || 'bg-surface-elevated text-text-secondary border border-border'
 }
 
-export default function NucInspectionCard({ inspection, onEdit, onDelete }: NucInspectionCardProps) {
+export default function NucInspectionCard({ inspection, onEdit, onDelete, readOnly }: NucInspectionCardProps) {
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-IE', {
       year: 'numeric',
@@ -68,6 +69,7 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete }: NucI
     <div className="bg-surface-elevated rounded-lg border border-border p-3 md:p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-2 md:gap-3">
         {/* Left Side: Actions */}
+        {!readOnly && (
         <div className="flex flex-col gap-1 shrink-0">
           <IconButton
             onClick={onEdit}
@@ -86,6 +88,7 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete }: NucI
             <Trash2 size={16} />
           </IconButton>
         </div>
+        )}
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
