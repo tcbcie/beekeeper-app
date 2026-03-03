@@ -146,17 +146,19 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         const nucUpdate: Record<string, string> = {}
         let graftStatus: string | null = null
 
+        const inspectionDate = formData.inspection_date
+
         if (qs === 'virgin') {
           nucUpdate.status = 'virgin'
-          nucUpdate.queen_emerged_at = new Date().toISOString()
+          nucUpdate.queen_emerged_at = inspectionDate
           graftStatus = 'emerged'
         } else if (qs === 'mated') {
           nucUpdate.status = 'mating'
-          nucUpdate.mating_confirmed_at = new Date().toISOString()
+          nucUpdate.mating_confirmed_at = inspectionDate
           graftStatus = 'mated'
         } else if (qs === 'laying') {
           nucUpdate.status = 'laying'
-          nucUpdate.mating_confirmed_at = new Date().toISOString()
+          nucUpdate.mating_confirmed_at = inspectionDate
           graftStatus = 'mated'
         } else if (qs === 'dead' || qs === 'missing') {
           nucUpdate.status = 'failed'
