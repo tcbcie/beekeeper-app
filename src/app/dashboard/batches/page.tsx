@@ -1258,9 +1258,6 @@ export default function BatchesPage() {
  <Plus size={16} />
  </IconButton>
  </div>
- {editingBatch && sealedCellCounts[editingBatch.id] > 0 && (
- <p className="text-xs text-text-tertiary italic mt-1">{sealedCellCounts[editingBatch.id]} sealed cell{sealedCellCounts[editingBatch.id] > 1 ? 's' : ''} distributed — report shows {Math.max(0, parseInt(formData.queens_hatched || '0') - sealedCellCounts[editingBatch.id])}</p>
- )}
  </div>
 
  {/* Queens Mated */}
@@ -1298,9 +1295,6 @@ export default function BatchesPage() {
  <Plus size={16} />
  </IconButton>
  </div>
- {editingBatch && sealedCellCounts[editingBatch.id] > 0 && (
- <p className="text-xs text-text-tertiary italic mt-1">{sealedCellCounts[editingBatch.id]} sealed cell{sealedCellCounts[editingBatch.id] > 1 ? 's' : ''} distributed — report shows {Math.max(0, parseInt(formData.queens_mated || '0') - sealedCellCounts[editingBatch.id])}</p>
- )}
  </div>
 
  {/* Queens Showing Hybridised Offspring */}
@@ -1339,6 +1333,15 @@ export default function BatchesPage() {
  </IconButton>
  </div>
  </div>
+
+ {/* Sealed Cells Distributed - read-only */}
+ {editingBatch && sealedCellCounts[editingBatch.id] > 0 && (
+ <div>
+ <label className="block text-xs font-medium text-text-secondary mb-1">Sealed Cells Distributed</label>
+ <div className="text-sm text-foreground font-medium">{sealedCellCounts[editingBatch.id]}</div>
+ <p className="text-xs text-text-tertiary italic mt-1">Excluded from NIHBS report hatched/mated counts</p>
+ </div>
+ )}
  </div>
  }
  </div>
@@ -1512,16 +1515,19 @@ export default function BatchesPage() {
  </div>
  <div>
  <span className="text-text-tertiary block">Hatched:</span>
- <span className="text-foreground font-medium">{batch.queens_hatched ? Math.max(0, batch.queens_hatched - (sealedCellCounts[batch.id] || 0)) : '-'}</span>
+ <span className="text-foreground font-medium">{batch.queens_hatched || '-'}</span>
  </div>
  <div>
  <span className="text-text-tertiary block">Mated:</span>
- <span className="text-foreground font-medium">{batch.queens_mated ? Math.max(0, batch.queens_mated - (sealedCellCounts[batch.id] || 0)) : '-'}</span>
- </div>
+ <span className="text-foreground font-medium">{batch.queens_mated || '-'}</span>
  </div>
  {sealedCellCounts[batch.id] > 0 && (
- <div className="text-xs text-text-tertiary italic pt-1">{sealedCellCounts[batch.id]} sealed cell{sealedCellCounts[batch.id] > 1 ? 's' : ''} distributed</div>
+ <div className="col-span-2">
+ <span className="text-text-tertiary block">Sealed Cells Distributed:</span>
+ <span className="text-foreground font-medium">{sealedCellCounts[batch.id]}</span>
+ </div>
  )}
+ </div>
  <div className="flex justify-between pt-2 border-t border-border">
  <span className="text-text-tertiary">Acceptance Check:</span>
  <span className="text-foreground">{formatDateIrish(batch.acceptance_check_date)}</span>
@@ -1566,14 +1572,8 @@ export default function BatchesPage() {
  <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
- <td className="px-6 py-4 whitespace-nowrap">
- {batch.queens_hatched ? Math.max(0, batch.queens_hatched - (sealedCellCounts[batch.id] || 0)) : '-'}
- {sealedCellCounts[batch.id] > 0 && <span className="text-xs text-text-tertiary ml-1" title={`${sealedCellCounts[batch.id]} sealed cell(s) distributed`}>*</span>}
- </td>
- <td className="px-6 py-4 whitespace-nowrap">
- {batch.queens_mated ? Math.max(0, batch.queens_mated - (sealedCellCounts[batch.id] || 0)) : '-'}
- {sealedCellCounts[batch.id] > 0 && <span className="text-xs text-text-tertiary ml-1" title={`${sealedCellCounts[batch.id]} sealed cell(s) distributed`}>*</span>}
- </td>
+ <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
+ <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
  <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.acceptance_check_date)}</td>
  </tr>
  ))}
