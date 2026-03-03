@@ -6,6 +6,8 @@ import { Plus, Edit2, Archive, Trash2, X, ClipboardList, MapPin, Calendar, Chevr
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
 import NucInspectionPanel from './NucInspectionPanel'
+import { getQueenColorFromYear } from '@/types/queen'
+import { COLOUR_DOTS } from './graftConstants'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { CreateDistributionData } from '@/hooks/useGraftDistributions'
 import { useMatingNucBulk } from '@/hooks/useMatingNucBulk'
@@ -55,15 +57,19 @@ interface MatingNuc {
  queen_emerged_at: string | null
  mating_confirmed_at: string | null
  queen_last_seen_at: string | null
+ queen_marked_at: string | null
  notes: string | null
  updated_at: string
  retired_at: string | null
  batch_grafts?: {
  cell_number: number
  status: string
+ queen_marked: boolean
+ queen_number: string | null
  } | null
  rearing_batches?: {
  batch_name: string
+ emergence_date: string | null
  } | null
  queens?: {
  queen_number: string
@@ -170,7 +176,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const fetchNucs = useCallback(async () => {
  let query = supabase
  .from('mating_nucs')
- .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name), queens(queen_number), mating_nuc_inspections(count)')
+ .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens(queen_number), mating_nuc_inspections(count)')
  .eq('user_id', userId)
 
  // Filter by retired status
@@ -580,7 +586,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const fetchHistory = async (nucNumber: string) => {
  const { data, error } = await supabase
  .from('mating_nucs')
- .select('*, batch_grafts(cell_number, status), rearing_batches(batch_name), queens(queen_number), mating_nuc_inspections(count)')
+ .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens(queen_number), mating_nuc_inspections(count)')
  .eq('user_id', userId)
  .eq('nuc_number', nucNumber)
  .order('setup_date', { ascending: false })
@@ -1095,6 +1101,16 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {nuc.queen_last_seen_at && (
  <span>Queen Seen: {formatDateIrish(nuc.queen_last_seen_at)}</span>
  )}
+ {nuc.queen_marked_at && (() => {
+ const colour = nuc.rearing_batches?.emergence_date ? getQueenColorFromYear(nuc.rearing_batches.emergence_date) : ''
+ return (
+ <span className="flex items-center gap-1">
+ {colour && COLOUR_DOTS[colour] && <span className={`inline-block w-3 h-3 rounded-full ${COLOUR_DOTS[colour]}`} />}
+ Marked: {formatDateIrish(nuc.queen_marked_at)}
+ {nuc.batch_grafts?.queen_number && ` (#${nuc.batch_grafts.queen_number})`}
+ </span>
+ )
+ })()}
  <span className="text-text-tertiary">
  Updated: {formatDateIrish(nuc.updated_at)}
  </span>
@@ -1154,6 +1170,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  nucNumber={nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}
  userId={userId}
  graftId={nuc.graft_id}
+ emergenceDate={nuc.rearing_batches?.emergence_date || null}
  onInspectionChange={fetchNucs}
  />
  )}
