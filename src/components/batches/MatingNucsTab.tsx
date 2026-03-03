@@ -353,18 +353,21 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
   setDistributeGroupMemberIds([])
   return
  }
+ let cancelled = false
  supabase
   .from('rearing_group_members')
   .select('user_id')
   .eq('group_id', groupId)
   .then(
    ({ data }) => {
-    if (data) setDistributeGroupMemberIds(data.map((m) => m.user_id))
+    if (!cancelled && data) setDistributeGroupMemberIds(data.map((m) => m.user_id))
    },
    (err) => {
     console.error('Error fetching group members:', err)
+    if (!cancelled) setDistributeGroupMemberIds([])
    }
   )
+ return () => { cancelled = true }
  }, [distributeNuc, batches])
 
  const handleBatchChange = (batchId: string) => {
@@ -640,6 +643,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  if (nucError) {
  console.error('Error updating nuc status to sold:', nucError)
+ toast.error('Distribution saved but nuc status could not be updated to sold. Please update manually.')
  }
  }
  toast.success('Distribution recorded')
