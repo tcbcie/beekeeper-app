@@ -43,6 +43,7 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUploadRe
 
   // Abort any active FileReader on unmount
   useEffect(() => {
+    mountedRef.current = true
     return () => {
       mountedRef.current = false
       if (readerRef.current && readerRef.current.readyState === FileReader.LOADING) {

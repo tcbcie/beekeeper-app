@@ -46,6 +46,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
   const mountedRef = useRef(true)
 
   useEffect(() => {
+    mountedRef.current = true
     return () => { mountedRef.current = false }
   }, [])
 
