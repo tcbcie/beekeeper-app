@@ -54,6 +54,7 @@ interface MatingNuc {
  cell_introduced_at: string | null
  queen_emerged_at: string | null
  mating_confirmed_at: string | null
+ queen_last_seen_at: string | null
  notes: string | null
  updated_at: string
  retired_at: string | null
@@ -1090,6 +1091,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
  {nuc.mating_confirmed_at && (
  <span>Mated: {formatDateIrish(nuc.mating_confirmed_at)}</span>
+ )}
+ {nuc.queen_last_seen_at && (
+ <span>Queen Seen: {formatDateIrish(nuc.queen_last_seen_at)}</span>
  )}
  <span className="text-text-tertiary">
  Updated: {formatDateIrish(nuc.updated_at)}
