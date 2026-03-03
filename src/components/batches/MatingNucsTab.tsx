@@ -1179,15 +1179,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  >
  <Edit2 size={18} />
  </Button>
- {!nuc.retired_at && (
- <Button
- onClick={() => handleRetire(nuc.id)}
- className="p-2 text-text-secondary hover:bg-surface-secondary rounded"
- title="Retire"
- >
- <Archive size={18} />
- </Button>
- )}
  <Button
  onClick={() => handleDelete(nuc.id)}
  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
@@ -1196,6 +1187,15 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <Trash2 size={18} />
  </Button>
  </>
+ )}
+ {!nuc.retired_at && (
+ <Button
+ onClick={() => handleRetire(nuc.id)}
+ className="p-2 text-text-secondary hover:bg-surface-secondary rounded"
+ title="Retire"
+ >
+ <Archive size={18} />
+ </Button>
  )}
  </div>
  </div>
