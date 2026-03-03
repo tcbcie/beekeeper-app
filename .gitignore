@@ -25,6 +25,9 @@
 *.pem
 *.backup
 
+# sql exports
+/sql/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
