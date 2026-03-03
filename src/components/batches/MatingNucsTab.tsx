@@ -17,6 +17,7 @@ interface Batch {
  batch_name: string
  graft_date: string
  mother_queen_id: string | null
+ mating_apiary_id: string | null
 }
 
 interface Graft {
@@ -194,7 +195,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const fetchBatches = useCallback(async () => {
  const { data } = await supabase
  .from('rearing_batches')
- .select('id, batch_name, graft_date, mother_queen_id')
+ .select('id, batch_name, graft_date, mother_queen_id, mating_apiary_id')
  .eq('user_id', userId)
  .order('graft_date', { ascending: false })
 
@@ -332,19 +333,28 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  const handleBatchChange = (batchId: string) => {
  const selectedBatch = batches.find((b) => b.id === batchId)
+ const matingApiary = selectedBatch?.mating_apiary_id
+   ? matingLocationOptions.find((a) => a.id === selectedBatch.mating_apiary_id)
+   : null
  setFormData((prev) => ({
  ...prev,
  batch_id: batchId,
  graft_id: '',
  queen_id: selectedBatch?.mother_queen_id || '',
+ mating_location: matingApiary?.name || prev.mating_location,
  }))
  }
 
  const handleBulkBatchChange = (batchId: string) => {
+ const selectedBatch = batches.find((b) => b.id === batchId)
+ const matingApiary = selectedBatch?.mating_apiary_id
+   ? matingLocationOptions.find((a) => a.id === selectedBatch.mating_apiary_id)
+   : null
  setBulkFormData((prev) => ({
  ...prev,
  source_batch_id: batchId,
  selected_graft_ids: [],
+ mating_location: matingApiary?.name || prev.mating_location,
  }))
  setBulkCellSearch('')
  }
