@@ -557,7 +557,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (nuc?.graft_id) {
  await supabase
    .from('batch_grafts')
-   .update({ status: 'emerged' })
+   .update({ status: 'sealed' })
    .eq('id', nuc.graft_id)
    .eq('status', 'in_nuc')
  }
