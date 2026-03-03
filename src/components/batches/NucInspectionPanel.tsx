@@ -176,17 +176,21 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       }
 
       if (Object.keys(nucUpdate).length > 0) {
-        await supabase
+        const { error: nucSyncError } = await supabase
           .from('mating_nucs')
           .update(nucUpdate)
           .eq('id', nucId)
+
+        if (nucSyncError) console.error('Error syncing nuc status:', nucSyncError)
       }
 
       if (graftStatus && graftId) {
-        await supabase
+        const { error: graftSyncError } = await supabase
           .from('batch_grafts')
           .update({ status: graftStatus })
           .eq('id', graftId)
+
+        if (graftSyncError) console.error('Error syncing graft status:', graftSyncError)
       }
 
       resetForm()
@@ -218,19 +222,26 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
 
   const markColour = emergenceDate ? getQueenColorFromYear(emergenceDate) : ''
 
+  const [markSaving, setMarkSaving] = useState(false)
+
   const handleMarkQueen = async () => {
+    setMarkSaving(true)
     try {
       if (graftId) {
-        await supabase
+        const { error: graftError } = await supabase
           .from('batch_grafts')
           .update({ queen_marked: true, queen_number: markQueenNumber || null })
           .eq('id', graftId)
+
+        if (graftError) throw graftError
       }
 
-      await supabase
+      const { error: nucError } = await supabase
         .from('mating_nucs')
         .update({ queen_marked_at: new Date().toISOString() })
         .eq('id', nucId)
+
+      if (nucError) throw nucError
 
       toast.success('Queen marked successfully')
       setShowMarkForm(false)
@@ -239,6 +250,8 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     } catch (error) {
       console.error('Error marking queen:', error)
       toast.error('Failed to mark queen')
+    } finally {
+      setMarkSaving(false)
     }
   }
 
@@ -313,8 +326,9 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 onClick={handleMarkQueen}
                 tone="success"
                 size="sm"
+                disabled={markSaving}
               >
-                Save
+                {markSaving ? 'Saving...' : 'Save'}
               </Button>
               <Button
                 onClick={() => { setShowMarkForm(false); setMarkQueenNumber('') }}
