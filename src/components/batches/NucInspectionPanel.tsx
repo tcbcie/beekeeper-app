@@ -53,6 +53,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
   const [editingInspection, setEditingInspection] = useState<NucInspection | null>(null)
   const [showMarkForm, setShowMarkForm] = useState(false)
   const [markQueenNumber, setMarkQueenNumber] = useState('')
+  const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0])
   const [formData, setFormData] = useState<NucInspectionFormData>({
     inspection_date: new Date().toISOString().split('T')[0],
     queen_seen: false,
@@ -238,7 +239,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
 
       const { error: nucError } = await supabase
         .from('mating_nucs')
-        .update({ queen_marked_at: new Date().toISOString() })
+        .update({ queen_marked_at: markDate })
         .eq('id', nucId)
 
       if (nucError) throw nucError
@@ -246,6 +247,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       toast.success('Queen marked successfully')
       setShowMarkForm(false)
       setMarkQueenNumber('')
+      setMarkDate(new Date().toISOString().split('T')[0])
       onInspectionChange?.()
     } catch (error) {
       console.error('Error marking queen:', error)
@@ -301,6 +303,15 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
           <h4 className="text-md font-medium text-foreground mb-3">Mark Queen</h4>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
+              <label className="text-sm text-text-secondary">Date:</label>
+              <input
+                type="date"
+                value={markDate}
+                onChange={(e) => setMarkDate(e.target.value)}
+                className="px-2 py-1 text-sm border border-border rounded-md bg-surface text-foreground"
+              />
+            </div>
+            <div className="flex items-center gap-2">
               <span className="text-sm text-text-secondary">Colour:</span>
               {markColour && COLOUR_DOTS[markColour] ? (
                 <span className="flex items-center gap-1.5">
@@ -331,7 +342,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 {markSaving ? 'Saving...' : 'Save'}
               </Button>
               <Button
-                onClick={() => { setShowMarkForm(false); setMarkQueenNumber('') }}
+                onClick={() => { setShowMarkForm(false); setMarkQueenNumber(''); setMarkDate(new Date().toISOString().split('T')[0]) }}
                 tone="neutral"
                 size="sm"
               >
