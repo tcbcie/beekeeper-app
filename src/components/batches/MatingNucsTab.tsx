@@ -552,6 +552,16 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (!confirm('Delete this nuc permanently? This will also delete all its inspections. This cannot be undone.')) return
 
  try {
+ // Reset graft status from 'in_nuc' back to 'emerged' before deleting
+ const nuc = nucs.find(n => n.id === id)
+ if (nuc?.graft_id) {
+ await supabase
+   .from('batch_grafts')
+   .update({ status: 'emerged' })
+   .eq('id', nuc.graft_id)
+   .eq('status', 'in_nuc')
+ }
+
  const { error } = await supabase
  .from('mating_nucs')
  .delete()
