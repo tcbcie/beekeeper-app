@@ -41,11 +41,12 @@ interface NucInspectionPanelProps {
   graftId?: string | null
   emergenceDate?: string | null
   onInspectionChange?: () => void
+  readOnly?: boolean
 }
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
 
-export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange }: NucInspectionPanelProps) {
+export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange, readOnly }: NucInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<NucInspection[]>([])
   const [loading, setLoading] = useState(true)
@@ -269,7 +270,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     <div className="p-4 md:p-6 bg-surface-secondary/30 border-t border-border">
       {/* Header */}
       <div className="flex items-center flex-wrap gap-3 mb-4">
-        {!showForm && !showMarkForm && (
+        {!readOnly && !showForm && !showMarkForm && (
           <Button
             onClick={() => setShowForm(true)}
             tone="success"
@@ -280,7 +281,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
             Add Inspection
           </Button>
         )}
-        {graftId && !showForm && !showMarkForm && (
+        {!readOnly && graftId && !showForm && !showMarkForm && (
           <Button
             onClick={() => setShowMarkForm(true)}
             tone="neutral"
@@ -492,6 +493,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
               inspection={inspection}
               onEdit={() => handleEdit(inspection)}
               onDelete={() => handleDelete(inspection.id)}
+              readOnly={readOnly}
             />
           ))}
         </div>
