@@ -1082,6 +1082,15 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <span className="flex items-center gap-1">
  <Calendar size={14} /> Setup: {formatDateIrish(nuc.setup_date)}
  </span>
+ {nuc.cell_introduced_at && (
+ <span>Cell In: {formatDateIrish(nuc.cell_introduced_at)}</span>
+ )}
+ {nuc.queen_emerged_at && (
+ <span>Emerged: {formatDateIrish(nuc.queen_emerged_at)}</span>
+ )}
+ {nuc.mating_confirmed_at && (
+ <span>Mated: {formatDateIrish(nuc.mating_confirmed_at)}</span>
+ )}
  <span className="text-text-tertiary">
  Updated: {formatDateIrish(nuc.updated_at)}
  </span>
