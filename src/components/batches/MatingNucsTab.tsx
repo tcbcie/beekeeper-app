@@ -20,6 +20,7 @@ interface Batch {
  graft_date: string
  mother_queen_id: string | null
  mating_apiary_id: string | null
+ rearing_group_id: string | null
 }
 
 interface Graft {
@@ -129,6 +130,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [historyNucNumber, setHistoryNucNumber] = useState<string | null>(null)
  const [historyData, setHistoryData] = useState<MatingNuc[]>([])
  const [distributeNuc, setDistributeNuc] = useState<MatingNuc | null>(null)
+ const [distributeGroupMemberIds, setDistributeGroupMemberIds] = useState<string[]>([])
  const [showBulkForm, setShowBulkForm] = useState(false)
  const [bulkLoading, setBulkLoading] = useState(false)
  const [bulkRuns, setBulkRuns] = useState<MatingNucBulkRun[]>([])
@@ -203,7 +205,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const fetchBatches = useCallback(async () => {
  const { data } = await supabase
  .from('rearing_batches')
- .select('id, batch_name, graft_date, mother_queen_id, mating_apiary_id')
+ .select('id, batch_name, graft_date, mother_queen_id, mating_apiary_id, rearing_group_id')
  .eq('user_id', userId)
  .order('graft_date', { ascending: false })
 
@@ -338,6 +340,32 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  setAvailableBulkGrafts([])
  })
  }, [bulkFormData.source_batch_id, fetchAvailableSealedGrafts, userId, toast])
+
+ // Fetch group member IDs when distribute modal opens
+ useEffect(() => {
+ if (!distributeNuc) {
+  setDistributeGroupMemberIds([])
+  return
+ }
+ const batch = batches.find((b) => b.id === distributeNuc.batch_id)
+ const groupId = batch?.rearing_group_id
+ if (!groupId) {
+  setDistributeGroupMemberIds([])
+  return
+ }
+ supabase
+  .from('rearing_group_members')
+  .select('user_id')
+  .eq('group_id', groupId)
+  .then(
+   ({ data }) => {
+    if (data) setDistributeGroupMemberIds(data.map((m) => m.user_id))
+   },
+   (err) => {
+    console.error('Error fetching group members:', err)
+   }
+  )
+ }, [distributeNuc, batches])
 
  const handleBatchChange = (batchId: string) => {
  const selectedBatch = batches.find((b) => b.id === batchId)
@@ -602,7 +630,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  const handleDistributeSave = async (data: CreateDistributionData) => {
  const success = await createDistribution(data)
- if (success) {
+ if (success === true) {
  // Also update nuc status to 'sold'
  if (distributeNuc) {
  const { error: nucError } = await supabase
@@ -617,6 +645,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  toast.success('Distribution recorded')
  fetchNucs()
  fetchGrafts()
+ } else if (success === false) {
+ toast.error('This graft has already been distributed')
  } else {
  toast.error('Failed to record distribution')
  }
@@ -1244,6 +1274,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  cellNumber={distributeNuc.batch_grafts?.cell_number ?? 0}
  graftStatus={distributeNuc.batch_grafts?.status || (getNucDistributionType(distributeNuc.status) === 'mated_queen' ? 'mated' : 'emerged')}
  userId={userId}
+ groupMemberIds={distributeGroupMemberIds}
  searchUsers={searchUsers}
  fetchRecipientApiaries={fetchRecipientApiaries}
  fetchRecipientHives={fetchRecipientHives}
