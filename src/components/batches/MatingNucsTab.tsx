@@ -478,27 +478,13 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault()
 
- // Validate: check no active nuc with same number exists
- const { data: existing } = await supabase
- .from('mating_nucs')
- .select('id')
- .eq('user_id', userId)
- .eq('nuc_number', formData.nuc_number)
- .is('retired_at', null)
- .maybeSingle()
-
- if (existing && existing.id !== editingNuc?.id) {
- toast.error(`Nuc "${formData.nuc_number}" is already active. Retire it first to reuse this number.`)
- return
- }
-
  if (!formData.mating_location.trim()) {
  toast.error('Mating location is required. Select an apiary or enter a custom location.')
  return
  }
 
  const nucData = {
- nuc_number: formData.nuc_number,
+ nuc_number: formData.nuc_number || null,
  batch_id: formData.batch_id || null,
  graft_id: formData.graft_id || null,
  queen_id: formData.queen_id || null,
@@ -686,14 +672,13 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </h3>
  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div>
- <label className="block text-sm font-medium text-text-secondary mb-1">Nuc Number *</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Nuc Number</label>
  <input
  type="text"
  value={formData.nuc_number}
  onChange={(e) => setFormData({ ...formData, nuc_number: e.target.value })}
  placeholder="e.g., N1, N2, A-01"
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
- required
  />
  </div>
 
