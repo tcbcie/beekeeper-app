@@ -1,23 +1,22 @@
-# Task: Mark Queen from Nuc Inspection Panel
+# Task: Align Nuc Card Distribute with Batch Queen Tracking
 **Date:** 03/03/2026
 **Status:** Complete — awaiting user testing
 
 ## 1. Objective
-Allow users to mark queens directly from the mating nuc view. Adds a "Mark Queen" button beside "Add Inspection" that updates both the nuc card (with marked date) and the batch graft record (`queen_marked`, `queen_number`).
+The "Distribute" button on the mating nuc card is missing the **Group Member** recipient tab and has weaker error handling compared to the Batch Queen Tracking version. Fix both issues so nuc-originated distributions can correctly target group members (important for NIHBS reporting).
 
-## 2. Execution Plan
-- [x] **Step 1:** Run migration — add `queen_marked_at` column to `mating_nucs` table
-- [x] **Step 2:** Update `MatingNucsTab.tsx` — expand MatingNuc interface & fetch queries to include `queen_marked`, `queen_number`, `emergence_date`, and `queen_marked_at`
-- [x] **Step 3:** Update `MatingNucsTab.tsx` — pass `emergenceDate` prop to `NucInspectionPanel`
-- [x] **Step 4:** Update `MatingNucsTab.tsx` — display "Marked" date + colour dot on nuc card when `queen_marked_at` is set
-- [x] **Step 5:** Update `NucInspectionPanel.tsx` — add `emergenceDate` prop, "Mark Queen" button, inline mark form, and `handleMarkQueen` save function
-- [x] **Step 6:** Update feature documentation in `docs/features/mark-queen-from-nuc.md`
-- [ ] **Step 7:** User testing
+## 2. Execution Plan — `src/components/batches/MatingNucsTab.tsx` only
+
+- [x] **Step 1:** Add `rearing_group_id` to `Batch` interface and `fetchBatches` select query
+- [x] **Step 2:** Add `distributeGroupMemberIds` state + `useEffect` to fetch group members when distribute modal opens
+- [x] **Step 3:** Pass `groupMemberIds={distributeGroupMemberIds}` to `DistributeGraftModal`
+- [x] **Step 4:** Fix `handleDistributeSave` 3-way check (`true`/`false`/`null`) matching `useBatchGrafts` pattern
 
 ## 3. Post-Task Review
 * **Summary of Changes:**
-  - **Migration:** Added `queen_marked_at` (timestamptz) to `mating_nucs`.
-  - **MatingNucsTab.tsx:** Expanded `MatingNuc` interface with `queen_marked_at`, plus `queen_marked`/`queen_number` on `batch_grafts` sub-type and `emergence_date` on `rearing_batches` sub-type. Updated both fetch queries to include new fields. Passed `emergenceDate` prop to `NucInspectionPanel`. Added colour dot + "Marked: date (#number)" display on nuc card.
-  - **NucInspectionPanel.tsx:** Added `emergenceDate` prop. Added `showMarkForm`/`markQueenNumber` state. Added "Mark Queen" button (only visible when graftId is present). Added inline mark form with auto-determined colour dot and optional queen number input. `handleMarkQueen` updates `batch_grafts` and `mating_nucs` then refreshes via `onInspectionChange`.
-  - **Docs:** Created `docs/features/mark-queen-from-nuc.md`.
-* **Scope:** 2 component files, 1 migration, 1 doc file. No new dependencies. Reused existing `getQueenColorFromYear` and `COLOUR_DOTS` utilities.
+  - **Batch interface:** Added `rearing_group_id: string | null` field and updated `fetchBatches` select to include it.
+  - **Group member fetch:** Added `distributeGroupMemberIds` state. Added `useEffect` keyed on `distributeNuc` that looks up the nuc's batch `rearing_group_id`, queries `rearing_group_members` for user IDs, and stores them. Clears when modal closes.
+  - **Modal prop:** Added `groupMemberIds={distributeGroupMemberIds}` to `DistributeGraftModal`, enabling the "Group Member" recipient tab when members exist.
+  - **Error handling:** Changed `if (success)` to `if (success === true)` and added `else if (success === false)` branch with "This graft has already been distributed" message, matching the `useBatchGrafts` pattern.
+* **Scope:** 1 file changed (`MatingNucsTab.tsx`). No new dependencies. No migrations.
+* **Testing:** User should verify: (1) Group Member tab appears when nuc's batch belongs to a rearing group, (2) distributing to a group member works, (3) already-distributed graft shows correct message, (4) nuc with no group still works normally.

@@ -24,7 +24,7 @@ Batch (graft date, breeder queen)
 - Link nuc to specific batch and graft/cell
 - `Cell/Graft` dropdown only lists `sealed` cells from the selected batch
 - Track nuc through statuses: `setup`, `cell_introduced`, `virgin`, `mating`, `laying`, `failed`, `sold`, `merged`
-- Auto-update nuc status based on inspection queen status
+- Auto-sync nuc status **and** linked graft status from inspection queen status (see [nuc-inspection-status-sync.md](nuc-inspection-status-sync.md))
 
 ### "Grafted from" Queen Selection
 - Optional dropdown to select which queen the cells were grafted from
@@ -45,7 +45,17 @@ Batch (graft date, breeder queen)
 ### Inspection System
 - Expandable inspection panel with inline add/edit
 - Inspection cards with badges for queen status, eggs, larvae, population, and temperament
-- Auto-updates nuc status when queen status indicates laying or failure
+- Auto-syncs nuc status and linked batch graft status on new inspections:
+  - `virgin` → nuc `virgin`, graft `emerged`, sets `queen_emerged_at`
+  - `mated` → nuc `mating`, graft `mated`, sets `mating_confirmed_at`
+  - `laying` → nuc `laying`, graft `mated`, sets `mating_confirmed_at`
+  - `dead`/`missing` → nuc `failed`
+
+### Distribution from Nuc Card
+- Distribute button appears on nucs with a linked graft in `virgin`, `mating`, or `laying` status
+- Opens `DistributeGraftModal` with all the same options as the Batch Queen Tracking table
+- **Group Member** recipient tab appears when the nuc's batch belongs to a rearing group (fetches `rearing_group_members` on modal open)
+- Error handling distinguishes: success, already-distributed (conflict), and generic failure
 
 ### Retirement and History
 - Duplicate active nuc numbers are blocked
@@ -146,7 +156,7 @@ Used for cell eligibility:
 |------|---------|
 | `src/components/batches/MatingNucsTab.tsx` | Main mating nucs component |
 | `src/hooks/useMatingNucBulk.ts` | Bulk creation and run retrieval logic |
-| `src/components/batches/NucInspectionPanel.tsx` | Inspection panel |
+| `src/components/batches/NucInspectionPanel.tsx` | Inspection panel (auto-syncs nuc + graft status) |
 | `src/components/batches/NucInspectionCard.tsx` | Inspection card display |
 | `supabase/migrations/add_mating_nuc_bulk_batches.sql` | Bulk schema and RLS policies |
 
@@ -162,3 +172,7 @@ Used for cell eligibility:
 - [x] Assigned grafts are updated to `in_nuc`
 - [x] Bulk runs table lists run mode and counts
 - [x] "View Nucs" filters list by selected run
+- [x] Inspection with `virgin` sets nuc to `virgin`, graft to `emerged`, and `queen_emerged_at`
+- [x] Inspection with `mated` sets nuc to `mating`, graft to `mated`, and `mating_confirmed_at`
+- [x] Inspection with `laying` sets nuc to `laying`, graft to `mated`
+- [x] Nuc without linked graft still saves inspection without graft update error
