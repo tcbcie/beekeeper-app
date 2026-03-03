@@ -189,7 +189,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       if (graftStatus && graftId) {
         const { error: graftSyncError } = await supabase
           .from('batch_grafts')
-          .update({ status: graftStatus })
+          .update({ status: graftStatus, status_date: inspectionDate })
           .eq('id', graftId)
 
         if (graftSyncError) console.error('Error syncing graft status:', graftSyncError)
