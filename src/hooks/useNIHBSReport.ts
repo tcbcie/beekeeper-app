@@ -95,6 +95,28 @@ export function useNIHBSReport() {
 
         if (batchesError) throw batchesError
 
+        // 2a. Fetch graft statuses to derive counters when batch-level values are NULL
+        const batchIdList = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
+        const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
+        if (batchIdList.length > 0) {
+          const { data: allGrafts } = await supabase
+            .from('batch_grafts')
+            .select('batch_id, status')
+            .in('batch_id', batchIdList)
+
+          if (allGrafts) {
+            for (const g of allGrafts) {
+              if (!derivedCounts.has(g.batch_id)) {
+                derivedCounts.set(g.batch_id, { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
+              }
+              const dc = derivedCounts.get(g.batch_id)!
+              if (!['grafted', 'failed'].includes(g.status)) dc.grafts_accepted++
+              if (['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)) dc.queens_hatched++
+              if (['mated', 'sold'].includes(g.status)) dc.queens_mated++
+            }
+          }
+        }
+
         // Helper: get or create a monthly bucket
         const getMonth = (m: number): MonthlyData => {
           if (!monthlyMap.has(m)) {
@@ -152,27 +174,33 @@ export function useNIHBSReport() {
           // Store emergence info for later queen_cell distribution adjustments
           batchEmergenceInfo.set(batch.id, { emergenceMonth: emergence.month, emergenceYear: emergence.year, apiaryId })
 
+          // Resolve counters: batch-level value takes precedence, fall back to graft-derived
+          const dc = derivedCounts.get(batch.id)
+          const accepted = batch.grafts_accepted ?? dc?.grafts_accepted ?? 0
+          const hatched = batch.queens_hatched ?? dc?.queens_hatched ?? 0
+          const mated = batch.queens_mated ?? dc?.queens_mated ?? 0
+
           // Graft-time metrics → graft month
           const graftMd = getMonth(graftMonth)
           graftMd.total.batch_count++
           graftMd.total.cell_count += batch.cell_count || 0
-          graftMd.total.grafts_accepted += batch.grafts_accepted || 0
+          graftMd.total.grafts_accepted += accepted
 
           const graftAd = getApiary(graftMd, apiaryId)
           graftAd.batch_count++
           graftAd.cell_count += batch.cell_count || 0
-          graftAd.grafts_accepted += batch.grafts_accepted || 0
+          graftAd.grafts_accepted += accepted
 
           // Post-emergence metrics → emergence month (only if within the report year)
           if (emergence.year === year) {
             const emergMd = getMonth(emergence.month)
-            emergMd.total.queens_hatched += batch.queens_hatched || 0
-            emergMd.total.queens_mated += batch.queens_mated || 0
+            emergMd.total.queens_hatched += hatched
+            emergMd.total.queens_mated += mated
             emergMd.hybridised_offspring += batch.queens_hybridised || 0
 
             const emergAd = getApiary(emergMd, apiaryId)
-            emergAd.queens_hatched += batch.queens_hatched || 0
-            emergAd.queens_mated += batch.queens_mated || 0
+            emergAd.queens_hatched += hatched
+            emergAd.queens_mated += mated
           }
         }
 

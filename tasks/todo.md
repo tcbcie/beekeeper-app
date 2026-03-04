@@ -1,24 +1,30 @@
-# Task: Batch Edit - Collapse Batch Quantities by Default
+# Task: NIHBS Report — Fallback to Graft-Derived Counters When Batch Counters Are NULL
 **Date:** 04/03/2026
-**Status:** Completed
+**Status:** In Progress
 
 ## 1. Objective
-Set the Batch Quantities panel to be collapsed by default when opening the Batch Edit screen, while preserving the existing manual Show/Hide toggle behaviour.
+The NIHBS report shows 0 for grafts_accepted/queens_hatched/queens_mated when batch-level counters are NULL in the database. The Batch Quantities UI correctly derives these from individual graft statuses, but the NIHBS report only reads the batch record. Fix the NIHBS report to fall back to graft-derived counts when batch counters are NULL.
 
-## 2. Impact Analysis
-* **Files to Modify:** * `src/app/dashboard/batches/page.tsx`
-  * `docs/features/batch-edit-quantities-default-collapse-plan.md`
-* **Simplicity Check:** This is a surgical UI-state adjustment in the existing page component, with no schema, API, or data-flow changes.
+## 2. Root Cause
+- `useBatchGrafts` hook auto-calculates counters from graft statuses and populates the batch edit form
+- These calculated values only exist in form state — they are NOT saved to the database unless the user clicks Save
+- `useNIHBSReport` reads `batch.grafts_accepted || 0` from the batch record, which is NULL → 0
+- Result: NIHBS report shows 0 even when grafts clearly exist and have progressed
 
-## 3. Execution Plan
-*(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Update Batch Edit open behaviour so `Batch Quantities` starts collapsed by default.
-- [x] **Step 2:** Confirm the existing Show/Hide control still toggles the section correctly after the default-state change.
-- [x] **Step 3:** Update documentation in `docs/features/batch-edit-quantities-default-collapse-plan.md`
-- [x] **Step 4:** Prompt user to test the build
+## 3. Impact Analysis
+* **Files to Modify:** `src/hooks/useNIHBSReport.ts`
+* **Simplicity Check:** Single file change — add a batch_grafts query and use graft-derived counts as fallback when batch counters are NULL
 
-## 4. Post-Task Review
-*(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The Batch Quantities panel visibility used a shared local state defaulted to open and was not forced closed when entering edit mode, so the section opened expanded on Batch Edit by default.
-* **Summary of Changes:** Added a targeted state update in the Batch Edit handler to set `quantitiesOpen` to `false` before showing the form. Verified the existing toggle handler remains unchanged. Updated the related feature plan document status and implementation notes.
-* **Notes for User:** No database, API, or schema changes were required. Build/tests were not run per project instruction; please test the Batch Edit screen and confirm the default collapsed state and Show/Hide behaviour.
+## 4. Execution Plan
+- [x] **Step 1:** In `useNIHBSReport.ts`, after fetching batches, fetch all `batch_grafts` (id, batch_id, status) for the batch IDs
+- [x] **Step 2:** Group grafts by batch_id and compute derived counts using the same logic as `useBatchGrafts`:
+  - `grafts_accepted` = count where status NOT IN ('grafted', 'failed')
+  - `queens_hatched` = count where status IN ('emerged', 'in_nuc', 'mated', 'sold')
+  - `queens_mated` = count where status IN ('mated', 'sold')
+- [x] **Step 3:** When processing each batch, use `batch.grafts_accepted ?? derivedCounts.grafts_accepted` (same for hatched/mated)
+- [ ] **Step 4:** Prompt user to test the build
+
+## 5. Post-Task Review
+* **Root Cause Found:** The NIHBS report used `batch.grafts_accepted || 0` which returned 0 when the batch counter was NULL. The Batch Quantities UI auto-derives counters from individual graft statuses via `useBatchGrafts`, but those values only populate the edit form state — they're not saved to the database unless the user clicks Save.
+* **Summary of Changes:** Added a `batch_grafts` query in `useNIHBSReport.ts` to derive counters (grafts_accepted, queens_hatched, queens_mated) from individual graft statuses. Uses `??` (nullish coalescing) so explicit batch-level values take precedence, but NULL falls back to graft-derived counts. Same derivation logic as `useBatchGrafts` hook.
+* **Notes for User:** Please test the NIHBS report and Excel export — February should now show Grafts Accepted = 12 (derived from grafts) instead of 0.
