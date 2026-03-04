@@ -95,24 +95,44 @@ export function useNIHBSReport() {
 
         if (batchesError) throw batchesError
 
-        // 2a. Fetch graft statuses to derive counters when batch-level values are NULL
+        // 2a. Fetch graft statuses + distributions to derive counters when batch-level values are NULL
         const batchIdList = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
         const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
+        // Also store distributions for reuse in step 2b
+        let allDists: { graft_id: string; batch_id: string; distribution_type: string; recipient_user_id: string | null; mating_confirmed: boolean | null; distribution_date: string | null }[] = []
         if (batchIdList.length > 0) {
-          const { data: allGrafts } = await supabase
-            .from('batch_grafts')
-            .select('batch_id, status')
-            .in('batch_id', batchIdList)
+          const [graftsRes, distsRes] = await Promise.all([
+            supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIdList),
+            supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date').in('batch_id', batchIdList),
+          ])
 
-          if (allGrafts) {
-            for (const g of allGrafts) {
+          if (distsRes.error) throw distsRes.error
+          allDists = distsRes.data || []
+
+          // Build graft_id → distribution_type lookup for sold grafts
+          const graftDistType = new Map<string, string>()
+          for (const d of allDists) {
+            graftDistType.set(d.graft_id, d.distribution_type)
+          }
+
+          if (graftsRes.data) {
+            for (const g of graftsRes.data) {
               if (!derivedCounts.has(g.batch_id)) {
                 derivedCounts.set(g.batch_id, { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
               }
               const dc = derivedCounts.get(g.batch_id)!
               if (!['grafted', 'failed'].includes(g.status)) dc.grafts_accepted++
-              if (['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)) dc.queens_hatched++
-              if (['mated', 'sold'].includes(g.status)) dc.queens_mated++
+
+              if (g.status === 'sold') {
+                // For sold grafts, use distribution_type to determine what stage was reached
+                const distType = graftDistType.get(g.id)
+                if (distType === 'mated_queen') { dc.queens_hatched++; dc.queens_mated++ }
+                else if (distType === 'virgin_queen') { dc.queens_hatched++ }
+                // queen_cell → don't count as hatched or mated
+              } else {
+                if (['emerged', 'in_nuc', 'mated'].includes(g.status)) dc.queens_hatched++
+                if (g.status === 'mated') dc.queens_mated++
+              }
             }
           }
         }
@@ -204,17 +224,11 @@ export function useNIHBSReport() {
           }
         }
 
-        // 2b. Fetch distributions for queen_cell adjustments and external distribution counts
-        const batchIds = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
-        if (batchIds.length > 0) {
-          const { data: dists, error: distsError } = await supabase
-            .from('graft_distributions')
-            .select('batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date')
-            .in('batch_id', batchIds)
-
-          if (distsError) throw distsError
-
-          if (dists) {
+        // 2b. Process distributions for queen_cell adjustments and external distribution counts
+        // (distributions already fetched in step 2a)
+        if (allDists.length > 0) {
+          {
+            const dists = allDists
             const memberIdSet = new Set(userIds)
 
             // Count queen_cell distributions per batch
@@ -259,7 +273,7 @@ export function useNIHBSReport() {
                 md.auto_virgins_external_mated++
               }
             }
-          }
+          }}
         }
       }
 
