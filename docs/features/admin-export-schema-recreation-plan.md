@@ -53,6 +53,8 @@ Metadata and dependency verification use direct MCP queries for:
     * Idempotent `CREATE POLICY` blocks for all exported `public` table policies.
     * Table RLS state replay (`ENABLE`/`DISABLE` and `FORCE`/`NO FORCE`) to mirror source behaviour.
   * Post-data sequence alignment using `setval`.
+  * Storage bucket recreation: guarded `INSERT INTO storage.buckets ... ON CONFLICT (id) DO NOTHING` for each bucket (`apiary-images`, `inspection-images`), with availability check for `storage.buckets`.
+  * Storage RLS policies: idempotent `CREATE POLICY` blocks for `storage.objects` (public read, authenticated upload/update/delete per bucket), with availability check for `storage.objects`.
   * Guarded `auth.users` seed data section using **ID-only** idempotent inserts (`ON CONFLICT (id) DO NOTHING`), so local Supabase restores can satisfy user-linked foreign keys without writing generated/auth-managed columns.
 * MCP verification confirms:
   * `public` tables: 60
@@ -65,6 +67,7 @@ Metadata and dependency verification use direct MCP queries for:
 * Compatibility note: added `vector` extension bootstrap after local restore failed on `knowledge_base.embedding vector(1536)` with `type "vector" does not exist`.
 * Compatibility note: added enum type bootstrap after local restore failed on `registration_codes.code_type subscription_code_type` with `type "subscription_code_type" does not exist`.
 * Compatibility note: data export now excludes generated columns after local restore failed on `profiles.full_name` (`cannot insert a non-DEFAULT value into column ... generated column`).
+* Compatibility note: added storage bucket and storage policy export after local restore via `supabase db reset --local` resulted in missing `apiary-images` and `inspection-images` buckets, causing 400 errors for image URLs.
 
 ## 7. Local Restore Flow
 1. Start a local Supabase/Postgres Docker environment with `auth` schema available.
