@@ -175,6 +175,8 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         graftStatus = 'mated'
       } else if (qs === 'dead' || qs === 'missing') {
         nucUpdate.status = 'failed'
+        nucUpdate.failed_at = inspectionDate
+        graftStatus = 'failed'
       }
 
       if (Object.keys(nucUpdate).length > 0) {

@@ -59,6 +59,7 @@ interface MatingNuc {
  mating_confirmed_at: string | null
  queen_last_seen_at: string | null
  queen_marked_at: string | null
+ failed_at: string | null
  notes: string | null
  updated_at: string
  retired_at: string | null
@@ -1131,6 +1132,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
  {nuc.mating_confirmed_at && (
  <span>Mated: {formatDateIrish(nuc.mating_confirmed_at)}</span>
+ )}
+ {nuc.failed_at && (
+ <span className="text-red-600 dark:text-red-400">Dead: {formatDateIrish(nuc.failed_at)}</span>
  )}
  {nuc.queen_last_seen_at && (
  <span>Queen Seen: {formatDateIrish(nuc.queen_last_seen_at)}</span>
