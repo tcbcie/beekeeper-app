@@ -140,7 +140,7 @@ The Reports feature provides beekeepers with printable and exportable reports fo
 - Queens Mated
 - Cells Distributed
 
-**Sealed queen cell exclusion:** Distributed sealed queen cells (`distribution_type = 'queen_cell'` in `graft_distributions`) are subtracted from Queens Hatched and Queens Mated per batch, since there is no tracking of whether those cells hatched or queens mated. The count of distributed cells is shown in a separate "Cells Distributed" column.
+**Cells Distributed column:** Distributed sealed queen cells (`distribution_type = 'queen_cell'` in `graft_distributions`) are shown in a separate "Cells Distributed" column. No subtraction from Queens Hatched or Queens Mated — batch values already reflect only queens that actually hatched/mated in possession.
 
 **Filters:**
 - Rearing group selection
@@ -154,7 +154,7 @@ See [nihbs-monthly-returns.md](nihbs-monthly-returns.md) for full documentation.
 
 **Visibility:** Only shown to rearing group owners.
 
-**Key feature:** The same sealed queen cell exclusion applies — distributed queen cells are subtracted from rows 13 (hatched) and 19 (mated within group) and tracked separately on row 28.
+**Key feature:** Distributed sealed queen cells are tracked separately on row 28 (per-apiary breakdown). No subtraction from rows 13 (hatched) or 19 (mated) — batch values already reflect only queens that actually hatched/mated in possession. Both `virgin_queen` and `mated_queen` external distributions are included in rows 24/26.
 
 ## Export Options
 
