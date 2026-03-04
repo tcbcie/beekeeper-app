@@ -30,6 +30,8 @@ export interface MonthlyData {
   auto_virgins_distributed_external: number
   auto_virgins_external_mated: number
   queen_cells_distributed: number
+  mated_distributed_external: number
+  mated_distributed_internal: number
 }
 
 export interface NIHBSReportData {
@@ -108,6 +110,8 @@ export function useNIHBSReport() {
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
               queen_cells_distributed: 0,
+              mated_distributed_external: 0,
+              mated_distributed_internal: 0,
             })
           }
           return monthlyMap.get(m)!
@@ -230,6 +234,24 @@ export function useNIHBSReport() {
                 md.auto_virgins_external_mated++
               }
             }
+
+            // Auto-calculate mated queen distribution counts
+            for (const d of dists) {
+              if (d.distribution_type !== 'mated_queen') continue
+
+              const distDate = d.distribution_date
+              if (!distDate) continue
+              const distMonth = parseInt(distDate.split('-')[1], 10)
+              const distYear = parseInt(distDate.split('-')[0], 10)
+              if (distYear !== year) continue
+
+              const md = getMonth(distMonth)
+              if (d.recipient_user_id && memberIdSet.has(d.recipient_user_id)) {
+                md.mated_distributed_internal++
+              } else {
+                md.mated_distributed_external++
+              }
+            }
           }
         }
       }
@@ -293,6 +315,8 @@ export function useNIHBSReport() {
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
               queen_cells_distributed: 0,
+              mated_distributed_external: 0,
+              mated_distributed_internal: 0,
             })
           }
           const md = monthlyMap.get(r.month)!
