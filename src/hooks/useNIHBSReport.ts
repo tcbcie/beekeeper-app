@@ -273,7 +273,7 @@ export function useNIHBSReport() {
                 md.auto_virgins_external_mated++
               }
             }
-          }}
+          }
         }
       }
 
