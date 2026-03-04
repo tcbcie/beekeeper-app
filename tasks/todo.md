@@ -1,27 +1,56 @@
-# Task: Lock Sold Nuc Cards
-**Date:** 03/03/2026
-**Status:** Complete — awaiting user testing
+# NIHBS Report: Track Mated Queen Distributions
 
-## Objective
-When a nuc is distributed and its status changes to `sold`, lock the nuc card so no accidental data changes can be made. Hide Edit/Retire/Delete buttons, and make the inspection panel read-only (no Add Inspection, Mark Queen, or Edit/Delete on inspection cards). History button stays visible.
+## Problem
+Mated queen distributions (from nuc cards) are correctly stored in `graft_distributions` but completely ignored by the NIHBS report hook. Line 219 of `useNIHBSReport.ts` skips any distribution that isn't `virgin_queen`.
 
-## Execution Plan
+## Affected Distributions (March 2026 test data)
+- 1 mated queen to external beekeeper → NOT shown
+- 1 mated queen to app user (non-member) → NOT shown
+- 2 mated queens to group members → NOT shown
+- 4 sealed cells → correctly shown on row 28
 
-- [x] Add `readOnly` prop to `NucInspectionCard` — hide Edit/Delete buttons when true
-- [x] Add `readOnly` prop to `NucInspectionPanel` — hide Add Inspection + Mark Queen when true, pass to cards
-- [x] Update `MatingNucsTab` — hide Edit/Retire/Delete for sold nucs, pass `readOnly` to inspection panel
-- [x] Create feature documentation
+## Plan
+
+- [x] 1. **useNIHBSReport.ts** — Add mated queen distribution tracking
+  - Add `mated_distributed_external` and `mated_distributed_internal` fields to `MonthlyData`
+  - Initialise to 0 in `getMonth` helper
+  - Add processing loop for `mated_queen` type distributions (separate from existing virgin_queen loop)
+  - External = recipient is null OR not a group member
+  - Internal = recipient is a group member
+
+- [x] 2. **NIHBSMonthlyReturn.tsx — Desktop table** — Add display rows
+  - New row 30: "Mated queens distributed outside group" (auto-calculated, read-only)
+  - New row 32: "Mated queens distributed to group members" (auto-calculated, read-only)
+
+- [x] 3. **NIHBSMonthlyReturn.tsx — Mobile card view** — Add display rows
+  - Same two new metrics as desktop
+
+- [x] 4. **NIHBSMonthlyReturn.tsx — Excel export** — Add export rows
+  - Row 30: Mated queens distributed outside group (after row 28)
+  - Row 32: Mated queens distributed to group members
+
+- [ ] 5. **Test** — User to verify report and Excel reflect all distributions
 
 ## Review
-**Summary of changes:**
-- **NucInspectionCard** — Added optional `readOnly` prop. When true, the Edit and Delete icon buttons are hidden (wrapped in `{!readOnly && ...}`).
-- **NucInspectionPanel** — Added optional `readOnly` prop. When true, hides Add Inspection and Mark Queen buttons. Passes `readOnly` down to each `NucInspectionCard`.
-- **MatingNucsTab** — Wrapped Edit, Retire, and Delete buttons in `{nuc.status !== 'sold' && ...}`. Passes `readOnly={nuc.status === 'sold'}` to `NucInspectionPanel`. History and Distribute buttons unaffected.
 
-**Scope:** 3 files changed. No new dependencies. No migrations.
+### Summary of Changes
+**2 files changed, no migrations, no new dependencies.**
 
-**Testing checklist:**
-1. Nuc with `sold` status — only History button visible, no Edit/Retire/Delete
-2. Expand a sold nuc — past inspections visible but no Add Inspection or Mark Queen
-3. Inspection cards in a sold nuc — no Edit/Delete buttons
-4. Non-sold nucs — all buttons still work as before
+**`src/hooks/useNIHBSReport.ts`:**
+- Added `mated_distributed_external` and `mated_distributed_internal` to `MonthlyData` interface
+- Initialised both to 0 in the `getMonth` helper and the manual-only month creation block
+- Added a new processing loop for `mated_queen` distributions:
+  - If recipient is a group member → increments `mated_distributed_internal`
+  - If recipient is null (external beekeeper) or not a group member → increments `mated_distributed_external`
+
+**`src/components/rearing-groups/NIHBSMonthlyReturn.tsx`:**
+- Desktop table: Added 2 new read-only rows (green highlight) after row 28 — row 30 (external) and row 32 (internal)
+- Mobile card view: Added 2 new metric lines after "Sealed cells distributed"
+- Excel export: Added rows 30 and 32 with yellow fill and borders after the sealed cells row
+
+**`docs/features/nihbs-monthly-returns.md`:** Updated to document new rows.
+
+### Expected Results for March 2026
+- Row 28: Sealed queen cells distributed = 4
+- Row 30: Mated queens distributed outside group = 2 (1 external beekeeper + 1 non-member app user)
+- Row 32: Mated queens distributed to group members = 2
