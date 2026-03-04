@@ -36,13 +36,12 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
   - Virgins distributed outside — successfully mated (auto-calculated from distribution records)
 - Auto-calculated distribution counts from `graft_distributions` records:
   - External distributions = virgin_queen distributions where recipient is NOT a group member (queen_cell distributions excluded — tracked separately on row 28)
-  - Mated queen distributions tracked separately: external (non-member recipients) and internal (group member recipients)
+  - Mated queen external distributions included in rows 24/26 (distributed outside / successfully mated)
   - Auto-calculated values used as defaults; manual overrides take precedence when saved
   - "Auto: X from records" indicator shown below manual fields
-- Sealed queen cell exclusion:
-  - Distributed sealed queen cells (distribution_type = 'queen_cell') are subtracted from "queen cells hatched" (row 13) and "queens mated within group" (row 19) since there is no tracking of whether they hatched or mated
-  - These are tracked separately on row 28 "Sealed queen cells distributed" with per-apiary breakdown
-  - The same subtraction is also applied on the batches page: mobile card and desktop table display values show adjusted counts, and the batch edit form shows an info note with the distribution count and adjusted report value
+- Sealed queen cell tracking:
+  - Distributed sealed queen cells (distribution_type = 'queen_cell') are tracked on row 28 "Sealed queen cells distributed" with per-apiary breakdown
+  - No subtraction from queens_hatched/queens_mated — batch values already reflect only queens that actually hatched/mated in possession
 
 ### Excel Export
 Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is available even when there is no monthly batch data for the selected year.
@@ -75,8 +74,6 @@ Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is 
 - Row 24: Number of virgin queens distributed outside the group (total only + NB note in red)
 - Row 26: Number of virgin queens distributed outside the group that were successfully mated
 - Row 28: Sealed queen cells distributed (auto-calculated from distribution records, per-apiary breakdown)
-- Row 30: Mated queens distributed outside the group (auto-calculated from distribution records)
-- Row 32: Mated queens distributed to group members (auto-calculated from distribution records)
 
 **Dynamic Column Behaviour:**
 - Apiary columns are generated dynamically based on the actual mating apiaries referenced by batches
