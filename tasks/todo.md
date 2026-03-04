@@ -43,3 +43,21 @@ The NIHBS report shows 0 for grafts_accepted/queens_hatched/queens_mated when ba
   4. Removed stale queen_cell subtraction from rearing group report
   5. Added RLS policy on `batch_grafts` for group owner access
   6. Updated all 3 feature docs
+
+## 6. Code Audit (Principal Quality Architect Review)
+
+### Findings
+
+| Severity | File | Issue | Status |
+|----------|------|-------|--------|
+| HIGH | `useNIHBSReport.ts` | `graftsRes.error` never checked after Promise.all — silent data corruption | Fixed |
+| HIGH | `useRearingGroupReport.ts` | Same silent `graftsRes.error` swallowing | Fixed |
+| MEDIUM | `useNIHBSReport.ts` | Redundant block scope + `dists` alias from prior refactor | Fixed |
+| MEDIUM | `DistributeGraftModal.tsx` | `selectedUser!.id` non-null assertion (lines 199, 218) | Accepted risk — guarded by `canSubmit` |
+| LOW | `DistributeGraftModal.tsx` | No user-visible error feedback on save failure | Deferred — parent handles toast |
+| CLEAN | `QueenTrackingSection.tsx` | No issues found | N/A |
+
+### Fixes Applied
+1. Added `if (graftsRes.error) throw graftsRes.error` in both hooks before processing graft data
+2. Removed redundant block scope and `dists` alias in `useNIHBSReport.ts` step 2b
+3. Normalised indentation in step 2b block

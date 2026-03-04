@@ -106,6 +106,7 @@ export function useNIHBSReport() {
             supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date').in('batch_id', batchIdList),
           ])
 
+          if (graftsRes.error) throw graftsRes.error
           if (distsRes.error) throw distsRes.error
           allDists = distsRes.data || []
 
@@ -227,51 +228,48 @@ export function useNIHBSReport() {
         // 2b. Process distributions for queen_cell adjustments and external distribution counts
         // (distributions already fetched in step 2a)
         if (allDists.length > 0) {
-          {
-            const dists = allDists
-            const memberIdSet = new Set(userIds)
+          const memberIdSet = new Set(userIds)
 
-            // Count queen_cell distributions per batch
-            const queenCellCountPerBatch = new Map<string, number>()
-            for (const d of dists) {
-              if (d.distribution_type === 'queen_cell') {
-                queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
-              }
+          // Count queen_cell distributions per batch
+          const queenCellCountPerBatch = new Map<string, number>()
+          for (const d of allDists) {
+            if (d.distribution_type === 'queen_cell') {
+              queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
             }
+          }
 
-            // Track queen_cell distributions on row 28 (no subtraction from hatched/mated —
-            // batch values already reflect only queens that actually hatched/mated in possession)
-            for (const [batchId, cellCount] of queenCellCountPerBatch) {
-              const info = batchEmergenceInfo.get(batchId)
-              if (!info || info.emergenceYear !== year) continue
+          // Track queen_cell distributions on row 28 (no subtraction from hatched/mated —
+          // batch values already reflect only queens that actually hatched/mated in possession)
+          for (const [batchId, cellCount] of queenCellCountPerBatch) {
+            const info = batchEmergenceInfo.get(batchId)
+            if (!info || info.emergenceYear !== year) continue
 
-              const emergMd = getMonth(info.emergenceMonth)
-              emergMd.total.queen_cells_distributed += cellCount
-              emergMd.queen_cells_distributed += cellCount
+            const emergMd = getMonth(info.emergenceMonth)
+            emergMd.total.queen_cells_distributed += cellCount
+            emergMd.queen_cells_distributed += cellCount
 
-              const emergAd = getApiary(emergMd, info.apiaryId)
-              emergAd.queen_cells_distributed += cellCount
-            }
+            const emergAd = getApiary(emergMd, info.apiaryId)
+            emergAd.queen_cells_distributed += cellCount
+          }
 
-            // Auto-calculate external distribution counts (queen_cell tracked separately on row 28)
-            for (const d of dists) {
-              // Only count external distributions (recipient not in the group)
-              if (d.recipient_user_id && memberIdSet.has(d.recipient_user_id)) continue
-              // queen_cell excluded — tracked on row 28
-              if (d.distribution_type === 'queen_cell') continue
+          // Auto-calculate external distribution counts (queen_cell tracked separately on row 28)
+          for (const d of allDists) {
+            // Only count external distributions (recipient not in the group)
+            if (d.recipient_user_id && memberIdSet.has(d.recipient_user_id)) continue
+            // queen_cell excluded — tracked on row 28
+            if (d.distribution_type === 'queen_cell') continue
 
-              const distDate = d.distribution_date
-              if (!distDate) continue
-              const distMonth = parseInt(distDate.split('-')[1], 10)
-              const distYear = parseInt(distDate.split('-')[0], 10)
-              if (distYear !== year) continue
+            const distDate = d.distribution_date
+            if (!distDate) continue
+            const distMonth = parseInt(distDate.split('-')[1], 10)
+            const distYear = parseInt(distDate.split('-')[0], 10)
+            if (distYear !== year) continue
 
-              const md = getMonth(distMonth)
-              md.auto_virgins_distributed_external++
-              // Mated queens are already mated when distributed; virgin queens need mating_confirmed
-              if (d.distribution_type === 'mated_queen' || d.mating_confirmed) {
-                md.auto_virgins_external_mated++
-              }
+            const md = getMonth(distMonth)
+            md.auto_virgins_distributed_external++
+            // Mated queens are already mated when distributed; virgin queens need mating_confirmed
+            if (d.distribution_type === 'mated_queen' || d.mating_confirmed) {
+              md.auto_virgins_external_mated++
             }
           }
         }
