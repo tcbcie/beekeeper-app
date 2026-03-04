@@ -74,40 +74,44 @@ export function useRearingGroupReport() {
 
       if (batchesError) throw batchesError
 
-      // Fetch graft statuses to derive counters when batch-level values are NULL
+      // Fetch graft statuses + distributions to derive counters when batch-level values are NULL
       const batchIds = (batches || []).map((b) => b.id).filter(Boolean)
       const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
+      const queenCellCountPerBatch = new Map<string, number>()
       if (batchIds.length > 0) {
-        const { data: allGrafts } = await supabase
-          .from('batch_grafts')
-          .select('batch_id, status')
-          .in('batch_id', batchIds)
+        const [graftsRes, distsRes] = await Promise.all([
+          supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
+          supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', batchIds),
+        ])
 
-        if (allGrafts) {
-          for (const g of allGrafts) {
+        const allDists = distsRes.data || []
+
+        // Build graft_id → distribution_type lookup for sold grafts
+        const graftDistType = new Map<string, string>()
+        for (const d of allDists) {
+          graftDistType.set(d.graft_id, d.distribution_type)
+          if (d.distribution_type === 'queen_cell') {
+            queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
+          }
+        }
+
+        if (graftsRes.data) {
+          for (const g of graftsRes.data) {
             if (!derivedCounts.has(g.batch_id)) {
               derivedCounts.set(g.batch_id, { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
             }
             const dc = derivedCounts.get(g.batch_id)!
             if (!['grafted', 'failed'].includes(g.status)) dc.grafts_accepted++
-            if (['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)) dc.queens_hatched++
-            if (['mated', 'sold'].includes(g.status)) dc.queens_mated++
-          }
-        }
-      }
 
-      // Fetch queen_cell distributions for the Cells Distributed column
-      const queenCellCountPerBatch = new Map<string, number>()
-      if (batchIds.length > 0) {
-        const { data: dists } = await supabase
-          .from('graft_distributions')
-          .select('batch_id, distribution_type')
-          .in('batch_id', batchIds)
-          .eq('distribution_type', 'queen_cell')
-
-        if (dists) {
-          for (const d of dists) {
-            queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
+            if (g.status === 'sold') {
+              const distType = graftDistType.get(g.id)
+              if (distType === 'mated_queen') { dc.queens_hatched++; dc.queens_mated++ }
+              else if (distType === 'virgin_queen') { dc.queens_hatched++ }
+              // queen_cell → don't count as hatched or mated
+            } else {
+              if (['emerged', 'in_nuc', 'mated'].includes(g.status)) dc.queens_hatched++
+              if (g.status === 'mated') dc.queens_mated++
+            }
           }
         }
       }
