@@ -77,11 +77,10 @@ export function useRearingGroupReport() {
       // Fetch graft statuses + distributions to derive counters when batch-level values are NULL
       const batchIds = (batches || []).map((b) => b.id).filter(Boolean)
       const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
-      const queenCellCountPerBatch = new Map<string, number>()
       if (batchIds.length > 0) {
         const [graftsRes, distsRes] = await Promise.all([
           supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
-          supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, distribution_date').in('batch_id', batchIds),
+          supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', batchIds),
         ])
 
         if (graftsRes.error) throw graftsRes.error
@@ -92,9 +91,6 @@ export function useRearingGroupReport() {
         const graftDistType = new Map<string, string>()
         for (const d of allDists) {
           graftDistType.set(d.graft_id, d.distribution_type)
-          if (d.distribution_type === 'queen_cell' && d.distribution_date && d.distribution_date >= startDate && d.distribution_date < endDate) {
-            queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
-          }
         }
 
         if (graftsRes.data) {
@@ -116,6 +112,21 @@ export function useRearingGroupReport() {
             }
           }
         }
+      }
+
+      // Fetch queen_cell distributions by distribution_date (independent of batch graft_date)
+      const queenCellCountPerMember = new Map<string, number>()
+      const { data: qcDists, error: qcError } = await supabase
+        .from('graft_distributions')
+        .select('user_id')
+        .eq('distribution_type', 'queen_cell')
+        .in('user_id', userIds)
+        .gte('distribution_date', startDate)
+        .lt('distribution_date', endDate)
+
+      if (qcError) throw qcError
+      for (const d of (qcDists || [])) {
+        queenCellCountPerMember.set(d.user_id, (queenCellCountPerMember.get(d.user_id) || 0) + 1)
       }
 
       // Fetch profiles for display names
@@ -149,14 +160,18 @@ export function useRearingGroupReport() {
         const entry = memberAgg.get(batch.user_id)
         if (entry) {
           const dc = derivedCounts.get(batch.id)
-          const distributed = queenCellCountPerBatch.get(batch.id) || 0
           entry.cell_count += batch.cell_count || 0
           entry.grafts_accepted += batch.grafts_accepted ?? dc?.grafts_accepted ?? 0
           entry.queens_hatched += batch.queens_hatched ?? dc?.queens_hatched ?? 0
           entry.queens_mated += batch.queens_mated ?? dc?.queens_mated ?? 0
-          entry.queen_cells_distributed += distributed
           entry.batch_count += 1
         }
+      }
+
+      // Apply queen_cell distribution counts (queried by distribution_date, not batch)
+      for (const [uid, count] of queenCellCountPerMember) {
+        const entry = memberAgg.get(uid)
+        if (entry) entry.queen_cells_distributed = count
       }
 
       const memberReports = Array.from(memberAgg.values())
