@@ -302,7 +302,7 @@ export default function QueenTrackingSection({
                           {isLocked ? <Lock size={14} /> : <LockOpen size={14} />}
                         </Button>
                       )}
-                      {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
+                      {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && tableSelectedIds.size < 2 && (
                         <Button
                           type="button"
                           onClick={() => setDistributeGraft(graft)}
@@ -441,7 +441,7 @@ export default function QueenTrackingSection({
                     {isLocked ? 'Unlock' : 'Lock'}
                   </Button>
                 )}
-                {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && (
+                {!isLocked && !distLoading && DISTRIBUTABLE_STATUSES.includes(graft.status) && !isDistributed && tableSelectedIds.size < 2 && (
                   <Button
                     type="button"
                     onClick={() => setDistributeGraft(graft)}
