@@ -317,15 +317,16 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  loadBulkRuns()
  }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, fetchMatingLocationOptions, loadBulkRuns])
 
- // Filter grafts by selected batch
+ // Filter grafts by selected batch (include the nuc's current graft when editing)
  useEffect(() => {
  if (formData.batch_id) {
- const filtered = grafts.filter(g => g.batch_id === formData.batch_id && g.status === 'sealed')
+ const currentGraftId = editingNuc?.graft_id
+ const filtered = grafts.filter(g => g.batch_id === formData.batch_id && (g.status === 'sealed' || g.id === currentGraftId))
  setFilteredGrafts(filtered)
  } else {
  setFilteredGrafts([])
  }
- }, [formData.batch_id, grafts])
+ }, [formData.batch_id, grafts, editingNuc])
 
  useEffect(() => {
  if (!bulkFormData.source_batch_id) {
