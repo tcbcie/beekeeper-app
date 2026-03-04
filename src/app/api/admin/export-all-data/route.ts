@@ -78,7 +78,17 @@ interface MetadataFunctionRow {
   function_def: string
 }
 
+interface StorageBucketRow {
+  id: string
+  name: string
+  is_public: boolean | string
+  file_size_limit: number | string | null
+  allowed_mime_types: string[] | null
+  avif_autodetection: boolean | string
+}
+
 type SqlRow = Record<string, unknown>
+type AdminExportMode = 'complete' | 'schema_admin_only'
 
 interface AuthUserSeedRow extends SqlRow {
   id: string
@@ -385,6 +395,8 @@ function buildTriggerToggleBlock(
 
 export async function POST(request: NextRequest) {
   try {
+    let exportMode: AdminExportMode = 'complete'
+
     // Verify the requesting user is an admin
     const authHeader = request.headers.get('authorization')
     if (!authHeader) {
@@ -420,7 +432,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.warn(`[AUDIT] Admin data export: admin=${user.id} status=started timestamp=${new Date().toISOString()}`)
+    try {
+      const requestBody = await request.json() as { mode?: unknown }
+      const requestedMode = requestBody && typeof requestBody === 'object'
+        ? requestBody.mode
+        : undefined
+      if (requestedMode !== undefined) {
+        if (requestedMode !== 'complete' && requestedMode !== 'schema_admin_only') {
+          return NextResponse.json(
+            { error: 'Invalid export mode' },
+            { status: 400 }
+          )
+        }
+        exportMode = requestedMode
+      }
+    } catch {
+      exportMode = 'complete'
+    }
+
+    console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} status=started timestamp=${new Date().toISOString()}`)
 
     const tables: string[] = [...DATABASE_EXPORT_TABLES]
     const tableOrder = new Map<string, number>(tables.map((table, index) => [table, index]))
@@ -585,6 +615,67 @@ export async function POST(request: NextRequest) {
       console.error('Error exporting auth.identities:', authIdentityError)
     }
 
+    if (exportMode === 'schema_admin_only') {
+      authUsers = authUsers.filter(row => row.id === user.id)
+      authIdentities = authIdentities.filter(row => row.user_id === user.id)
+    }
+
+    let storageBuckets: StorageBucketRow[] = []
+    let storageBucketsExportError: string | null = null
+    let storagePolicies: MetadataPolicyRow[] = []
+    let storagePoliciesExportError: string | null = null
+
+    try {
+      storageBuckets = await runSafeSelect<StorageBucketRow>(`
+        SELECT
+          id,
+          name,
+          "public" AS is_public,
+          file_size_limit,
+          allowed_mime_types,
+          avif_autodetection
+        FROM storage.buckets
+        ORDER BY name
+      `)
+    } catch (storageError) {
+      storageBucketsExportError = storageError instanceof Error ? storageError.message : 'Unknown storage.buckets export error'
+      console.error('Error exporting storage.buckets:', storageError)
+    }
+
+    try {
+      storagePolicies = await runSafeSelect<MetadataPolicyRow>(`
+        SELECT
+          tbl.relname AS table_name,
+          pol.polname AS policy_name,
+          pol.polpermissive AS policy_permissive,
+          pol.polcmd AS policy_command_key,
+          (
+            SELECT string_agg(
+              CASE
+                WHEN role_oid = 0 THEN 'PUBLIC'
+                ELSE quote_ident(pg_get_userbyid(role_oid))
+              END,
+              ', '
+              ORDER BY CASE
+                WHEN role_oid = 0 THEN 'PUBLIC'
+                ELSE quote_ident(pg_get_userbyid(role_oid))
+              END
+            )
+            FROM unnest(pol.polroles) AS role_oid
+          ) AS policy_roles,
+          pg_get_expr(pol.polqual, pol.polrelid) AS using_expr,
+          pg_get_expr(pol.polwithcheck, pol.polrelid) AS with_check_expr
+        FROM pg_policy pol
+        JOIN pg_class tbl ON tbl.oid = pol.polrelid
+        JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+        WHERE ns.nspname = 'storage'
+        ORDER BY tbl.relname, pol.polname
+      `)
+    } catch (storagePolicyError) {
+      storagePoliciesExportError = storagePolicyError instanceof Error ? storagePolicyError.message : 'Unknown storage policies export error'
+      console.error('Error exporting storage policies:', storagePolicyError)
+    }
+
     const filteredColumnMetadata = columnMetadata.filter(column => tableSet.has(column.table_name))
     const filteredConstraintMetadata = constraintMetadata.filter(constraint => tableSet.has(constraint.table_name))
     const filteredIndexMetadata = indexMetadata.filter(index => tableSet.has(index.table_name))
@@ -658,13 +749,22 @@ export async function POST(request: NextRequest) {
     const foreignKeyConstraints = filteredConstraintMetadata.filter(constraint => constraint.constraint_type === 'f')
 
     // Build SQL export content
+    const isSchemaAdminOnlyExport = exportMode === 'schema_admin_only'
+    const exportTitle = isSchemaAdminOnlyExport
+      ? 'HiveCraic EMPTY Database Export (Schema + Admin Seed)'
+      : 'HiveCraic COMPLETE Database Export (ALL USERS)'
     let sqlContent = `-- =====================================================\n`
-    sqlContent += `-- HiveCraic COMPLETE Database Export (ALL USERS)\n`
+    sqlContent += `-- ${exportTitle}\n`
     sqlContent += `-- Generated on: ${new Date().toISOString()}\n`
     sqlContent += `-- Exported by Admin: ${user.email}\n`
     sqlContent += `-- =====================================================\n\n`
-    sqlContent += `-- This export includes ALL data from ALL users\n`
-    sqlContent += `-- This export includes schema recreation for public tables, then data\n`
+    if (isSchemaAdminOnlyExport) {
+      sqlContent += `-- This export includes schema recreation and one login-capable admin account only\n`
+      sqlContent += `-- Public table data is intentionally empty except the exporting admin profile row\n`
+    } else {
+      sqlContent += `-- This export includes ALL data from ALL users\n`
+      sqlContent += `-- This export includes schema recreation for public tables, then data\n`
+    }
     sqlContent += `-- Auth dependency note: foreign keys to auth.users are emitted with guarded checks\n`
     sqlContent += `-- If auth.users does not exist in target, those FKs are skipped with NOTICE\n\n`
 
@@ -787,6 +887,9 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- DATA EXPORT (PUBLIC)\n`
     sqlContent += `-- =====================================================\n\n`
+    if (isSchemaAdminOnlyExport) {
+      sqlContent += `-- Schema-admin-only mode: exporting only the admin profile row and no other public table data\n\n`
+    }
     sqlContent += `BEGIN;\n\n`
     sqlContent += `-- Best effort: disable triggers so inserts can load regardless of FK ordering\n`
     sqlContent += buildTriggerToggleBlock(tables, 'DISABLE')
@@ -798,10 +901,29 @@ export async function POST(request: NextRequest) {
 
     for (const table of tables) {
       try {
-        // Use service role client to bypass RLS and get ALL records
-        const { data, error } = await supabaseAdmin
-          .from(table)
-          .select('*')
+        if (isSchemaAdminOnlyExport && table !== 'profiles') {
+          exportResults[table] = 0
+          continue
+        }
+
+        let data: Record<string, unknown>[] | null = null
+        let error: { message: string } | null = null
+
+        if (isSchemaAdminOnlyExport && table === 'profiles') {
+          const response = await supabaseAdmin
+            .from(table)
+            .select('*')
+            .eq('id', user.id)
+            .limit(1)
+          data = response.data as Record<string, unknown>[] | null
+          error = response.error
+        } else {
+          const response = await supabaseAdmin
+            .from(table)
+            .select('*')
+          data = response.data as Record<string, unknown>[] | null
+          error = response.error
+        }
 
         if (error) {
           console.error(`Error fetching ${table}:`, error)
@@ -900,6 +1022,57 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    sqlContent += `-- =====================================================\n`
+    sqlContent += `-- STORAGE BUCKETS AND POLICIES\n`
+    sqlContent += `-- =====================================================\n`
+
+    if (storageBucketsExportError) {
+      sqlContent += `-- Skipping storage buckets due to source query error: ${storageBucketsExportError.replace(/\n/g, ' ')}\n\n`
+    } else if (storageBuckets.length > 0) {
+      sqlContent += `DO $$\nBEGIN\n  IF to_regclass('storage.buckets') IS NULL THEN\n    RAISE NOTICE 'Skipping storage bucket setup because storage.buckets is unavailable in target';\n  ELSE\n`
+      for (const bucket of storageBuckets) {
+        const mimeTypesValue = Array.isArray(bucket.allowed_mime_types)
+          ? `{${bucket.allowed_mime_types.map((m: string) => `"${m}"`).join(',')}}`
+          : null
+        const bucketRow: Record<string, unknown> = {
+          id: bucket.id,
+          name: bucket.name,
+          public: toBoolean(bucket.is_public),
+          file_size_limit: bucket.file_size_limit,
+          allowed_mime_types: mimeTypesValue,
+          avif_autodetection: toBoolean(bucket.avif_autodetection),
+        }
+        const insertSql = buildInsertOnConflictDoNothingSql('storage', 'buckets', bucketRow, ['id'])
+        sqlContent += `    EXECUTE '${escapeSqlLiteral(insertSql)}';\n`
+      }
+      sqlContent += `  END IF;\nEND $$;\n\n`
+    } else {
+      sqlContent += `-- No storage buckets found in source export\n\n`
+    }
+
+    if (storagePoliciesExportError) {
+      sqlContent += `-- Skipping storage policies due to source query error: ${storagePoliciesExportError.replace(/\n/g, ' ')}\n\n`
+    } else if (storagePolicies.length > 0) {
+      sqlContent += `DO $$\nBEGIN\n  IF to_regclass('storage.objects') IS NULL THEN\n    RAISE NOTICE 'Skipping storage policies because storage.objects is unavailable in target';\n  ELSE\n`
+      for (const policy of storagePolicies) {
+        const policyMode = toBoolean(policy.policy_permissive) ? 'PERMISSIVE' : 'RESTRICTIVE'
+        const policyCommand = mapPolicyCommand(policy.policy_command_key)
+        const rolesClause = policy.policy_roles?.trim() ? ` TO ${policy.policy_roles.trim()}` : ''
+        const usingClause = policy.using_expr?.trim() ? ` USING (${policy.using_expr.trim()})` : ''
+        const withCheckClause = policy.with_check_expr?.trim() ? ` WITH CHECK (${policy.with_check_expr.trim()})` : ''
+
+        const createSql = `CREATE POLICY ${sqlIdentifier(policy.policy_name)} ON storage.${sqlIdentifier(policy.table_name)} AS ${policyMode} FOR ${policyCommand}${rolesClause}${usingClause}${withCheckClause};`
+        const existsSql = `SELECT 1 FROM pg_policy pol JOIN pg_class tbl ON tbl.oid = pol.polrelid JOIN pg_namespace ns ON ns.oid = tbl.relnamespace WHERE ns.nspname = 'storage' AND tbl.relname = '${escapeSqlLiteral(policy.table_name)}' AND pol.polname = '${escapeSqlLiteral(policy.policy_name)}'`
+
+        sqlContent += `    IF NOT EXISTS (${existsSql}) THEN\n`
+        sqlContent += `      EXECUTE '${escapeSqlLiteral(createSql)}';\n`
+        sqlContent += `    END IF;\n`
+      }
+      sqlContent += `  END IF;\nEND $$;\n\n`
+    } else {
+      sqlContent += `-- No storage policies found in source export\n\n`
+    }
+
     if (filteredSequenceMetadata.length > 0) {
       sqlContent += `-- =====================================================\n`
       sqlContent += `-- SEQUENCE ALIGNMENT\n`
@@ -919,7 +1092,8 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
-    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}\n`
+    sqlContent += `-- Mode: ${exportMode}\n`
+    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}, storage_buckets=${storageBuckets.length}, storage_policies=${storagePolicies.length}\n`
     sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
@@ -944,14 +1118,17 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- END OF EXPORT\n`
     sqlContent += `-- =====================================================\n`
 
-    console.warn(`[AUDIT] Admin data export: admin=${user.id} tables=${tables.length} status=success timestamp=${new Date().toISOString()}`)
+    console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} tables=${tables.length} status=success timestamp=${new Date().toISOString()}`)
 
     // Return the SQL content with appropriate headers
+    const filePrefix = isSchemaAdminOnlyExport
+      ? 'hivecraic-empty-schema-admin-export'
+      : 'hivecraic-complete-export'
     return new NextResponse(sqlContent, {
       status: 200,
       headers: {
         'Content-Type': 'text/plain',
-        'Content-Disposition': `attachment; filename="hivecraic-complete-export-${new Date().toISOString().split('T')[0]}.sql"`
+        'Content-Disposition': `attachment; filename="${filePrefix}-${new Date().toISOString().split('T')[0]}.sql"`
       }
     })
 

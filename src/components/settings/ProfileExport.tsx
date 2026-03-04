@@ -14,11 +14,13 @@ interface ProfileExportProps {
   hasActiveSubscription: boolean
 }
 
+type AdminExportMode = 'complete' | 'schema_admin_only'
+
 export default function ProfileExport({ isAdmin, hasActiveSubscription }: ProfileExportProps) {
   const toast = useToast()
   const [exporting, setExporting] = useState(false)
 
-  const exportDatabase = async () => {
+  const exportDatabase = async (adminMode: AdminExportMode = 'complete') => {
     setExporting(true)
     try {
       // If user is admin, use admin API to export ALL users' data
@@ -37,7 +39,8 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({ mode: adminMode })
         })
 
         if (!response.ok) {
@@ -53,13 +56,20 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `hivecraic-complete-export-${new Date().toISOString().split('T')[0]}.sql`
+        const filePrefix = adminMode === 'schema_admin_only'
+          ? 'hivecraic-empty-schema-admin-export'
+          : 'hivecraic-complete-export'
+        a.download = `${filePrefix}-${new Date().toISOString().split('T')[0]}.sql`
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
 
-        toast.success('Complete database exported successfully!')
+        toast.success(
+          adminMode === 'schema_admin_only'
+            ? 'Empty database export (schema + admin account) downloaded successfully!'
+            : 'Complete database exported successfully!'
+        )
       } else {
         // Regular user: export only their own data
         const tables = [...DATABASE_EXPORT_TABLES]
@@ -152,9 +162,14 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-text-secondary">Export Your Data</h3>
         {isAdmin ? (
-          <p className="text-sm text-text-tertiary">
-            <strong>Admin Export:</strong> Download complete database backup with ALL users&apos; data from ALL tables including apiaries, hives, queens, inspections, tasks, events, and more.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-text-tertiary">
+              <strong>Admin Export:</strong> Download complete database backup with ALL users&apos; data from ALL tables including apiaries, hives, queens, inspections, tasks, events, and more.
+            </p>
+            <p className="text-sm text-text-tertiary">
+              You can also export a clean database file with schema and only your admin login-capable account seed.
+            </p>
+          </div>
         ) : hasActiveSubscription ? (
           <p className="text-sm text-text-tertiary">
             Download your personal beekeeping data including apiaries, hives, queens, inspections, tasks, events, and more in SQL format.
@@ -167,15 +182,38 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
           </InfoPanel>
         )}
         {(isAdmin || hasActiveSubscription) && (
-          <Button
-            onClick={exportDatabase}
-            disabled={exporting}
-            tone="success"
-            className="disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download size={16} />
-            {exporting ? 'Exporting...' : isAdmin ? 'Export Complete Database (All Users)' : 'Export My Data'}
-          </Button>
+          isAdmin ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => { void exportDatabase('complete') }}
+                disabled={exporting}
+                tone="success"
+                className="disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={16} />
+                {exporting ? 'Exporting...' : 'Export Complete Database (All Users)'}
+              </Button>
+              <Button
+                onClick={() => { void exportDatabase('schema_admin_only') }}
+                disabled={exporting}
+                tone="blue"
+                className="disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={16} />
+                {exporting ? 'Exporting...' : 'Export Empty Database (Schema + Admin)'}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={() => { void exportDatabase() }}
+              disabled={exporting}
+              tone="success"
+              className="disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={16} />
+              {exporting ? 'Exporting...' : 'Export My Data'}
+            </Button>
+          )
         )}
       </div>
     </Card>
