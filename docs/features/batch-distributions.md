@@ -132,6 +132,7 @@ The `useNIHBSReport` hook auto-calculates from distribution records:
 - **Sealed queen cells distributed** (row 28) = all `queen_cell` distributions (regardless of recipient), tracked per-apiary in the batch's emergence month
 - No subtraction from queens_hatched/queens_mated — batch values already reflect only queens that actually hatched/mated in possession
 - Only group-assigned batches (with `rearing_group_id`) are included in the NIHBS report
+- **Graft-derived fallback:** When batch counters are NULL, counts are derived from individual graft statuses. For `sold` grafts, the `distribution_type` determines the actual stage reached: `queen_cell` → accepted only, `virgin_queen` → hatched, `mated_queen` → hatched + mated
 
 These auto-calculated values are used as defaults. Manual overrides saved in `nihbs_monthly_returns` take precedence.
 

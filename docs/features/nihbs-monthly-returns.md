@@ -109,14 +109,29 @@ Stores the manual-entry fields per group per month.
 
 | File | Description |
 |------|-------------|
-| `src/hooks/useNIHBSReport.ts` | Data aggregation hook for NIHBS report |
-| `src/hooks/useRearingGroupReport.ts` | Modified — added cell_count + mating_apiary_id; queen_cell distribution subtraction from hatched/mated |
-| `src/components/rearing-groups/RearingGroupReport.tsx` | Monthly rearing report UI — includes Cells Distributed column |
+| `src/hooks/useNIHBSReport.ts` | Data aggregation hook for NIHBS report — derives counters from graft statuses when batch-level values are NULL |
+| `src/hooks/useRearingGroupReport.ts` | Modified — graft-derived fallback for NULL counters; no queen_cell subtraction |
+| `src/components/rearing-groups/RearingGroupReport.tsx` | Monthly rearing report UI — "Sealed Cells" column + Cells Distributed column |
 | `src/hooks/useRearingGroups.ts` | Modified — added experience_level to member interface |
 | `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` | NIHBS report UI + Excel export component |
 | `src/app/dashboard/batches/page.tsx` | Modified — mating apiary dropdown on batch form |
 | `src/app/dashboard/reports/page.tsx` | Modified — rearing report and NIHBS returns tabs (conditional on group ownership) |
 
+## Graft-Derived Counter Fallback
+
+When batch-level counters (`grafts_accepted`, `queens_hatched`, `queens_mated`) are NULL in the database, both `useNIHBSReport` and `useRearingGroupReport` derive counts from individual graft statuses in `batch_grafts`:
+
+- **grafts_accepted** = grafts not in `grafted` or `failed` status
+- **queens_hatched** = grafts in `emerged`, `in_nuc`, or `mated` status
+- **queens_mated** = grafts in `mated` status
+- **sold grafts** — checked against `graft_distributions` to determine actual stage:
+  - `queen_cell` distribution → counts as accepted only (not hatched or mated)
+  - `virgin_queen` distribution → counts as hatched only
+  - `mated_queen` distribution → counts as both hatched and mated
+
+Batch-level values take precedence when explicitly set (uses `??` nullish coalescing).
+
 ## RLS Policies
 
 - `nihbs_monthly_returns`: Group owners only (SELECT/INSERT/UPDATE).
+- `batch_grafts`: Group owners can view member grafts (SELECT) — enables graft-derived counter fallback for the NIHBS and rearing reports.
