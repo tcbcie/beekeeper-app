@@ -74,8 +74,29 @@ export function useRearingGroupReport() {
 
       if (batchesError) throw batchesError
 
-      // Fetch queen_cell distributions to subtract from hatched/mated
+      // Fetch graft statuses to derive counters when batch-level values are NULL
       const batchIds = (batches || []).map((b) => b.id).filter(Boolean)
+      const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
+      if (batchIds.length > 0) {
+        const { data: allGrafts } = await supabase
+          .from('batch_grafts')
+          .select('batch_id, status')
+          .in('batch_id', batchIds)
+
+        if (allGrafts) {
+          for (const g of allGrafts) {
+            if (!derivedCounts.has(g.batch_id)) {
+              derivedCounts.set(g.batch_id, { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
+            }
+            const dc = derivedCounts.get(g.batch_id)!
+            if (!['grafted', 'failed'].includes(g.status)) dc.grafts_accepted++
+            if (['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)) dc.queens_hatched++
+            if (['mated', 'sold'].includes(g.status)) dc.queens_mated++
+          }
+        }
+      }
+
+      // Fetch queen_cell distributions for the Cells Distributed column
       const queenCellCountPerBatch = new Map<string, number>()
       if (batchIds.length > 0) {
         const { data: dists } = await supabase
@@ -121,11 +142,12 @@ export function useRearingGroupReport() {
       for (const batch of (batches || [])) {
         const entry = memberAgg.get(batch.user_id)
         if (entry) {
+          const dc = derivedCounts.get(batch.id)
           const distributed = queenCellCountPerBatch.get(batch.id) || 0
           entry.cell_count += batch.cell_count || 0
-          entry.grafts_accepted += batch.grafts_accepted || 0
-          entry.queens_hatched += Math.max(0, (batch.queens_hatched || 0) - distributed)
-          entry.queens_mated += Math.max(0, (batch.queens_mated || 0) - distributed)
+          entry.grafts_accepted += batch.grafts_accepted ?? dc?.grafts_accepted ?? 0
+          entry.queens_hatched += batch.queens_hatched ?? dc?.queens_hatched ?? 0
+          entry.queens_mated += batch.queens_mated ?? dc?.queens_mated ?? 0
           entry.queen_cells_distributed += distributed
           entry.batch_count += 1
         }
