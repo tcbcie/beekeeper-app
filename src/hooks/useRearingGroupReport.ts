@@ -84,6 +84,8 @@ export function useRearingGroupReport() {
           supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', batchIds),
         ])
 
+        if (graftsRes.error) throw graftsRes.error
+        if (distsRes.error) throw distsRes.error
         const allDists = distsRes.data || []
 
         // Build graft_id → distribution_type lookup for sold grafts
