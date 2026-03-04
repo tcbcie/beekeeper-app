@@ -40,7 +40,7 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
   - Auto-calculated values used as defaults; manual overrides take precedence when saved
   - "Auto: X from records" indicator shown below manual fields
 - Sealed queen cell tracking:
-  - Distributed sealed queen cells (distribution_type = 'queen_cell') are tracked on row 28 "Sealed queen cells distributed" with per-apiary breakdown
+  - Distributed sealed queen cells (distribution_type = 'queen_cell') are tracked on row 28 "Sealed queen cells distributed" with per-apiary breakdown, counted by `distribution_date` month (not batch emergence month)
   - No subtraction from queens_hatched/queens_mated — batch values already reflect only queens that actually hatched/mated in possession
 
 ### Excel Export
@@ -73,7 +73,7 @@ Generates a multi-sheet `.xlsx` workbook matching the NIHBS template. Export is 
 - "Outside your group" section header
 - Row 24: Number of virgin queens distributed outside the group (total only + NB note in red)
 - Row 26: Number of virgin queens distributed outside the group that were successfully mated
-- Row 28: Sealed queen cells distributed (auto-calculated from distribution records, per-apiary breakdown)
+- Row 28: Sealed queen cells distributed (auto-calculated from distribution records by distribution_date month, per-apiary breakdown)
 
 **Dynamic Column Behaviour:**
 - Apiary columns are generated dynamically based on the actual mating apiaries referenced by batches
