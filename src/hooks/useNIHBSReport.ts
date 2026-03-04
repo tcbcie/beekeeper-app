@@ -30,8 +30,6 @@ export interface MonthlyData {
   auto_virgins_distributed_external: number
   auto_virgins_external_mated: number
   queen_cells_distributed: number
-  mated_distributed_external: number
-  mated_distributed_internal: number
 }
 
 export interface NIHBSReportData {
@@ -111,8 +109,6 @@ export function useNIHBSReport() {
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
               queen_cells_distributed: 0,
-              mated_distributed_external: 0,
-              mated_distributed_internal: 0,
             })
           }
           return monthlyMap.get(m)!
@@ -201,29 +197,26 @@ export function useNIHBSReport() {
               }
             }
 
-            // Subtract queen_cell distributions from queens_hatched/queens_mated and track on row 28
+            // Track queen_cell distributions on row 28 (no subtraction from hatched/mated —
+            // batch values already reflect only queens that actually hatched/mated in possession)
             for (const [batchId, cellCount] of queenCellCountPerBatch) {
               const info = batchEmergenceInfo.get(batchId)
               if (!info || info.emergenceYear !== year) continue
 
               const emergMd = getMonth(info.emergenceMonth)
-              emergMd.total.queens_hatched = Math.max(0, emergMd.total.queens_hatched - cellCount)
-              emergMd.total.queens_mated = Math.max(0, emergMd.total.queens_mated - cellCount)
               emergMd.total.queen_cells_distributed += cellCount
               emergMd.queen_cells_distributed += cellCount
 
               const emergAd = getApiary(emergMd, info.apiaryId)
-              emergAd.queens_hatched = Math.max(0, emergAd.queens_hatched - cellCount)
-              emergAd.queens_mated = Math.max(0, emergAd.queens_mated - cellCount)
               emergAd.queen_cells_distributed += cellCount
             }
 
-            // Auto-calculate external distribution counts (virgin_queen only — queen_cell tracked separately on row 28)
+            // Auto-calculate external distribution counts (queen_cell tracked separately on row 28)
             for (const d of dists) {
               // Only count external distributions (recipient not in the group)
               if (d.recipient_user_id && memberIdSet.has(d.recipient_user_id)) continue
-              // Only count virgin_queen types (queen_cell excluded — tracked on row 28)
-              if (d.distribution_type !== 'virgin_queen') continue
+              // queen_cell excluded — tracked on row 28
+              if (d.distribution_type === 'queen_cell') continue
 
               const distDate = d.distribution_date
               if (!distDate) continue
@@ -233,26 +226,9 @@ export function useNIHBSReport() {
 
               const md = getMonth(distMonth)
               md.auto_virgins_distributed_external++
-              if (d.mating_confirmed) {
+              // Mated queens are already mated when distributed; virgin queens need mating_confirmed
+              if (d.distribution_type === 'mated_queen' || d.mating_confirmed) {
                 md.auto_virgins_external_mated++
-              }
-            }
-
-            // Auto-calculate mated queen distribution counts
-            for (const d of dists) {
-              if (d.distribution_type !== 'mated_queen') continue
-
-              const distDate = d.distribution_date
-              if (!distDate) continue
-              const distMonth = parseInt(distDate.split('-')[1], 10)
-              const distYear = parseInt(distDate.split('-')[0], 10)
-              if (distYear !== year) continue
-
-              const md = getMonth(distMonth)
-              if (d.recipient_user_id && memberIdSet.has(d.recipient_user_id)) {
-                md.mated_distributed_internal++
-              } else {
-                md.mated_distributed_external++
               }
             }
           }
@@ -318,8 +294,6 @@ export function useNIHBSReport() {
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
               queen_cells_distributed: 0,
-              mated_distributed_external: 0,
-              mated_distributed_internal: 0,
             })
           }
           const md = monthlyMap.get(r.month)!

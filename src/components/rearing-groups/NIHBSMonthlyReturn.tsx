@@ -371,29 +371,6 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
           cell.alignment = { horizontal: 'center' }
         }
 
-        // Row 29: blank
-        sheet.addRow([])
-
-        // Row 30: Mated queens distributed outside group
-        const r30 = sheet.addRow([])
-        r30.getCell(1).value = 'Mated queens distributed outside the group'
-        r30.getCell(1).font = { bold: true, size: 11 }
-        r30.getCell(2).value = md.mated_distributed_external
-        r30.getCell(2).fill = yellowFill
-        r30.getCell(2).border = thinBorder
-        r30.getCell(2).alignment = { horizontal: 'center' }
-
-        // Row 31: blank
-        sheet.addRow([])
-
-        // Row 32: Mated queens distributed to group members
-        const r32 = sheet.addRow([])
-        r32.getCell(1).value = 'Mated queens distributed to group members'
-        r32.getCell(1).font = { bold: true, size: 11 }
-        r32.getCell(2).value = md.mated_distributed_internal
-        r32.getCell(2).fill = yellowFill
-        r32.getCell(2).border = thinBorder
-        r32.getCell(2).alignment = { horizontal: 'center' }
       }
 
       // Generate and download
@@ -550,16 +527,6 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       <td className="py-2 px-3 text-foreground">Sealed queen cells distributed</td>
                       <td className="py-2 px-3 text-right font-medium text-foreground">{md.queen_cells_distributed}</td>
                     </tr>
-                    <tr className="border-b border-border bg-green-50 dark:bg-green-950/20">
-                      <td className="py-2 px-3 text-text-tertiary">30</td>
-                      <td className="py-2 px-3 text-foreground">Mated queens distributed outside group</td>
-                      <td className="py-2 px-3 text-right font-medium text-foreground">{md.mated_distributed_external}</td>
-                    </tr>
-                    <tr className="border-b border-border bg-green-50 dark:bg-green-950/20">
-                      <td className="py-2 px-3 text-text-tertiary">32</td>
-                      <td className="py-2 px-3 text-foreground">Mated queens distributed to group members</td>
-                      <td className="py-2 px-3 text-right font-medium text-foreground">{md.mated_distributed_internal}</td>
-                    </tr>
                     <tr className="border-b border-border bg-amber-50 dark:bg-amber-950/20">
                       <td className="py-2 px-3 text-text-tertiary">21</td>
                       <td className="py-2 px-3 text-foreground">Hybridised offspring</td>
@@ -638,14 +605,6 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                 <div className="flex justify-between text-sm">
                   <span className="text-text-tertiary">Sealed cells distributed:</span>
                   <span className="font-medium text-foreground">{md.queen_cells_distributed}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-tertiary">Mated queens distributed (external):</span>
-                  <span className="font-medium text-foreground">{md.mated_distributed_external}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-tertiary">Mated queens distributed (group):</span>
-                  <span className="font-medium text-foreground">{md.mated_distributed_internal}</span>
                 </div>
                 <div className="pt-2 border-t border-border space-y-2">
                   <div className="flex justify-between items-center text-sm">
