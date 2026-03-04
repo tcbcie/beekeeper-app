@@ -52,6 +52,7 @@ function buildStorageRemotePatterns(): RemotePattern[] {
 }
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['192.168.100.50'],
   images: {
     remotePatterns: buildStorageRemotePatterns()
   },
