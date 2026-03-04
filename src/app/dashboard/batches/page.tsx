@@ -548,6 +548,7 @@ export default function BatchesPage() {
  enable_batch_event_reminders: batch.enable_batch_event_reminders || false,
  batch_reminder_minutes_before: batch.batch_reminder_minutes_before?.toString() || '60',
  })
+ setQuantitiesOpen(false)
  setShowForm(true)
  }
 
