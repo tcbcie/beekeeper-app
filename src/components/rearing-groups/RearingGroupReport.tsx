@@ -88,7 +88,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                 <tr className="border-b border-border">
                   <th className="text-left py-2 px-3 text-text-tertiary font-medium">Member</th>
                   <th className="text-right py-2 px-3 text-text-tertiary font-medium">Batches</th>
-                  <th className="text-right py-2 px-3 text-text-tertiary font-medium">Grafts Accepted</th>
+                  <th className="text-right py-2 px-3 text-text-tertiary font-medium">Sealed Cells</th>
                   <th className="text-right py-2 px-3 text-text-tertiary font-medium">Queens Hatched</th>
                   <th className="text-right py-2 px-3 text-text-tertiary font-medium">Queens Mated</th>
                   <th className="text-right py-2 px-3 text-text-tertiary font-medium">Cells Distributed</th>
@@ -125,7 +125,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="text-text-tertiary">Batches:</div>
                     <div className="text-right text-foreground">{member.batch_count}</div>
-                    <div className="text-text-tertiary">Grafts Accepted:</div>
+                    <div className="text-text-tertiary">Sealed Cells:</div>
                     <div className="text-right text-foreground">{member.grafts_accepted}</div>
                     <div className="text-text-tertiary">Queens Hatched:</div>
                     <div className="text-right text-foreground">{member.queens_hatched}</div>
@@ -142,7 +142,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
               <div className="grid grid-cols-2 gap-2 text-sm font-medium">
                 <div className="text-text-tertiary">Batches:</div>
                 <div className="text-right text-foreground">{report.totals.batch_count}</div>
-                <div className="text-text-tertiary">Grafts Accepted:</div>
+                <div className="text-text-tertiary">Sealed Cells:</div>
                 <div className="text-right text-foreground">{report.totals.grafts_accepted}</div>
                 <div className="text-text-tertiary">Queens Hatched:</div>
                 <div className="text-right text-foreground">{report.totals.queens_hatched}</div>
