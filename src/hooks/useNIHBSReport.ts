@@ -182,10 +182,12 @@ export function useNIHBSReport() {
         // 2b. Fetch distributions for queen_cell adjustments and external distribution counts
         const batchIds = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
         if (batchIds.length > 0) {
-          const { data: dists } = await supabase
+          const { data: dists, error: distsError } = await supabase
             .from('graft_distributions')
             .select('batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date')
             .in('batch_id', batchIds)
+
+          if (distsError) throw distsError
 
           if (dists) {
             const memberIdSet = new Set(userIds)
@@ -218,7 +220,7 @@ export function useNIHBSReport() {
             // Auto-calculate external distribution counts (virgin_queen only — queen_cell tracked separately on row 28)
             for (const d of dists) {
               // Only count external distributions (recipient not in the group)
-              if (memberIdSet.has(d.recipient_user_id)) continue
+              if (d.recipient_user_id && memberIdSet.has(d.recipient_user_id)) continue
               // Only count virgin_queen types (queen_cell excluded — tracked on row 28)
               if (d.distribution_type !== 'virgin_queen') continue
 
