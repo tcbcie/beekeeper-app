@@ -161,7 +161,8 @@ function normaliseAuthIdentitySeedRow(row: SqlRow): AuthIdentitySeedRow {
   return normalisedRow as AuthIdentitySeedRow
 }
 
-async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
+async function fetchAuthUserSeedRows(userId?: string): Promise<AuthUserSeedRow[]> {
+  const whereClause = userId ? `WHERE u.id = ${sqlValue(userId)}` : ''
   const rows = await runSafeSelect<AuthUserSeedQueryRow>(`
     SELECT
       id,
@@ -198,13 +199,15 @@ async function fetchAuthUserSeedRows(): Promise<AuthUserSeedRow[]> {
       is_sso_user,
       is_anonymous
     FROM auth.users u
+    ${whereClause}
     ORDER BY id
   `)
 
   return rows.map(row => normaliseAuthUserSeedRow(row as SqlRow))
 }
 
-async function fetchAuthIdentitySeedRows(): Promise<AuthIdentitySeedRow[]> {
+async function fetchAuthIdentitySeedRows(userId?: string): Promise<AuthIdentitySeedRow[]> {
+  const whereClause = userId ? `WHERE i.user_id = ${sqlValue(userId)}` : ''
   const rows = await runSafeSelect<AuthIdentitySeedQueryRow>(`
     SELECT
       id,
@@ -216,6 +219,7 @@ async function fetchAuthIdentitySeedRows(): Promise<AuthIdentitySeedRow[]> {
       COALESCE((to_jsonb(i) ->> ('crea' || 'ted_at'))::timestamptz, NOW()) AS c_at,
       COALESCE((to_jsonb(i) ->> ('upda' || 'ted_at'))::timestamptz, NOW()) AS u_at
     FROM auth.identities i
+    ${whereClause}
     ORDER BY user_id, id
   `)
 
@@ -239,6 +243,37 @@ async function runSafeSelect<T>(query: string): Promise<T[]> {
 
   return data as T[]
 }
+
+function parseExportMode(rawBody: string): AdminExportMode | null {
+  const trimmedBody = rawBody.trim()
+  if (!trimmedBody) {
+    return 'complete'
+  }
+
+  let parsedBody: unknown
+  try {
+    parsedBody = JSON.parse(trimmedBody)
+  } catch {
+    return null
+  }
+
+  if (!parsedBody || typeof parsedBody !== 'object') {
+    return null
+  }
+
+  const mode = (parsedBody as { mode?: unknown }).mode
+  if (mode === undefined) {
+    return 'complete'
+  }
+
+  if (mode === 'complete' || mode === 'schema_admin_only') {
+    return mode
+  }
+
+  return null
+}
+
+const TABLE_EXPORT_PAGE_SIZE = 1000
 
 function buildCreateExtensionsBlock(): string {
   return `-- Ensure required extensions exist for default expressions and column types\nDO $$\nBEGIN\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping uuid-ossp extension create due to insufficient privileges';\n  END;\n\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "pgcrypto";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping pgcrypto extension create due to insufficient privileges';\n  END;\n\n  BEGIN\n    CREATE EXTENSION IF NOT EXISTS "vector";\n  EXCEPTION\n    WHEN insufficient_privilege THEN\n      RAISE NOTICE 'Skipping vector extension create due to insufficient privileges';\n  END;\nEND $$;\n`
@@ -432,23 +467,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    try {
-      const requestBody = await request.json() as { mode?: unknown }
-      const requestedMode = requestBody && typeof requestBody === 'object'
-        ? requestBody.mode
-        : undefined
-      if (requestedMode !== undefined) {
-        if (requestedMode !== 'complete' && requestedMode !== 'schema_admin_only') {
-          return NextResponse.json(
-            { error: 'Invalid export mode' },
-            { status: 400 }
-          )
-        }
-        exportMode = requestedMode
-      }
-    } catch {
-      exportMode = 'complete'
+    const rawBody = await request.text()
+    const parsedMode = parseExportMode(rawBody)
+    if (!parsedMode) {
+      return NextResponse.json(
+        { error: 'Invalid request body or export mode' },
+        { status: 400 }
+      )
     }
+    exportMode = parsedMode
 
     console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} status=started timestamp=${new Date().toISOString()}`)
 
@@ -601,23 +628,19 @@ export async function POST(request: NextRequest) {
     let authUsersExportError: string | null = null
     let authIdentities: AuthIdentitySeedRow[] = []
     let authIdentitiesExportError: string | null = null
+    const authSeedUserId = exportMode === 'schema_admin_only' ? user.id : undefined
     try {
-      authUsers = await fetchAuthUserSeedRows()
+      authUsers = await fetchAuthUserSeedRows(authSeedUserId)
     } catch (authError) {
       authUsersExportError = authError instanceof Error ? authError.message : 'Unknown auth.users export error'
       console.error('Error exporting auth.users:', authError)
     }
 
     try {
-      authIdentities = await fetchAuthIdentitySeedRows()
+      authIdentities = await fetchAuthIdentitySeedRows(authSeedUserId)
     } catch (authIdentityError) {
       authIdentitiesExportError = authIdentityError instanceof Error ? authIdentityError.message : 'Unknown auth.identities export error'
       console.error('Error exporting auth.identities:', authIdentityError)
-    }
-
-    if (exportMode === 'schema_admin_only') {
-      authUsers = authUsers.filter(row => row.id === user.id)
-      authIdentities = authIdentities.filter(row => row.user_id === user.id)
     }
 
     let storageBuckets: StorageBucketRow[] = []
@@ -738,11 +761,31 @@ export async function POST(request: NextRequest) {
     }
 
     const insertableColumnsByTable = new Map<string, string[]>()
+    const tableHasIdColumn = new Map<string, boolean>()
     for (const [tableName, columns] of columnsByTable.entries()) {
       const insertableColumns = columns
         .filter(column => (column.generated_kind || '').trim() !== 's')
         .map(column => column.column_name)
       insertableColumnsByTable.set(tableName, insertableColumns)
+      tableHasIdColumn.set(tableName, columns.some(column => column.column_name === 'id'))
+    }
+
+    const primaryKeyColumnsByTable = new Map<string, string[]>()
+    for (const constraint of filteredConstraintMetadata) {
+      if (constraint.constraint_type !== 'p') {
+        continue
+      }
+      const primaryKeyMatch = constraint.constraint_def.match(/^PRIMARY KEY \((.+)\)$/i)
+      if (!primaryKeyMatch) {
+        continue
+      }
+      const primaryKeyColumns = primaryKeyMatch[1]
+        .split(',')
+        .map(column => column.trim().replace(/^"|"$/g, ''))
+        .filter(Boolean)
+      if (primaryKeyColumns.length > 0) {
+        primaryKeyColumnsByTable.set(constraint.table_name, primaryKeyColumns)
+      }
     }
 
     const nonForeignKeyConstraints = filteredConstraintMetadata.filter(constraint => constraint.constraint_type !== 'f')
@@ -906,44 +949,48 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        let data: Record<string, unknown>[] | null = null
-        let error: { message: string } | null = null
+        const insertableColumns = insertableColumnsByTable.get(table) || []
+        let totalRows = 0
+        let pageStart = 0
+        let tableSql = ''
+        let hasTableError = false
 
-        if (isSchemaAdminOnlyExport && table === 'profiles') {
-          const response = await supabaseAdmin
+        while (true) {
+          let query = supabaseAdmin
             .from(table)
             .select('*')
-            .eq('id', user.id)
-            .limit(1)
-          data = response.data as Record<string, unknown>[] | null
-          error = response.error
-        } else {
-          const response = await supabaseAdmin
-            .from(table)
-            .select('*')
-          data = response.data as Record<string, unknown>[] | null
-          error = response.error
-        }
+            .range(pageStart, pageStart + TABLE_EXPORT_PAGE_SIZE - 1)
 
-        if (error) {
-          console.error(`Error fetching ${table}:`, error)
-          exportResults[table] = 0
-          exportErrors[table] = error.message
-          continue
-        }
+          if (isSchemaAdminOnlyExport && table === 'profiles') {
+            query = query.eq('id', user.id)
+          } else {
+            const orderColumns = primaryKeyColumnsByTable.get(table) || (tableHasIdColumn.get(table) ? ['id'] : [])
+            for (const orderColumn of orderColumns) {
+              query = query.order(orderColumn, { ascending: true })
+            }
+          }
 
-        exportResults[table] = data?.length || 0
+          const { data, error } = await query
+          if (error) {
+            console.error(`Error fetching ${table}:`, error)
+            exportResults[table] = 0
+            exportErrors[table] = error.message
+            hasTableError = true
+            break
+          }
 
-        if (data && data.length > 0) {
-          sqlContent += `\n-- =====================================================\n`
-          sqlContent += `-- Table: ${table}\n`
-          sqlContent += `-- Records: ${data.length}\n`
-          sqlContent += `-- =====================================================\n\n`
+          const rows = (data as Record<string, unknown>[] | null) || []
+          if (rows.length === 0) {
+            break
+          }
 
-          const insertableColumns = insertableColumnsByTable.get(table) || []
+          if (totalRows === 0) {
+            tableSql += `\n-- =====================================================\n`
+            tableSql += `-- Table: ${table}\n`
+            tableSql += `-- =====================================================\n\n`
+          }
 
-          for (const row of data) {
-            const sourceRow = row as Record<string, unknown>
+          for (const sourceRow of rows) {
             const exportRow: Record<string, unknown> = {}
             for (const columnName of insertableColumns) {
               if (columnName in sourceRow) {
@@ -955,9 +1002,25 @@ export async function POST(request: NextRequest) {
               continue
             }
 
-            sqlContent += `${buildInsertSql(PUBLIC_SCHEMA, table, exportRow)}\n`
+            tableSql += `${buildInsertSql(PUBLIC_SCHEMA, table, exportRow)}\n`
           }
 
+          totalRows += rows.length
+
+          if (isSchemaAdminOnlyExport || rows.length < TABLE_EXPORT_PAGE_SIZE) {
+            break
+          }
+
+          pageStart += TABLE_EXPORT_PAGE_SIZE
+        }
+
+        if (hasTableError) {
+          continue
+        }
+
+        exportResults[table] = totalRows
+        if (totalRows > 0) {
+          sqlContent += tableSql
           sqlContent += '\n'
         }
       } catch (tableError) {

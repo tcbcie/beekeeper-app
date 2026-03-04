@@ -21,7 +21,14 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
   const [exporting, setExporting] = useState(false)
 
   const exportDatabase = async (adminMode: AdminExportMode = 'complete') => {
+    if (exporting) {
+      return
+    }
+
     setExporting(true)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000)
+
     try {
       // If user is admin, use admin API to export ALL users' data
       if (isAdmin) {
@@ -40,12 +47,27 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ mode: adminMode })
+          body: JSON.stringify({ mode: adminMode }),
+          signal: controller.signal
         })
 
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to export database')
+          const contentType = response.headers.get('content-type') || ''
+          let errorMessage = `Failed to export database (${response.status})`
+
+          if (contentType.includes('application/json')) {
+            const error = await response.json().catch(() => null)
+            if (error && typeof error.error === 'string' && error.error.trim()) {
+              errorMessage = error.error
+            }
+          } else {
+            const errorText = await response.text().catch(() => '')
+            if (errorText.trim()) {
+              errorMessage = errorText.trim()
+            }
+          }
+
+          throw new Error(errorMessage)
         }
 
         // Get the SQL content from response
@@ -148,8 +170,15 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
       }
     } catch (error) {
       console.error('Error exporting database:', error)
-      toast.error('Failed to export database. Check console for details.')
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.error('Export timed out. Please try again.')
+      } else if (error instanceof Error && error.message) {
+        toast.error(error.message)
+      } else {
+        toast.error('Failed to export database. Check console for details.')
+      }
     } finally {
+      clearTimeout(timeoutId)
       setExporting(false)
     }
   }
