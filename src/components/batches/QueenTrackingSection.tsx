@@ -312,7 +312,7 @@ export default function QueenTrackingSection({
                           <Send size={14} />
                         </Button>
                       )}
-                      {!isLocked && (
+                      {!isLocked && tableSelectedIds.size < 2 && (
                         <Button
                           type="button"
                           onClick={() => deleteGraft(graft.id)}
@@ -451,7 +451,7 @@ export default function QueenTrackingSection({
                     Distribute
                   </Button>
                 )}
-                {!isLocked && (
+                {!isLocked && tableSelectedIds.size < 2 && (
                   <Button
                     type="button"
                     onClick={() => deleteGraft(graft.id)}
