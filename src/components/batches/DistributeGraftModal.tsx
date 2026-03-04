@@ -176,7 +176,8 @@ export default function DistributeGraftModal({
 
   const isExternal = recipientMode === 'external'
   const externalHasData = extName.trim() || extEmail.trim() || extPhone.trim() || extLocation.trim()
-  const canSubmit = isExternal ? !!externalHasData : !!selectedUser
+  const externalLocationRequired = isExternal && distributionType === 'queen_cell' && !extLocation.trim()
+  const canSubmit = isExternal ? (!!externalHasData && !externalLocationRequired) : !!selectedUser
 
   const handleSubmit = async () => {
     if (!canSubmit || saving || submittingRef.current) return
@@ -449,13 +450,13 @@ export default function DistributeGraftModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Apiary / Mating Location (closest Eircode)</label>
+                  <label className="block text-xs text-text-secondary mb-1">Apiary / Mating Location (closest Eircode){distributionType === 'queen_cell' && <span className="text-red-500"> *</span>}</label>
                   <input
                     type="text"
                     value={extLocation}
                     onChange={(e) => setExtLocation(e.target.value)}
                     placeholder="e.g. D01 AB12"
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                    className={`w-full px-3 py-2 border rounded-md bg-surface text-foreground text-sm ${externalLocationRequired ? 'border-red-400' : 'border-border'}`}
                   />
                 </div>
               </div>

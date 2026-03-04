@@ -135,12 +135,16 @@ The Reports feature provides beekeepers with printable and exportable reports fo
 **Columns:**
 - Member name
 - Batches
-- Grafts Accepted
+- Sealed Cells
 - Queens Hatched
 - Queens Mated
 - Cells Distributed
 
+**Sealed Cells column:** Shows `grafts_accepted` from the batch record, or derives from graft statuses when NULL (grafts not in `grafted`/`failed`).
+
 **Cells Distributed column:** Distributed sealed queen cells (`distribution_type = 'queen_cell'` in `graft_distributions`) are shown in a separate "Cells Distributed" column. No subtraction from Queens Hatched or Queens Mated — batch values already reflect only queens that actually hatched/mated in possession.
+
+**Graft-derived fallback:** When batch counters are NULL, values are derived from individual graft statuses. For `sold` grafts, the `distribution_type` in `graft_distributions` determines what stage was reached (queen_cell → accepted only, virgin_queen → hatched, mated_queen → hatched + mated).
 
 **Filters:**
 - Rearing group selection
