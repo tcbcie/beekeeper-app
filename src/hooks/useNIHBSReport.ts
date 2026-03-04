@@ -230,26 +230,25 @@ export function useNIHBSReport() {
         if (allDists.length > 0) {
           const memberIdSet = new Set(userIds)
 
-          // Count queen_cell distributions per batch
-          const queenCellCountPerBatch = new Map<string, number>()
+          // Track queen_cell distributions on row 28 by distribution_date month
+          // (not batch emergence month — a cell can be distributed in a later month)
           for (const d of allDists) {
-            if (d.distribution_type === 'queen_cell') {
-              queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
-            }
-          }
+            if (d.distribution_type !== 'queen_cell') continue
+            const distDate = d.distribution_date
+            if (!distDate) continue
+            const distMonth = parseInt(distDate.split('-')[1], 10)
+            const distYear = parseInt(distDate.split('-')[0], 10)
+            if (distYear !== year) continue
 
-          // Track queen_cell distributions on row 28 (no subtraction from hatched/mated —
-          // batch values already reflect only queens that actually hatched/mated in possession)
-          for (const [batchId, cellCount] of queenCellCountPerBatch) {
-            const info = batchEmergenceInfo.get(batchId)
-            if (!info || info.emergenceYear !== year) continue
+            const info = batchEmergenceInfo.get(d.batch_id)
+            const apiaryId = info?.apiaryId || 'unassigned'
 
-            const emergMd = getMonth(info.emergenceMonth)
-            emergMd.total.queen_cells_distributed += cellCount
-            emergMd.queen_cells_distributed += cellCount
+            const md = getMonth(distMonth)
+            md.total.queen_cells_distributed++
+            md.queen_cells_distributed++
 
-            const emergAd = getApiary(emergMd, info.apiaryId)
-            emergAd.queen_cells_distributed += cellCount
+            const ad = getApiary(md, apiaryId)
+            ad.queen_cells_distributed++
           }
 
           // Auto-calculate external distribution counts (queen_cell tracked separately on row 28)

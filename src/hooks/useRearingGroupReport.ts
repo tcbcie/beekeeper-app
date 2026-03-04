@@ -81,7 +81,7 @@ export function useRearingGroupReport() {
       if (batchIds.length > 0) {
         const [graftsRes, distsRes] = await Promise.all([
           supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
-          supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', batchIds),
+          supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, distribution_date').in('batch_id', batchIds),
         ])
 
         if (graftsRes.error) throw graftsRes.error
@@ -92,7 +92,7 @@ export function useRearingGroupReport() {
         const graftDistType = new Map<string, string>()
         for (const d of allDists) {
           graftDistType.set(d.graft_id, d.distribution_type)
-          if (d.distribution_type === 'queen_cell') {
+          if (d.distribution_type === 'queen_cell' && d.distribution_date && d.distribution_date >= startDate && d.distribution_date < endDate) {
             queenCellCountPerBatch.set(d.batch_id, (queenCellCountPerBatch.get(d.batch_id) || 0) + 1)
           }
         }

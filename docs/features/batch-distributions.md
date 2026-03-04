@@ -129,7 +129,7 @@ On delete: graft status reverted to previous status (stored in `previous_graft_s
 The `useNIHBSReport` hook auto-calculates from distribution records:
 - **Distributed outside group** (row 24) = `virgin_queen` and `mated_queen` distributions where recipient is NOT a group member (`queen_cell` excluded — tracked separately on row 28)
 - **Successfully mated outside group** (row 26) = same filter + `mating_confirmed = true` OR `distribution_type = 'mated_queen'` (mated queens are already mated at distribution time)
-- **Sealed queen cells distributed** (row 28) = all `queen_cell` distributions (regardless of recipient), tracked per-apiary in the batch's emergence month
+- **Sealed queen cells distributed** (row 28) = all `queen_cell` distributions (regardless of recipient), tracked per-apiary by `distribution_date` month (not batch emergence month)
 - No subtraction from queens_hatched/queens_mated — batch values already reflect only queens that actually hatched/mated in possession
 - Only group-assigned batches (with `rearing_group_id`) are included in the NIHBS report
 - **Graft-derived fallback:** When batch counters are NULL, counts are derived from individual graft statuses. For `sold` grafts, the `distribution_type` determines the actual stage reached: `queen_cell` → accepted only, `virgin_queen` → hatched, `mated_queen` → hatched + mated
