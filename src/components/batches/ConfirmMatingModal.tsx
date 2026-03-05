@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, MapPin } from 'lucide-react'
+import { X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 
@@ -226,8 +226,7 @@ export default function ConfirmMatingModal({
           {/* Mating Location */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              <MapPin size={14} className="inline mr-1" />
-              Mating Location *
+              Apiary / Mating Location (closest Eircode)
             </label>
 
             {/* Apiary dropdown for app users */}
@@ -252,15 +251,9 @@ export default function ConfirmMatingModal({
               type="text"
               value={customLocation}
               onChange={(e) => handleCustomLocationChange(e.target.value)}
-              placeholder={isExternal ? 'Enter mating location' : 'Or enter custom location'}
+              placeholder="e.g. D01 AB12"
               className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
             />
-
-            {!isExternal && (
-              <p className="text-xs text-text-tertiary mt-1">
-                Select from recipient&apos;s apiaries or enter a custom location
-              </p>
-            )}
           </div>
 
           {/* Error message */}
