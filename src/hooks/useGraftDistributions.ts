@@ -309,6 +309,74 @@ export function useGraftDistributions() {
     }
   }, [])
 
+  const confirmMatingWithLocation = useCallback(async (
+    id: string,
+    matingDate: string,
+    matingLocation: string
+  ): Promise<boolean> => {
+    // Validate required fields
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for mating confirmation')
+      return false
+    }
+    if (!matingDate || typeof matingDate !== 'string') {
+      console.error('Invalid mating date')
+      return false
+    }
+    // Validate date format (YYYY-MM-DD)
+    const dateObj = new Date(matingDate + 'T00:00:00')
+    if (isNaN(dateObj.getTime())) {
+      console.error('Invalid date format for mating confirmation')
+      return false
+    }
+    if (!matingLocation || !matingLocation.trim()) {
+      console.error('Missing mating location')
+      return false
+    }
+
+    try {
+      const { error } = await supabase
+        .from('graft_distributions')
+        .update({
+          mating_confirmed: true,
+          mating_confirmed_date: matingDate,
+          mating_location: matingLocation.trim(),
+        })
+        .eq('id', id)
+
+      if (error) throw error
+      return true
+    } catch (err) {
+      console.error('Error confirming mating with location:', err)
+      return false
+    }
+  }, [])
+
+  const clearMatingConfirmation = useCallback(async (id: string): Promise<boolean> => {
+    // Validate ID before update
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for clearing mating confirmation')
+      return false
+    }
+
+    try {
+      const { error } = await supabase
+        .from('graft_distributions')
+        .update({
+          mating_confirmed: false,
+          mating_confirmed_date: null,
+          mating_location: null,
+        })
+        .eq('id', id)
+
+      if (error) throw error
+      return true
+    } catch (err) {
+      console.error('Error clearing mating confirmation:', err)
+      return false
+    }
+  }, [])
+
   const searchUsers = useCallback(async (searchText: string): Promise<RecipientUser[]> => {
     if (!searchText || searchText.length < 2) return []
     try {
@@ -357,6 +425,8 @@ export function useGraftDistributions() {
     createBulkDistributions,
     deleteDistribution,
     toggleMatingConfirmed,
+    confirmMatingWithLocation,
+    clearMatingConfirmation,
     searchUsers,
     fetchRecipientApiaries,
     fetchRecipientHives,

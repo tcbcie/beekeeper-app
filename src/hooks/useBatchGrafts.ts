@@ -53,7 +53,8 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     createDistribution,
     createBulkDistributions,
     deleteDistribution,
-    toggleMatingConfirmed,
+    confirmMatingWithLocation,
+    clearMatingConfirmation,
     searchUsers,
     fetchRecipientApiaries,
     fetchRecipientHives,
@@ -301,14 +302,27 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     }
   }, [deleteDistribution, toast, fetchGrafts, fetchDistributions, batchId])
 
-  const handleToggleMating = useCallback(async (dist: GraftDistribution) => {
-    const success = await toggleMatingConfirmed(dist.id, !dist.mating_confirmed)
+  const handleConfirmMating = useCallback(async (distId: string, matingDate: string, matingLocation: string): Promise<boolean> => {
+    const success = await confirmMatingWithLocation(distId, matingDate, matingLocation)
     if (success) {
+      toast.success('Mating confirmed')
       fetchDistributions(batchId)
     } else {
-      toast.error('Failed to update mating status')
+      toast.error('Failed to confirm mating')
     }
-  }, [toggleMatingConfirmed, fetchDistributions, batchId, toast])
+    return success
+  }, [confirmMatingWithLocation, fetchDistributions, batchId, toast])
+
+  const handleClearMating = useCallback(async (distId: string): Promise<boolean> => {
+    const success = await clearMatingConfirmation(distId)
+    if (success) {
+      toast.success('Mating confirmation cleared')
+      fetchDistributions(batchId)
+    } else {
+      toast.error('Failed to clear mating')
+    }
+    return success
+  }, [clearMatingConfirmation, fetchDistributions, batchId, toast])
 
   const handleBulkDistributeSave = useCallback(async (data: BulkDistributionData) => {
     const success = await createBulkDistributions(data)
@@ -594,7 +608,8 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     // Distribution wrappers
     handleDistributeSave,
     handleDeleteDistribution,
-    handleToggleMating,
+    handleConfirmMating,
+    handleClearMating,
     handleBulkDistributeSave,
 
     // Frame selection

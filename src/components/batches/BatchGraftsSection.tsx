@@ -162,7 +162,8 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         distributions={hook.distributions}
         grafts={hook.grafts}
         distLoading={hook.distLoading}
-        handleToggleMating={hook.handleToggleMating}
+        handleConfirmMating={hook.handleConfirmMating}
+        handleClearMating={hook.handleClearMating}
         handleDeleteDistribution={hook.handleDeleteDistribution}
       />
 
