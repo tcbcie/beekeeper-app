@@ -64,12 +64,28 @@ export function useRearingGroupReport() {
       const endYear = month === 12 ? year + 1 : year
       const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01`
 
-      // Fetch rearing batches for those user_ids within the month
+      // Helper: derive emergence month/year from emergence_date or graft_date + 12 days
+      const getEmergenceMonthYear = (batch: { emergence_date?: string | null; graft_date: string }): { month: number; year: number } => {
+        if (batch.emergence_date) {
+          const parts = batch.emergence_date.split('-')
+          return { month: parseInt(parts[1], 10), year: parseInt(parts[0], 10) }
+        }
+        // Fallback: graft_date + 12 days
+        const graft = new Date(batch.graft_date + 'T00:00:00')
+        graft.setDate(graft.getDate() + 12)
+        return { month: graft.getMonth() + 1, year: graft.getFullYear() }
+      }
+
+      // Fetch rearing batches for those user_ids - need batches that either:
+      // 1. Were grafted in the selected month (for batch counts, cell counts)
+      // 2. Have emergence in the selected month (for hatched/mated counts)
+      // We fetch a wider range and filter accordingly
+      const widerStartDate = `${month === 1 ? year - 1 : year}-${String(month === 1 ? 12 : month - 1).padStart(2, '0')}-01`
       const { data: batches, error: batchesError } = await supabase
         .from('rearing_batches')
-        .select('id, user_id, cell_count, grafts_accepted, queens_hatched, queens_mated, mating_apiary_id')
+        .select('id, user_id, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, mating_apiary_id')
         .in('user_id', userIds)
-        .gte('graft_date', startDate)
+        .gte('graft_date', widerStartDate)
         .lt('graft_date', endDate)
 
       if (batchesError) throw batchesError
@@ -158,13 +174,30 @@ export function useRearingGroupReport() {
 
       for (const batch of (batches || [])) {
         const entry = memberAgg.get(batch.user_id)
-        if (entry) {
-          const dc = derivedCounts.get(batch.id)
+        if (!entry) continue
+
+        const dc = derivedCounts.get(batch.id)
+
+        // Check if batch was grafted in the selected month (for batch/cell/accepted counts)
+        const graftMonth = parseInt(batch.graft_date.split('-')[1], 10)
+        const graftYear = parseInt(batch.graft_date.split('-')[0], 10)
+        const isGraftedInMonth = graftMonth === month && graftYear === year
+
+        // Check if batch emerged in the selected month (for hatched/mated counts)
+        const emergence = getEmergenceMonthYear(batch)
+        const isEmergedInMonth = emergence.month === month && emergence.year === year
+
+        // Graft-time metrics: only count if grafted in selected month
+        if (isGraftedInMonth) {
           entry.cell_count += batch.cell_count || 0
           entry.grafts_accepted += batch.grafts_accepted ?? dc?.grafts_accepted ?? 0
+          entry.batch_count += 1
+        }
+
+        // Post-emergence metrics: only count if emerged in selected month
+        if (isEmergedInMonth) {
           entry.queens_hatched += batch.queens_hatched ?? dc?.queens_hatched ?? 0
           entry.queens_mated += batch.queens_mated ?? dc?.queens_mated ?? 0
-          entry.batch_count += 1
         }
       }
 
