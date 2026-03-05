@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { Check, X } from 'lucide-react'
 import type { GraftDistribution } from '@/hooks/useGraftDistributions'
 import { Graft, TYPE_LABELS, formatDateIrish } from './graftConstants'
 import IconButton from '@/components/ui/IconButton'
+import ConfirmMatingModal from './ConfirmMatingModal'
 
 interface DistributionListProps {
   distributions: GraftDistribution[]
   grafts: Graft[]
   distLoading: boolean
-  handleToggleMating: (dist: GraftDistribution) => void
+  handleConfirmMating: (distId: string, matingDate: string, matingLocation: string) => Promise<boolean>
+  handleClearMating: (distId: string) => Promise<boolean>
   handleDeleteDistribution: (dist: GraftDistribution) => void
 }
 
@@ -15,9 +18,11 @@ export default function DistributionList({
   distributions,
   grafts,
   distLoading,
-  handleToggleMating,
+  handleConfirmMating,
+  handleClearMating,
   handleDeleteDistribution,
 }: DistributionListProps) {
+  const [matingModalDist, setMatingModalDist] = useState<GraftDistribution | null>(null)
   if (distLoading || distributions.length === 0) return null
 
   return (
@@ -110,7 +115,7 @@ export default function DistributionList({
                 {dist.distribution_type !== 'mated_queen' && (
                   <IconButton
                     type="button"
-                    onClick={() => handleToggleMating(dist)}
+                    onClick={() => setMatingModalDist(dist)}
                     size="sm"
                     className={`p-2 rounded text-xs ${
                       dist.mating_confirmed
@@ -136,6 +141,20 @@ export default function DistributionList({
           )
         })}
       </div>
+
+      {/* Mating Confirmation Modal */}
+      {matingModalDist && (
+        <ConfirmMatingModal
+          cellNumber={matingModalDist.cell_number}
+          recipientUserId={matingModalDist.recipient_user_id}
+          currentMatingLocation={matingModalDist.mating_location}
+          currentMatingDate={matingModalDist.mating_confirmed_date}
+          isConfirmed={matingModalDist.mating_confirmed}
+          onConfirm={(date, location) => handleConfirmMating(matingModalDist.id, date, location)}
+          onClear={() => handleClearMating(matingModalDist.id)}
+          onClose={() => setMatingModalDist(null)}
+        />
+      )}
     </div>
   )
 }

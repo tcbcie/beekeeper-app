@@ -318,10 +318,9 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                   <tr className="border-b border-border bg-surface-secondary">
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Cell</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Batch</th>
-                    <th className="text-left py-3 px-4 font-medium text-text-secondary">Owner</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Recipient</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-text-secondary">Location</th>
+                    <th className="text-left py-3 px-4 font-medium text-text-secondary">Mating Location</th>
                     <th className="text-center py-3 px-4 font-medium text-text-secondary">Mated</th>
                     <th className="text-center py-3 px-4 font-medium text-text-secondary">Overwintered</th>
                     <th className="text-center py-3 px-4 font-medium text-text-secondary">Hybridised</th>
@@ -332,7 +331,6 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                     <tr key={d.id} className="border-b border-border last:border-b-0 hover:bg-surface-secondary/50">
                       <td className="py-3 px-4 text-foreground font-medium">#{d.cell_number}</td>
                       <td className="py-3 px-4 text-foreground">{d.batch_name}</td>
-                      <td className="py-3 px-4 text-text-secondary">{d.batch_owner_name || 'Unknown'}</td>
                       <td className="py-3 px-4 text-foreground">{getRecipientName(d)}</td>
                       <td className="py-3 px-4 text-text-secondary">{formatDateIrish(d.distribution_date)}</td>
                       <td className="py-3 px-4 text-text-secondary">{getLocation(d)}</td>
@@ -424,11 +422,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                   <div className="px-4 pb-4 pt-2 border-t border-border space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-text-secondary">Owner:</span>
-                        <span className="ml-2 text-foreground">{d.batch_owner_name || 'Unknown'}</span>
-                      </div>
-                      <div>
-                        <span className="text-text-secondary">Location:</span>
+                        <span className="text-text-secondary">Mating Location:</span>
                         <span className="ml-2 text-foreground">{getLocation(d)}</span>
                       </div>
                       {d.mating_confirmed_date && (
