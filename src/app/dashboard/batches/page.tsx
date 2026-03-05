@@ -183,7 +183,7 @@ export default function BatchesPage() {
  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
- const [activeTab, setActiveTab] = useState<'planning' | 'nucs' | 'selection'>('planning')
+ const [activeTab, setActiveTab] = useState<'planning' | 'nucs' | 'selection' | 'virgins'>('planning')
 
  // Selection tab states
  const [selectedApiary, setSelectedApiary] = useState<string>('all')
@@ -819,6 +819,14 @@ export default function BatchesPage() {
  active={activeTab === 'selection'}
  >
  Selection
+ </NavTabButton>
+ <NavTabButton
+ onClick={() => setActiveTab('virgins')}
+ tone="blue"
+ size="lg"
+ active={activeTab === 'virgins'}
+ >
+ Virgin Queen Tracker
  </NavTabButton>
  </nav>
  </div>
@@ -2044,6 +2052,14 @@ export default function BatchesPage() {
  </div>
  )}
  </div>
+ </div>
+ )}
+
+ {/* Virgin Queen Tracker Tab Content */}
+ {activeTab === 'virgins' && (
+ <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+ <h3 className="text-lg font-semibold text-foreground mb-4">Virgin Queen Tracker</h3>
+ <p className="text-text-secondary">Coming soon - track and manage virgin queens from emergence to mating.</p>
  </div>
  )}
  </div>
