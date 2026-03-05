@@ -14,6 +14,7 @@ import NotificationStatusCard from '@/components/NotificationStatusCard'
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
 import MatingNucsTab from '@/components/batches/MatingNucsTab'
 import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
+import VirginQueenTrackerTab from '@/components/batches/VirginQueenTrackerTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 
 interface Queen {
@@ -2056,11 +2057,8 @@ export default function BatchesPage() {
  )}
 
  {/* Virgin Queen Tracker Tab Content */}
- {activeTab === 'virgins' && (
- <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
- <h3 className="text-lg font-semibold text-foreground mb-4">Virgin Queen Tracker</h3>
- <p className="text-text-secondary">Coming soon - track and manage virgin queens from emergence to mating.</p>
- </div>
+ {activeTab === 'virgins' && userId && (
+ <VirginQueenTrackerTab userId={userId} />
  )}
  </div>
  </>
