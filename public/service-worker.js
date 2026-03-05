@@ -2,6 +2,7 @@
 // Handles notification display, click events, and offline caching
 
 const CACHE_NAME = 'hivecraic-v1.6.4'
+const MAPBOX_CACHE_NAME = 'hivecraic-mapbox-tiles'
 const OFFLINE_URLS = [
   '/',
   '/login',
@@ -32,7 +33,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== CACHE_NAME && cacheName !== MAPBOX_CACHE_NAME) {
             console.log('Deleting old cache:', cacheName)
             return caches.delete(cacheName)
           }
@@ -86,6 +87,26 @@ self.addEventListener('fetch', (event) => {
 
   // Skip API calls to Supabase - these need internet connection
   if (event.request.url.includes('supabase.co')) {
+    return
+  }
+
+  // Cache-first strategy for Mapbox tiles, styles, fonts, and sprites
+  if (event.request.url.includes('api.mapbox.com') || event.request.url.includes('tiles.mapbox.com')) {
+    event.respondWith(
+      caches.open(MAPBOX_CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse
+          }
+          return fetch(event.request).then((response) => {
+            if (response && response.status === 200) {
+              cache.put(event.request, response.clone())
+            }
+            return response
+          })
+        })
+      })
+    )
     return
   }
 
