@@ -78,6 +78,11 @@ interface MetadataFunctionRow {
   function_def: string
 }
 
+interface MetadataViewRow {
+  view_name: string
+  view_definition: string
+}
+
 interface StorageBucketRow {
   id: string
   name: string
@@ -624,6 +629,15 @@ export async function POST(request: NextRequest) {
       ORDER BY p.proname, pg_get_function_identity_arguments(p.oid)
     `)
 
+    const viewMetadata = await runSafeSelect<MetadataViewRow>(`
+      SELECT
+        viewname AS view_name,
+        definition AS view_definition
+      FROM pg_views
+      WHERE schemaname = '${PUBLIC_SCHEMA}'
+      ORDER BY viewname
+    `)
+
     let authUsers: AuthUserSeedRow[] = []
     let authUsersExportError: string | null = null
     let authIdentities: AuthIdentitySeedRow[] = []
@@ -1059,6 +1073,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (viewMetadata.length > 0) {
+      sqlContent += `-- =====================================================\n`
+      sqlContent += `-- POST-DATA VIEWS (PUBLIC)\n`
+      sqlContent += `-- =====================================================\n`
+      for (const view of viewMetadata) {
+        const viewDef = view.view_definition?.trim()
+        if (viewDef) {
+          sqlContent += `CREATE OR REPLACE VIEW ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(view.view_name)} AS\n${viewDef}\n\n`
+        }
+      }
+    }
+
     if (filteredPolicyMetadata.length > 0 || filteredRlsTableMetadata.length > 0) {
       sqlContent += `-- =====================================================\n`
       sqlContent += `-- POST-DATA ROW LEVEL SECURITY\n`
@@ -1156,7 +1182,7 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- Mode: ${exportMode}\n`
-    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}, storage_buckets=${storageBuckets.length}, storage_policies=${storagePolicies.length}\n`
+    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, views=${viewMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}, storage_buckets=${storageBuckets.length}, storage_policies=${storagePolicies.length}\n`
     sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
     if (authUsersExportError) {
       sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
