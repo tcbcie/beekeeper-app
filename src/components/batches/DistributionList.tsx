@@ -85,11 +85,6 @@ export default function DistributionList({
                   </>
                 ) : (
                   <>
-                    {dist.mating_location && (
-                      <div className="text-xs text-text-tertiary mt-0.5">
-                        Mating location: {dist.mating_location}
-                      </div>
-                    )}
                     {locationParts.length > 0 && (
                       <div className="text-xs text-text-tertiary mt-0.5">
                         {locationParts.join(' \u2022 ')}
@@ -108,6 +103,12 @@ export default function DistributionList({
                 {dist.mating_confirmed && dist.mating_confirmed_date && (
                   <div className="text-xs text-green-600 dark:text-green-400 mt-0.5">
                     Mated: {formatDateIrish(dist.mating_confirmed_date)}
+                    {dist.mating_location && <> at {dist.mating_location}</>}
+                  </div>
+                )}
+                {dist.distribution_type === 'virgin_queen' && (
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 italic">
+                    Track via Virgin Queen Tracker
                   </div>
                 )}
               </div>
