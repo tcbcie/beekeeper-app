@@ -2,11 +2,11 @@
 
 ## Summary
 
-The GDD Tracker is a tool within the Tools section that allows beekeepers to record vegetation bloom observations and automatically calculate Growing Degree Days (GDD) from January 1st to the bloom date.
+The GDD Tracker is a tool within the Tools section that allows beekeepers to record vegetation bloom observations and automatically calculate Growing Degree Days (GDD) from 1 January to the observed bloom date.
 
 ## Files
 
-- `src/components/tools/GDDTracker.tsx` - Main tracker component (add/edit/delete records, table view)
+- `src/components/tools/GDDTracker.tsx` - Main tracker component (add, edit, delete, group, and calculate records)
 - `src/app/dashboard/tools/page.tsx` - Tools hub page (loads GDD Tracker via `?section=gdd`)
 
 ## Features
@@ -14,60 +14,68 @@ The GDD Tracker is a tool within the Tools section that allows beekeepers to rec
 ### Record Management
 - Add, edit, and delete GDD bloom observation records
 - Select apiary (must have GPS coordinates) and vegetation type
-- Enter bloom start date and optional bloom end date
-- Optional notes field
-- Community sharing toggle (anonymised, within 20km)
-- GDD auto-calculated from Open-Meteo weather API on save
+- Enter bloom observed date and optional bloom end date
+- Store optional notes
+- Share data with nearby beekeepers in anonymised form within 20km
+- Auto-calculate GDD from Open-Meteo weather data when a record is saved
 
 ### Table View
-- Sortable columns: Year, Bloom Date, GDD (click column header to toggle sort)
-- Clickable vegetation names open the Vegetation Info Modal
-- Inline actions: edit, delete, toggle sharing
-- Records without GDD show a "Calculate" button
+- Sort by Year, Bloom Date, or GDD
+- Open the Vegetation Info Modal from vegetation names
+- Edit, delete, recalculate, and toggle sharing inline
+- Show a `Calculate` action when a record has no stored GDD value
 
 ### Group by Vegetation
-- Toggle button in the header groups records by vegetation type
-- Each vegetation group shows a header row with the vegetation name and record count
-- Records within each group retain the current sort order
-- Group header is clickable to open the Vegetation Info Modal
-- Groups are sorted alphabetically by vegetation name
-- When grouped, the vegetation column in each row shows plain text (not clickable) since the group header already provides the link
+- Toggle grouping from the tracker header
+- Show a vegetation group header with record count
+- Keep the active record sort order inside each group
+- Open the Vegetation Info Modal from the group header
 
 ## GDD Calculation
 
 ### Formula
-```
-GDD = Σ max(0, (Tmax + Tmin) / 2) × multiplier
+
+```text
+GDD = sum(max(0, (Tmax + Tmin) / 2) * multiplier)
 ```
 
 ### Seasonal Multipliers
+
 | Month | Multiplier |
-|-------|------------|
+| --- | --- |
 | January | 0.5 |
 | February | 0.75 |
-| March - December | 1.0 |
+| March to December | 1.0 |
 
 ### Data Source
-- Open-Meteo Archive API: daily max/min temperatures
-- Timezone: Europe/Dublin
-- Period: January 1st of the bloom year to the bloom observation date
+
+- Open-Meteo Archive API for daily maximum and minimum temperatures
+- Timezone: `Europe/Dublin`
+- Range: 1 January of the bloom year through the observed bloom date
+
+## Historical Data Note
+
+- On 6 March 2026, the stored `Dandelion` records for `2025-04-01` were corrected from `160.3` to `498.9`.
+- Root cause: those rows had retained the older pre-22 January 2026 GDD formula while the rest of the 2025 records had already been recalculated with the current seasonal-multiplier formula.
 
 ## Database
 
 ### Table: `gdd_records`
+
 | Column | Type | Description |
-|--------|------|-------------|
+| --- | --- | --- |
 | id | uuid | Primary key |
 | user_id | uuid | Owner (RLS filtered) |
-| apiary_id | uuid | FK to apiaries |
-| vegetation_type_id | uuid | FK to dropdown_values |
-| year | integer | Year of observation |
-| start_date | date | Bloom start date |
+| apiary_id | uuid | Foreign key to `apiaries` |
+| vegetation_type_id | uuid | Foreign key to `dropdown_values` |
+| year | integer | Observation year |
+| start_date | date | Bloom observed date |
 | end_date | date | Bloom end date (optional) |
 | gdd_value | numeric | Calculated GDD |
 | is_shared | boolean | Community sharing flag |
 | notes | text | Optional notes |
-| updated_at | timestamptz | Last update |
+| updated_at | timestamptz | Last update timestamp |
 
 ### Unique Constraint
-One record per (user_id, apiary_id, vegetation_type_id, year).
+
+One record per `(user_id, apiary_id, vegetation_type_id, year)`.

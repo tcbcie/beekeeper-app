@@ -57,3 +57,40 @@ Please test by:
 1. Opening the Monthly Rearing Report for March 2026
 2. Confirming "Queens Hatched" now shows 5 (matching the NIHBS report)
 3. Check other months to ensure the fix works correctly across different time periods
+
+---
+
+# Task: Audit 2025 GDD Values and Correct Stale Dandelion Record
+**Date:** 06/03/2026
+**Status:** Completed
+
+## 1. Objective
+Confirm the 2025 GDD inconsistency in `gdd_records`, correct the confirmed stale `Dandelion` rows for `01/04/2025`, and align regression coverage/documentation with the live seasonal-multiplier formula.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `tasks/todo.md`
+  * `tests/components/tools/GDDTracker.test.tsx`
+  * `docs/features/gdd-tracker.md`
+* **Data to Modify:** `public.gdd_records` rows for the confirmed stale `Dandelion` records only
+* **Simplicity Check:** Keep this to a targeted data correction plus test/documentation alignment. No UI refactor or formula redesign is planned unless a live calculation bug appears during execution.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Apply a targeted MCP database update to the confirmed stale `2025-04-01` `Dandelion` rows so their stored GDD matches the current calculation scale used by the live tracker (`498.9` for the affected records).
+- [x] **Step 2:** Update `tests/components/tools/GDDTracker.test.tsx` so the GDD logic assertions reflect the live seasonal-multiplier formula instead of the retired base-temperature model.
+- [x] **Step 3:** Update `docs/features/gdd-tracker.md` to document the current formula clearly and note the data correction context for the 2025 outlier.
+- [x] **Step 4:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** A partial historical backfill left `Dandelion` on `01/04/2025` with the pre-22/01/2026 GDD formula (`160.3`), while other 2025 rows were later recalculated with the current seasonal-multiplier formula.
+* **Summary of Changes:** Corrected the two stale `Dandelion` rows in `public.gdd_records`, replaced the outdated GDD tracker test coverage with assertions that match the live seasonal-multiplier formula and current UI text, and refreshed `docs/features/gdd-tracker.md` with the active formula plus a historical data note.
+* **Notes for User:** Please test the GDD Tracker and GDD Data screens in the app. The database correction updated only the two `Dandelion` rows dated `2025-04-01`, and I also noticed an unrelated existing data anomaly where `Hawthorn (Crataegus)` has an end date earlier than its bloom date.
+
+## Review
+
+- Database: Updated the two stale `Dandelion` records on `2025-04-01` from `160.3` to `498.9` and stamped a fresh `updated_at` value.
+- Tests: Replaced the retired base-temperature assumptions in `tests/components/tools/GDDTracker.test.tsx` with the current seasonal-multiplier behaviour and current UI copy.
+- Documentation: Rewrote `docs/features/gdd-tracker.md` in clean ASCII, documented the live formula, and recorded the 6 March 2026 historical data correction for traceability.
+- Follow-up context: No build or automated test run was performed, per project instruction. An unrelated existing worktree file remains unmodified: `.claude/plans/sprightly-strolling-dream.md`.
