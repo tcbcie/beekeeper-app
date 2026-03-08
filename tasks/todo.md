@@ -388,6 +388,42 @@ When distributing a queen (cell, virgin, or mated) to an app user (self, group m
 
 ---
 
+# Task: Lock Distributed Queen Fields and Store Breeder Info
+**Date:** 08/03/2026
+**Status:** In Progress
+
+## 1. Problem
+Queens auto-created via distribution have no provenance info and all fields are editable. Need to:
+- Lock birth_date, source, marking_color, mated_at_eircode on distributed queens
+- Store and display the breeder (distributor) name and source batch name
+
+## 2. Impact Analysis
+* **DB Changes:**
+  * Add `distributed_by_name` text column to queens (nullable) — serves as "is distributed" flag + breeder display
+  * Update RPC: add `p_batch_id` and `p_distributed_by_name` parameters
+* **Files to Modify:**
+  * `src/hooks/useGraftDistributions.ts` — fetch user profile name, pass batch_id + name to RPC
+  * `src/types/queen.ts` — add `distributed_by_name` to Queen interface
+  * `src/app/dashboard/queens/page.tsx` — lock fields + show info when distributed
+* **Simplicity Check:** One new DB column, RPC update, hook tweak, and UI conditional disabling. No RLS changes.
+
+## 3. Execution Plan
+- [x] **Step 1:** DB migration: add `distributed_by_name` column + update RPC
+- [x] **Step 2:** Update hook to fetch profile name and pass batch_id + name to RPC
+- [x] **Step 3:** Update Queen type to include `distributed_by_name`
+- [x] **Step 4:** Update queen edit form to lock fields and show breeder info
+- [ ] **Step 5:** Prompt user to test the build
+
+## 4. Post-Task Review
+* **Summary of Changes:**
+  * DB migration: added `distributed_by_name` text column to queens table, updated RPC with `p_batch_id` and `p_distributed_by_name` parameters
+  * Hook: `useGraftDistributions.ts` now fetches breeder profile name and batch details, passes `batch_id` + `distributed_by_name` to RPC
+  * Type: added `distributed_by_name?: string | null` to `Queen` interface
+  * UI: queen edit form locks birth_date, marking_color, source, and mated_at_eircode when `distributed_by_name` is set; shows breeder info banner with breeder name and batch provenance
+* **Notes for User:** Please test by editing a distributed queen — the four fields should be greyed out and a banner should show the breeder name and batch.
+
+---
+
 # Task: Harden Records Inspection Data Flow
 **Date:** 08/03/2026
 **Status:** Completed

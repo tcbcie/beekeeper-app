@@ -13,6 +13,7 @@ export interface Queen {
   status: string
   performance_notes: string
   mated_at_eircode: string
+  distributed_by_name?: string | null
   created_at?: string
   mother_id?: string
   father_id?: string
