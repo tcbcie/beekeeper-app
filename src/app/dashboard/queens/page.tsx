@@ -307,15 +307,15 @@ export default function QueensPage() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [editParam, highlightedQueenId, queens])
 
- // Auto-calculate color when birth date changes
+ // Auto-calculate color when birth date changes (skip for distributed queens — preserve breeder data)
  useEffect(() => {
- if (formData.birth_date) {
+ if (formData.birth_date && !editingQueen?.distributed_by_name) {
  const calculatedColor = getQueenColorFromYear(formData.birth_date)
  if (calculatedColor && calculatedColor !== formData.marking_color) {
  setFormData(prev => ({ ...prev, marking_color: calculatedColor }))
  }
  }
- }, [formData.birth_date, formData.marking_color])
+ }, [formData.birth_date, formData.marking_color, editingQueen?.distributed_by_name])
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault()
@@ -331,9 +331,23 @@ export default function QueensPage() {
 
  try {
  if (editingQueen) {
+ // For distributed queens, strip locked fields to preserve breeder provenance
+ const updateData = editingQueen.distributed_by_name
+ ? {
+ queen_number: dataToSubmit.queen_number,
+ subspecies: dataToSubmit.subspecies,
+ lineage: dataToSubmit.lineage,
+ queen_clipped: dataToSubmit.queen_clipped,
+ status: dataToSubmit.status,
+ performance_notes: dataToSubmit.performance_notes,
+ mother_id: dataToSubmit.mother_id,
+ father_id: dataToSubmit.father_id,
+ }
+ : dataToSubmit
+
  const { error } = await supabase
  .from('queens')
- .update(dataToSubmit)
+ .update(updateData)
  .eq('id', editingQueen.id)
  .eq('user_id', userId)
 
