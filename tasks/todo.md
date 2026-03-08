@@ -232,3 +232,37 @@ Ensure the "Record New Inspection" form also inherits the top hive filter for cr
 - Page-to-form propagation: `src/app/dashboard/records/page.tsx` now passes `filters.hiveId` into the inspection form alongside the selected apiary.
 - Create-flow sync: `src/components/records/forms/InspectionForm.tsx` now applies the selected top hive to new inspections and derives the matching apiary automatically from that hive.
 - Context preservation: edit inspections and explicit preset-hive entry flows still keep their stronger existing hive context instead of being overwritten by the top filters.
+
+---
+
+# Task: Add Clear Button To Inspection Drone Population Control
+**Date:** 08/03/2026
+**Status:** Completed
+
+## 1. Objective
+Add a clear button to the "Drone Population Level" control in the new inspection form so the user can explicitly reset that selection back to no value.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/components/records/forms/InspectionForm.tsx`
+  * `docs/features/inspection-drone-clear-button-plan.md`
+  * `tasks/todo.md`
+* **Simplicity Check:** Keep this as a surgical UI change inside the existing drones section by reusing the current unset sentinel for `drones_present`. No database changes, no broader form refactor, and no change to how saved values are displayed.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Update `src/components/records/forms/InspectionForm.tsx` to add a clear action for the drone population selector that resets `drones_present` to the existing unset value.
+- [x] **Step 2:** Keep the control styling and layout consistent so the clear action works for both new and edited inspections without affecting the existing drone brood checkbox.
+- [x] **Step 3:** Update documentation in `docs/features/inspection-drone-clear-button-plan.md`
+- [x] **Step 4:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The drone population control currently exposes only the four level buttons, so there is no direct way to reset the field to its unset state from the UI.
+* **Summary of Changes:** Added a clear button beside the drone population label in `InspectionForm`, wired it to reset `drones_present` to `-1`, and left the existing submit and display logic unchanged.
+* **Notes for User:** No build or automated test run was performed, per project instruction. Please verify the drones control manually.
+
+## Review
+
+- Drones UI: `src/components/records/forms/InspectionForm.tsx` now shows a `Clear` button in the drone population control header.
+- Field behaviour: the clear action resets only `drones_present` to the existing unset sentinel and does not alter the drone brood checkbox.
