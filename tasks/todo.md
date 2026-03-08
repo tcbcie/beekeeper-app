@@ -352,6 +352,42 @@ In the Queen Tracking table, checkboxes only appear when "Bulk Actions" mode is 
 
 ---
 
+# Task: Auto-Create Queen Record on Distribution to App User
+**Date:** 08/03/2026
+**Status:** In Progress
+
+## 1. Problem
+When distributing a queen (cell, virgin, or mated) to an app user (self, group member, or searched user), no queen record is created in the recipient's Queens page. The user wants a queen record automatically created for the recipient.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * Database — new RPC function `create_queen_for_distribution` (SECURITY DEFINER to bypass INSERT RLS)
+  * `src/hooks/useGraftDistributions.ts` — call RPC after successful distribution to app user
+* **Simplicity Check:** Single RPC function + hook additions. No UI changes. Queen creation is non-blocking (distribution succeeds even if queen creation fails). No changes to the distribute modal or queen management pages.
+
+## 3. Execution Plan
+- [x] **Step 1:** Create DB migration with `create_queen_for_distribution` RPC function
+- [x] **Step 2:** In `createDistribution`, after successful app-user distribution, fetch batch/graft details and call RPC to create queen
+- [x] **Step 3:** In `createBulkDistributions`, same for each graft in bulk
+- [ ] **Step 4:** Prompt user to test the build
+
+## Queen Data Mapping
+- `queen_number` → graft's `queen_number` if set, else `"Cell #N"`
+- `birth_date` → batch `emergence_date` if set, else graft_date
+- `marking_color` → calculated from birth year
+- `source` → `"Distributed from [batch_name]"`
+- `status` → `'active'`
+- `mated_at_eircode` → mating_location if available
+
+## 4. Post-Task Review
+* **Summary of Changes:**
+  * Created SECURITY DEFINER RPC function `create_queen_for_distribution` that inserts a queen record bypassing RLS
+  * Added `createQueenForRecipient` helper in `useGraftDistributions.ts` that fetches batch/graft data and calls the RPC
+  * Integrated into both `createDistribution` (single) and `createBulkDistributions` (bulk) — fires non-blocking after successful distribution to any app user
+* **Notes for User:** Please test by distributing a graft to yourself or another app user, then check the recipient's Queens page for the new record.
+
+---
+
 # Task: Harden Records Inspection Data Flow
 **Date:** 08/03/2026
 **Status:** Completed

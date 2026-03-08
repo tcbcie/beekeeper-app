@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
+import { getQueenColorFromYear } from '@/types/queen'
 
 export interface GraftDistribution {
   id: string
@@ -83,6 +84,47 @@ export interface BulkDistributionData {
   external_recipient_phone: string | null
   external_recipient_location: string | null
   mating_location: string | null
+}
+
+/** Create a queen record for the recipient after distribution to an app user. Non-blocking. */
+async function createQueenForRecipient(
+  recipientUserId: string,
+  batchId: string,
+  graftId: string,
+  matingLocation: string | null
+): Promise<void> {
+  try {
+    // Fetch batch and graft details in parallel
+    const [batchRes, graftRes] = await Promise.all([
+      supabase.from('rearing_batches').select('emergence_date, batch_name, graft_date').eq('id', batchId).single(),
+      supabase.from('batch_grafts').select('queen_number, cell_number').eq('id', graftId).single(),
+    ])
+
+    const batch = batchRes.data as { emergence_date: string | null; batch_name: string; graft_date: string | null } | null
+    const graft = graftRes.data as { queen_number: string | null; cell_number: number } | null
+
+    const queenNumber = graft?.queen_number || `Cell #${graft?.cell_number ?? '?'}`
+    let birthDate = batch?.emergence_date || null
+    if (!birthDate && batch?.graft_date) {
+      const d = new Date(batch.graft_date)
+      d.setDate(d.getDate() + 12)
+      birthDate = d.toISOString().split('T')[0]
+    }
+    const markingColor = birthDate ? getQueenColorFromYear(birthDate) : null
+    const source = batch?.batch_name ? `Distributed from ${batch.batch_name}` : 'Distributed'
+
+    await supabase.rpc('create_queen_for_distribution', {
+      p_recipient_user_id: recipientUserId,
+      p_queen_number: queenNumber,
+      p_birth_date: birthDate,
+      p_marking_color: markingColor,
+      p_source: source,
+      p_status: 'active',
+      p_mated_at_eircode: matingLocation || null,
+    })
+  } catch (err) {
+    console.error('Non-blocking: failed to create queen for recipient:', err)
+  }
 }
 
 export function useGraftDistributions() {
@@ -191,6 +233,11 @@ export function useGraftDistributions() {
         throw graftError
       }
 
+      // Create queen record for recipient (non-blocking)
+      if (data.recipient_user_id) {
+        createQueenForRecipient(data.recipient_user_id, data.batch_id, data.graft_id, data.mating_location ?? null)
+      }
+
       return true
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err) {
@@ -246,6 +293,13 @@ export function useGraftDistributions() {
           console.error('Error bulk-updating graft statuses, distributions rolled back:', graftError)
         }
         throw graftError
+      }
+
+      // Create queen records for recipient (non-blocking, one per graft)
+      if (data.recipient_user_id) {
+        for (const g of data.grafts) {
+          createQueenForRecipient(data.recipient_user_id, data.batch_id, g.id, data.mating_location ?? null)
+        }
       }
 
       return true
