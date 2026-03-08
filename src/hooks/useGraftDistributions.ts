@@ -167,8 +167,11 @@ async function createQueensForRecipient(
 
     const raw = batchRes.data as { id: string; emergence_date: string | null; batch_name: string; graft_date: string | null; apiaries: { eircode: string | null }[] | { eircode: string | null } | null }
     const apiary = Array.isArray(raw.apiaries) ? raw.apiaries[0] : raw.apiaries
+    if (profileRes.error) {
+      console.error('Non-blocking: failed to fetch breeder profile:', profileRes.error)
+    }
     const profile = profileRes.data as { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null } | null
-    const displayName = profile?.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || null
+    const displayName = profile?.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || 'Unknown breeder'
 
     const batchDetails: BatchDetails = {
       emergence_date: raw.emergence_date,
