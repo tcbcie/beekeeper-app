@@ -573,6 +573,18 @@ export default function QueensPage() {
  <h3 className="text-xl font-semibold mb-4 text-foreground">
  {editingQueen ? 'Edit Queen' : 'Add New Queen'}
  </h3>
+ {editingQueen?.distributed_by_name && (
+ <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
+ <p className="font-medium">Distributed Queen</p>
+ <p>Breeder: {editingQueen.distributed_by_name}</p>
+ {editingQueen.batch?.batch_name && (
+ <p>Batch: {editingQueen.batch.batch_name}</p>
+ )}
+ <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
+ Birth date, marking colour, source, and mated at fields are locked for distributed queens.
+ </p>
+ </div>
+ )}
  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">
@@ -592,7 +604,8 @@ export default function QueensPage() {
  type="date"
  value={formData.birth_date}
  onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ disabled={!!editingQueen?.distributed_by_name}
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  />
  </div>
 
@@ -608,7 +621,8 @@ export default function QueensPage() {
  <select
  value={formData.marking_color}
  onChange={(e) => setFormData({ ...formData, marking_color: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ disabled={!!editingQueen?.distributed_by_name}
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select color</option>
  {colorOptions.map((color) => (
@@ -627,7 +641,8 @@ export default function QueensPage() {
  <select
  value={formData.source}
  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ disabled={!!editingQueen?.distributed_by_name}
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select source</option>
  {sourceOptions.map((source) => (
@@ -727,7 +742,8 @@ export default function QueensPage() {
  onChange={(e) => setFormData({ ...formData, mated_at_eircode: e.target.value.toUpperCase() })}
  placeholder="e.g., H91 E6K2"
  maxLength={8}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ disabled={!!editingQueen?.distributed_by_name}
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  />
  <p className="text-xs text-text-tertiary mt-1">
  Irish postcode where the queen was mated

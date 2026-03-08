@@ -91,6 +91,8 @@ interface BatchDetails {
   batch_name: string
   graft_date: string | null
   mating_apiary_eircode: string | null
+  batchId: string | null
+  distributedByName: string | null
 }
 
 /** Derive queen birth date: emergence_date, falling back to graft_date + 12 days. */
@@ -136,6 +138,8 @@ async function createQueenForRecipient(
       p_source: 'Bred',
       p_status: 'active',
       p_mated_at_eircode: eircode,
+      p_batch_id: batch.batchId ?? null,
+      p_distributed_by_name: batch.distributedByName ?? null,
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
@@ -149,24 +153,29 @@ async function createQueensForRecipient(
   graftIds: string[]
 ): Promise<void> {
   try {
-    const { data: batch, error: batchError } = await supabase
-      .from('rearing_batches')
-      .select('emergence_date, batch_name, graft_date, apiaries!mating_apiary_id(eircode)')
-      .eq('id', batchId)
-      .single()
+    // Fetch batch details and current user's profile in parallel
+    const [batchRes, profileRes] = await Promise.all([
+      supabase.from('rearing_batches').select('id, emergence_date, batch_name, graft_date, apiaries!mating_apiary_id(eircode)').eq('id', batchId).single(),
+      supabase.from('profiles').select('full_name, first_name, last_name, email').eq('id', (await supabase.auth.getUser()).data.user?.id ?? '').single(),
+    ])
 
-    if (batchError || !batch) {
-      console.error('Non-blocking: failed to fetch batch for queen creation:', batchError)
+    if (batchRes.error || !batchRes.data) {
+      console.error('Non-blocking: failed to fetch batch for queen creation:', batchRes.error)
       return
     }
 
-    const raw = batch as { emergence_date: string | null; batch_name: string; graft_date: string | null; apiaries: { eircode: string | null }[] | { eircode: string | null } | null }
+    const raw = batchRes.data as { id: string; emergence_date: string | null; batch_name: string; graft_date: string | null; apiaries: { eircode: string | null }[] | { eircode: string | null } | null }
     const apiary = Array.isArray(raw.apiaries) ? raw.apiaries[0] : raw.apiaries
+    const profile = profileRes.data as { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null } | null
+    const displayName = profile?.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || null
+
     const batchDetails: BatchDetails = {
       emergence_date: raw.emergence_date,
       batch_name: raw.batch_name,
       graft_date: raw.graft_date,
       mating_apiary_eircode: apiary?.eircode ?? null,
+      batchId: raw.id,
+      distributedByName: displayName,
     }
     await Promise.allSettled(
       graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails))
