@@ -86,32 +86,47 @@ export interface BulkDistributionData {
   mating_location: string | null
 }
 
+interface BatchDetails {
+  emergence_date: string | null
+  batch_name: string
+  graft_date: string | null
+}
+
+/** Derive queen birth date: emergence_date, falling back to graft_date + 12 days. */
+function deriveBirthDate(batch: BatchDetails): string | null {
+  if (batch.emergence_date) return batch.emergence_date
+  if (batch.graft_date) {
+    const d = new Date(batch.graft_date)
+    d.setDate(d.getDate() + 12)
+    return d.toISOString().split('T')[0]
+  }
+  return null
+}
+
 /** Create a queen record for the recipient after distribution to an app user. Non-blocking. */
 async function createQueenForRecipient(
   recipientUserId: string,
-  batchId: string,
   graftId: string,
-  matingLocation: string | null
+  matingLocation: string | null,
+  batch: BatchDetails
 ): Promise<void> {
   try {
-    // Fetch batch and graft details in parallel
-    const [batchRes, graftRes] = await Promise.all([
-      supabase.from('rearing_batches').select('emergence_date, batch_name, graft_date').eq('id', batchId).single(),
-      supabase.from('batch_grafts').select('queen_number, cell_number').eq('id', graftId).single(),
-    ])
+    const { data: graft, error: graftError } = await supabase
+      .from('batch_grafts')
+      .select('queen_number, cell_number')
+      .eq('id', graftId)
+      .single()
 
-    const batch = batchRes.data as { emergence_date: string | null; batch_name: string; graft_date: string | null } | null
-    const graft = graftRes.data as { queen_number: string | null; cell_number: number } | null
-
-    const queenNumber = graft?.queen_number || `Cell #${graft?.cell_number ?? '?'}`
-    let birthDate = batch?.emergence_date || null
-    if (!birthDate && batch?.graft_date) {
-      const d = new Date(batch.graft_date)
-      d.setDate(d.getDate() + 12)
-      birthDate = d.toISOString().split('T')[0]
+    if (graftError || !graft) {
+      console.error('Non-blocking: failed to fetch graft for queen creation:', graftError)
+      return
     }
+
+    const queenNumber = (graft as { queen_number: string | null; cell_number: number }).queen_number
+      || `Cell #${(graft as { cell_number: number }).cell_number}`
+    const birthDate = deriveBirthDate(batch)
     const markingColor = birthDate ? getQueenColorFromYear(birthDate) : null
-    const source = batch?.batch_name ? `Distributed from ${batch.batch_name}` : 'Distributed'
+    const source = batch.batch_name ? `Distributed from ${batch.batch_name}` : 'Distributed'
 
     await supabase.rpc('create_queen_for_distribution', {
       p_recipient_user_id: recipientUserId,
@@ -124,6 +139,34 @@ async function createQueenForRecipient(
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
+  }
+}
+
+/** Fetch batch details once, then create queen records for one or more grafts. Non-blocking. */
+async function createQueensForRecipient(
+  recipientUserId: string,
+  batchId: string,
+  graftIds: string[],
+  matingLocation: string | null
+): Promise<void> {
+  try {
+    const { data: batch, error: batchError } = await supabase
+      .from('rearing_batches')
+      .select('emergence_date, batch_name, graft_date')
+      .eq('id', batchId)
+      .single()
+
+    if (batchError || !batch) {
+      console.error('Non-blocking: failed to fetch batch for queen creation:', batchError)
+      return
+    }
+
+    const batchDetails = batch as BatchDetails
+    await Promise.allSettled(
+      graftIds.map(id => createQueenForRecipient(recipientUserId, id, matingLocation, batchDetails))
+    )
+  } catch (err) {
+    console.error('Non-blocking: failed to create queens for recipient:', err)
   }
 }
 
@@ -235,7 +278,7 @@ export function useGraftDistributions() {
 
       // Create queen record for recipient (non-blocking)
       if (data.recipient_user_id) {
-        createQueenForRecipient(data.recipient_user_id, data.batch_id, data.graft_id, data.mating_location ?? null)
+        createQueensForRecipient(data.recipient_user_id, data.batch_id, [data.graft_id], data.mating_location ?? null)
       }
 
       return true
@@ -295,11 +338,9 @@ export function useGraftDistributions() {
         throw graftError
       }
 
-      // Create queen records for recipient (non-blocking, one per graft)
+      // Create queen records for recipient (non-blocking, single batch fetch)
       if (data.recipient_user_id) {
-        for (const g of data.grafts) {
-          createQueenForRecipient(data.recipient_user_id, data.batch_id, g.id, data.mating_location ?? null)
-        }
+        createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds, data.mating_location ?? null)
       }
 
       return true
