@@ -94,3 +94,71 @@ Confirm the 2025 GDD inconsistency in `gdd_records`, correct the confirmed stale
 - Tests: Replaced the retired base-temperature assumptions in `tests/components/tools/GDDTracker.test.tsx` with the current seasonal-multiplier behaviour and current UI copy.
 - Documentation: Rewrote `docs/features/gdd-tracker.md` in clean ASCII, documented the live formula, and recorded the 6 March 2026 historical data correction for traceability.
 - Follow-up context: No build or automated test run was performed, per project instruction. An unrelated existing worktree file remains unmodified: `.claude/plans/sprightly-strolling-dream.md`.
+
+---
+
+# Task: Correct 2025 Hawthorn End Date Data Error
+**Date:** 06/03/2026
+**Status:** Completed
+
+## 1. Objective
+Correct the invalid `Hawthorn (Crataegus)` 2025 end date values that were stored earlier than the bloom start date.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `tasks/todo.md`
+* **Data to Modify:** `public.gdd_records` rows for the two affected 2025 `Hawthorn (Crataegus)` records only
+* **Simplicity Check:** Apply a targeted data correction only. No code or formula changes are required because `gdd_value` is based on the bloom start date rather than the bloom end date.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Update the two `Hawthorn (Crataegus)` rows for `2025-04-28` from `end_date = 2025-02-16` to `end_date = 2025-05-16`.
+- [x] **Step 2:** Verify that the corrected rows now carry the expected end date and unchanged `gdd_value`.
+- [x] **Step 3:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The stored `Hawthorn (Crataegus)` end date appears to have a month typo (`02` instead of `05`), leaving the bloom end earlier than the bloom start.
+* **Summary of Changes:** Updated the two affected 2025 `Hawthorn (Crataegus)` rows from `2025-02-16` to `2025-05-16` and verified that `gdd_value` remained `781.3`.
+* **Notes for User:** No build or automated test run was performed. Please refresh the GDD views and confirm the corrected end date now appears as `16/5/2025`.
+
+## Review
+
+- Database: Updated the two `Hawthorn (Crataegus)` 2025 rows with `start_date = 2025-04-28` so `end_date` is now `2025-05-16`.
+- Verification: Confirmed both rows now show the corrected end date and still retain `gdd_value = 781.3`.
+
+---
+
+# Task: Sync Records Apiary Selection Into New Inspection
+**Date:** 08/03/2026
+**Status:** Completed
+
+## 1. Objective
+Ensure the Records page preselects the user's only apiary when opening a new inspection, and keep the top apiary filter propagated into the "Record New Inspection" form for new inspections.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/app/dashboard/records/page.tsx`
+  * `src/components/records/forms/InspectionForm.tsx`
+  * `docs/features/records-inspection-apiary-sync-plan.md`
+  * `tasks/todo.md`
+* **Simplicity Check:** Keep the existing page-level records filter as the source of truth for the selected apiary during new inspection creation, and only add the minimum form sync needed. No database work, no wider refactor of other record forms, and no changes to edit-inspection behaviour unless required for correctness.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Update `src/app/dashboard/records/page.tsx` to auto-select the sole available apiary when the user has exactly one apiary and no more specific apiary or hive context has already been chosen.
+- [x] **Step 2:** Pass the current records apiary selection into `InspectionForm` and keep new-inspection apiary selection aligned when the top filter changes, without overriding hive-driven or edit-inspection state.
+- [x] **Step 3:** Update documentation in `docs/features/records-inspection-apiary-sync-plan.md`
+- [x] **Step 4:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The Records page filter state and `InspectionForm` apiary state are currently managed separately, so new inspections do not inherit the selected or sole apiary.
+* **Summary of Changes:** Added a guarded single-apiary default on the Records page and passed the selected top-level apiary into `InspectionForm`, where new inspections now stay aligned with the top filter while preserving edit and preset-hive behaviour.
+* **Notes for User:** No build or automated test run was performed, per project instruction. Please test the overview-to-records new inspection flow and the top-filter-to-form sync manually.
+
+## Review
+
+- Records filter initialisation: `src/app/dashboard/records/page.tsx` now auto-selects the sole apiary once when there is no stronger hive or apiary context.
+- New inspection sync: `src/components/records/forms/InspectionForm.tsx` now accepts the selected top-level apiary and applies it to new inspections, clearing the chosen hive only when the top filter switches to a different apiary.
+- Context preservation: existing edit inspections and preset-hive flows keep their hive-derived apiary rather than being overwritten by the top filter.

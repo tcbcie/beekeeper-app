@@ -70,6 +70,7 @@ export default function RecordsPage() {
   const toast = useToast()
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
+  const hasInitialisedApiaryFilterRef = useRef(false)
 
   // User state
   const [userId, setUserId] = useState<string | null>(null)
@@ -184,6 +185,32 @@ export default function RecordsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.ownershipFilter, userId])
+
+  useEffect(() => {
+    if (hasInitialisedApiaryFilterRef.current) {
+      return
+    }
+
+    if (searchParams.get('hive')) {
+      hasInitialisedApiaryFilterRef.current = true
+      return
+    }
+
+    if (filters.apiaryId || filters.hiveId) {
+      hasInitialisedApiaryFilterRef.current = true
+      return
+    }
+
+    if (apiaries.length === 1) {
+      setApiaryId(apiaries[0].id)
+      hasInitialisedApiaryFilterRef.current = true
+      return
+    }
+
+    if (apiaries.length > 1) {
+      hasInitialisedApiaryFilterRef.current = true
+    }
+  }, [apiaries, filters.apiaryId, filters.hiveId, searchParams, setApiaryId])
 
   // New record handler - defined before useEffect that uses it
   const handleNewRecord = useCallback((type: RecordType, presetHiveId?: string) => {
@@ -1008,6 +1035,8 @@ export default function RecordsPage() {
                 initialData={getInspectionFormData()}
                 hives={hives}
                 apiaries={apiaries}
+                selectedApiaryId={filters.apiaryId}
+                isEditing={Boolean(editingInspection?.id)}
                 userHasActiveSubscription={userHasActiveSubscription}
                 onSubmit={handleInspectionSubmit}
                 onCancel={resetForm}
