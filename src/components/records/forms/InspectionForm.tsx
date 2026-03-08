@@ -590,7 +590,17 @@ export default function InspectionForm({
           {dronesExpanded && (
             <div className="p-4 pt-0 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Drone Population Level</label>
+                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="text-sm font-medium text-text-secondary">Drone Population Level</label>
+                  <Button
+                    unstyled
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, drones_present: -1 }))}
+                    className="min-h-[36px] w-full px-3 sm:min-h-[32px] sm:w-auto rounded-md border border-border bg-surface-elevated text-[11px] sm:text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                  >
+                    Clear
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { value: 0, label: 'Low' },
