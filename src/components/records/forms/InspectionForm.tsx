@@ -13,6 +13,7 @@ interface InspectionFormProps {
   hives: Hive[]
   apiaries: Apiary[]
   selectedApiaryId?: string
+  selectedHiveId?: string
   isEditing?: boolean
   userHasActiveSubscription: boolean
   onSubmit: (formData: InspectionFormData, imageFile: File | null) => Promise<void>
@@ -34,6 +35,7 @@ export default function InspectionForm({
   hives,
   apiaries,
   selectedApiaryId = '',
+  selectedHiveId = '',
   isEditing = false,
   userHasActiveSubscription,
   onSubmit,
@@ -101,26 +103,53 @@ export default function InspectionForm({
       return
     }
 
+    if (selectedHiveId) {
+      const selectedHive = hives.find(hive => hive.id === selectedHiveId)
+
+      if (selectedHive) {
+        const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
+
+        if (formApiaryId !== nextApiaryId) {
+          setFormApiaryId(nextApiaryId)
+        }
+
+        if (formData.hive_id !== selectedHiveId) {
+          setFormData(prev => ({ ...prev, hive_id: selectedHiveId }))
+        }
+
+        return
+      }
+    }
+
     if (!formData.hive_id) {
-      setFormApiaryId(selectedApiaryId)
+      if (formApiaryId !== selectedApiaryId) {
+        setFormApiaryId(selectedApiaryId)
+      }
       return
     }
 
     const hiveApiaryId = getApiaryIdForHive(formData.hive_id)
 
     if (!selectedApiaryId) {
-      setFormApiaryId('')
+      if (formApiaryId !== '') {
+        setFormApiaryId('')
+      }
       return
     }
 
     if (hiveApiaryId === selectedApiaryId) {
-      setFormApiaryId(selectedApiaryId)
+      if (formApiaryId !== selectedApiaryId) {
+        setFormApiaryId(selectedApiaryId)
+      }
       return
     }
 
-    setFormApiaryId(selectedApiaryId)
-    setFormData(prev => ({ ...prev, hive_id: '' }))
-  }, [formData.hive_id, getApiaryIdForHive, initialData?.hive_id, isEditing, selectedApiaryId])
+    if (formApiaryId !== selectedApiaryId) {
+      setFormApiaryId(selectedApiaryId)
+    }
+
+    setFormData(prev => prev.hive_id ? { ...prev, hive_id: '' } : prev)
+  }, [formApiaryId, formData.hive_id, getApiaryIdForHive, hives, initialData?.hive_id, isEditing, selectedApiaryId, selectedHiveId])
 
   const handleHiveSelect = async (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))

@@ -162,3 +162,73 @@ Ensure the Records page preselects the user's only apiary when opening a new ins
 - Records filter initialisation: `src/app/dashboard/records/page.tsx` now auto-selects the sole apiary once when there is no stronger hive or apiary context.
 - New inspection sync: `src/components/records/forms/InspectionForm.tsx` now accepts the selected top-level apiary and applies it to new inspections, clearing the chosen hive only when the top filter switches to a different apiary.
 - Context preservation: existing edit inspections and preset-hive flows keep their hive-derived apiary rather than being overwritten by the top filter.
+
+---
+
+# Task: Clear Default Drone Population Selection In New Inspections
+**Date:** 08/03/2026
+**Status:** Completed
+
+## 1. Objective
+Ensure the "Drone Population Level" control in new inspection forms starts with no option selected instead of preselecting "Extreme".
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/types/records.ts`
+  * `docs/features/inspection-drone-population-default-plan.md`
+  * `tasks/todo.md`
+* **Simplicity Check:** Use the existing unset sentinel already supported by the records flow for `drones_present`, and only change the new-inspection default state. No database changes, no form redesign, and no change to saved inspection values.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Update the default inspection form state in `src/types/records.ts` so `drones_present` starts unset rather than defaulting to the `Extreme` option.
+- [x] **Step 2:** Verify the existing submission and display flow still treats the unset value correctly for new and edited inspections.
+- [x] **Step 3:** Update documentation in `docs/features/inspection-drone-population-default-plan.md`
+- [x] **Step 4:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The default inspection form state sets `drones_present` to `3`, which maps directly to the `Extreme` button styling.
+* **Summary of Changes:** Changed the new-inspection default for `drones_present` to the existing unset sentinel `-1`, leaving the current submit and display logic in place so unset values continue to save as `null` and remain visually unselected.
+* **Notes for User:** No build or automated test run was performed, per project instruction. Please verify the new inspection drones section manually.
+
+## Review
+
+- Default state: `src/types/records.ts` now initialises `drones_present` to `-1`, so no drone population button is selected by default in a new inspection.
+- Existing flow compatibility: the current records submit path still converts `-1` to `null`, and the inspection card still suppresses unset drone population values.
+
+---
+
+# Task: Inherit Top Hive Filter In New Inspection Form
+**Date:** 08/03/2026
+**Status:** Completed
+
+## 1. Objective
+Ensure the "Record New Inspection" form also inherits the top hive filter for create flows, so the selected hive at the top of the Records page is reflected directly in the new inspection form.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/app/dashboard/records/page.tsx`
+  * `src/components/records/forms/InspectionForm.tsx`
+  * `docs/features/records-inspection-hive-sync-plan.md`
+  * `tasks/todo.md`
+* **Simplicity Check:** Extend the existing page-to-form synchronisation so the top hive filter becomes the source of truth for new inspection create flows, while preserving edit-inspection and preset-hive behaviour. No database work, no refactor of other record forms, and no change to saved inspection records.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Update `src/app/dashboard/records/page.tsx` to pass the selected top-level hive filter into `InspectionForm` for new inspection creation.
+- [x] **Step 2:** Update `src/components/records/forms/InspectionForm.tsx` so new inspections inherit the selected top hive, keep apiary and hive in sync, and only clear or override values when the top filters change to a conflicting context.
+- [x] **Step 3:** Update documentation in `docs/features/records-inspection-hive-sync-plan.md`
+- [x] **Step 4:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The Records page filter state currently propagates apiary selection into new inspections, but not the top-level hive selection, so create flows can still diverge from the page context.
+* **Summary of Changes:** Passed the selected top-level hive filter into `InspectionForm` and extended the existing create-flow sync so new inspections now inherit both top apiary and top hive context while preserving edit and preset-hive behaviour.
+* **Notes for User:** No build or automated test run was performed, per project instruction. Please verify the top-filter-to-new-inspection hive inheritance manually.
+
+## Review
+
+- Page-to-form propagation: `src/app/dashboard/records/page.tsx` now passes `filters.hiveId` into the inspection form alongside the selected apiary.
+- Create-flow sync: `src/components/records/forms/InspectionForm.tsx` now applies the selected top hive to new inspections and derives the matching apiary automatically from that hive.
+- Context preservation: edit inspections and explicit preset-hive entry flows still keep their stronger existing hive context instead of being overwritten by the top filters.

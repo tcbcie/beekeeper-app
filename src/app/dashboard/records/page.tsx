@@ -1036,6 +1036,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 selectedApiaryId={filters.apiaryId}
+                selectedHiveId={filters.hiveId}
                 isEditing={Boolean(editingInspection?.id)}
                 userHasActiveSubscription={userHasActiveSubscription}
                 onSubmit={handleInspectionSubmit}
