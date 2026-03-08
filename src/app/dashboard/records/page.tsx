@@ -45,7 +45,7 @@ import type {
   InspectionFormData,
   ArchiveFormData
 } from '@/types/records'
-import { getDefaultArchiveFormData } from '@/types/records'
+import { getDefaultArchiveFormData, getDefaultInspectionFormData } from '@/types/records'
 
 interface NominatimResult {
   lat: string
@@ -80,6 +80,7 @@ export default function RecordsPage() {
   const [showForm, setShowForm] = useState(false)
   const [formType, setFormType] = useState<RecordType>('inspection')
   const [editingInspection, setEditingInspection] = useState<Inspection | null>(null)
+  const [inspectionDraft, setInspectionDraft] = useState<InspectionFormData | null>(null)
   const [editingTreatment, setEditingTreatment] = useState<VarroaTreatment | null>(null)
   const [editingCheck, setEditingCheck] = useState<VarroaCheck | null>(null)
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null)
@@ -161,6 +162,68 @@ export default function RecordsPage() {
     return latestValues
   }, [inspections])
 
+  const inspectionFormData = useMemo<InspectionFormData | null>(() => {
+    if (inspectionDraft) {
+      return inspectionDraft
+    }
+
+    if (!editingInspection) {
+      return null
+    }
+
+    const defaults = getDefaultInspectionFormData()
+
+    return {
+      hive_id: editingInspection.hive_id ?? defaults.hive_id,
+      inspection_date: editingInspection.inspection_date ?? defaults.inspection_date,
+      inspection_time: editingInspection.inspection_time ?? '',
+      weight: editingInspection.weight ?? defaults.weight,
+      queen_seen: editingInspection.queen_seen ?? defaults.queen_seen,
+      eggs_present: editingInspection.eggs_present ?? defaults.eggs_present,
+      drones_present: editingInspection.drones_present ?? defaults.drones_present,
+      drone_brood_present: editingInspection.drone_brood_present ?? defaults.drone_brood_present,
+      brood_frames: editingInspection.brood_frames ?? defaults.brood_frames,
+      right_sized_frames: editingInspection.right_sized_frames ?? defaults.right_sized_frames,
+      brood_pattern_rating: editingInspection.brood_pattern_rating ?? defaults.brood_pattern_rating,
+      temperament_rating: editingInspection.temperament_rating ?? defaults.temperament_rating,
+      population_strength: editingInspection.population_strength ?? defaults.population_strength,
+      swarming_tendency: editingInspection.swarming_tendency ?? defaults.swarming_tendency,
+      calmness: editingInspection.calmness ?? defaults.calmness,
+      frames_foundation: editingInspection.frames_foundation ?? defaults.frames_foundation,
+      frames_brood: editingInspection.frames_brood ?? defaults.frames_brood,
+      frames_drawn: editingInspection.frames_drawn ?? defaults.frames_drawn,
+      honey_supers: editingInspection.honey_supers ?? defaults.honey_supers,
+      drone_frames: editingInspection.drone_frames ?? defaults.drone_frames,
+      store_frames: editingInspection.store_frames ?? defaults.store_frames,
+      recapping: editingInspection.recapping ?? defaults.recapping,
+      vsh: editingInspection.vsh ?? defaults.vsh,
+      smr: editingInspection.smr ?? defaults.smr,
+      afb_disease: editingInspection.afb_disease ?? defaults.afb_disease,
+      efb_disease: editingInspection.efb_disease ?? defaults.efb_disease,
+      chalkbrood_disease: editingInspection.chalkbrood_disease ?? defaults.chalkbrood_disease,
+      nosemosis_disease: editingInspection.nosemosis_disease ?? defaults.nosemosis_disease,
+      dwv_disease: editingInspection.dwv_disease ?? defaults.dwv_disease,
+      iapv_cbpv_disease: editingInspection.iapv_cbpv_disease ?? defaults.iapv_cbpv_disease,
+      queen_cups: editingInspection.queen_cups ?? defaults.queen_cups,
+      queen_cups_number: editingInspection.queen_cups_number ?? defaults.queen_cups_number,
+      queen_cups_removed_all: editingInspection.queen_cups_removed_all ?? defaults.queen_cups_removed_all,
+      swarm_cells: editingInspection.swarm_cells ?? defaults.swarm_cells,
+      swarm_cells_number: editingInspection.swarm_cells_number ?? defaults.swarm_cells_number,
+      swarm_cells_removed_all: editingInspection.swarm_cells_removed_all ?? defaults.swarm_cells_removed_all,
+      supercedure_cells: editingInspection.supercedure_cells ?? defaults.supercedure_cells,
+      supercedure_cells_number: editingInspection.supercedure_cells_number ?? defaults.supercedure_cells_number,
+      supercedure_cells_removed_all: editingInspection.supercedure_cells_removed_all ?? defaults.supercedure_cells_removed_all,
+      emergency_cells: editingInspection.emergency_cells ?? defaults.emergency_cells,
+      emergency_cells_number: editingInspection.emergency_cells_number ?? defaults.emergency_cells_number,
+      emergency_cells_removed_all: editingInspection.emergency_cells_removed_all ?? defaults.emergency_cells_removed_all,
+      removed_cells: editingInspection.removed_cells ?? defaults.removed_cells,
+      remaining_cells: editingInspection.remaining_cells ?? defaults.remaining_cells,
+      queen_cells_notes: editingInspection.queen_cells_notes ?? defaults.queen_cells_notes,
+      notes: editingInspection.notes ?? defaults.notes,
+      image_url: editingInspection.image_url ?? defaults.image_url
+    }
+  }, [editingInspection, inspectionDraft])
+
   // Use the filters hook
   const {
     filters,
@@ -236,22 +299,16 @@ export default function RecordsPage() {
 
     setFormType(type)
     setEditingInspection(null)
+    setInspectionDraft(null)
     setEditingTreatment(null)
     setEditingCheck(null)
     setEditingFeeding(null)
     setEditingHarvest(null)
 
     if (type === 'inspection') {
-      // For new inspections, set a minimal editingInspection with just the hive_id
-      // so getInspectionFormData() returns data with the preset hive
-      if (presetHiveId) {
-        setEditingInspection({
-          id: '',
-          hive_id: presetHiveId,
-          inspection_date: currentDate,
-          inspection_time: new Date().toTimeString().slice(0, 5)
-        } as Inspection)
-      }
+      const nextInspectionDraft = getDefaultInspectionFormData()
+      nextInspectionDraft.hive_id = presetHiveId || ''
+      setInspectionDraft(nextInspectionDraft)
     } else if (type === 'archive') {
       setArchiveData({
         hive_id: presetHiveId || '',
@@ -568,6 +625,7 @@ export default function RecordsPage() {
   }
 
   const handleInspectionEdit = (inspection: Inspection) => {
+    setInspectionDraft(null)
     setEditingInspection(inspection)
     setFormType('inspection')
     setShowForm(true)
@@ -901,6 +959,7 @@ export default function RecordsPage() {
   const resetForm = () => {
     setShowForm(false)
     setEditingInspection(null)
+    setInspectionDraft(null)
     setEditingTreatment(null)
     setEditingCheck(null)
     setEditingFeeding(null)
@@ -918,60 +977,6 @@ export default function RecordsPage() {
     // Fetch weather data when hive changes (for inspection form)
     if (hiveId) {
       await handleFetchWeatherForHive(hiveId)
-    }
-  }
-
-  // Convert inspection to form data
-  const getInspectionFormData = (): InspectionFormData | null => {
-    if (!editingInspection) return null
-    return {
-      hive_id: editingInspection.hive_id,
-      inspection_date: editingInspection.inspection_date,
-      inspection_time: editingInspection.inspection_time || '',
-      weight: editingInspection.weight,
-      queen_seen: editingInspection.queen_seen || false,
-      eggs_present: editingInspection.eggs_present || false,
-      drones_present: editingInspection.drones_present ?? -1,
-      drone_brood_present: editingInspection.drone_brood_present ?? null,
-      brood_frames: editingInspection.brood_frames,
-      right_sized_frames: editingInspection.right_sized_frames,
-      brood_pattern_rating: editingInspection.brood_pattern_rating ?? 0,
-      temperament_rating: editingInspection.temperament_rating ?? 0,
-      population_strength: editingInspection.population_strength ?? 0,
-      swarming_tendency: editingInspection.swarming_tendency ?? 0,
-      calmness: editingInspection.calmness ?? 0,
-      frames_foundation: editingInspection.frames_foundation ?? 0,
-      frames_brood: editingInspection.frames_brood ?? 0,
-      frames_drawn: editingInspection.frames_drawn ?? 0,
-      honey_supers: editingInspection.honey_supers ?? 0,
-      drone_frames: editingInspection.drone_frames ?? 0,
-      store_frames: editingInspection.store_frames ?? 0,
-      recapping: editingInspection.recapping ?? 0,
-      vsh: editingInspection.vsh ?? 0,
-      smr: editingInspection.smr ?? 0,
-      afb_disease: editingInspection.afb_disease ?? 0,
-      efb_disease: editingInspection.efb_disease ?? 0,
-      chalkbrood_disease: editingInspection.chalkbrood_disease ?? 0,
-      nosemosis_disease: editingInspection.nosemosis_disease ?? 0,
-      dwv_disease: editingInspection.dwv_disease ?? 0,
-      iapv_cbpv_disease: editingInspection.iapv_cbpv_disease ?? 0,
-      queen_cups: editingInspection.queen_cups ?? false,
-      queen_cups_number: editingInspection.queen_cups_number ?? 0,
-      queen_cups_removed_all: editingInspection.queen_cups_removed_all ?? false,
-      swarm_cells: editingInspection.swarm_cells ?? false,
-      swarm_cells_number: editingInspection.swarm_cells_number ?? 0,
-      swarm_cells_removed_all: editingInspection.swarm_cells_removed_all ?? false,
-      supercedure_cells: editingInspection.supercedure_cells ?? false,
-      supercedure_cells_number: editingInspection.supercedure_cells_number ?? 0,
-      supercedure_cells_removed_all: editingInspection.supercedure_cells_removed_all ?? false,
-      emergency_cells: editingInspection.emergency_cells ?? false,
-      emergency_cells_number: editingInspection.emergency_cells_number ?? 0,
-      emergency_cells_removed_all: editingInspection.emergency_cells_removed_all ?? false,
-      removed_cells: editingInspection.removed_cells ?? 0,
-      remaining_cells: editingInspection.remaining_cells ?? 0,
-      queen_cells_notes: editingInspection.queen_cells_notes || '',
-      notes: editingInspection.notes || '',
-      image_url: editingInspection.image_url
     }
   }
 
@@ -1049,7 +1054,7 @@ export default function RecordsPage() {
 
             {formType === 'inspection' && (
               <InspectionForm
-                initialData={getInspectionFormData()}
+                initialData={inspectionFormData}
                 hives={hives}
                 apiaries={apiaries}
                 previousRightSizedFramesByHive={previousRightSizedFramesByHive}

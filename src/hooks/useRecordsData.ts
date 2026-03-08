@@ -189,14 +189,12 @@ export function useRecordsData(): UseRecordsDataReturn {
     if (ownershipFilter === 'my') {
       if (ownHiveIds.length === 0) {
         setInspections([])
-        setLoading(false)
         return
       }
       query = query.in('hive_id', ownHiveIds)
     } else if (ownershipFilter === 'team') {
       if (teamHiveIds.length === 0) {
         setInspections([])
-        setLoading(false)
         return
       }
       query = query.in('hive_id', teamHiveIds)
@@ -204,19 +202,27 @@ export function useRecordsData(): UseRecordsDataReturn {
       const allAccessibleHiveIds = [...ownHiveIds, ...teamHiveIds]
       if (allAccessibleHiveIds.length === 0) {
         setInspections([])
-        setLoading(false)
         return
       }
       query = query.in('hive_id', allAccessibleHiveIds)
     }
 
-    const { data } = await query
+    const { data, error } = await query
       .order('inspection_date', { ascending: false })
+      .order('inspection_time', { ascending: false, nullsFirst: false })
       .limit(500)
 
+    if (error) {
+      console.error('Error fetching inspections:', error)
+      setInspections([])
+      return
+    }
+
+    const inspectionsData = data ?? []
+
     // Fallback profile fetch if foreign key fails
-    if (data && data.length > 0 && !data[0].profiles) {
-      const userIds = [...new Set(data.map(i => i.user_id).filter(Boolean))]
+    if (inspectionsData.length > 0 && !inspectionsData[0].profiles) {
+      const userIds = [...new Set(inspectionsData.map(i => i.user_id).filter(Boolean))]
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -225,7 +231,7 @@ export function useRecordsData(): UseRecordsDataReturn {
 
         if (profilesData) {
           const profilesMap = new Map(profilesData.map(p => [p.id, p]))
-          data.forEach((inspection: Inspection) => {
+          inspectionsData.forEach((inspection: Inspection) => {
             if (inspection.user_id) {
               const profile = profilesMap.get(inspection.user_id)
               if (profile) {
@@ -241,14 +247,11 @@ export function useRecordsData(): UseRecordsDataReturn {
       }
     }
 
-    if (data) {
-      const normalisedInspections = data.map((inspection) => ({
-        ...inspection,
-        image_url: normaliseStoragePublicUrl(inspection.image_url)
-      }))
-      setInspections(normalisedInspections as Inspection[])
-    }
-    setLoading(false)
+    const normalisedInspections = inspectionsData.map((inspection) => ({
+      ...inspection,
+      image_url: normaliseStoragePublicUrl(inspection.image_url)
+    }))
+    setInspections(normalisedInspections as Inspection[])
   }, [updateSharedHiveIds])
 
   const fetchVarroaTreatments = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
@@ -675,6 +678,8 @@ export function useRecordsData(): UseRecordsDataReturn {
         fetchApiaries(userId),
         fetchAllOptions()
       ])
+    } catch (error) {
+      console.error('Failed to fetch records data:', error)
     } finally {
       fetchInProgressRef.current = false
       setLoading(false)
