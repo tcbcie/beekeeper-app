@@ -14,6 +14,7 @@ export interface Queen {
   performance_notes: string
   mated_at_eircode: string
   distributed_by_name?: string | null
+  distributed_batch_name?: string | null
   created_at?: string
   mother_id?: string
   father_id?: string

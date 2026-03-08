@@ -416,11 +416,11 @@ Queens auto-created via distribution have no provenance info and all fields are 
 
 ## 4. Post-Task Review
 * **Summary of Changes:**
-  * DB migration: added `distributed_by_name` text column to queens table, updated RPC with `p_batch_id` and `p_distributed_by_name` parameters
-  * Hook: `useGraftDistributions.ts` now fetches breeder profile name and batch details, passes `batch_id` + `distributed_by_name` to RPC
-  * Type: added `distributed_by_name?: string | null` to `Queen` interface
-  * UI: queen edit form locks birth_date, marking_color, source, and mated_at_eircode when `distributed_by_name` is set; shows breeder info banner with breeder name and batch provenance
-* **Notes for User:** Please test by editing a distributed queen — the four fields should be greyed out and a banner should show the breeder name and batch.
+  * DB migrations: added `distributed_by_name` and `distributed_batch_name` text columns to queens table, updated RPC with `p_batch_id`, `p_distributed_by_name`, and `p_distributed_batch_name` parameters
+  * Hook: `useGraftDistributions.ts` now fetches breeder profile name and batch details, passes `batch_id` + `distributed_by_name` + `distributed_batch_name` to RPC
+  * Type: added `distributed_by_name` and `distributed_batch_name` to `Queen` interface
+  * UI: queen edit form locks birth_date, marking_color, source, mated_at_eircode, and source_batch when `distributed_by_name` is set; source batch shows denormalised batch name as read-only text; breeder info banner shows breeder name and batch provenance
+* **Notes for User:** Please test by editing a distributed queen — the five fields should be greyed out and a banner should show the breeder name and batch.
 
 ---
 

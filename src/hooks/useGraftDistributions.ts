@@ -140,6 +140,7 @@ async function createQueenForRecipient(
       p_mated_at_eircode: eircode,
       p_batch_id: batch.batchId ?? null,
       p_distributed_by_name: batch.distributedByName ?? null,
+      p_distributed_batch_name: batch.batch_name ?? null,
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)

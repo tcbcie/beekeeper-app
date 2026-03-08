@@ -577,11 +577,11 @@ export default function QueensPage() {
  <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
  <p className="font-medium">Distributed Queen</p>
  <p>Breeder: {editingQueen.distributed_by_name}</p>
- {editingQueen.batch?.batch_name && (
- <p>Batch: {editingQueen.batch.batch_name}</p>
+ {editingQueen.distributed_batch_name && (
+ <p>Batch: {editingQueen.distributed_batch_name}</p>
  )}
  <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
- Birth date, marking colour, source, and mated at fields are locked for distributed queens.
+ Birth date, marking colour, source, mated at, and source batch fields are locked for distributed queens.
  </p>
  </div>
  )}
@@ -718,6 +718,14 @@ export default function QueensPage() {
 
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Source Batch</label>
+ {editingQueen?.distributed_by_name ? (
+ <input
+ type="text"
+ value={editingQueen.distributed_batch_name || ''}
+ disabled
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground opacity-60 cursor-not-allowed"
+ />
+ ) : (
  <select
  value={formData.batch_id}
  onChange={(e) => setFormData({ ...formData, batch_id: e.target.value })}
@@ -730,6 +738,7 @@ export default function QueensPage() {
  </option>
  ))}
  </select>
+ )}
  </div>
 
  <div>
