@@ -266,3 +266,39 @@ Add a clear button to the "Drone Population Level" control in the new inspection
 
 - Drones UI: `src/components/records/forms/InspectionForm.tsx` now shows a `Clear` button in the drone population control header.
 - Field behaviour: the clear action resets only `drones_present` to the existing unset sentinel and does not alter the drone brood checkbox.
+
+---
+
+# Task: Prefill Right-Sized Frames From Previous Inspection
+**Date:** 08/03/2026
+**Status:** Completed
+
+## 1. Objective
+When creating a new inspection, prefill "Right-Sized to How Many Frames" from the most recent previous inspection for the same hive when that previous inspection already has a right-sized frames value.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/app/dashboard/records/page.tsx`
+  * `src/components/records/forms/InspectionForm.tsx`
+  * `docs/features/inspection-right-sized-frames-prefill-plan.md`
+  * `tasks/todo.md`
+* **Simplicity Check:** Reuse the inspections data the Records page already loads and pass only the minimal latest-per-hive value into the inspection form. No new database calls, no changes to edit-inspection behaviour, and no refactor of other inspection fields.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Update `src/app/dashboard/records/page.tsx` to derive the latest previous `right_sized_frames` value for each hive from the already loaded inspections data and pass the selected hive’s value into `InspectionForm` for create flows.
+- [x] **Step 2:** Update `src/components/records/forms/InspectionForm.tsx` so new inspections prefill `right_sized_frames` from that previous-inspection value when a hive is selected or inherited, without overriding edit-inspection data or later manual changes unless the hive context changes.
+- [x] **Step 3:** Update documentation in `docs/features/inspection-right-sized-frames-prefill-plan.md`
+- [x] **Step 4:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The new inspection form currently initialises `right_sized_frames` empty every time, even though the Records page already has the latest inspection data needed to carry that value forward for the same hive.
+* **Summary of Changes:** Derived the latest previous `right_sized_frames` value per hive from the loaded inspections list in the Records page and applied it in `InspectionForm` for new-inspection create flows whenever the hive context is selected or inherited.
+* **Notes for User:** No build or automated test run was performed, per project instruction. Please verify the right-sized frames prefill manually in the new inspection flow.
+
+## Review
+
+- Records data reuse: `src/app/dashboard/records/page.tsx` now builds a latest per-hive right-sized frames lookup from the already loaded inspection history.
+- Create-flow prefill: `src/components/records/forms/InspectionForm.tsx` now applies that previous value when a new inspection gets a hive context, including inherited top-filter hive selection.
+- Context safety: edit inspections still use their saved values, and the prefill only reapplies when the hive context itself changes.

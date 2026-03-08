@@ -12,6 +12,7 @@ interface InspectionFormProps {
   initialData: InspectionFormData | null
   hives: Hive[]
   apiaries: Apiary[]
+  previousRightSizedFramesByHive?: Record<string, number | null>
   selectedApiaryId?: string
   selectedHiveId?: string
   isEditing?: boolean
@@ -34,6 +35,7 @@ export default function InspectionForm({
   initialData,
   hives,
   apiaries,
+  previousRightSizedFramesByHive = {},
   selectedApiaryId = '',
   selectedHiveId = '',
   isEditing = false,
@@ -48,6 +50,7 @@ export default function InspectionForm({
   const [formApiaryId, setFormApiaryId] = useState<string>(selectedApiaryId)
   const [submitting, setSubmitting] = useState(false)
   const previousInitialDataRef = useRef<InspectionFormData | null>(initialData)
+  const lastRightSizedPrefillHiveIdRef = useRef<string | null>(null)
 
   // Collapsible section states
   const [queenCellsExpanded, setQueenCellsExpanded] = useState(false)
@@ -75,6 +78,15 @@ export default function InspectionForm({
 
     return hives.find(hive => hive.id === hiveId)?.apiary_id ?? ''
   }, [hives])
+
+  const getPreviousRightSizedFrames = useCallback((hiveId: string) => {
+    if (!hiveId) {
+      return null
+    }
+
+    const previousValue = previousRightSizedFramesByHive[hiveId]
+    return typeof previousValue === 'number' && previousValue > 0 ? previousValue : null
+  }, [previousRightSizedFramesByHive])
 
   // Update form data when initialData changes
   useEffect(() => {
@@ -150,6 +162,36 @@ export default function InspectionForm({
 
     setFormData(prev => prev.hive_id ? { ...prev, hive_id: '' } : prev)
   }, [formApiaryId, formData.hive_id, getApiaryIdForHive, hives, initialData?.hive_id, isEditing, selectedApiaryId, selectedHiveId])
+
+  useEffect(() => {
+    if (isEditing) {
+      lastRightSizedPrefillHiveIdRef.current = formData.hive_id || null
+      return
+    }
+
+    const currentHiveId = formData.hive_id
+
+    if (!currentHiveId) {
+      if (lastRightSizedPrefillHiveIdRef.current !== null) {
+        lastRightSizedPrefillHiveIdRef.current = null
+        setFormData(prev => prev.right_sized_frames !== null ? { ...prev, right_sized_frames: null } : prev)
+      }
+      return
+    }
+
+    if (lastRightSizedPrefillHiveIdRef.current === currentHiveId) {
+      return
+    }
+
+    lastRightSizedPrefillHiveIdRef.current = currentHiveId
+    const previousValue = getPreviousRightSizedFrames(currentHiveId)
+
+    setFormData(prev => (
+      prev.hive_id === currentHiveId && prev.right_sized_frames !== previousValue
+        ? { ...prev, right_sized_frames: previousValue }
+        : prev
+    ))
+  }, [formData.hive_id, formData.right_sized_frames, getPreviousRightSizedFrames, isEditing])
 
   const handleHiveSelect = async (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))
