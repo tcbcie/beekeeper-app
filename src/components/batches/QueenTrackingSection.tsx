@@ -106,7 +106,7 @@ export default function QueenTrackingSection({
       )}
 
       {/* Table Bulk Action Bar */}
-      {tableSelectMode && (
+      {(tableSelectMode || tableSelectedIds.size > 0) && (
         <div className="flex flex-wrap items-center gap-2 p-3 mb-3 bg-forest-50 dark:bg-forest-950/30 rounded-lg border border-forest-200 dark:border-forest-800">
           <span className="text-sm font-medium text-foreground">{tableSelectedIds.size} selected</span>
           <Button type="button" onClick={selectAllTable} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
@@ -191,7 +191,7 @@ export default function QueenTrackingSection({
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-surface-secondary">
             <tr>
-              {tableSelectMode && <th className="px-2 py-2 w-8" />}
+              <th className="px-2 py-2 w-8" />
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Status</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Last Update</th>
@@ -208,18 +208,16 @@ export default function QueenTrackingSection({
               const canMark = MARKABLE_STATUSES.includes(graft.status)
               return (
                 <tr key={graft.id} className={`hover:bg-surface-secondary ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
-                  {tableSelectMode && (
-                    <td className="px-2 py-2">
-                      {!isLocked && (
-                        <Button type="button" onClick={() => toggleTableSelect(graft.id)}>
-                          {tableSelectedIds.has(graft.id)
-                            ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
-                            : <Square size={16} className="text-text-tertiary" />
-                          }
-                        </Button>
-                      )}
-                    </td>
-                  )}
+                  <td className="px-2 py-2">
+                    {!isLocked && (
+                      <Button type="button" onClick={() => toggleTableSelect(graft.id)}>
+                        {tableSelectedIds.has(graft.id)
+                          ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
+                          : <Square size={16} className="text-text-tertiary" />
+                        }
+                      </Button>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-sm font-medium text-foreground">#{graft.cell_number}</td>
                   <td className="px-3 py-2">
                     {isLocked ? (
@@ -343,7 +341,7 @@ export default function QueenTrackingSection({
             <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  {tableSelectMode && !isLocked && (
+                  {!isLocked && (
                     <Button type="button" onClick={() => toggleTableSelect(graft.id)}>
                       {tableSelectedIds.has(graft.id)
                         ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />

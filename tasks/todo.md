@@ -302,3 +302,88 @@ When creating a new inspection, prefill "Right-Sized to How Many Frames" from th
 - Records data reuse: `src/app/dashboard/records/page.tsx` now builds a latest per-hive right-sized frames lookup from the already loaded inspection history.
 - Create-flow prefill: `src/components/records/forms/InspectionForm.tsx` now applies that previous value when a new inspection gets a hive context, including inherited top-filter hive selection.
 - Context safety: edit inspections still use their saved values, and the prefill only reapplies when the hive context itself changes.
+
+---
+
+# Task: Fix Nuc Card Status Label — "Mating" Should Be "Mated"
+**Date:** 08/03/2026
+**Status:** In Progress
+
+## 1. Problem
+When a nuc inspection records queen_status as "mated", the nuc status is set to DB value `mating`. The UI label for this status displays "Mating", but it should display "Mated" since this status is only set when mating is confirmed.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/components/batches/MatingNucsTab.tsx` — change label from "Mating" to "Mated"
+* **Simplicity Check:** Single label change. The DB value `mating` stays the same. No schema changes, no sync logic changes.
+
+## 3. Execution Plan
+- [x] **Step 1:** Change the label for the `mating` status from "Mating" to "Mated" in `MatingNucsTab.tsx`
+- [ ] **Step 2:** Prompt user to test the build
+
+## 4. Post-Task Review
+* **Root Cause Found:** The `NUC_STATUSES` array used the label "Mating" for DB value `mating`, but this status is only set when an inspection confirms `queen_status = 'mated'`, making the label misleading.
+* **Summary of Changes:** Changed the display label from "Mating" to "Mated" in `src/components/batches/MatingNucsTab.tsx` line 91. No DB or sync logic changes.
+* **Notes for User:** Please test by viewing a nuc with `mating` status — the badge should now read "Mated".
+
+---
+
+# Task: Always Allow Single Cell Selection in Queen Tracking Table
+**Date:** 08/03/2026
+**Status:** In Progress
+
+## 1. Problem
+In the Queen Tracking table, checkboxes only appear when "Bulk Actions" mode is enabled. Users want to select individual cells at any time and use the same action bar (change status, apply date, mark/unmark queen, distribute, delete) without entering bulk mode.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/components/batches/QueenTrackingSection.tsx` — always show checkboxes + show action bar when cells selected
+* **Simplicity Check:** Remove the `tableSelectMode` guards on checkboxes and action bar visibility. Keep the Bulk Actions button for Select All/Deselect All. No logic changes to the actions themselves.
+
+## 3. Execution Plan
+- [x] **Step 1:** Always show the checkbox column in desktop table (remove `tableSelectMode &&` guard on `<th>` and `<td>`)
+- [x] **Step 2:** Always show the checkbox on mobile cards (remove `tableSelectMode &&` guard)
+- [x] **Step 3:** Show the action bar when `tableSelectedIds.size > 0` OR `tableSelectMode` is true
+- [ ] **Step 4:** Prompt user to test the build
+
+## 4. Post-Task Review
+* **Summary of Changes:** Removed `tableSelectMode` guards on checkboxes (desktop `<th>`/`<td>` and mobile card) so they always show for unlocked rows. Changed action bar condition from `tableSelectMode` to `tableSelectMode || tableSelectedIds.size > 0` so it appears whenever cells are selected.
+* **Notes for User:** Please test — checkboxes should now always be visible, and selecting any cell should show the action bar without needing to click "Bulk Actions" first.
+
+---
+
+# Task: Harden Records Inspection Data Flow
+**Date:** 08/03/2026
+**Status:** Completed
+
+## 1. Objective
+Harden the Records inspection create flow so loading state, previous-inspection prefill, and form initialisation remain deterministic under partial data, failed requests, and same-day inspection history.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/hooks/useRecordsData.ts`
+  * `src/app/dashboard/records/page.tsx`
+  * `src/components/records/forms/InspectionForm.tsx`
+  * `docs/features/records-inspection-hardening-plan.md`
+  * `tasks/todo.md`
+* **Simplicity Check:** Keep this to a surgical hardening pass inside the existing records page and hook. No schema changes, no new API surface, and no broader refactor of unrelated record forms.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Remove child-level loading toggles from `src/hooks/useRecordsData.ts`, make `fetchAllData()` the sole owner of global records loading state, and harden inspection fetch error handling so failed requests clear stale data instead of leaving mixed state behind.
+- [x] **Step 2:** Replace the partial `Inspection` cast in `src/app/dashboard/records/page.tsx` with a proper new-inspection `InspectionFormData` draft path so create flows no longer rely on invalid domain objects.
+- [x] **Step 3:** Update latest-inspection ordering and right-sized prefill tracking across `src/hooks/useRecordsData.ts` and `src/components/records/forms/InspectionForm.tsx` so same-day inspections resolve deterministically and late-arriving history can still populate the new form.
+- [x] **Step 4:** Update documentation in `docs/features/records-inspection-hardening-plan.md`
+- [x] **Step 5:** Prompt user to test the build
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The records page mixed page-level loading ownership with child fetch completion, and the new-inspection flow relied on a forged partial `Inspection` object. That combination left the form vulnerable to partial data, stale state after inspection fetch failures, and missed right-sized prefills when history arrived after the hive context was already set.
+* **Summary of Changes:** Consolidated inspection loading completion under `fetchAllData()`, cleared stale inspections on fetch errors, replaced the create-flow partial `Inspection` cast with a proper `InspectionFormData` draft, and hardened right-sized prefills so they re-evaluate when the resolved previous value changes.
+* **Notes for User:** No build or automated test run was performed, per project instruction. Please manually verify the Records page and new/edit inspection flows.
+
+## Review
+
+- Data loading: `src/hooks/useRecordsData.ts` no longer lets `fetchInspections()` finish the global records loading cycle early, and inspection fetch errors now clear stale inspection rows before returning.
+- Create-flow state: `src/app/dashboard/records/page.tsx` now uses a dedicated `InspectionFormData` draft for new inspections and memoises the form input model so parent re-renders do not recreate inspection initial data unnecessarily.
+- Prefill behaviour: `src/components/records/forms/InspectionForm.tsx` now keys right-sized prefills by both hive and resolved historical value, allowing late-arriving inspection history to populate the field once without repeatedly overriding the same hive context.
