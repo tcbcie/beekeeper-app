@@ -12,6 +12,8 @@ interface InspectionFormProps {
   initialData: InspectionFormData | null
   hives: Hive[]
   apiaries: Apiary[]
+  selectedApiaryId?: string
+  isEditing?: boolean
   userHasActiveSubscription: boolean
   onSubmit: (formData: InspectionFormData, imageFile: File | null) => Promise<void>
   onCancel: () => void
@@ -31,6 +33,8 @@ export default function InspectionForm({
   initialData,
   hives,
   apiaries,
+  selectedApiaryId = '',
+  isEditing = false,
   userHasActiveSubscription,
   onSubmit,
   onCancel,
@@ -39,7 +43,7 @@ export default function InspectionForm({
   fetchingWeather = false
 }: InspectionFormProps) {
   const [formData, setFormData] = useState<InspectionFormData>(initialData || getDefaultInspectionFormData())
-  const [formApiaryId, setFormApiaryId] = useState<string>('')
+  const [formApiaryId, setFormApiaryId] = useState<string>(selectedApiaryId)
   const [submitting, setSubmitting] = useState(false)
   const previousInitialDataRef = useRef<InspectionFormData | null>(initialData)
 
@@ -62,12 +66,20 @@ export default function InspectionForm({
     folder: 'inspections'
   })
 
+  const getApiaryIdForHive = useCallback((hiveId: string) => {
+    if (!hiveId) {
+      return ''
+    }
+
+    return hives.find(hive => hive.id === hiveId)?.apiary_id ?? ''
+  }, [hives])
+
   // Update form data when initialData changes
   useEffect(() => {
     if (!initialData) {
       if (previousInitialDataRef.current) {
         setFormData(getDefaultInspectionFormData())
-        setFormApiaryId('')
+        setFormApiaryId(selectedApiaryId)
         resetImage()
       }
       previousInitialDataRef.current = null
@@ -75,18 +87,44 @@ export default function InspectionForm({
     }
 
     setFormData(initialData)
-    const hive = hives.find(h => h.id === initialData.hive_id)
-    setFormApiaryId(hive?.apiary_id ?? '')
+    setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
     if (initialData.image_url) {
       setPreviewFromUrl(initialData.image_url)
     } else {
       resetImage()
     }
     previousInitialDataRef.current = initialData
-  }, [initialData, hives, setPreviewFromUrl, resetImage])
+  }, [getApiaryIdForHive, initialData, resetImage, selectedApiaryId, setPreviewFromUrl])
+
+  useEffect(() => {
+    if (isEditing || initialData?.hive_id) {
+      return
+    }
+
+    if (!formData.hive_id) {
+      setFormApiaryId(selectedApiaryId)
+      return
+    }
+
+    const hiveApiaryId = getApiaryIdForHive(formData.hive_id)
+
+    if (!selectedApiaryId) {
+      setFormApiaryId('')
+      return
+    }
+
+    if (hiveApiaryId === selectedApiaryId) {
+      setFormApiaryId(selectedApiaryId)
+      return
+    }
+
+    setFormApiaryId(selectedApiaryId)
+    setFormData(prev => ({ ...prev, hive_id: '' }))
+  }, [formData.hive_id, getApiaryIdForHive, initialData?.hive_id, isEditing, selectedApiaryId])
 
   const handleHiveSelect = async (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))
+    setFormApiaryId(getApiaryIdForHive(hiveId))
     if (hiveId) {
       await onHiveChange(hiveId)
     }
