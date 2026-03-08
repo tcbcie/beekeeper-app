@@ -144,6 +144,23 @@ export default function RecordsPage() {
     return merged
   }, [inspections, varroaTreatments, varroaChecks, feedings, harvests, archiveRecords])
 
+  const previousRightSizedFramesByHive = useMemo<Record<string, number | null>>(() => {
+    const latestValues: Record<string, number | null> = {}
+
+    for (const inspection of inspections) {
+      if (!inspection.hive_id || inspection.hive_id in latestValues) {
+        continue
+      }
+
+      latestValues[inspection.hive_id] =
+        inspection.right_sized_frames != null && inspection.right_sized_frames > 0
+          ? inspection.right_sized_frames
+          : null
+    }
+
+    return latestValues
+  }, [inspections])
+
   // Use the filters hook
   const {
     filters,
@@ -1035,6 +1052,7 @@ export default function RecordsPage() {
                 initialData={getInspectionFormData()}
                 hives={hives}
                 apiaries={apiaries}
+                previousRightSizedFramesByHive={previousRightSizedFramesByHive}
                 selectedApiaryId={filters.apiaryId}
                 selectedHiveId={filters.hiveId}
                 isEditing={Boolean(editingInspection?.id)}
