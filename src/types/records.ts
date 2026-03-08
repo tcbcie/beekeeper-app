@@ -376,7 +376,7 @@ export function getDefaultInspectionFormData(): InspectionFormData {
     weight: null,
     queen_seen: false,
     eggs_present: false,
-    drones_present: 3,
+    drones_present: -1,
     drone_brood_present: null,
     brood_frames: null,
     right_sized_frames: null,
