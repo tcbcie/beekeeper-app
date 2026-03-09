@@ -173,10 +173,14 @@ async function createQueensForRecipient(
   graftIds: string[]
 ): Promise<void> {
   try {
+    // Resolve auth user ID first so a failure doesn't abort the entire batch fetch
+    const { data: authData } = await supabase.auth.getUser()
+    const callerId = authData?.user?.id ?? ''
+
     // Fetch batch details (with mother queen + mating apiary) and current user's profile in parallel
     const [batchRes, profileRes] = await Promise.all([
       supabase.from('rearing_batches').select('id, emergence_date, batch_name, graft_date, apiaries!mating_apiary_id(name, eircode), queens!mother_queen_id(queen_number, marking_color, birth_date, subspecies)').eq('id', batchId).single(),
-      supabase.from('profiles').select('full_name, first_name, last_name, email').eq('id', (await supabase.auth.getUser()).data.user?.id ?? '').single(),
+      supabase.from('profiles').select('full_name, first_name, last_name, email').eq('id', callerId).single(),
     ])
 
     if (batchRes.error || !batchRes.data) {
@@ -203,7 +207,10 @@ async function createQueensForRecipient(
       const parts = [motherQueen.queen_number]
       const details: string[] = []
       if (motherQueen.marking_color) details.push(motherQueen.marking_color)
-      if (motherQueen.birth_date) details.push(new Date(motherQueen.birth_date).getFullYear().toString())
+      if (motherQueen.birth_date) {
+        const year = new Date(motherQueen.birth_date).getFullYear()
+        if (!isNaN(year)) details.push(year.toString())
+      }
       if (motherQueen.subspecies) details.push(motherQueen.subspecies)
       if (details.length > 0) parts.push(`(${details.join(' ')})`)
       motherQueenSnapshot = parts.join(' ')
