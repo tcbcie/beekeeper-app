@@ -11,6 +11,8 @@ interface VarroaTreatmentFormProps {
   treatment: VarroaTreatment | null
   hives: Hive[]
   apiaries: Apiary[]
+  selectedApiaryId?: string
+  selectedHiveId?: string
   treatmentProducts: TreatmentProduct[]
   applicationMethods: DropdownValue[]
   onSubmit: (treatment: VarroaTreatment, isOther: boolean, otherType: string) => Promise<void>
@@ -23,6 +25,8 @@ export default function VarroaTreatmentForm({
   treatment,
   hives,
   apiaries,
+  selectedApiaryId = '',
+  selectedHiveId = '',
   treatmentProducts,
   applicationMethods,
   onSubmit,
@@ -52,9 +56,12 @@ export default function VarroaTreatmentForm({
   const [selectedHiveHasHoneySupers, setSelectedHiveHasHoneySupers] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const isEditing = Boolean(treatment?.id)
 
   // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true)
+  const lastWeatherHiveIdRef = useRef<string | null>(null)
+  const weatherRequestIdRef = useRef(0)
   useEffect(() => {
     isMountedRef.current = true
     return () => { isMountedRef.current = false }
@@ -66,49 +73,109 @@ export default function VarroaTreatmentForm({
       setFormData(treatment)
       // Find apiary for selected hive
       const hive = hives.find(h => h.id === treatment.hive_id)
-      if (hive?.apiary_id) {
-        setFormApiaryId(hive.apiary_id)
-      }
+      setFormApiaryId(hive?.apiary_id ?? selectedApiaryId)
       // Check if treatment type is custom
       if (treatment.treatment_type && !treatmentProducts.some(p => p.product_name === treatment.treatment_type)) {
         setIsOtherTreatment(true)
         setOtherTreatmentType(treatment.treatment_type)
-      }
-      // Check for honey supers
-      if (hive) {
-        const honeySupers = hive.configuration?.honey_supers || 0
-        setSelectedHiveHasHoneySupers(honeySupers > 0)
+      } else {
+        setIsOtherTreatment(false)
+        setOtherTreatmentType('')
       }
     }
-  }, [treatment, hives, treatmentProducts])
+  }, [selectedApiaryId, treatment, hives, treatmentProducts])
 
-  const handleHiveChange = async (hiveId: string) => {
-    setFormData(prev => ({ ...prev, hive_id: hiveId }))
-
-    // Check if selected hive has honey supers
-    const selectedHive = hives.find(h => h.id === hiveId)
+  useEffect(() => {
+    const selectedHive = hives.find(h => h.id === formData.hive_id)
     const honeySupers = selectedHive?.configuration?.honey_supers || 0
     setSelectedHiveHasHoneySupers(honeySupers > 0)
+  }, [formData.hive_id, hives])
 
-    // Fetch weather data for the selected hive
-    if (hiveId) {
-      setFetchingWeather(true)
+  useEffect(() => {
+    if (isEditing) {
+      return
+    }
+
+    if (selectedHiveId) {
+      const selectedHive = hives.find(hive => hive.id === selectedHiveId)
+
+      if (!selectedHive) {
+        return
+      }
+
+      const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
+      setFormApiaryId(prev => prev !== nextApiaryId ? nextApiaryId : prev)
+      setFormData(prev => prev.hive_id !== selectedHiveId ? { ...prev, hive_id: selectedHiveId } : prev)
+      return
+    }
+
+    if (!selectedApiaryId) {
+      return
+    }
+
+    setFormApiaryId(prev => prev !== selectedApiaryId ? selectedApiaryId : prev)
+    setFormData(prev => {
+      if (!prev.hive_id) {
+        return prev
+      }
+
+      const hiveApiaryId = hives.find(hive => hive.id === prev.hive_id)?.apiary_id ?? ''
+      return hiveApiaryId && hiveApiaryId !== selectedApiaryId
+        ? { ...prev, hive_id: '' }
+        : prev
+    })
+  }, [hives, isEditing, selectedApiaryId, selectedHiveId])
+
+  useEffect(() => {
+    if (isEditing) {
+      return
+    }
+
+    if (!formData.hive_id) {
+      lastWeatherHiveIdRef.current = null
+      weatherRequestIdRef.current += 1
+      setFetchingWeather(false)
+      return
+    }
+
+    if (lastWeatherHiveIdRef.current === formData.hive_id) {
+      return
+    }
+
+    lastWeatherHiveIdRef.current = formData.hive_id
+    const currentHiveId = formData.hive_id
+    const requestId = ++weatherRequestIdRef.current
+
+    setFetchingWeather(true)
+
+    void (async () => {
       try {
-        const weatherData = await onFetchWeather(hiveId)
-        // Only update state if component is still mounted
-        if (isMountedRef.current && weatherData) {
-          setFormData(prev => ({
-            ...prev,
-            temperature: weatherData.temp,
-            weather_conditions: `${weatherData.condition}, ${weatherData.humidity}% humidity, ${weatherData.wind_speed} km/h wind`
-          }))
+        const weatherData = await onFetchWeather(currentHiveId)
+
+        if (!isMountedRef.current || requestId !== weatherRequestIdRef.current || !weatherData) {
+          return
         }
+
+        setFormData(prev => (
+          prev.hive_id === currentHiveId
+            ? {
+                ...prev,
+                temperature: weatherData.temp,
+                weather_conditions: `${weatherData.condition}, ${weatherData.humidity}% humidity, ${weatherData.wind_speed} km/h wind`
+              }
+            : prev
+        ))
       } finally {
-        if (isMountedRef.current) {
+        if (isMountedRef.current && requestId === weatherRequestIdRef.current) {
           setFetchingWeather(false)
         }
       }
-    }
+    })()
+  }, [formData.hive_id, isEditing, onFetchWeather])
+
+  const handleHiveChange = (hiveId: string) => {
+    setFormData(prev => ({ ...prev, hive_id: hiveId }))
+    setFormApiaryId(prev => hiveId ? (hives.find(h => h.id === hiveId)?.apiary_id ?? prev) : prev)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

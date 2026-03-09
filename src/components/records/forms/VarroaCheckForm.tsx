@@ -12,6 +12,8 @@ interface VarroaCheckFormProps {
   check: VarroaCheck | null
   hives: Hive[]
   apiaries: Apiary[]
+  selectedApiaryId?: string
+  selectedHiveId?: string
   checkMethodOptions: string[]
   existingChecks: VarroaCheck[]
   userHasActiveSubscription: boolean
@@ -24,6 +26,8 @@ export default function VarroaCheckForm({
   check,
   hives,
   apiaries,
+  selectedApiaryId = '',
+  selectedHiveId = '',
   checkMethodOptions,
   existingChecks,
   userHasActiveSubscription,
@@ -48,6 +52,7 @@ export default function VarroaCheckForm({
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [otherCheckMethod, setOtherCheckMethod] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const isEditing = Boolean(check?.id)
 
   const {
     imageFile,
@@ -73,19 +78,56 @@ export default function VarroaCheckForm({
       
       // Find apiary for selected hive
       const hive = hives.find(h => h.id === check.hive_id)
-      if (hive?.apiary_id) {
-        setFormApiaryId(hive.apiary_id)
-      }
+      setFormApiaryId(hive?.apiary_id ?? selectedApiaryId)
       // Check if method is custom
       if (check.method && !checkMethodOptions.includes(check.method)) {
         setOtherCheckMethod(check.method)
+      } else {
+        setOtherCheckMethod('')
       }
       // Set image preview if exists
       if (check.image_url) {
         setPreviewFromUrl(check.image_url)
+      } else {
+        resetImage()
       }
     }
-  }, [check, hives, checkMethodOptions, setPreviewFromUrl])
+  }, [check, checkMethodOptions, hives, resetImage, selectedApiaryId, setPreviewFromUrl])
+
+  useEffect(() => {
+    if (isEditing) {
+      return
+    }
+
+    if (selectedHiveId) {
+      const selectedHive = hives.find(hive => hive.id === selectedHiveId)
+
+      if (!selectedHive) {
+        return
+      }
+
+      const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
+      setFormApiaryId(prev => prev !== nextApiaryId ? nextApiaryId : prev)
+      setFormData(prev => prev.hive_id !== selectedHiveId ? { ...prev, hive_id: selectedHiveId } : prev)
+      return
+    }
+
+    if (!selectedApiaryId) {
+      return
+    }
+
+    setFormApiaryId(prev => prev !== selectedApiaryId ? selectedApiaryId : prev)
+    setFormData(prev => {
+      if (!prev.hive_id) {
+        return prev
+      }
+
+      const hiveApiaryId = hives.find(hive => hive.id === prev.hive_id)?.apiary_id ?? ''
+      return hiveApiaryId && hiveApiaryId !== selectedApiaryId
+        ? { ...prev, hive_id: '' }
+        : prev
+    })
+  }, [hives, isEditing, selectedApiaryId, selectedHiveId])
 
   const isNaturalDrop = formData.method === 'Natural Mite Drop' || formData.method === 'Screening Board'
 
@@ -282,7 +324,11 @@ export default function VarroaCheckForm({
           <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
           <select
             value={formData.hive_id}
-            onChange={(e) => setFormData(prev => ({ ...prev, hive_id: e.target.value }))}
+            onChange={(e) => {
+              const hiveId = e.target.value
+              setFormData(prev => ({ ...prev, hive_id: hiveId }))
+              setFormApiaryId(prev => hiveId ? (hives.find(h => h.id === hiveId)?.apiary_id ?? prev) : prev)
+            }}
             className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             required
           >
