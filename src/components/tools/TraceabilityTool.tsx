@@ -7,6 +7,7 @@ import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin,
 import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
 import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, OriginPercentage } from '@/types/traceability'
@@ -211,7 +212,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             }
             // Get first apiary with an image
             if (!apiaryImageUrl && apiary.image_url) {
-              apiaryImageUrl = apiary.image_url
+              apiaryImageUrl = normaliseStoragePublicUrl(apiary.image_url)
             }
           }
         }
