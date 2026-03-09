@@ -424,6 +424,41 @@ Queens auto-created via distribution have no provenance info and all fields are 
 
 ---
 
+# Task: Store Lineage Snapshot for Distributed Queens
+**Date:** 09/03/2026
+**Status:** In Progress
+
+## 1. Problem
+Recipients of distributed queens have no visibility of the breeder's mother queen or drone source. The `mother_id`/`father_id` FKs point to the breeder's queens which RLS blocks. The recipient sees an empty lineage.
+
+## 2. Impact Analysis
+* **DB Changes:**
+  * Add `distributed_mother_queen` text column — snapshot e.g. "Queen #5 (Blue 2025, AMM)"
+  * Add `distributed_drone_source` text column — e.g. "Open-mated at Mating Apiary (H91 E6K2)"
+  * Update RPC with `p_distributed_mother_queen`, `p_distributed_drone_source`, `p_subspecies`, `p_lineage`
+* **Files to Modify:**
+  * `src/hooks/useGraftDistributions.ts` — join mother queen via batch, build snapshots
+  * `src/types/queen.ts` — add new fields to Queen interface
+  * `src/app/dashboard/queens/page.tsx` — show lineage fields in breeder banner
+* **Simplicity Check:** Two new columns, RPC update, one extra join in the hook, banner update. No new UI components.
+
+## 3. Execution Plan
+- [x] **Step 1:** DB migration: add columns + update RPC (manual — MCP unavailable)
+- [x] **Step 2:** Update hook to join mother queen via batch and build snapshot strings
+- [x] **Step 3:** Update Queen type
+- [x] **Step 4:** Update breeder info banner to display mother queen and drone source
+- [ ] **Step 5:** Prompt user to test the build
+
+## 4. Post-Task Review
+* **Summary of Changes:**
+  * DB migration: added `distributed_mother_queen` and `distributed_drone_source` text columns to queens, updated RPC with `p_distributed_mother_queen`, `p_distributed_drone_source`, `p_subspecies`, `p_lineage`
+  * Hook: batch query now joins `queens!mother_queen_id` and fetches apiary `name`. Builds mother queen snapshot (e.g. "Queen #5 (Blue 2025, AMM)"), drone source description (e.g. "Open-mated at Apiary Name (H91 E6K2)"), and human-readable lineage summary. Also sets subspecies from mother queen.
+  * Type: added `distributed_mother_queen` and `distributed_drone_source` to Queen interface
+  * UI: breeder info banner now shows mother queen and drone source alongside breeder name and batch
+* **Notes for User:** Please run the SQL migration manually in the Supabase dashboard, then test by distributing a queen and checking the recipient's queen edit form.
+
+---
+
 # Task: Harden Records Inspection Data Flow
 **Date:** 08/03/2026
 **Status:** Completed
