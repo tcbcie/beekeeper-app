@@ -118,50 +118,32 @@ export default function InspectionForm({
     if (selectedHiveId) {
       const selectedHive = hives.find(hive => hive.id === selectedHiveId)
 
-      if (selectedHive) {
-        const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
-
-        if (formApiaryId !== nextApiaryId) {
-          setFormApiaryId(nextApiaryId)
-        }
-
-        if (formData.hive_id !== selectedHiveId) {
-          setFormData(prev => ({ ...prev, hive_id: selectedHiveId }))
-        }
-
+      if (!selectedHive) {
         return
       }
-    }
 
-    if (!formData.hive_id) {
-      if (formApiaryId !== selectedApiaryId) {
-        setFormApiaryId(selectedApiaryId)
-      }
+      const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
+      setFormApiaryId(prev => prev !== nextApiaryId ? nextApiaryId : prev)
+      setFormData(prev => prev.hive_id !== selectedHiveId ? { ...prev, hive_id: selectedHiveId } : prev)
       return
     }
-
-    const hiveApiaryId = getApiaryIdForHive(formData.hive_id)
 
     if (!selectedApiaryId) {
-      if (formApiaryId !== '') {
-        setFormApiaryId('')
-      }
       return
     }
 
-    if (hiveApiaryId === selectedApiaryId) {
-      if (formApiaryId !== selectedApiaryId) {
-        setFormApiaryId(selectedApiaryId)
+    setFormApiaryId(prev => prev !== selectedApiaryId ? selectedApiaryId : prev)
+    setFormData(prev => {
+      if (!prev.hive_id) {
+        return prev
       }
-      return
-    }
 
-    if (formApiaryId !== selectedApiaryId) {
-      setFormApiaryId(selectedApiaryId)
-    }
-
-    setFormData(prev => prev.hive_id ? { ...prev, hive_id: '' } : prev)
-  }, [formApiaryId, formData.hive_id, getApiaryIdForHive, hives, initialData?.hive_id, isEditing, selectedApiaryId, selectedHiveId])
+      const hiveApiaryId = getApiaryIdForHive(prev.hive_id)
+      return hiveApiaryId && hiveApiaryId !== selectedApiaryId
+        ? { ...prev, hive_id: '' }
+        : prev
+    })
+  }, [getApiaryIdForHive, hives, initialData?.hive_id, isEditing, selectedApiaryId, selectedHiveId])
 
   useEffect(() => {
     if (isEditing) {
@@ -200,7 +182,7 @@ export default function InspectionForm({
 
   const handleHiveSelect = async (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))
-    setFormApiaryId(getApiaryIdForHive(hiveId))
+    setFormApiaryId(prev => hiveId ? getApiaryIdForHive(hiveId) : prev)
     if (hiveId) {
       await onHiveChange(hiveId)
     }

@@ -1075,6 +1075,8 @@ export default function RecordsPage() {
                 treatment={editingTreatment}
                 hives={hives}
                 apiaries={apiaries}
+                selectedApiaryId={filters.apiaryId}
+                selectedHiveId={filters.hiveId}
                 treatmentProducts={treatmentProducts}
                 applicationMethods={applicationMethods}
                 onSubmit={handleTreatmentSubmit}
@@ -1089,6 +1091,8 @@ export default function RecordsPage() {
                 check={editingCheck}
                 hives={hives}
                 apiaries={apiaries}
+                selectedApiaryId={filters.apiaryId}
+                selectedHiveId={filters.hiveId}
                 checkMethodOptions={checkMethodOptions}
                 existingChecks={varroaChecks}
                 userHasActiveSubscription={userHasActiveSubscription}
@@ -1103,6 +1107,8 @@ export default function RecordsPage() {
                 feeding={editingFeeding}
                 hives={hives}
                 apiaries={apiaries}
+                selectedApiaryId={filters.apiaryId}
+                selectedHiveId={filters.hiveId}
                 feedTypeOptions={feedTypeOptions}
                 onSubmit={handleFeedingSubmit}
                 onCancel={resetForm}
@@ -1114,6 +1120,8 @@ export default function RecordsPage() {
                 harvest={editingHarvest}
                 hives={hives}
                 apiaries={apiaries}
+                selectedApiaryId={filters.apiaryId}
+                selectedHiveId={filters.hiveId}
                 floralSourceOptions={floralSourceOptions}
                 onSubmit={handleHarvestSubmit}
                 onCancel={resetForm}
