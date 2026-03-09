@@ -2,6 +2,7 @@
 import { Metadata } from 'next'
 import Image from 'next/image'
 import { Package, SearchX } from 'lucide-react'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import ApiaryAreaMapWrapper from '@/components/maps/ApiaryAreaMapWrapper'
 import FeedbackForm from '@/components/trace/FeedbackForm'
 
@@ -53,7 +54,9 @@ async function getBatchInfo(traceCode: string): Promise<BatchInfo | null> {
   })
 
   if (error || !data) return null
-  return data as BatchInfo
+  const info = data as BatchInfo
+  info.apiary_image_url = normaliseStoragePublicUrl(info.apiary_image_url) ?? null
+  return info
 }
 
 function formatDate(dateStr: string): string {

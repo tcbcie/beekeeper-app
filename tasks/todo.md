@@ -494,3 +494,32 @@ Harden the Records inspection create flow so loading state, previous-inspection 
 - Data loading: `src/hooks/useRecordsData.ts` no longer lets `fetchInspections()` finish the global records loading cycle early, and inspection fetch errors now clear stale inspection rows before returning.
 - Create-flow state: `src/app/dashboard/records/page.tsx` now uses a dedicated `InspectionFormData` draft for new inspections and memoises the form input model so parent re-renders do not recreate inspection initial data unnecessarily.
 - Prefill behaviour: `src/components/records/forms/InspectionForm.tsx` now keys right-sized prefills by both hive and resolved historical value, allowing late-arriving inspection history to populate the field once without repeatedly overriding the same hive context.
+
+---
+
+# Task: Normalise Image URLs for Batches & Public Traceability Page
+**Date:** 09/03/2026
+**Status:** In Progress
+
+## 1. Problem
+Apiary image URLs in the Traceability Tool (honey provenance) and the public Honey Trace page are not normalised. Legacy absolute Supabase storage URLs from previous projects break `next/image` in offline/local development and after project migrations.
+
+This was already fixed for inspections/records and apiaries (see `docs/features/offline-storage-url-normalisation-plan.md` and `docs/features/offline-apiary-image-url-normalisation-plan.md`). The same `normaliseStoragePublicUrl` from `src/lib/storage-url.ts` needs applying to the two remaining image paths.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/components/tools/TraceabilityTool.tsx` — normalise `apiaryImageUrl` at fetch time (line ~214)
+  * `src/app/(trace)/trace/[batchCode]/page.tsx` — normalise `apiary_image_url` before render (line ~158)
+  * `docs/features/batch-traceability-image-url-normalisation-plan.md` — new feature doc
+  * `tasks/todo.md`
+* **Simplicity Check:** Two single-line `normaliseStoragePublicUrl()` calls at existing image URL assignment points. No database changes, no component restructuring, no new dependencies.
+
+## 3. Execution Plan
+- [x] **Step 1:** In `TraceabilityTool.tsx`: import `normaliseStoragePublicUrl` and wrap the `apiaryImageUrl` assignment (line ~214) so the stored URL is normalised at fetch time.
+- [x] **Step 2:** In `trace/[batchCode]/page.tsx`: import `normaliseStoragePublicUrl` and normalise `apiary_image_url` after the RPC response before it reaches the `<Image>` component.
+- [x] **Step 3:** Create feature doc `docs/features/batch-traceability-image-url-normalisation-plan.md`.
+- [ ] **Step 4:** Prompt user to test the build.
+
+## 4. Post-Task Review
+* **Summary of Changes:** Applied the existing `normaliseStoragePublicUrl` helper to two files — the Traceability Tool's apiary image fetch and the public trace page's RPC response — so legacy Supabase storage URLs are rewritten to the current origin before rendering.
+* **Notes for User:** Please test by viewing a batch preview with an apiary image in the Traceability Tool, and visiting a public trace page that has an apiary image.
