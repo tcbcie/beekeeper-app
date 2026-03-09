@@ -335,13 +335,10 @@ export default function QueensPage() {
  const updateData = editingQueen.distributed_by_name
  ? {
  queen_number: dataToSubmit.queen_number,
- subspecies: dataToSubmit.subspecies,
  lineage: dataToSubmit.lineage,
  queen_clipped: dataToSubmit.queen_clipped,
  status: dataToSubmit.status,
  performance_notes: dataToSubmit.performance_notes,
- mother_id: dataToSubmit.mother_id,
- father_id: dataToSubmit.father_id,
  }
  : dataToSubmit
 
@@ -601,7 +598,7 @@ export default function QueensPage() {
  <p>Drone Source: {editingQueen.distributed_drone_source}</p>
  )}
  <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
- Birth date, marking colour, source, mated at, and source batch fields are locked for distributed queens.
+ Birth date, marking colour, source, subspecies, mother/father queen, mated at, and source batch are locked for distributed queens.
  </p>
  </div>
  )}
@@ -678,7 +675,8 @@ export default function QueensPage() {
  <select
  value={formData.subspecies}
  onChange={(e) => setFormData({ ...formData, subspecies: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ disabled={!!editingQueen?.distributed_by_name}
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select subspecies</option>
  {subspeciesOptions.map((subspecies) => (
@@ -705,7 +703,8 @@ export default function QueensPage() {
  <select
  value={formData.mother_id}
  onChange={(e) => setFormData({ ...formData, mother_id: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ disabled={!!editingQueen?.distributed_by_name}
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select mother queen (optional)</option>
  {queens
@@ -723,7 +722,8 @@ export default function QueensPage() {
  <select
  value={formData.father_id}
  onChange={(e) => setFormData({ ...formData, father_id: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ disabled={!!editingQueen?.distributed_by_name}
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select father queen (optional)</option>
  {queens
@@ -836,8 +836,8 @@ export default function QueensPage() {
  </div>
  </form>
 
- {/* Lineage Tree - only show when editing an existing queen */}
- {editingQueen && (
+ {/* Lineage Tree - only show when editing a non-distributed queen (distributed queens show provenance in the banner) */}
+ {editingQueen && !editingQueen.distributed_by_name && (
  <QueenLineageTree
  queenId={editingQueen.id}
  expanded={showLineage}
