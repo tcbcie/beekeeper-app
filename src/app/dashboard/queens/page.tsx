@@ -589,10 +589,16 @@ export default function QueensPage() {
  </h3>
  {editingQueen?.distributed_by_name && (
  <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
- <p className="font-medium">Distributed Queen</p>
+ <p className="font-medium">Distributed Queen — Provenance</p>
  <p>Breeder: {editingQueen.distributed_by_name}</p>
  {editingQueen.distributed_batch_name && (
  <p>Batch: {editingQueen.distributed_batch_name}</p>
+ )}
+ {editingQueen.distributed_mother_queen && (
+ <p>Mother Queen: {editingQueen.distributed_mother_queen}</p>
+ )}
+ {editingQueen.distributed_drone_source && (
+ <p>Drone Source: {editingQueen.distributed_drone_source}</p>
  )}
  <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
  Birth date, marking colour, source, mated at, and source batch fields are locked for distributed queens.

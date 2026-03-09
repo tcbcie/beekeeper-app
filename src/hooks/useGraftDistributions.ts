@@ -91,8 +91,11 @@ interface BatchDetails {
   batch_name: string
   graft_date: string | null
   mating_apiary_eircode: string | null
+  mating_apiary_name: string | null
   batchId: string | null
   distributedByName: string | null
+  motherQueenSnapshot: string | null
+  motherQueenSubspecies: string | null
 }
 
 /** Derive queen birth date: emergence_date, falling back to graft_date + 12 days. */
@@ -130,6 +133,18 @@ async function createQueenForRecipient(
     const markingColor = birthDate ? getQueenColorFromYear(birthDate) : null
     const eircode = batch.mating_apiary_eircode || null
 
+    // Build drone source description
+    const droneSource = batch.mating_apiary_name
+      ? `Open-mated at ${batch.mating_apiary_name}${eircode ? ` (${eircode})` : ''}`
+      : eircode ? `Open-mated at ${eircode}` : null
+
+    // Build human-readable lineage summary
+    const lineageParts: string[] = []
+    if (batch.motherQueenSnapshot) lineageParts.push(`Mother: ${batch.motherQueenSnapshot}`)
+    if (droneSource) lineageParts.push(droneSource)
+    if (batch.distributedByName) lineageParts.push(`Breeder: ${batch.distributedByName}`)
+    const lineage = lineageParts.length > 0 ? lineageParts.join('. ') + '.' : null
+
     await supabase.rpc('create_queen_for_distribution', {
       p_recipient_user_id: recipientUserId,
       p_queen_number: queenNumber,
@@ -141,6 +156,10 @@ async function createQueenForRecipient(
       p_batch_id: batch.batchId ?? null,
       p_distributed_by_name: batch.distributedByName ?? null,
       p_distributed_batch_name: batch.batch_name ?? null,
+      p_distributed_mother_queen: batch.motherQueenSnapshot ?? null,
+      p_distributed_drone_source: droneSource ?? null,
+      p_subspecies: batch.motherQueenSubspecies ?? null,
+      p_lineage: lineage,
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
@@ -154,9 +173,9 @@ async function createQueensForRecipient(
   graftIds: string[]
 ): Promise<void> {
   try {
-    // Fetch batch details and current user's profile in parallel
+    // Fetch batch details (with mother queen + mating apiary) and current user's profile in parallel
     const [batchRes, profileRes] = await Promise.all([
-      supabase.from('rearing_batches').select('id, emergence_date, batch_name, graft_date, apiaries!mating_apiary_id(eircode)').eq('id', batchId).single(),
+      supabase.from('rearing_batches').select('id, emergence_date, batch_name, graft_date, apiaries!mating_apiary_id(name, eircode), queens!mother_queen_id(queen_number, marking_color, birth_date, subspecies)').eq('id', batchId).single(),
       supabase.from('profiles').select('full_name, first_name, last_name, email').eq('id', (await supabase.auth.getUser()).data.user?.id ?? '').single(),
     ])
 
@@ -165,21 +184,41 @@ async function createQueensForRecipient(
       return
     }
 
-    const raw = batchRes.data as { id: string; emergence_date: string | null; batch_name: string; graft_date: string | null; apiaries: { eircode: string | null }[] | { eircode: string | null } | null }
+    const raw = batchRes.data as {
+      id: string; emergence_date: string | null; batch_name: string; graft_date: string | null;
+      apiaries: { name: string | null; eircode: string | null }[] | { name: string | null; eircode: string | null } | null;
+      queens: { queen_number: string; marking_color: string | null; birth_date: string | null; subspecies: string | null }[] | { queen_number: string; marking_color: string | null; birth_date: string | null; subspecies: string | null } | null;
+    }
     const apiary = Array.isArray(raw.apiaries) ? raw.apiaries[0] : raw.apiaries
+    const motherQueen = Array.isArray(raw.queens) ? raw.queens[0] : raw.queens
     if (profileRes.error) {
       console.error('Non-blocking: failed to fetch breeder profile:', profileRes.error)
     }
     const profile = profileRes.data as { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null } | null
     const displayName = profile?.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || 'Unknown breeder'
 
+    // Build mother queen snapshot: "Queen #5 (Blue 2025, AMM)"
+    let motherQueenSnapshot: string | null = null
+    if (motherQueen) {
+      const parts = [motherQueen.queen_number]
+      const details: string[] = []
+      if (motherQueen.marking_color) details.push(motherQueen.marking_color)
+      if (motherQueen.birth_date) details.push(new Date(motherQueen.birth_date).getFullYear().toString())
+      if (motherQueen.subspecies) details.push(motherQueen.subspecies)
+      if (details.length > 0) parts.push(`(${details.join(' ')})`)
+      motherQueenSnapshot = parts.join(' ')
+    }
+
     const batchDetails: BatchDetails = {
       emergence_date: raw.emergence_date,
       batch_name: raw.batch_name,
       graft_date: raw.graft_date,
       mating_apiary_eircode: apiary?.eircode ?? null,
+      mating_apiary_name: apiary?.name ?? null,
       batchId: raw.id,
       distributedByName: displayName,
+      motherQueenSnapshot,
+      motherQueenSubspecies: motherQueen?.subspecies ?? null,
     }
     await Promise.allSettled(
       graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails))

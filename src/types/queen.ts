@@ -15,6 +15,8 @@ export interface Queen {
   mated_at_eircode: string
   distributed_by_name?: string | null
   distributed_batch_name?: string | null
+  distributed_mother_queen?: string | null
+  distributed_drone_source?: string | null
   created_at?: string
   mother_id?: string
   father_id?: string
