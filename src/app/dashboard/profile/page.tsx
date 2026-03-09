@@ -236,6 +236,28 @@ export default function ProfilePage() {
  { data: colonies },
  { data: colonyMovements },
  { data: gddRecords },
+ { data: financialRecords },
+ { data: batchGrafts },
+ { data: graftDistributions },
+ { data: matingNucs },
+ { data: matingNucInspections },
+ { data: matingNucBatches },
+ { data: wildColonies },
+ { data: wildColonyInspections },
+ { data: diagnosisImages },
+ { data: diagnosisImageComments },
+ { data: qrTags },
+ { data: logbookEntries },
+ { data: conservationAreas },
+ { data: bulkContainers },
+ { data: purchaseItems },
+ { data: batchRuns },
+ { data: pushSubscriptions },
+ { data: supportTickets },
+ { data: reactivationRequests },
+ { data: subscriptionHistory },
+ { data: rearingGroupMembers },
+ { data: teamMembers },
  ] = await Promise.all([
  supabase.from('apiaries').select('*').eq('user_id', userId),
  supabase.from('hives').select('*').eq('user_id', userId),
@@ -250,6 +272,28 @@ export default function ProfilePage() {
  supabase.from('colonies').select('*').eq('user_id', userId),
  supabase.from('colony_movements').select('*').eq('user_id', userId),
  supabase.from('gdd_records').select('*').eq('user_id', userId),
+ supabase.from('financial_records').select('*').eq('user_id', userId),
+ supabase.from('batch_grafts').select('*').eq('user_id', userId),
+ supabase.from('graft_distributions').select('*').eq('user_id', userId),
+ supabase.from('mating_nucs').select('*').eq('user_id', userId),
+ supabase.from('mating_nuc_inspections').select('*').eq('user_id', userId),
+ supabase.from('mating_nuc_batches').select('*').eq('user_id', userId),
+ supabase.from('wild_colonies').select('*').eq('user_id', userId),
+ supabase.from('wild_colony_inspections').select('*').eq('user_id', userId),
+ supabase.from('diagnosis_images').select('*').eq('user_id', userId),
+ supabase.from('diagnosis_image_comments').select('*').eq('user_id', userId),
+ supabase.from('qr_tags').select('*').eq('user_id', userId),
+ supabase.from('logbook_entries').select('*').eq('user_id', userId),
+ supabase.from('conservation_areas').select('*').eq('user_id', userId),
+ supabase.from('bulk_containers').select('*').eq('user_id', userId),
+ supabase.from('purchase_items').select('*').eq('user_id', userId),
+ supabase.from('batch_runs').select('*').eq('user_id', userId),
+ supabase.from('push_subscriptions').select('*').eq('user_id', userId),
+ supabase.from('support_tickets').select('*').eq('user_id', userId),
+ supabase.from('reactivation_requests').select('*').eq('user_id', userId),
+ supabase.from('subscription_history').select('*').eq('user_id', userId),
+ supabase.from('rearing_group_members').select('*').eq('user_id', userId),
+ supabase.from('team_members').select('*').eq('user_id', userId),
  ])
 
  const exportData = {
@@ -271,6 +315,28 @@ export default function ProfilePage() {
  colonies: colonies || [],
  colony_movements: colonyMovements || [],
  gdd_records: gddRecords || [],
+ financial_records: financialRecords || [],
+ batch_grafts: batchGrafts || [],
+ graft_distributions: graftDistributions || [],
+ mating_nucs: matingNucs || [],
+ mating_nuc_inspections: matingNucInspections || [],
+ mating_nuc_batches: matingNucBatches || [],
+ wild_colonies: wildColonies || [],
+ wild_colony_inspections: wildColonyInspections || [],
+ diagnosis_images: diagnosisImages || [],
+ diagnosis_image_comments: diagnosisImageComments || [],
+ qr_tags: qrTags || [],
+ logbook_entries: logbookEntries || [],
+ conservation_areas: conservationAreas || [],
+ bulk_containers: bulkContainers || [],
+ purchase_items: purchaseItems || [],
+ batch_runs: batchRuns || [],
+ push_subscriptions: pushSubscriptions || [],
+ support_tickets: supportTickets || [],
+ reactivation_requests: reactivationRequests || [],
+ subscription_history: subscriptionHistory || [],
+ rearing_group_members: rearingGroupMembers || [],
+ team_members: teamMembers || [],
  }
 
  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
@@ -313,6 +379,28 @@ export default function ProfilePage() {
  { data: colonies },
  { data: colonyMovements },
  { data: gddRecords },
+ { data: financialRecords },
+ { data: batchGrafts },
+ { data: graftDistributions },
+ { data: matingNucs },
+ { data: matingNucInspections },
+ { data: matingNucBatches },
+ { data: wildColonies },
+ { data: wildColonyInspections },
+ { data: diagnosisImages },
+ { data: diagnosisImageComments },
+ { data: qrTags },
+ { data: logbookEntries },
+ { data: conservationAreas },
+ { data: bulkContainers },
+ { data: purchaseItems },
+ { data: batchRuns },
+ { data: pushSubscriptions },
+ { data: supportTickets },
+ { data: reactivationRequests },
+ { data: subscriptionHistory },
+ { data: rearingGroupMembers },
+ { data: teamMembers },
  ] = await Promise.all([
  supabase.from('apiaries').select('*').eq('user_id', userId),
  supabase.from('hives').select('*').eq('user_id', userId),
@@ -327,6 +415,28 @@ export default function ProfilePage() {
  supabase.from('colonies').select('*').eq('user_id', userId),
  supabase.from('colony_movements').select('*').eq('user_id', userId),
  supabase.from('gdd_records').select('*').eq('user_id', userId),
+ supabase.from('financial_records').select('*').eq('user_id', userId),
+ supabase.from('batch_grafts').select('*').eq('user_id', userId),
+ supabase.from('graft_distributions').select('*').eq('user_id', userId),
+ supabase.from('mating_nucs').select('*').eq('user_id', userId),
+ supabase.from('mating_nuc_inspections').select('*').eq('user_id', userId),
+ supabase.from('mating_nuc_batches').select('*').eq('user_id', userId),
+ supabase.from('wild_colonies').select('*').eq('user_id', userId),
+ supabase.from('wild_colony_inspections').select('*').eq('user_id', userId),
+ supabase.from('diagnosis_images').select('*').eq('user_id', userId),
+ supabase.from('diagnosis_image_comments').select('*').eq('user_id', userId),
+ supabase.from('qr_tags').select('*').eq('user_id', userId),
+ supabase.from('logbook_entries').select('*').eq('user_id', userId),
+ supabase.from('conservation_areas').select('*').eq('user_id', userId),
+ supabase.from('bulk_containers').select('*').eq('user_id', userId),
+ supabase.from('purchase_items').select('*').eq('user_id', userId),
+ supabase.from('batch_runs').select('*').eq('user_id', userId),
+ supabase.from('push_subscriptions').select('*').eq('user_id', userId),
+ supabase.from('support_tickets').select('*').eq('user_id', userId),
+ supabase.from('reactivation_requests').select('*').eq('user_id', userId),
+ supabase.from('subscription_history').select('*').eq('user_id', userId),
+ supabase.from('rearing_group_members').select('*').eq('user_id', userId),
+ supabase.from('team_members').select('*').eq('user_id', userId),
  ])
 
  const convertToCSV = (data: Record<string, unknown>[], tableName: string) => {
@@ -359,6 +469,28 @@ export default function ProfilePage() {
  csvContent += convertToCSV(colonies || [], 'Colonies')
  csvContent += convertToCSV(colonyMovements || [], 'Colony Movements')
  csvContent += convertToCSV(gddRecords || [], 'GDD Records')
+ csvContent += convertToCSV(financialRecords || [], 'Financial Records')
+ csvContent += convertToCSV(batchGrafts || [], 'Batch Grafts')
+ csvContent += convertToCSV(graftDistributions || [], 'Graft Distributions')
+ csvContent += convertToCSV(matingNucs || [], 'Mating Nucs')
+ csvContent += convertToCSV(matingNucInspections || [], 'Mating Nuc Inspections')
+ csvContent += convertToCSV(matingNucBatches || [], 'Mating Nuc Batches')
+ csvContent += convertToCSV(wildColonies || [], 'Wild Colonies')
+ csvContent += convertToCSV(wildColonyInspections || [], 'Wild Colony Inspections')
+ csvContent += convertToCSV(diagnosisImages || [], 'Diagnosis Images')
+ csvContent += convertToCSV(diagnosisImageComments || [], 'Diagnosis Image Comments')
+ csvContent += convertToCSV(qrTags || [], 'QR Tags')
+ csvContent += convertToCSV(logbookEntries || [], 'Logbook Entries')
+ csvContent += convertToCSV(conservationAreas || [], 'Conservation Areas')
+ csvContent += convertToCSV(bulkContainers || [], 'Bulk Containers')
+ csvContent += convertToCSV(purchaseItems || [], 'Purchase Items')
+ csvContent += convertToCSV(batchRuns || [], 'Batch Runs')
+ csvContent += convertToCSV(pushSubscriptions || [], 'Push Subscriptions')
+ csvContent += convertToCSV(supportTickets || [], 'Support Tickets')
+ csvContent += convertToCSV(reactivationRequests || [], 'Reactivation Requests')
+ csvContent += convertToCSV(subscriptionHistory || [], 'Subscription History')
+ csvContent += convertToCSV(rearingGroupMembers || [], 'Rearing Group Members')
+ csvContent += convertToCSV(teamMembers || [], 'Team Members')
 
  const blob = new Blob([csvContent], { type: 'text/csv' })
  const url = URL.createObjectURL(blob)
