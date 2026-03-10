@@ -6,7 +6,7 @@ import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
-import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Flame, Calendar, TreeDeciduous, Crosshair } from 'lucide-react'
+import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Calendar, TreeDeciduous, Crosshair } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useDCAPredictions } from '@/hooks/useDCAPredictions'
@@ -144,7 +144,6 @@ export default function CommunityMapPage() {
   const [showUserApiaries, setShowUserApiaries] = useState(true)
   const [showSharedApiaries, setShowSharedApiaries] = useState(true)
   const [flightRadius, setFlightRadius] = useState(3) // Default 3km
-  const [showHeatMap, setShowHeatMap] = useState(false)
   const [timeFilter, setTimeFilter] = useState(0) // Days, 0 = all time
   const [wildColonies, setWildColonies] = useState<WildColony[]>([])
   const [showWildColonies, setShowWildColonies] = useState(true)
@@ -278,12 +277,12 @@ export default function CommunityMapPage() {
     const layersToRemove = [
       'user-flight-radius-fill', 'user-flight-radius-outline',
       'shared-flight-radius-fill', 'shared-flight-radius-outline',
-      'heat-map-layer', 'cluster-circles', 'cluster-count', 'unclustered-point',
+      'cluster-circles', 'cluster-count', 'unclustered-point',
       'ca-fill', 'ca-outline',
       'dca-fill', 'dca-outline', 'dca-flyway-lines',
     ]
     const sourcesToRemove = [
-      'user-flight-radius', 'shared-flight-radius', 'apiaries-geojson', 'ca-source',
+      'user-flight-radius', 'shared-flight-radius', 'ca-source',
       'dca-source', 'dca-flyways',
     ]
     layersToRemove.forEach(layer => {
@@ -305,7 +304,7 @@ export default function CommunityMapPage() {
     const filteredSharedApiaries = filterByTime(sharedApiaries)
 
     // Add flight radius circles for user apiaries (green)
-    if (showUserApiaries && filteredUserApiaries.length > 0 && flightRadius > 0 && !showHeatMap) {
+    if (showUserApiaries && filteredUserApiaries.length > 0 && flightRadius > 0) {
       map.current.addSource('user-flight-radius', {
         type: 'geojson',
         data: createMultiCircleGeoJSON(filteredUserApiaries, flightRadius)
@@ -335,7 +334,7 @@ export default function CommunityMapPage() {
     // No client-side obfuscation needed - coordinates never leave server unobfuscated
 
     // Add flight radius circles for shared apiaries (purple)
-    if (showSharedApiaries && filteredSharedApiaries.length > 0 && flightRadius > 0 && !showHeatMap) {
+    if (showSharedApiaries && filteredSharedApiaries.length > 0 && flightRadius > 0) {
       map.current.addSource('shared-flight-radius', {
         type: 'geojson',
         data: createMultiCircleGeoJSON(filteredSharedApiaries, flightRadius)
@@ -361,70 +360,7 @@ export default function CommunityMapPage() {
       })
     }
 
-    // Combine all apiaries for heat map / clustering
-    const allApiariesGeoJSON: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: [
-        ...(showUserApiaries ? filteredUserApiaries.map(a => ({
-          type: 'Feature' as const,
-          properties: { type: 'user', name: a.name, city: a.city },
-          geometry: { type: 'Point' as const, coordinates: [a.longitude, a.latitude] }
-        })) : []),
-        ...(showSharedApiaries ? filteredSharedApiaries.map(a => ({
-          type: 'Feature' as const,
-          properties: { type: 'shared', city: a.city },
-          geometry: { type: 'Point' as const, coordinates: [a.longitude, a.latitude] }
-        })) : [])
-      ]
-    }
-
-    // Heat map mode
-    if (showHeatMap && allApiariesGeoJSON.features.length > 0) {
-      map.current.addSource('apiaries-geojson', {
-        type: 'geojson',
-        data: allApiariesGeoJSON
-      })
-
-      map.current.addLayer({
-        id: 'heat-map-layer',
-        type: 'heatmap',
-        source: 'apiaries-geojson',
-        paint: {
-          'heatmap-weight': 1,
-          'heatmap-intensity': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            5, 0.3,
-            10, 0.8,
-            15, 1.2
-          ],
-          'heatmap-radius': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            5, 5,
-            8, 12,
-            12, 25
-          ],
-          'heatmap-opacity': 0.65,
-          'heatmap-color': [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            0, 'rgba(0, 0, 255, 0)',
-            0.2, 'rgb(0, 255, 255)',
-            0.4, 'rgb(0, 255, 0)',
-            0.6, 'rgb(255, 255, 0)',
-            0.8, 'rgb(255, 128, 0)',
-            1, 'rgb(255, 0, 0)'
-          ]
-        }
-      })
-    } else {
-      // Standard marker mode (no heat map)
-
-      // Add markers for user's own apiaries (green, exact location)
+    // Add markers for user's own apiaries (green, exact location)
       if (showUserApiaries) {
         filteredUserApiaries.forEach(apiary => {
           if (!map.current) return
@@ -536,7 +472,6 @@ export default function CommunityMapPage() {
           markers.current.push(marker)
         })
       }
-    }
 
     // Add conservation area radius circles and markers
     if (showConservationAreas && conservationAreas.length > 0) {
@@ -719,7 +654,7 @@ export default function CommunityMapPage() {
       })
       // Only fit bounds initially, not on every filter change
     }
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, showHeatMap, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -872,25 +807,7 @@ export default function CommunityMapPage() {
               <span>DCA predictions</span>
             </Button>
           )}
-          <Button
-            type="button"
-            onClick={() => setShowHeatMap(prev => !prev)}
-            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showHeatMap ? 'text-orange-600' : 'text-text-tertiary'}`}
-            title="Show density heat map"
-          >
-            <Flame size={12} />
-            <span>Heat map</span>
-          </Button>
         </div>
-
-        {/* Heat map info tooltip when active */}
-        {showHeatMap && (
-          <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg shadow-lg border border-orange-200 dark:border-orange-800 p-2 max-w-[200px]">
-            <p className="text-xs text-orange-800 dark:text-orange-200 break-words">
-              <strong>Heat Map:</strong> Warmer colors (red/orange) show areas with more apiaries. Useful for identifying potential drone congregation areas.
-            </p>
-          </div>
-        )}
 
         {/* DCA Apiary Selector Panel */}
         {showDCAPredictions && userApiaries.length > 0 && (
