@@ -6,9 +6,10 @@ import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
-import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Flame, Calendar, TreeDeciduous } from 'lucide-react'
+import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Flame, Calendar, TreeDeciduous, Crosshair } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { useDCAPredictions } from '@/hooks/useDCAPredictions'
 // Server-side obfuscation now used - coordinates pre-obfuscated in database views
 
 interface SharedApiary {
@@ -150,10 +151,13 @@ export default function CommunityMapPage() {
   const [isPowerUser, setIsPowerUser] = useState(false)
   const [conservationAreas, setConservationAreas] = useState<ConservationArea[]>([])
   const [showConservationAreas, setShowConservationAreas] = useState(true)
+  const [showDCAPredictions, setShowDCAPredictions] = useState(false)
+  const [selectedDCAApiaries, setSelectedDCAApiaries] = useState<string[]>([])
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
   const router = useRouter()
+  const dca = useDCAPredictions(userApiaries)
 
   // Check auth and fetch shared apiaries
   useEffect(() => {
@@ -276,9 +280,11 @@ export default function CommunityMapPage() {
       'shared-flight-radius-fill', 'shared-flight-radius-outline',
       'heat-map-layer', 'cluster-circles', 'cluster-count', 'unclustered-point',
       'ca-fill', 'ca-outline',
+      'dca-fill', 'dca-outline', 'dca-flyway-lines',
     ]
     const sourcesToRemove = [
       'user-flight-radius', 'shared-flight-radius', 'apiaries-geojson', 'ca-source',
+      'dca-source', 'dca-flyways',
     ]
     layersToRemove.forEach(layer => {
       if (map.current?.getLayer(layer)) map.current.removeLayer(layer)
@@ -601,6 +607,106 @@ export default function CommunityMapPage() {
       })
     }
 
+    // Add DCA prediction layers (rose/pink)
+    if (showDCAPredictions && dca.predictions.length > 0) {
+      // Build circle features for each prediction
+      const dcaFeatures = dca.predictions.map(pred =>
+        createCircleGeoJSON([pred.longitude, pred.latitude], pred.radiusKm)
+      )
+      const dcaGeoJSON: GeoJSON.FeatureCollection<GeoJSON.Polygon> = {
+        type: 'FeatureCollection',
+        features: dcaFeatures,
+      }
+
+      map.current.addSource('dca-source', { type: 'geojson', data: dcaGeoJSON })
+      map.current.addLayer({
+        id: 'dca-fill',
+        type: 'fill',
+        source: 'dca-source',
+        paint: { 'fill-color': '#e11d48', 'fill-opacity': 0.12 },
+      })
+      map.current.addLayer({
+        id: 'dca-outline',
+        type: 'line',
+        source: 'dca-source',
+        paint: { 'line-color': '#e11d48', 'line-width': 2, 'line-opacity': 0.5, 'line-dasharray': [4, 3] },
+      })
+
+      // Flyway lines from apiaries to predicted DCAs
+      if (dca.flyways.length > 0) {
+        const flywayFeatures: GeoJSON.Feature<GeoJSON.LineString>[] = dca.flyways.map(fw => ({
+          type: 'Feature',
+          properties: { apiaryName: fw.apiaryName },
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [fw.fromLongitude, fw.fromLatitude],
+              [fw.toLongitude, fw.toLatitude],
+            ],
+          },
+        }))
+        const flywayGeoJSON: GeoJSON.FeatureCollection<GeoJSON.LineString> = {
+          type: 'FeatureCollection',
+          features: flywayFeatures,
+        }
+
+        map.current.addSource('dca-flyways', { type: 'geojson', data: flywayGeoJSON })
+        map.current.addLayer({
+          id: 'dca-flyway-lines',
+          type: 'line',
+          source: 'dca-flyways',
+          paint: { 'line-color': '#e11d48', 'line-width': 1.5, 'line-opacity': 0.35, 'line-dasharray': [6, 4] },
+        })
+      }
+
+      // Centre markers for each DCA prediction
+      dca.predictions.forEach(pred => {
+        if (!map.current) return
+
+        const el = document.createElement('div')
+        el.className = 'dca-marker'
+        el.style.cursor = 'pointer'
+        el.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; background-color: #e11d48; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="22" y1="12" x2="18" y2="12"></line>
+            <line x1="6" y1="12" x2="2" y2="12"></line>
+            <line x1="12" y1="6" x2="12" y2="2"></line>
+            <line x1="12" y1="22" x2="12" y2="18"></line>
+          </svg>
+        </div>`
+
+        const confidenceColour = pred.confidence === 'high' ? '#16a34a' : pred.confidence === 'medium' ? '#eab308' : '#9ca3af'
+        const apiaryNames = pred.contributingApiaries.length > 0
+          ? userApiaries.filter(a => pred.contributingApiaries.includes(a.id)).map(a => escapeHtml(a.name)).join(', ')
+          : 'Unknown'
+
+        const popup = new mapboxgl.Popup({
+          offset: 15,
+          closeButton: false,
+          closeOnClick: true,
+        }).setHTML(`
+          <div style="padding: 4px 8px; max-width: 200px;">
+            <div style="font-weight: 600; color: #e11d48;">Predicted DCA</div>
+            <div style="font-size: 11px; margin-top: 2px;">Direction: ${escapeHtml(pred.direction)} · Score: ${pred.score}</div>
+            <div style="font-size: 11px; margin-top: 2px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${confidenceColour}; margin-right: 4px;"></span>
+              ${escapeHtml(pred.confidence)} confidence
+            </div>
+            <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">From: ${apiaryNames}</div>
+            <div style="font-size: 10px; opacity: 0.5; margin-top: 4px;">Estimated — verify in field</div>
+          </div>
+        `)
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([pred.longitude, pred.latitude])
+          .setPopup(popup)
+          .addTo(map.current)
+
+        markers.current.push(marker)
+      })
+    }
+
     // Fit bounds to include visible apiaries (only on first load)
     const visibleUserApiaries = showUserApiaries ? filteredUserApiaries : []
     const visibleSharedApiaries = showSharedApiaries ? filteredSharedApiaries : []
@@ -613,7 +719,7 @@ export default function CommunityMapPage() {
       })
       // Only fit bounds initially, not on every filter change
     }
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, showHeatMap, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, showHeatMap, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -752,6 +858,20 @@ export default function CommunityMapPage() {
             <span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block flex-shrink-0" />
             <span>Conservation areas</span>
           </Button>
+          {userApiaries.length > 0 && (
+            <Button
+              type="button"
+              onClick={() => {
+                setShowDCAPredictions(prev => !prev)
+                if (showDCAPredictions) dca.clear()
+              }}
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showDCAPredictions ? 'text-rose-600' : 'text-text-tertiary'}`}
+            >
+              {showDCAPredictions ? <Eye size={12} /> : <EyeOff size={12} />}
+              <Crosshair size={12} />
+              <span>DCA predictions</span>
+            </Button>
+          )}
           <Button
             type="button"
             onClick={() => setShowHeatMap(prev => !prev)}
@@ -769,6 +889,48 @@ export default function CommunityMapPage() {
             <p className="text-xs text-orange-800 dark:text-orange-200 break-words">
               <strong>Heat Map:</strong> Warmer colors (red/orange) show areas with more apiaries. Useful for identifying potential drone congregation areas.
             </p>
+          </div>
+        )}
+
+        {/* DCA Apiary Selector Panel */}
+        {showDCAPredictions && userApiaries.length > 0 && (
+          <div className="bg-surface-elevated rounded-lg shadow-lg border border-border p-2 max-w-[200px]">
+            <p className="text-xs font-medium text-rose-600 mb-1.5">Select apiaries for DCA:</p>
+            <div className="space-y-1 max-h-[120px] overflow-y-auto">
+              {userApiaries.map(a => (
+                <label key={a.id} className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedDCAApiaries.includes(a.id)}
+                    onChange={(e) => {
+                      setSelectedDCAApiaries(prev =>
+                        e.target.checked
+                          ? [...prev, a.id]
+                          : prev.filter(id => id !== a.id)
+                      )
+                    }}
+                    className="rounded border-border text-rose-600 focus:ring-rose-500"
+                  />
+                  <span className="truncate">{a.name}</span>
+                </label>
+              ))}
+            </div>
+            {selectedDCAApiaries.length > 10 && (
+              <p className="text-xs text-amber-600 mt-1">Max 10 apiaries. First 10 will be used.</p>
+            )}
+            <button
+              onClick={() => dca.calculate(selectedDCAApiaries)}
+              disabled={dca.loading || selectedDCAApiaries.length === 0}
+              className="mt-2 w-full px-2 py-1 text-xs font-medium rounded bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {dca.loading ? 'Analysing terrain...' : 'Predict DCAs'}
+            </button>
+            {dca.error && (
+              <p className="text-xs text-red-500 mt-1">{dca.error}</p>
+            )}
+            {dca.predictions.length > 0 && (
+              <p className="text-xs text-rose-600 mt-1">{dca.predictions.length} area{dca.predictions.length !== 1 ? 's' : ''} found</p>
+            )}
           </div>
         )}
 
@@ -816,6 +978,13 @@ export default function CommunityMapPage() {
                 <div className="w-3 h-3 rounded-full bg-teal-600 border border-white"></div>
                 <span className="font-medium text-foreground">{conservationAreas.length}</span>
                 <span className="text-text-secondary hidden sm:inline">CAs</span>
+              </div>
+            )}
+            {dca.predictions.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-rose-600 border border-white"></div>
+                <span className="font-medium text-foreground">{dca.predictions.length}</span>
+                <span className="text-text-secondary hidden sm:inline">DCAs</span>
               </div>
             )}
           </div>
@@ -914,6 +1083,12 @@ export default function CommunityMapPage() {
             <div className="w-5 h-5 rounded-full bg-teal-600 border-2 border-white shadow"></div>
             <span className="text-text-secondary">NIHBS Conservation Area (AMM)</span>
           </div>
+          {dca.predictions.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-rose-600/20 border-2 border-rose-600/50 border-dashed"></div>
+              <span className="text-text-secondary">Predicted DCA (estimated)</span>
+            </div>
+          )}
           {flightRadius > 0 && (
             <>
               <div className="flex items-center gap-2">
