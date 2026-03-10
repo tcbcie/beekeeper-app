@@ -743,10 +743,12 @@ export default function CommunityMapPage() {
 
   // Global callback for DCA confirmation buttons in Mapbox popups
   useEffect(() => {
-    (window as Record<string, unknown>).__dcaConfirm = (lat: number, lng: number, confirmed: boolean) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any).__dcaConfirm = (lat: number, lng: number, confirmed: boolean) => {
       dca.confirmDCA(lat, lng, confirmed)
     }
-    return () => { delete (window as Record<string, unknown>).__dcaConfirm }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return () => { delete (window as any).__dcaConfirm }
   }, [dca.confirmDCA])
 
   if (loading) return <LoadingSpinner text="Loading community map..." />
