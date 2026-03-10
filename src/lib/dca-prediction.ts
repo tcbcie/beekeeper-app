@@ -41,6 +41,12 @@ interface Apiary {
   longitude: number
 }
 
+export interface ConfirmedLocation {
+  latitude: number
+  longitude: number
+  confirmed: boolean
+}
+
 interface SamplePoint {
   latitude: number
   longitude: number
@@ -268,7 +274,7 @@ function mergePredictions(predictions: ScoredCandidate[]): ScoredCandidate[] {
 
 // ── Main Entry Point ─────────────────────────────────────────
 
-export async function predictDCAs(apiaries: Apiary[]): Promise<DCAResult> {
+export async function predictDCAs(apiaries: Apiary[], confirmedLocations?: ConfirmedLocation[]): Promise<DCAResult> {
   if (apiaries.length === 0) return { predictions: [], flyways: [] }
 
   // Build lookup map to avoid repeated O(n) finds
@@ -307,6 +313,48 @@ export async function predictDCAs(apiaries: Apiary[]): Promise<DCAResult> {
     allCandidates.push(
       ...candidates.map(c => ({ ...c, apiaryId: apiary.id, apiaryName: apiary.name }))
     )
+  }
+
+  // Step 3b: Inject positive field confirmations not near any terrain candidate
+  if (confirmedLocations) {
+    for (const loc of confirmedLocations) {
+      if (!loc.confirmed) continue
+
+      // Skip if within 1km of an existing terrain candidate
+      const nearTerrain = allCandidates.some(
+        c => haversine(c.latitude, c.longitude, loc.latitude, loc.longitude) < 1
+      )
+      if (nearTerrain) continue
+
+      // Find nearest apiary and compute direction index from it
+      let nearestApiary: Apiary | null = null
+      let nearestDist = Infinity
+      for (const a of apiaries) {
+        const d = haversine(a.latitude, a.longitude, loc.latitude, loc.longitude)
+        if (d < nearestDist) {
+          nearestDist = d
+          nearestApiary = a
+        }
+      }
+      if (!nearestApiary) continue
+
+      // Compute bearing from apiary to confirmation → direction index
+      const dLng = (loc.longitude - nearestApiary.longitude) * Math.PI / 180
+      const lat1 = nearestApiary.latitude * Math.PI / 180
+      const lat2 = loc.latitude * Math.PI / 180
+      const y = Math.sin(dLng) * Math.cos(lat2)
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
+      const bearingDeg = ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360
+      const directionIndex = Math.round(bearingDeg / DIRECTION_STEP_DEG) % NUM_DIRECTIONS
+
+      allCandidates.push({
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        directionIndex,
+        apiaryId: nearestApiary.id,
+        apiaryName: nearestApiary.name,
+      })
+    }
   }
 
   if (allCandidates.length === 0) return { predictions: [], flyways: [] }
@@ -351,7 +399,12 @@ export async function predictDCAs(apiaries: Apiary[]): Promise<DCAResult> {
   scored = addConvergenceScores(scored)
 
   // Step 7: Filter, merge, limit
-  scored = scored.filter(c => c.score >= MIN_SCORE)
+  // When confirmations are present, use a lower threshold so borderline candidates
+  // survive to receive the hook's +15 confirmation bonus in post-processing.
+  const filterThreshold = confirmedLocations && confirmedLocations.length > 0
+    ? MIN_SCORE - 15
+    : MIN_SCORE
+  scored = scored.filter(c => c.score >= filterThreshold)
   scored = mergePredictions(scored)
   scored = scored.slice(0, MAX_RESULTS)
 

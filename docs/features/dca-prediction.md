@@ -37,7 +37,7 @@ Predicts likely Drone Congregation Areas near user apiaries based on terrain ele
 - **Caching:** localStorage with 24-hour TTL, keyed by apiary IDs + coordinates
 - **API budget:** ~70 points per apiary (48 terrain samples + ~20 bowl checks)
 - **Apiary limit:** Maximum 10 per calculation
-- **No database tables or API routes required** — entirely client-side
+- **Database:** `dca_confirmations` table stores field observations (user-scoped with RLS)
 
 ## Files
 
@@ -55,9 +55,57 @@ Predicts likely Drone Congregation Areas near user apiaries based on terrain ele
 - **API failure:** Error message in selector panel, no predictions shown
 - **10+ apiaries:** First 10 used, info note displayed
 
+## Field Confirmation
+
+Beekeepers can confirm or deny DCA predictions based on real-world observations, creating a feedback loop that improves scoring accuracy over time.
+
+### How It Works
+
+- Click a DCA marker popup to see "Drones seen" / "No drones" buttons
+- Clicking either button saves a confirmation record to the database
+- On the next prediction calculation, confirmations within 1km of a prediction adjust its score:
+  - **Positive confirmation:** +15 to score
+  - **Negative confirmation:** -15 to score
+- Scores are clamped to 0-100 and predictions below 40 are filtered out
+
+### Scoring Breakdown
+
+| Component | Points | Source |
+|-----------|--------|--------|
+| Bowl shape | 0-40 | Terrain elevation |
+| Donut distance | 0-20 | Distance from apiary |
+| Convergence | 0-40 | Multiple apiaries |
+| Field confirmation | +/-15 | User observation |
+
+### Visual Indicators
+
+- **Rose/pink marker** — unconfirmed prediction (default)
+- **Green marker** — confirmed DCA (drones observed)
+- **Grey marker** — denied DCA (no drones observed)
+
+### Candidate Injection
+
+Positive confirmations ("drones seen") at locations the terrain model missed are injected as new candidates directly into the prediction engine:
+
+1. After terrain candidates are generated, each positive confirmation is checked against existing candidates
+2. If no terrain candidate exists within 1km, the confirmation is injected as a new candidate
+3. The nearest apiary is found and the bearing from it determines the direction label
+4. Injected candidates go through normal bowl/donut/convergence scoring — terrain still has a say
+5. The existing +15 confirmation bonus is then applied on top by post-processing
+
+This means field-verified DCA locations appear in future predictions even when terrain analysis alone wouldn't find them. A confirmed location in a genuine terrain bowl scores higher than one on flat ground.
+
+Negative confirmations ("no drones") are not injected — they only suppress via the existing -15 post-processing adjustment.
+
+**Skip logic:** If a positive confirmation is within 1km of an existing terrain candidate, it is not injected (the terrain candidate already covers that area and receives the +15 bonus).
+
+### Privacy
+
+Confirmations are user-private only. Each beekeeper's observations affect only their own prediction scores. No community sharing of confirmations in this iteration.
+
 ## Limitations
 
 - Predictions are estimates based on elevation data only
 - Does not account for wind patterns, vegetation, or urban areas
 - Always verify potential DCAs with field observations
-- "Estimated — verify in field" note shown in all popups
+- Unconfirmed popups show "Drones seen" / "No drones" buttons for field verification

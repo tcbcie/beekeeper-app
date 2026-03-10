@@ -523,3 +523,64 @@ This was already fixed for inspections/records and apiaries (see `docs/features/
 ## 4. Post-Task Review
 * **Summary of Changes:** Applied the existing `normaliseStoragePublicUrl` helper to two files — the Traceability Tool's apiary image fetch and the public trace page's RPC response — so legacy Supabase storage URLs are rewritten to the current origin before rendering.
 * **Notes for User:** Please test by viewing a batch preview with an apiary image in the Traceability Tool, and visiting a public trace page that has an apiary image.
+
+---
+
+# Task: DCA Field Confirmation — Feedback Loop for Prediction Improvement
+**Date:** 10/03/2026
+**Status:** In Progress
+
+## 1. Objective
+Add a confirm/deny mechanism to DCA predictions so beekeepers can record field observations ("drones seen" or "no drones"), feeding real-world data back into scoring.
+
+## 2. Impact Analysis
+* **DB Changes:** New `dca_confirmations` table with user-scoped RLS
+* **Files Modified:**
+  * `src/hooks/useDCAPredictions.ts` — fetch confirmations, apply +/-15 score adjustment, expose `confirmDCA()`
+  * `src/app/dashboard/community-map/page.tsx` — popup buttons, marker colour logic, global callback, legend
+  * `docs/features/dca-prediction.md` — field confirmation documentation
+
+## 3. Execution Plan
+- [x] **Step 1:** Create `dca_confirmations` DB table with RLS via MCP migration
+- [x] **Step 2:** Update hook — add DCAConfirmation type, fetch on mount, apply score adjustments, add `confirmDCA()` function
+- [x] **Step 3:** Update community map — popup buttons, marker colours (green/grey/rose), global callback, legend entry
+- [x] **Step 4:** Update documentation with field confirmation section
+- [ ] **Step 5:** Prompt user to test the build
+
+## 4. Post-Task Review
+* **Summary of Changes:**
+  * DB: Created `dca_confirmations` table with indexes and standard user-scoped RLS policies
+  * Hook: Fetches confirmations on mount, applies +/-15 score adjustment post-prediction (clamped 0-100, filtered at 40), exposes `confirmDCA()` that inserts row and clears prediction cache
+  * Map: Unconfirmed popups show "Drones seen" / "No drones" buttons via `window.__dcaConfirm` global callback; confirmed markers are green (#059669), denied are grey (#9ca3af); circle fill/outline uses data-driven colour; legend shows confirmed DCA entry
+  * Docs: Added field confirmation section covering scoring impact, visual indicators, and privacy
+* **Notes for User:** Please test by running a DCA prediction, clicking a marker to confirm/deny, and verifying marker colour changes on recalculation.
+
+---
+
+# Task: DCA Candidate Injection — Field-Confirmed Locations Feed Into Prediction Engine
+**Date:** 10/03/2026
+**Status:** In Progress
+
+## 1. Objective
+Inject positive field confirmations as new candidates into the DCA prediction engine so field-verified locations appear in future predictions even when terrain analysis alone wouldn't find them.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/lib/dca-prediction.ts` — accept optional confirmations param, inject as candidates after terrain generation
+  * `src/hooks/useDCAPredictions.ts` — pass confirmations into `predictDCAs()`
+  * `docs/features/dca-prediction.md` — document candidate injection behaviour
+* **Simplicity Check:** One new optional parameter, one injection loop in the engine, one call-site change in the hook, and a docs update. No DB changes, no UI changes, no new files.
+
+## 3. Execution Plan
+- [x] **Step 1:** Add `ConfirmedLocation` interface and update `predictDCAs` signature to accept optional confirmations
+- [x] **Step 2:** After terrain candidate generation (Step 3), inject positive confirmations not within 1km of any terrain candidate — compute nearest apiary and direction index
+- [x] **Step 3:** Update hook to pass confirmations into `predictDCAs()`
+- [x] **Step 4:** Update `docs/features/dca-prediction.md` with candidate injection documentation
+- [ ] **Step 5:** Prompt user to test the build
+
+## 4. Post-Task Review
+* **Summary of Changes:**
+  * Engine (`dca-prediction.ts`): Added `ConfirmedLocation` export interface, updated `predictDCAs` to accept optional `confirmedLocations` param. After terrain candidate generation (Step 3), positive confirmations not within 1km of any terrain candidate are injected into `allCandidates` with the nearest apiary's ID/name and a computed direction index from bearing. They then flow through normal bowl/donut/convergence scoring.
+  * Hook (`useDCAPredictions.ts`): Maps `confirmationsRef.current` to `ConfirmedLocation[]` and passes it to `predictDCAs()`. Cache key unchanged — cache is already cleared on confirmation.
+  * Docs (`dca-prediction.md`): Added "Candidate Injection" subsection under Field Confirmation documenting the injection flow, skip logic, and scoring behaviour.
+* **Notes for User:** Please test by adding a positive confirmation at a location with no nearby DCA prediction, then recalculating — the confirmed location should appear as a new predicted DCA.

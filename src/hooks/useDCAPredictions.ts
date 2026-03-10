@@ -1,13 +1,24 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
-import { predictDCAs, type DCAPrediction, type DCAFlyway } from '@/lib/dca-prediction'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { predictDCAs, type DCAPrediction, type DCAFlyway, type ConfirmedLocation } from '@/lib/dca-prediction'
+import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
 
 interface Apiary {
   id: string
   name: string
   latitude: number
   longitude: number
+}
+
+export interface DCAConfirmation {
+  id: string
+  latitude: number
+  longitude: number
+  confirmed: boolean
+  observation_date: string
+  notes: string | null
 }
 
 const CACHE_KEY_PREFIX = 'dca-predictions-'
@@ -62,12 +73,75 @@ function saveCache(key: string, result: CachedResult): void {
   }
 }
 
+// Haversine distance in km between two lat/lng points
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function applyConfirmationAdjustments(
+  preds: DCAPrediction[],
+  confirmations: DCAConfirmation[]
+): DCAPrediction[] {
+  if (confirmations.length === 0) return preds
+
+  return preds
+    .map(pred => {
+      // Find nearest confirmation within 1km
+      let nearest: DCAConfirmation | null = null
+      let nearestDist = Infinity
+      for (const c of confirmations) {
+        const d = haversineKm(pred.latitude, pred.longitude, c.latitude, c.longitude)
+        if (d <= 1 && d < nearestDist) {
+          nearest = c
+          nearestDist = d
+        }
+      }
+      if (!nearest) return pred
+
+      const adjusted = Math.max(0, Math.min(100, pred.score + (nearest.confirmed ? 15 : -15)))
+      const confidence: 'high' | 'medium' | 'low' = adjusted >= 70 ? 'high' : adjusted >= 55 ? 'medium' : 'low'
+      const radiusKm = confidence === 'high' ? 0.5 : confidence === 'medium' ? 0.75 : 1
+      return { ...pred, score: adjusted, confidence, radiusKm }
+    })
+    .filter(pred => pred.score >= 40)
+}
+
 export function useDCAPredictions(apiaries: Apiary[]) {
   const [predictions, setPredictions] = useState<DCAPrediction[]>([])
   const [flyways, setFlyways] = useState<DCAFlyway[]>([])
+  const [confirmations, setConfirmations] = useState<DCAConfirmation[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const callIdRef = useRef(0)
+  const confirmationsRef = useRef<DCAConfirmation[]>([])
+
+  // Keep ref in sync for use inside calculate callback
+  useEffect(() => {
+    confirmationsRef.current = confirmations
+  }, [confirmations])
+
+  // Fetch confirmations on mount
+  useEffect(() => {
+    async function fetchConfirmations() {
+      const userId = await getCurrentUserId()
+      if (!userId) return
+      const { data } = await supabase
+        .from('dca_confirmations')
+        .select('id, latitude, longitude, confirmed, observation_date, notes')
+        .eq('user_id', userId)
+      if (data) {
+        const typed = data as DCAConfirmation[]
+        setConfirmations(typed)
+        confirmationsRef.current = typed
+      }
+    }
+    fetchConfirmations()
+  }, [])
 
   const calculate = useCallback(async (selectedApiaryIds: string[]) => {
     if (selectedApiaryIds.length === 0) {
@@ -88,7 +162,7 @@ export function useDCAPredictions(apiaries: Apiary[]) {
     const cacheKey = getCacheKey(ids, apiaries)
     const cached = loadCache(cacheKey)
     if (cached) {
-      setPredictions(cached.predictions)
+      setPredictions(applyConfirmationAdjustments(cached.predictions, confirmationsRef.current))
       setFlyways(cached.flyways)
       setError(null)
       return
@@ -101,11 +175,19 @@ export function useDCAPredictions(apiaries: Apiary[]) {
     setError(null)
 
     try {
-      const result = await predictDCAs(selected)
+      const confirmedLocations: ConfirmedLocation[] = confirmationsRef.current
+        .filter(c => isFinite(Number(c.latitude)) && isFinite(Number(c.longitude)))
+        .map(c => ({
+          latitude: Number(c.latitude),
+          longitude: Number(c.longitude),
+          confirmed: c.confirmed,
+        }))
+      const result = await predictDCAs(selected, confirmedLocations)
 
       if (callIdRef.current !== thisCallId) return // superseded by newer call
 
-      setPredictions(result.predictions)
+      const adjusted = applyConfirmationAdjustments(result.predictions, confirmationsRef.current)
+      setPredictions(adjusted)
       setFlyways(result.flyways)
       saveCache(cacheKey, { ...result, timestamp: Date.now() })
     } catch {
@@ -119,6 +201,31 @@ export function useDCAPredictions(apiaries: Apiary[]) {
     }
   }, [apiaries])
 
+  const confirmDCA = useCallback(async (lat: number, lng: number, confirmed: boolean): Promise<boolean> => {
+    const userId = await getCurrentUserId()
+    if (!userId) return false
+
+    const { data, error: insertError } = await supabase
+      .from('dca_confirmations')
+      .insert({ user_id: userId, latitude: lat, longitude: lng, confirmed })
+      .select('id, latitude, longitude, confirmed, observation_date, notes')
+      .single()
+
+    if (insertError || !data) return false
+
+    const newConfirmation = data as DCAConfirmation
+    setConfirmations(prev => [...prev, newConfirmation])
+    confirmationsRef.current = [...confirmationsRef.current, newConfirmation]
+
+    // Clear prediction cache so next calculation incorporates confirmations
+    try {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_KEY_PREFIX))
+      keys.forEach(k => localStorage.removeItem(k))
+    } catch { /* ignore */ }
+
+    return true
+  }, [])
+
   const clear = useCallback(() => {
     callIdRef.current++ // invalidate any in-flight calculation
     setPredictions([])
@@ -127,5 +234,5 @@ export function useDCAPredictions(apiaries: Apiary[]) {
     setLoading(false)
   }, [])
 
-  return { predictions, flyways, loading, error, calculate, clear }
+  return { predictions, flyways, confirmations, loading, error, calculate, clear, confirmDCA }
 }
