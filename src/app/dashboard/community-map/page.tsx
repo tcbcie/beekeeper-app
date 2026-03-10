@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button'
 import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Calendar, TreeDeciduous, Crosshair } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { useDCAPredictions } from '@/hooks/useDCAPredictions'
+import { useDCAPredictions, type DCAConfirmation } from '@/hooks/useDCAPredictions'
 // Server-side obfuscation now used - coordinates pre-obfuscated in database views
 
 interface SharedApiary {
@@ -87,6 +87,20 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
     Math.sin(dLng / 2) * Math.sin(dLng / 2)
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return R * c
+}
+
+// Find nearest DCA confirmation within 1km
+function findNearestConfirmation(lat: number, lng: number, confirmations: DCAConfirmation[]): DCAConfirmation | null {
+  let nearest: DCAConfirmation | null = null
+  let nearestDist = Infinity
+  for (const c of confirmations) {
+    const d = haversineDistance(lat, lng, Number(c.latitude), Number(c.longitude))
+    if (d <= 1 && d < nearestDist) {
+      nearest = c
+      nearestDist = d
+    }
+  }
+  return nearest
 }
 
 // Generate circle coordinates for GeoJSON
@@ -542,12 +556,16 @@ export default function CommunityMapPage() {
       })
     }
 
-    // Add DCA prediction layers (rose/pink)
+    // Add DCA prediction layers (rose/pink, green for confirmed, grey for denied)
     if (showDCAPredictions && dca.predictions.length > 0) {
-      // Build circle features for each prediction
-      const dcaFeatures = dca.predictions.map(pred =>
-        createCircleGeoJSON([pred.longitude, pred.latitude], pred.radiusKm)
-      )
+      // Build circle features for each prediction with colour based on confirmation status
+      const dcaFeatures = dca.predictions.map(pred => {
+        const match = findNearestConfirmation(pred.latitude, pred.longitude, dca.confirmations)
+        const colour = match ? (match.confirmed ? '#059669' : '#9ca3af') : '#e11d48'
+        const feature = createCircleGeoJSON([pred.longitude, pred.latitude], pred.radiusKm)
+        feature.properties = { ...feature.properties, color: colour }
+        return feature
+      })
       const dcaGeoJSON: GeoJSON.FeatureCollection<GeoJSON.Polygon> = {
         type: 'FeatureCollection',
         features: dcaFeatures,
@@ -558,13 +576,13 @@ export default function CommunityMapPage() {
         id: 'dca-fill',
         type: 'fill',
         source: 'dca-source',
-        paint: { 'fill-color': '#e11d48', 'fill-opacity': 0.12 },
+        paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.12 },
       })
       map.current.addLayer({
         id: 'dca-outline',
         type: 'line',
         source: 'dca-source',
-        paint: { 'line-color': '#e11d48', 'line-width': 2, 'line-opacity': 0.5, 'line-dasharray': [4, 3] },
+        paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-opacity': 0.5, 'line-dasharray': [4, 3] },
       })
 
       // Flyway lines from apiaries to predicted DCAs
@@ -598,10 +616,13 @@ export default function CommunityMapPage() {
       dca.predictions.forEach(pred => {
         if (!map.current) return
 
+        const match = findNearestConfirmation(pred.latitude, pred.longitude, dca.confirmations)
+        const markerColour = match ? (match.confirmed ? '#059669' : '#9ca3af') : '#e11d48'
+
         const el = document.createElement('div')
         el.className = 'dca-marker'
         el.style.cursor = 'pointer'
-        el.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; background-color: #e11d48; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+        el.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; background-color: ${markerColour}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="22" y1="12" x2="18" y2="12"></line>
@@ -616,20 +637,38 @@ export default function CommunityMapPage() {
           ? userApiaries.filter(a => pred.contributingApiaries.includes(a.id)).map(a => escapeHtml(a.name)).join(', ')
           : 'Unknown'
 
+        // Build popup title and footer based on confirmation status
+        const popupTitle = match
+          ? (match.confirmed ? 'Confirmed DCA' : 'Denied DCA')
+          : 'Predicted DCA'
+        const titleColour = match ? (match.confirmed ? '#059669' : '#9ca3af') : '#e11d48'
+
+        let footerHtml: string
+        if (match) {
+          const statusLabel = match.confirmed ? 'Confirmed' : 'Denied'
+          const statusColour = match.confirmed ? '#059669' : '#9ca3af'
+          footerHtml = `<div style="font-size: 10px; color: ${statusColour}; margin-top: 4px;">${statusLabel} on ${escapeHtml(match.observation_date)}</div>`
+        } else {
+          footerHtml = `<div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button onclick="window.__dcaConfirm(${pred.latitude}, ${pred.longitude}, true)" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid #059669; background: #ecfdf5; color: #059669; cursor: pointer;">Drones seen</button>
+            <button onclick="window.__dcaConfirm(${pred.latitude}, ${pred.longitude}, false)" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid #9ca3af; background: #f9fafb; color: #6b7280; cursor: pointer;">No drones</button>
+          </div>`
+        }
+
         const popup = new mapboxgl.Popup({
           offset: 15,
           closeButton: false,
           closeOnClick: true,
         }).setHTML(`
-          <div style="padding: 4px 8px; max-width: 200px;">
-            <div style="font-weight: 600; color: #e11d48;">Predicted DCA</div>
+          <div style="padding: 4px 8px; max-width: 220px;">
+            <div style="font-weight: 600; color: ${titleColour};">${escapeHtml(popupTitle)}</div>
             <div style="font-size: 11px; margin-top: 2px;">Direction: ${escapeHtml(pred.direction)} · Score: ${pred.score}</div>
             <div style="font-size: 11px; margin-top: 2px;">
               <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${confidenceColour}; margin-right: 4px;"></span>
               ${escapeHtml(pred.confidence)} confidence
             </div>
             <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">From: ${apiaryNames}</div>
-            <div style="font-size: 10px; opacity: 0.5; margin-top: 4px;">Estimated — verify in field</div>
+            ${footerHtml}
           </div>
         `)
 
@@ -654,7 +693,7 @@ export default function CommunityMapPage() {
       })
       // Only fit bounds initially, not on every filter change
     }
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -701,6 +740,14 @@ export default function CommunityMapPage() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isFullscreen])
+
+  // Global callback for DCA confirmation buttons in Mapbox popups
+  useEffect(() => {
+    (window as Record<string, unknown>).__dcaConfirm = (lat: number, lng: number, confirmed: boolean) => {
+      dca.confirmDCA(lat, lng, confirmed)
+    }
+    return () => { delete (window as Record<string, unknown>).__dcaConfirm }
+  }, [dca.confirmDCA])
 
   if (loading) return <LoadingSpinner text="Loading community map..." />
 
@@ -1001,10 +1048,16 @@ export default function CommunityMapPage() {
             <span className="text-text-secondary">NIHBS Conservation Area (AMM)</span>
           </div>
           {dca.predictions.length > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-rose-600/20 border-2 border-rose-600/50 border-dashed"></div>
-              <span className="text-text-secondary">Predicted DCA (estimated)</span>
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-rose-600/20 border-2 border-rose-600/50 border-dashed"></div>
+                <span className="text-text-secondary">Predicted DCA (estimated)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-emerald-600/20 border-2 border-emerald-600/50"></div>
+                <span className="text-text-secondary">Confirmed DCA (field verified)</span>
+              </div>
+            </>
           )}
           {flightRadius > 0 && (
             <>
