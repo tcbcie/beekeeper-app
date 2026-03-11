@@ -1,32 +1,26 @@
-# Task: Queen Rearing Batch Grafts Dark Mode Refinement
+# Task: Queen Rearing Planning Desktop Dark Layout Reset
 **Date:** 11/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Fix the remaining dark-mode regressions in the Queen Rearing batch-grafts area so the `Individual Cells/Grafts`, `Cell Frame`, and `Queen Tracking` sections render with proper contrast and coherent surfaces in dark theme.
+Fix the remaining desktop dark-mode issues in the Queen Rearing `Planning` tab so the top planning band reads as one coherent interface instead of a light outer shell with mismatched pastel snapshot cards.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/app/dashboard/batches/page.tsx`
-  * `src/components/batches/BatchGraftsSection.tsx`
-  * `src/components/batches/GraftHelpBanner.tsx`
-  * `src/components/batches/DistributionList.tsx`
-  * `src/components/batches/CellFrame.tsx`
-  * `src/components/batches/QueenTrackingSection.tsx`
-  * `src/components/batches/graftConstants.ts`
+* **Files to Modify:** * `src/components/batches/QueenRearingPlanningTab.tsx`
   * `docs/features/queen-rearing.md`
-  * `docs/features/queen-rearing-batch-grafts-dark-mode-refinement-plan.md`
+  * `docs/features/queen-rearing-planning-desktop-dark-layout-reset-plan.md`
   * `tasks/todo-codex.md`
-* **Simplicity Check:** Keep this limited to theme and contrast fixes in the batch-grafts UI shell and its immediate child components. Do not change graft workflow behaviour, data flow, or the underlying batch logic.
+* **Simplicity Check:** Keep this limited to the desktop presentation, contrast, and layout treatment of the `Planning` tab and its surfaced card language. Do not change the planner calculations, dates, state model, or database behaviour.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Audit the batch-grafts components for light-biased table rows, panel backgrounds, status chips, and control states that break in dark mode.
-- [x] **Step 2:** Update the affected components and shared graft colour tokens so tables, frame controls, row states, and status badges remain legible and consistent in dark theme.
-- [x] **Step 3:** Update the relevant Queen Rearing documentation in `docs/features/` to note the dark-mode refinement of the batch-grafts area.
+- [x] **Step 1:** Audit the current `Planning` top section for light-biased desktop surfaces, weak text contrast, and snapshot cards whose pastel fills do not belong in dark mode.
+- [x] **Step 2:** Recompose the top planning band in `src/components/batches/QueenRearingPlanningTab.tsx` into a darker, more coherent desktop layout with consistent surfaced cards, restrained accent usage, and stronger content hierarchy.
+- [x] **Step 3:** Update the relevant Queen Rearing documentation in `docs/features/` to note the desktop dark-layout reset for the planner.
 - [x] **Step 4:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The batch-grafts area still mixed light-theme table surfaces and older badge tokens into dark mode, leaving large sections washed out or unreadable.
-* **Summary of Changes:** Replaced the light-biased outer grafts wrapper with a neutral surfaced shell, aligned the individual grafts section, frame, queen tracking table, and distribution cards with darker surfaces, and hardened the shared graft status tokens so chips and badges remain consistent across the full batch-grafts flow.
-* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the dark-mode UI in your normal browser/build check.
+* **Root Cause Found (if applicable):** The desktop planner still mixed a pale outer shell with fixed pastel snapshot cards and a stretched control panel, so dark mode felt inconsistent even after earlier token-level fixes.
+* **Summary of Changes:** Rebuilt the desktop planner shell around surfaced theme cards, removed the pastel summary fills, stopped the right-hand panel from stretching, and aligned the lower timeline cards with the same accent system.
+* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the desktop planner in your normal browser/build check.
