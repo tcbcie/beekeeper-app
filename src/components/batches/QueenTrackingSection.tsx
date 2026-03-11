@@ -107,7 +107,7 @@ export default function QueenTrackingSection({
 
       {/* Table Bulk Action Bar */}
       {(tableSelectMode || tableSelectedIds.size > 0) && (
-        <div className="flex flex-wrap items-center gap-2 p-3 mb-3 bg-forest-50 dark:bg-forest-950/30 rounded-lg border border-forest-200 dark:border-forest-800">
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-forest-200 bg-forest-50 dark:border-forest-800 dark:bg-forest-950/20 p-3">
           <span className="text-sm font-medium text-foreground">{tableSelectedIds.size} selected</span>
           <Button type="button" onClick={selectAllTable} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
             Select All
@@ -122,7 +122,7 @@ export default function QueenTrackingSection({
             type="date"
             value={bulkDate}
             onChange={(e) => setBulkDate(e.target.value)}
-            className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
           />
           <Button
             type="button"
@@ -135,7 +135,7 @@ export default function QueenTrackingSection({
           <select
             onChange={(e) => { if (e.target.value) { handleTableBulkStatusChange(e.target.value, bulkDate); e.target.value = '' } }}
             defaultValue=""
-            className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
           >
             <option value="" disabled>Change Status...</option>
             {TABLE_STATUSES.map((s) => (
@@ -187,9 +187,9 @@ export default function QueenTrackingSection({
       )}
 
       {/* Desktop Table */}
-      <div className="hidden md:block">
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-surface shadow-sm dark:bg-surface-elevated/95 md:block">
         <table className="min-w-full divide-y divide-border">
-          <thead className="bg-surface-secondary">
+          <thead className="bg-surface-secondary dark:bg-surface">
             <tr>
               <th className="px-2 py-2 w-8" />
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
@@ -206,12 +206,18 @@ export default function QueenTrackingSection({
               const isLockedByFailed = graft.status === 'failed'
               const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
               const canMark = MARKABLE_STATUSES.includes(graft.status)
+              const isSelected = tableSelectedIds.has(graft.id)
+              const rowClassName = isSelected
+                ? 'bg-forest-50/70 ring-1 ring-inset ring-forest-500 dark:bg-forest-950/25'
+                : isLocked
+                  ? 'bg-surface-secondary/60 dark:bg-surface/40'
+                  : 'bg-surface hover:bg-surface-secondary/80 dark:bg-surface-elevated/70 dark:hover:bg-surface/60'
               return (
-                <tr key={graft.id} className={`hover:bg-surface-secondary ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-inset ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
+                <tr key={graft.id} className={`transition-colors ${rowClassName}`}>
                   <td className="px-2 py-2">
                     {!isLocked && (
                       <Button type="button" onClick={() => toggleTableSelect(graft.id)}>
-                        {tableSelectedIds.has(graft.id)
+                        {isSelected
                           ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
                           : <Square size={16} className="text-text-tertiary" />
                         }
@@ -222,11 +228,11 @@ export default function QueenTrackingSection({
                   <td className="px-3 py-2">
                     {isLocked ? (
                       isLockedByFailed ? (
-                        <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium">
+                        <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800 font-medium">
                           Failed
                         </span>
                       ) : (
-                        <span className="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">
+                        <span className="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium">
                           Distributed
                         </span>
                       )
@@ -234,7 +240,7 @@ export default function QueenTrackingSection({
                       <select
                         value={graft.status}
                         onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
-                        className="px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                        className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
                       >
                         {TABLE_STATUSES.map(s => (
                           <option key={s.value} value={s.value}>{s.label}</option>
@@ -251,7 +257,7 @@ export default function QueenTrackingSection({
                         type="date"
                         defaultValue={graft.status_date || ''}
                         onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
-                        className="w-32 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                        className="w-32 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
                       />
                     )}
                   </td>
@@ -260,7 +266,7 @@ export default function QueenTrackingSection({
                       type="checkbox"
                       checked={graft.queen_marked}
                       onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                      className="h-4 w-4 rounded border-border bg-surface text-forest-600 focus:ring-forest-500 dark:bg-surface-elevated"
                       disabled={isLocked || !canMark}
                     />
                   </td>
@@ -279,7 +285,7 @@ export default function QueenTrackingSection({
                           }
                         }}
                         placeholder="Enter number..."
-                        className="w-28 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                        className="w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
                       />
                     )}
                   </td>
@@ -304,7 +310,7 @@ export default function QueenTrackingSection({
                         <Button
                           type="button"
                           onClick={() => setDistributeGraft(graft)}
-                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
+                          className="p-1.5 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
                           title="Distribute"
                         >
                           <Send size={14} />
@@ -314,7 +320,7 @@ export default function QueenTrackingSection({
                         <Button
                           type="button"
                           onClick={() => deleteGraft(graft.id)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                          className="p-1.5 text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                           title="Delete"
                         >
                           <Trash2 size={14} />
@@ -337,13 +343,14 @@ export default function QueenTrackingSection({
           const isLockedByFailed = graft.status === 'failed'
           const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
           const canMark = MARKABLE_STATUSES.includes(graft.status)
+          const isSelected = tableSelectedIds.has(graft.id)
           return (
-            <div key={graft.id} className={`p-3 bg-surface-elevated rounded-lg border border-border space-y-2 ${tableSelectedIds.has(graft.id) ? 'ring-1 ring-forest-500 bg-forest-50/50 dark:bg-forest-950/20' : ''} ${isLocked ? 'opacity-60' : ''}`}>
+            <div key={graft.id} className={`space-y-2 rounded-xl border border-border p-3 shadow-sm ${isSelected ? 'ring-1 ring-forest-500 bg-forest-50/60 dark:bg-forest-950/20' : isLocked ? 'bg-surface-secondary/70 dark:bg-surface/40' : 'bg-surface dark:bg-surface-elevated/95'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   {!isLocked && (
                     <Button type="button" onClick={() => toggleTableSelect(graft.id)}>
-                      {tableSelectedIds.has(graft.id)
+                      {isSelected
                         ? <CheckSquare size={16} className="text-forest-600 dark:text-forest-400" />
                         : <Square size={16} className="text-text-tertiary" />
                       }
@@ -353,11 +360,11 @@ export default function QueenTrackingSection({
                 </div>
                 {isLocked ? (
                   isLockedByFailed ? (
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800">
                       Failed
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                       Distributed
                     </span>
                   )
@@ -374,7 +381,7 @@ export default function QueenTrackingSection({
                     <select
                       value={graft.status}
                       onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
-                      className="px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                      className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
                     >
                       {TABLE_STATUSES.map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
@@ -388,7 +395,7 @@ export default function QueenTrackingSection({
                       type="date"
                       defaultValue={graft.status_date || ''}
                       onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
-                      className="w-28 sm:w-32 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                      className="w-28 sm:w-32 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -397,7 +404,7 @@ export default function QueenTrackingSection({
                       type="checkbox"
                       checked={graft.queen_marked}
                       onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                      className="h-4 w-4 rounded border-border bg-surface text-forest-600 focus:ring-forest-500 dark:bg-surface-elevated"
                       disabled={!canMark}
                     />
                   </div>
@@ -415,7 +422,7 @@ export default function QueenTrackingSection({
                         }
                       }}
                       placeholder="Enter number..."
-                      className="w-24 sm:w-28 px-2 py-1 text-xs rounded border border-border bg-surface text-foreground"
+                      className="w-24 sm:w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
                     />
                     ) : (
                       <span className="text-xs text-text-secondary">{graft.queen_number || '-'}</span>
@@ -443,7 +450,7 @@ export default function QueenTrackingSection({
                   <Button
                     type="button"
                     onClick={() => setDistributeGraft(graft)}
-                    className="px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded flex items-center gap-1"
+                    className="px-2 py-1 text-xs text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded flex items-center gap-1"
                   >
                     <Send size={12} />
                     Distribute
@@ -453,7 +460,7 @@ export default function QueenTrackingSection({
                   <Button
                     type="button"
                     onClick={() => deleteGraft(graft.id)}
-                    className="px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex items-center gap-1"
+                    className="px-2 py-1 text-xs text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex items-center gap-1"
                   >
                     <Trash2 size={12} />
                     Delete
