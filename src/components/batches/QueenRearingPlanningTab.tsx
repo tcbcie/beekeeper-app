@@ -383,24 +383,24 @@ function SnapshotWindowCard({
           </span>
         )}
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))]">
         <div className={snapshotInsetSurfaceClass}>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
             <span className={`${snapshotInsetBadgeBaseClass} ${toneStyles.badgeClass}`}>
               {start.weekday}
             </span>
           </div>
-          <p className="mt-3 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{start.calendarDate}</p>
+          <p className="mt-3 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums sm:text-xl">{start.calendarDate}</p>
         </div>
         <div className={snapshotInsetSurfaceClass}>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
             <span className={`${snapshotInsetBadgeBaseClass} ${toneStyles.badgeClass}`}>
               {end.weekday}
             </span>
           </div>
-          <p className="mt-3 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{end.calendarDate}</p>
+          <p className="mt-3 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums sm:text-xl">{end.calendarDate}</p>
         </div>
       </div>
     </div>
