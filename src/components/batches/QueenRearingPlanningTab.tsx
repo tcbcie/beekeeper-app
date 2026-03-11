@@ -319,30 +319,42 @@ function SnapshotWindowCard({
 
   return (
     <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="min-w-0">
+        <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
           <p className="mt-2 text-sm text-text-secondary">{note}</p>
         </div>
         {weekendSummary && (
-          <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass}`}>
-            {weekendSummary}
-          </span>
+          <div className="mt-3">
+            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass}`}>
+              {weekendSummary}
+            </span>
+          </div>
         )}
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
-        <div className="rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
-          <p className="mt-2 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{start.calendarDate}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">{start.weekday}</p>
+      <div className="mt-4 space-y-3">
+        <div className="min-w-0 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
+            <span className="rounded-full border border-border bg-slate-900/[0.03] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-white/[0.04]">
+              {start.weekday}
+            </span>
+          </div>
+          <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums sm:text-xl">{start.calendarDate}</p>
         </div>
-        <div className="hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-white/75 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary dark:bg-slate-950/55 sm:flex">
-          to
+        <div className="flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+          <span className="h-px flex-1 bg-border" />
+          To
+          <span className="h-px flex-1 bg-border" />
         </div>
-        <div className="rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
-          <p className="mt-2 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{end.calendarDate}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">{end.weekday}</p>
+        <div className="min-w-0 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
+            <span className="rounded-full border border-border bg-slate-900/[0.03] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-white/[0.04]">
+              {end.weekday}
+            </span>
+          </div>
+          <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums sm:text-xl">{end.calendarDate}</p>
         </div>
       </div>
     </div>
@@ -366,16 +378,18 @@ function SnapshotSupportStrip({
 
   return (
     <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+        <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
           <p className="mt-2 text-sm text-text-secondary">{note}</p>
         </div>
-        <div className="flex items-center gap-3 self-start md:self-auto">
-          <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${badgeClass}`}>
-            {weekday}
-          </span>
-          <p className="text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{calendarDate}</p>
+        <div className="justify-self-start xl:justify-self-end">
+          <div className="inline-flex flex-wrap items-center gap-3 rounded-xl border border-white/70 bg-white/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-950/40">
+            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${badgeClass}`}>
+              {weekday}
+            </span>
+            <p className="text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{calendarDate}</p>
+          </div>
         </div>
       </div>
     </div>
