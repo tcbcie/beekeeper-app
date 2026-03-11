@@ -244,64 +244,139 @@ const buildPlannerTimeline = (sourceMode: PlannerSourceMode, sourceDate: string)
   }
 }
 
-function PlannerSummaryCard({
+function SnapshotPanel({
+  eyebrow,
   title,
-  accentClass,
+  description,
   children,
 }: {
+  eyebrow: string
   title: string
-  accentClass: string
+  description: string
   children: ReactNode
 }) {
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
-      {children}
-    </div>
+    <section className="rounded-[28px] border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/45 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">{eyebrow}</p>
+          <h4 className="mt-2 text-lg font-semibold text-foreground">{title}</h4>
+          <p className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-3">{children}</div>
+    </section>
   )
 }
 
-function SummarySingleDate({ dateString }: { dateString: string }) {
+function SnapshotAnchorCard({
+  title,
+  label,
+  dateString,
+  accentClass,
+  badgeClass,
+}: {
+  title: string
+  label: string
+  dateString: string
+  accentClass: string
+  badgeClass: string
+}) {
   const { calendarDate, weekday } = getSummaryDateParts(dateString)
 
   return (
-    <div className="mt-3 space-y-3">
-      <p className="text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{calendarDate}</p>
-      <span className="inline-flex w-fit rounded-full border border-border bg-slate-900/[0.03] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-white/[0.04]">
-        {weekday}
-      </span>
+    <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
+      <p className="mt-2 text-sm text-text-secondary">{label}</p>
+      <div className="mt-4 flex items-end justify-between gap-3">
+        <p className="text-2xl font-semibold leading-none tracking-tight text-foreground tabular-nums">{calendarDate}</p>
+        <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${badgeClass}`}>
+          {weekday}
+        </span>
+      </div>
     </div>
   )
 }
 
-function SummaryRange({ startDate, endDate }: { startDate: string, endDate: string }) {
+function SnapshotWindowCard({
+  title,
+  note,
+  startDate,
+  endDate,
+  accentClass,
+  badgeClass,
+}: {
+  title: string
+  note: string
+  startDate: string
+  endDate: string
+  accentClass: string
+  badgeClass: string
+}) {
   const start = getSummaryDateParts(startDate)
   const end = getSummaryDateParts(endDate)
+  const weekendSummary = getWeekendSummary(startDate, endDate)
 
   return (
-    <div className="mt-3 space-y-3">
-      <div className="rounded-xl border border-border bg-slate-900/[0.03] p-3 dark:bg-white/[0.04]">
-        <div className="flex items-center justify-between gap-3">
+    <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
+          <p className="mt-2 text-sm text-text-secondary">{note}</p>
+        </div>
+        {weekendSummary && (
+          <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass}`}>
+            {weekendSummary}
+          </span>
+        )}
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+        <div className="rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
-          <span className="rounded-full border border-border bg-white/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-slate-950/70">
-            {start.weekday}
-          </span>
+          <p className="mt-2 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{start.calendarDate}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">{start.weekday}</p>
         </div>
-        <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums">{start.calendarDate}</p>
-      </div>
-      <div className="flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-        <span className="h-px flex-1 bg-border" />
-        To
-        <span className="h-px flex-1 bg-border" />
-      </div>
-      <div className="rounded-xl border border-border bg-slate-900/[0.03] p-3 dark:bg-white/[0.04]">
-        <div className="flex items-center justify-between gap-3">
+        <div className="hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-white/75 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary dark:bg-slate-950/55 sm:flex">
+          to
+        </div>
+        <div className="rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
-          <span className="rounded-full border border-border bg-white/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-slate-950/70">
-            {end.weekday}
-          </span>
+          <p className="mt-2 text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{end.calendarDate}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">{end.weekday}</p>
         </div>
-        <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums">{end.calendarDate}</p>
+      </div>
+    </div>
+  )
+}
+
+function SnapshotSupportStrip({
+  title,
+  note,
+  dateString,
+  accentClass,
+  badgeClass,
+}: {
+  title: string
+  note: string
+  dateString: string
+  accentClass: string
+  badgeClass: string
+}) {
+  const { calendarDate, weekday } = getSummaryDateParts(dateString)
+
+  return (
+    <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
+          <p className="mt-2 text-sm text-text-secondary">{note}</p>
+        </div>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${badgeClass}`}>
+            {weekday}
+          </span>
+          <p className="text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{calendarDate}</p>
+        </div>
       </div>
     </div>
   )
@@ -341,6 +416,7 @@ export default function QueenRearingPlanningTab() {
   const activeDateLabel = sourceMode === 'graft' ? 'Planned graft date' : 'Target virgin emergence day'
   const activeModeTitle = sourceMode === 'graft' ? 'Choose a graft date' : 'Choose a virgin emergence day'
   const counterpartLabel = sourceMode === 'graft' ? 'Derived emergence day' : 'Derived graft date'
+  const snapshotModeLabel = sourceMode === 'graft' ? 'Graft-led scenario' : 'Emergence-led scenario'
 
   const handleModeChange = (nextMode: PlannerSourceMode) => {
     if (nextMode === sourceMode) return
@@ -374,23 +450,53 @@ export default function QueenRearingPlanningTab() {
               </p>
             </div>
             {planner ? (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-                <PlannerSummaryCard accentClass="border-blue-200 bg-white/85 dark:border-blue-900 dark:bg-slate-950/50" title="Graft Date">
-                  <SummarySingleDate dateString={planner.graftDate} />
-                </PlannerSummaryCard>
-                <PlannerSummaryCard accentClass="border-violet-200 bg-white/85 dark:border-violet-900 dark:bg-slate-950/50" title="Emergence">
-                  <SummarySingleDate dateString={planner.emergenceDate} />
-                </PlannerSummaryCard>
-                <PlannerSummaryCard accentClass="border-emerald-200 bg-white/85 dark:border-emerald-900 dark:bg-slate-950/50" title="Mating Flights">
-                  <SummaryRange endDate={planner.queenMatingEnd} startDate={planner.queenMatingStart} />
-                </PlannerSummaryCard>
-                <PlannerSummaryCard accentClass="border-amber-200 bg-white/85 dark:border-amber-900 dark:bg-slate-950/50" title="Laying Window">
-                  <SummaryRange endDate={planner.queenLayingEnd} startDate={planner.queenLayingStart} />
-                </PlannerSummaryCard>
-                <PlannerSummaryCard accentClass="border-sky-200 bg-white/85 dark:border-sky-900 dark:bg-slate-950/50" title="Drone Start">
-                  <SummarySingleDate dateString={planner.droneBroodStart} />
-                </PlannerSummaryCard>
-              </div>
+              <SnapshotPanel
+                description="Use this snapshot to judge whether the chosen anchor date creates workable mating and laying windows, then confirm drone timing underneath."
+                eyebrow="Planning Snapshot"
+                title={snapshotModeLabel}
+              >
+                <div className="grid gap-3 md:grid-cols-2">
+                  <SnapshotAnchorCard
+                    accentClass="border-blue-200 bg-blue-50/85 dark:border-blue-900 dark:bg-blue-950/30"
+                    badgeClass="border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                    dateString={sourceMode === 'graft' ? planner.graftDate : planner.emergenceDate}
+                    label={activeDateLabel}
+                    title="Anchor Date"
+                  />
+                  <SnapshotAnchorCard
+                    accentClass="border-violet-200 bg-violet-50/85 dark:border-violet-900 dark:bg-violet-950/30"
+                    badgeClass="border-violet-200 bg-violet-100 text-violet-800 dark:border-violet-800 dark:bg-violet-950/60 dark:text-violet-300"
+                    dateString={sourceMode === 'graft' ? planner.emergenceDate : planner.graftDate}
+                    label={counterpartLabel}
+                    title="Counterpart"
+                  />
+                </div>
+                <div className="grid gap-3 xl:grid-cols-2">
+                  <SnapshotWindowCard
+                    accentClass="border-emerald-200 bg-emerald-50/85 dark:border-emerald-900 dark:bg-emerald-950/30"
+                    badgeClass="border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                    endDate={planner.queenMatingEnd}
+                    note="Expected queen-flight window once the virgin has had a few days to mature."
+                    startDate={planner.queenMatingStart}
+                    title="Mating Flights"
+                  />
+                  <SnapshotWindowCard
+                    accentClass="border-amber-200 bg-amber-50/85 dark:border-amber-900 dark:bg-amber-950/30"
+                    badgeClass="border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                    endDate={planner.queenLayingEnd}
+                    note="Practical window for the first eggs after successful mating and settling."
+                    startDate={planner.queenLayingStart}
+                    title="Laying Window"
+                  />
+                </div>
+                <SnapshotSupportStrip
+                  accentClass="border-sky-200 bg-sky-50/85 dark:border-sky-900 dark:bg-sky-950/30"
+                  badgeClass="border-sky-200 bg-sky-100 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
+                  dateString={planner.droneBroodStart}
+                  note="Have drone brood underway by this point so mature drones overlap the first likely mating flights."
+                  title="Drone Start"
+                />
+              </SnapshotPanel>
             ) : (
               <div className="rounded-2xl border border-red-200 bg-red-50/90 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
                 Enter a valid calendar date to restore the planning timeline.
