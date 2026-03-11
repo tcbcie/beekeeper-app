@@ -1,29 +1,28 @@
-# Task: Records Non-Inspection Filter Prefill
-**Date:** 09/03/2026
+# Task: Queen Rearing Planning Timeline Tab
+**Date:** 11/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Extend the Records page create flow so the top apiary and hive filters prefill new non-inspection records in the same way they already prefill new inspections. This covers varroa treatments, varroa checks, feedings, and harvests.
+Add a new `Planning` tab to the Queen Rearing section, positioned after `Virgin Queen Tracker`, so the user can explore different graft dates and immediately see the linked queen and drone timing windows, including weekdays for emergence, mating, laying, and drone readiness.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/app/dashboard/records/page.tsx`
-  * `src/components/records/forms/VarroaTreatmentForm.tsx`
-  * `src/components/records/forms/VarroaCheckForm.tsx`
-  * `src/components/records/forms/FeedingForm.tsx`
-  * `src/components/records/forms/HarvestForm.tsx`
-  * `docs/features/records-non-inspection-filter-prefill-plan.md`
-* **Simplicity Check:** Reuse the existing records page filter state as the single source of truth for create-time apiary and hive context. Keep the change scoped to form props and create-flow sync logic, without changing database access, record schemas, or unrelated form behaviour.
+* **Files to Modify:** * `src/app/dashboard/batches/page.tsx`
+  * `src/components/batches/QueenRearingPlanningTab.tsx`
+  * `docs/features/queen-rearing.md`
+  * `docs/features/overview-pages-improvement.md`
+  * `docs/features/queen-rearing-planning-timeline-tab-plan.md`
+* **Simplicity Check:** Keep this as a client-side planning sandbox with local state only. No database schema changes, no saved planner records, and no changes to existing batch data entry beyond the tab navigation needed to host the new tab.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Pass the current records apiary and hive filters from `src/app/dashboard/records/page.tsx` into the varroa treatment, varroa check, feeding, and harvest forms during create flows.
-- [x] **Step 2:** Update `src/components/records/forms/VarroaTreatmentForm.tsx` and `src/components/records/forms/VarroaCheckForm.tsx` so new records inherit and stay aligned with the selected top-level apiary and hive, while edit flows keep their saved hive context.
-- [x] **Step 3:** Update `src/components/records/forms/FeedingForm.tsx` and `src/components/records/forms/HarvestForm.tsx` so new records inherit and stay aligned with the selected top-level apiary and hive, while edit flows keep their saved hive context.
-- [x] **Step 4:** Update documentation in `docs/features/records-non-inspection-filter-prefill-plan.md`
-- [x] **Step 5:** Prompt user to test the build
+- [x] **Step 1:** Refactor the Queen Rearing tab state in `src/app/dashboard/batches/page.tsx` so the current `Grafting Batch` tab has a distinct internal key, then add a new user-facing `Planning` tab after `Virgin Queen Tracker` without changing the existing batch workflow.
+- [x] **Step 2:** Build `src/components/batches/QueenRearingPlanningTab.tsx` as a local planning tool driven by a graft date input, showing the derived queen milestones: graft date, virgin emergence, mating-flight window, likely laying window, and clearly labelled weekdays.
+- [x] **Step 3:** Extend the same planning view to show linked drone timing from the planned queen schedule, including the recommended drone-rearing start point, drone emergence, and when drones should be mature enough to mate.
+- [x] **Step 4:** Update the relevant Queen Rearing documentation in `docs/features/` so the tab list, purpose, and planning behaviour are recorded for future maintenance.
+- [x] **Step 5:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The records page filter context is only passed into `InspectionForm`; the other record forms initialise their own apiary and hive state from the record object alone, so create flows ignore the current top filters unless a direct preset hive is supplied.
-* **Summary of Changes:** Passed the records page apiary and hive filters into the non-inspection record forms, then hardened create-only sync logic so new varroa treatments, varroa checks, feedings, and harvests inherit the top filters without overwriting edit flows. Also aligned the inspection form with the same safer sync pattern and guarded treatment weather auto-fill against stale async updates.
-* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please test the affected create flows in the UI.
+* **Root Cause Found (if applicable):** The Queen Rearing page currently supports live batch tracking but has no forward-planning workspace for comparing graft dates against queen and drone development windows.
+* **Summary of Changes:** Added a fifth `Planning` tab to the Queen Rearing page, introduced a local graft-date planning view for queen and drone timing, and aligned the supporting feature documentation with the new tab structure and timeline assumptions.
+* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the new planner tab in your normal UI/build check.

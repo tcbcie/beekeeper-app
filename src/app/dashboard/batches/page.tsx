@@ -15,6 +15,7 @@ import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notif
 import MatingNucsTab from '@/components/batches/MatingNucsTab'
 import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
 import VirginQueenTrackerTab from '@/components/batches/VirginQueenTrackerTab'
+import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 
 interface Queen {
@@ -184,7 +185,7 @@ export default function BatchesPage() {
  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
- const [activeTab, setActiveTab] = useState<'planning' | 'nucs' | 'selection' | 'virgins'>('planning')
+ const [activeTab, setActiveTab] = useState<'grafting' | 'nucs' | 'selection' | 'virgins' | 'planning'>('grafting')
 
  // Selection tab states
  const [selectedApiary, setSelectedApiary] = useState<string>('all')
@@ -781,7 +782,7 @@ export default function BatchesPage() {
  <h1 className="text-3xl font-bold text-foreground">Queen Rearing 🥚</h1>
  <p className="text-sm text-text-secondary mt-1">3-5-8 - The Queen is made!</p>
  </div>
- {activeTab === 'planning' && (
+ {activeTab === 'grafting' && (
  <Button
  onClick={() => showForm ? resetForm() : (resetForm(), setShowForm(true))}
  tone="blue"
@@ -796,14 +797,15 @@ export default function BatchesPage() {
  {/* Tab Navigation */}
  <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border">
  <div className="border-b border-border">
- <nav className="flex -mb-px">
+ <div className="overflow-x-auto">
+ <nav className="flex -mb-px min-w-max">
  <NavTabButton
- onClick={() => setActiveTab('planning')}
+ onClick={() => setActiveTab('grafting')}
  tone="blue"
  size="lg"
- active={activeTab === 'planning'}
+ active={activeTab === 'grafting'}
  >
- Planning
+ Grafting Batch
  </NavTabButton>
  <NavTabButton
  onClick={() => setActiveTab('nucs')}
@@ -829,12 +831,21 @@ export default function BatchesPage() {
  >
  Virgin Queen Tracker
  </NavTabButton>
+ <NavTabButton
+ onClick={() => setActiveTab('planning')}
+ tone="blue"
+ size="lg"
+ active={activeTab === 'planning'}
+ >
+ Planning
+ </NavTabButton>
  </nav>
  </div>
  </div>
+ </div>
 
- {/* Planning Tab Content */}
- {activeTab === 'planning' && (
+ {/* Grafting Batch Tab Content */}
+ {activeTab === 'grafting' && (
  <>
  {showForm && (
  <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-4 sm:p-6 border border-border overflow-hidden">
@@ -2059,6 +2070,11 @@ export default function BatchesPage() {
  {/* Virgin Queen Tracker Tab Content */}
  {activeTab === 'virgins' && userId && (
  <VirginQueenTrackerTab userId={userId} />
+ )}
+
+ {/* Planning Tab Content */}
+ {activeTab === 'planning' && (
+ <QueenRearingPlanningTab />
  )}
  </div>
  </>
