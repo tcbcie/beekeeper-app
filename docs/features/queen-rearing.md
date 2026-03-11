@@ -8,11 +8,11 @@ The queen rearing system is the most complex feature in HiveCraic, spanning batc
 
 | Route | Page | Purpose |
 |-------|------|---------|
-| `/dashboard/batches` | Batches page | Three-tab hub: Planning, Mating Nucs, Selection |
+| `/dashboard/batches` | Batches page | Five-tab hub: Grafting Batch, Mating Nucs, Selection, Virgin Queen Tracker, Planning |
 | `/dashboard/queens` | Queens list | Queen registry with genealogy, search, CSV export |
 | `/dashboard/queens/[id]` | Queen detail | Profile, lineage tree, offspring, sighting history |
 
-The batches page uses a tab query param (`?tab=nucs`, `?tab=selection`) but stays on a single route.
+The batches page stays on a single route and switches tabs client-side.
 
 ---
 
@@ -106,7 +106,7 @@ Queen Record (queen_number, lineage, batch_id)
 
 ### Batches Page (`src/app/dashboard/batches/page.tsx`)
 
-**Planning Tab**
+**Grafting Batch Tab**
 - Batch CRUD form with auto-calculated timeline dates from graft date
 - Breeder queen dropdown (active queens only)
 - Starter colony picker (apiary → hive cascade)
@@ -125,12 +125,25 @@ Queen Record (queen_number, lineage, batch_id)
 - Minimum 3 inspections required per hive
 - Results ranked with medals for top 3
 
+**Virgin Queen Tracker Tab** — renders `VirginQueenTrackerTab` component
+- Tracks virgin queens distributed from rearing-group batches
+- Supports group, year, and status filters
+- Allows overwintering and hybridisation tracking updates
+
+**Planning Tab** — renders `QueenRearingPlanningTab` component
+- Local planning sandbox with no database writes
+- Lets the user move a graft date and inspect the weekday impact across key queen milestones
+- Shows virgin emergence, likely mating-flight window, likely laying window, and linked drone timing
+- Surfaces assumptions directly in the UI so the timing ranges remain easy to adjust later
+
 ### Reusable Components
 
 | Component | File | Purpose |
 |-----------|------|---------|
 | `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: collapsible frame visualisation for grafted/accepted grafts (bars + cups) with staged bulk actions + queen tracking table for all post-frame grafts (caged/emerged/in_nuc/mated/failed/sold) with bulk actions (status change, mark/unmark, distribute, delete), queen marking, queen numbering, marking colour note, and individual distribute/delete actions. Per-row distribute and delete buttons are hidden when 2+ grafts are selected (multi-select uses the bulk action bar instead). In frame bulk mode, status/date selections are staged and saved only when `Done` is clicked, and the bulk date picker is pre-populated with the current date. Failed and distributed rows are auto-locked with a red "Failed" or indigo "Distributed" badge; lock can be toggled for correction |
 | `MatingNucsTab` | `src/components/batches/MatingNucsTab.tsx` | Full nuc CRUD, retirement with history, expandable inspections |
+| `VirginQueenTrackerTab` | `src/components/batches/VirginQueenTrackerTab.tsx` | Tracks distributed virgin queens across rearing groups with status filters and follow-up fields |
+| `QueenRearingPlanningTab` | `src/components/batches/QueenRearingPlanningTab.tsx` | Local queen and drone timeline planner driven by a graft date and weekday-aware date ranges |
 | `NucInspectionPanel` | `src/components/batches/NucInspectionPanel.tsx` | Inline inspection form + history list per nuc |
 | `NucInspectionCard` | `src/components/batches/NucInspectionCard.tsx` | Single inspection display with badges |
 | `QueenLineageTree` | `src/components/QueenLineageTree.tsx` | 4-generation family tree with colour-coded queen cards |
@@ -165,6 +178,11 @@ All dates derive from the graft date, reflecting honey bee queen development bio
 | 1st Option to Cage | +5 days | Cage strongest cells |
 | 2nd Option to Cage | +10 days | Final caging before sealing |
 | Expected Emergence | +12 days | Virgin queens emerge |
+
+The Planning tab extends this with local guidance windows rather than saved batch dates:
+- Likely mating flights: emergence + 5 to 8 days
+- Likely laying: emergence + 10 to 14 days
+- Drone planning: start drone brood about 36 days before the first likely mating flight, with drone emergence around 24 days later and maturity about 10 to 12 days after that
 
 ---
 
@@ -250,7 +268,7 @@ Component-level interfaces in `batches/page.tsx`:
 
 | File | Purpose |
 |------|---------|
-| `src/app/dashboard/batches/page.tsx` | Main batches page (Planning, Nucs, Selection tabs) |
+| `src/app/dashboard/batches/page.tsx` | Main batches page (Grafting Batch, Mating Nucs, Selection, Virgin Queen Tracker, Planning tabs) |
 | `src/app/dashboard/queens/page.tsx` | Queens list with CRUD and CSV export |
 | `src/app/dashboard/queens/[id]/page.tsx` | Queen detail with lineage and sightings |
 | `src/components/batches/BatchGraftsSection.tsx` | Frame visualisation of grafts (bars + cups) + distribution list |

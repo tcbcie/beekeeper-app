@@ -131,9 +131,10 @@ A thorough audit of all overview/listing pages in HiveCraic, comparing current l
 ### 6. Batches Page (`/dashboard/batches`)
 
 **Current Layout:**
-- 3 tabs: Planning, Mating Nucs, Selection
-- Planning: batch list with timeline
+- 5 tabs: Grafting Batch, Mating Nucs, Selection, Virgin Queen Tracker, Planning
+- Grafting Batch: batch list with timeline
 - Selection: weighted scoring of hives
+- Planning: local queen and drone timeline sandbox
 
 **Issues Found:**
 - Generally well-structured with tabs
