@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { AlertTriangle, Bug, Calendar, Clock3, Egg } from 'lucide-react'
 
@@ -30,6 +31,11 @@ interface PlannerTimeline {
   droneReadyEnd: string
   queenMilestones: TimelineMilestone[]
   droneMilestones: TimelineMilestone[]
+}
+
+interface SummaryDateParts {
+  calendarDate: string
+  weekday: string
 }
 
 const TIMELINE_OFFSETS = {
@@ -104,6 +110,11 @@ const formatSingleDate = (dateString: string): string => {
 const formatRange = (startDate: string, endDate: string): string => {
   return `${formatDateIrish(startDate)} | ${getDayName(startDate)} to ${formatDateIrish(endDate)} | ${getDayName(endDate)}`
 }
+
+const getSummaryDateParts = (dateString: string): SummaryDateParts => ({
+  calendarDate: formatDateIrish(dateString),
+  weekday: getDayName(dateString),
+})
 
 const getWeekendSummary = (startDate: string, endDate?: string): string | null => {
   const start = parseLocalDate(startDate)
@@ -233,6 +244,69 @@ const buildPlannerTimeline = (sourceMode: PlannerSourceMode, sourceDate: string)
   }
 }
 
+function PlannerSummaryCard({
+  title,
+  accentClass,
+  children,
+}: {
+  title: string
+  accentClass: string
+  children: ReactNode
+}) {
+  return (
+    <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
+      {children}
+    </div>
+  )
+}
+
+function SummarySingleDate({ dateString }: { dateString: string }) {
+  const { calendarDate, weekday } = getSummaryDateParts(dateString)
+
+  return (
+    <div className="mt-3 space-y-3">
+      <p className="text-xl font-semibold leading-tight tracking-tight text-foreground tabular-nums">{calendarDate}</p>
+      <span className="inline-flex w-fit rounded-full border border-border bg-slate-900/[0.03] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-white/[0.04]">
+        {weekday}
+      </span>
+    </div>
+  )
+}
+
+function SummaryRange({ startDate, endDate }: { startDate: string, endDate: string }) {
+  const start = getSummaryDateParts(startDate)
+  const end = getSummaryDateParts(endDate)
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="rounded-xl border border-border bg-slate-900/[0.03] p-3 dark:bg-white/[0.04]">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
+          <span className="rounded-full border border-border bg-white/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-slate-950/70">
+            {start.weekday}
+          </span>
+        </div>
+        <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums">{start.calendarDate}</p>
+      </div>
+      <div className="flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+        <span className="h-px flex-1 bg-border" />
+        To
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <div className="rounded-xl border border-border bg-slate-900/[0.03] p-3 dark:bg-white/[0.04]">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
+          <span className="rounded-full border border-border bg-white/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-slate-950/70">
+            {end.weekday}
+          </span>
+        </div>
+        <p className="mt-2 text-lg font-semibold leading-tight tracking-tight text-foreground tabular-nums">{end.calendarDate}</p>
+      </div>
+    </div>
+  )
+}
+
 function MilestoneCard({ milestone }: { milestone: TimelineMilestone }) {
   const weekendSummary = getWeekendSummary(milestone.startDate, milestone.endDate)
 
@@ -300,27 +374,22 @@ export default function QueenRearingPlanningTab() {
               </p>
             </div>
             {planner ? (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <div className="rounded-2xl border border-blue-200 bg-white/85 p-4 shadow-sm dark:border-blue-900 dark:bg-slate-950/50">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-tertiary">Graft Date</p>
-                  <p className="mt-2 text-base font-semibold text-foreground">{formatSingleDate(planner.graftDate)}</p>
-                </div>
-                <div className="rounded-2xl border border-violet-200 bg-white/85 p-4 shadow-sm dark:border-violet-900 dark:bg-slate-950/50">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-tertiary">Emergence</p>
-                  <p className="mt-2 text-base font-semibold text-foreground">{formatSingleDate(planner.emergenceDate)}</p>
-                </div>
-                <div className="rounded-2xl border border-emerald-200 bg-white/85 p-4 shadow-sm dark:border-emerald-900 dark:bg-slate-950/50">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-tertiary">Mating Flights</p>
-                  <p className="mt-2 text-base font-semibold text-foreground">{formatRange(planner.queenMatingStart, planner.queenMatingEnd)}</p>
-                </div>
-                <div className="rounded-2xl border border-amber-200 bg-white/85 p-4 shadow-sm dark:border-amber-900 dark:bg-slate-950/50">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-tertiary">Laying Window</p>
-                  <p className="mt-2 text-base font-semibold text-foreground">{formatRange(planner.queenLayingStart, planner.queenLayingEnd)}</p>
-                </div>
-                <div className="rounded-2xl border border-sky-200 bg-white/85 p-4 shadow-sm dark:border-sky-900 dark:bg-slate-950/50">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-tertiary">Drone Start</p>
-                  <p className="mt-2 text-base font-semibold text-foreground">{formatSingleDate(planner.droneBroodStart)}</p>
-                </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+                <PlannerSummaryCard accentClass="border-blue-200 bg-white/85 dark:border-blue-900 dark:bg-slate-950/50" title="Graft Date">
+                  <SummarySingleDate dateString={planner.graftDate} />
+                </PlannerSummaryCard>
+                <PlannerSummaryCard accentClass="border-violet-200 bg-white/85 dark:border-violet-900 dark:bg-slate-950/50" title="Emergence">
+                  <SummarySingleDate dateString={planner.emergenceDate} />
+                </PlannerSummaryCard>
+                <PlannerSummaryCard accentClass="border-emerald-200 bg-white/85 dark:border-emerald-900 dark:bg-slate-950/50" title="Mating Flights">
+                  <SummaryRange endDate={planner.queenMatingEnd} startDate={planner.queenMatingStart} />
+                </PlannerSummaryCard>
+                <PlannerSummaryCard accentClass="border-amber-200 bg-white/85 dark:border-amber-900 dark:bg-slate-950/50" title="Laying Window">
+                  <SummaryRange endDate={planner.queenLayingEnd} startDate={planner.queenLayingStart} />
+                </PlannerSummaryCard>
+                <PlannerSummaryCard accentClass="border-sky-200 bg-white/85 dark:border-sky-900 dark:bg-slate-950/50" title="Drone Start">
+                  <SummarySingleDate dateString={planner.droneBroodStart} />
+                </PlannerSummaryCard>
               </div>
             ) : (
               <div className="rounded-2xl border border-red-200 bg-red-50/90 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">

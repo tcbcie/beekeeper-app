@@ -1,31 +1,30 @@
-# Task: Queen Rearing Planner Emergence Date Input
+# Task: Queen Rearing Planning Summary Card Readability
 **Date:** 11/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Extend the Queen Rearing `Planning` tab so the user can plan from either a graft date or a virgin queen emergence date, instead of being limited to graft-date-first planning.
+Improve the readability of the Queen Rearing `Planning` tab summary cards so single dates and planning ranges are easier to scan, especially where weekday labels currently wrap awkwardly.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/components/batches/QueenRearingPlanningTab.tsx`
   * `docs/features/queen-rearing.md`
-  * `docs/features/queen-rearing-planning-emergence-date-input-plan.md`
-* **Simplicity Check:** Keep the planner local and client-side. Add one explicit date-mode choice with a single derived timeline, rather than introducing multiple independent date fields that can drift out of sync.
+  * `docs/features/queen-rearing-planning-summary-card-readability-plan.md`
+* **Simplicity Check:** Keep the change limited to the presentation of the top planning summary cards. Leave the planner calculations, state flow, and downstream milestone logic untouched.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Refactor `src/components/batches/QueenRearingPlanningTab.tsx` so the planner has a clear source date mode, allowing the timeline to be derived from either `graft date` or `virgin emergence date` while preserving the existing behaviour as one of the options.
-- [x] **Step 2:** Update the planner controls and summary cards so the user can switch modes, enter the selected source date, and still see the counterpart date calculated explicitly in the timeline.
-- [x] **Step 3:** Keep the downstream queen and drone timing calculations aligned to the same derived emergence date so mating, laying, and drone readiness remain internally consistent.
-- [x] **Step 4:** Update the relevant Queen Rearing documentation in `docs/features/` so the planner now records both supported entry points.
-- [x] **Step 5:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
+- [x] **Step 1:** Refactor the top summary-card rendering in `src/components/batches/QueenRearingPlanningTab.tsx` so dates and weekdays are presented as structured lines instead of one wrapped text string.
+- [x] **Step 2:** Tighten the card layout, spacing, and responsive behaviour so date ranges remain readable across the current card grid.
+- [x] **Step 3:** Update the relevant Queen Rearing documentation in `docs/features/` to describe the improved planner summary presentation.
+- [x] **Step 4:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The planner currently assumes graft date is always the starting point, which makes it awkward to work backwards from a desired virgin emergence day.
-* **Summary of Changes:** Added a source-date mode to the Queen Rearing planner so the timeline can be driven from either graft date or target virgin emergence day, hardened the planner date handling so cleared or invalid values remain recoverable, and aligned the Queen Rearing documentation with the dual-entry behaviour.
-* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the updated planner behaviour in your normal UI/build check.
+* **Root Cause Found (if applicable):** The summary cards were rendering each date plus weekday as a single string, which forced awkward line breaks and made range cards difficult to scan.
+* **Summary of Changes:** Reworked the top planning summary cards into structured single-date and range blocks, eased the responsive grid so five narrow columns are only used at larger widths, and aligned the Queen Rearing documentation with the improved planner presentation.
+* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the updated planner UI in your normal browser/build check.
 
 ## Review
-* **Root Cause:** The planner assumed graft date was always the only valid starting point, which made it awkward to work backwards from a desired emergence weekday and left the date-entry state too fragile.
-* **Changes Made:** Refactored `QueenRearingPlanningTab` so one explicit mode controls the timeline source date, added an `Emergence Day` option alongside `Graft Date`, derived the counterpart date automatically, and kept all mating, laying, and drone timing anchored from the resolved emergence date. While making that change, I tightened local date parsing and kept the input panel visible even when the current date is invalid, so the user can recover without losing the controls. Updated the Queen Rearing documentation and both planner plan files to reflect the new dual-entry behaviour.
-* **Testing Needed:** Please open `/dashboard/batches`, switch to the `Planning` tab, confirm both `Graft Date` and `Emergence Day` modes work, and check that changing either source date updates the counterpart date and the downstream queen and drone timeline consistently.
+* **Root Cause:** The top planner cards compressed dates and weekdays into wrapped inline strings, so the most important planning information became harder to parse as soon as the cards narrowed.
+* **Changes Made:** Added small presentational helpers in `QueenRearingPlanningTab` for single-date and range summaries, split the date and weekday into deliberate visual rows, and updated the summary grid so it stays at two or three columns until very wide screens. This keeps the planner logic unchanged while making the cards easier to read.
+* **Testing Needed:** Please open `/dashboard/batches`, switch to the `Planning` tab, and check that the top summary cards now read cleanly on both desktop and narrower window widths.

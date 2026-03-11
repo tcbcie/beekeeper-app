@@ -181,6 +181,7 @@ All dates derive from the graft date, reflecting honey bee queen development bio
 
 The Planning tab extends this with local guidance windows rather than saved batch dates:
 - The planner can be anchored from either a graft date or a target virgin emergence day; whichever counterpart date is not chosen is derived automatically
+- The top summary cards split dates and weekdays into separate lines so single dates and planning ranges are easier to scan quickly
 - Likely mating flights: emergence + 5 to 8 days
 - Likely laying: emergence + 10 to 14 days
 - Drone planning: start drone brood about 36 days before the first likely mating flight, with drone emergence around 24 days later and maturity about 10 to 12 days after that

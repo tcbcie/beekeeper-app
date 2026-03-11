@@ -1,26 +1,25 @@
-# Task: Queen Rearing Planner Emergence Date Input
+# Task: Queen Rearing Planning Summary Card Readability
 **Date:** 11/03/2026
-**Status:** Completed
+**Status:** Awaiting Approval
 
 ## 1. Objective
-Extend the Queen Rearing `Planning` tab so the user can plan from either a graft date or a virgin queen emergence date, instead of being limited to graft-date-first planning.
+Improve the readability of the Queen Rearing `Planning` tab summary cards so single dates and planning ranges are easier to scan, especially where weekday labels currently wrap awkwardly.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/components/batches/QueenRearingPlanningTab.tsx`
   * `docs/features/queen-rearing.md`
-  * `docs/features/queen-rearing-planning-emergence-date-input-plan.md`
-* **Simplicity Check:** Keep the planner local and client-side. Add one explicit date-mode choice with a single derived timeline, rather than introducing multiple independent date fields that can drift out of sync.
+  * `docs/features/queen-rearing-planning-summary-card-readability-plan.md`
+* **Simplicity Check:** Keep the change limited to the presentation of the top planning summary cards. Leave the planner calculations, state flow, and downstream milestone logic untouched.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Refactor `src/components/batches/QueenRearingPlanningTab.tsx` so the planner has a clear source date mode, allowing the timeline to be derived from either `graft date` or `virgin emergence date` while preserving the existing behaviour as one of the options.
-- [x] **Step 2:** Update the planner controls and summary cards so the user can switch modes, enter the selected source date, and still see the counterpart date calculated explicitly in the timeline.
-- [x] **Step 3:** Keep the downstream queen and drone timing calculations aligned to the same derived emergence date so mating, laying, and drone readiness remain internally consistent.
-- [x] **Step 4:** Update the relevant Queen Rearing documentation in `docs/features/` so the planner now records both supported entry points.
-- [x] **Step 5:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
+- [ ] **Step 1:** Refactor the top summary-card rendering in `src/components/batches/QueenRearingPlanningTab.tsx` so dates and weekdays are presented as structured lines instead of one wrapped text string.
+- [ ] **Step 2:** Tighten the card layout, spacing, and responsive behaviour so date ranges remain readable across the current card grid.
+- [ ] **Step 3:** Update the relevant Queen Rearing documentation in `docs/features/` to describe the improved planner summary presentation.
+- [ ] **Step 4:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The planner currently assumes graft date is always the starting point, which makes it awkward to work backwards from a desired virgin emergence day.
-* **Summary of Changes:** Added a source-date mode to the Queen Rearing planner so the timeline can be driven from either graft date or target virgin emergence day, hardened the planner date handling so cleared or invalid values remain recoverable, and aligned the Queen Rearing documentation with the dual-entry behaviour.
-* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the updated planner behaviour in your normal UI/build check.
+* **Root Cause Found (if applicable):** The summary cards currently compress dates and weekdays into single strings, which wrap poorly and make planning ranges harder to parse quickly.
+* **Summary of Changes:** Pending approval.
+* **Notes for User:** No database MCP work is expected. I will not run build tests; I will ask you to verify the UI once the change is ready.
