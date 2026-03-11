@@ -1,33 +1,31 @@
-# Task: Queen Rearing Planning Timeline Tab
+# Task: Queen Rearing Planner Emergence Date Input
 **Date:** 11/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Add a new `Planning` tab to the Queen Rearing section, positioned after `Virgin Queen Tracker`, so the user can explore different graft dates and immediately see the linked queen and drone timing windows, including weekdays for emergence, mating, laying, and drone readiness.
+Extend the Queen Rearing `Planning` tab so the user can plan from either a graft date or a virgin queen emergence date, instead of being limited to graft-date-first planning.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/app/dashboard/batches/page.tsx`
-  * `src/components/batches/QueenRearingPlanningTab.tsx`
+* **Files to Modify:** * `src/components/batches/QueenRearingPlanningTab.tsx`
   * `docs/features/queen-rearing.md`
-  * `docs/features/overview-pages-improvement.md`
-  * `docs/features/queen-rearing-planning-timeline-tab-plan.md`
-* **Simplicity Check:** Keep this as a client-side planning sandbox with local state only. No database schema changes, no saved planner records, and no changes to existing batch data entry beyond the tab navigation needed to host the new tab.
+  * `docs/features/queen-rearing-planning-emergence-date-input-plan.md`
+* **Simplicity Check:** Keep the planner local and client-side. Add one explicit date-mode choice with a single derived timeline, rather than introducing multiple independent date fields that can drift out of sync.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Refactor the Queen Rearing tab state in `src/app/dashboard/batches/page.tsx` so the current `Grafting Batch` tab has a distinct internal key, then add a new user-facing `Planning` tab after `Virgin Queen Tracker` without changing the existing batch workflow.
-- [x] **Step 2:** Build `src/components/batches/QueenRearingPlanningTab.tsx` as a local planning tool driven by a graft date input, showing the derived queen milestones: graft date, virgin emergence, mating-flight window, likely laying window, and clearly labelled weekdays.
-- [x] **Step 3:** Extend the same planning view to show linked drone timing from the planned queen schedule, including the recommended drone-rearing start point, drone emergence, and when drones should be mature enough to mate.
-- [x] **Step 4:** Update the relevant Queen Rearing documentation in `docs/features/` so the tab list, purpose, and planning behaviour are recorded for future maintenance.
+- [x] **Step 1:** Refactor `src/components/batches/QueenRearingPlanningTab.tsx` so the planner has a clear source date mode, allowing the timeline to be derived from either `graft date` or `virgin emergence date` while preserving the existing behaviour as one of the options.
+- [x] **Step 2:** Update the planner controls and summary cards so the user can switch modes, enter the selected source date, and still see the counterpart date calculated explicitly in the timeline.
+- [x] **Step 3:** Keep the downstream queen and drone timing calculations aligned to the same derived emergence date so mating, laying, and drone readiness remain internally consistent.
+- [x] **Step 4:** Update the relevant Queen Rearing documentation in `docs/features/` so the planner now records both supported entry points.
 - [x] **Step 5:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The Queen Rearing page currently supports live batch tracking but has no forward-planning workspace for comparing graft dates against queen and drone development windows.
-* **Summary of Changes:** Added a fifth `Planning` tab to the Queen Rearing page, introduced a local graft-date planning view for queen and drone timing, and aligned the supporting feature documentation with the new tab structure and timeline assumptions.
-* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the new planner tab in your normal UI/build check.
+* **Root Cause Found (if applicable):** The planner currently assumes graft date is always the starting point, which makes it awkward to work backwards from a desired virgin emergence day.
+* **Summary of Changes:** Added a source-date mode to the Queen Rearing planner so the timeline can be driven from either graft date or target virgin emergence day, hardened the planner date handling so cleared or invalid values remain recoverable, and aligned the Queen Rearing documentation with the dual-entry behaviour.
+* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the updated planner behaviour in your normal UI/build check.
 
 ## Review
-* **Root Cause:** The Queen Rearing page could track live batches, mating nucs, selection, and distributed virgins, but it had no forward-planning workspace for testing graft dates against queen and drone timing windows.
-* **Changes Made:** Renamed the existing internal tab key from `planning` to `grafting` so a new user-facing `Planning` tab could be added cleanly. Added `QueenRearingPlanningTab` as a local sandbox on `/dashboard/batches` with a graft date picker, quick date nudges, weekday-aware queen milestones, and backward-planned drone timing. Updated the Queen Rearing documentation and overview notes to reflect the new five-tab layout and the planner's explicit timing assumptions.
-* **Testing Needed:** Please open `/dashboard/batches`, switch to the new `Planning` tab, try several graft dates, and confirm the queen and drone timelines move as expected while the `Grafting Batch` tab still behaves exactly as before.
+* **Root Cause:** The planner assumed graft date was always the only valid starting point, which made it awkward to work backwards from a desired emergence weekday and left the date-entry state too fragile.
+* **Changes Made:** Refactored `QueenRearingPlanningTab` so one explicit mode controls the timeline source date, added an `Emergence Day` option alongside `Graft Date`, derived the counterpart date automatically, and kept all mating, laying, and drone timing anchored from the resolved emergence date. While making that change, I tightened local date parsing and kept the input panel visible even when the current date is invalid, so the user can recover without losing the controls. Updated the Queen Rearing documentation and both planner plan files to reflect the new dual-entry behaviour.
+* **Testing Needed:** Please open `/dashboard/batches`, switch to the `Planning` tab, confirm both `Graft Date` and `Emergence Day` modes work, and check that changing either source date updates the counterpart date and the downstream queen and drone timeline consistently.
