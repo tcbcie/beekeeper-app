@@ -116,6 +116,10 @@ const getSummaryDateParts = (dateString: string): SummaryDateParts => ({
   weekday: getDayName(dateString),
 })
 
+const snapshotPanelClass = 'rounded-[28px] border border-border bg-surface/90 p-4 shadow-sm backdrop-blur-sm dark:bg-surface/80 sm:p-5'
+const snapshotInsetSurfaceClass = 'border border-border bg-surface-elevated/85 dark:bg-surface-elevated/95'
+const snapshotInsetBadgeClass = 'rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-surface'
+
 const getWeekendSummary = (startDate: string, endDate?: string): string | null => {
   const start = parseLocalDate(startDate)
   const finish = parseLocalDate(endDate || startDate)
@@ -256,7 +260,7 @@ function SnapshotPanel({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-[28px] border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/45 sm:p-5">
+    <section className={snapshotPanelClass}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-2xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">{eyebrow}</p>
@@ -333,10 +337,10 @@ function SnapshotWindowCard({
         )}
       </div>
       <div className="mt-4 space-y-3">
-        <div className="min-w-0 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+        <div className={`min-w-0 rounded-xl p-3 ${snapshotInsetSurfaceClass}`}>
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
-            <span className="rounded-full border border-border bg-slate-900/[0.03] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-white/[0.04]">
+            <span className={snapshotInsetBadgeClass}>
               {start.weekday}
             </span>
           </div>
@@ -347,10 +351,10 @@ function SnapshotWindowCard({
           To
           <span className="h-px flex-1 bg-border" />
         </div>
-        <div className="min-w-0 rounded-xl border border-white/70 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+        <div className={`min-w-0 rounded-xl p-3 ${snapshotInsetSurfaceClass}`}>
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
-            <span className="rounded-full border border-border bg-slate-900/[0.03] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary dark:bg-white/[0.04]">
+            <span className={snapshotInsetBadgeClass}>
               {end.weekday}
             </span>
           </div>
@@ -384,7 +388,7 @@ function SnapshotSupportStrip({
           <p className="mt-2 text-sm text-text-secondary">{note}</p>
         </div>
         <div className="justify-self-start xl:justify-self-end">
-          <div className="inline-flex flex-wrap items-center gap-3 rounded-xl border border-white/70 bg-white/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-950/40">
+          <div className={`inline-flex flex-wrap items-center gap-3 rounded-xl px-3 py-3 ${snapshotInsetSurfaceClass}`}>
             <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${badgeClass}`}>
               {weekday}
             </span>
@@ -518,7 +522,7 @@ export default function QueenRearingPlanningTab() {
             )}
           </div>
 
-          <div className="rounded-3xl border border-border bg-surface/90 p-5 shadow-sm dark:bg-slate-950/70">
+          <div className="rounded-3xl border border-border bg-surface/90 p-5 shadow-sm dark:bg-surface-elevated/90">
             <div className="flex items-center gap-2 text-foreground">
               <Clock3 size={18} className="text-blue-600 dark:text-blue-400" />
               <h4 className="text-lg font-semibold">{activeModeTitle}</h4>
@@ -548,7 +552,7 @@ export default function QueenRearingPlanningTab() {
               value={sourceDate}
               onChange={(e) => setSourceDate(e.target.value)}
               aria-invalid={sourceDate !== '' && planner === null}
-              className="mt-2 w-full rounded-xl border border-border bg-surface px-3 py-2 text-foreground"
+              className="mt-2 w-full rounded-xl border border-border bg-surface px-3 py-2 text-foreground dark:bg-surface-elevated"
             />
             <p className="mt-2 text-sm text-text-secondary">
               {planner
@@ -624,7 +628,7 @@ export default function QueenRearingPlanningTab() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm dark:bg-surface-elevated">
           <h4 className="text-lg font-semibold text-foreground">Assumptions used here</h4>
           <ul className="mt-4 space-y-3 text-sm leading-6 text-text-secondary">
             <li>You can plan from either graft date or target virgin emergence day; the counterpart date is derived automatically.</li>
@@ -635,7 +639,7 @@ export default function QueenRearingPlanningTab() {
           </ul>
         </div>
 
-        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm dark:bg-surface-elevated">
           <h4 className="text-lg font-semibold text-foreground">How to use it</h4>
           <ul className="mt-4 space-y-3 text-sm leading-6 text-text-secondary">
             <li>Choose the mode that matches how you plan: either start from grafting or start from the emergence weekday you want.</li>
