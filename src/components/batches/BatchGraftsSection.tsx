@@ -44,7 +44,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm dark:bg-surface-elevated/95">
       {/* Header Bar */}
       <div className="flex flex-wrap justify-between items-center gap-y-2">
         <div className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             type="button"
             onClick={() => hook.setShowHelp(!hook.showHelp)}
             size="xs"
-            className={`transition-colors ${hook.showHelp ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' : 'text-text-tertiary hover:text-blue-600'}`}
+            className={`transition-colors ${hook.showHelp ? 'text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300' : 'text-text-tertiary hover:text-blue-600 dark:hover:text-blue-300'}`}
             title="How this works"
           >
             <HelpCircle size={16} />

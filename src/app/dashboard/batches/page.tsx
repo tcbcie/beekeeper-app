@@ -1372,7 +1372,7 @@ export default function BatchesPage() {
 
  {/* Individual Grafts Section - Only show when editing existing batch */}
  {editingBatch && userId && (
- <div className="md:col-span-2 bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+ <div className="md:col-span-2 rounded-xl border border-border bg-surface-secondary/70 p-4 shadow-sm dark:bg-surface/40">
  <BatchGraftsSection
  batchId={editingBatch.id}
  userId={userId}

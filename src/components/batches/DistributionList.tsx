@@ -50,7 +50,7 @@ export default function DistributionList({
           return (
             <div
               key={dist.id}
-              className="flex items-center gap-3 p-3 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border"
+              className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm dark:bg-surface-elevated/90"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -120,8 +120,8 @@ export default function DistributionList({
                     size="sm"
                     className={`p-2 rounded text-xs ${
                       dist.mating_confirmed
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-surface-secondary text-text-tertiary border border-border'
+                        ? 'border border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300'
+                        : 'border border-border bg-surface-secondary text-text-tertiary dark:bg-surface dark:text-text-secondary'
                     }`}
                     title={dist.mating_confirmed ? `Mating confirmed ${dist.mating_confirmed_date ? formatDateIrish(dist.mating_confirmed_date) : ''}`.trim() : 'Confirm mating'}
                   >

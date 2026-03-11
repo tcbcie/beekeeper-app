@@ -74,7 +74,7 @@ export default function CellFrame({
     <div>
       {/* Bulk Action Bar */}
       {selectMode && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-forest-50 dark:bg-forest-950/30 rounded-lg border border-forest-200 dark:border-forest-800 mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-forest-200 bg-forest-50 dark:border-forest-800 dark:bg-forest-950/20 p-3">
           <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
           <Button type="button" onClick={selectAll} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
             Select All
@@ -88,7 +88,7 @@ export default function CellFrame({
           <select
             value={bulkStatusDraft}
             onChange={(e) => handleBulkStatusChange(e.target.value)}
-            className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
           >
             <option value="">Change Status...</option>
             {FRAME_STATUSES.map((s) => (
@@ -99,7 +99,7 @@ export default function CellFrame({
             type="date"
             value={bulkDateDraft}
             onChange={(e) => handleBulkDateChange(e.target.value)}
-            className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
             title="Change date for selected"
           />
           <Button
@@ -114,12 +114,12 @@ export default function CellFrame({
       )}
 
       {/* Frame Header */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-medium text-text-secondary uppercase tracking-wide">Cell Frame</span>
         <Button
           type="button"
           onClick={() => setFrameCollapsed(prev => !prev)}
-          className="flex items-center gap-1 px-2 py-1.5 text-xs text-text-tertiary hover:text-foreground rounded"
+          className="flex items-center gap-1 rounded border border-border bg-surface/80 px-2 py-1.5 text-xs text-text-tertiary hover:bg-surface-elevated hover:text-foreground dark:bg-surface-elevated/80"
         >
           {frameCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           {frameCollapsed ? 'Show' : 'Hide'}
@@ -129,7 +129,7 @@ export default function CellFrame({
       {/* Frame Visualisation */}
       {!frameCollapsed && (
         <div className="overflow-x-auto">
-          <div className="border-4 border-amber-700 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2 sm:p-4 min-w-fit">
+          <div className="min-w-fit rounded-lg border-4 border-amber-700 bg-amber-50/90 p-2 shadow-inner dark:border-amber-800 dark:bg-amber-950/25 sm:p-4">
             {(() => {
               let rows: Graft[][]
               if (frameRows && cellsPerRow) {
@@ -187,7 +187,7 @@ export default function CellFrame({
                                 value={graft.status}
                                 onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-16 px-0 py-1 text-[10px] rounded border border-border bg-surface text-foreground text-center"
+                                className="w-16 rounded border border-border bg-surface px-0 py-1 text-center text-[10px] text-foreground dark:bg-surface-elevated"
                               >
                                 {FRAME_STATUSES.map(s => (
                                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -199,13 +199,13 @@ export default function CellFrame({
                                 defaultValue={graft.status_date || ''}
                                 onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-16 px-0 py-0.5 text-[10px] rounded border border-border bg-surface text-foreground text-center"
+                                className="w-16 rounded border border-border bg-surface px-0 py-0.5 text-center text-[10px] text-foreground dark:bg-surface-elevated"
                               />
                               <div className="flex gap-0.5">
                                 <Button
                                   type="button"
                                   onClick={() => deleteGraft(graft.id)}
-                                  className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                  className="rounded p-1.5 text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
                                   title="Delete"
                                 >
                                   <Trash2 size={10} />
