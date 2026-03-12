@@ -584,3 +584,31 @@ Inject positive field confirmations as new candidates into the DCA prediction en
   * Hook (`useDCAPredictions.ts`): Maps `confirmationsRef.current` to `ConfirmedLocation[]` and passes it to `predictDCAs()`. Cache key unchanged — cache is already cleared on confirmation.
   * Docs (`dca-prediction.md`): Added "Candidate Injection" subsection under Field Confirmation documenting the injection flow, skip logic, and scoring behaviour.
 * **Notes for User:** Please test by adding a positive confirmation at a location with no nearby DCA prediction, then recalculating — the confirmed location should appear as a new predicted DCA.
+
+---
+
+# Task: Fix Wolf Scale Bracket Values Missing Maintenance Event Subtraction
+**Date:** 12/03/2026
+**Status:** In Progress
+
+## 1. Problem
+The 30d bracket values on Wolf scale cards show **positive** numbers that don't make sense:
+- Hive #26-DA: -3.17 30d **(+2.39)** ← should be negative
+- Hive #64-DA: -4.94 30d **(+0.90)** ← should be negative
+
+### Root Cause
+In `src/app/api/wolf-waagen/data/route.ts`, the **current period** weight changes correctly subtract maintenance events (feeding/harvesting) via `detectMaintenanceEvents` + `sumInterventions`. But the **previous period** bracket values (lines 189-192) use raw `calcWeightChange` with **no maintenance subtraction**, so feeding events in the prior 30-60 day window inflate the value and make it appear positive.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/app/api/wolf-waagen/data/route.ts` — apply maintenance event detection to previous period 7d and 30d values
+* **Simplicity Check:** Three lines of code added. Same pattern already used for current period values. No UI changes, no DB changes.
+
+## 3. Execution Plan
+- [x] **Step 1:** Apply `detectMaintenanceEvents` + `sumInterventions` to `historyPrev7d` and `historyPrev30d` in the Wolf API route, matching the existing current-period logic
+- [ ] **Step 2:** Prompt user to test the build
+
+## 4. Post-Task Review
+* **Root Cause Found:** Previous period bracket values in the Wolf API route used raw `calcWeightChange` without subtracting maintenance events (feeding/harvesting), while current period values correctly subtracted them. This made bracket values appear inflated/positive when feeding occurred in the prior period.
+* **Summary of Changes:** Applied `detectMaintenanceEvents` + `sumInterventions` to `historyPrev7d` and `historyPrev30d` in `src/app/api/wolf-waagen/data/route.ts` (lines 189-200), matching the existing pattern used for current period values. The 24h previous period is unchanged as it only has ~1 daily reading (not enough for maintenance detection).
+* **Notes for User:** Please test by refreshing the Scale Overview page and checking the Wolf scale bracket values for 7d and 30d.

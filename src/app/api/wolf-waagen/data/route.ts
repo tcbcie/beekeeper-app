@@ -187,9 +187,20 @@ export async function GET(request: NextRequest) {
       : null
 
     // Calculate previous period changes (shown in brackets for comparison)
+    // Apply same maintenance event subtraction as current period values
     const prevWeightChange24h = calcWeightChange(historyPrev24h)
-    const prevWeightChange7d = calcWeightChange(historyPrev7d)
-    const prevWeightChange30d = calcWeightChange(historyPrev30d)
+
+    const rawPrevWeightChange7d = calcWeightChange(historyPrev7d)
+    const interventionsPrev7d = sumInterventions(detectMaintenanceEvents(historyPrev7d))
+    const prevWeightChange7d = rawPrevWeightChange7d !== null
+      ? rawPrevWeightChange7d - interventionsPrev7d
+      : null
+
+    const rawPrevWeightChange30d = calcWeightChange(historyPrev30d)
+    const interventionsPrev30d = sumInterventions(detectMaintenanceEvents(historyPrev30d))
+    const prevWeightChange30d = rawPrevWeightChange30d !== null
+      ? rawPrevWeightChange30d - interventionsPrev30d
+      : null
 
     let history = null
     if (period || (customStart && customEnd)) {
