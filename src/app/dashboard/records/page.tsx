@@ -416,7 +416,7 @@ export default function RecordsPage() {
       }
       router.replace('/dashboard/records')
     }
-  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, handleNewRecord])
+  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, handleNewRecord, setApiaryId])
 
 
   // Weather fetching

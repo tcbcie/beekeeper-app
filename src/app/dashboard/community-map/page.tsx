@@ -749,7 +749,7 @@ export default function CommunityMapPage() {
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return () => { delete (window as any).__dcaConfirm }
-  }, [dca.confirmDCA])
+  }, [dca])
 
   if (loading) return <LoadingSpinner text="Loading community map..." />
 
