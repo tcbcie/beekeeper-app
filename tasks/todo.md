@@ -761,3 +761,45 @@ Principal Quality Architect audit of the queen rearing, distribution, and virgin
   * `DistributionList.tsx`: Replaced O(n*m) `Array.find()` with O(1) `Map` lookup
   * `docs/features/batch-distributions.md`: Added code hardening section for 12/03/2026
 * **Notes for User:** Please test the batch management, distribution, and virgin queen tracker flows.
+
+---
+
+# Task: Distribution Table UX Improvements
+**Date:** 12/03/2026
+**Status:** In Progress
+
+## 1. Objective
+Improve the Distributions table with better column labelling, recipient colour-coding by type, and sortable Date/Mated columns.
+
+## 2. Changes Required
+
+### Column Header: Cell / Queen
+- Rename "Cell" header to "Cell / Queen" since it already shows queen number below cell number
+
+### Recipient Colour-Coding
+- **Group member** (green dot/badge) — `recipient_user_id` is in `groupMemberIds`
+- **App user** (blue dot/badge) — `recipient_user_id` is set but not in group
+- **Other beekeeper** (amber dot/badge) — `recipient_user_id` is null (external)
+- Add a compact legend row below the collapse toggle
+- Need to pass `groupMemberIds` from `BatchGraftsSection` → `DistributionList`
+
+### Sortable Columns: Date & Mated
+- Add sort state (`sortBy: 'date' | 'mated'`, `sortDir: 'asc' | 'desc'`)
+- Clickable headers with sort indicator arrows
+- Sort distributions via `useMemo` based on sort state
+
+## 3. Impact Analysis
+* **Files to Modify:**
+  * `src/components/batches/DistributionList.tsx` — all changes
+  * `src/components/batches/BatchGraftsSection.tsx` — pass `groupMemberIds` prop
+* **Simplicity Check:** All changes in one component + one prop pass-through. No DB changes, no hook changes.
+
+## 4. Execution Plan
+- [x] **Step 1:** Add `groupMemberIds` prop and pass it from `BatchGraftsSection`
+- [x] **Step 2:** Rename Cell header to "Cell / Queen"
+- [x] **Step 3:** Add recipient type helper + colour-coded dot on recipient names (desktop + mobile)
+- [x] **Step 4:** Add compact legend below the collapse toggle
+- [x] **Step 5:** Add sort state + sortable Date and Mated column headers with indicators
+- [x] **Step 6:** Sort distributions via `useMemo`
+- [x] **Step 7:** Update `docs/features/batch-distributions.md`
+- [ ] Prompt user to test

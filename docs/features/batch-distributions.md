@@ -72,13 +72,22 @@ Modal form with:
 
 ### Distribution List
 
-Shown below the graft grid in `BatchGraftsSection`. Each card shows:
-- Cell number and type badge
-- "Distributed to [name] ([email])" — if only name or email is known, shows whichever is available; never shows "Unknown" for registered users. Recipient name resolved as: `full_name` → `first_name + last_name` → `email`
-- "to [Apiary Name][, Hive N] on DD/MM/YYYY" — or just "on DD/MM/YYYY" if no apiary was recorded
-- Mating location line (if set): `Mating location: D01 AB12` — shown for app-user distributions with a mating location
-- Apiary location line (if any location data present): `Grid: X1Y2 • Elev: 45m • 52.1234°, -6.5678°` — each part labelled and only shown if present
-- Queen info line (if set on the graft at time of distribution): `Queen marked • Queen #123`
+Shown below the graft grid in `BatchGraftsSection` as a collapsible table (desktop) / card list (mobile).
+
+**Table columns:** Cell / Queen, Type, Recipient, Date (sortable), Location, Mated (sortable), Actions
+
+**Recipient colour-coding:** Each recipient name is preceded by a coloured dot indicating type:
+- **Green dot** — Group member (`recipient_user_id` found in `groupMemberIds`)
+- **Blue dot** — App user (registered but not in the rearing group)
+- **Amber dot** — Other beekeeper (external, `recipient_user_id` is null)
+
+A legend showing only the recipient types present in the current batch appears next to the "Distributions" header.
+
+**Sorting:** Date and Mated columns are clickable. Clicking toggles between ascending and descending. Default sort is Date descending. A small arrow indicator shows the active sort column and direction.
+
+**Cell / Queen column:** Shows `#N` cell number and, if assigned, `Q#N` queen number below it.
+
+**Other features:**
 - Mating confirmed toggle (for queen cell/virgin queen distributions) — when confirmed, the confirmed date is shown in green ("Mated: DD/MM/YYYY"); toggling off clears the date
 - Delete button to remove distribution and revert graft status
 
