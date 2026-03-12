@@ -163,7 +163,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   const generateGrafts = useCallback(async () => {
     if (!cellCount || cellCount <= 0) {
-      toast.error('Set cell count first')
+      toast.error('Populate Batch Quantities')
       return
     }
 
