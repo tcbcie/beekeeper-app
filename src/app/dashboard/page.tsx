@@ -240,8 +240,8 @@ export default function DashboardPage() {
  {statCards.map((card) => (
  <Link key={card.label} href={card.href!} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-secondary dark:hover:bg-surface-elevated transition-colors whitespace-nowrap">
  <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
- <span className="text-xs text-text-secondary">{card.label}:</span>
- <span className="text-sm font-bold text-foreground">{card.value}</span>
+ <span className="text-sm text-text-secondary">{card.label}:</span>
+ <span className="text-base font-bold text-foreground">{card.value}</span>
  </Link>
  ))}
  </div>
