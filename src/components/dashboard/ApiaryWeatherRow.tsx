@@ -64,7 +64,7 @@ function WeightChip({ label, value }: { label: string; value: number }) {
   const Icon = positive ? TrendingUp : TrendingDown
   return (
     <div className="flex flex-col items-center">
-      <span className="text-[9px] text-text-tertiary leading-none mb-0.5">{label}</span>
+      <span className="text-[10px] text-text-tertiary leading-none mb-0.5">{label}</span>
       <span className={`flex items-center gap-0.5 text-xs font-bold tabular-nums ${
         positive ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
       }`}>
@@ -195,7 +195,7 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
 
       {/* Weather description */}
       {weather && (
-        <div className="px-4 py-0.5 bg-forest-50 dark:bg-forest-900/20 text-[11px] text-forest-700 dark:text-forest-300">
+        <div className="px-4 py-0.5 bg-forest-50 dark:bg-forest-900/20 text-xs text-forest-700 dark:text-forest-300">
           {weatherLabel(weather.current.weatherCode)}
         </div>
       )}
@@ -204,7 +204,7 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
       {weather && (
         <div className="border-b border-border">
           <div className="px-3 pt-1.5">
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-text-tertiary">Forecast</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">Forecast</span>
           </div>
           <div className="flex items-stretch">
             {weather.daily.map((day, i) => (
@@ -214,11 +214,11 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
                   i === 0 ? 'bg-forest-50/50 dark:bg-forest-900/15' : ''
                 } ${i < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
               >
-                <span className={`text-[9px] font-medium leading-none ${
+                <span className={`text-[11px] font-medium leading-none ${
                   i === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-tertiary'
                 }`}>{day.day}</span>
-                <span className="text-xs leading-none my-0.5">{weatherIcon(day.weatherCode)}</span>
-                <span className="text-[9px] leading-none tabular-nums">
+                <span className="text-sm leading-none my-0.5">{weatherIcon(day.weatherCode)}</span>
+                <span className="text-[11px] leading-none tabular-nums">
                   <span className="font-semibold text-foreground">{day.tempMax}&deg;</span>
                   <span className="text-text-tertiary"> {day.tempMin}&deg;</span>
                 </span>
@@ -231,12 +231,12 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
       {/* Stats row */}
       <div className="px-3 py-2 flex items-center gap-3 border-b border-border/50">
         <div className="flex flex-col">
-          <span className="text-[9px] text-text-tertiary leading-none mb-0.5">Hives</span>
+          <span className="text-[11px] text-text-tertiary leading-none mb-0.5">Hives</span>
           <span className="text-sm font-bold text-foreground tabular-nums">{apiary.hiveCount}</span>
         </div>
         <div className="w-px h-5 bg-border" />
         <div className="flex flex-col">
-          <span className="text-[9px] text-text-tertiary leading-none mb-0.5">Last Inspected</span>
+          <span className="text-[11px] text-text-tertiary leading-none mb-0.5">Last Inspected</span>
           {daysSinceInspection !== null ? (
             <span className={`text-sm font-bold tabular-nums ${
               daysSinceInspection < 7
@@ -257,15 +257,15 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
       {hasScales && (
         <div className="px-3 py-2 flex items-center gap-2">
           <div className="flex items-center gap-1 shrink-0">
-            <Scale size={10} className="text-text-tertiary" />
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-text-tertiary">
+            <Scale size={12} className="text-text-tertiary" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary">
               Avg ({apiary.scales.length})
             </span>
           </div>
           {scaleLoading && (
             <div className="flex items-center gap-1">
               <div className="animate-spin rounded-full h-3 w-3 border border-text-tertiary border-t-transparent" />
-              <span className="text-[10px] text-text-tertiary">Loading...</span>
+              <span className="text-xs text-text-tertiary">Loading...</span>
             </div>
           )}
           {!scaleLoading && avgWeight && (
@@ -278,7 +278,7 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
             </div>
           )}
           {!scaleLoading && scaleData.length === 0 && (
-            <span className="text-[10px] text-text-tertiary">No data</span>
+            <span className="text-xs text-text-tertiary">No data</span>
           )}
         </div>
       )}
