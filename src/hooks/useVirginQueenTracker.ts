@@ -230,7 +230,7 @@ export function useVirginQueenTracker() {
   const calculateStats = useCallback((data: TrackedVirginQueen[]): VirginQueenStats => {
     return {
       total: data.length,
-      mated: data.filter((d) => d.mating_confirmed).length,
+      mated: data.filter((d) => d.mating_confirmed || d.distribution_type === 'mated_queen').length,
       overwintered: data.filter((d) => d.overwintered === true).length,
       failed: data.filter((d) => d.overwintered === false).length,
       hybridised: data.filter((d) => d.offspring_hybridised === true).length,
@@ -240,9 +240,9 @@ export function useVirginQueenTracker() {
   const filterByStatus = useCallback((data: TrackedVirginQueen[], status: StatusFilter): TrackedVirginQueen[] => {
     switch (status) {
       case 'pending':
-        return data.filter((d) => !d.mating_confirmed)
+        return data.filter((d) => !d.mating_confirmed && d.distribution_type !== 'mated_queen')
       case 'mated':
-        return data.filter((d) => d.mating_confirmed && d.overwintered === null)
+        return data.filter((d) => (d.mating_confirmed || d.distribution_type === 'mated_queen') && d.overwintered === null)
       case 'overwintered':
         return data.filter((d) => d.overwintered === true)
       case 'failed':
