@@ -1,24 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { useVirginQueenTracker, type TrackedVirginQueen, type StatusFilter } from '@/hooks/useVirginQueenTracker'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { Check, X, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { formatDateIrish } from './graftConstants'
 
 interface VirginQueenTrackerTabProps {
   userId: string
-}
-
-// Format date to Irish format (DD/MM/YYYY) with validation
-const formatDateIrish = (dateString: string | null): string => {
-  if (!dateString) return '-'
-  const date = new Date(dateString + 'T00:00:00')
-  if (isNaN(date.getTime())) return '-'
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
 }
 
 // Three-state toggle component with accessibility
@@ -93,8 +83,10 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  // Track in-flight updates to prevent race conditions
+  // Track in-flight updates to prevent race conditions (ref avoids stale closures)
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
+  const updatingIdsRef = useRef(updatingIds)
+  updatingIdsRef.current = updatingIds
 
   // Fetch data on mount
   useEffect(() => {
@@ -131,10 +123,9 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
   // Calculate stats from filtered data
   const stats = useMemo(() => calculateStats(filteredDistributions), [filteredDistributions, calculateStats])
 
-  // Handle toggle updates with in-flight protection
+  // Handle toggle updates with in-flight protection (ref-based guard)
   const handleOverwinteredChange = useCallback(async (id: string, newValue: boolean | null) => {
-    // Prevent concurrent updates to the same record
-    if (updatingIds.has(id)) return
+    if (updatingIdsRef.current.has(id)) return
 
     setUpdatingIds((prev) => new Set(prev).add(id))
     try {
@@ -152,11 +143,10 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
         return next
       })
     }
-  }, [updateOverwintered, fetchDistributions, userId, toast, updatingIds])
+  }, [updateOverwintered, fetchDistributions, userId, toast])
 
   const handleHybridisationChange = useCallback(async (id: string, newValue: boolean | null) => {
-    // Prevent concurrent updates to the same record
-    if (updatingIds.has(id)) return
+    if (updatingIdsRef.current.has(id)) return
 
     setUpdatingIds((prev) => new Set(prev).add(id))
     try {
@@ -174,7 +164,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
         return next
       })
     }
-  }, [updateHybridisation, fetchDistributions, userId, toast, updatingIds])
+  }, [updateHybridisation, fetchDistributions, userId, toast])
 
   // Get recipient display name
   const getRecipientName = (d: TrackedVirginQueen): string => {

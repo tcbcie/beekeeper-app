@@ -681,3 +681,83 @@ The DistributeGraftModal only showed and required the mating location field for 
   * External location asterisk now always shown (was conditional on queen_cell)
   * Updated `docs/features/batch-distributions.md`
 * **Notes for User:** Please test by opening the distribute modal for a virgin queen or mated queen — the mating location field should now appear and be required.
+
+---
+
+# Task: Queen Rearing Code Audit — Application Hardening
+**Date:** 12/03/2026
+**Status:** In Progress
+
+## 1. Objective
+Principal Quality Architect audit of the queen rearing, distribution, and virgin queen tracking code. Focus on robustness, defensive programming, and correctness. Application code hardening only — no test code.
+
+## 2. Files Audited
+- `src/hooks/useBatchGrafts.ts` (647 lines)
+- `src/hooks/useGraftDistributions.ts` (601 lines)
+- `src/hooks/useVirginQueenTracker.ts` (283 lines)
+- `src/components/batches/DistributeGraftModal.tsx` (570 lines)
+- `src/components/batches/BatchGraftsSection.tsx` (207 lines)
+- `src/components/batches/QueenTrackingSection.tsx` (491 lines)
+- `src/components/batches/DistributionList.tsx` (239 lines)
+- `src/components/batches/VirginQueenTrackerTab.tsx` (481 lines)
+
+## 3. Findings
+
+### HIGH Severity
+
+**H1 — Stale closure in concurrent update guard**
+`VirginQueenTrackerTab.tsx:135-155` — `handleOverwinteredChange` and `handleHybridisationChange` include `updatingIds` (a state Set) in their `useCallback` dependency arrays. The `if (updatingIds.has(id)) return` check reads a stale closure value. If two rapid clicks occur before React re-renders, the second click bypasses the guard. Should use a ref instead.
+
+**H2 — Optimistic updates not reverted on failure**
+`useBatchGrafts.ts:235-275` — `updateGraftQueenMarked`, `updateGraftStatusDate`, and `updateGraftQueenNumber` optimistically update local state via `setGrafts(prev => ...)` but never revert on Supabase error. The user sees the UI reflect a change that didn't persist.
+
+**H3 — `queens_mated` counter counts all `sold` grafts regardless of distribution type**
+`useBatchGrafts.ts:154` — Grafts distributed as `queen_cell` (unmated) are counted in `queens_mated` because they have `sold` status. The batch-level counters shown in the UI could mislead.
+
+**H4 — Dead code: unused `toggleMatingConfirmed` export**
+`useGraftDistributions.ts:460-477` — Exported but never called by any consumer. Superseded by `confirmMatingWithLocation` and `clearMatingConfirmation`.
+
+### MEDIUM Severity
+
+**M1 — `deriveBirthDate` timezone-unsafe**
+`useGraftDistributions.ts:106` — Uses `new Date(batch.graft_date)` without the `T00:00:00` suffix that every other date parse in the codebase uses. Could shift dates by a day in negative UTC offsets.
+
+**M2 — `formatDateIrish` duplicated**
+`VirginQueenTrackerTab.tsx:14-22` — Duplicates the same function from `graftConstants.ts`. Import it instead.
+
+**M3 — No input length limits on external recipient fields**
+`DistributeGraftModal.tsx:423-461` — Name, email, phone, and location inputs have no `maxLength`. Users could submit arbitrarily long strings.
+
+**M4 — O(n*m) graft lookup in render loops**
+`DistributionList.tsx:73,151` — `grafts.find()` inside `.map()` for each distribution. Should use a `Map` for O(1) lookup.
+
+**M5 — `handleBulkDelete` (frame) doesn't exclude distributed grafts**
+`useBatchGrafts.ts:445-463` — Frame bulk delete could attempt to delete grafts with FK-linked distributions, resulting in a confusing DB error instead of a clear message.
+
+**M6 — `updateGraftStatus` doesn't validate against known statuses**
+`useBatchGrafts.ts:201-215` — Accepts any string as `newStatus`. Should validate against `GRAFT_STATUSES`.
+
+## 4. Execution Plan
+
+- [x] **H1:** Replace `updatingIds` state check with a `useRef<Set<string>>` for the concurrent update guard
+- [x] **H2:** Add error rollback to optimistic updates in `useBatchGrafts.ts`
+- [x] **H3:** Fix `queens_mated` counter to exclude `sold` grafts distributed as `queen_cell`
+- [x] **H4:** Remove dead `toggleMatingConfirmed` function and its export
+- [x] **M1:** Add `T00:00:00` suffix to date parse in `deriveBirthDate`
+- [x] **M2:** Import `formatDateIrish` from `graftConstants` instead of duplicating
+- [x] **M3:** Add `maxLength` attributes to external recipient inputs
+- [x] **M4:** Convert graft lookup to `Map` in `DistributionList.tsx`
+- [x] **M5:** Filter out distributed/failed grafts before frame bulk delete
+- [x] **M6:** Validate status value in `updateGraftStatus`
+- [x] Update `docs/features/batch-distributions.md` with hardening notes
+- [ ] Prompt user to test
+
+## 5. Post-Task Review
+* **Summary of Changes:**
+  * `VirginQueenTrackerTab.tsx`: Replaced stale closure guard with `useRef` for concurrent update protection; imported `formatDateIrish` from `graftConstants` instead of duplicating
+  * `useBatchGrafts.ts`: Added optimistic update rollback on failure for queen marked/status date/queen number; fixed `queens_mated` counter to exclude queen_cell distributions; added status validation against known values; hardened frame bulk delete to exclude distributed/failed grafts
+  * `useGraftDistributions.ts`: Removed dead `toggleMatingConfirmed` function; fixed timezone-unsafe date parse in `deriveBirthDate`
+  * `DistributeGraftModal.tsx`: Added `maxLength` to all external recipient text inputs
+  * `DistributionList.tsx`: Replaced O(n*m) `Array.find()` with O(1) `Map` lookup
+  * `docs/features/batch-distributions.md`: Added code hardening section for 12/03/2026
+* **Notes for User:** Please test the batch management, distribution, and virgin queen tracker flows.
