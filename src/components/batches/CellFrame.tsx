@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from 'react'
-import { Trash2, CheckSquare, Square, ChevronDown, ChevronUp, Grid3X3 } from 'lucide-react'
+import { XCircle, Trash2, CheckSquare, Square, ChevronDown, ChevronUp, Grid3X3 } from 'lucide-react'
 import { Graft, GRAFT_STATUSES, FRAME_STATUSES, FRAME_STATUS_VALUES, CUP_COLORS } from './graftConstants'
 import Button from '@/components/ui/Button'
 
@@ -204,11 +204,11 @@ export default function CellFrame({
                               <div className="flex gap-0.5">
                                 <Button
                                   type="button"
-                                  onClick={() => deleteGraft(graft.id)}
+                                  onClick={() => updateGraftStatus(graft.id, 'failed')}
                                   className="rounded p-1.5 text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
-                                  title="Delete"
+                                  title="Failed"
                                 >
-                                  <Trash2 size={10} />
+                                  <XCircle size={10} />
                                 </Button>
                               </div>
                             </div>
