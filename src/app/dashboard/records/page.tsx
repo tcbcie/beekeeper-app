@@ -405,7 +405,11 @@ export default function RecordsPage() {
 
       router.replace('/dashboard/records')
     } else if (createParam) {
-      // Handle quick action links from dashboard (no hive pre-selected)
+      // Handle quick action links from dashboard (optionally with apiary pre-selected)
+      const apiaryParam = searchParams.get('apiary')
+      if (apiaryParam) {
+        setApiaryId(apiaryParam)
+      }
       const validTypes: RecordType[] = ['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest']
       if (validTypes.includes(createParam as RecordType)) {
         handleNewRecord(createParam as RecordType)

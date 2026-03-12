@@ -2,27 +2,28 @@
 import { useEffect, useState, useMemo } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
-import StatCard from '@/components/ui/StatCard'
 import AppIcon from '@/components/icons/AppIcon'
 import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
 import UpcomingEvents from '@/components/UpcomingEvents'
 import Link from 'next/link'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg, ListChecks } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RecentActivityRecord } from '@/types/dashboard'
+import ApiaryWeatherRow from '@/components/dashboard/ApiaryWeatherRow'
 import { dashboardCardIcons, iconography } from '@/lib/iconography'
 
 export default function DashboardPage() {
  const [userId, setUserId] = useState<string | null>(null)
  const [userRole, setUserRole] = useState<UserRole>('User')
  const [showMySharedDetails, setShowMySharedDetails] = useState(false)
+ const [showTeamsSection, setShowTeamsSection] = useState(false)
  const router = useRouter()
 
  // Custom hooks
- const { stats, alerts, recentActivity, loading, error: dashboardError, fetchDashboardData } = useDashboardStats()
+ const { stats, apiaries, alerts, recentActivity, loading, error: dashboardError, fetchDashboardData } = useDashboardStats()
  const {
  ownedTeams,
  memberTeams,
@@ -105,22 +106,22 @@ export default function DashboardPage() {
 
  if (loading) return (
  <div className="space-y-6">
+ {/* Header */}
  <div className="h-9 w-56 bg-surface-secondary rounded animate-shimmer" />
- <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
- <SkeletonCard />
- <SkeletonCard />
- <SkeletonCard />
- <SkeletonCard />
- <SkeletonCard />
+ {/* Apiary cards placeholder */}
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <SkeletonCard className="h-48" />
+ <SkeletonCard className="h-48" />
  </div>
- {/* Quick actions placeholder */}
+ {/* Stats strip + quick actions placeholder */}
+ <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border space-y-3">
+ <Skeleton className="h-8 w-full" />
  <div className="flex flex-wrap gap-2">
  {Array.from({ length: 6 }).map((_, i) => (
  <Skeleton key={i} className="h-8 w-28" />
  ))}
  </div>
- {/* Alerts placeholder */}
- <Skeleton className="h-16 w-full" />
+ </div>
  {/* Recent activity placeholder */}
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border space-y-3">
  <SkeletonRow />
@@ -182,53 +183,11 @@ export default function DashboardPage() {
  </Link>
  )}
  </div>
- <p className="text-sm sm:text-base text-text-secondary">
- A quick field-journal summary of your apiaries, hive activity, and shared work.
- </p>
  </div>
- </div>
-
- {/* My Statistics Cards */}
- <div>
- <h2 className="text-lg font-semibold text-foreground mb-3">My Beekeeping</h2>
- <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
- {statCards.map((card, index) => (
- <StatCard
- key={card.label}
- label={card.label}
- value={card.value}
- icon={card.icon}
- color={card.color}
- href={card.href}
- className={`stagger-${index + 1}`}
- />
- ))}
- </div>
- </div>
-
- {/* Quick Actions */}
- <div className="flex flex-wrap gap-2">
- {[
- { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} /> },
- { label: 'Log Feeding', href: '/dashboard/records?create=feeding', icon: <Wheat size={14} /> },
- { label: 'Varroa Check', href: '/dashboard/records?create=varroa_check', icon: <Bug size={14} /> },
- { label: 'Add Treatment', href: '/dashboard/records?create=varroa_treatment', icon: <Syringe size={14} /> },
- { label: 'Log Harvest', href: '/dashboard/records?create=harvest', icon: <Droplet size={14} /> },
- { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={14} /> },
- ].map((action) => (
- <Link
- key={action.label}
- href={action.href}
- className="fj-chip fj-chip-sm fj-chip-neutral"
- >
- {action.icon}
- {action.label}
- </Link>
- ))}
  </div>
 
  {/* Attention Needed Alerts */}
-{(alerts.overdueInspections > 0 || alerts.oldQueens > 0 || alerts.highVarroa > 0) && (
+{(alerts.overdueInspections > 0 || alerts.oldQueens > 0 || alerts.highVarroa > 0 || alerts.todayTasks > 0) && (
  <div className="fj-panel-amber p-4">
  <div className="flex items-center gap-2 mb-3">
  <AlertTriangle size={18} className="fj-text-warning" />
@@ -253,18 +212,106 @@ export default function DashboardPage() {
  {alerts.highVarroa} high varroa check{alerts.highVarroa !== 1 ? 's' : ''} (&gt;3%)
  </Link>
  )}
+ {alerts.todayTasks > 0 && (
+ <Link href="/dashboard/tasks" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
+ <ListChecks size={12} />
+ {alerts.todayTasks} task{alerts.todayTasks !== 1 ? 's' : ''} due today
+ </Link>
+ )}
  </div>
  </div>
  )}
 
- {/* Team Statistics Cards - Shared by Me */}
- {isTeamMember && hasMySharedData && (
- <Panel padding="sm" className="border border-blue-600 dark:border-blue-800">
+ {/* Apiary Weather */}
+ {apiaries.length > 0 && (
+  <div>
+   <h2 className="text-lg font-semibold text-foreground mb-3">My Apiaries</h2>
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {apiaries.map((apiary) => (
+     <ApiaryWeatherRow key={apiary.id} apiary={apiary} />
+    ))}
+   </div>
+  </div>
+ )}
+
+ {/* Stats Strip + Quick Actions */}
+ <Panel padding="sm">
+ <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-3 border-b border-border scrollbar-thin">
+ {statCards.map((card, i) => (
+ <Link key={card.label} href={card.href!} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-secondary dark:hover:bg-surface-elevated transition-colors whitespace-nowrap shrink-0">
+ <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
+ <span className="text-xs text-text-secondary">{card.label}:</span>
+ <span className="text-sm font-bold text-foreground">{card.value}</span>
+ {i < statCards.length - 1 && <span className="text-border ml-1.5">|</span>}
+ </Link>
+ ))}
+ </div>
+ <div className="flex flex-wrap gap-2">
+ {[
+ { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} /> },
+ { label: 'Log Feeding', href: '/dashboard/records?create=feeding', icon: <Wheat size={14} /> },
+ { label: 'Varroa Check', href: '/dashboard/records?create=varroa_check', icon: <Bug size={14} /> },
+ { label: 'Add Treatment', href: '/dashboard/records?create=varroa_treatment', icon: <Syringe size={14} /> },
+ { label: 'Log Harvest', href: '/dashboard/records?create=harvest', icon: <Droplet size={14} /> },
+ { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={14} /> },
+ ].map((action) => (
+ <Link
+ key={action.label}
+ href={action.href}
+ className="fj-chip fj-chip-sm fj-chip-neutral"
+ >
+ {action.icon}
+ {action.label}
+ </Link>
+ ))}
+ </div>
+ </Panel>
+
+ {/* Upcoming Events */}
+ {userId && <UpcomingEvents userId={userId} />}
+
+ {/* Recent Activity */}
+ <RecentActivitySection
+ recentActivity={recentActivity}
+ dashboardError={dashboardError}
+ onRetry={() => userId && fetchDashboardData(userId)}
+ />
+
+ {/* Teams & Collaboration (collapsed accordion) */}
+ {(isTeamMember || isRearingGroupMember || loadingTeams || loadingRearingGroups) && (
+ <Panel>
+ <button
+ onClick={() => setShowTeamsSection(!showTeamsSection)}
+ className="w-full flex items-center justify-between"
+ >
+ <div className="flex items-center gap-2">
+ <Users size={20} className="text-blue-600 dark:text-blue-400" />
+ <h2 className="text-lg font-semibold text-foreground">Teams &amp; Collaboration</h2>
+ </div>
+ <div className="flex items-center gap-2">
+ <span className="text-sm text-text-secondary">
+ {(loadingTeams || loadingRearingGroups) ? 'Loading\u2026' : (
+ <>
+ {ownedTeams.length + memberTeams.length > 0 && `${ownedTeams.length + memberTeams.length} team${ownedTeams.length + memberTeams.length !== 1 ? 's' : ''}`}
+ {ownedTeams.length + memberTeams.length > 0 && (ownedRearingGroups.length + memberRearingGroups.length) > 0 && ', '}
+ {(ownedRearingGroups.length + memberRearingGroups.length) > 0 && `${ownedRearingGroups.length + memberRearingGroups.length} rearing group${ownedRearingGroups.length + memberRearingGroups.length !== 1 ? 's' : ''}`}
+ </>
+ )}
+ </span>
+ <span className={`text-text-tertiary transition-transform ${showTeamsSection ? 'rotate-180' : ''}`}>&#9660;</span>
+ </div>
+ </button>
+
+ {showTeamsSection && (
+ <div className="mt-4 space-y-6">
+ {/* Shared by Me */}
+ {hasMySharedData && (
+ <div className="border border-blue-600 dark:border-blue-800 rounded-lg p-4">
  <div className="flex items-center justify-between mb-3">
- <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
- <Users size={18} className="text-blue-600 dark:text-blue-400" />
+ <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+ <Users size={16} className="text-blue-600 dark:text-blue-400" />
  Shared by Me
- </h2>
+ </h3>
  <Button
  onClick={() => {
  if (!showMySharedDetails && userId) {
@@ -282,18 +329,16 @@ export default function DashboardPage() {
  {mySharedCards.map((card) => (
  <div key={card.label} className="flex flex-col">
  <div className="flex items-center gap-1.5 mb-1">
- <AppIcon icon={card.icon} size="md" className="text-text-secondary" />
+ <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
  <span className="text-xs text-text-tertiary">{card.label}</span>
  </div>
- <span className="text-2xl font-bold text-foreground">{card.value}</span>
+ <span className="text-xl font-bold text-foreground">{card.value}</span>
  </div>
  ))}
  </div>
-
- {/* Team Members Detail View */}
  {showMySharedDetails && (
  <div className="mt-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
- <h3 className="text-sm font-semibold text-foreground mb-3">Team Members with Access</h3>
+ <h4 className="text-sm font-semibold text-foreground mb-3">Team Members with Access</h4>
  {loadingTeamMembers ? (
  <div className="flex justify-center py-4">
  <div className="animate-spin rounded-full h-6 w-6 border-4 border-blue-600 border-t-transparent"></div>
@@ -309,14 +354,8 @@ export default function DashboardPage() {
  <p className="text-xs text-text-secondary truncate">{member.profiles?.email}</p>
  </div>
  <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
- <span className="fj-badge fj-badge-blue">
- {member.teams?.name || 'Unknown'}
- </span>
- <span className={`fj-badge ${
- member.role === 'owner' ? 'fj-badge-amber' : 'fj-badge-neutral'
- }`}>
- {member.role}
- </span>
+ <span className="fj-badge fj-badge-blue">{member.teams?.name || 'Unknown'}</span>
+ <span className={`fj-badge ${member.role === 'owner' ? 'fj-badge-amber' : 'fj-badge-neutral'}`}>{member.role}</span>
  </div>
  </div>
  ))}
@@ -326,44 +365,32 @@ export default function DashboardPage() {
  )}
  </div>
  )}
- </Panel>
+ </div>
  )}
 
- {/* Team Statistics Cards - Shared with Me */}
- {isTeamMember && hasSharedWithMeData && (
- <Panel padding="sm" className="border-2 border-green-600 dark:border-green-700">
- <div className="flex items-center justify-between mb-3">
- <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
- <Users size={18} className="text-green-600 dark:text-green-400" />
+ {/* Shared with Me */}
+ {hasSharedWithMeData && (
+ <div className="border border-green-600 dark:border-green-700 rounded-lg p-4">
+ <h3 className="text-base font-semibold text-foreground flex items-center gap-2 mb-3">
+ <Users size={16} className="text-green-600 dark:text-green-400" />
  Shared with Me
- </h2>
- </div>
+ </h3>
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
  {sharedWithMeCards.map((card) => (
  <div key={card.label} className="flex flex-col">
  <div className="flex items-center gap-1.5 mb-1">
- <AppIcon icon={card.icon} size="md" className="text-text-secondary" />
+ <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
  <span className="text-xs text-text-tertiary">{card.label}</span>
  </div>
- <span className="text-2xl font-bold text-foreground">{card.value}</span>
+ <span className="text-xl font-bold text-foreground">{card.value}</span>
  </div>
  ))}
  </div>
- </Panel>
+ </div>
  )}
 
- {/* Upcoming Events */}
- {userId && <UpcomingEvents userId={userId} />}
-
- {/* Recent Activity */}
- <RecentActivitySection
- recentActivity={recentActivity}
- dashboardError={dashboardError}
- onRetry={() => userId && fetchDashboardData(userId)}
- />
-
- {/* Teams Section */}
- {(loadingTeams || ownedTeams.length > 0 || memberTeams.length > 0) && (
+ {/* My Teams */}
+ {(isTeamMember || loadingTeams) && (
  <TeamsSection
  ownedTeams={ownedTeams}
  memberTeams={memberTeams}
@@ -374,13 +401,17 @@ export default function DashboardPage() {
  />
  )}
 
- {/* Rearing Groups Section */}
- {(loadingRearingGroups || isRearingGroupMember) && (
+ {/* Rearing Groups */}
+ {isRearingGroupMember && (
  <RearingGroupsSection
  ownedRearingGroups={ownedRearingGroups}
  memberRearingGroups={memberRearingGroups}
  loadingRearingGroups={loadingRearingGroups}
  />
+ )}
+ </div>
+ )}
+ </Panel>
  )}
 
  {/* Application Version */}
@@ -463,6 +494,7 @@ function RecentActivitySection({ recentActivity, dashboardError, onRetry }: Rece
 
  const hiveId = record.hive_id
  const recordHref = hiveId ? `/dashboard/records?hive=${hiveId}` : '/dashboard/records'
+ const apiaryName = record.hives?.apiaries?.name
 
  return (
  <Link key={record.id} href={recordHref} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors">
@@ -472,6 +504,7 @@ function RecentActivitySection({ recentActivity, dashboardError, onRetry }: Rece
  <span className="font-medium text-foreground block truncate">{label}</span>
  <span className="text-sm text-text-secondary">
  {new Date(record.date).toLocaleDateString()}
+ {apiaryName && <span className="text-text-tertiary"> &middot; {apiaryName}</span>}
  </span>
  </div>
  </div>
@@ -511,7 +544,7 @@ interface TeamsSectionProps {
 
 function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, hasMySharedData, hasSharedWithMeData }: TeamsSectionProps) {
  return (
- <Panel>
+ <div>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
  <Users size={24} className="text-blue-600 dark:text-blue-400" />
@@ -599,7 +632,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
  )}
  </div>
  )}
- </Panel>
+ </div>
  )
 }
 
@@ -611,7 +644,7 @@ interface RearingGroupsSectionProps {
 
 function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loadingRearingGroups }: RearingGroupsSectionProps) {
  return (
- <Panel>
+ <div>
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
  <Egg size={24} className="text-amber-600 dark:text-amber-400" />
@@ -688,6 +721,6 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
  )}
  </div>
  )}
- </Panel>
+ </div>
  )
 }
