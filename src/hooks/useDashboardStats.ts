@@ -97,7 +97,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
         // Fetch latest inspection per hive
         const hiveIds = (hivesData || []).map(h => h.id)
-        let inspectionMap: Record<string, string> = {}
+        const inspectionMap: Record<string, string> = {}
         if (hiveIds.length > 0) {
           const { data: inspData } = await supabase
             .from('inspections')
