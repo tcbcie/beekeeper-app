@@ -7,6 +7,7 @@ export interface Inspection {
   queen_seen: boolean
   hives?: {
     hive_number: string
+    apiaries?: { name: string } | null
   }
 }
 
@@ -17,6 +18,7 @@ export interface VarroaTreatment {
   treatment_type: string
   hives?: {
     hive_number: string
+    apiaries?: { name: string } | null
   }
 }
 
@@ -28,6 +30,7 @@ export interface VarroaCheck {
   infestation_rate: number | null
   hives?: {
     hive_number: string
+    apiaries?: { name: string } | null
   }
 }
 
@@ -39,6 +42,7 @@ export interface Feeding {
   quantity: number | null
   hives?: {
     hive_number: string
+    apiaries?: { name: string } | null
   }
 }
 
@@ -50,6 +54,7 @@ export interface Harvest {
   frames_harvested: number | null
   hives?: {
     hive_number: string
+    apiaries?: { name: string } | null
   }
 }
 
@@ -92,6 +97,24 @@ export interface TeamApiaryWithOwner {
   }[] | null
 }
 
+export interface DashboardApiaryScale {
+  hiveId: string
+  type: 'beep' | 'wolf'
+  deviceId: string
+}
+
+export interface DashboardApiary {
+  id: string
+  name: string
+  location: string | null
+  city: string | null
+  latitude: number | null
+  longitude: number | null
+  hiveCount: number
+  lastInspectionDate: string | null
+  scales: DashboardApiaryScale[]
+}
+
 export interface DashboardStats {
   apiaries: number
   hives: number
@@ -104,6 +127,7 @@ export interface AttentionAlerts {
   overdueInspections: number
   oldQueens: number
   highVarroa: number
+  todayTasks: number
 }
 
 export interface TeamStats {

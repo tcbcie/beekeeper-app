@@ -112,7 +112,6 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
   }
 
   const getBadgeColor = (daysUntil: number) => {
-    if (daysUntil === 0) return 'bg-red-100 dark:bg-red-950/30 text-foreground dark:text-red-300 border-red-200 dark:border-red-800'
     if (daysUntil === 1) return 'bg-orange-100 dark:bg-orange-950/30 text-foreground dark:text-orange-300 border-orange-200 dark:border-orange-800'
     if (daysUntil <= 3) return 'bg-yellow-100 dark:bg-yellow-950/30 text-foreground dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
     return 'bg-blue-100 dark:bg-blue-950/30 text-foreground dark:text-blue-300 border-blue-200 dark:border-blue-800'
@@ -135,16 +134,12 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
     )
   }
 
-  if (events.length === 0) {
-    return (
-      <Panel>
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
-          <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
-        </div>
-        <p className="text-text-secondary text-sm">No events in the next 7 days</p>
-      </Panel>
-    )
+  // Filter out today's events (already shown in attention banner)
+  const futureEvents = events.filter(e => e.days_until > 0)
+
+  // Hide entirely when no upcoming events
+  if (futureEvents.length === 0) {
+    return null
   }
 
   return (
@@ -156,7 +151,7 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
       </div>
 
       <div className="space-y-3">
-        {events.map((event, index) => (
+        {futureEvents.map((event, index) => (
           <Link
             key={`${event.id}-${index}`}
             href="/dashboard/tasks"
@@ -179,11 +174,14 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
                 <p className="text-xs text-text-tertiary mt-0.5">{formatDate(event.date)}</p>
               </div>
               <span className={`px-2 py-1 rounded text-xs font-medium border ${getBadgeColor(event.days_until)} whitespace-nowrap`}>
-                {event.days_until === 0 ? 'Today' : event.days_until === 1 ? 'Tomorrow' : `${event.days_until} days`}
+                {event.days_until === 1 ? 'Tomorrow' : `${event.days_until} days`}
               </span>
             </div>
           </Link>
         ))}
+        <Link href="/dashboard/tasks" className="block text-center text-sm text-forest-600 dark:text-forest-400 hover:underline pt-2">
+          View All Tasks
+        </Link>
       </div>
     </Panel>
   )

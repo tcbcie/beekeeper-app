@@ -7,6 +7,7 @@ function toLocalDateString(date: Date): string {
 }
 import type {
   DashboardStats,
+  DashboardApiary,
   AttentionAlerts,
   RecentActivityRecord,
   Inspection,
@@ -18,6 +19,7 @@ import type {
 
 interface UseDashboardStatsReturn {
   stats: DashboardStats
+  apiaries: DashboardApiary[]
   alerts: AttentionAlerts
   recentActivity: RecentActivityRecord[]
   loading: boolean
@@ -37,7 +39,9 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     overdueInspections: 0,
     oldQueens: 0,
     highVarroa: 0,
+    todayTasks: 0,
   })
+  const [apiaries, setApiaries] = useState<DashboardApiary[]>([])
   const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -59,8 +63,9 @@ export function useDashboardStats(): UseDashboardStatsReturn {
       const fourteenDaysAgo = toLocalDateString(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000))
       const twoYearsAgo = toLocalDateString(new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000))
 
-      const [apiariesRes, hivesRes, inspectionsRes, queensRes, tasksRes] = await Promise.all([
+      const [apiariesRes, apiaryListRes, hivesRes, inspectionsRes, queensRes, tasksRes] = await Promise.all([
         supabase.from('apiaries').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        supabase.from('apiaries').select('id, name, location, city, latitude, longitude').eq('user_id', userId).order('name'),
         supabase.from('hives').select('id', { count: 'exact', head: true }).eq('user_id', userId),
         supabase
           .from('inspections')
@@ -72,6 +77,67 @@ export function useDashboardStats(): UseDashboardStatsReturn {
       ])
 
       if (!mountedRef.current) return
+
+      // Enrich apiaries with hive counts, last inspection, and scale info
+      const rawApiaries = (apiaryListRes.data || []) as { id: string; name: string; location: string | null; city: string | null; latitude: number | null; longitude: number | null }[]
+      const apiaryIds = rawApiaries.map(a => a.id)
+
+      let enrichedApiaries: DashboardApiary[] = rawApiaries.map(a => ({
+        ...a, hiveCount: 0, lastInspectionDate: null, scales: [],
+      }))
+
+      if (apiaryIds.length > 0) {
+        // Fetch active hives with scale info per apiary
+        const { data: hivesData } = await supabase
+          .from('hives')
+          .select('id, apiary_id, beep_device_id, wolf_scale_id')
+          .eq('user_id', userId)
+          .is('archived_at', null)
+          .in('apiary_id', apiaryIds)
+
+        // Fetch latest inspection per hive
+        const hiveIds = (hivesData || []).map(h => h.id)
+        let inspectionMap: Record<string, string> = {}
+        if (hiveIds.length > 0) {
+          const { data: inspData } = await supabase
+            .from('inspections')
+            .select('hive_id, inspection_date')
+            .in('hive_id', hiveIds)
+            .order('inspection_date', { ascending: false })
+          for (const ins of (inspData || [])) {
+            if (!inspectionMap[ins.hive_id]) {
+              inspectionMap[ins.hive_id] = ins.inspection_date
+            }
+          }
+        }
+
+        // Build per-apiary maps
+        const hiveCountMap: Record<string, number> = {}
+        const scaleMap: Record<string, DashboardApiary['scales']> = {}
+        const lastInspMap: Record<string, string> = {}
+
+        for (const h of (hivesData || [])) {
+          const aid = h.apiary_id as string
+          hiveCountMap[aid] = (hiveCountMap[aid] || 0) + 1
+          if (!scaleMap[aid]) scaleMap[aid] = []
+          if (h.beep_device_id) scaleMap[aid].push({ hiveId: h.id, type: 'beep', deviceId: h.beep_device_id })
+          if (h.wolf_scale_id) scaleMap[aid].push({ hiveId: h.id, type: 'wolf', deviceId: h.wolf_scale_id })
+          const insDate = inspectionMap[h.id]
+          if (insDate && (!lastInspMap[aid] || insDate > lastInspMap[aid])) {
+            lastInspMap[aid] = insDate
+          }
+        }
+
+        enrichedApiaries = rawApiaries.map(a => ({
+          ...a,
+          hiveCount: hiveCountMap[a.id] || 0,
+          lastInspectionDate: lastInspMap[a.id] || null,
+          scales: scaleMap[a.id] || [],
+        }))
+      }
+
+      if (!mountedRef.current) return
+      setApiaries(enrichedApiaries)
       setStats({
         apiaries: apiariesRes.count || 0,
         hives: hivesRes.count || 0,
@@ -81,7 +147,8 @@ export function useDashboardStats(): UseDashboardStatsReturn {
       })
 
       // Fetch attention alerts and overdue hives in parallel
-      const [oldQueensRes, highVarroaRes, activeHivesRes] = await Promise.all([
+      const todayStr = toLocalDateString(new Date())
+      const [oldQueensRes, highVarroaRes, activeHivesRes, todayTasksRes] = await Promise.all([
         // Active queens older than 2 years
         supabase.from('queens').select('id', { count: 'exact', head: true })
           .eq('user_id', userId).eq('status', 'active').lt('birth_date', twoYearsAgo),
@@ -92,6 +159,9 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         // Active hives for overdue inspection calculation
         supabase.from('hives').select('id')
           .eq('user_id', userId).is('archived_at', null),
+        // Tasks due today
+        supabase.from('tasks_events').select('id', { count: 'exact', head: true })
+          .eq('user_id', userId).eq('completed', false).eq('start_date', todayStr),
       ])
 
       // Count unique hives with high varroa
@@ -117,6 +187,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         overdueInspections: overdueCount,
         oldQueens: oldQueensRes.count || 0,
         highVarroa: highVarroaHiveIds.size,
+        todayTasks: todayTasksRes.count || 0,
       })
 
       // Fetch recent activity from all record types
@@ -124,31 +195,31 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         await Promise.all([
           supabase
             .from('inspections')
-            .select('*, hives(hive_number)')
+            .select('*, hives(hive_number, apiaries(name))')
             .eq('user_id', userId)
             .order('inspection_date', { ascending: false })
             .limit(10),
           supabase
             .from('varroa_treatments')
-            .select('*, hives(hive_number)')
+            .select('*, hives(hive_number, apiaries(name))')
             .eq('user_id', userId)
             .order('treatment_date', { ascending: false })
             .limit(10),
           supabase
             .from('varroa_checks')
-            .select('*, hives(hive_number)')
+            .select('*, hives(hive_number, apiaries(name))')
             .eq('user_id', userId)
             .order('check_date', { ascending: false })
             .limit(10),
           supabase
             .from('feedings')
-            .select('*, hives(hive_number)')
+            .select('*, hives(hive_number, apiaries(name))')
             .eq('user_id', userId)
             .order('feed_date', { ascending: false })
             .limit(10),
           supabase
             .from('harvests')
-            .select('*, hives(hive_number)')
+            .select('*, hives(hive_number, apiaries(name))')
             .eq('user_id', userId)
             .order('harvest_date', { ascending: false })
             .limit(10),
@@ -206,6 +277,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
   return {
     stats,
+    apiaries,
     alerts,
     recentActivity,
     loading,
