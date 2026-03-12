@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useState } from 'react'
-import { Trash2, Send, CheckSquare, Square, Lock, LockOpen } from 'lucide-react'
+import { Trash2, Send, CheckSquare, Square, Lock, LockOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import {
   Graft,
@@ -74,26 +74,38 @@ export default function QueenTrackingSection({
   setDistributeGraft,
 }: QueenTrackingSectionProps) {
   const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [collapsed, setCollapsed] = useState(false)
 
   if (tableGrafts.length === 0) return null
 
   return (
     <div className="pt-4 border-t border-border">
       <div className="flex justify-between items-center mb-1">
-        <h4 className="text-sm font-semibold text-foreground">Queen Tracking ({tableGrafts.length})</h4>
-        <Button
+        <button
           type="button"
-          onClick={() => { if (tableSelectMode) { exitTableSelectMode() } else { exitSelectMode(); setTableSelectMode(true) } }}
-          className={`px-3 py-1.5 text-sm rounded font-medium flex items-center gap-1 ${
-            tableSelectMode
-              ? 'bg-forest-600 text-white hover:bg-forest-700'
-              : 'border border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30'
-          }`}
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-text-secondary transition-colors"
         >
-          <CheckSquare size={14} />
-          {tableSelectMode ? 'Done' : 'Bulk Actions'}
-        </Button>
+          {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          Queen Tracking ({tableGrafts.length})
+        </button>
+        {!collapsed && (
+          <Button
+            type="button"
+            onClick={() => { if (tableSelectMode) { exitTableSelectMode() } else { exitSelectMode(); setTableSelectMode(true) } }}
+            className={`px-3 py-1.5 text-sm rounded font-medium flex items-center gap-1 ${
+              tableSelectMode
+                ? 'bg-forest-600 text-white hover:bg-forest-700'
+                : 'border border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30'
+            }`}
+          >
+            <CheckSquare size={14} />
+            {tableSelectMode ? 'Done' : 'Bulk Actions'}
+          </Button>
+        )}
       </div>
+
+      {collapsed ? null : (<>
 
       {/* Marking Colour Note */}
       {markingColour && emergenceYear && !isNaN(emergenceYear) && (
@@ -471,6 +483,7 @@ export default function QueenTrackingSection({
           )
         })}
       </div>
+      </>)}
     </div>
   )
 }
