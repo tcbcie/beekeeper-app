@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import AppIcon from '@/components/icons/AppIcon'
+import AlertPanel from '@/components/ui/AlertPanel'
 import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
@@ -13,7 +14,44 @@ import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RecentActivityRecord } from '@/types/dashboard'
 import ApiaryWeatherRow from '@/components/dashboard/ApiaryWeatherRow'
+import { formatLocalDate } from '@/lib/date-utils'
 import { dashboardCardIcons, iconography } from '@/lib/iconography'
+
+function getRecentActivityTypeParam(recordType: RecentActivityRecord['record_type']): string {
+  switch (recordType) {
+    case 'varroa_check':
+      return 'varroa-check'
+    case 'varroa_treatment':
+      return 'varroa-treatment'
+    default:
+      return recordType
+  }
+}
+
+function buildRecentActivityHref(record: RecentActivityRecord): string {
+  const params = new URLSearchParams({
+    type: getRecentActivityTypeParam(record.record_type),
+    record: record.id,
+  })
+
+  if (record.hive_id) {
+    params.set('hive', record.hive_id)
+  }
+
+  return `/dashboard/records?${params.toString()}`
+}
+
+function formatRecentActivityDate(dateString: string): string {
+  if (dateString.includes('T')) {
+    return new Date(dateString).toLocaleDateString('en-IE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+  }
+
+  return formatLocalDate(dateString)
+}
 
 export default function DashboardPage() {
  const [userId, setUserId] = useState<string | null>(null)
@@ -23,7 +61,7 @@ export default function DashboardPage() {
  const router = useRouter()
 
  // Custom hooks
- const { stats, apiaries, alerts, recentActivity, loading, error: dashboardError, fetchDashboardData } = useDashboardStats()
+ const { stats, apiaries, alerts, recentActivity, loading, error: dashboardError, recentActivityError, fetchDashboardData } = useDashboardStats()
  const {
  ownedTeams,
  memberTeams,
@@ -183,10 +221,26 @@ export default function DashboardPage() {
  </Link>
  )}
  </div>
- </div>
- </div>
+</div>
+</div>
 
- {/* Attention Needed Alerts */}
+{dashboardError && (
+ <AlertPanel
+  tone="error"
+  icon={<AlertTriangle size={18} />}
+  title="Some dashboard sections could not be loaded"
+  endSlot={(
+   <Button type="button" tone="neutral" size="xs" onClick={() => userId && fetchDashboardData(userId)}>
+    Retry
+   </Button>
+  )}
+  endSlotClassName="self-center"
+ >
+  <p className="text-sm">{dashboardError}</p>
+ </AlertPanel>
+)}
+
+{/* Attention Needed Alerts */}
 {(alerts.overdueInspections > 0 || alerts.oldQueens > 0 || alerts.highVarroa > 0 || alerts.todayTasks > 0) && (
  <div className="fj-panel-amber p-4">
  <div className="flex items-center gap-2 mb-3">
@@ -270,18 +324,21 @@ export default function DashboardPage() {
  {userId && <UpcomingEvents userId={userId} />}
 
  {/* Recent Activity */}
- <RecentActivitySection
+<RecentActivitySection
  recentActivity={recentActivity}
- dashboardError={dashboardError}
+ recentActivityError={recentActivityError}
  onRetry={() => userId && fetchDashboardData(userId)}
- />
+/>
 
  {/* Teams & Collaboration (collapsed accordion) */}
- {(isTeamMember || isRearingGroupMember || loadingTeams || loadingRearingGroups) && (
+{(isTeamMember || isRearingGroupMember || loadingTeams || loadingRearingGroups) && (
  <Panel>
  <button
+ type="button"
  onClick={() => setShowTeamsSection(!showTeamsSection)}
  className="w-full flex items-center justify-between"
+ aria-expanded={showTeamsSection}
+ aria-controls="dashboard-teams-collaboration-panel"
  >
  <div className="flex items-center gap-2">
  <Users size={20} className="text-blue-600 dark:text-blue-400" />
@@ -302,10 +359,10 @@ export default function DashboardPage() {
  </button>
 
  {showTeamsSection && (
- <div className="mt-4 space-y-6">
+ <div id="dashboard-teams-collaboration-panel" className="mt-4 space-y-6">
  {/* Shared by Me */}
  {hasMySharedData && (
- <div className="border border-blue-600 dark:border-blue-800 rounded-lg p-4">
+  <div className="border border-blue-600 dark:border-blue-800 rounded-lg p-4">
  <div className="flex items-center justify-between mb-3">
  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
  <Users size={16} className="text-blue-600 dark:text-blue-400" />
@@ -313,17 +370,20 @@ export default function DashboardPage() {
  </h3>
  <Button
  onClick={() => {
- if (!showMySharedDetails && userId) {
- fetchMySharedTeamMembers(userId)
- }
- setShowMySharedDetails(!showMySharedDetails)
+  if (!showMySharedDetails && userId) {
+   fetchMySharedTeamMembers(userId)
+  }
+  setShowMySharedDetails(!showMySharedDetails)
  }}
+ type="button"
  tone="blue"
  size="sm"
+ aria-expanded={showMySharedDetails}
+ aria-controls="dashboard-shared-team-members"
  >
  {showMySharedDetails ? 'Hide' : 'Show'} Details
  </Button>
- </div>
+</div>
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
  {mySharedCards.map((card) => (
  <div key={card.label} className="flex flex-col">
@@ -336,7 +396,7 @@ export default function DashboardPage() {
  ))}
  </div>
  {showMySharedDetails && (
- <div className="mt-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+ <div id="dashboard-shared-team-members" className="mt-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
  <h4 className="text-sm font-semibold text-foreground mb-3">Team Members with Access</h4>
  {loadingTeamMembers ? (
  <div className="flex justify-center py-4">
@@ -425,11 +485,11 @@ export default function DashboardPage() {
 
 interface RecentActivitySectionProps {
  recentActivity: RecentActivityRecord[]
- dashboardError: string | null
+ recentActivityError: string | null
  onRetry: () => void
 }
 
-function RecentActivitySection({ recentActivity, dashboardError, onRetry }: RecentActivitySectionProps) {
+function RecentActivitySection({ recentActivity, recentActivityError, onRetry }: RecentActivitySectionProps) {
  return (
  <Panel>
  <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
@@ -490,40 +550,38 @@ function RecentActivitySection({ recentActivity, dashboardError, onRetry }: Rece
  ) : null
  break
  }
+      const recordHref = buildRecentActivityHref(record)
+      const apiaryName = record.hives?.apiaries?.name
 
- const hiveId = record.hive_id
- const recordHref = hiveId ? `/dashboard/records?hive=${hiveId}` : '/dashboard/records'
- const apiaryName = record.hives?.apiaries?.name
-
- return (
+      return (
  <Link key={record.id} href={recordHref} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors">
- <div className="flex items-center gap-2 flex-1 min-w-0">
- {icon}
- <div className="flex-1 min-w-0">
- <span className="font-medium text-foreground block truncate">{label}</span>
- <span className="text-sm text-text-secondary">
- {new Date(record.date).toLocaleDateString()}
+  <div className="flex items-center gap-2 flex-1 min-w-0">
+  {icon}
+  <div className="flex-1 min-w-0">
+  <span className="font-medium text-foreground block truncate">{label}</span>
+  <span className="text-sm text-text-secondary">
+ {formatRecentActivityDate(record.date)}
  {apiaryName && <span className="text-text-tertiary"> &middot; {apiaryName}</span>}
  </span>
  </div>
  </div>
  {badge && <div className="ml-2 flex-shrink-0">{badge}</div>}
  </Link>
- )
- })}
- {recentActivity.length === 0 && !dashboardError && (
+      )
+     })}
+ {recentActivity.length === 0 && !recentActivityError && (
  <p className="text-text-secondary text-center py-4">No recent activity</p>
  )}
  {recentActivity.length > 0 && (
  <Link href="/dashboard/records" className="block text-center text-sm text-forest-600 dark:text-forest-400 hover:underline pt-2">
- View All Records
+  View All Records
  </Link>
  )}
- {dashboardError && (
+ {recentActivityError && (
  <div className="text-center py-4">
- <p className="text-red-600 dark:text-red-400 mb-2">{dashboardError}</p>
- <Button onClick={onRetry} tone="neutral" size="xs">
- Try again
+ <p className="text-red-600 dark:text-red-400 mb-2">{recentActivityError}</p>
+ <Button type="button" onClick={onRetry} tone="neutral" size="xs">
+  Try again
  </Button>
  </div>
  )}

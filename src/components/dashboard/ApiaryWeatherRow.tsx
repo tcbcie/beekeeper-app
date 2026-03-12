@@ -1,7 +1,10 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+
+import { useEffect, useState, useCallback, useRef, startTransition } from 'react'
 import Link from 'next/link'
 import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale } from 'lucide-react'
+
+import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary } from '@/types/dashboard'
 
@@ -29,7 +32,16 @@ interface ScaleWeight {
   change30d: number | null
 }
 
-// WMO weather code to emoji icon
+interface CacheEntry<T> {
+  data: T
+  fetchedAt: number
+}
+
+const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000
+const SCALE_CACHE_TTL_MS = 5 * 60 * 1000
+const weatherCache = new Map<string, CacheEntry<ApiaryWeather>>()
+const scaleCache = new Map<string, CacheEntry<ScaleWeight[]>>()
+
 function weatherIcon(code: number): string {
   if (code === 0) return '\u2600\uFE0F'
   if (code <= 2) return '\u26C5'
@@ -43,7 +55,6 @@ function weatherIcon(code: number): string {
   return '\u2601\uFE0F'
 }
 
-// WMO code to short description
 function weatherLabel(code: number): string {
   if (code === 0) return 'Clear'
   if (code <= 2) return 'Partly cloudy'
@@ -57,11 +68,16 @@ function weatherLabel(code: number): string {
   return 'Cloudy'
 }
 
+function isCacheFresh(fetchedAt: number, ttlMs: number): boolean {
+  return Date.now() - fetchedAt < ttlMs
+}
+
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function WeightChip({ label, value }: { label: string; value: number }) {
   const positive = value >= 0
   const Icon = positive ? TrendingUp : TrendingDown
+
   return (
     <div className="flex flex-col items-center">
       <span className="text-xs text-text-tertiary leading-none mb-0.5">{label}</span>
@@ -85,91 +101,179 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
   const [weatherError, setWeatherError] = useState(false)
   const [scaleData, setScaleData] = useState<ScaleWeight[]>([])
   const [scaleLoading, setScaleLoading] = useState(false)
+  const [shouldLoadData, setShouldLoadData] = useState(false)
+  const cardRef = useRef<HTMLAnchorElement | null>(null)
+  const mountedRef = useRef(true)
 
   const hasCoords = apiary.latitude != null && apiary.longitude != null
   const hasScales = apiary.scales.length > 0
+  const weatherCacheKey = hasCoords ? `${apiary.latitude},${apiary.longitude}` : null
+  const scaleCacheKey = `${apiary.id}:${apiary.scales.map(scale => `${scale.type}:${scale.deviceId}:${scale.hiveId}`).join('|')}`
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
+
+  useEffect(() => {
+    const node = cardRef.current
+    if (!node) return
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setShouldLoadData(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          setShouldLoadData(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '240px 0px' }
+    )
+
+    observer.observe(node)
+
+    return () => observer.disconnect()
+  }, [])
 
   const fetchWeather = useCallback(async () => {
-    if (!hasCoords) return
+    if (!hasCoords || !weatherCacheKey || !shouldLoadData) return
+
+    const cachedWeather = weatherCache.get(weatherCacheKey)
+    if (cachedWeather && isCacheFresh(cachedWeather.fetchedAt, WEATHER_CACHE_TTL_MS)) {
+      setWeather(cachedWeather.data)
+      return
+    }
+
     setWeatherLoading(true)
     setWeatherError(false)
+
     try {
       const res = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe/Dublin&forecast_days=7`
       )
       if (!res.ok) throw new Error('fetch failed')
+
       const data = await res.json()
-      setWeather({
+      const nextWeather: ApiaryWeather = {
         current: {
           temperature: Math.round(data.current.temperature_2m),
           weatherCode: data.current.weather_code,
         },
-        daily: data.daily.time.map((date: string, i: number) => ({
-          day: DAY_NAMES[new Date(date + 'T12:00:00').getDay()],
-          tempMin: Math.round(data.daily.temperature_2m_min[i]),
-          tempMax: Math.round(data.daily.temperature_2m_max[i]),
-          weatherCode: data.daily.weather_code[i],
+        daily: data.daily.time.map((date: string, index: number) => ({
+          day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
+          tempMin: Math.round(data.daily.temperature_2m_min[index]),
+          tempMax: Math.round(data.daily.temperature_2m_max[index]),
+          weatherCode: data.daily.weather_code[index],
         })),
+      }
+
+      weatherCache.set(weatherCacheKey, { data: nextWeather, fetchedAt: Date.now() })
+      if (!mountedRef.current) return
+
+      startTransition(() => {
+        setWeather(nextWeather)
       })
     } catch {
-      setWeatherError(true)
+      if (mountedRef.current) {
+        setWeatherError(true)
+      }
     } finally {
-      setWeatherLoading(false)
+      if (mountedRef.current) {
+        setWeatherLoading(false)
+      }
     }
-  }, [apiary.latitude, apiary.longitude, hasCoords])
+  }, [apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey])
 
   const fetchScaleData = useCallback(async () => {
-    if (!hasScales) return
+    if (!hasScales || !shouldLoadData) return
+
+    const cachedScaleData = scaleCache.get(scaleCacheKey)
+    if (cachedScaleData && isCacheFresh(cachedScaleData.fetchedAt, SCALE_CACHE_TTL_MS)) {
+      setScaleData(cachedScaleData.data)
+      return
+    }
+
     setScaleLoading(true)
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      const results: ScaleWeight[] = []
-      for (const scale of apiary.scales) {
-        try {
-          const endpoint = scale.type === 'beep'
-            ? `/api/beep/data?deviceId=${scale.deviceId}&hiveId=${scale.hiveId}`
-            : `/api/wolf-waagen/data?scaleId=${scale.deviceId}&hiveId=${scale.hiveId}`
-          const res = await fetch(endpoint, {
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-          })
-          if (res.ok) {
+
+      let hadScaleFetchFailure = false
+      const results = await Promise.all(
+        apiary.scales.map(async scale => {
+          try {
+            const endpoint = scale.type === 'beep'
+              ? `/api/beep/data?deviceId=${scale.deviceId}&hiveId=${scale.hiveId}`
+              : `/api/wolf-waagen/data?scaleId=${scale.deviceId}&hiveId=${scale.hiveId}`
+            const res = await fetch(endpoint, {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            })
+
+            if (!res.ok) {
+              hadScaleFetchFailure = true
+              return null
+            }
+
             const json = await res.json()
-            results.push({
+            return {
               hiveId: scale.hiveId,
               change24h: json.weightChange24h ?? null,
               change7d: json.weightChange7d ?? null,
               change30d: json.weightChange30d ?? null,
-            })
+            } satisfies ScaleWeight
+          } catch {
+            hadScaleFetchFailure = true
+            return null
           }
-        } catch { /* skip */ }
+        })
+      )
+
+      const nextScaleData = results.filter((result): result is ScaleWeight => result !== null)
+      if (!mountedRef.current) return
+
+      if (hadScaleFetchFailure) {
+        return
       }
-      setScaleData(results)
-    } catch { /* silently fail */ } finally {
-      setScaleLoading(false)
+
+      if (nextScaleData.length === apiary.scales.length) {
+        scaleCache.set(scaleCacheKey, { data: nextScaleData, fetchedAt: Date.now() })
+      }
+
+      startTransition(() => {
+        setScaleData(nextScaleData)
+      })
+    } finally {
+      if (mountedRef.current) {
+        setScaleLoading(false)
+      }
     }
-  }, [hasScales, apiary.scales])
+  }, [apiary.scales, hasScales, scaleCacheKey, shouldLoadData])
 
   useEffect(() => { fetchWeather() }, [fetchWeather])
   useEffect(() => { fetchScaleData() }, [fetchScaleData])
 
   const locationText = apiary.city || apiary.location || null
   const avgWeight = scaleData.length > 0 ? {
-    change24h: avg(scaleData.map(s => s.change24h)),
-    change7d: avg(scaleData.map(s => s.change7d)),
-    change30d: avg(scaleData.map(s => s.change30d)),
+    change24h: avg(scaleData.map(scale => scale.change24h)),
+    change7d: avg(scaleData.map(scale => scale.change7d)),
+    change30d: avg(scaleData.map(scale => scale.change30d)),
   } : null
 
   const daysSinceInspection = apiary.lastInspectionDate
-    ? Math.floor((Date.now() - new Date(apiary.lastInspectionDate).getTime()) / (1000 * 60 * 60 * 24))
+    ? differenceInCalendarDays(parseLocalDate(apiary.lastInspectionDate), new Date())
     : null
 
   return (
     <Link
+      ref={cardRef}
       href={`/dashboard/apiaries/${apiary.id}`}
       className="group block rounded-lg overflow-hidden border border-border hover:border-forest-500 dark:hover:border-forest-400 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all"
     >
-      {/* Header — name + current weather */}
       <div className="px-4 py-2.5 bg-gradient-to-r from-forest-600 to-forest-700 dark:from-forest-700 dark:to-forest-800 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <MapPin size={14} className="text-forest-200 shrink-0" />
@@ -193,29 +297,27 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
         </div>
       </div>
 
-      {/* Weather description */}
       {weather && (
         <div className="px-4 py-0.5 bg-forest-50 dark:bg-forest-900/20 text-xs text-forest-700 dark:text-forest-300">
           {weatherLabel(weather.current.weatherCode)}
         </div>
       )}
 
-      {/* 7-day forecast */}
       {weather && (
         <div className="border-b border-border">
           <div className="px-3 pt-1.5">
             <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Forecast</span>
           </div>
           <div className="flex items-stretch">
-            {weather.daily.map((day, i) => (
+            {weather.daily.map((day, index) => (
               <div
-                key={i}
+                key={index}
                 className={`flex-1 flex flex-col items-center py-1.5 ${
-                  i === 0 ? 'bg-forest-50/50 dark:bg-forest-900/15' : ''
-                } ${i < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
+                  index === 0 ? 'bg-forest-50/50 dark:bg-forest-900/15' : ''
+                } ${index < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
               >
                 <span className={`text-xs font-medium leading-none ${
-                  i === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-tertiary'
+                  index === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-tertiary'
                 }`}>{day.day}</span>
                 <span className="text-sm leading-none my-0.5">{weatherIcon(day.weatherCode)}</span>
                 <span className="text-xs leading-none tabular-nums">
@@ -228,7 +330,6 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
         </div>
       )}
 
-      {/* Stats row */}
       <div className="px-3 py-2 flex items-center gap-3 border-b border-border/50">
         <div className="flex flex-col">
           <span className="text-xs text-text-tertiary leading-none mb-0.5">Hives</span>
@@ -242,8 +343,8 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
               daysSinceInspection < 7
                 ? 'text-green-700 dark:text-green-400'
                 : daysSinceInspection < 14
-                ? 'text-amber-700 dark:text-amber-400'
-                : 'text-red-700 dark:text-red-400'
+                  ? 'text-amber-700 dark:text-amber-400'
+                  : 'text-red-700 dark:text-red-400'
             }`}>{daysSinceInspection}d ago</span>
           ) : apiary.hiveCount > 0 ? (
             <span className="text-base font-medium text-text-tertiary">Never</span>
@@ -253,7 +354,6 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
         </div>
       </div>
 
-      {/* Scale weight row */}
       {hasScales && (
         <div className="px-3 py-2 flex items-center gap-2">
           <div className="flex items-center gap-1 shrink-0">
@@ -287,7 +387,7 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
 }
 
 function avg(values: (number | null)[]): number | null {
-  const valid = values.filter((v): v is number => v !== null)
+  const valid = values.filter((value): value is number => value !== null)
   if (valid.length === 0) return null
-  return valid.reduce((sum, v) => sum + v, 0) / valid.length
+  return valid.reduce((sum, value) => sum + value, 0) / valid.length
 }

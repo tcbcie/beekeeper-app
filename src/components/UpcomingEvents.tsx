@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { differenceInCalendarDays, formatLocalDate, parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 import { Calendar, Bell } from 'lucide-react'
 import Link from 'next/link'
 import Panel from '@/components/ui/Panel'
@@ -31,6 +32,8 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
     today.setHours(0, 0, 0, 0)
     const sevenDaysFromNow = new Date(today)
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+    const todayString = toLocalDateString(today)
+    const sevenDaysString = toLocalDateString(sevenDaysFromNow)
 
     // Fetch all tasks and events from tasks_events table
     const { data: tasks, error } = await supabase
@@ -38,8 +41,8 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
       .select('id, title, event_type, category, priority, start_date, batch_id, hive_id, apiary_id, completed')
       .eq('user_id', userId)
       .eq('completed', false)
-      .gte('start_date', today.toISOString().split('T')[0])
-      .lte('start_date', sevenDaysFromNow.toISOString().split('T')[0])
+      .gte('start_date', todayString)
+      .lte('start_date', sevenDaysString)
       .order('start_date', { ascending: true })
 
     if (error) {
@@ -49,9 +52,8 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
     }
 
     const upcomingEvents: UpcomingEvent[] = (tasks || []).map(task => {
-      const eventDate = new Date(task.start_date)
-      eventDate.setHours(0, 0, 0, 0)
-      const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      const eventDate = parseLocalDate(task.start_date)
+      const daysUntil = differenceInCalendarDays(today, eventDate)
 
       return {
         id: task.id,
@@ -118,8 +120,12 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return formatLocalDate(dateString)
+  }
+
+  const buildEventHref = (eventId: string) => {
+    const params = new URLSearchParams({ task: eventId })
+    return `/dashboard/tasks?${params.toString()}`
   }
 
   if (loading) {
@@ -154,7 +160,7 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
         {futureEvents.map((event, index) => (
           <Link
             key={`${event.id}-${index}`}
-            href="/dashboard/tasks"
+            href={buildEventHref(event.id)}
             className="block p-3 rounded-lg border border-border hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
           >
             <div className="flex items-start justify-between gap-3">

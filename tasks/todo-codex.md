@@ -1,30 +1,29 @@
-# Task: Queen Rearing Planning Snapshot Overlap Regression Fix
-**Date:** 11/03/2026
+# Task: Dashboard Review Fixes
+**Date:** 12/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Fix the planner snapshot regression where the `From` and `Until` date blocks overlap again at intermediate desktop widths.
+Resolve the follow-up review findings for the dashboard landing page so recent activity dates stay correct for timestamp-backed records, record deep links still work for archived hives, and transient scale API failures do not get cached as misleading empty data.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/components/batches/QueenRearingPlanningTab.tsx`
-  * `docs/features/queen-rearing.md`
-  * `docs/features/queen-rearing-planning-snapshot-overlap-regression-fix-plan.md`
-* **Simplicity Check:** Kept this limited to the responsive layout behaviour of the snapshot date blocks. The planner logic, tone system, and broader dark-mode direction were left intact.
+* **Files to Modify:** * `src/app/dashboard/page.tsx`
+  * `src/app/dashboard/records/page.tsx`
+  * `src/components/dashboard/ApiaryWeatherRow.tsx`
+  * `docs/features/dashboard-landing-page-follow-up-plan.md`
+* **Simplicity Check:** Keep the work limited to the three reviewed regressions. Avoid any broader dashboard restructuring or further feature expansion.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Audit the snapshot card breakpoints and identify the exact width conditions where the `From` and `Until` date blocks no longer have enough space.
-- [x] **Step 2:** Adjust the responsive layout in `src/components/batches/QueenRearingPlanningTab.tsx` so the date blocks only sit side by side when there is enough width and otherwise stack cleanly without overlap.
-- [x] **Step 3:** Update the relevant Queen Rearing documentation in `docs/features/` to note the overlap regression fix.
-- [x] **Step 4:** Mirror the approved checklist into `tasks/todo-codex.md`, mark items off as they are completed, append the review summary, and then prompt the user to test the build.
+- [x] **Step 1:** Re-check the affected dashboard, records, and apiary-card paths against the review comments and document this remediation pass.
+- [x] **Step 2:** Restore timestamp-aware date rendering for recent activity while keeping date-only records on local calendar formatting.
+- [x] **Step 3:** Ensure record deep links unhide archived hives and stop caching empty or partial scale results after transient API failures.
+- [x] **Step 4:** Update the dashboard follow-up documentation, mirror completion into `tasks/todo-codex.md`, and prompt the user to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The snapshot window cards were switching to a two-column inner date layout based on viewport size instead of the actual card width, while the date strings remained unbreakable.
-* **Summary of Changes:** Replaced the fixed `sm:grid-cols-2` inner layout with an auto-fit grid, allowed the date block headers to wrap, and slightly reduced the minimum date text size so the cards stack before overlap begins.
-* **Notes for User:** No database MCP work was required. I did not run build tests, per repo instruction; please verify the planner snapshot in your normal browser/build check.
+* **Root Cause Found (if applicable):** The earlier dashboard follow-up mixed date-only and timestamp formatting in one path, left deep-linked archived-hive records behind the default archive filter, and cached scale refresh failures as if they were valid empty responses.
+* **Summary of Changes:** Restored timestamp-aware recent-activity rendering, enabled archived hives for record deep links, and made scale cache writes contingent on a fully successful per-scale refresh.
+* **Notes for User:** Build tests were not run per repository instruction. Please test the dashboard landing page, archived-hive record links from recent activity, and apiary card scale refresh behaviour in your usual browser/build check.
 
 ## Review
-* **Root Cause:** The regression came from a breakpoint assumption. Once the top shell was redesigned, the window cards became narrower at some desktop widths, but the inner `From` and `Until` blocks still switched to two columns too early.
-* **Changes Made:** Changed the inner snapshot date layout to an auto-fit grid driven by card width, added wrapping behaviour to the small header rows, and eased the date text sizing slightly so the cards preserve readability without colliding.
-* **Testing Needed:** Please open `/dashboard/batches`, switch to `Planning`, and check the snapshot on the desktop width that was previously overlapping.
+Applied the three review fixes without expanding the dashboard scope. Recent activity now formats timestamp-backed records with timestamp awareness, record deep links explicitly unhide archived hives before filtering, and apiary scale data no longer overwrites the dashboard cache or card state after transient per-scale API failures.

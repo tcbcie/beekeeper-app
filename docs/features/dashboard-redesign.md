@@ -101,3 +101,25 @@ inspections/varroa_checks/feedings/etc.
   → record.hives?.apiaries?.name (single object, not array — many-to-one join)
   → displayed as "12/03/2026 · Apiary Name"
 ```
+## Follow-up Improvements (12 March 2026)
+
+### Local Calendar Handling
+- Upcoming events now query and compare against local calendar dates instead of UTC-sliced strings, avoiding day drift around daylight-saving changes
+- Dashboard-linked task and record forms now use local date values when pre-filling dashboard quick actions
+- Recent activity date rendering now treats date-only values as local dates while still handling datetime-backed record types such as varroa checks
+
+### Stronger Hand-off Navigation
+- Upcoming events now link to the specific task card on `/dashboard/tasks` using `?task=...`
+- The tasks page applies the minimum filters needed to reveal that task, scrolls it into view, and highlights it
+- Recent activity now links to the relevant record on `/dashboard/records` using `?type=...&record=...&hive=...`
+- The records page applies the relevant hive/type filters, scrolls the matching card into view, and highlights it
+
+### First-load Performance and Resilience
+- Apiary cards now wait until they approach the viewport before fetching weather and scale data
+- Scale requests inside each card now run in parallel instead of one by one
+- Weather and scale responses use short in-memory cache windows to cut repeat requests without keeping stale data indefinitely
+- Dashboard overview failures and recent-activity failures are now reported separately so the UI can explain the problem in the correct place
+
+### Accessibility Follow-up
+- The Teams & Collaboration accordion now exposes `aria-expanded` and `aria-controls`
+- The Shared by Me details toggle now exposes its expanded state and controlled region for assistive technology users
