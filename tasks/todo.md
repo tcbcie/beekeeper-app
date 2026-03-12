@@ -803,3 +803,37 @@ Improve the Distributions table with better column labelling, recipient colour-c
 - [x] **Step 6:** Sort distributions via `useMemo`
 - [x] **Step 7:** Update `docs/features/batch-distributions.md`
 - [ ] Prompt user to test
+
+---
+
+# Task: Eliminate NIHBS Row 28 — Merge Queen Cells into Row 24
+**Date:** 12/03/2026
+**Status:** Pending
+
+## 1. Problem
+The NIHBS monthly return tracks "Sealed queen cells distributed" separately on row 28. The original NIHBS template has no row 28 — C24 captures both virgin queens AND ripe sealed queen cells distributed outside the group. Our implementation split these into two rows, which doesn't match the template.
+
+### Required Change
+Eliminate row 28 entirely and include queen cell distributions in row 24 (alongside virgin queen and mated queen distributions to non-group members).
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/hooks/useNIHBSReport.ts` — remove queen_cell exclusion from row 24 counting, remove separate row 28 counting loop, remove `queen_cells_distributed` from interfaces
+  * `src/components/rearing-groups/NIHBSMonthlyReturn.tsx` — remove row 28 from desktop table, mobile cards, and Excel export; update row 24 label
+  * `docs/features/batch-distributions.md` — update NIHBS report integration section
+* **Simplicity Check:** Remove code, remove fields, update labels. No new logic, no DB changes.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** In `useNIHBSReport.ts`: remove `if (d.distribution_type === 'queen_cell') continue` (line 259) so queen_cell distributions to non-group-members are counted in `auto_virgins_distributed_external`
+- [x] **Step 2:** In `useNIHBSReport.ts`: remove the separate queen_cell tracking loop (lines 233-252) and remove `queen_cells_distributed` from `MonthlyApiaryData`, `MonthlyData`, and all `getMonth`/`getApiary` initialisers
+- [x] **Step 3:** In `NIHBSMonthlyReturn.tsx`: remove row 28 from desktop table (lines 525-529), mobile cards (lines 605-608), and Excel export (lines 357-372)
+- [x] **Step 4:** Update `docs/features/batch-distributions.md` NIHBS report integration section
+- [ ] **Step 5:** Prompt user to test
+
+## 4. Post-Task Review
+* **Summary of Changes:**
+  * `useNIHBSReport.ts`: Removed `queen_cells_distributed` from `MonthlyApiaryData` and `MonthlyData` interfaces. Removed the separate queen_cell tracking loop. Removed the queen_cell exclusion from external distribution counting so all distribution types are now counted in row 24. Removed dead `batchEmergenceInfo` map.
+  * `NIHBSMonthlyReturn.tsx`: Removed row 28 from desktop table, mobile cards, and Excel export.
+  * `docs/features/batch-distributions.md`: Updated NIHBS report integration section to reflect merged row 24.
+* **Notes for User:** Please test by generating the NIHBS report and Excel export — row 28 should be gone, and queen cell distributions to non-group-members should now be included in row 24's auto-calculated count.
