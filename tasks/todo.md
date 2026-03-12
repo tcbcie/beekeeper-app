@@ -652,3 +652,32 @@ Cells #8, #9, #10 in the Virgin Queen Tracker show "Pending" in the Mated column
   * Database: Fixed 3 existing rows with `mating_confirmed = false` for `mated_queen` distributions
   * Documentation: Updated `docs/features/virgin-queen-tracker.md` with mated status logic
 * **Notes for User:** Please test by viewing the Virgin Queen Tracker tab — cells #8, #9, #10 should now show "Yes" in the Mated column and the Mated count should increase to 5.
+
+---
+
+# Task: Make Mating Location Mandatory for All Distribution Types
+**Date:** 12/03/2026
+**Status:** Complete
+
+## 1. Problem
+The DistributeGraftModal only showed and required the mating location field for `queen_cell` distributions. For `virgin_queen` and `mated_queen` types, the field was hidden entirely, so no location was captured. This caused cells #8, #9, #10 to have no mating location in the Virgin Queen Tracker.
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/components/batches/DistributeGraftModal.tsx` — show/require mating location for all types
+  * `docs/features/batch-distributions.md` — update documentation
+* **Simplicity Check:** Four small edits in one file. No new files, no DB changes.
+
+## 3. Execution Plan
+- [x] 1. Show mating location field for all distribution types (not just queen_cell) for app users
+- [x] 2. Require either apiary or mating location for all types (not just queen_cell)
+- [x] 3. Require external location for all types (not just queen_cell)
+- [x] 4. Update batch-distributions.md documentation
+
+## 4. Post-Task Review
+* **Root Cause:** The mating location input was conditionally shown only for `distributionType === 'queen_cell'`, and the validation check had the same guard. External location was also only required for queen_cell.
+* **Summary of Changes:**
+  * Removed `distributionType === 'queen_cell'` guards from the mating location field visibility, the app-user validation, and the external location requirement
+  * External location asterisk now always shown (was conditional on queen_cell)
+  * Updated `docs/features/batch-distributions.md`
+* **Notes for User:** Please test by opening the distribute modal for a virgin queen or mated queen — the mating location field should now appear and be required.
