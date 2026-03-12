@@ -114,3 +114,64 @@ export function getCurrentDate(): string {
 export function getCurrentTime(): string {
   return new Date().toTimeString().slice(0, 5)
 }
+
+/**
+ * Get the local calendar date in ISO format (YYYY-MM-DD)
+ * @param date - Date object in the user's local timezone
+ * @returns Local date string
+ */
+export function toLocalDateString(date: Date): string {
+  return date.toLocaleDateString('en-CA')
+}
+
+/**
+ * Get the local date-time value used by `datetime-local` inputs
+ * @param date - Date object in the user's local timezone
+ * @returns Local date-time string
+ */
+export function toLocalDateTimeInputValue(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+/**
+ * Parse a date-only string as a local calendar day instead of UTC midnight
+ * @param dateString - YYYY-MM-DD
+ * @returns Local Date object
+ */
+export function parseLocalDate(dateString: string): Date {
+  const [year, month, day] = dateString.slice(0, 10).split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+/**
+ * Get the difference between two local calendar dates in whole days
+ * @param fromDate - Start date
+ * @param toDate - End date
+ * @returns Number of calendar days
+ */
+export function differenceInCalendarDays(fromDate: Date, toDate: Date): number {
+  const from = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate())
+  const to = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate())
+  return Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+/**
+ * Format a local date-only string without letting the browser treat it as UTC
+ * @param dateString - YYYY-MM-DD
+ * @param locale - Output locale
+ * @param options - Intl formatting options
+ * @returns Formatted date string
+ */
+export function formatLocalDate(
+  dateString: string,
+  locale: string = 'en-IE',
+  options: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' }
+): string {
+  return parseLocalDate(dateString).toLocaleDateString(locale, options)
+}

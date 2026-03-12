@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter, ClipboardList, Printer } from 'lucide-react'
@@ -18,6 +18,7 @@ import Badge from '@/components/ui/Badge'
 import Chip from '@/components/ui/Chip'
 import Card from '@/components/ui/Card'
 import Surface from '@/components/ui/Surface'
+import { formatLocalDate, toLocalDateString } from '@/lib/date-utils'
 
 interface TaskEvent {
   id: string
@@ -89,6 +90,9 @@ export default function TasksEventsPage() {
   const [filterOwnership, setFilterOwnership] = useState<'all' | 'my' | 'team'>('all')
   const [showChecklist, setShowChecklist] = useState(false)
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
+  const appliedTaskDeepLinkRef = useRef<string | null>(null)
+  const scrolledTaskRef = useRef<string | null>(null)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -279,12 +283,30 @@ export default function TasksEventsPage() {
           ...prev,
           hive_id: hiveId,
           apiary_id: selectedHive.apiary_id || '',
-          start_date: new Date().toISOString().split('T')[0] // Set today's date
+          start_date: toLocalDateString(new Date())
         }))
         setShowForm(true)
       }
     }
   }, [searchParams, hives])
+
+  useEffect(() => {
+    const taskId = searchParams.get('task')
+    if (!taskId || tasks.length === 0 || appliedTaskDeepLinkRef.current === taskId) return
+
+    const targetTask = tasks.find(task => task.id === taskId)
+    if (!targetTask) return
+
+    setFilterType('all')
+    setFilterCategory('all')
+    setFilterOwnership('all')
+    setFilterHive(targetTask.hive_id || 'all')
+    setFilterApiary(targetTask.apiary_id || 'all')
+    setFilterStatus(targetTask.completed ? 'completed' : 'active')
+    setHighlightedTaskId(taskId)
+    appliedTaskDeepLinkRef.current = taskId
+    scrolledTaskRef.current = null
+  }, [searchParams, tasks])
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -462,10 +484,23 @@ export default function TasksEventsPage() {
     return true
   })
 
+  useEffect(() => {
+    if (!highlightedTaskId || scrolledTaskRef.current === highlightedTaskId) return
+    if (!filteredTasks.some(task => task.id === highlightedTaskId)) return
+
+    scrolledTaskRef.current = highlightedTaskId
+
+    requestAnimationFrame(() => {
+      document.getElementById(`task-card-${highlightedTaskId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    })
+  }, [filteredTasks, highlightedTaskId])
+
   // Helper functions
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return formatLocalDate(dateString)
   }
 
   const formatTime = (timeString: string) => {
@@ -661,12 +696,18 @@ export default function TasksEventsPage() {
       ) : (
         <div className="space-y-3">
           {filteredTasks.map(task => (
-            <Card
+            <div
               key={task.id}
-              padding="sm"
-              className={`border-l-4 ${getTaskCardAccentClass(task)}`}
+              id={`task-card-${task.id}`}
+              className={`scroll-mt-24 rounded-lg transition-shadow ${
+                task.id === highlightedTaskId ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-background shadow-lg' : ''
+              }`}
             >
-              <div className="flex items-start justify-between gap-4">
+              <Card
+                padding="sm"
+                className={`border-l-4 ${getTaskCardAccentClass(task)}`}
+              >
+                <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   {/* Completion checkbox */}
                   <IconButton
@@ -784,8 +825,9 @@ export default function TasksEventsPage() {
                     <Trash2 size={16} />
                   </IconButton>
                 </div>
-              </div>
-            </Card>
+                </div>
+              </Card>
+            </div>
           ))}
         </div>
       )}

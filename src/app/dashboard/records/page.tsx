@@ -17,6 +17,7 @@ import IconButton from '@/components/ui/IconButton'
 import { useToast } from '@/components/ui/Toast'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
+import { toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import {
@@ -64,6 +65,17 @@ interface OpenMeteoResponse {
 }
 
 const WEATHER_REQUEST_TIMEOUT_MS = 8000
+const RECORD_DEEP_LINK_TYPES = new Set<RecordType>(['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest'])
+
+function mapTypeParamToRecordType(typeParam: string | null): RecordType | null {
+  if (!typeParam) return null
+  if (typeParam === 'varroa-check') return 'varroa_check'
+  if (typeParam === 'varroa-treatment') return 'varroa_treatment'
+  if (typeParam === 'inspection' || typeParam === 'feeding' || typeParam === 'harvest' || typeParam === 'archive') {
+    return typeParam
+  }
+  return null
+}
 
 export default function RecordsPage() {
   const router = useRouter()
@@ -71,6 +83,7 @@ export default function RecordsPage() {
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
   const hasInitialisedApiaryFilterRef = useRef(false)
+  const scrolledRecordKeyRef = useRef<string | null>(null)
 
   // User state
   const [userId, setUserId] = useState<string | null>(null)
@@ -92,6 +105,7 @@ export default function RecordsPage() {
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
   const [showIpmTips, setShowIpmTips] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
+  const [highlightedRecordKey, setHighlightedRecordKey] = useState<string | null>(null)
 
   // Use the data hook
   const {
@@ -294,8 +308,9 @@ export default function RecordsPage() {
 
   // New record handler - defined before useEffect that uses it
   const handleNewRecord = useCallback((type: RecordType, presetHiveId?: string) => {
-    const currentDate = new Date().toISOString().split('T')[0]
-    const currentDateTime = new Date().toISOString().slice(0, 16)
+    const now = new Date()
+    const currentDate = toLocalDateString(now)
+    const currentDateTime = toLocalDateTimeInputValue(now)
 
     setFormType(type)
     setEditingInspection(null)
@@ -382,6 +397,8 @@ export default function RecordsPage() {
     const hiveParam = searchParams.get('hive')
     const typeParam = searchParams.get('type')
     const createParam = searchParams.get('create')
+    const recordParam = searchParams.get('record')
+    const mappedType = mapTypeParamToRecordType(typeParam)
 
     if (hiveParam && hives.length > 0) {
       // Auto-switch to 'all' if the hive is shared (not owned by current user)
@@ -392,17 +409,24 @@ export default function RecordsPage() {
 
       setHiveId(hiveParam)
 
-      if (typeParam) {
-        const validTypes = ['inspection', 'varroa-check', 'varroa-treatment', 'feeding', 'harvest', 'archive']
-        if (validTypes.includes(typeParam)) {
-          const mappedType = typeParam === 'varroa-check' ? 'varroa_check' :
-                            typeParam === 'varroa-treatment' ? 'varroa_treatment' :
-                            typeParam as RecordType
-
+      if (recordParam && mappedType && RECORD_DEEP_LINK_TYPES.has(mappedType)) {
+        setShowArchivedHives(true)
+        setRecordTypeFilter(mappedType)
+        setHighlightedRecordKey(`${mappedType}-${recordParam}`)
+        scrolledRecordKeyRef.current = null
+      } else if (mappedType) {
+        const validCreateTypes = new Set<RecordType>(['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest', 'archive'])
+        if (validCreateTypes.has(mappedType)) {
           handleNewRecord(mappedType, hiveParam)
         }
       }
 
+      router.replace('/dashboard/records')
+    } else if (!hiveParam && recordParam && mappedType && RECORD_DEEP_LINK_TYPES.has(mappedType)) {
+      setShowArchivedHives(true)
+      setRecordTypeFilter(mappedType)
+      setHighlightedRecordKey(`${mappedType}-${recordParam}`)
+      scrolledRecordKeyRef.current = null
       router.replace('/dashboard/records')
     } else if (createParam) {
       // Handle quick action links from dashboard (optionally with apiary pre-selected)
@@ -416,7 +440,21 @@ export default function RecordsPage() {
       }
       router.replace('/dashboard/records')
     }
-  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, handleNewRecord, setApiaryId])
+  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, handleNewRecord, setApiaryId, setRecordTypeFilter, setShowArchivedHives])
+
+  useEffect(() => {
+    if (!highlightedRecordKey || scrolledRecordKeyRef.current === highlightedRecordKey) return
+    if (!filteredRecords.some(record => `${record.record_type}-${record.id}` === highlightedRecordKey)) return
+
+    scrolledRecordKeyRef.current = highlightedRecordKey
+
+    requestAnimationFrame(() => {
+      document.getElementById(`record-card-${highlightedRecordKey}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    })
+  }, [filteredRecords, highlightedRecordKey])
 
 
   // Weather fetching
@@ -1200,11 +1238,14 @@ export default function RecordsPage() {
             />
           ) : (
             filteredRecords.map(record => {
+              const recordKey = `${record.record_type}-${record.id}`
+              const isHighlighted = highlightedRecordKey === recordKey
+              let card: React.ReactNode = null
+
               switch (record.record_type) {
                 case 'inspection':
-                  return (
+                  card = (
                     <InspectionCard
-                      key={`inspection-${record.id}`}
                       inspection={record}
                       userId={userId}
                       sharedHiveIds={sharedHiveIds}
@@ -1215,10 +1256,10 @@ export default function RecordsPage() {
                       onImageClick={handleImageClick}
                     />
                   )
+                  break
                 case 'varroa_check':
-                  return (
+                  card = (
                     <VarroaCheckCard
-                      key={`check-${record.id}`}
                       check={record}
                       userId={userId}
                       sharedHiveIds={sharedHiveIds}
@@ -1228,10 +1269,10 @@ export default function RecordsPage() {
                       onImageClick={handleImageClick}
                     />
                   )
+                  break
                 case 'varroa_treatment':
-                  return (
+                  card = (
                     <TreatmentCard
-                      key={`treatment-${record.id}`}
                       treatment={record}
                       userId={userId}
                       sharedHiveIds={sharedHiveIds}
@@ -1239,10 +1280,10 @@ export default function RecordsPage() {
                       onDelete={handleTreatmentDelete}
                     />
                   )
+                  break
                 case 'feeding':
-                  return (
+                  card = (
                     <FeedingCard
-                      key={`feeding-${record.id}`}
                       feeding={record}
                       userId={userId}
                       sharedHiveIds={sharedHiveIds}
@@ -1250,10 +1291,10 @@ export default function RecordsPage() {
                       onDelete={handleFeedingDelete}
                     />
                   )
+                  break
                 case 'harvest':
-                  return (
+                  card = (
                     <HarvestCard
-                      key={`harvest-${record.id}`}
                       harvest={record}
                       userId={userId}
                       sharedHiveIds={sharedHiveIds}
@@ -1261,16 +1302,31 @@ export default function RecordsPage() {
                       onDelete={handleHarvestDelete}
                     />
                   )
+                  break
                 case 'archive':
-                  return (
+                  card = (
                     <ArchiveCard
-                      key={`archive-${record.id}`}
                       archiveRecord={record}
                     />
                   )
+                  break
                 default:
-                  return null
+                  card = null
               }
+
+              if (!card) return null
+
+              return (
+                <div
+                  key={recordKey}
+                  id={`record-card-${recordKey}`}
+                  className={`scroll-mt-24 rounded-lg transition-shadow ${
+                    isHighlighted ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-background shadow-lg' : ''
+                  }`}
+                >
+                  {card}
+                </div>
+              )
             })
           )}
         </div>
