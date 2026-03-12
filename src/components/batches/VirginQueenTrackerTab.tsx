@@ -335,7 +335,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                       <td className="py-3 px-4 text-text-secondary">{formatDateIrish(d.distribution_date)}</td>
                       <td className="py-3 px-4 text-text-secondary">{getLocation(d)}</td>
                       <td className="py-3 px-4 text-center">
-                        {d.mating_confirmed ? (
+                        {(d.mating_confirmed || d.distribution_type === 'mated_queen') ? (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs font-medium">
                             <Check size={12} /> Yes
                           </span>
@@ -394,7 +394,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
 
                   {/* Quick status indicators */}
                   <div className="flex gap-2 mt-2">
-                    {d.mating_confirmed && (
+                    {(d.mating_confirmed || d.distribution_type === 'mated_queen') && (
                       <span className="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                         Mated
                       </span>

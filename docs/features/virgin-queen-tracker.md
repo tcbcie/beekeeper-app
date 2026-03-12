@@ -87,10 +87,17 @@ hybridisation_date DATE DEFAULT NULL
 - Dates are automatically recorded when status is set to Yes or No
 - Dates are cleared when status is reset to Unknown
 
+### Mated Status Logic
+A distribution is considered "mated" if either:
+- `mating_confirmed = true` (explicitly confirmed via toggle), OR
+- `distribution_type = 'mated_queen'` (queen was already mated at distribution time)
+
+When a `mated_queen` distribution is created, `mating_confirmed` is automatically set to `true` with the distribution date as the confirmation date.
+
 ### Summary Statistics
 The dashboard shows:
 - Total distributions matching filters
-- Mated count (mating confirmed)
+- Mated count (mating confirmed or distributed as mated queen)
 - Overwintered count (survived winter)
 - Failed count (did not survive)
 - Hybridised count (offspring show hybridisation)

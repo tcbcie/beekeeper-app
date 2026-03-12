@@ -612,3 +612,43 @@ In `src/app/api/wolf-waagen/data/route.ts`, the **current period** weight change
 * **Root Cause Found:** Previous period bracket values in the Wolf API route used raw `calcWeightChange` without subtracting maintenance events (feeding/harvesting), while current period values correctly subtracted them. This made bracket values appear inflated/positive when feeding occurred in the prior period.
 * **Summary of Changes:** Applied `detectMaintenanceEvents` + `sumInterventions` to `historyPrev7d` and `historyPrev30d` in `src/app/api/wolf-waagen/data/route.ts` (lines 189-200), matching the existing pattern used for current period values. The 24h previous period is unchanged as it only has ~1 daily reading (not enough for maintenance detection).
 * **Notes for User:** Please test by refreshing the Scale Overview page and checking the Wolf scale bracket values for 7d and 30d.
+
+---
+
+# Task: Fix Virgin Queen Tracker Mated Status for Mated Queen Distributions
+**Date:** 12/03/2026
+**Status:** In Progress
+
+## 1. Problem
+Cells #8, #9, #10 in the Virgin Queen Tracker show "Pending" in the Mated column, but in the Grafting Batch distributions they are marked as "Mated Queen" distribution type. The tracker only checks the `mating_confirmed` boolean (which defaults to `false`) and ignores `distribution_type === 'mated_queen'`.
+
+### Root Cause
+- When creating a distribution with `distribution_type = 'mated_queen'`, the code never sets `mating_confirmed = true` — it uses the DB default of `false`
+- The Virgin Queen Tracker UI, stats, and filters only check `mating_confirmed`, not `distribution_type`
+- The NIHBS report already handles this correctly (`mating_confirmed OR distribution_type = 'mated_queen'`)
+
+## 2. Impact Analysis
+* **Files to Modify:**
+  * `src/hooks/useVirginQueenTracker.ts` — stats and filter logic
+  * `src/components/batches/VirginQueenTrackerTab.tsx` — Mated column display
+  * `src/hooks/useGraftDistributions.ts` — auto-set mating_confirmed on mated_queen distributions
+  * Database — fix existing mated_queen distributions with mating_confirmed = false
+* **Simplicity Check:** Three small code changes + one data fix. No new files, no UI redesign.
+
+## 3. Execution Plan
+- [x] 1. Fix `useVirginQueenTracker.ts` — update `calculateStats` and `filterByStatus` to treat `mated_queen` distributions as mated
+- [x] 2. Fix `VirginQueenTrackerTab.tsx` — update Mated column display (desktop + mobile)
+- [x] 3. Fix `useGraftDistributions.ts` — auto-set `mating_confirmed = true` when creating `mated_queen` distributions (single + bulk)
+- [x] 4. Fix existing data — updated 3 rows in `graft_distributions` where `distribution_type = 'mated_queen'` and `mating_confirmed = false`
+- [x] 5. Update feature documentation
+- [ ] 6. Prompt user to test
+
+## 4. Post-Task Review
+* **Root Cause:** When creating a `mated_queen` distribution, the code never set `mating_confirmed = true` — it used the DB default of `false`. The Virgin Queen Tracker UI, stats, and filters only checked `mating_confirmed`, ignoring `distribution_type`.
+* **Summary of Changes:**
+  * `useVirginQueenTracker.ts`: `calculateStats` and `filterByStatus` now treat `distribution_type === 'mated_queen'` as effectively mated (matching NIHBS report logic)
+  * `VirginQueenTrackerTab.tsx`: Desktop table and mobile card Mated column now show "Yes" for mated queen distributions
+  * `useGraftDistributions.ts`: Both `createDistribution` and `createBulkDistributions` now auto-set `mating_confirmed = true` and `mating_confirmed_date` when `distribution_type === 'mated_queen'`
+  * Database: Fixed 3 existing rows with `mating_confirmed = false` for `mated_queen` distributions
+  * Documentation: Updated `docs/features/virgin-queen-tracker.md` with mated status logic
+* **Notes for User:** Please test by viewing the Virgin Queen Tracker tab — cells #8, #9, #10 should now show "Yes" in the Mated column and the Mated count should increase to 5.

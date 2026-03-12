@@ -318,9 +318,13 @@ export function useGraftDistributions() {
 
   const createDistribution = useCallback(async (data: CreateDistributionData): Promise<boolean | null> => {
     try {
+      // Mated queens are already mated at distribution time
+      const insertData = data.distribution_type === 'mated_queen'
+        ? { ...data, mating_confirmed: true, mating_confirmed_date: data.distribution_date }
+        : data
       const { error } = await supabase
         .from('graft_distributions')
-        .insert(data)
+        .insert(insertData)
 
       if (error) throw error
 
@@ -362,6 +366,8 @@ export function useGraftDistributions() {
 
   const createBulkDistributions = useCallback(async (data: BulkDistributionData): Promise<boolean | null> => {
     try {
+      // Mated queens are already mated at distribution time
+      const isMatedQueen = data.distribution_type === 'mated_queen'
       const rows = data.grafts.map((g) => ({
         graft_id: g.id,
         batch_id: data.batch_id,
@@ -378,6 +384,7 @@ export function useGraftDistributions() {
         external_recipient_phone: data.external_recipient_phone,
         external_recipient_location: data.external_recipient_location,
         mating_location: data.mating_location,
+        ...(isMatedQueen ? { mating_confirmed: true, mating_confirmed_date: data.distribution_date } : {}),
       }))
 
       const { error } = await supabase
