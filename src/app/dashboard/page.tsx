@@ -236,13 +236,12 @@ export default function DashboardPage() {
 
  {/* Stats Strip + Quick Actions */}
  <Panel padding="sm">
- <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-3 border-b border-border scrollbar-thin">
- {statCards.map((card, i) => (
- <Link key={card.label} href={card.href!} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-secondary dark:hover:bg-surface-elevated transition-colors whitespace-nowrap shrink-0">
+ <div className="flex flex-wrap items-center gap-1 pb-2 mb-3 border-b border-border">
+ {statCards.map((card) => (
+ <Link key={card.label} href={card.href!} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-secondary dark:hover:bg-surface-elevated transition-colors whitespace-nowrap">
  <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
  <span className="text-xs text-text-secondary">{card.label}:</span>
  <span className="text-sm font-bold text-foreground">{card.value}</span>
- {i < statCards.length - 1 && <span className="text-border ml-1.5">|</span>}
  </Link>
  ))}
  </div>
