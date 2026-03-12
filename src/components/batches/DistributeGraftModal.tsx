@@ -176,14 +176,14 @@ export default function DistributeGraftModal({
 
   const isExternal = recipientMode === 'external'
   const externalHasData = extName.trim() || extEmail.trim() || extPhone.trim() || extLocation.trim()
-  const externalLocationRequired = isExternal && distributionType === 'queen_cell' && !extLocation.trim()
+  const externalLocationRequired = isExternal && !extLocation.trim()
   const canSubmit = isExternal ? (!!externalHasData && !externalLocationRequired) : !!selectedUser
 
   const handleSubmit = async () => {
     if (!canSubmit || saving || submittingRef.current) return
 
-    // For queen_cell app-user distributions, require either apiary or mating location
-    if (!isExternal && distributionType === 'queen_cell' && !selectedApiaryId && !matingLocation.trim()) {
+    // Require either apiary or mating location for all distribution types
+    if (!isExternal && !selectedApiaryId && !matingLocation.trim()) {
       setLocationError('Please select an apiary or enter a mating location')
       return
     }
@@ -450,7 +450,7 @@ export default function DistributeGraftModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Apiary / Mating Location (closest Eircode){distributionType === 'queen_cell' && <span className="text-red-500"> *</span>}</label>
+                  <label className="block text-xs text-text-secondary mb-1">Apiary / Mating Location (closest Eircode)<span className="text-red-500"> *</span></label>
                   <input
                     type="text"
                     value={extLocation}
@@ -493,8 +493,8 @@ export default function DistributeGraftModal({
             </div>
           )}
 
-          {/* Mating Location — shown for queen_cell distributions to app users */}
-          {!isExternal && selectedUser && distributionType === 'queen_cell' && (
+          {/* Mating Location — shown for all distribution types to app users */}
+          {!isExternal && selectedUser && (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 Apiary / Mating Location (closest Eircode)
