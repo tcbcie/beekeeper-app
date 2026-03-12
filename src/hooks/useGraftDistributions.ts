@@ -102,7 +102,7 @@ interface BatchDetails {
 function deriveBirthDate(batch: BatchDetails): string | null {
   if (batch.emergence_date) return batch.emergence_date
   if (batch.graft_date) {
-    const d = new Date(batch.graft_date)
+    const d = new Date(batch.graft_date + 'T00:00:00')
     d.setDate(d.getDate() + 12)
     return d.toISOString().split('T')[0]
   }
@@ -457,25 +457,6 @@ export function useGraftDistributions() {
     }
   }, [toast])
 
-  const toggleMatingConfirmed = useCallback(async (id: string, confirmed: boolean): Promise<boolean> => {
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const { error } = await supabase
-        .from('graft_distributions')
-        .update({
-          mating_confirmed: confirmed,
-          mating_confirmed_date: confirmed ? today : null,
-        })
-        .eq('id', id)
-
-      if (error) throw error
-      return true
-    } catch (err) {
-      console.error('Error toggling mating confirmed:', err)
-      return false
-    }
-  }, [])
-
   const confirmMatingWithLocation = useCallback(async (
     id: string,
     matingDate: string,
@@ -591,7 +572,6 @@ export function useGraftDistributions() {
     createDistribution,
     createBulkDistributions,
     deleteDistribution,
-    toggleMatingConfirmed,
     confirmMatingWithLocation,
     clearMatingConfirmation,
     searchUsers,

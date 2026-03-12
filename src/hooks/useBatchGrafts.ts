@@ -8,6 +8,8 @@ import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDi
 import { getQueenColorFromYear } from '@/types/queen'
 import { Graft, GRAFT_STATUSES, FRAME_STATUS_VALUES } from '@/components/batches/graftConstants'
 
+const VALID_GRAFT_STATUS_VALUES = GRAFT_STATUSES.map(s => s.value)
+
 interface UseBatchGraftsProps {
   batchId: string
   userId: string
@@ -151,9 +153,11 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     }
     const accepted = grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
     const hatched = grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
-    const mated = grafts.filter(g => ['mated', 'sold'].includes(g.status)).length
+    // For sold grafts, only count as mated if distribution type isn't queen_cell
+    const queenCellGraftIds = new Set(distributions.filter(d => d.distribution_type === 'queen_cell').map(d => d.graft_id))
+    const mated = grafts.filter(g => g.status === 'mated' || (g.status === 'sold' && !queenCellGraftIds.has(g.id))).length
     cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
-  }, [grafts, loading])
+  }, [grafts, loading, distributions])
 
   // --- CRUD ---
 
@@ -199,6 +203,11 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   }, [cellCount, grafts, batchId, userId, graftDate, toast, fetchGrafts])
 
   const updateGraftStatus = useCallback(async (graftId: string, newStatus: string) => {
+    if (!VALID_GRAFT_STATUS_VALUES.includes(newStatus)) {
+      console.error('Invalid graft status:', newStatus)
+      toast.error('Invalid status value')
+      return
+    }
     try {
       const today = new Date().toISOString().split('T')[0]
       const { error } = await supabase
@@ -233,46 +242,52 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   }, [fetchGrafts, toast])
 
   const updateGraftQueenMarked = useCallback(async (graftId: string, marked: boolean) => {
+    const previous = grafts.find(g => g.id === graftId)?.queen_marked
+    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: marked } : g))
     try {
       const { error } = await supabase
         .from('batch_grafts')
         .update({ queen_marked: marked })
         .eq('id', graftId)
       if (error) throw error
-      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: marked } : g))
     } catch (error) {
       console.error('Error updating queen marked:', error)
       toast.error('Failed to update queen marked')
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: previous ?? false } : g))
     }
-  }, [toast])
+  }, [toast, grafts])
 
   const updateGraftStatusDate = useCallback(async (graftId: string, date: string) => {
+    const previous = grafts.find(g => g.id === graftId)?.status_date
+    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, status_date: date || null } : g))
     try {
       const { error } = await supabase
         .from('batch_grafts')
         .update({ status_date: date || null })
         .eq('id', graftId)
       if (error) throw error
-      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, status_date: date || null } : g))
     } catch (error) {
       console.error('Error updating status date:', error)
       toast.error('Failed to update status date')
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, status_date: previous ?? null } : g))
     }
-  }, [toast])
+  }, [toast, grafts])
 
   const updateGraftQueenNumber = useCallback(async (graftId: string, queenNumber: string) => {
+    const previous = grafts.find(g => g.id === graftId)?.queen_number
+    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: queenNumber || null } : g))
     try {
       const { error } = await supabase
         .from('batch_grafts')
         .update({ queen_number: queenNumber || null })
         .eq('id', graftId)
       if (error) throw error
-      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: queenNumber || null } : g))
     } catch (error) {
       console.error('Error updating queen number:', error)
       toast.error('Failed to update queen number')
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: previous ?? null } : g))
     }
-  }, [toast])
+  }, [toast, grafts])
 
   // --- Distribution wrappers ---
 
@@ -443,7 +458,12 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   }, [selectedIds, bulkStatusDraft, bulkDateDraft, bulkDateTouched, toast, clearFrameBulkDrafts, fetchGrafts])
 
   const handleBulkDelete = useCallback(async () => {
-    const ids = Array.from(selectedIds)
+    // Exclude distributed or failed grafts that would fail FK or shouldn't be deleted
+    const distributedIds = new Set(distributions.map(d => d.graft_id))
+    const ids = Array.from(selectedIds).filter(id => {
+      const g = grafts.find(gr => gr.id === id)
+      return g && g.status !== 'failed' && g.status !== 'sold' && !distributedIds.has(id)
+    })
     if (ids.length === 0) return
     if (!confirm(`Delete ${ids.length} selected grafts? This cannot be undone.`)) return
     try {
@@ -460,7 +480,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error bulk deleting grafts:', error)
       toast.error('Failed to delete grafts')
     }
-  }, [selectedIds, toast, fetchGrafts, fetchDistributions, batchId])
+  }, [selectedIds, toast, fetchGrafts, fetchDistributions, batchId, distributions, grafts])
 
   // --- Table bulk handlers ---
 

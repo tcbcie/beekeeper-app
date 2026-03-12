@@ -425,6 +425,7 @@ export default function DistributeGraftModal({
                     value={extName}
                     onChange={(e) => setExtName(e.target.value)}
                     placeholder="Beekeeper name..."
+                    maxLength={200}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
                     autoFocus
                   />
@@ -436,6 +437,7 @@ export default function DistributeGraftModal({
                     value={extEmail}
                     onChange={(e) => setExtEmail(e.target.value)}
                     placeholder="email@example.com"
+                    maxLength={254}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
                   />
                 </div>
@@ -446,6 +448,7 @@ export default function DistributeGraftModal({
                     value={extPhone}
                     onChange={(e) => setExtPhone(e.target.value)}
                     placeholder="+353 ..."
+                    maxLength={20}
                     className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
                   />
                 </div>
@@ -456,6 +459,7 @@ export default function DistributeGraftModal({
                     value={extLocation}
                     onChange={(e) => setExtLocation(e.target.value)}
                     placeholder="e.g. D01 AB12"
+                    maxLength={100}
                     className={`w-full px-3 py-2 border rounded-md bg-surface text-foreground text-sm ${externalLocationRequired ? 'border-red-400' : 'border-border'}`}
                   />
                 </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Check, X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { GraftDistribution } from '@/hooks/useGraftDistributions'
 import { Graft, TYPE_LABELS, formatDateIrish } from './graftConstants'
@@ -38,6 +38,7 @@ export default function DistributionList({
 }: DistributionListProps) {
   const [matingModalDist, setMatingModalDist] = useState<GraftDistribution | null>(null)
   const [collapsed, setCollapsed] = useState(false)
+  const graftMap = useMemo(() => new Map(grafts.map(g => [g.id, g])), [grafts])
   if (distLoading || distributions.length === 0) return null
 
   return (
@@ -70,7 +71,7 @@ export default function DistributionList({
               <tbody className="divide-y divide-border">
                 {distributions.map((dist) => {
                   const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell || { label: 'Unknown', color: 'bg-surface-secondary text-text-secondary border border-border' }
-                  const graft = grafts.find(g => g.id === dist.graft_id)
+                  const graft = graftMap.get(dist.graft_id)
                   return (
                     <tr key={dist.id} className="bg-surface hover:bg-surface-secondary/80 dark:bg-surface-elevated/70 dark:hover:bg-surface/60 transition-colors">
                       <td className="px-3 py-2 text-sm font-medium text-foreground">
@@ -148,7 +149,7 @@ export default function DistributionList({
           <div className="md:hidden space-y-2">
             {distributions.map((dist) => {
               const distTypeInfo = TYPE_LABELS[dist.distribution_type] || TYPE_LABELS.queen_cell || { label: 'Unknown', color: 'bg-surface-secondary text-text-secondary border border-border' }
-              const graft = grafts.find(g => g.id === dist.graft_id)
+              const graft = graftMap.get(dist.graft_id)
               return (
                 <div
                   key={dist.id}
