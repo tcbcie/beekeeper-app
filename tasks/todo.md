@@ -1,26 +1,30 @@
-# Drag-and-Drop Quick Action onto Apiary Cards
+# Simplify Quick Actions to Two Big Draggable Buttons
 
 **Date:** 2026-03-13
 
 ## Tasks
 
-- [x] **1. Make the "New Inspection" chip draggable (desktop)**
-- [x] **2. Make entire ApiaryWeatherRow card a drop target (desktop)**
-- [x] **3. Add touch drag-and-drop for mobile**
+- [x] **1. Remove Log Feeding, Varroa Check, Add Treatment, Log Harvest**
+  - Stripped down to just "New Inspection" and "New Task"
+  - Inspection page already allows selecting any record type
 
-## Audit Findings
+- [x] **2. Make both buttons bigger and side-by-side**
+  - Changed from `flex-wrap` chips to `grid grid-cols-2` with `py-3` padding
+  - Larger icons (18px), `text-base font-semibold`
 
-| # | Severity | Finding | Fix |
-|---|----------|---------|-----|
-| 1 | HIGH | Ghost element leaked on unmount or `touchcancel` — orphaned `<div>` stays in `document.body` | Extracted `cleanupTouchDrag` shared by `touchEnd`/`touchCancel`/unmount effect |
-| 2 | HIGH | Ghost label hardcoded to "New Inspection" — breaks if other actions get `dragType` | Pass `label` param from action config to `handleTouchStart` |
-| 3 | MEDIUM | Duplicate highlight logic — React `dragOver` state and `data-dragover` attribute both applied | Removed React state, unified on `data-dragover` + Tailwind `data-[dragover=true]:` variants |
-| 4 | MEDIUM | `actionType` from `dataTransfer` not validated — arbitrary string interpolated into URL | Allowlist check (`VALID_DROP_ACTIONS`) in both desktop drop and touch drop paths |
+- [x] **3. Enable drag-and-drop for "New Task"**
+  - Added `dragType: 'task'` — both buttons now draggable
+  - Drop routes: `task` → `/dashboard/tasks?create=true&apiary={id}`, others → records page
+  - Updated `VALID_DROP_ACTIONS` and drop handlers in both files
+
+- [x] **4. Tasks page: handle `?create=true&apiary=` (no hive)**
+  - Extended `?apiary=` useEffect to open form with apiary pre-filled when `create=true`
 
 ## Review
 
 ### Files Changed
 | File | Change |
 |------|--------|
-| `src/app/dashboard/page.tsx` | Draggable chip + touch handlers + ghost cleanup + action validation |
-| `src/components/dashboard/ApiaryWeatherRow.tsx` | Drop target with unified `data-dragover` highlight + action validation |
+| `src/app/dashboard/page.tsx` | Two-button grid, both draggable, task-aware routing |
+| `src/components/dashboard/ApiaryWeatherRow.tsx` | Drop handler routes `task` to tasks page |
+| `src/app/dashboard/tasks/page.tsx` | `?create=true&apiary=` opens form with apiary pre-filled |

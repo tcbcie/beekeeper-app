@@ -303,10 +303,14 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
         e.stopPropagation()
         dragCounterRef.current = 0
         if (cardRef.current) cardRef.current.dataset.dragover = ''
-        const VALID_ACTIONS = ['inspection', 'feeding', 'varroa_check', 'varroa_treatment', 'harvest']
+        const VALID_ACTIONS = ['inspection', 'feeding', 'varroa_check', 'varroa_treatment', 'harvest', 'task']
         const actionType = e.dataTransfer.getData('application/x-action')
         if (actionType && VALID_ACTIONS.includes(actionType)) {
-          router.push(`/dashboard/records?create=${actionType}&apiary=${apiary.id}`)
+          if (actionType === 'task') {
+            router.push(`/dashboard/tasks?create=true&apiary=${apiary.id}`)
+          } else {
+            router.push(`/dashboard/records?create=${actionType}&apiary=${apiary.id}`)
+          }
         }
       }}
     >

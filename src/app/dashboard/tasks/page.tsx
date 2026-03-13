@@ -292,11 +292,16 @@ export default function TasksEventsPage() {
   }, [searchParams, hives])
 
   // Handle ?apiary= param for pre-filtering by apiary (apply once only)
+  // Also open form if ?create=true&apiary= (no hive needed)
   useEffect(() => {
     const apiaryId = searchParams.get('apiary')
     if (apiaryId && appliedApiaryFilterRef.current !== apiaryId) {
       appliedApiaryFilterRef.current = apiaryId
       setFilterApiary(apiaryId)
+      if (searchParams.get('create') === 'true') {
+        setFormData(prev => ({ ...prev, apiary_id: apiaryId, start_date: toLocalDateString(new Date()) }))
+        setShowForm(true)
+      }
     }
   }, [searchParams])
 
