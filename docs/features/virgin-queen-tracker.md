@@ -13,7 +13,7 @@ This feature supports conservation breeding programmes by providing visibility i
 
 ## 2. Scope & Simplicity
 * **In Scope:**
-  - Track virgin/mated queen distributions from group-linked batches
+  - Track queen cell, virgin queen, and mated queen distributions from group-linked batches
   - Record overwintering status (survived/failed/unknown)
   - Record hybridisation status of offspring (hybridised/pure/unknown)
   - Filter by group, year, and status
@@ -87,12 +87,23 @@ hybridisation_date DATE DEFAULT NULL
 - Dates are automatically recorded when status is set to Yes or No
 - Dates are cleared when status is reset to Unknown
 
+### Distribution Types
+The tracker now shows all three distribution types with colour-coded badges:
+- **Cell** (amber) — sealed queen cell, not yet emerged or mated
+- **Virgin** (blue) — virgin queen, emerged but not yet mated
+- **Mated** (green) — queen already mated at distribution time
+
 ### Mated Status Logic
 A distribution is considered "mated" if either:
 - `mating_confirmed = true` (explicitly confirmed via toggle), OR
 - `distribution_type = 'mated_queen'` (queen was already mated at distribution time)
 
 When a `mated_queen` distribution is created, `mating_confirmed` is automatically set to `true` with the distribution date as the confirmation date.
+
+### Cell Queen → Mated Feedback
+When a recipient marks a distributed cell queen as mated via the queen detail page ("Mark as Mated" action), the corresponding `graft_distributions` record is automatically updated with `mating_confirmed = true`, `mating_confirmed_date`, and `mating_location`. This feeds into:
+- The Virgin Queen Tracker (mated badge appears)
+- The NIHBS monthly report cell B26 (virgins externally mated count)
 
 ### Summary Statistics
 The dashboard shows:

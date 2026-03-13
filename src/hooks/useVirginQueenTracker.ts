@@ -5,7 +5,7 @@ export interface TrackedVirginQueen {
   id: string
   graft_id: string
   batch_id: string
-  distribution_type: 'virgin_queen' | 'mated_queen'
+  distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
   distribution_date: string
   mating_confirmed: boolean
   mating_confirmed_date: string | null
@@ -90,7 +90,7 @@ export function useVirginQueenTracker() {
             profiles(first_name, last_name)
           )
         `)
-        .in('distribution_type', ['virgin_queen', 'mated_queen'])
+        .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
         .in('rearing_batches.rearing_group_id', groupIds)
         .order('distribution_date', { ascending: false })
 
@@ -133,7 +133,7 @@ export function useVirginQueenTracker() {
           id: d.id as string,
           graft_id: d.graft_id as string,
           batch_id: d.batch_id as string,
-          distribution_type: d.distribution_type as 'virgin_queen' | 'mated_queen',
+          distribution_type: d.distribution_type as 'queen_cell' | 'virgin_queen' | 'mated_queen',
           distribution_date: d.distribution_date as string,
           mating_confirmed: d.mating_confirmed as boolean,
           mating_confirmed_date: d.mating_confirmed_date as string | null,
