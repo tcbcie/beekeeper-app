@@ -94,9 +94,11 @@ function WeightChip({ label, value }: { label: string; value: number }) {
 
 interface ApiaryWeatherRowProps {
   apiary: DashboardApiary
+  activeAction?: { type: string; label: string } | null
+  onActionDrop?: (apiaryId: string) => void
 }
 
-export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
+export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherRowProps) {
   const router = useRouter()
   const [weather, setWeather] = useState<ApiaryWeather | null>(null)
   const [weatherLoading, setWeatherLoading] = useState(false)
@@ -277,7 +279,12 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
       ref={cardRef}
       href={`/dashboard/apiaries/${apiary.id}`}
       data-apiary-id={apiary.id}
-      className="group block rounded-lg overflow-hidden border-2 border-border hover:border-forest-500 dark:hover:border-forest-400 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all data-[dragover=true]:border-amber-400 data-[dragover=true]:dark:border-amber-500 data-[dragover=true]:ring-2 data-[dragover=true]:ring-amber-200 data-[dragover=true]:dark:ring-amber-800 data-[dragover=true]:shadow-lg"
+      onClick={activeAction ? (e) => { e.preventDefault(); onActionDrop?.(apiary.id) } : undefined}
+      className={`group block rounded-lg overflow-hidden border-2 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all data-[dragover=true]:border-amber-400 data-[dragover=true]:dark:border-amber-500 data-[dragover=true]:ring-2 data-[dragover=true]:ring-amber-200 data-[dragover=true]:dark:ring-amber-800 data-[dragover=true]:shadow-lg ${
+        activeAction
+          ? 'border-amber-300 dark:border-amber-600 ring-1 ring-amber-200/50 dark:ring-amber-800/50'
+          : 'border-border hover:border-forest-500 dark:hover:border-forest-400'
+      }`}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes('application/x-action')) {
           e.preventDefault()

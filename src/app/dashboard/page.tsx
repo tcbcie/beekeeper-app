@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import AppIcon from '@/components/icons/AppIcon'
@@ -81,78 +81,18 @@ export default function DashboardPage() {
  const { ownedRearingGroups, memberRearingGroups, loadingRearingGroups, fetchRearingGroups } = useRearingGroups()
  const devicePosition = useGeolocation()
 
- // Touch drag-and-drop for mobile (HTML5 DnD doesn't work on touch)
- const touchDragRef = useRef<{
-   type: string
-   ghost: HTMLElement
-   lastTarget: Element | null
- } | null>(null)
+ // Mobile tap-to-select: tap a quick action, then tap an apiary card to apply
+ const [activeAction, setActiveAction] = useState<{ type: string; label: string } | null>(null)
 
- const handleTouchStart = useCallback((e: React.TouchEvent, dragType: string, label: string) => {
-   e.preventDefault()
-   const touch = e.touches[0]
-   const ghost = document.createElement('div')
-   ghost.textContent = label
-   ghost.style.cssText = `
-     position:fixed;z-index:9999;pointer-events:none;
-     padding:6px 14px;border-radius:8px;font-size:14px;font-weight:600;
-     background:#f59e0b;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.25);
-     transform:translate(-50%,-50%);white-space:nowrap;
-   `
-   ghost.style.left = `${touch.clientX}px`
-   ghost.style.top = `${touch.clientY}px`
-   document.body.appendChild(ghost)
-   touchDragRef.current = { type: dragType, ghost, lastTarget: null }
- }, [])
-
- const handleTouchMove = useCallback((e: React.TouchEvent) => {
-   if (!touchDragRef.current) return
-   e.preventDefault()
-   const touch = e.touches[0]
-   const { ghost, lastTarget } = touchDragRef.current
-   ghost.style.left = `${touch.clientX}px`
-   ghost.style.top = `${touch.clientY}px`
-
-   // Find apiary card under finger
-   ghost.style.display = 'none'
-   const el = document.elementFromPoint(touch.clientX, touch.clientY)
-   ghost.style.display = ''
-   const card = el?.closest('[data-apiary-id]') ?? null
-
-   if (card !== lastTarget) {
-     if (lastTarget) (lastTarget as HTMLElement).dataset.dragover = ''
-     if (card) (card as HTMLElement).dataset.dragover = 'true'
-     touchDragRef.current.lastTarget = card
+ const handleApiaryActionDrop = useCallback((apiaryId: string) => {
+   if (!activeAction || !VALID_DROP_ACTIONS.includes(activeAction.type)) return
+   setActiveAction(null)
+   if (activeAction.type === 'task') {
+     router.push(`/dashboard/tasks?create=true&apiary=${apiaryId}`)
+   } else {
+     router.push(`/dashboard/records?create=${activeAction.type}&apiary=${apiaryId}`)
    }
- }, [])
-
- const cleanupTouchDrag = useCallback((navigate: boolean) => {
-   if (!touchDragRef.current) return
-   const { type, ghost, lastTarget } = touchDragRef.current
-   ghost.remove()
-   if (lastTarget) {
-     (lastTarget as HTMLElement).dataset.dragover = ''
-     if (navigate && VALID_DROP_ACTIONS.includes(type)) {
-       const apiaryId = (lastTarget as HTMLElement).dataset.apiaryId
-       if (apiaryId) {
-         if (type === 'task') {
-           router.push(`/dashboard/tasks?create=true&apiary=${apiaryId}`)
-         } else {
-           router.push(`/dashboard/records?create=${type}&apiary=${apiaryId}`)
-         }
-       }
-     }
-   }
-   touchDragRef.current = null
- }, [router])
-
- const handleTouchEnd = useCallback(() => { cleanupTouchDrag(true) }, [cleanupTouchDrag])
- const handleTouchCancel = useCallback(() => { cleanupTouchDrag(false) }, [cleanupTouchDrag])
-
- // Safety net: remove ghost if component unmounts mid-drag
- useEffect(() => {
-   return () => { cleanupTouchDrag(false) }
- }, [cleanupTouchDrag])
+ }, [activeAction, router])
 
  useEffect(() => {
  const initUser = async () => {
@@ -370,33 +310,55 @@ export default function DashboardPage() {
  </div>
  )}
 
- {/* Quick Actions — draggable onto apiary cards */}
+ {/* Quick Actions — desktop: drag onto apiary card · mobile: tap then tap apiary */}
+ {activeAction && (
+   <div
+     role="button"
+     tabIndex={0}
+     onClick={() => setActiveAction(null)}
+     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveAction(null) }}
+     className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-sm font-semibold cursor-pointer"
+   >
+     <span>Tap an apiary below to apply &ldquo;{activeAction.label}&rdquo;</span>
+     <span className="text-xs underline">Cancel</span>
+   </div>
+ )}
  <div className="grid grid-cols-2 gap-3">
  {([
  { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={18} />, dragType: 'inspection' },
  { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={18} />, dragType: 'task' },
- ]).map((action) => (
- <Link
- key={action.label}
- href={action.href}
- draggable
- onDragStart={(e) => {
-   e.dataTransfer.setData('application/x-action', action.dragType)
-   e.dataTransfer.effectAllowed = 'link'
-   e.currentTarget.style.opacity = '0.5'
- }}
- onDragEnd={(e) => { e.currentTarget.style.opacity = '' }}
- onTouchStart={(e) => handleTouchStart(e, action.dragType, action.label)}
- onTouchMove={handleTouchMove}
- onTouchEnd={handleTouchEnd}
- onTouchCancel={handleTouchCancel}
- className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border bg-surface hover:bg-surface-secondary dark:hover:bg-surface-elevated shadow-sm text-base font-semibold text-text-primary transition-colors cursor-grab active:cursor-grabbing select-none"
- >
- <GripVertical size={14} className="text-text-tertiary" />
- {action.icon}
- {action.label}
- </Link>
- ))}
+ ]).map((action) => {
+   const isActive = activeAction?.type === action.dragType
+   return (
+   <Link
+   key={action.label}
+   href={action.href}
+   draggable
+   onDragStart={(e) => {
+     e.dataTransfer.setData('application/x-action', action.dragType)
+     e.dataTransfer.effectAllowed = 'link'
+     e.currentTarget.style.opacity = '0.5'
+   }}
+   onDragEnd={(e) => { e.currentTarget.style.opacity = '' }}
+   onClick={(e) => {
+     // On touch devices, toggle selection mode instead of navigating
+     if ('ontouchstart' in window) {
+       e.preventDefault()
+       setActiveAction(isActive ? null : { type: action.dragType, label: action.label })
+     }
+   }}
+   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border shadow-sm text-base font-semibold transition-colors ${
+     isActive
+       ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 ring-2 ring-amber-200 dark:ring-amber-800'
+       : 'border-border bg-surface hover:bg-surface-secondary dark:hover:bg-surface-elevated text-text-primary'
+   }`}
+   >
+   <GripVertical size={14} className="text-text-tertiary hidden md:block" />
+   {action.icon}
+   {action.label}
+   </Link>
+   )
+ })}
  </div>
 
  {/* Apiary Weather (sorted nearest-first when GPS available) */}
@@ -405,7 +367,7 @@ export default function DashboardPage() {
    <h2 className="text-lg font-semibold text-foreground mb-3">My Apiaries</h2>
    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     {sortedApiaries.map((apiary) => (
-     <ApiaryWeatherRow key={apiary.id} apiary={apiary} />
+     <ApiaryWeatherRow key={apiary.id} apiary={apiary} activeAction={activeAction} onActionDrop={handleApiaryActionDrop} />
     ))}
    </div>
   </div>
