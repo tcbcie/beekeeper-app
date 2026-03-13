@@ -88,6 +88,36 @@ export default function QueenDetailPage() {
         fetchQueenData(currentUserId)
         return
       }
+      // Feed back mating confirmation to graft_distributions for Virgin Queen Tracker / NIHBS report
+      if (queen.batch_id) {
+        (async () => {
+          try {
+            const { data: match } = await supabase
+              .from('graft_distributions')
+              .select('id')
+              .eq('batch_id', queen.batch_id)
+              .eq('recipient_user_id', currentUserId)
+              .eq('distribution_type', 'queen_cell')
+              .eq('mating_confirmed', false)
+              .order('distribution_date', { ascending: true })
+              .limit(1)
+              .maybeSingle()
+            if (match) {
+              const { error: distError } = await supabase
+                .from('graft_distributions')
+                .update({
+                  mating_confirmed: true,
+                  mating_confirmed_date: matedDate,
+                  mating_location: matedEircode || queen.mated_at_eircode || null,
+                })
+                .eq('id', match.id)
+              if (distError) console.error('Non-blocking: failed to update distribution mating status:', distError)
+            }
+          } catch (err) {
+            console.error('Non-blocking: failed to update distribution mating status:', err)
+          }
+        })()
+      }
       toast.success('Queen marked as mated')
       setShowMatedForm(false)
       setMatedDate('')

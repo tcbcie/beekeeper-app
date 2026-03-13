@@ -307,6 +307,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                 <thead>
                   <tr className="border-b border-border bg-surface-secondary">
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Cell</th>
+                    <th className="text-left py-3 px-4 font-medium text-text-secondary">Type</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Batch</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Recipient</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Date</th>
@@ -320,6 +321,17 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                   {filteredDistributions.map((d) => (
                     <tr key={d.id} className="border-b border-border last:border-b-0 hover:bg-surface-secondary/50">
                       <td className="py-3 px-4 text-foreground font-medium">#{d.cell_number}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          d.distribution_type === 'queen_cell'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                            : d.distribution_type === 'mated_queen'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                        }`}>
+                          {d.distribution_type === 'queen_cell' ? 'Cell' : d.distribution_type === 'mated_queen' ? 'Mated' : 'Virgin'}
+                        </span>
+                      </td>
                       <td className="py-3 px-4 text-foreground">{d.batch_name}</td>
                       <td className="py-3 px-4 text-foreground">{getRecipientName(d)}</td>
                       <td className="py-3 px-4 text-text-secondary">{formatDateIrish(d.distribution_date)}</td>
@@ -371,8 +383,17 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground">Cell #{d.cell_number}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                          d.distribution_type === 'queen_cell'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                            : d.distribution_type === 'mated_queen'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                        }`}>
+                          {d.distribution_type === 'queen_cell' ? 'Cell' : d.distribution_type === 'mated_queen' ? 'Mated' : 'Virgin'}
+                        </span>
                         <span className="text-sm text-text-secondary">• {d.batch_name}</span>
                       </div>
                       <div className="text-sm text-text-secondary mt-1">

@@ -1,16 +1,14 @@
-# Queen Cell Status for Distributed Cells
+# Track Distributed Cells in Virgin Queen Tracker & NIHBS Report
 
 **Date:** 2026-03-13
 
 ## Tasks
 
-- [x] 1. DB Migration — Add `mated_date` column to queens table
-- [x] 2. Distribution Hook — Set `'cell'` status for queen cell distributions
-- [x] 3. Queen Type — Add `mated_date` to Queen interface
-- [x] 4. Queens List Page — Badge, filter, form updates
-- [x] 5. Queen Detail Page — Cell banner + Mark Mated/Failed actions
-- [x] 6. Hive Queen Dropdown — Include cell queens with "(Cell)" label
-- [x] 7. Code Audit — Hardened all findings
+- [x] 1. Virgin Queen Tracker hook — include `queen_cell` distributions
+- [x] 2. Tracker UI — show type badge to distinguish cells from virgin queens
+- [x] 3. Mark as Mated feedback — update `graft_distributions` mating_confirmed when a cell queen is marked mated
+- [x] 4. NIHBS Report — verified no changes needed (auto-calculates from mating_confirmed)
+- [x] 5. Update feature docs
 
 ## Review
 
@@ -18,24 +16,19 @@
 
 | File | Change |
 |------|--------|
-| DB migration | Added `mated_date date` column to `queens` table |
-| `src/types/queen.ts` | Added `mated_date` to `Queen` and `QueenFormData` interfaces |
-| `src/hooks/useGraftDistributions.ts` | Added `distributionType` parameter to `createQueenForRecipient` and `createQueensForRecipient`; sets `p_status: 'cell'` for queen cell distributions |
-| `src/app/dashboard/queens/page.tsx` | Added `cell` to status filter and form dropdowns; amber badge for cell status; `mated_date` field in form (editable for distributed queens); cell count in summary stats; `mated_date` added to distributed queen allowed update fields |
-| `src/app/dashboard/queens/[id]/page.tsx` | Amber cell banner with "Mark as Mated" (inline form: date + eircode) and "Mark as Failed" buttons; amber cell status badge; `mated_date` in identity section; offspring cell badge; `user_id` + `status: 'cell'` guards on mutations; `{ count: 'exact' }` for race-condition detection |
-| `src/app/dashboard/hives/page.tsx` | Changed queen dropdown query from `.eq('status', 'active')` to `.in('status', ['active', 'cell'])`; added `status` to select; appends "(Cell)" label in dropdown |
+| `src/hooks/useVirginQueenTracker.ts` | Added `'queen_cell'` to distribution type filter and `TrackedVirginQueen` type union |
+| `src/components/batches/VirginQueenTrackerTab.tsx` | Added Type column with colour-coded badge (amber Cell, blue Virgin, green Mated) in both desktop table and mobile cards |
+| `src/app/dashboard/queens/[id]/page.tsx` | `handleMarkMated` now also updates the matching `graft_distributions` record with `mating_confirmed = true`, `mating_confirmed_date`, and `mating_location` (non-blocking) |
+| `docs/features/virgin-queen-tracker.md` | Updated scope, added distribution types section and cell→mated feedback documentation |
 
-### Code Audit Findings (all resolved)
+### Data Flow
+```
+Cell queen marked as mated (queen detail page)
+  → queens table: status = 'active', mated_date set
+  → graft_distributions table: mating_confirmed = true (non-blocking)
+    → Virgin Queen Tracker: shows mated badge
+    → NIHBS Report B26: auto-counted as externally mated
+```
 
-| Severity | Issue | Fix |
-|----------|-------|-----|
-| **Critical** | `handleMarkMated`/`handleMarkFailed` missing `.eq('user_id')` — any authenticated user could mutate any queen | Added `.eq('user_id', currentUserId)` + early return if null |
-| **High** | Race condition: two tabs could both "Mark as Mated" — no status precondition | Added `.eq('status', 'cell')` + `{ count: 'exact' }` + stale-state toast |
-| **Medium** | Distributed queen update path silently dropped `mated_date` | Added `mated_date` to allowed fields list |
-| **Medium** | `mated_date` form field was disabled for distributed queens (recipient can't set it) | Removed `disabled` and cursor-not-allowed styling |
-| **Medium** | Offspring status badges missed amber `cell` styling | Added `cell` branch to offspring badge ternary |
-| **Medium** | `matedDate`/`matedEircode` not reset after successful mark-as-mated | Added `setMatedDate('')` and `setMatedEircode('')` |
-
-### What's Auto-Excluded
-- **Breeder queen dropdown** (`batches/page.tsx`): Already filters `.eq('status', 'active')` — cell queens auto-excluded
-- **Dashboard stats**: Counts active queens only — cell queens correctly excluded
+### No Changes Needed
+- **NIHBS Report** (`useNIHBSReport.ts`): Line 239 already checks `d.mating_confirmed` regardless of distribution type
