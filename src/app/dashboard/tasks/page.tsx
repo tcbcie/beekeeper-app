@@ -1001,16 +1001,16 @@ export default function TasksEventsPage() {
                     }}
                   >
                     <option value="">None</option>
-                    {hives.filter(h => !h.is_shared).length > 0 && (
+                    {hives.filter(h => !h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).length > 0 && (
                       <optgroup label="My Hives">
-                        {hives.filter(h => !h.is_shared).map(hive => (
+                        {hives.filter(h => !h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).map(hive => (
                           <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
                         ))}
                       </optgroup>
                     )}
-                    {hives.filter(h => h.is_shared).length > 0 && (
+                    {hives.filter(h => h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).length > 0 && (
                       <optgroup label="Shared Hives">
-                        {hives.filter(h => h.is_shared).map(hive => (
+                        {hives.filter(h => h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).map(hive => (
                           <option key={hive.id} value={hive.id}>Hive {hive.hive_number} (Shared)</option>
                         ))}
                       </optgroup>
@@ -1022,7 +1022,15 @@ export default function TasksEventsPage() {
                   <FieldLabel>Apiary</FieldLabel>
                   <SelectField
                     value={formData.apiary_id}
-                    onChange={(e) => setFormData({ ...formData, apiary_id: e.target.value })}
+                    onChange={(e) => {
+                      const newApiaryId = e.target.value
+                      const currentHive = hives.find(h => h.id === formData.hive_id)
+                      setFormData({
+                        ...formData,
+                        apiary_id: newApiaryId,
+                        hive_id: currentHive?.apiary_id === newApiaryId || !newApiaryId ? formData.hive_id : '',
+                      })
+                    }}
                   >
                     <option value="">None</option>
                     {apiaries.filter(a => !a.is_shared).length > 0 && (
