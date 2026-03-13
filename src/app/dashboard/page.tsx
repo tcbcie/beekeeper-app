@@ -11,6 +11,7 @@ import UpcomingEvents from '@/components/UpcomingEvents'
 import Link from 'next/link'
 import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg, ListChecks } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
+import { useGeolocation, haversineKm } from '@/hooks/useGeolocation'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RecentActivityRecord } from '@/types/dashboard'
 import ApiaryWeatherRow from '@/components/dashboard/ApiaryWeatherRow'
@@ -76,6 +77,7 @@ export default function DashboardPage() {
  } = useTeams()
  const { openTicketsCount, userTicketStatus, fetchOpenTicketsCount, fetchUserTicketStatus } = useTicketStatus()
  const { ownedRearingGroups, memberRearingGroups, loadingRearingGroups, fetchRearingGroups } = useRearingGroups()
+ const devicePosition = useGeolocation()
 
  useEffect(() => {
  const initUser = async () => {
@@ -114,6 +116,20 @@ export default function DashboardPage() {
  }, [userId, fetchTeams, fetchTeamStats, fetchRearingGroups])
 
  // Memoised computed values (must be above early return to satisfy rules-of-hooks)
+ // Sort apiaries nearest-first when GPS is available
+ const sortedApiaries = useMemo(() => {
+  if (!devicePosition || apiaries.length === 0) return apiaries
+  // Pre-compute distances once (O(n)), then sort by lookup
+  const withDistance = apiaries.map(apiary => ({
+   apiary,
+   dist: apiary.latitude != null && apiary.longitude != null
+    ? haversineKm(devicePosition.latitude, devicePosition.longitude, apiary.latitude, apiary.longitude)
+    : Infinity,
+  }))
+  withDistance.sort((a, b) => a.dist - b.dist)
+  return withDistance.map(entry => entry.apiary)
+ }, [apiaries, devicePosition])
+
  const isTeamMember = useMemo(() => ownedTeams.length > 0 || memberTeams.length > 0, [ownedTeams, memberTeams])
  const isRearingGroupMember = useMemo(() => ownedRearingGroups.length > 0 || memberRearingGroups.length > 0, [ownedRearingGroups, memberRearingGroups])
 
@@ -146,19 +162,22 @@ export default function DashboardPage() {
  <div className="space-y-6">
  {/* Header */}
  <div className="h-9 w-56 bg-surface-secondary rounded animate-shimmer" />
- {/* Apiary cards placeholder */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <SkeletonCard className="h-48" />
- <SkeletonCard className="h-48" />
- </div>
- {/* Stats strip + quick actions placeholder */}
- <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border space-y-3">
- <Skeleton className="h-8 w-full" />
+ {/* Quick actions placeholder */}
+ <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
  <div className="flex flex-wrap gap-2">
  {Array.from({ length: 6 }).map((_, i) => (
  <Skeleton key={i} className="h-8 w-28" />
  ))}
  </div>
+ </div>
+ {/* Apiary cards placeholder */}
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <SkeletonCard className="h-48" />
+ <SkeletonCard className="h-48" />
+ </div>
+ {/* Stats strip placeholder */}
+ <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
+ <Skeleton className="h-8 w-full" />
  </div>
  {/* Recent activity placeholder */}
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border space-y-3">
@@ -276,29 +295,8 @@ export default function DashboardPage() {
  </div>
  )}
 
- {/* Apiary Weather */}
- {apiaries.length > 0 && (
-  <div>
-   <h2 className="text-lg font-semibold text-foreground mb-3">My Apiaries</h2>
-   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {apiaries.map((apiary) => (
-     <ApiaryWeatherRow key={apiary.id} apiary={apiary} />
-    ))}
-   </div>
-  </div>
- )}
-
- {/* Stats Strip + Quick Actions */}
+ {/* Quick Actions (above the fold for field use) */}
  <Panel padding="sm">
- <div className="flex flex-wrap items-center gap-1 pb-2 mb-3 border-b border-border">
- {statCards.map((card) => (
- <Link key={card.label} href={card.href!} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-secondary dark:hover:bg-surface-elevated transition-colors whitespace-nowrap">
- <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
- <span className="text-sm text-text-secondary">{card.label}:</span>
- <span className="text-base font-bold text-foreground">{card.value}</span>
- </Link>
- ))}
- </div>
  <div className="flex flex-wrap gap-2">
  {[
  { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} /> },
@@ -315,6 +313,31 @@ export default function DashboardPage() {
  >
  {action.icon}
  {action.label}
+ </Link>
+ ))}
+ </div>
+ </Panel>
+
+ {/* Apiary Weather (sorted nearest-first when GPS available) */}
+ {sortedApiaries.length > 0 && (
+  <div>
+   <h2 className="text-lg font-semibold text-foreground mb-3">My Apiaries</h2>
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {sortedApiaries.map((apiary) => (
+     <ApiaryWeatherRow key={apiary.id} apiary={apiary} />
+    ))}
+   </div>
+  </div>
+ )}
+
+ {/* Stats Strip */}
+ <Panel padding="sm">
+ <div className="flex flex-wrap items-center gap-1">
+ {statCards.map((card) => (
+ <Link key={card.label} href={card.href!} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-secondary dark:hover:bg-surface-elevated transition-colors whitespace-nowrap">
+ <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
+ <span className="text-sm text-text-secondary">{card.label}:</span>
+ <span className="text-base font-bold text-foreground">{card.value}</span>
  </Link>
  ))}
  </div>
@@ -504,10 +527,10 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Search size={18} className="text-blue-600 dark:text-blue-400" />
  label = `Inspection of ${record.hives?.hive_number || 'Unknown Hive'}`
  badge = (
- <span className={`px-2 py-1 text-xs rounded ${
+ <span className={`px-2 py-1 text-xs font-semibold rounded ${
  record.queen_seen
- ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
- : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+ ? 'bg-green-200 dark:bg-green-900/40 text-green-900 dark:text-green-200'
+ : 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200'
  }`}>
  {record.queen_seen ? 'Queen Seen' : 'No Queen'}
  </span>
@@ -517,7 +540,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Syringe size={18} className="text-red-600 dark:text-red-400" />
  label = `Varroa Treatment - ${record.hives?.hive_number || 'Unknown Hive'}`
  badge = (
- <span className="px-2 py-1 text-xs rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+ <span className="px-2 py-1 text-xs font-semibold rounded bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200">
  {record.treatment_type}
  </span>
  )
@@ -526,7 +549,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Bug size={18} className="text-orange-600 dark:text-orange-400" />
  label = `Varroa Check - ${record.hives?.hive_number || 'Unknown Hive'}`
  badge = record.infestation_rate !== null ? (
- <span className="px-2 py-1 text-xs rounded bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
+ <span className="px-2 py-1 text-xs font-semibold rounded bg-orange-200 dark:bg-orange-900/40 text-orange-900 dark:text-orange-200">
  {record.infestation_rate}% infestation
  </span>
  ) : null
@@ -535,7 +558,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Wheat size={18} className="text-amber-600 dark:text-amber-400" />
  label = `Feeding - ${record.hives?.hive_number || 'Unknown Hive'}`
  badge = (
- <span className="px-2 py-1 text-xs rounded bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+ <span className="px-2 py-1 text-xs font-semibold rounded bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">
  {record.feed_type}
  </span>
  )
@@ -544,7 +567,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Droplet size={18} className="text-yellow-600 dark:text-yellow-400" />
  label = `Harvest - ${record.hives?.hive_number || 'Unknown Hive'}`
  badge = record.honey_weight !== null ? (
- <span className="px-2 py-1 text-xs rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+ <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200">
  {record.honey_weight} kg
  </span>
  ) : null
@@ -559,9 +582,9 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
   {icon}
   <div className="flex-1 min-w-0">
   <span className="font-medium text-foreground block truncate">{label}</span>
-  <span className="text-sm text-text-secondary">
+  <span className="text-sm font-medium text-text-secondary">
  {formatRecentActivityDate(record.date)}
- {apiaryName && <span className="text-text-tertiary"> &middot; {apiaryName}</span>}
+ {apiaryName && <span className="text-text-secondary"> &middot; {apiaryName}</span>}
  </span>
  </div>
  </div>

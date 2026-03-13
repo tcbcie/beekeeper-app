@@ -14,6 +14,8 @@ export interface NavItem {
   group?: NavGroupId
   pinToBottom?: boolean
   afterGroups?: boolean
+  /** Show in the mobile bottom nav bar (max 4–5 items for glove-friendly tapping) */
+  bottomNav?: boolean
 }
 
 export interface NavGroup {
@@ -28,13 +30,13 @@ export const navGroups: NavGroup[] = [
 ]
 
 export const baseNavItems: NavItem[] = [
-  { href: '/dashboard', label: 'Overview', icon: Home },
-  { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin, group: 'manage' },
+  { href: '/dashboard', label: 'Overview', icon: Home, bottomNav: true },
+  { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin, group: 'manage', bottomNav: true },
   { href: '/dashboard/hives', label: 'Hives', icon: Archive, group: 'manage' },
   { href: '/dashboard/queens', label: 'Queens', icon: Crown, group: 'manage' },
   { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg, group: 'manage' },
-  { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity' },
-  { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity' },
+  { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity', bottomNav: true },
+  { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity', bottomNav: true },
   { href: '/dashboard/logbook', label: 'Logbook', icon: BookOpen, group: 'activity' },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText, group: 'insights' },
   { href: '/dashboard/research', label: 'Research', icon: FlaskConical, group: 'insights' },
