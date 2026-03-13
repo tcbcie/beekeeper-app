@@ -111,10 +111,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <ImpersonationBanner />
       <OfflineIndicator />
       <UpdateNotification />
-      <Navbar
-        currentUser={user}
-        onMenuClick={() => setIsMobileMenuOpen(true)}
-      />
+      <Navbar currentUser={user} />
       <MobileDrawer
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}

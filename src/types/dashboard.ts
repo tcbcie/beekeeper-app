@@ -113,6 +113,7 @@ export interface DashboardApiary {
   hiveCount: number
   lastInspectionDate: string | null
   scales: DashboardApiaryScale[]
+  activeTaskCount: number
 }
 
 export interface DashboardStats {

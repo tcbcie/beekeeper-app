@@ -92,6 +92,7 @@ export default function TasksEventsPage() {
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
   const appliedTaskDeepLinkRef = useRef<string | null>(null)
+  const appliedApiaryFilterRef = useRef<string | null>(null)
   const scrolledTaskRef = useRef<string | null>(null)
 
   // Form state
@@ -289,6 +290,15 @@ export default function TasksEventsPage() {
       }
     }
   }, [searchParams, hives])
+
+  // Handle ?apiary= param for pre-filtering by apiary (apply once only)
+  useEffect(() => {
+    const apiaryId = searchParams.get('apiary')
+    if (apiaryId && appliedApiaryFilterRef.current !== apiaryId) {
+      appliedApiaryFilterRef.current = apiaryId
+      setFilterApiary(apiaryId)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const taskId = searchParams.get('task')

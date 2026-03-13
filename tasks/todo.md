@@ -1,74 +1,41 @@
-# Dashboard Field UX Improvements — Task List
+# Dashboard Follow-up: Hamburger Fix + Apiary Task Count
 
 **Date:** 2026-03-13
-**Feature Doc:** `docs/features/dashboard-field-ux-improvements.md`
 
 ## Tasks
 
-- [x] **1. Glove Test — Simplify Bottom Nav to 5 tabs**
-  - Added `bottomNav` flag to NavItem interface and 4 key items in `navigation.ts`
-  - Rewrote `BottomNavBar.tsx` — 5 equal-width tabs (Overview, Apiaries, Records, Tasks, More)
-  - Removed scroll/fade machinery (no longer needed with only 5 items)
+- [x] **1. Remove dead hamburger button from Navbar**
+  - Removed `<IconButton>` hamburger, `Menu` import, and `onMenuClick` prop from Navbar
+  - Updated layout.tsx to stop passing `onMenuClick`
+  - Root cause: `.fj-icon-btn { display: inline-flex }` overrode Tailwind `hidden`
 
-- [x] **2. Push Quick Actions Above the Fold**
-  - Moved Quick Actions panel above Apiary Weather in `dashboard/page.tsx`
-  - Stats Strip separated into its own panel below apiaries
+- [x] **2. Add `activeTaskCount` to apiary cards**
+  - Added `activeTaskCount: number` to `DashboardApiary` type
+  - Fetches active tasks per apiary in `useDashboardStats` (single query, counted in JS)
+  - Renders teal task button in stats row (aligned right) when count > 0
+  - Button shows icon + count + "task(s)" label
+  - Click navigates to `/dashboard/tasks?apiary={id}` with stopPropagation (inside Link card)
 
-- [x] **3. Collapse Weather Forecast by Default**
-  - Added `forecastExpanded` state (default: false) to `ApiaryWeatherRow.tsx`
-  - Weather label row now a toggle button with "7-day"/"Hide" + chevron
-  - Card header + hive stats + scale data always visible; forecast on demand
+- [x] **3. Add `?apiary=` query param to tasks page**
+  - New useEffect reads `apiary` search param and sets `filterApiary`
+  - Works alongside existing `?task=` and `?hive=` params
 
-- [x] **4. GPS-Based Apiary Sorting**
-  - Created `useGeolocation` hook (`src/hooks/useGeolocation.ts`) with haversine distance
-  - Dashboard sorts apiaries nearest-first via `sortedApiaries` memo
-  - Graceful fallback — original order if GPS denied/unavailable
+## Audit Findings (Round 2)
 
-- [x] **5. Sun Glare Contrast Improvements**
-  - All Recent Activity badges: `bg-*-100` → `bg-*-200`, text → `*-900`, added `font-semibold`
-  - Date text: added `font-medium`, apiary name promoted from `text-tertiary` to `text-secondary`
-  - Weather card: "Hives"/"Last Inspected" labels → `font-medium text-text-secondary`
-  - Scale WeightChip labels → `font-medium text-text-secondary`
-  - Forecast day labels → `font-semibold text-text-secondary`, min temps → `font-medium text-text-secondary`
-
-## Code Audit (Post-Implementation)
-
-- [x] **CRITICAL: `<button>` inside `<Link>` — invalid HTML**
-  - Replaced `<button>` with `<div role="button">` + keyboard handler + `e.stopPropagation()`
-  - Added `aria-expanded` and `aria-label` for screen readers
-
-- [x] **HIGH: `useGeolocation` state update after unmount**
-  - Added `mountedRef` guard so `setPosition` only fires if component is still mounted
-  - Proper cleanup in effect return
-
-- [x] **HIGH: `haversineKm` — no NaN/Infinity guard**
-  - Added `Number.isFinite()` guard on all 4 params, returns `Infinity` on invalid input
-  - Prevents sort corruption from corrupt database coordinates
-
-- [x] **MEDIUM: Sort comparator recomputes haversine O(n log n) times**
-  - Refactored to pre-compute distances once (O(n)), then sort by lookup
-
-- [x] **MEDIUM: BottomNavBar false-active on prefix collision**
-  - Changed `startsWith(href)` → `=== href || startsWith(href + '/')`
-
-- [x] **LOW: Skeleton loading state didn't match new section order**
-  - Reordered skeleton to: Quick Actions → Apiaries → Stats Strip → Recent Activity
+| # | Severity | Finding | Fix |
+|---|----------|---------|-----|
+| 1 | HIGH | `window.location.href` in ApiaryWeatherRow bypasses Next.js router — full page reload, destroys React state, bad on slow field connections | Replaced with `useRouter` + `router.push()` |
+| 2 | HIGH | `?apiary=` useEffect re-fires on every `searchParams` change, overriding user's manual filter | Added `appliedApiaryFilterRef` dedup guard — applies once per unique apiary ID |
+| 3 | MEDIUM | Task count query ran sequentially after initial `Promise.all` — unnecessary extra round-trip | Moved into the existing `Promise.all` (now 7 parallel queries) |
 
 ## Review
 
 ### Files Changed
 | File | Change |
 |------|--------|
-| `src/lib/navigation.ts` | Added `bottomNav` flag to NavItem + 4 items |
-| `src/components/BottomNavBar.tsx` | Simplified to 5 equal-width tabs, fixed active-state matching |
-| `src/app/dashboard/page.tsx` | Reordered sections, GPS sorting (optimised), contrast, skeleton fix |
-| `src/components/dashboard/ApiaryWeatherRow.tsx` | Collapsible forecast (a11y-safe), contrast improvements |
-| `src/hooks/useGeolocation.ts` | New hook — GPS + haversine with unmount guard + NaN safety |
-
-### Summary
-- **No functionality removed** — all nav items still accessible via More drawer
-- **Zero database changes** — purely frontend
-- **TypeScript compiles clean** — all pre-existing test errors, none in changed files
-- **Dark mode preserved** — all contrast changes include dark mode variants
-- **Graceful degradation** — GPS hook silently falls back if denied/unavailable
-- **Audit passed** — 4 defects found and fixed (1 Critical, 2 High, 1 Medium), 2 low-severity items resolved
+| `src/components/Navbar.tsx` | Removed hamburger button, Menu import, onMenuClick prop |
+| `src/app/dashboard/layout.tsx` | Removed onMenuClick prop from Navbar |
+| `src/types/dashboard.ts` | Added `activeTaskCount` to DashboardApiary |
+| `src/hooks/useDashboardStats.ts` | Fetch active tasks per apiary; parallelised task count query |
+| `src/components/dashboard/ApiaryWeatherRow.tsx` | Task count button in stats row; `router.push` instead of `window.location.href` |
+| `src/app/dashboard/tasks/page.tsx` | Read `?apiary=` query param with dedup ref guard |

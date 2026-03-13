@@ -64,7 +64,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         const fourteenDaysAgo = toLocalDateString(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000))
         const twoYearsAgo = toLocalDateString(new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000))
 
-        const [apiariesRes, apiaryListRes, hivesRes, inspectionsRes, queensRes, tasksRes] = await Promise.all([
+        const [apiariesRes, apiaryListRes, hivesRes, inspectionsRes, queensRes, tasksRes, apiaryTasksRes] = await Promise.all([
           supabase.from('apiaries').select('id', { count: 'exact', head: true }).eq('user_id', userId),
           supabase.from('apiaries').select('id, name, location, city, latitude, longitude').eq('user_id', userId).order('name'),
           supabase.from('hives').select('id', { count: 'exact', head: true }).eq('user_id', userId),
@@ -75,6 +75,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
             .eq('user_id', userId),
           supabase.from('queens').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'active'),
           supabase.from('tasks_events').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', false),
+          supabase.from('tasks_events').select('apiary_id').eq('user_id', userId).eq('completed', false).not('apiary_id', 'is', null),
         ])
 
         if (!mountedRef.current) return
@@ -89,11 +90,19 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         }[]
         const apiaryIds = rawApiaries.map(apiary => apiary.id)
 
+        const taskCountMap: Record<string, number> = {}
+        for (const task of (apiaryTasksRes.data || [])) {
+          if (task.apiary_id) {
+            taskCountMap[task.apiary_id] = (taskCountMap[task.apiary_id] || 0) + 1
+          }
+        }
+
         let enrichedApiaries: DashboardApiary[] = rawApiaries.map(apiary => ({
           ...apiary,
           hiveCount: 0,
           lastInspectionDate: null,
           scales: [],
+          activeTaskCount: taskCountMap[apiary.id] || 0,
         }))
 
         if (apiaryIds.length > 0) {
@@ -143,6 +152,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
             hiveCount: hiveCountMap[apiary.id] || 0,
             lastInspectionDate: lastInspectionMap[apiary.id] || null,
             scales: scaleMap[apiary.id] || [],
+            activeTaskCount: taskCountMap[apiary.id] || 0,
           }))
         }
 

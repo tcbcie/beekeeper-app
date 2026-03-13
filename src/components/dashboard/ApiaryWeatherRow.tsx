@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef, startTransition } from 'react'
 import Link from 'next/link'
-import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
@@ -96,6 +97,7 @@ interface ApiaryWeatherRowProps {
 }
 
 export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
+  const router = useRouter()
   const [weather, setWeather] = useState<ApiaryWeather | null>(null)
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [weatherError, setWeatherError] = useState(false)
@@ -362,6 +364,19 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
             <span className="text-base font-medium text-text-tertiary">&mdash;</span>
           )}
         </div>
+        {apiary.activeTaskCount > 0 && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/tasks?apiary=${apiary.id}`) }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/tasks?apiary=${apiary.id}`) } }}
+            className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200 hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors cursor-pointer"
+          >
+            <ListChecks size={14} />
+            <span className="text-sm font-semibold tabular-nums">{apiary.activeTaskCount}</span>
+            <span className="text-xs font-medium">task{apiary.activeTaskCount !== 1 ? 's' : ''}</span>
+          </div>
+        )}
       </div>
 
       {hasScales && (
