@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, startTransition } from 'react'
 import Link from 'next/link'
-import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale } from 'lucide-react'
+import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
@@ -80,7 +80,7 @@ function WeightChip({ label, value }: { label: string; value: number }) {
 
   return (
     <div className="flex flex-col items-center">
-      <span className="text-xs text-text-tertiary leading-none mb-0.5">{label}</span>
+      <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">{label}</span>
       <span className={`flex items-center gap-0.5 text-sm font-bold tabular-nums ${
         positive ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
       }`}>
@@ -102,6 +102,7 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
   const [scaleData, setScaleData] = useState<ScaleWeight[]>([])
   const [scaleLoading, setScaleLoading] = useState(false)
   const [shouldLoadData, setShouldLoadData] = useState(false)
+  const [forecastExpanded, setForecastExpanded] = useState(false)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
   const mountedRef = useRef(true)
 
@@ -298,16 +299,25 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
       </div>
 
       {weather && (
-        <div className="px-4 py-0.5 bg-forest-50 dark:bg-forest-900/20 text-xs text-forest-700 dark:text-forest-300">
-          {weatherLabel(weather.current.weatherCode)}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) } }}
+          aria-expanded={forecastExpanded}
+          aria-label={forecastExpanded ? 'Hide 7-day forecast' : 'Show 7-day forecast'}
+          className="w-full flex items-center justify-between px-4 py-1 bg-forest-50 dark:bg-forest-900/20 text-xs text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-forest-900/30 transition-colors cursor-pointer"
+        >
+          <span>{weatherLabel(weather.current.weatherCode)}</span>
+          <span className="flex items-center gap-1 text-forest-600 dark:text-forest-400">
+            <span className="text-[10px] font-medium">{forecastExpanded ? 'Hide' : '7-day'}</span>
+            <ChevronDown size={12} className={`transition-transform ${forecastExpanded ? 'rotate-180' : ''}`} />
+          </span>
         </div>
       )}
 
-      {weather && (
+      {weather && forecastExpanded && (
         <div className="border-b border-border">
-          <div className="px-3 pt-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Forecast</span>
-          </div>
           <div className="flex items-stretch">
             {weather.daily.map((day, index) => (
               <div
@@ -316,13 +326,13 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
                   index === 0 ? 'bg-forest-50/50 dark:bg-forest-900/15' : ''
                 } ${index < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
               >
-                <span className={`text-xs font-medium leading-none ${
-                  index === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-tertiary'
+                <span className={`text-xs font-semibold leading-none ${
+                  index === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-secondary'
                 }`}>{day.day}</span>
                 <span className="text-sm leading-none my-0.5">{weatherIcon(day.weatherCode)}</span>
                 <span className="text-xs leading-none tabular-nums">
                   <span className="font-semibold text-foreground">{day.tempMax}&deg;</span>
-                  <span className="text-text-tertiary"> {day.tempMin}&deg;</span>
+                  <span className="text-text-secondary font-medium"> {day.tempMin}&deg;</span>
                 </span>
               </div>
             ))}
@@ -332,12 +342,12 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
 
       <div className="px-3 py-2 flex items-center gap-3 border-b border-border/50">
         <div className="flex flex-col">
-          <span className="text-xs text-text-tertiary leading-none mb-0.5">Hives</span>
+          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Hives</span>
           <span className="text-base font-bold text-foreground tabular-nums">{apiary.hiveCount}</span>
         </div>
         <div className="w-px h-5 bg-border" />
         <div className="flex flex-col">
-          <span className="text-xs text-text-tertiary leading-none mb-0.5">Last Inspected</span>
+          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Last Inspected</span>
           {daysSinceInspection !== null ? (
             <span className={`text-base font-bold tabular-nums ${
               daysSinceInspection < 7
