@@ -186,11 +186,12 @@ export function useNIHBSReport() {
           const emergence = getEmergenceMonthYear(batch)
           const apiaryId = batch.mating_apiary_id || 'unassigned'
 
-          // Resolve counters: batch-level value takes precedence, fall back to graft-derived
+          // Prefer derived counts (from actual graft statuses) over batch-level counters
+          // which can become stale when cells are distributed before hatching
           const dc = derivedCounts.get(batch.id)
-          const accepted = batch.grafts_accepted ?? dc?.grafts_accepted ?? 0
-          const hatched = batch.queens_hatched ?? dc?.queens_hatched ?? 0
-          const mated = batch.queens_mated ?? dc?.queens_mated ?? 0
+          const accepted = dc ? dc.grafts_accepted : (batch.grafts_accepted ?? 0)
+          const hatched = dc ? dc.queens_hatched : (batch.queens_hatched ?? 0)
+          const mated = dc ? dc.queens_mated : (batch.queens_mated ?? 0)
 
           // Graft-time metrics → graft month
           const graftMd = getMonth(graftMonth)
