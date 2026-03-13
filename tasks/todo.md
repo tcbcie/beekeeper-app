@@ -1,41 +1,24 @@
-# Dashboard Follow-up: Hamburger Fix + Apiary Task Count
+# Drag-and-Drop Quick Action onto Apiary Cards
 
 **Date:** 2026-03-13
 
 ## Tasks
 
-- [x] **1. Remove dead hamburger button from Navbar**
-  - Removed `<IconButton>` hamburger, `Menu` import, and `onMenuClick` prop from Navbar
-  - Updated layout.tsx to stop passing `onMenuClick`
-  - Root cause: `.fj-icon-btn { display: inline-flex }` overrode Tailwind `hidden`
+- [x] **1. Make the "New Inspection" chip draggable**
+  - Added `draggable` + `onDragStart`/`onDragEnd` with `application/x-action` data transfer
+  - Opacity dims during drag, `cursor-grab` hint
+  - Small `GripVertical` icon added as visual affordance
 
-- [x] **2. Add `activeTaskCount` to apiary cards**
-  - Added `activeTaskCount: number` to `DashboardApiary` type
-  - Fetches active tasks per apiary in `useDashboardStats` (single query, counted in JS)
-  - Renders teal task button in stats row (aligned right) when count > 0
-  - Button shows icon + count + "task(s)" label
-  - Click navigates to `/dashboard/tasks?apiary={id}` with stopPropagation (inside Link card)
-
-- [x] **3. Add `?apiary=` query param to tasks page**
-  - New useEffect reads `apiary` search param and sets `filterApiary`
-  - Works alongside existing `?task=` and `?hive=` params
-
-## Audit Findings (Round 2)
-
-| # | Severity | Finding | Fix |
-|---|----------|---------|-----|
-| 1 | HIGH | `window.location.href` in ApiaryWeatherRow bypasses Next.js router — full page reload, destroys React state, bad on slow field connections | Replaced with `useRouter` + `router.push()` |
-| 2 | HIGH | `?apiary=` useEffect re-fires on every `searchParams` change, overriding user's manual filter | Added `appliedApiaryFilterRef` dedup guard — applies once per unique apiary ID |
-| 3 | MEDIUM | Task count query ran sequentially after initial `Promise.all` — unnecessary extra round-trip | Moved into the existing `Promise.all` (now 7 parallel queries) |
+- [x] **2. Make entire ApiaryWeatherRow card a drop target**
+  - `onDragOver`/`onDragEnter`/`onDragLeave`/`onDrop` on the outer `<Link>`
+  - `dragCounterRef` prevents flicker from child enter/leave events
+  - Amber highlight ring + border on dragover
+  - On drop: navigates to `/dashboard/records?create={type}&apiary={id}`
 
 ## Review
 
 ### Files Changed
 | File | Change |
 |------|--------|
-| `src/components/Navbar.tsx` | Removed hamburger button, Menu import, onMenuClick prop |
-| `src/app/dashboard/layout.tsx` | Removed onMenuClick prop from Navbar |
-| `src/types/dashboard.ts` | Added `activeTaskCount` to DashboardApiary |
-| `src/hooks/useDashboardStats.ts` | Fetch active tasks per apiary; parallelised task count query |
-| `src/components/dashboard/ApiaryWeatherRow.tsx` | Task count button in stats row; `router.push` instead of `window.location.href` |
-| `src/app/dashboard/tasks/page.tsx` | Read `?apiary=` query param with dedup ref guard |
+| `src/app/dashboard/page.tsx` | "New Inspection" chip now draggable with grip icon |
+| `src/components/dashboard/ApiaryWeatherRow.tsx` | Card accepts drop, highlights on dragover, navigates on drop |
