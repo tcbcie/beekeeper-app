@@ -1002,20 +1002,29 @@ export default function TasksEventsPage() {
                     }}
                   >
                     <option value="">None</option>
-                    {hives.filter(h => !h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).length > 0 && (
-                      <optgroup label="My Hives">
-                        {hives.filter(h => !h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).map(hive => (
-                          <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {hives.filter(h => h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).length > 0 && (
-                      <optgroup label="Shared Hives">
-                        {hives.filter(h => h.is_shared && (!formData.apiary_id || h.apiary_id === formData.apiary_id)).map(hive => (
-                          <option key={hive.id} value={hive.id}>Hive {hive.hive_number} (Shared)</option>
-                        ))}
-                      </optgroup>
-                    )}
+                    {(() => {
+                      const matchesApiary = (h: Hive) => !formData.apiary_id || h.apiary_id === formData.apiary_id
+                      const myHives = hives.filter(h => !h.is_shared && matchesApiary(h))
+                      const sharedHives = hives.filter(h => h.is_shared && matchesApiary(h))
+                      return (
+                        <>
+                          {myHives.length > 0 && (
+                            <optgroup label="My Hives">
+                              {myHives.map(hive => (
+                                <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {sharedHives.length > 0 && (
+                            <optgroup label="Shared Hives">
+                              {sharedHives.map(hive => (
+                                <option key={hive.id} value={hive.id}>Hive {hive.hive_number} (Shared)</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </>
+                      )
+                    })()}
                   </SelectField>
                 </div>
 

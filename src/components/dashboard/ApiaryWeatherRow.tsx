@@ -344,7 +344,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
         </div>
       </div>
 
-      {weather && (
+      {weather && !activeAction && (
         <div
           role="button"
           tabIndex={0}
@@ -408,7 +408,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
             <span className="text-base font-medium text-text-tertiary">&mdash;</span>
           )}
         </div>
-        {apiary.activeTaskCount > 0 && (
+        {apiary.activeTaskCount > 0 && !activeAction && (
           <div
             role="button"
             tabIndex={0}
