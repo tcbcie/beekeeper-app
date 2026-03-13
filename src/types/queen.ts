@@ -13,6 +13,7 @@ export interface Queen {
   status: string
   performance_notes: string
   mated_at_eircode: string
+  mated_date?: string | null
   distributed_by_name?: string | null
   distributed_batch_name?: string | null
   distributed_mother_queen?: string | null
@@ -55,6 +56,7 @@ export interface QueenFormData {
   status: string
   performance_notes: string
   mated_at_eircode: string
+  mated_date: string
   mother_id: string
   father_id: string
   batch_id: string

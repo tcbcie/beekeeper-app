@@ -21,6 +21,7 @@ interface HiveListApiary {
 interface HiveListQueen {
  id: string
  queen_number: string
+ status?: string
  assigned_hive_id?: string | null
 }
 
@@ -475,8 +476,8 @@ export default function HivesPage() {
  // Fetch my queens + queens from users who share apiaries with me
  let queensQuery = supabase
  .from('queens')
- .select('id, queen_number')
- .eq('status', 'active')
+ .select('id, queen_number, status')
+ .in('status', ['active', 'cell'])
 
  if (sharedUserIds.length > 0) {
  queensQuery = queensQuery.or(`user_id.eq.${currentUserId},user_id.in.(${sharedUserIds.join(',')})`)
@@ -1247,7 +1248,7 @@ export default function HivesPage() {
  return editingHive && q.assigned_hive_id === editingHive.id
  })
  .map((q) => (
- <option key={q.id} value={q.id}>{q.queen_number}</option>
+ <option key={q.id} value={q.id}>{q.queen_number}{q.status === 'cell' ? ' (Cell)' : ''}</option>
  ))
  }
  </select>
