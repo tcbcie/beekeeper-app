@@ -113,7 +113,8 @@ function deriveBirthDate(batch: BatchDetails): string | null {
 async function createQueenForRecipient(
   recipientUserId: string,
   graftId: string,
-  batch: BatchDetails
+  batch: BatchDetails,
+  distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen'
 ): Promise<void> {
   try {
     const { data: graft, error: graftError } = await supabase
@@ -151,7 +152,7 @@ async function createQueenForRecipient(
       p_birth_date: birthDate,
       p_marking_color: markingColor,
       p_source: 'Bred',
-      p_status: 'active',
+      p_status: distributionType === 'queen_cell' ? 'cell' : 'active',
       p_mated_at_eircode: eircode,
       p_batch_id: batch.batchId ?? null,
       p_distributed_by_name: batch.distributedByName ?? null,
@@ -170,7 +171,8 @@ async function createQueenForRecipient(
 async function createQueensForRecipient(
   recipientUserId: string,
   batchId: string,
-  graftIds: string[]
+  graftIds: string[],
+  distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen'
 ): Promise<void> {
   try {
     // Resolve auth user ID first so a failure doesn't abort the entire batch fetch
@@ -228,7 +230,7 @@ async function createQueensForRecipient(
       motherQueenSubspecies: motherQueen?.subspecies ?? null,
     }
     await Promise.allSettled(
-      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails))
+      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType))
     )
   } catch (err) {
     console.error('Non-blocking: failed to create queens for recipient:', err)
@@ -347,7 +349,7 @@ export function useGraftDistributions() {
 
       // Create queen record for recipient (non-blocking)
       if (data.recipient_user_id) {
-        createQueensForRecipient(data.recipient_user_id, data.batch_id, [data.graft_id])
+        createQueensForRecipient(data.recipient_user_id, data.batch_id, [data.graft_id], data.distribution_type)
       }
 
       return true
@@ -412,7 +414,7 @@ export function useGraftDistributions() {
 
       // Create queen records for recipient (non-blocking, single batch fetch)
       if (data.recipient_user_id) {
-        createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds)
+        createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds, data.distribution_type)
       }
 
       return true

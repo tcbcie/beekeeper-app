@@ -26,7 +26,7 @@ export default function QueensPage() {
  const [searchTerm, setSearchTerm] = useState('')
  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
- const [statusFilter, setStatusFilter] = useState<'active' | 'retired' | 'dead' | 'all'>('active')
+ const [statusFilter, setStatusFilter] = useState<'active' | 'cell' | 'retired' | 'dead' | 'all'>('active')
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
  const [isTeamMember, setIsTeamMember] = useState(false)
@@ -46,6 +46,7 @@ export default function QueensPage() {
  status: 'active',
  performance_notes: '',
  mated_at_eircode: '',
+ mated_date: '',
  mother_id: '',
  father_id: '',
  batch_id: '',
@@ -327,6 +328,7 @@ export default function QueensPage() {
  mother_id: formData.mother_id || null,
  father_id: formData.father_id || null,
  batch_id: formData.batch_id || null,
+ mated_date: formData.mated_date || null,
  }
 
  try {
@@ -339,6 +341,7 @@ export default function QueensPage() {
  queen_clipped: dataToSubmit.queen_clipped,
  status: dataToSubmit.status,
  performance_notes: dataToSubmit.performance_notes,
+ mated_date: dataToSubmit.mated_date,
  }
  : dataToSubmit
 
@@ -376,6 +379,7 @@ export default function QueensPage() {
  status: queen.status,
  performance_notes: queen.performance_notes,
  mated_at_eircode: queen.mated_at_eircode || '',
+ mated_date: queen.mated_date || '',
  mother_id: queen.mother_id || '',
  father_id: queen.father_id || '',
  batch_id: queen.batch_id || '',
@@ -449,6 +453,7 @@ export default function QueensPage() {
  status: 'active',
  performance_notes: '',
  mated_at_eircode: '',
+ mated_date: '',
  mother_id: '',
  father_id: '',
  batch_id: '',
@@ -543,6 +548,7 @@ export default function QueensPage() {
 
  // Summary stats (computed from ALL queens so user can see what's hidden by filters)
  const activeQueens = queens.filter(q => q.status === 'active').length
+ const cellQueens = queens.filter(q => q.status === 'cell').length
  const retiredQueens = queens.filter(q => q.status === 'retired').length
  const deadQueens = queens.filter(q => q.status === 'dead').length
  const avgAgeMonths = (() => {
@@ -780,6 +786,16 @@ export default function QueensPage() {
  </div>
 
  <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Mated Date</label>
+ <input
+ type="date"
+ value={formData.mated_date}
+ onChange={(e) => setFormData({ ...formData, mated_date: e.target.value })}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ />
+ </div>
+
+ <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Status</label>
  <select
  value={formData.status}
@@ -787,6 +803,7 @@ export default function QueensPage() {
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="active">Active</option>
+ <option value="cell">Cell</option>
  <option value="retired">Retired</option>
  <option value="dead">Dead</option>
  </select>
@@ -850,7 +867,7 @@ export default function QueensPage() {
  {/* Summary stats */}
  {queens.length > 0 && (
  <p className="text-sm text-text-secondary">
- {activeQueens} Active | {retiredQueens} Retired | {deadQueens} Dead | Avg Age: {avgAgeMonths} months
+ {activeQueens} Active{cellQueens > 0 ? ` | ${cellQueens} Cell${cellQueens !== 1 ? 's' : ''}` : ''} | {retiredQueens} Retired | {deadQueens} Dead | Avg Age: {avgAgeMonths} months
  </p>
  )}
 
@@ -882,10 +899,11 @@ export default function QueensPage() {
  )}
  <select
  value={statusFilter}
- onChange={(e) => setStatusFilter(e.target.value as 'active' | 'retired' | 'dead' | 'all')}
+ onChange={(e) => setStatusFilter(e.target.value as 'active' | 'cell' | 'retired' | 'dead' | 'all')}
  className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
  >
  <option value="active">Active</option>
+ <option value="cell">Cells</option>
  <option value="retired">Retired</option>
  <option value="dead">Dead</option>
  <option value="all">All Statuses</option>
@@ -1023,10 +1041,12 @@ export default function QueensPage() {
  className={`px-2 py-1 rounded text-xs font-medium ${
  queen.status === 'active'
  ? 'bg-green-100 dark:bg-green-900/30 text-foreground dark:text-green-300 border border-green-300 dark:border-green-800'
+ : queen.status === 'cell'
+ ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
  : 'bg-surface-secondary text-text-secondary border border-border'
  }`}
  >
- {queen.status}
+ {queen.status === 'cell' ? 'Cell' : queen.status}
  </span>
  </td>
  </tr>

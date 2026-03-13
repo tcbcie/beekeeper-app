@@ -9,13 +9,21 @@ import QueenLineageTree from '@/components/QueenLineageTree'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useQueenDetail } from '@/hooks'
+import { supabase } from '@/lib/supabase'
+import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 
 export default function QueenDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast()
   const queenId = params.id as string
   const [lineageExpanded, setLineageExpanded] = useState(true)
+  const [showMatedForm, setShowMatedForm] = useState(false)
+  const [matedDate, setMatedDate] = useState('')
+  const [matedEircode, setMatedEircode] = useState('')
+  const [cellActionLoading, setCellActionLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const {
     queen,
@@ -34,6 +42,7 @@ export default function QueenDetailPage() {
         router.push('/login')
         return
       }
+      setCurrentUserId(id)
       fetchQueenData(id)
     }
     init()
@@ -50,6 +59,71 @@ export default function QueenDetailPage() {
         </Button>
       </div>
     )
+  }
+
+  const handleMarkMated = async () => {
+    if (!currentUserId) return
+    if (!matedDate) {
+      toast.error('Please enter a mated date')
+      return
+    }
+    setCellActionLoading(true)
+    try {
+      const { error, count } = await supabase
+        .from('queens')
+        .update(
+          {
+            status: 'active',
+            mated_date: matedDate,
+            mated_at_eircode: matedEircode || queen.mated_at_eircode || null,
+          },
+          { count: 'exact' }
+        )
+        .eq('id', queen.id)
+        .eq('user_id', currentUserId)
+        .eq('status', 'cell')
+      if (error) throw error
+      if (count === 0) {
+        toast.error('Queen was already updated — please refresh')
+        fetchQueenData(currentUserId)
+        return
+      }
+      toast.success('Queen marked as mated')
+      setShowMatedForm(false)
+      setMatedDate('')
+      setMatedEircode('')
+      fetchQueenData(currentUserId)
+    } catch {
+      toast.error('Failed to update queen status')
+    } finally {
+      setCellActionLoading(false)
+    }
+  }
+
+  const handleMarkFailed = async () => {
+    if (!currentUserId) return
+    if (!confirm('Mark this cell as failed? This will set the status to dead.')) return
+    setCellActionLoading(true)
+    try {
+      const { error, count } = await supabase
+        .from('queens')
+        .update({ status: 'dead' }, { count: 'exact' })
+        .eq('id', queen.id)
+        .eq('user_id', currentUserId)
+        .eq('status', 'cell')
+      if (error) throw error
+      if (count === 0) {
+        toast.error('Queen was already updated — please refresh')
+        fetchQueenData(currentUserId)
+        return
+      }
+      toast.success('Cell marked as failed')
+      fetchQueenData(currentUserId)
+    } catch {
+      toast.error('Failed to update queen status')
+    } finally {
+      setCellActionLoading(false)
+    }
   }
 
   const markingColor = getQueenColorFromYear(queen.birth_date)
@@ -89,9 +163,11 @@ export default function QueenDetailPage() {
             <span className={`px-2 py-0.5 text-xs font-medium rounded border ${
               queen.status === 'active'
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
+                : queen.status === 'cell'
+                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
                 : 'bg-surface-secondary text-text-secondary border-border'
             }`}>
-              {queen.status}
+              {queen.status === 'cell' ? 'Cell' : queen.status}
             </span>
           </div>
           <p className="text-sm text-text-secondary mt-1">Age: {age}</p>
@@ -106,6 +182,75 @@ export default function QueenDetailPage() {
           </Link>
         )}
       </div>
+
+      {/* Cell Banner */}
+      {queen.status === 'cell' && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              This is a queen cell — not yet emerged or mated
+            </p>
+          </div>
+          {isOwner && !showMatedForm && (
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowMatedForm(true)}
+                disabled={cellActionLoading}
+                className="px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 text-sm min-h-[44px]"
+              >
+                Mark as Mated
+              </Button>
+              <Button
+                onClick={handleMarkFailed}
+                disabled={cellActionLoading}
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 text-sm min-h-[44px]"
+              >
+                Mark as Failed
+              </Button>
+            </div>
+          )}
+          {showMatedForm && (
+            <div className="mt-3 space-y-3 bg-white dark:bg-surface-elevated rounded-lg p-4 border border-amber-200 dark:border-amber-800">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Mated Date *</label>
+                <input
+                  type="date"
+                  value={matedDate}
+                  onChange={(e) => setMatedDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Mated at (Eircode)</label>
+                <input
+                  type="text"
+                  value={matedEircode}
+                  onChange={(e) => setMatedEircode(e.target.value.toUpperCase())}
+                  placeholder="e.g., H91 E6K2"
+                  maxLength={8}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleMarkMated}
+                  disabled={cellActionLoading}
+                  className="px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 text-sm min-h-[44px]"
+                >
+                  {cellActionLoading ? 'Saving...' : 'Confirm Mated'}
+                </Button>
+                <Button
+                  onClick={() => setShowMatedForm(false)}
+                  className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated text-sm min-h-[44px]"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Age Warning */}
       {isOld && queen.status === 'active' && (
@@ -127,6 +272,9 @@ export default function QueenDetailPage() {
               <p><span className="text-text-tertiary">Source:</span> <span className="text-text-primary">{queen.source || 'N/A'}</span></p>
               <p><span className="text-text-tertiary">Born:</span> <span className="text-text-primary">{queen.birth_date ? new Date(queen.birth_date).toLocaleDateString('en-IE') : 'N/A'}</span></p>
               <p><span className="text-text-tertiary">Clipped:</span> <span className="text-text-primary">{queen.queen_clipped ? 'Yes' : 'No'}</span></p>
+              {queen.mated_date && (
+                <p><span className="text-text-tertiary">Mated:</span> <span className="text-text-primary">{new Date(queen.mated_date).toLocaleDateString('en-IE')}</span></p>
+              )}
               {queen.mated_at_eircode && (
                 <p><span className="text-text-tertiary">Mated at:</span> <span className="text-text-primary">{queen.mated_at_eircode}</span></p>
               )}
@@ -240,9 +388,11 @@ export default function QueenDetailPage() {
                 <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                   child.status === 'active'
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                    : child.status === 'cell'
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
                     : 'bg-surface-secondary text-text-secondary'
                 }`}>
-                  {child.status}
+                  {child.status === 'cell' ? 'Cell' : child.status}
                 </span>
               </Link>
             ))}
