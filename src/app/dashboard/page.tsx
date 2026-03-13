@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import AppIcon from '@/components/icons/AppIcon'
@@ -83,16 +83,19 @@ export default function DashboardPage() {
 
  // Mobile tap-to-select: tap a quick action, then tap an apiary card to apply
  const [activeAction, setActiveAction] = useState<{ type: string; label: string } | null>(null)
+ const activeActionRef = useRef(activeAction)
+ activeActionRef.current = activeAction
 
  const handleApiaryActionDrop = useCallback((apiaryId: string) => {
-   if (!activeAction || !VALID_DROP_ACTIONS.includes(activeAction.type)) return
+   const action = activeActionRef.current
+   if (!action || !VALID_DROP_ACTIONS.includes(action.type)) return
    setActiveAction(null)
-   if (activeAction.type === 'task') {
+   if (action.type === 'task') {
      router.push(`/dashboard/tasks?create=true&apiary=${apiaryId}`)
    } else {
-     router.push(`/dashboard/records?create=${activeAction.type}&apiary=${apiaryId}`)
+     router.push(`/dashboard/records?create=${action.type}&apiary=${apiaryId}`)
    }
- }, [activeAction, router])
+ }, [router])
 
  useEffect(() => {
  const initUser = async () => {
@@ -341,8 +344,8 @@ export default function DashboardPage() {
    }}
    onDragEnd={(e) => { e.currentTarget.style.opacity = '' }}
    onClick={(e) => {
-     // On touch devices, toggle selection mode instead of navigating
-     if ('ontouchstart' in window) {
+     // On touch-only devices (no fine pointer), toggle selection mode instead of navigating
+     if (window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches) {
        e.preventDefault()
        setActiveAction(isActive ? null : { type: action.dragType, label: action.label })
      }
