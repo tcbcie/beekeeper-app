@@ -1,5 +1,5 @@
 'use client'
-import { LogOut, Menu, AlertCircle } from 'lucide-react'
+import { LogOut, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
@@ -7,14 +7,11 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import Button from '@/components/ui/Button'
-import IconButton from '@/components/ui/IconButton'
-
 interface NavbarProps {
   currentUser: User | null
-  onMenuClick?: () => void
 }
 
-export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
+export default function Navbar({ currentUser }: NavbarProps) {
   const router = useRouter()
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatusResponse | null>(null)
   const [hasProfileName, setHasProfileName] = useState<boolean>(true)
@@ -96,19 +93,6 @@ export default function Navbar({ currentUser, onMenuClick }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            {/* Hamburger menu for mobile */}
-            <IconButton
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onMenuClick?.()
-              }}
-              className="hidden touch-manipulation min-h-[48px] min-w-[48px] items-center justify-center"
-              aria-label="Open menu"
-              type="button"
-            >
-              <Menu size={24} />
-            </IconButton>
             <h1 className="text-xl sm:text-2xl font-bold text-forest-600 dark:text-forest-400 whitespace-nowrap flex items-center gap-2">
               <Image src="/logo.png" alt="HiveCraic" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
               HiveCraic
