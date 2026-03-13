@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import AppIcon from '@/components/icons/AppIcon'
@@ -54,6 +54,8 @@ function formatRecentActivityDate(dateString: string): string {
   return formatLocalDate(dateString)
 }
 
+const VALID_DROP_ACTIONS = ['inspection', 'feeding', 'varroa_check', 'varroa_treatment', 'harvest']
+
 export default function DashboardPage() {
  const [userId, setUserId] = useState<string | null>(null)
  const [userRole, setUserRole] = useState<UserRole>('User')
@@ -78,6 +80,75 @@ export default function DashboardPage() {
  const { openTicketsCount, userTicketStatus, fetchOpenTicketsCount, fetchUserTicketStatus } = useTicketStatus()
  const { ownedRearingGroups, memberRearingGroups, loadingRearingGroups, fetchRearingGroups } = useRearingGroups()
  const devicePosition = useGeolocation()
+
+ // Touch drag-and-drop for mobile (HTML5 DnD doesn't work on touch)
+ const touchDragRef = useRef<{
+   type: string
+   ghost: HTMLElement
+   lastTarget: Element | null
+ } | null>(null)
+
+ const handleTouchStart = useCallback((e: React.TouchEvent, dragType: string, label: string) => {
+   e.preventDefault()
+   const touch = e.touches[0]
+   const ghost = document.createElement('div')
+   ghost.textContent = label
+   ghost.style.cssText = `
+     position:fixed;z-index:9999;pointer-events:none;
+     padding:6px 14px;border-radius:8px;font-size:14px;font-weight:600;
+     background:#f59e0b;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.25);
+     transform:translate(-50%,-50%);white-space:nowrap;
+   `
+   ghost.style.left = `${touch.clientX}px`
+   ghost.style.top = `${touch.clientY}px`
+   document.body.appendChild(ghost)
+   touchDragRef.current = { type: dragType, ghost, lastTarget: null }
+ }, [])
+
+ const handleTouchMove = useCallback((e: React.TouchEvent) => {
+   if (!touchDragRef.current) return
+   e.preventDefault()
+   const touch = e.touches[0]
+   const { ghost, lastTarget } = touchDragRef.current
+   ghost.style.left = `${touch.clientX}px`
+   ghost.style.top = `${touch.clientY}px`
+
+   // Find apiary card under finger
+   ghost.style.display = 'none'
+   const el = document.elementFromPoint(touch.clientX, touch.clientY)
+   ghost.style.display = ''
+   const card = el?.closest('[data-apiary-id]') ?? null
+
+   if (card !== lastTarget) {
+     if (lastTarget) (lastTarget as HTMLElement).dataset.dragover = ''
+     if (card) (card as HTMLElement).dataset.dragover = 'true'
+     touchDragRef.current.lastTarget = card
+   }
+ }, [])
+
+ const cleanupTouchDrag = useCallback((navigate: boolean) => {
+   if (!touchDragRef.current) return
+   const { type, ghost, lastTarget } = touchDragRef.current
+   ghost.remove()
+   if (lastTarget) {
+     (lastTarget as HTMLElement).dataset.dragover = ''
+     if (navigate && VALID_DROP_ACTIONS.includes(type)) {
+       const apiaryId = (lastTarget as HTMLElement).dataset.apiaryId
+       if (apiaryId) {
+         router.push(`/dashboard/records?create=${type}&apiary=${apiaryId}`)
+       }
+     }
+   }
+   touchDragRef.current = null
+ }, [router])
+
+ const handleTouchEnd = useCallback(() => { cleanupTouchDrag(true) }, [cleanupTouchDrag])
+ const handleTouchCancel = useCallback(() => { cleanupTouchDrag(false) }, [cleanupTouchDrag])
+
+ // Safety net: remove ghost if component unmounts mid-drag
+ useEffect(() => {
+   return () => { cleanupTouchDrag(false) }
+ }, [cleanupTouchDrag])
 
  useEffect(() => {
  const initUser = async () => {
@@ -295,32 +366,36 @@ export default function DashboardPage() {
  </div>
  )}
 
- {/* Quick Actions (above the fold for field use) */}
+ {/* Quick Actions (above the fold for field use) — draggable items can be dropped onto apiary cards */}
  <Panel padding="sm">
  <div className="flex flex-wrap gap-2">
- {[
+ {([
  { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} />, dragType: 'inspection' },
  { label: 'Log Feeding', href: '/dashboard/records?create=feeding', icon: <Wheat size={14} /> },
  { label: 'Varroa Check', href: '/dashboard/records?create=varroa_check', icon: <Bug size={14} /> },
  { label: 'Add Treatment', href: '/dashboard/records?create=varroa_treatment', icon: <Syringe size={14} /> },
  { label: 'Log Harvest', href: '/dashboard/records?create=harvest', icon: <Droplet size={14} /> },
  { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={14} /> },
- ].map((action) => (
+ ] as { label: string; href: string; icon: React.ReactNode; dragType?: string }[]).map((action) => (
  <Link
  key={action.label}
  href={action.href}
- draggable={'dragType' in action}
+ draggable={!!action.dragType}
  onDragStart={(e) => {
-   if ('dragType' in action && action.dragType) {
+   if (action.dragType) {
      e.dataTransfer.setData('application/x-action', action.dragType)
      e.dataTransfer.effectAllowed = 'link'
      e.currentTarget.style.opacity = '0.5'
    }
  }}
  onDragEnd={(e) => { e.currentTarget.style.opacity = '' }}
- className={`fj-chip fj-chip-sm fj-chip-neutral ${'dragType' in action ? 'cursor-grab active:cursor-grabbing' : ''}`}
+ onTouchStart={action.dragType ? (e) => handleTouchStart(e, action.dragType!, action.label) : undefined}
+ onTouchMove={action.dragType ? handleTouchMove : undefined}
+ onTouchEnd={action.dragType ? handleTouchEnd : undefined}
+ onTouchCancel={action.dragType ? handleTouchCancel : undefined}
+ className={`fj-chip fj-chip-sm fj-chip-neutral ${action.dragType ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
  >
- {'dragType' in action && <GripVertical size={12} className="text-text-tertiary -ml-0.5" />}
+ {action.dragType && <GripVertical size={12} className="text-text-tertiary -ml-0.5" />}
  {action.icon}
  {action.label}
  </Link>

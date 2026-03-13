@@ -105,7 +105,6 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
   const [scaleLoading, setScaleLoading] = useState(false)
   const [shouldLoadData, setShouldLoadData] = useState(false)
   const [forecastExpanded, setForecastExpanded] = useState(false)
-  const [dragOver, setDragOver] = useState(false)
   const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
   const mountedRef = useRef(true)
@@ -277,11 +276,8 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
     <Link
       ref={cardRef}
       href={`/dashboard/apiaries/${apiary.id}`}
-      className={`group block rounded-lg overflow-hidden border-2 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all ${
-        dragOver
-          ? 'border-amber-400 dark:border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800 shadow-lg'
-          : 'border-border hover:border-forest-500 dark:hover:border-forest-400'
-      }`}
+      data-apiary-id={apiary.id}
+      className="group block rounded-lg overflow-hidden border-2 border-border hover:border-forest-500 dark:hover:border-forest-400 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all data-[dragover=true]:border-amber-400 data-[dragover=true]:dark:border-amber-500 data-[dragover=true]:ring-2 data-[dragover=true]:ring-amber-200 data-[dragover=true]:dark:ring-amber-800 data-[dragover=true]:shadow-lg"
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes('application/x-action')) {
           e.preventDefault()
@@ -292,23 +288,24 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
         if (e.dataTransfer.types.includes('application/x-action')) {
           e.preventDefault()
           dragCounterRef.current++
-          setDragOver(true)
+          if (cardRef.current) cardRef.current.dataset.dragover = 'true'
         }
       }}
       onDragLeave={() => {
         dragCounterRef.current--
         if (dragCounterRef.current <= 0) {
           dragCounterRef.current = 0
-          setDragOver(false)
+          if (cardRef.current) cardRef.current.dataset.dragover = ''
         }
       }}
       onDrop={(e) => {
         e.preventDefault()
         e.stopPropagation()
         dragCounterRef.current = 0
-        setDragOver(false)
+        if (cardRef.current) cardRef.current.dataset.dragover = ''
+        const VALID_ACTIONS = ['inspection', 'feeding', 'varroa_check', 'varroa_treatment', 'harvest']
         const actionType = e.dataTransfer.getData('application/x-action')
-        if (actionType) {
+        if (actionType && VALID_ACTIONS.includes(actionType)) {
           router.push(`/dashboard/records?create=${actionType}&apiary=${apiary.id}`)
         }
       }}

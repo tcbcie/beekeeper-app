@@ -18,10 +18,18 @@ Users can drag the "New Inspection" quick action chip onto any apiary card on th
 
 ## Technical Details
 
-- Uses the native HTML5 Drag and Drop API — no external libraries.
+### Desktop (HTML5 Drag and Drop API)
+- `draggable` + `onDragStart`/`onDragEnd` on the chip, `onDragOver`/`onDrop` on cards.
 - `dragCounterRef` prevents highlight flicker caused by child element enter/leave events.
 - The chip dims to 50% opacity during drag for visual feedback.
-- Drop target is the full `<Link>` card — large touch target for mobile-first use.
+
+### Mobile (Touch Events)
+- HTML5 DnD doesn't work on mobile — separate touch event handlers added.
+- `onTouchStart` creates a floating ghost element (`position:fixed`) that follows the finger.
+- `onTouchMove` moves the ghost and uses `document.elementFromPoint()` to find the apiary card under the finger. Temporarily hides the ghost to avoid self-detection.
+- `onTouchEnd` checks if the finger is over an apiary card (via `data-apiary-id` attribute) and navigates.
+- Cards use Tailwind `data-[dragover=true]:` variants for touch highlight styling (set via `dataset.dragover`).
+- `select-none` on the chip prevents text selection and context menu on long press.
 
 ## Files
 
