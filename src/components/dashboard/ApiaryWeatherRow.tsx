@@ -105,6 +105,8 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
   const [scaleLoading, setScaleLoading] = useState(false)
   const [shouldLoadData, setShouldLoadData] = useState(false)
   const [forecastExpanded, setForecastExpanded] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
   const mountedRef = useRef(true)
 
@@ -275,7 +277,41 @@ export default function ApiaryWeatherRow({ apiary }: ApiaryWeatherRowProps) {
     <Link
       ref={cardRef}
       href={`/dashboard/apiaries/${apiary.id}`}
-      className="group block rounded-lg overflow-hidden border border-border hover:border-forest-500 dark:hover:border-forest-400 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all"
+      className={`group block rounded-lg overflow-hidden border-2 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all ${
+        dragOver
+          ? 'border-amber-400 dark:border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800 shadow-lg'
+          : 'border-border hover:border-forest-500 dark:hover:border-forest-400'
+      }`}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('application/x-action')) {
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'link'
+        }
+      }}
+      onDragEnter={(e) => {
+        if (e.dataTransfer.types.includes('application/x-action')) {
+          e.preventDefault()
+          dragCounterRef.current++
+          setDragOver(true)
+        }
+      }}
+      onDragLeave={() => {
+        dragCounterRef.current--
+        if (dragCounterRef.current <= 0) {
+          dragCounterRef.current = 0
+          setDragOver(false)
+        }
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        dragCounterRef.current = 0
+        setDragOver(false)
+        const actionType = e.dataTransfer.getData('application/x-action')
+        if (actionType) {
+          router.push(`/dashboard/records?create=${actionType}&apiary=${apiary.id}`)
+        }
+      }}
     >
       <div className="px-4 py-2.5 bg-gradient-to-r from-forest-600 to-forest-700 dark:from-forest-700 dark:to-forest-800 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">

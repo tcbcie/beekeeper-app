@@ -9,7 +9,7 @@ import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
 import UpcomingEvents from '@/components/UpcomingEvents'
 import Link from 'next/link'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg, ListChecks } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg, ListChecks, GripVertical } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useGeolocation, haversineKm } from '@/hooks/useGeolocation'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
@@ -299,7 +299,7 @@ export default function DashboardPage() {
  <Panel padding="sm">
  <div className="flex flex-wrap gap-2">
  {[
- { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} /> },
+ { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} />, dragType: 'inspection' },
  { label: 'Log Feeding', href: '/dashboard/records?create=feeding', icon: <Wheat size={14} /> },
  { label: 'Varroa Check', href: '/dashboard/records?create=varroa_check', icon: <Bug size={14} /> },
  { label: 'Add Treatment', href: '/dashboard/records?create=varroa_treatment', icon: <Syringe size={14} /> },
@@ -309,8 +309,18 @@ export default function DashboardPage() {
  <Link
  key={action.label}
  href={action.href}
- className="fj-chip fj-chip-sm fj-chip-neutral"
+ draggable={'dragType' in action}
+ onDragStart={(e) => {
+   if ('dragType' in action && action.dragType) {
+     e.dataTransfer.setData('application/x-action', action.dragType)
+     e.dataTransfer.effectAllowed = 'link'
+     e.currentTarget.style.opacity = '0.5'
+   }
+ }}
+ onDragEnd={(e) => { e.currentTarget.style.opacity = '' }}
+ className={`fj-chip fj-chip-sm fj-chip-neutral ${'dragType' in action ? 'cursor-grab active:cursor-grabbing' : ''}`}
  >
+ {'dragType' in action && <GripVertical size={12} className="text-text-tertiary -ml-0.5" />}
  {action.icon}
  {action.label}
  </Link>
