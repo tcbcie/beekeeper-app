@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase'
 export interface RearingGroupMemberReport {
   user_id: string
   member_name: string
-  grafts_accepted: number
   queens_hatched: number
   queens_mated: number
   queen_cells_distributed: number
@@ -19,7 +18,6 @@ export interface RearingGroupReport {
   year: number
   members: RearingGroupMemberReport[]
   totals: {
-    grafts_accepted: number
     queens_hatched: number
     queens_mated: number
     queen_cells_distributed: number
@@ -52,7 +50,7 @@ export function useRearingGroupReport() {
           month,
           year,
           members: [],
-          totals: { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0, batch_count: 0, cell_count: 0 },
+          totals: { queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0, batch_count: 0, cell_count: 0 },
         })
         setLoadingReport(false)
         return
@@ -83,7 +81,7 @@ export function useRearingGroupReport() {
       const widerStartDate = `${month === 1 ? year - 1 : year}-${String(month === 1 ? 12 : month - 1).padStart(2, '0')}-01`
       const { data: batches, error: batchesError } = await supabase
         .from('rearing_batches')
-        .select('id, user_id, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, mating_apiary_id')
+        .select('id, user_id, graft_date, emergence_date, cell_count, queens_hatched, queens_mated, mating_apiary_id')
         .in('user_id', userIds)
         .gte('graft_date', widerStartDate)
         .lt('graft_date', endDate)
@@ -92,7 +90,7 @@ export function useRearingGroupReport() {
 
       // Fetch graft statuses + distributions to derive counters when batch-level values are NULL
       const batchIds = (batches || []).map((b) => b.id).filter(Boolean)
-      const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
+      const derivedCounts = new Map<string, { queens_hatched: number; queens_mated: number }>()
       if (batchIds.length > 0) {
         const [graftsRes, distsRes] = await Promise.all([
           supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
@@ -112,11 +110,9 @@ export function useRearingGroupReport() {
         if (graftsRes.data) {
           for (const g of graftsRes.data) {
             if (!derivedCounts.has(g.batch_id)) {
-              derivedCounts.set(g.batch_id, { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
+              derivedCounts.set(g.batch_id, { queens_hatched: 0, queens_mated: 0 })
             }
             const dc = derivedCounts.get(g.batch_id)!
-            if (!['grafted', 'failed'].includes(g.status)) dc.grafts_accepted++
-
             if (g.status === 'sold') {
               const distType = graftDistType.get(g.id)
               if (distType === 'mated_queen') { dc.queens_hatched++; dc.queens_mated++ }
@@ -163,7 +159,6 @@ export function useRearingGroupReport() {
         memberAgg.set(uid, {
           user_id: uid,
           member_name: profilesMap.get(uid) || 'Unknown',
-          grafts_accepted: 0,
           queens_hatched: 0,
           queens_mated: 0,
           queen_cells_distributed: 0,
@@ -178,7 +173,7 @@ export function useRearingGroupReport() {
 
         const dc = derivedCounts.get(batch.id)
 
-        // Check if batch was grafted in the selected month (for batch/cell/accepted counts)
+        // Check if batch was grafted in the selected month (for batch/cell counts)
         const graftMonth = parseInt(batch.graft_date.split('-')[1], 10)
         const graftYear = parseInt(batch.graft_date.split('-')[0], 10)
         const isGraftedInMonth = graftMonth === month && graftYear === year
@@ -190,14 +185,15 @@ export function useRearingGroupReport() {
         // Graft-time metrics: only count if grafted in selected month
         if (isGraftedInMonth) {
           entry.cell_count += batch.cell_count || 0
-          entry.grafts_accepted += batch.grafts_accepted ?? dc?.grafts_accepted ?? 0
           entry.batch_count += 1
         }
 
         // Post-emergence metrics: only count if emerged in selected month
+        // Prefer derived counts (from actual graft statuses) over batch-level counters
+        // which can become stale when cells are distributed before hatching
         if (isEmergedInMonth) {
-          entry.queens_hatched += batch.queens_hatched ?? dc?.queens_hatched ?? 0
-          entry.queens_mated += batch.queens_mated ?? dc?.queens_mated ?? 0
+          entry.queens_hatched += dc ? dc.queens_hatched : (batch.queens_hatched ?? 0)
+          entry.queens_mated += dc ? dc.queens_mated : (batch.queens_mated ?? 0)
         }
       }
 
@@ -211,14 +207,13 @@ export function useRearingGroupReport() {
 
       const totals = memberReports.reduce(
         (acc, m) => ({
-          grafts_accepted: acc.grafts_accepted + m.grafts_accepted,
           queens_hatched: acc.queens_hatched + m.queens_hatched,
           queens_mated: acc.queens_mated + m.queens_mated,
           queen_cells_distributed: acc.queen_cells_distributed + m.queen_cells_distributed,
           batch_count: acc.batch_count + m.batch_count,
           cell_count: acc.cell_count + m.cell_count,
         }),
-        { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0, batch_count: 0, cell_count: 0 }
+        { queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0, batch_count: 0, cell_count: 0 }
       )
 
       setReport({
