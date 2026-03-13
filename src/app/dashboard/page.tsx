@@ -54,7 +54,7 @@ function formatRecentActivityDate(dateString: string): string {
   return formatLocalDate(dateString)
 }
 
-const VALID_DROP_ACTIONS = ['inspection', 'feeding', 'varroa_check', 'varroa_treatment', 'harvest']
+const VALID_DROP_ACTIONS = ['inspection', 'feeding', 'varroa_check', 'varroa_treatment', 'harvest', 'task']
 
 export default function DashboardPage() {
  const [userId, setUserId] = useState<string | null>(null)
@@ -135,7 +135,11 @@ export default function DashboardPage() {
      if (navigate && VALID_DROP_ACTIONS.includes(type)) {
        const apiaryId = (lastTarget as HTMLElement).dataset.apiaryId
        if (apiaryId) {
-         router.push(`/dashboard/records?create=${type}&apiary=${apiaryId}`)
+         if (type === 'task') {
+           router.push(`/dashboard/tasks?create=true&apiary=${apiaryId}`)
+         } else {
+           router.push(`/dashboard/records?create=${type}&apiary=${apiaryId}`)
+         }
        }
      }
    }
@@ -366,42 +370,34 @@ export default function DashboardPage() {
  </div>
  )}
 
- {/* Quick Actions (above the fold for field use) — draggable items can be dropped onto apiary cards */}
- <Panel padding="sm">
- <div className="flex flex-wrap gap-2">
+ {/* Quick Actions — draggable onto apiary cards */}
+ <div className="grid grid-cols-2 gap-3">
  {([
- { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={14} />, dragType: 'inspection' },
- { label: 'Log Feeding', href: '/dashboard/records?create=feeding', icon: <Wheat size={14} /> },
- { label: 'Varroa Check', href: '/dashboard/records?create=varroa_check', icon: <Bug size={14} /> },
- { label: 'Add Treatment', href: '/dashboard/records?create=varroa_treatment', icon: <Syringe size={14} /> },
- { label: 'Log Harvest', href: '/dashboard/records?create=harvest', icon: <Droplet size={14} /> },
- { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={14} /> },
- ] as { label: string; href: string; icon: React.ReactNode; dragType?: string }[]).map((action) => (
+ { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={18} />, dragType: 'inspection' },
+ { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={18} />, dragType: 'task' },
+ ]).map((action) => (
  <Link
  key={action.label}
  href={action.href}
- draggable={!!action.dragType}
+ draggable
  onDragStart={(e) => {
-   if (action.dragType) {
-     e.dataTransfer.setData('application/x-action', action.dragType)
-     e.dataTransfer.effectAllowed = 'link'
-     e.currentTarget.style.opacity = '0.5'
-   }
+   e.dataTransfer.setData('application/x-action', action.dragType)
+   e.dataTransfer.effectAllowed = 'link'
+   e.currentTarget.style.opacity = '0.5'
  }}
  onDragEnd={(e) => { e.currentTarget.style.opacity = '' }}
- onTouchStart={action.dragType ? (e) => handleTouchStart(e, action.dragType!, action.label) : undefined}
- onTouchMove={action.dragType ? handleTouchMove : undefined}
- onTouchEnd={action.dragType ? handleTouchEnd : undefined}
- onTouchCancel={action.dragType ? handleTouchCancel : undefined}
- className={`fj-chip fj-chip-sm fj-chip-neutral ${action.dragType ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
+ onTouchStart={(e) => handleTouchStart(e, action.dragType, action.label)}
+ onTouchMove={handleTouchMove}
+ onTouchEnd={handleTouchEnd}
+ onTouchCancel={handleTouchCancel}
+ className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border bg-surface hover:bg-surface-secondary dark:hover:bg-surface-elevated shadow-sm text-base font-semibold text-text-primary transition-colors cursor-grab active:cursor-grabbing select-none"
  >
- {action.dragType && <GripVertical size={12} className="text-text-tertiary -ml-0.5" />}
+ <GripVertical size={14} className="text-text-tertiary" />
  {action.icon}
  {action.label}
  </Link>
  ))}
  </div>
- </Panel>
 
  {/* Apiary Weather (sorted nearest-first when GPS available) */}
  {sortedApiaries.length > 0 && (
