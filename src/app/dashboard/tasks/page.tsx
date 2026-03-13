@@ -178,7 +178,7 @@ export default function TasksEventsPage() {
 
     // Fetch own hives and apiaries
     const [ownHivesRes, ownApiariesRes, batchesRes] = await Promise.all([
-      supabase.from('hives').select('id, hive_number, apiary_id, user_id').eq('user_id', userId).order('hive_number'),
+      supabase.from('hives').select('id, hive_number, apiary_id, user_id').eq('user_id', userId).is('archived_at', null).order('hive_number'),
       supabase.from('apiaries').select('id, name').eq('user_id', userId).order('name'),
       supabase.from('rearing_batches').select('id, batch_name').eq('user_id', userId).order('batch_name')
     ])
@@ -242,6 +242,7 @@ export default function TasksEventsPage() {
           .from('hives')
           .select('id, hive_number, apiary_id, user_id')
           .in('apiary_id', sharedApiaryIds)
+          .is('archived_at', null)
 
         if (sharedHivesError) {
           console.error('Error fetching shared hives:', sharedHivesError)
