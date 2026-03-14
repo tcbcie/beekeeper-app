@@ -27,6 +27,10 @@ function formatSignedAdjustment(value: number): string {
   return value > 0 ? `+${value}` : `${value}`
 }
 
+function isNonZeroAdjustment(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value !== 0
+}
+
 export default function InspectionCard({
   inspection,
   userId,
@@ -47,7 +51,7 @@ export default function InspectionCard({
     { label: 'Supers', value: inspection.honey_supers },
     { label: 'Drone', value: inspection.drone_frames },
     { label: 'Store', value: inspection.store_frames },
-  ].filter(item => item.value !== 0)
+  ].filter((item): item is { label: string; value: number } => isNonZeroAdjustment(item.value))
 
   useEffect(() => {
     setThumbnailLoadFailed(false)
