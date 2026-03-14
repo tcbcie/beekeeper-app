@@ -1,29 +1,28 @@
-# Task: Dashboard Review Fixes
-**Date:** 12/03/2026
+# Task: Mobile Bottom Navigation Hives Entry
+**Date:** 14/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Resolve the follow-up review findings for the dashboard landing page so recent activity dates stay correct for timestamp-backed records, record deep links still work for archived hives, and transient scale API failures do not get cached as misleading empty data.
+Add `Hives` to the mobile dashboard bottom menu so it is directly accessible alongside the other primary mobile navigation actions.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/app/dashboard/page.tsx`
-  * `src/app/dashboard/records/page.tsx`
-  * `src/components/dashboard/ApiaryWeatherRow.tsx`
-  * `docs/features/dashboard-landing-page-follow-up-plan.md`
-* **Simplicity Check:** Keep the work limited to the three reviewed regressions. Avoid any broader dashboard restructuring or further feature expansion.
+* **Files to Modify:** * `src/lib/navigation.ts`
+  * `src/components/BottomNavBar.tsx`
+  * `docs/features/navigation-restructure.md`
+* **Simplicity Check:** Keep this limited to the shared navigation config and the mobile bottom bar rendering. Only adjust the bar layout if the extra `Hives` item would otherwise make labels or touch targets unusable on narrow screens.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Re-check the affected dashboard, records, and apiary-card paths against the review comments and document this remediation pass.
-- [x] **Step 2:** Restore timestamp-aware date rendering for recent activity while keeping date-only records on local calendar formatting.
-- [x] **Step 3:** Ensure record deep links unhide archived hives and stop caching empty or partial scale results after transient API failures.
-- [x] **Step 4:** Update the dashboard follow-up documentation, mirror completion into `tasks/todo-codex.md`, and prompt the user to test the build.
+- [x] **Step 1:** Enable `Hives` in the shared mobile bottom-nav configuration and confirm the active-state logic still treats hive routes correctly.
+- [x] **Step 2:** Make the smallest safe mobile bottom-bar layout adjustment needed to accommodate `Hives` without breaking narrow-screen usability.
+- [x] **Step 3:** Update documentation in `docs/features/navigation-restructure.md`
+- [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The earlier dashboard follow-up mixed date-only and timestamp formatting in one path, left deep-linked archived-hive records behind the default archive filter, and cached scale refresh failures as if they were valid empty responses.
-* **Summary of Changes:** Restored timestamp-aware recent-activity rendering, enabled archived hives for record deep links, and made scale cache writes contingent on a fully successful per-scale refresh.
-* **Notes for User:** Build tests were not run per repository instruction. Please test the dashboard landing page, archived-hive record links from recent activity, and apiary card scale refresh behaviour in your usual browser/build check.
+* **Root Cause Found (if applicable):** The mobile bottom bar only renders items explicitly flagged in the shared navigation config, and `Hives` was not marked for that surface.
+* **Summary of Changes:** Enabled `Hives` in the shared mobile bottom-nav configuration, changed the bottom bar to use a horizontally scrollable primary-action row with a pinned `More` button, and updated the navigation documentation to reflect the new mobile item set.
+* **Notes for User:** Build tests were not run per repository instruction. Please test the mobile dashboard bottom navigation, including the `Hives` tab visibility, active states, horizontal scrolling, and the `More` drawer trigger.
 
 ## Review
-Applied the three review fixes without expanding the dashboard scope. Recent activity now formats timestamp-backed records with timestamp awareness, record deep links explicitly unhide archived hives before filtering, and apiary scale data no longer overwrites the dashboard cache or card state after transient per-scale API failures.
+Added `Hives` to the mobile bottom navigation without widening the change beyond the shared navigation config and the bottom-bar component. The bottom bar now keeps its tap targets usable on narrow screens by allowing the primary tabs to scroll horizontally while keeping `More` pinned on the right.

@@ -36,7 +36,7 @@ Single source of truth for all nav items, groups, and helper functions. Eliminat
 
 Fixed bar at the bottom of the screen on mobile (`md:hidden`):
 
-- **Scrollable items area** — all nav items from `navigation.ts` (excluding bottom-pinned items like Profile/About) are displayed in a horizontally scrollable row. Users can swipe to see all items.
+- **Scrollable items area** — the primary items flagged with `bottomNav` in `navigation.ts` are displayed in a horizontally scrollable row. This now includes Overview, Apiaries, Hives, Records, and Tasks & Events.
 - **Pinned "More" button** — fixed to the far right with a left border separator, always visible. Opens the MobileDrawer for grouped/hierarchical navigation.
 - Uses the `scrollbar-hide` utility to hide the scrollbar while keeping swipe functionality.
 - Safe area inset for iOS home indicator.
@@ -79,7 +79,7 @@ All components with `fixed bottom-*` positioning were adjusted to clear the bott
 
 - [ ] Desktop: sidebar groups expand/collapse, state persists on refresh
 - [ ] Desktop: icon-only mode still works (flat icons, no group headers)
-- [ ] Mobile: bottom nav bar visible with 5 items
+- [ ] Mobile: bottom nav bar shows Overview, Apiaries, Hives, Records, Tasks & Events, plus More
 - [ ] Mobile: "More" button opens the drawer
 - [ ] Mobile: active states highlight correctly on bottom nav
 - [ ] Mobile: drawer shows grouped items with headers
