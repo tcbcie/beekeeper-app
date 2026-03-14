@@ -1,27 +1,28 @@
-# Task: Dashboard Apiary Queenright Status
+# Task: Dashboard Apiary Queen Issue Warning
 **Date:** 14/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Add a queenright status to each dashboard apiary card so the card shows whether the apiary has recent evidence of a queen from inspections that recorded either eggs present or queen seen, and show a warning state when that evidence is older than three weeks.
+Refine the dashboard apiary cards so they warn when any hive in an apiary lacks a recent queenright signal, and surface a separate `Possible queen issue` state that also takes prolonged lack of brood into account.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/types/dashboard.ts`
   * `src/hooks/useDashboardStats.ts`
   * `src/components/dashboard/ApiaryWeatherRow.tsx`
-  * `docs/features/dashboard-apiary-queenright-status-plan.md`
+  * `docs/features/dashboard-apiary-queen-issue-warning-plan.md`
+  * `docs/features/dashboard-apiary-weather.md`
   * `tasks/todo-codex.md`
-* **Simplicity Check:** Keep the change contained to the existing dashboard enrichment and card rendering flow. Reuse the current apiary fetch path and add one derived status field rather than introducing a new dashboard service or separate query layer.
+* **Simplicity Check:** Keep the change inside the existing dashboard enrichment and card rendering flow. Derive one apiary-level risk summary from the inspections already being fetched instead of introducing a new service, route, or schema change.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Extend the dashboard apiary type and enrichment logic to derive the most recent apiary-level queenright signal from inspections where either `eggs_present` or `queen_seen` is true, while treating null inspection flags safely.
-- [x] **Step 2:** Update the apiary dashboard card UI to show the queenright status alongside hives, last inspection, and tasks, with a clear warning state when the signal is older than 21 days.
-- [x] **Step 3:** Update documentation in `docs/features/dashboard-apiary-queenright-status-plan.md`
+- [x] **Step 1:** Extend the dashboard apiary enrichment to calculate per-hive queenright and brood recency, then derive an apiary-level `Possible queen issue` state when any hive lacks a recent queenright signal or has gone more than 21 days without brood.
+- [x] **Step 2:** Update the dashboard apiary card UI so the current queenright block becomes a clearer health indicator, including a warning presentation and issue count when one or more hives in the apiary are at risk.
+- [x] **Step 3:** Update documentation in `docs/features/dashboard-apiary-queen-issue-warning-plan.md`
 - [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The dashboard apiary card only exposes hive count, inspection recency, and task count, even though the inspection data model already contains queenright evidence fields that can be surfaced.
-* **Summary of Changes:** Added a derived `lastQueenrightDate` field to dashboard apiaries, surfaced it on the dashboard apiary card, and applied a stale-warning state when the latest queenright evidence is older than 21 days.
-* **Notes for User:** The live database schema was checked through the MCP connection. `public.inspections.queen_seen` and `public.inspections.eggs_present` are nullable booleans, so the implementation explicitly treats null as no signal.
+* **Root Cause Found (if applicable):** The current card only tracked the latest positive apiary-wide queenright signal, so a single healthy hive could mask another hive that had lost recent queenright evidence or had been broodless for too long.
+* **Summary of Changes:** Implemented a per-hive inspection roll-up, added apiary risk counts for queenright and brood issues, and updated the card to show a warning-first `Possible issue` state when any hive is at risk.
+* **Notes for User:** The live schema was checked through the MCP connection. `public.inspections.queen_seen` and `public.inspections.eggs_present` are nullable booleans, and `public.inspections.brood_frames` is a nullable integer. The implementation treats null safely and only counts brood when `eggs_present` is true or `brood_frames > 0`.

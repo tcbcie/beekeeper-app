@@ -19,6 +19,22 @@ interface DashboardInspectionSummaryRow {
   inspection_date: string
   queen_seen: boolean | null
   eggs_present: boolean | null
+  brood_frames: number | null
+}
+
+interface DashboardHiveHealthSummary {
+  lastQueenrightDate: string | null
+  broodAbsentSinceDate: string | null
+  broodSignalResolved: boolean
+}
+
+const QUEEN_STATUS_WARNING_DAYS = 21
+
+function getLocalDateDaysAgo(days: number): string {
+  const date = new Date()
+  date.setHours(0, 0, 0, 0)
+  date.setDate(date.getDate() - days)
+  return toLocalDateString(date)
 }
 
 interface UseDashboardStatsReturn {
@@ -70,6 +86,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         // Fetch the dashboard overview data first so the page can still render even if later sections fail.
         const fourteenDaysAgo = toLocalDateString(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000))
         const twoYearsAgo = toLocalDateString(new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000))
+        const queenStatusCutoff = getLocalDateDaysAgo(QUEEN_STATUS_WARNING_DAYS)
 
         const [apiariesRes, apiaryListRes, hivesRes, inspectionsRes, queensRes, tasksRes, apiaryTasksRes] = await Promise.all([
           supabase.from('apiaries').select('id', { count: 'exact', head: true }).eq('user_id', userId),
@@ -118,6 +135,9 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           hiveCount: 0,
           lastInspectionDate: null,
           lastQueenrightDate: null,
+          queenIssueHiveCount: 0,
+          queenrightAtRiskHiveCount: 0,
+          broodAtRiskHiveCount: 0,
           scales: [],
           activeTaskCount: taskCountMap[apiary.id] || 0,
         }))
@@ -135,12 +155,21 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           const hiveCountMap: Record<string, number> = {}
           const scaleMap: Record<string, DashboardApiary['scales']> = {}
           const hiveApiaryMap: Record<string, string> = {}
+          const hiveHealthMap: Record<string, DashboardHiveHealthSummary> = {}
           const lastInspectionMap: Record<string, string> = {}
           const lastQueenrightMap: Record<string, string> = {}
+          const queenIssueHiveCountMap: Record<string, number> = {}
+          const queenrightAtRiskHiveCountMap: Record<string, number> = {}
+          const broodAtRiskHiveCountMap: Record<string, number> = {}
 
           for (const hive of (hivesData || [])) {
             const apiaryId = hive.apiary_id as string
             hiveApiaryMap[hive.id] = apiaryId
+            hiveHealthMap[hive.id] = {
+              lastQueenrightDate: null,
+              broodAbsentSinceDate: null,
+              broodSignalResolved: false,
+            }
             hiveCountMap[apiaryId] = (hiveCountMap[apiaryId] || 0) + 1
             if (!scaleMap[apiaryId]) scaleMap[apiaryId] = []
             if (hive.beep_device_id) scaleMap[apiaryId].push({ hiveId: hive.id, type: 'beep', deviceId: hive.beep_device_id })
@@ -150,7 +179,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           if (hiveIds.length > 0) {
             const { data: inspectionsData, error: inspectionsDataError } = await supabase
               .from('inspections')
-              .select('hive_id, inspection_date, queen_seen, eggs_present')
+              .select('hive_id, inspection_date, queen_seen, eggs_present, brood_frames')
               .in('hive_id', hiveIds)
               .order('inspection_date', { ascending: false })
             if (inspectionsDataError) throw inspectionsDataError
@@ -162,18 +191,53 @@ export function useDashboardStats(): UseDashboardStatsReturn {
               if (!hiveId || !inspectionDate) continue
 
               const apiaryId = hiveApiaryMap[hiveId]
-              if (!apiaryId) continue
+              const hiveHealth = hiveHealthMap[hiveId]
+              if (!apiaryId || !hiveHealth) continue
 
               if (!lastInspectionMap[apiaryId] || inspectionDate > lastInspectionMap[apiaryId]) {
                 lastInspectionMap[apiaryId] = inspectionDate
               }
 
-              if (
-                (inspection.queen_seen === true || inspection.eggs_present === true)
-                && (!lastQueenrightMap[apiaryId] || inspectionDate > lastQueenrightMap[apiaryId])
-              ) {
+              const hasQueenrightSignal = inspection.queen_seen === true || inspection.eggs_present === true
+              const hasBroodSignal = inspection.eggs_present === true || (inspection.brood_frames ?? 0) > 0
+
+              if (hasQueenrightSignal && !hiveHealth.lastQueenrightDate) {
+                hiveHealth.lastQueenrightDate = inspectionDate
+              }
+
+              if (hasQueenrightSignal && (!lastQueenrightMap[apiaryId] || inspectionDate > lastQueenrightMap[apiaryId])) {
                 lastQueenrightMap[apiaryId] = inspectionDate
               }
+
+              if (!hiveHealth.broodSignalResolved) {
+                if (hasBroodSignal) {
+                  hiveHealth.broodSignalResolved = true
+                } else {
+                  hiveHealth.broodAbsentSinceDate = inspectionDate
+                }
+              }
+            }
+          }
+
+          for (const hiveId of hiveIds) {
+            const apiaryId = hiveApiaryMap[hiveId]
+            const hiveHealth = hiveHealthMap[hiveId]
+            if (!apiaryId || !hiveHealth) continue
+
+            const queenrightAtRisk = !hiveHealth.lastQueenrightDate || hiveHealth.lastQueenrightDate < queenStatusCutoff
+            const broodAtRisk = Boolean(
+              hiveHealth.broodAbsentSinceDate
+              && hiveHealth.broodAbsentSinceDate < queenStatusCutoff
+            )
+
+            if (queenrightAtRisk) {
+              queenrightAtRiskHiveCountMap[apiaryId] = (queenrightAtRiskHiveCountMap[apiaryId] || 0) + 1
+            }
+            if (broodAtRisk) {
+              broodAtRiskHiveCountMap[apiaryId] = (broodAtRiskHiveCountMap[apiaryId] || 0) + 1
+            }
+            if (queenrightAtRisk || broodAtRisk) {
+              queenIssueHiveCountMap[apiaryId] = (queenIssueHiveCountMap[apiaryId] || 0) + 1
             }
           }
 
@@ -182,6 +246,9 @@ export function useDashboardStats(): UseDashboardStatsReturn {
             hiveCount: hiveCountMap[apiary.id] || 0,
             lastInspectionDate: lastInspectionMap[apiary.id] || null,
             lastQueenrightDate: lastQueenrightMap[apiary.id] || null,
+            queenIssueHiveCount: queenIssueHiveCountMap[apiary.id] || 0,
+            queenrightAtRiskHiveCount: queenrightAtRiskHiveCountMap[apiary.id] || 0,
+            broodAtRiskHiveCount: broodAtRiskHiveCountMap[apiary.id] || 0,
             scales: scaleMap[apiary.id] || [],
             activeTaskCount: taskCountMap[apiary.id] || 0,
           }))
