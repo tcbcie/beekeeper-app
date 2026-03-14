@@ -47,13 +47,32 @@ const givenTakenFields: Array<{ key: GivenTakenFieldKey; label: string }> = [
   { key: 'store_frames', label: 'Store Frames' },
 ]
 
+const INSPECTION_ADJUSTMENT_MIN = -2147483648
+const INSPECTION_ADJUSTMENT_MAX = 2147483647
+
+function clampInspectionAdjustment(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  if (value < INSPECTION_ADJUSTMENT_MIN) {
+    return INSPECTION_ADJUSTMENT_MIN
+  }
+
+  if (value > INSPECTION_ADJUSTMENT_MAX) {
+    return INSPECTION_ADJUSTMENT_MAX
+  }
+
+  return Math.trunc(value)
+}
+
 function parseSignedInteger(value: string): number {
   if (value.trim() === '' || value === '-') {
     return 0
   }
 
   const parsedValue = Number.parseInt(value, 10)
-  return Number.isNaN(parsedValue) ? 0 : parsedValue
+  return Number.isNaN(parsedValue) ? 0 : clampInspectionAdjustment(parsedValue)
 }
 
 function createGivenTakenDrafts(data: Pick<InspectionFormData, GivenTakenFieldKey>): Record<GivenTakenFieldKey, string> {
@@ -237,12 +256,16 @@ export default function InspectionForm({
     setFormData(prev => ({ ...prev, hive_id: hiveId }))
     setFormApiaryId(prev => hiveId ? getApiaryIdForHive(hiveId) : prev)
     if (hiveId) {
-      await onHiveChange(hiveId)
+      try {
+        await onHiveChange(hiveId)
+      } catch (error) {
+        console.error('Failed to update hive inspection context:', error)
+      }
     }
   }
 
   const setGivenTakenValue = useCallback((field: GivenTakenFieldKey, value: number) => {
-    const normalisedValue = Number.isNaN(value) ? 0 : value
+    const normalisedValue = clampInspectionAdjustment(value)
 
     setFormData(prev => prev[field] === normalisedValue ? prev : { ...prev, [field]: normalisedValue })
     setGivenTakenDrafts(prev => (
@@ -278,6 +301,11 @@ export default function InspectionForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (submitting || fetchingWeather) {
+      return
+    }
+
     const submitData = normaliseGivenTakenValues(formData, givenTakenDrafts)
     setFormData(submitData)
     setGivenTakenDrafts(createGivenTakenDrafts(submitData))
@@ -859,7 +887,7 @@ export default function InspectionForm({
                     </div>
                   </div>
                 )
-              ))}
+              })}
             </div>
           )}
         </div>
