@@ -30,6 +30,51 @@ const numberSelectorSelectedClasses = {
 } as const
 
 type NumberSelectorTheme = keyof typeof numberSelectorSelectedClasses
+type GivenTakenFieldKey =
+  | 'frames_foundation'
+  | 'frames_brood'
+  | 'frames_drawn'
+  | 'honey_supers'
+  | 'drone_frames'
+  | 'store_frames'
+
+const givenTakenFields: Array<{ key: GivenTakenFieldKey; label: string }> = [
+  { key: 'frames_foundation', label: 'Foundation' },
+  { key: 'frames_brood', label: 'Brood' },
+  { key: 'frames_drawn', label: 'Drawn' },
+  { key: 'honey_supers', label: 'Honey Supers' },
+  { key: 'drone_frames', label: 'Drone Frames' },
+  { key: 'store_frames', label: 'Store Frames' },
+]
+
+function parseSignedInteger(value: string): number {
+  if (value.trim() === '' || value === '-') {
+    return 0
+  }
+
+  const parsedValue = Number.parseInt(value, 10)
+  return Number.isNaN(parsedValue) ? 0 : parsedValue
+}
+
+function createGivenTakenDrafts(data: Pick<InspectionFormData, GivenTakenFieldKey>): Record<GivenTakenFieldKey, string> {
+  return givenTakenFields.reduce((drafts, field) => {
+    drafts[field.key] = String(data[field.key] ?? 0)
+    return drafts
+  }, {} as Record<GivenTakenFieldKey, string>)
+}
+
+function normaliseGivenTakenValues(
+  data: InspectionFormData,
+  drafts: Record<GivenTakenFieldKey, string>
+): InspectionFormData {
+  const nextData = { ...data }
+
+  for (const field of givenTakenFields) {
+    nextData[field.key] = parseSignedInteger(drafts[field.key])
+  }
+
+  return nextData
+}
 
 export default function InspectionForm({
   initialData,
@@ -46,7 +91,12 @@ export default function InspectionForm({
   onImageClick,
   fetchingWeather = false
 }: InspectionFormProps) {
-  const [formData, setFormData] = useState<InspectionFormData>(initialData || getDefaultInspectionFormData())
+  const buildInitialFormData = () => initialData || getDefaultInspectionFormData()
+
+  const [formData, setFormData] = useState<InspectionFormData>(buildInitialFormData)
+  const [givenTakenDrafts, setGivenTakenDrafts] = useState<Record<GivenTakenFieldKey, string>>(
+    () => createGivenTakenDrafts(buildInitialFormData())
+  )
   const [formApiaryId, setFormApiaryId] = useState<string>(selectedApiaryId)
   const [submitting, setSubmitting] = useState(false)
   const previousInitialDataRef = useRef<InspectionFormData | null>(initialData)
@@ -92,7 +142,9 @@ export default function InspectionForm({
   useEffect(() => {
     if (!initialData) {
       if (previousInitialDataRef.current) {
-        setFormData(getDefaultInspectionFormData())
+        const defaultFormData = getDefaultInspectionFormData()
+        setFormData(defaultFormData)
+        setGivenTakenDrafts(createGivenTakenDrafts(defaultFormData))
         setFormApiaryId(selectedApiaryId)
         resetImage()
       }
@@ -101,6 +153,7 @@ export default function InspectionForm({
     }
 
     setFormData(initialData)
+    setGivenTakenDrafts(createGivenTakenDrafts(initialData))
     setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
     if (initialData.image_url) {
       setPreviewFromUrl(initialData.image_url)
@@ -188,11 +241,49 @@ export default function InspectionForm({
     }
   }
 
+  const setGivenTakenValue = useCallback((field: GivenTakenFieldKey, value: number) => {
+    const normalisedValue = Number.isNaN(value) ? 0 : value
+
+    setFormData(prev => prev[field] === normalisedValue ? prev : { ...prev, [field]: normalisedValue })
+    setGivenTakenDrafts(prev => (
+      prev[field] === String(normalisedValue)
+        ? prev
+        : { ...prev, [field]: String(normalisedValue) }
+    ))
+  }, [])
+
+  const handleGivenTakenDraftChange = useCallback((field: GivenTakenFieldKey, nextValue: string) => {
+    if (!/^-?\d*$/.test(nextValue)) {
+      return
+    }
+
+    setGivenTakenDrafts(prev => prev[field] === nextValue ? prev : { ...prev, [field]: nextValue })
+
+    if (nextValue !== '' && nextValue !== '-') {
+      const parsedValue = Number.parseInt(nextValue, 10)
+
+      if (!Number.isNaN(parsedValue)) {
+        setFormData(prev => prev[field] === parsedValue ? prev : { ...prev, [field]: parsedValue })
+      }
+    }
+  }, [])
+
+  const handleGivenTakenBlur = useCallback((field: GivenTakenFieldKey) => {
+    setGivenTakenValue(field, parseSignedInteger(givenTakenDrafts[field]))
+  }, [givenTakenDrafts, setGivenTakenValue])
+
+  const adjustGivenTakenValue = useCallback((field: GivenTakenFieldKey, delta: number) => {
+    setGivenTakenValue(field, parseSignedInteger(givenTakenDrafts[field]) + delta)
+  }, [givenTakenDrafts, setGivenTakenValue])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const submitData = normaliseGivenTakenValues(formData, givenTakenDrafts)
+    setFormData(submitData)
+    setGivenTakenDrafts(createGivenTakenDrafts(submitData))
     setSubmitting(true)
     try {
-      await onSubmit(formData, imageFile)
+      await onSubmit(submitData, imageFile)
     } finally {
       setSubmitting(false)
     }
@@ -674,29 +765,100 @@ export default function InspectionForm({
             onClick={() => setGivenTakenExpanded(!givenTakenExpanded)}
             className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
           >
-            <h4 className="text-sm font-semibold text-foreground">Frames Given/Taken</h4>
+            <div className="text-left">
+              <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
+              <p className="mt-1 text-xs text-text-tertiary">Use minus for taken items and plus for given items.</p>
+            </div>
             {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </Button>
           {givenTakenExpanded && (
-            <div className="p-4 pt-0 grid grid-cols-2 md:grid-cols-3 gap-4">
-              {[
-                { key: 'frames_foundation', label: 'Foundation' },
-                { key: 'frames_brood', label: 'Brood' },
-                { key: 'frames_drawn', label: 'Drawn' },
-                { key: 'honey_supers', label: 'Honey Supers' },
-                { key: 'drone_frames', label: 'Drone Frames' },
-                { key: 'store_frames', label: 'Store Frames' }
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">{field.label}</label>
-                  <input
-                    type="number"
-                    value={formData[field.key as keyof InspectionFormData] as number}
-                    onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
-                    min="0"
-                  />
-                </div>
+            <div className="grid grid-cols-1 gap-4 p-4 pt-0 sm:grid-cols-2 xl:grid-cols-3">
+              {givenTakenFields.map((field) => {
+                const currentValue = parseSignedInteger(givenTakenDrafts[field.key])
+                const adjustmentStateLabel = currentValue > 0
+                  ? `Given ${currentValue}`
+                  : currentValue < 0
+                    ? `Taken ${Math.abs(currentValue)}`
+                    : 'No change'
+                const adjustmentStateClasses = currentValue > 0
+                  ? 'bg-forest-50 text-forest-700 border border-forest-200 dark:bg-forest-900/30 dark:text-forest-300 dark:border-forest-800'
+                  : currentValue < 0
+                    ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
+                    : 'bg-surface-elevated text-text-secondary border border-border'
+
+                return (
+                  <div key={field.key} className="rounded-xl border border-border bg-surface-secondary/60 p-3">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <label htmlFor={`given-taken-${field.key}`} className="text-sm font-medium text-text-secondary">
+                        {field.label}
+                      </label>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${adjustmentStateClasses}`}>
+                        {adjustmentStateLabel}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-[52px_minmax(0,1fr)_52px] gap-2">
+                      <Button
+                        unstyled
+                        type="button"
+                        onClick={() => adjustGivenTakenValue(field.key, -1)}
+                        aria-label={`Decrease ${field.label}`}
+                        className="min-h-[52px] rounded-lg border border-red-200 bg-red-50 text-xl font-bold text-red-700 transition-colors hover:bg-red-100 active:bg-red-200 touch-manipulation dark:border-red-900 dark:bg-red-900/30 dark:text-red-300"
+                      >
+                        -
+                      </Button>
+                      <input
+                        id={`given-taken-${field.key}`}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="-?[0-9]*"
+                        value={givenTakenDrafts[field.key]}
+                        onChange={(e) => handleGivenTakenDraftChange(field.key, e.target.value)}
+                        onBlur={() => handleGivenTakenBlur(field.key)}
+                        onFocus={(e) => e.target.select()}
+                        className="min-h-[52px] w-full rounded-lg border border-border bg-surface px-3 py-2 text-center text-lg font-semibold text-foreground"
+                        placeholder="0"
+                        aria-label={`${field.label} adjustment`}
+                      />
+                      <Button
+                        unstyled
+                        type="button"
+                        onClick={() => adjustGivenTakenValue(field.key, 1)}
+                        aria-label={`Increase ${field.label}`}
+                        className="min-h-[52px] rounded-lg border border-forest-200 bg-forest-50 text-xl font-bold text-forest-700 transition-colors hover:bg-forest-100 active:bg-forest-200 touch-manipulation dark:border-forest-800 dark:bg-forest-900/30 dark:text-forest-300"
+                      >
+                        +
+                      </Button>
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <Button
+                        unstyled
+                        type="button"
+                        onClick={() => adjustGivenTakenValue(field.key, -5)}
+                        className="min-h-[44px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
+                      >
+                        -5
+                      </Button>
+                      <Button
+                        unstyled
+                        type="button"
+                        onClick={() => setGivenTakenValue(field.key, 0)}
+                        className="min-h-[44px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        unstyled
+                        type="button"
+                        onClick={() => adjustGivenTakenValue(field.key, 5)}
+                        className="min-h-[44px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
+                      >
+                        +5
+                      </Button>
+                    </div>
+                  </div>
+                )
               ))}
             </div>
           )}
