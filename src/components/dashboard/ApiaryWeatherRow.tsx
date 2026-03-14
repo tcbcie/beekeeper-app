@@ -40,7 +40,6 @@ interface CacheEntry<T> {
 
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000
 const SCALE_CACHE_TTL_MS = 5 * 60 * 1000
-const QUEENRIGHT_WARNING_DAYS = 21
 const weatherCache = new Map<string, CacheEntry<ApiaryWeather>>()
 const scaleCache = new Map<string, CacheEntry<ScaleWeight[]>>()
 
@@ -81,6 +80,26 @@ function getDaysSinceDate(dateString: string | null): number | null {
   if (Number.isNaN(parsedDate.getTime())) return null
 
   return Math.max(differenceInCalendarDays(parsedDate, new Date()), 0)
+}
+
+function formatHiveRiskLabel(count: number): string {
+  return `${count} hive${count === 1 ? '' : 's'}`
+}
+
+function getQueenIssueSummary(apiary: DashboardApiary): string {
+  if (apiary.queenrightAtRiskHiveCount > 0 && apiary.broodAtRiskHiveCount > 0) {
+    return `${formatHiveRiskLabel(apiary.queenIssueHiveCount)} need queen/brood check`
+  }
+
+  if (apiary.queenrightAtRiskHiveCount > 0) {
+    return `${formatHiveRiskLabel(apiary.queenrightAtRiskHiveCount)} lack queen signal`
+  }
+
+  if (apiary.broodAtRiskHiveCount > 0) {
+    return `${formatHiveRiskLabel(apiary.broodAtRiskHiveCount)} no brood 21+d`
+  }
+
+  return 'All hives recent'
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -282,7 +301,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
 
   const daysSinceInspection = getDaysSinceDate(apiary.lastInspectionDate)
   const daysSinceQueenright = getDaysSinceDate(apiary.lastQueenrightDate)
-  const queenrightWarning = daysSinceQueenright !== null && daysSinceQueenright > QUEENRIGHT_WARNING_DAYS
+  const hasQueenIssue = apiary.queenIssueHiveCount > 0
 
   return (
     <Link
@@ -420,20 +439,26 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
         </div>
         <div className="w-px h-5 bg-border" />
         <div className="flex flex-col min-w-0">
-          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Queenright</span>
-          {daysSinceQueenright !== null ? (
-            <span className={`flex items-center gap-1 text-base font-bold tabular-nums ${
-              queenrightWarning
-                ? 'text-amber-700 dark:text-amber-400'
-                : 'text-green-700 dark:text-green-400'
-            }`}>
-              {queenrightWarning && <AlertTriangle size={14} className="shrink-0" />}
-              {daysSinceQueenright}d ago
-            </span>
-          ) : apiary.hiveCount > 0 ? (
-            <span className="text-sm font-medium text-text-tertiary">No record</span>
-          ) : (
+          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Queen Status</span>
+          {apiary.hiveCount === 0 ? (
             <span className="text-base font-medium text-text-tertiary">&mdash;</span>
+          ) : hasQueenIssue ? (
+            <>
+              <span className="flex items-center gap-1 text-sm font-bold text-amber-700 dark:text-amber-400 leading-none">
+                <AlertTriangle size={14} className="shrink-0" />
+                Possible issue
+              </span>
+              <span className="text-xs font-medium text-amber-700/90 dark:text-amber-300 leading-none mt-0.5">
+                {getQueenIssueSummary(apiary)}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-base font-bold text-green-700 dark:text-green-400 leading-none">Healthy</span>
+              <span className="text-xs font-medium text-text-secondary leading-none mt-0.5">
+                {daysSinceQueenright !== null ? `Latest ${daysSinceQueenright}d ago` : 'All hives recent'}
+              </span>
+            </>
           )}
         </div>
         {apiary.activeTaskCount > 0 && !activeAction && (

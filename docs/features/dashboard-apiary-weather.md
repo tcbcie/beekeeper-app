@@ -1,7 +1,7 @@
 # Dashboard Apiary Weather Cards
 
 ## Overview
-Each apiary is displayed as a multi-line card on the main dashboard showing the apiary name with location, live weather, operational stats, queenright recency, and scale weight data.
+Each apiary is displayed as a multi-line card on the main dashboard showing the apiary name with location, live weather, operational stats, queen-status risk, and scale weight data.
 
 ## Card Layout
 
@@ -14,8 +14,10 @@ Horizontally scrollable row of daily forecasts: day abbreviation, weather emoji,
 ### Line 3 - Stats
 - Hive count
 - Last inspection recency, colour-coded: green (<7 days), amber (7-13 days), red (14+ days), grey (never)
-- Queenright recency based on the latest apiary inspection where either `queen_seen` or `eggs_present` is true
-- Queenright warning treatment when that positive signal is older than 21 days
+- Queen status block:
+  - `Healthy` when every hive in the apiary has a recent queenright signal
+  - `Possible issue` when any hive lacks a recent queenright signal or has a broodless run older than 21 days
+- Warning detail text showing how many hives are affected and whether the concern is queen signal, brood, or both
 - Active task pill when incomplete apiary tasks exist
 
 ### Line 4 - Scale Weights (conditional)
@@ -28,11 +30,18 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 - Parameters: `current=temperature_2m,weather_code`, `daily=temperature_2m_max,temperature_2m_min,weather_code`, `timezone=Europe/Dublin`, `forecast_days=7`
 - Requires GPS coordinates on the apiary and is hidden gracefully if coordinates are missing
 
-### Hive and Queenright Stats
+### Hive and Queen Status Signals
 - Active hive count from the `hives` table, excluding archived hives
 - Last inspection date from the latest inspection across all hives in the apiary
-- Last queenright date from the latest inspection across apiary hives where either `queen_seen` or `eggs_present` is true
-- Nullable inspection flags are treated defensively, so null does not count as a queenright signal
+- Queenright signal from inspections where either `queen_seen` or `eggs_present` is true
+- Brood signal from inspections where either `eggs_present` is true or `brood_frames > 0`
+- Apiary warning counts are derived per hive rather than from one shared apiary date
+
+### Queen Issue Rules
+- A hive is flagged for queen-signal risk when it has no queenright signal in the last 21 days
+- A hive is flagged for brood risk only when a confirmed broodless run has lasted more than 21 days
+- Recent broodless inspections do not immediately trigger a brood warning, which avoids overreacting to short summer brood breaks
+- Nullable inspection fields are treated defensively and do not count as positive evidence
 
 ### Scale Data
 - Fetched via the existing `/api/beep/data` and `/api/wolf-waagen/data` API routes
@@ -41,15 +50,15 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 
 ## Edge Cases
 - Apiaries without GPS show a small cloud-off icon instead of weather data
-- Apiaries with 0 hives show a neutral dash for inspection and queenright recency
-- Apiaries with hives but no inspection recording `queen_seen` or `eggs_present` show `No record` for queenright
-- Apiaries with a queenright signal older than 21 days show a warning treatment
+- Apiaries with 0 hives show a neutral dash for inspection and queen status
+- Apiaries with one healthy hive and one risky hive now show `Possible issue`; healthy hives no longer hide risky ones
+- Apiaries with recent broodless inspections only show a brood warning once the confirmed broodless run exceeds 21 days
 - Invalid date strings degrade safely to a neutral fallback instead of rendering a broken age
 - Scale API failures are skipped; `No data` is shown if no scale readings can be rendered
 - Apiaries without scales omit the scale row entirely
 
 ## Files
 - `src/types/dashboard.ts` - `DashboardApiary`, `DashboardApiaryScale`, and dashboard inspection typing
-- `src/hooks/useDashboardStats.ts` - dashboard apiary fetch, enrichment, and defensive error bubbling
-- `src/components/dashboard/ApiaryWeatherRow.tsx` - dashboard apiary card rendering and queenright warning display
+- `src/hooks/useDashboardStats.ts` - dashboard apiary fetch, per-hive signal roll-up, and defensive error bubbling
+- `src/components/dashboard/ApiaryWeatherRow.tsx` - dashboard apiary card rendering and warning display
 - `src/app/dashboard/page.tsx` - "My Apiaries" section that renders the cards

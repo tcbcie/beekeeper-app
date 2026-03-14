@@ -6,6 +6,7 @@ export interface Inspection {
   inspection_date: string
   queen_seen: boolean | null
   eggs_present: boolean | null
+  brood_frames?: number | null
   hives?: {
     hive_number: string
     apiaries?: { name: string } | null
@@ -114,6 +115,9 @@ export interface DashboardApiary {
   hiveCount: number
   lastInspectionDate: string | null
   lastQueenrightDate: string | null
+  queenIssueHiveCount: number
+  queenrightAtRiskHiveCount: number
+  broodAtRiskHiveCount: number
   scales: DashboardApiaryScale[]
   activeTaskCount: number
 }
