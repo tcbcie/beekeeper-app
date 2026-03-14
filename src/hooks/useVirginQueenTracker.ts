@@ -18,7 +18,11 @@ export interface TrackedVirginQueen {
   // Recipient info
   recipient_user_id: string | null
   recipient_name: string | null
+  recipient_email: string | null
+  recipient_apiary_name: string | null
+  recipient_apiary_eircode: string | null
   external_recipient_name: string | null
+  external_recipient_email: string | null
   external_recipient_location: string | null
   // Cell info
   cell_number: number
@@ -84,7 +88,8 @@ export function useVirginQueenTracker() {
         .select(`
           *,
           batch_grafts(cell_number),
-          profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name),
+          profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name, email),
+          apiaries!graft_distributions_recipient_apiary_id_fkey(name, eircode),
           rearing_batches!inner(
             id, batch_name, graft_date, rearing_group_id, user_id,
             profiles(first_name, last_name)
@@ -116,7 +121,9 @@ export function useVirginQueenTracker() {
         if (!isOwnDistribution && !isGroupOwner) continue
 
         const grafts = d.batch_grafts as { cell_number: number }[] | { cell_number: number } | null
-        const recipientProfile = d.profiles as { full_name: string | null; first_name: string | null; last_name: string | null } | null
+        const recipientProfile = d.profiles as { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null } | null
+        const recipientApiary = d.apiaries as { name: string | null; eircode: string | null }[] | { name: string | null; eircode: string | null } | null
+        const apiary = Array.isArray(recipientApiary) ? recipientApiary[0] : recipientApiary
 
         // Build batch owner name
         const batchOwnerProfile = batch.profiles
@@ -145,7 +152,11 @@ export function useVirginQueenTracker() {
           notes: d.notes as string | null,
           recipient_user_id: d.recipient_user_id as string | null,
           recipient_name: recipientName,
+          recipient_email: recipientProfile?.email ?? null,
+          recipient_apiary_name: apiary?.name ?? null,
+          recipient_apiary_eircode: apiary?.eircode ?? null,
           external_recipient_name: d.external_recipient_name as string | null,
+          external_recipient_email: d.external_recipient_email as string | null,
           external_recipient_location: d.external_recipient_location as string | null,
           cell_number: Array.isArray(grafts) ? grafts[0]?.cell_number ?? 0 : grafts?.cell_number ?? 0,
           batch_name: batch.batch_name,
