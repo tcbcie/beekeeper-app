@@ -25,7 +25,7 @@ interface DashboardInspectionSummaryRow {
 interface DashboardHiveHealthSummary {
   lastQueenrightDate: string | null
   broodAbsentSinceDate: string | null
-  broodSignalResolved: boolean
+  broodInferenceClosed: boolean
 }
 
 const QUEEN_STATUS_WARNING_DAYS = 21
@@ -35,6 +35,18 @@ function getLocalDateDaysAgo(days: number): string {
   date.setHours(0, 0, 0, 0)
   date.setDate(date.getDate() - days)
   return toLocalDateString(date)
+}
+
+function hasQueenrightSignal(inspection: DashboardInspectionSummaryRow): boolean {
+  return inspection.queen_seen === true || inspection.eggs_present === true
+}
+
+function hasBroodSignal(inspection: DashboardInspectionSummaryRow): boolean {
+  return inspection.eggs_present === true || (inspection.brood_frames ?? 0) > 0
+}
+
+function hasExplicitBroodAbsence(inspection: DashboardInspectionSummaryRow): boolean {
+  return inspection.brood_frames === 0
 }
 
 interface UseDashboardStatsReturn {
@@ -68,6 +80,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
   const [error, setError] = useState<string | null>(null)
   const [recentActivityError, setRecentActivityError] = useState<string | null>(null)
   const mountedRef = useRef(true)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     mountedRef.current = true
@@ -76,6 +89,10 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
   const fetchDashboardData = useCallback(async (userId: string) => {
     if (!userId) return
+
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+    const isCurrentRequest = () => mountedRef.current && requestIdRef.current === requestId
 
     setError(null)
     setRecentActivityError(null)
@@ -111,7 +128,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           ?? apiaryTasksRes.error
         if (overviewError) throw overviewError
 
-        if (!mountedRef.current) return
+        if (!isCurrentRequest()) return
 
         const rawApiaries = (apiaryListRes.data || []) as {
           id: string
@@ -168,7 +185,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
             hiveHealthMap[hive.id] = {
               lastQueenrightDate: null,
               broodAbsentSinceDate: null,
-              broodSignalResolved: false,
+              broodInferenceClosed: false,
             }
             hiveCountMap[apiaryId] = (hiveCountMap[apiaryId] || 0) + 1
             if (!scaleMap[apiaryId]) scaleMap[apiaryId] = []
@@ -198,22 +215,27 @@ export function useDashboardStats(): UseDashboardStatsReturn {
                 lastInspectionMap[apiaryId] = inspectionDate
               }
 
-              const hasQueenrightSignal = inspection.queen_seen === true || inspection.eggs_present === true
-              const hasBroodSignal = inspection.eggs_present === true || (inspection.brood_frames ?? 0) > 0
+              const queenrightSeen = hasQueenrightSignal(inspection)
+              const broodSeen = hasBroodSignal(inspection)
+              const broodExplicitlyAbsent = hasExplicitBroodAbsence(inspection)
 
-              if (hasQueenrightSignal && !hiveHealth.lastQueenrightDate) {
+              if (queenrightSeen && !hiveHealth.lastQueenrightDate) {
                 hiveHealth.lastQueenrightDate = inspectionDate
               }
 
-              if (hasQueenrightSignal && (!lastQueenrightMap[apiaryId] || inspectionDate > lastQueenrightMap[apiaryId])) {
+              if (queenrightSeen && (!lastQueenrightMap[apiaryId] || inspectionDate > lastQueenrightMap[apiaryId])) {
                 lastQueenrightMap[apiaryId] = inspectionDate
               }
 
-              if (!hiveHealth.broodSignalResolved) {
-                if (hasBroodSignal) {
-                  hiveHealth.broodSignalResolved = true
-                } else {
+              // Treat null brood fields as unknown. Only an explicit 0 brood frame reading
+              // should start a broodless run that can age into a warning.
+              if (!hiveHealth.broodInferenceClosed) {
+                if (broodSeen) {
+                  hiveHealth.broodInferenceClosed = true
+                } else if (broodExplicitlyAbsent) {
                   hiveHealth.broodAbsentSinceDate = inspectionDate
+                } else {
+                  hiveHealth.broodInferenceClosed = true
                 }
               }
             }
@@ -254,7 +276,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           }))
         }
 
-        if (!mountedRef.current) return
+        if (!isCurrentRequest()) return
 
         setApiaries(enrichedApiaries)
         setStats({
@@ -301,7 +323,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           overdueCount = activeHiveIds.filter(id => !inspectedHiveIds.has(id)).length
         }
 
-        if (!mountedRef.current) return
+        if (!isCurrentRequest()) return
 
         setAlerts({
           overdueInspections: overdueCount,
@@ -311,7 +333,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         })
       } catch (err) {
         console.error('Error fetching dashboard overview data:', err)
-        if (mountedRef.current) {
+        if (isCurrentRequest()) {
           setError('Some dashboard sections could not be loaded. You can still use the links below and retry the dashboard data.')
         }
       }
@@ -394,18 +416,18 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           return dateB - dateA
         })
 
-        if (!mountedRef.current) return
+        if (!isCurrentRequest()) return
 
         setRecentActivity(merged.slice(0, 5))
       } catch (err) {
         console.error('Error fetching recent activity:', err)
-        if (mountedRef.current) {
+        if (isCurrentRequest()) {
           setRecentActivity([])
           setRecentActivityError('Recent activity could not be loaded. Please try again.')
         }
       }
     } finally {
-      if (mountedRef.current) {
+      if (isCurrentRequest()) {
         setLoading(false)
       }
     }

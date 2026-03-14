@@ -238,7 +238,6 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      let hadScaleFetchFailure = false
       const results = await Promise.all(
         apiary.scales.map(async scale => {
           try {
@@ -250,7 +249,6 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
             })
 
             if (!res.ok) {
-              hadScaleFetchFailure = true
               return null
             }
 
@@ -262,7 +260,6 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
               change30d: json.weightChange30d ?? null,
             } satisfies ScaleWeight
           } catch {
-            hadScaleFetchFailure = true
             return null
           }
         })
@@ -270,10 +267,6 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
 
       const nextScaleData = results.filter((result): result is ScaleWeight => result !== null)
       if (!mountedRef.current) return
-
-      if (hadScaleFetchFailure) {
-        return
-      }
 
       if (nextScaleData.length === apiary.scales.length) {
         scaleCache.set(scaleCacheKey, { data: nextScaleData, fetchedAt: Date.now() })
