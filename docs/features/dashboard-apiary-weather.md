@@ -46,7 +46,7 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 ### Scale Data
 - Fetched via the existing `/api/beep/data` and `/api/wolf-waagen/data` API routes
 - Returns weight changes for 24h, 7d, and 30d
-- Averaged across all scales when multiple hives have scales
+- Averaged across all successfully loaded scales when multiple hives have scales
 
 ## Edge Cases
 - Apiaries without GPS show a small cloud-off icon instead of weather data
@@ -54,7 +54,7 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 - Apiaries with one healthy hive and one risky hive now show `Possible issue`; healthy hives no longer hide risky ones
 - Apiaries with recent broodless inspections only show a brood warning once the confirmed broodless run exceeds 21 days
 - Invalid date strings degrade safely to a neutral fallback instead of rendering a broken age
-- Scale API failures are skipped; `No data` is shown if no scale readings can be rendered
+- Scale API failures are skipped per hive; successful scale readings remain visible and `No data` is shown only if no scale readings can be rendered
 - Apiaries without scales omit the scale row entirely
 
 ## Files
