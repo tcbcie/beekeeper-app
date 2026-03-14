@@ -166,16 +166,25 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
     }
   }, [updateHybridisation, fetchDistributions, userId, toast])
 
-  // Get recipient display name
+  // Get recipient display name + email
   const getRecipientName = (d: TrackedVirginQueen): string => {
-    if (d.recipient_name) return d.recipient_name
-    if (d.external_recipient_name) return d.external_recipient_name
+    const name = d.recipient_name || d.external_recipient_name || null
+    const email = d.recipient_email || d.external_recipient_email || null
+    if (name && email) return `${name} (${email})`
+    if (name) return name
+    if (email) return email
     return 'Unknown'
   }
 
-  // Get location display
+  // Get location display — mating_location, then recipient apiary, then external location
   const getLocation = (d: TrackedVirginQueen): string => {
-    return d.mating_location || d.external_recipient_location || '-'
+    if (d.mating_location) return d.mating_location
+    if (d.recipient_apiary_name) {
+      return d.recipient_apiary_eircode
+        ? `${d.recipient_apiary_name} (${d.recipient_apiary_eircode})`
+        : d.recipient_apiary_name
+    }
+    return d.external_recipient_location || '-'
   }
 
   if (loading) {
