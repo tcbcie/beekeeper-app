@@ -23,6 +23,10 @@ function renderStars(rating: number): string {
   return '★'.repeat(rating) + '☆'.repeat(5 - rating)
 }
 
+function formatSignedAdjustment(value: number): string {
+  return value > 0 ? `+${value}` : `${value}`
+}
+
 export default function InspectionCard({
   inspection,
   userId,
@@ -36,6 +40,14 @@ export default function InspectionCard({
   const hive = hives.find(h => h.id === inspection.hive_id)
   const normalisedImageUrl = normaliseStoragePublicUrl(inspection.image_url)
   const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
+  const givenTakenItems = [
+    { label: 'Foundation', value: inspection.frames_foundation },
+    { label: 'Brood', value: inspection.frames_brood },
+    { label: 'Drawn', value: inspection.frames_drawn },
+    { label: 'Supers', value: inspection.honey_supers },
+    { label: 'Drone', value: inspection.drone_frames },
+    { label: 'Store', value: inspection.store_frames },
+  ].filter(item => item.value !== 0)
 
   useEffect(() => {
     setThumbnailLoadFailed(false)
@@ -273,32 +285,21 @@ export default function InspectionCard({
       )}
 
       {/* Given/Taken Section */}
-      {(inspection.frames_foundation > 0 || inspection.frames_brood > 0 || inspection.frames_drawn > 0 ||
-        inspection.honey_supers > 0 || inspection.drone_frames > 0 || inspection.store_frames > 0) && (
+      {givenTakenItems.length > 0 && (
         <div className="mb-3 overflow-hidden rounded border border-border">
           <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
             <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
           </div>
           <div className="px-3 py-1.5">
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-              {inspection.frames_foundation > 0 && (
-                <span><span className="text-text-secondary">Foundation:</span> <span className="font-bold text-orange-800">{inspection.frames_foundation}</span></span>
-              )}
-              {inspection.frames_brood > 0 && (
-                <span><span className="text-text-secondary">Brood:</span> <span className="font-bold text-orange-800">{inspection.frames_brood}</span></span>
-              )}
-              {inspection.frames_drawn > 0 && (
-                <span><span className="text-text-secondary">Drawn:</span> <span className="font-bold text-orange-800">{inspection.frames_drawn}</span></span>
-              )}
-              {inspection.honey_supers > 0 && (
-                <span><span className="text-text-secondary">Supers:</span> <span className="font-bold text-orange-800">{inspection.honey_supers}</span></span>
-              )}
-              {inspection.drone_frames > 0 && (
-                <span><span className="text-text-secondary">Drone:</span> <span className="font-bold text-orange-800">{inspection.drone_frames}</span></span>
-              )}
-              {inspection.store_frames > 0 && (
-                <span><span className="text-text-secondary">Store:</span> <span className="font-bold text-orange-800">{inspection.store_frames}</span></span>
-              )}
+              {givenTakenItems.map(item => (
+                <span key={item.label}>
+                  <span className="text-text-secondary">{item.label}:</span>{' '}
+                  <span className={`font-bold ${item.value > 0 ? 'text-forest-700 dark:text-forest-400' : 'text-red-700 dark:text-red-400'}`}>
+                    {formatSignedAdjustment(item.value)}
+                  </span>
+                </span>
+              ))}
             </div>
           </div>
         </div>

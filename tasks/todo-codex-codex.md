@@ -1,26 +1,26 @@
-# Task: Mobile Bottom Navigation Hives Entry
+# Task: Inspection Given/Taken Mobile Entry Fix
 **Date:** 14/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Add `Hives` to the mobile dashboard bottom menu so it is directly accessible alongside the other primary mobile navigation actions.
+Rename the inspection form section from `Frames Given/Taken` to `Given/Taken`, allow signed values for each adjustment field, and replace the current mobile-unfriendly numeric entry with a more practical touch-first control.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/lib/navigation.ts`
-  * `src/components/BottomNavBar.tsx`
-  * `docs/features/navigation-restructure.md`
+* **Files to Modify:** * `src/components/records/forms/InspectionForm.tsx`
+  * `src/components/records/cards/InspectionCard.tsx`
+  * `docs/features/inspection-given-taken-mobile-entry-plan.md`
   * `tasks/todo-codex.md`
-* **Simplicity Check:** Keep this limited to the shared navigation config and the mobile bottom bar rendering. Only adjust the bar layout if the extra `Hives` item would otherwise make labels or touch targets unusable on narrow screens.
+* **Simplicity Check:** Keep the change contained to the inspection given/taken UI and its display card. Reuse the existing inspection form patterns where possible instead of introducing a new global input system.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Enable `Hives` in the shared mobile bottom-nav configuration and confirm the active-state logic still treats hive routes correctly.
-- [x] **Step 2:** Make the smallest safe mobile bottom-bar layout adjustment needed to accommodate `Hives` without breaking narrow-screen usability.
-- [x] **Step 3:** Update documentation in `docs/features/navigation-restructure.md`
+- [x] **Step 1:** Replace the current given/taken heading and raw numeric inputs with a touch-friendly signed-entry control that works reliably on mobile for the six adjustment fields.
+- [x] **Step 2:** Update the inspection record summary so negative given/taken values are displayed correctly instead of being hidden by the current `> 0` checks.
+- [x] **Step 3:** Update documentation in `docs/features/inspection-given-taken-mobile-entry-plan.md`
 - [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The mobile bottom bar only renders items explicitly flagged in the shared navigation config, and `Hives` was not marked for that surface.
-* **Summary of Changes:** Enabled `Hives` in the shared mobile bottom-nav configuration, changed the bottom bar to use a horizontally scrollable primary-action row with a pinned `More` button, and updated the navigation documentation to reflect the new mobile item set.
-* **Notes for User:** Build tests were not run per repository instruction. Please test the mobile dashboard bottom navigation, including the `Hives` tab visibility, active states, horizontal scrolling, and the `More` drawer trigger.
+* **Root Cause Found (if applicable):** The inspection form uses plain `type="number"` inputs with `min="0"` and coercion back to `0`, while the inspection card only renders given/taken entries when values are greater than zero.
+* **Summary of Changes:** Renamed the section to `Given/Taken`, replaced the browser-native number fields with signed touch-first controls, normalised signed drafts before submit, and updated the inspection card to show all non-zero signed adjustments.
+* **Notes for User:** Build tests will not be run per repository instruction. The `public.inspections` given/taken columns were checked through the MCP database connection and are plain integer fields with default `0` and no matching signed-value `CHECK` constraints.
