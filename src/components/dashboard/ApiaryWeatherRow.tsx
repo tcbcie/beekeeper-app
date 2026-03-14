@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, startTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks } from 'lucide-react'
+import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
@@ -40,6 +40,7 @@ interface CacheEntry<T> {
 
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000
 const SCALE_CACHE_TTL_MS = 5 * 60 * 1000
+const QUEENRIGHT_WARNING_DAYS = 21
 const weatherCache = new Map<string, CacheEntry<ApiaryWeather>>()
 const scaleCache = new Map<string, CacheEntry<ScaleWeight[]>>()
 
@@ -71,6 +72,15 @@ function weatherLabel(code: number): string {
 
 function isCacheFresh(fetchedAt: number, ttlMs: number): boolean {
   return Date.now() - fetchedAt < ttlMs
+}
+
+function getDaysSinceDate(dateString: string | null): number | null {
+  if (!dateString) return null
+
+  const parsedDate = parseLocalDate(dateString)
+  if (Number.isNaN(parsedDate.getTime())) return null
+
+  return Math.max(differenceInCalendarDays(parsedDate, new Date()), 0)
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -270,9 +280,9 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     change30d: avg(scaleData.map(scale => scale.change30d)),
   } : null
 
-  const daysSinceInspection = apiary.lastInspectionDate
-    ? differenceInCalendarDays(parseLocalDate(apiary.lastInspectionDate), new Date())
-    : null
+  const daysSinceInspection = getDaysSinceDate(apiary.lastInspectionDate)
+  const daysSinceQueenright = getDaysSinceDate(apiary.lastQueenrightDate)
+  const queenrightWarning = daysSinceQueenright !== null && daysSinceQueenright > QUEENRIGHT_WARNING_DAYS
 
   return (
     <Link
@@ -386,13 +396,13 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
         </div>
       )}
 
-      <div className="px-3 py-2 flex items-center gap-3 border-b border-border/50">
-        <div className="flex flex-col">
+      <div className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/50">
+        <div className="flex flex-col min-w-0">
           <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Hives</span>
           <span className="text-base font-bold text-foreground tabular-nums">{apiary.hiveCount}</span>
         </div>
         <div className="w-px h-5 bg-border" />
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Last Inspected</span>
           {daysSinceInspection !== null ? (
             <span className={`text-base font-bold tabular-nums ${
@@ -404,6 +414,24 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
             }`}>{daysSinceInspection}d ago</span>
           ) : apiary.hiveCount > 0 ? (
             <span className="text-base font-medium text-text-tertiary">Never</span>
+          ) : (
+            <span className="text-base font-medium text-text-tertiary">&mdash;</span>
+          )}
+        </div>
+        <div className="w-px h-5 bg-border" />
+        <div className="flex flex-col min-w-0">
+          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Queenright</span>
+          {daysSinceQueenright !== null ? (
+            <span className={`flex items-center gap-1 text-base font-bold tabular-nums ${
+              queenrightWarning
+                ? 'text-amber-700 dark:text-amber-400'
+                : 'text-green-700 dark:text-green-400'
+            }`}>
+              {queenrightWarning && <AlertTriangle size={14} className="shrink-0" />}
+              {daysSinceQueenright}d ago
+            </span>
+          ) : apiary.hiveCount > 0 ? (
+            <span className="text-sm font-medium text-text-tertiary">No record</span>
           ) : (
             <span className="text-base font-medium text-text-tertiary">&mdash;</span>
           )}

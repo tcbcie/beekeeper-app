@@ -14,6 +14,13 @@ import type {
   Harvest,
 } from '@/types/dashboard'
 
+interface DashboardInspectionSummaryRow {
+  hive_id: string | null
+  inspection_date: string
+  queen_seen: boolean | null
+  eggs_present: boolean | null
+}
+
 interface UseDashboardStatsReturn {
   stats: DashboardStats
   apiaries: DashboardApiary[]
@@ -78,6 +85,15 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           supabase.from('tasks_events').select('apiary_id').eq('user_id', userId).eq('completed', false).not('apiary_id', 'is', null),
         ])
 
+        const overviewError = apiariesRes.error
+          ?? apiaryListRes.error
+          ?? hivesRes.error
+          ?? inspectionsRes.error
+          ?? queensRes.error
+          ?? tasksRes.error
+          ?? apiaryTasksRes.error
+        if (overviewError) throw overviewError
+
         if (!mountedRef.current) return
 
         const rawApiaries = (apiaryListRes.data || []) as {
@@ -101,49 +117,63 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           ...apiary,
           hiveCount: 0,
           lastInspectionDate: null,
+          lastQueenrightDate: null,
           scales: [],
           activeTaskCount: taskCountMap[apiary.id] || 0,
         }))
 
         if (apiaryIds.length > 0) {
-          const { data: hivesData } = await supabase
+          const { data: hivesData, error: hivesDataError } = await supabase
             .from('hives')
             .select('id, apiary_id, beep_device_id, wolf_scale_id')
             .eq('user_id', userId)
             .is('archived_at', null)
             .in('apiary_id', apiaryIds)
+          if (hivesDataError) throw hivesDataError
 
           const hiveIds = (hivesData || []).map(hive => hive.id)
-          const inspectionMap: Record<string, string> = {}
-
-          if (hiveIds.length > 0) {
-            const { data: inspectionsData } = await supabase
-              .from('inspections')
-              .select('hive_id, inspection_date')
-              .in('hive_id', hiveIds)
-              .order('inspection_date', { ascending: false })
-
-            for (const inspection of (inspectionsData || [])) {
-              if (!inspectionMap[inspection.hive_id]) {
-                inspectionMap[inspection.hive_id] = inspection.inspection_date
-              }
-            }
-          }
-
           const hiveCountMap: Record<string, number> = {}
           const scaleMap: Record<string, DashboardApiary['scales']> = {}
+          const hiveApiaryMap: Record<string, string> = {}
           const lastInspectionMap: Record<string, string> = {}
+          const lastQueenrightMap: Record<string, string> = {}
 
           for (const hive of (hivesData || [])) {
             const apiaryId = hive.apiary_id as string
+            hiveApiaryMap[hive.id] = apiaryId
             hiveCountMap[apiaryId] = (hiveCountMap[apiaryId] || 0) + 1
             if (!scaleMap[apiaryId]) scaleMap[apiaryId] = []
             if (hive.beep_device_id) scaleMap[apiaryId].push({ hiveId: hive.id, type: 'beep', deviceId: hive.beep_device_id })
             if (hive.wolf_scale_id) scaleMap[apiaryId].push({ hiveId: hive.id, type: 'wolf', deviceId: hive.wolf_scale_id })
+          }
 
-            const inspectionDate = inspectionMap[hive.id]
-            if (inspectionDate && (!lastInspectionMap[apiaryId] || inspectionDate > lastInspectionMap[apiaryId])) {
-              lastInspectionMap[apiaryId] = inspectionDate
+          if (hiveIds.length > 0) {
+            const { data: inspectionsData, error: inspectionsDataError } = await supabase
+              .from('inspections')
+              .select('hive_id, inspection_date, queen_seen, eggs_present')
+              .in('hive_id', hiveIds)
+              .order('inspection_date', { ascending: false })
+            if (inspectionsDataError) throw inspectionsDataError
+
+            for (const inspection of (inspectionsData || []) as DashboardInspectionSummaryRow[]) {
+              const hiveId = inspection.hive_id
+              const inspectionDate = inspection.inspection_date
+
+              if (!hiveId || !inspectionDate) continue
+
+              const apiaryId = hiveApiaryMap[hiveId]
+              if (!apiaryId) continue
+
+              if (!lastInspectionMap[apiaryId] || inspectionDate > lastInspectionMap[apiaryId]) {
+                lastInspectionMap[apiaryId] = inspectionDate
+              }
+
+              if (
+                (inspection.queen_seen === true || inspection.eggs_present === true)
+                && (!lastQueenrightMap[apiaryId] || inspectionDate > lastQueenrightMap[apiaryId])
+              ) {
+                lastQueenrightMap[apiaryId] = inspectionDate
+              }
             }
           }
 
@@ -151,6 +181,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
             ...apiary,
             hiveCount: hiveCountMap[apiary.id] || 0,
             lastInspectionDate: lastInspectionMap[apiary.id] || null,
+            lastQueenrightDate: lastQueenrightMap[apiary.id] || null,
             scales: scaleMap[apiary.id] || [],
             activeTaskCount: taskCountMap[apiary.id] || 0,
           }))
@@ -180,17 +211,24 @@ export function useDashboardStats(): UseDashboardStatsReturn {
             .eq('user_id', userId).eq('completed', false).eq('start_date', todayString),
         ])
 
+        const alertsError = oldQueensRes.error
+          ?? highVarroaRes.error
+          ?? activeHivesRes.error
+          ?? todayTasksRes.error
+        if (alertsError) throw alertsError
+
         const highVarroaHiveIds = new Set((highVarroaRes.data || []).map(check => check.hive_id))
 
         let overdueCount = 0
         const activeHives = activeHivesRes.data
         if (activeHives && activeHives.length > 0) {
           const activeHiveIds = activeHives.map(hive => hive.id)
-          const { data: recentInspections } = await supabase
+          const { data: recentInspections, error: recentInspectionsError } = await supabase
             .from('inspections')
             .select('hive_id')
             .in('hive_id', activeHiveIds)
             .gte('inspection_date', fourteenDaysAgo)
+          if (recentInspectionsError) throw recentInspectionsError
 
           const inspectedHiveIds = new Set((recentInspections || []).map(inspection => inspection.hive_id))
           overdueCount = activeHiveIds.filter(id => !inspectedHiveIds.has(id)).length
@@ -244,6 +282,13 @@ export function useDashboardStats(): UseDashboardStatsReturn {
             .order('harvest_date', { ascending: false })
             .limit(10),
         ])
+
+        const recentActivityFetchError = activityInspections.error
+          ?? activityTreatments.error
+          ?? activityChecks.error
+          ?? activityFeedings.error
+          ?? activityHarvests.error
+        if (recentActivityFetchError) throw recentActivityFetchError
 
         const merged: RecentActivityRecord[] = [
           ...((activityInspections.data || []).filter(Boolean) as Inspection[]).map(inspection => ({
