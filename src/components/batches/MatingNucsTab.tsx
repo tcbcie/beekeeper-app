@@ -617,7 +617,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (nuc?.graft_id) {
  await supabase
    .from('batch_grafts')
-   .update({ status: 'sealed' })
+   .update({ status: 'sealed', queen_marked: false, queen_number: null })
    .eq('id', nuc.graft_id)
    .eq('status', 'in_nuc')
  }
@@ -630,6 +630,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (error) throw error
  toast.success('Nuc deleted')
  fetchNucs()
+ fetchGrafts()
  } catch (error) {
  console.error('Error deleting nuc:', error)
  toast.error('Failed to delete mating nuc')
