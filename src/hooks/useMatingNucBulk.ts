@@ -233,7 +233,7 @@ export function useMatingNucBulk() {
     if (graftIdsToUpdate.length > 0) {
       const { error: graftStatusError } = await supabase
         .from('batch_grafts')
-        .update({ status: 'in_nuc' })
+        .update({ status: 'in_nuc', status_date: new Date().toISOString().split('T')[0] })
         .in('id', graftIdsToUpdate)
       if (graftStatusError) throw graftStatusError
     }
