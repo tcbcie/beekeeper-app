@@ -558,7 +558,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (formData.graft_id) {
  await supabase
  .from('batch_grafts')
- .update({ status: 'in_nuc', status_date: new Date().toISOString().split('T')[0] })
+ .update({ status: 'in_nuc', status_date: formData.setup_date || new Date().toISOString().split('T')[0] })
  .eq('id', formData.graft_id)
  }
 

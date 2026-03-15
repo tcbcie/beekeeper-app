@@ -156,7 +156,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     if (cb) cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
 
     // Persist to DB if counts changed (fire-and-forget)
-    const key = `${accepted}:${hatched}:${mated}`
+    const key = `${batchId}:${accepted}:${hatched}:${mated}`
     if (key !== lastPersistedCounts.current) {
       lastPersistedCounts.current = key
       supabase
