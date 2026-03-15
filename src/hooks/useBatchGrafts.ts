@@ -390,6 +390,16 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     clearFrameBulkDrafts()
   }, [clearFrameBulkDrafts])
 
+  // --- Table computed values (needed by selection helpers) ---
+
+  const tableGrafts = useMemo(() =>
+    grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status)),
+  [grafts])
+
+  const distributedGraftIds = useMemo(() =>
+    new Set(distributions.map(d => d.graft_id)),
+  [distributions])
+
   // --- Table selection helpers ---
 
   const toggleTableSelect = useCallback((id: string) => {
@@ -402,16 +412,14 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   }, [])
 
   const selectAllTable = useCallback(() => {
-    const distributedIds = new Set(distributions.map(d => d.graft_id))
     setTableSelectedIds(new Set(
-      grafts.filter(g =>
-        !FRAME_STATUS_VALUES.includes(g.status) &&
+      tableGrafts.filter(g =>
         g.status !== 'failed' &&
         g.status !== 'sold' &&
-        !distributedIds.has(g.id)
+        !distributedGraftIds.has(g.id)
       ).map(g => g.id)
     ))
-  }, [grafts, distributions])
+  }, [tableGrafts, distributedGraftIds])
 
   const deselectAllTable = useCallback(() => setTableSelectedIds(new Set()), [])
   const exitTableSelectMode = useCallback(() => { setTableSelectMode(false); setTableSelectedIds(new Set()) }, [])
@@ -566,14 +574,6 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       return acc
     }, {} as Record<string, number>),
   [grafts])
-
-  const tableGrafts = useMemo(() =>
-    grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status)),
-  [grafts])
-
-  const distributedGraftIds = useMemo(() =>
-    new Set(distributions.map(d => d.graft_id)),
-  [distributions])
 
   const markingColour = useMemo(() =>
     emergenceDate ? getQueenColorFromYear(emergenceDate) : '',
