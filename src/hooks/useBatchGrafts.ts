@@ -467,10 +467,9 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   const handleBulkDelete = useCallback(async () => {
     // Exclude distributed or failed grafts that would fail FK or shouldn't be deleted
-    const distributedIds = new Set(distributions.map(d => d.graft_id))
     const ids = Array.from(selectedIds).filter(id => {
       const g = grafts.find(gr => gr.id === id)
-      return g && g.status !== 'failed' && g.status !== 'sold' && !distributedIds.has(id)
+      return g && g.status !== 'failed' && g.status !== 'sold' && !distributedGraftIds.has(id)
     })
     if (ids.length === 0) return
     if (!confirm(`Delete ${ids.length} selected grafts? This cannot be undone.`)) return
@@ -488,11 +487,15 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error bulk deleting grafts:', error)
       toast.error('Failed to delete grafts')
     }
-  }, [selectedIds, toast, fetchGrafts, fetchDistributions, batchId, distributions, grafts])
+  }, [selectedIds, toast, fetchGrafts, fetchDistributions, batchId, distributedGraftIds, grafts])
 
   // --- Table bulk handlers ---
 
   const handleTableBulkStatusChange = useCallback(async (newStatus: string, date?: string) => {
+    if (!VALID_GRAFT_STATUS_VALUES.includes(newStatus)) {
+      toast.error('Invalid status value')
+      return
+    }
     const ids = Array.from(tableSelectedIds)
     if (ids.length === 0) return
     try {
