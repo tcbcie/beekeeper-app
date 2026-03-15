@@ -162,6 +162,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  queen_id: '',
  mating_location: '',
  status: 'cell_introduced',
+ setup_date: new Date().toISOString().split('T')[0],
  notes: '',
  })
 
@@ -495,6 +496,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  queen_id: '',
  mating_location: '',
  status: 'cell_introduced',
+ setup_date: new Date().toISOString().split('T')[0],
  notes: '',
  })
  setEditingNuc(null)
@@ -510,6 +512,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  queen_id: nuc.queen_id || '',
  mating_location: nuc.mating_location || '',
  status: nuc.status,
+ setup_date: nuc.setup_date ? nuc.setup_date.split('T')[0] : '',
  notes: nuc.notes || '',
  })
  setShowForm(true)
@@ -530,6 +533,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  queen_id: formData.queen_id || null,
  mating_location: formData.mating_location || null,
  status: formData.status,
+ setup_date: formData.setup_date || null,
  notes: formData.notes || null,
  user_id: userId,
  }
@@ -810,6 +814,16 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  className="w-full mt-2 px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  />
  <p className="mt-1 text-xs text-text-tertiary">Choose an apiary from the list or enter a custom location.</p>
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Setup Date</label>
+ <input
+ type="date"
+ value={formData.setup_date}
+ onChange={(e) => setFormData({ ...formData, setup_date: e.target.value })}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ />
  </div>
 
  <div>
