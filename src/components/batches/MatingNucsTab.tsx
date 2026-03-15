@@ -338,7 +338,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  useEffect(() => {
  if (formData.batch_id) {
  const currentGraftId = editingNuc?.graft_id
- const filtered = grafts.filter(g => g.batch_id === formData.batch_id && (g.status === 'sealed' || g.id === currentGraftId))
+ const filtered = grafts.filter(g => g.batch_id === formData.batch_id && (['sealed', 'caged', 'emerged'].includes(g.status) || g.id === currentGraftId))
  setFilteredGrafts(filtered)
  } else {
  setFilteredGrafts([])
