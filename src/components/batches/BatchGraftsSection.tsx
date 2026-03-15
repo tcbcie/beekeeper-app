@@ -59,35 +59,37 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             <HelpCircle size={16} />
           </IconButton>
         </div>
-        <div className="flex gap-2">
-          {hook.grafts.length > 0 && (
+        {!hook.frameCollapsed && (
+          <div className="flex gap-2">
+            {hook.grafts.length > 0 && (
+              <Button
+                type="button"
+                onClick={handleFrameBulkButtonClick}
+                disabled={hook.savingFrameBulkEdits}
+                tone={hook.selectMode ? 'success' : 'neutral'}
+                size="sm"
+                className={`inline-flex items-center gap-1 ${
+                  hook.selectMode
+                    ? ''
+                    : 'border border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30'
+                }`}
+              >
+                <CheckSquare size={14} />
+                {hook.savingFrameBulkEdits ? 'Saving...' : hook.selectMode ? 'Done' : 'Bulk Actions'}
+              </Button>
+            )}
             <Button
               type="button"
-              onClick={handleFrameBulkButtonClick}
-              disabled={hook.savingFrameBulkEdits}
-              tone={hook.selectMode ? 'success' : 'neutral'}
+              onClick={hook.generateGrafts}
+              tone="success"
               size="sm"
-              className={`inline-flex items-center gap-1 ${
-                hook.selectMode
-                  ? ''
-                  : 'border border-forest-600 text-forest-600 dark:border-forest-400 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30'
-              }`}
+              className="inline-flex items-center gap-1"
             >
-              <CheckSquare size={14} />
-              {hook.savingFrameBulkEdits ? 'Saving...' : hook.selectMode ? 'Done' : 'Bulk Actions'}
+              <Plus size={14} />
+              Generate Cell Records
             </Button>
-          )}
-          <Button
-            type="button"
-            onClick={hook.generateGrafts}
-            tone="success"
-            size="sm"
-            className="inline-flex items-center gap-1"
-          >
-            <Plus size={14} />
-            Generate Cell Records
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Help Banner */}
