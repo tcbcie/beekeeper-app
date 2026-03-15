@@ -104,7 +104,7 @@ export function useMatingNucBulk() {
       .select('id, batch_id, cell_number, status')
       .eq('user_id', userId)
       .eq('batch_id', sourceBatchId)
-      .eq('status', 'sealed')
+      .in('status', ['sealed', 'caged', 'emerged'])
       .order('cell_number')
 
     if (sealedError) throw sealedError
