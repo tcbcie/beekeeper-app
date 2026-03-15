@@ -1552,10 +1552,6 @@ export default function BatchesPage() {
  </div>
  )}
  </div>
- <div className="flex justify-between pt-2 border-t border-border">
- <span className="text-text-tertiary">Acceptance Check:</span>
- <span className="text-foreground">{formatDateIrish(batch.acceptance_check_date)}</span>
- </div>
  </div>
  </div>
  ))}
@@ -1577,7 +1573,6 @@ export default function BatchesPage() {
  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Accepted</th>
  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hatched</th>
  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Mated</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Acceptance Check</th>
  </tr>
  </thead>
  <tbody className="bg-surface dark:bg-surface divide-y divide-border">
@@ -1598,7 +1593,6 @@ export default function BatchesPage() {
  <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
- <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.acceptance_check_date)}</td>
  </tr>
  ))}
  </tbody>
