@@ -143,21 +143,31 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     if (hasTableGrafts) setFrameCollapsed(true)
   }, [grafts])
 
-  // Sync counts to parent when grafts change (uses ref to avoid infinite loop)
+  // Sync counts to parent and persist to DB when grafts change
+  const lastPersistedCounts = useRef<string>('')
   useEffect(() => {
-    const cb = onCountsChangeRef.current
-    if (!cb || loading) return
-    if (grafts.length === 0) {
-      cb({ grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
-      return
-    }
-    const accepted = grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
-    const hatched = grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
-    // For sold grafts, only count as mated if distribution type isn't queen_cell
+    if (loading) return
+    const accepted = grafts.length === 0 ? 0 : grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
+    const hatched = grafts.length === 0 ? 0 : grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
     const queenCellGraftIds = new Set(distributions.filter(d => d.distribution_type === 'queen_cell').map(d => d.graft_id))
-    const mated = grafts.filter(g => g.status === 'mated' || (g.status === 'sold' && !queenCellGraftIds.has(g.id))).length
-    cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
-  }, [grafts, loading, distributions])
+    const mated = grafts.length === 0 ? 0 : grafts.filter(g => g.status === 'mated' || (g.status === 'sold' && !queenCellGraftIds.has(g.id))).length
+
+    const cb = onCountsChangeRef.current
+    if (cb) cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
+
+    // Persist to DB if counts changed (fire-and-forget)
+    const key = `${accepted}:${hatched}:${mated}`
+    if (key !== lastPersistedCounts.current) {
+      lastPersistedCounts.current = key
+      supabase
+        .from('rearing_batches')
+        .update({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
+        .eq('id', batchId)
+        .then(({ error }) => {
+          if (error) console.error('Failed to persist batch counts:', error)
+        })
+    }
+  }, [grafts, loading, distributions, batchId])
 
   // --- CRUD ---
 
