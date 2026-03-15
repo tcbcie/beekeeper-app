@@ -200,6 +200,22 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  console.error('Error fetching nucs:', error)
  } else if (data) {
  setNucs(data)
+
+ // Sync graft statuses: ensure grafts assigned to active nucs show 'in_nuc'
+ const activeGraftIds = data
+   .filter(n => !n.retired_at && n.graft_id && n.status !== 'failed')
+   .map(n => n.graft_id)
+   .filter(Boolean) as string[]
+ if (activeGraftIds.length > 0) {
+   supabase
+     .from('batch_grafts')
+     .update({ status: 'in_nuc' })
+     .in('id', activeGraftIds)
+     .in('status', ['sealed', 'caged', 'emerged'])
+     .then(({ error: syncError }) => {
+       if (syncError) console.error('Failed to sync graft statuses:', syncError)
+     })
+ }
  }
  setLoading(false)
  }, [userId, showRetired, activeBulkBatchId])
