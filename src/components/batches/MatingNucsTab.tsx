@@ -1216,12 +1216,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {nuc.queen_last_seen_at && (
  <span>Queen Seen: {formatDateIrish(nuc.queen_last_seen_at)}</span>
  )}
- {nuc.queen_marked_at && (() => {
+ {(nuc.queen_marked_at || nuc.batch_grafts?.queen_marked) && (() => {
  const colour = nuc.rearing_batches?.emergence_date ? getQueenColorFromYear(nuc.rearing_batches.emergence_date) : ''
  return (
  <span className="flex items-center gap-1">
  {colour && COLOUR_DOTS[colour] && <span className={`inline-block w-3 h-3 rounded-full ${COLOUR_DOTS[colour]}`} />}
- Marked: {formatDateIrish(nuc.queen_marked_at)}
+ Marked{nuc.queen_marked_at ? `: ${formatDateIrish(nuc.queen_marked_at)}` : ''}
  {nuc.batch_grafts?.queen_number && ` (#${nuc.batch_grafts.queen_number})`}
  </span>
  )
