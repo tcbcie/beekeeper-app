@@ -97,14 +97,12 @@ const NUC_STATUSES = [
  { value: 'merged', label: 'Merged', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
 ]
 
-// Format date to Irish format (DD/MM/YYYY)
+// Format date to Irish format (DD/MM/YYYY) — uses string splitting to avoid timezone drift
 const formatDateIrish = (dateString: string | null): string => {
  if (!dateString) return '-'
- const date = new Date(dateString)
- const day = date.getDate().toString().padStart(2, '0')
- const month = (date.getMonth() + 1).toString().padStart(2, '0')
- const year = date.getFullYear()
- return `${day}/${month}/${year}`
+ const parts = dateString.split('T')[0].split('-')
+ if (parts.length !== 3) return dateString
+ return `${parts[2]}/${parts[1]}/${parts[0]}`
 }
 
 const NUC_DISTRIBUTABLE_STATUSES = ['virgin', 'mating', 'laying']
@@ -568,6 +566,23 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .eq('id', editingNuc.id)
 
  if (error) throw error
+
+ // Handle graft change on edit: revert old graft, transition new graft
+ const oldGraftId = editingNuc.graft_id
+ const newGraftId = formData.graft_id || null
+ if (oldGraftId && oldGraftId !== newGraftId) {
+   await supabase
+     .from('batch_grafts')
+     .update({ status: 'sealed', queen_marked: false, queen_number: null })
+     .eq('id', oldGraftId)
+ }
+ if (newGraftId && newGraftId !== oldGraftId) {
+   await supabase
+     .from('batch_grafts')
+     .update({ status: 'in_nuc', status_date: formData.setup_date || new Date().toISOString().split('T')[0] })
+     .eq('id', newGraftId)
+ }
+
  toast.success('Mating nuc updated')
  } else {
  const { error } = await supabase
@@ -600,6 +615,16 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (!confirm('Retire this nuc? It will be archived but history preserved.')) return
 
  try {
+ // Revert graft status before retiring so the cell becomes available again
+ const nuc = nucs.find(n => n.id === id)
+ if (nuc?.graft_id) {
+   await supabase
+     .from('batch_grafts')
+     .update({ status: 'sealed', queen_marked: false, queen_number: null })
+     .eq('id', nuc.graft_id)
+     .in('status', ['in_nuc', 'sealed', 'caged', 'emerged'])
+ }
+
  const { error } = await supabase
  .from('mating_nucs')
  .update({ retired_at: new Date().toISOString() })
@@ -608,6 +633,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (error) throw error
  toast.success('Nuc retired')
  fetchNucs()
+ fetchGrafts()
  } catch (error) {
  console.error('Error retiring nuc:', error)
  toast.error('Failed to retire mating nuc')
@@ -618,14 +644,14 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (!confirm('Delete this nuc permanently? This will also delete all its inspections. This cannot be undone.')) return
 
  try {
- // Reset graft status from 'in_nuc' back to 'emerged' before deleting
+ // Reset graft status back to 'sealed' before deleting (guard includes pre-sync statuses)
  const nuc = nucs.find(n => n.id === id)
  if (nuc?.graft_id) {
  await supabase
    .from('batch_grafts')
    .update({ status: 'sealed', queen_marked: false, queen_number: null })
    .eq('id', nuc.graft_id)
-   .eq('status', 'in_nuc')
+   .in('status', ['in_nuc', 'sealed', 'caged', 'emerged'])
  }
 
  const { error } = await supabase
