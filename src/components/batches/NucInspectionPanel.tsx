@@ -42,11 +42,14 @@ interface NucInspectionPanelProps {
   emergenceDate?: string | null
   onInspectionChange?: () => void
   readOnly?: boolean
+  existingQueenMarkedAt?: string | null
+  existingQueenMarked?: boolean
+  existingQueenNumber?: string | null
 }
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
 
-export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange, readOnly }: NucInspectionPanelProps) {
+export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange, readOnly, existingQueenMarkedAt, existingQueenMarked, existingQueenNumber }: NucInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<NucInspection[]>([])
   const [loading, setLoading] = useState(true)
@@ -285,13 +288,17 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         )}
         {!readOnly && graftId && !showForm && !showMarkForm && (
           <Button
-            onClick={() => setShowMarkForm(true)}
+            onClick={() => {
+              setMarkDate(existingQueenMarkedAt ? existingQueenMarkedAt.split('T')[0] : new Date().toISOString().split('T')[0])
+              setMarkQueenNumber(existingQueenNumber || '')
+              setShowMarkForm(true)
+            }}
             tone="neutral"
             size="sm"
             className="inline-flex items-center gap-1.5"
           >
             <Tag size={16} />
-            Mark Queen
+            {existingQueenMarked ? 'Edit Marking' : 'Mark Queen'}
           </Button>
         )}
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -303,7 +310,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       {/* Mark Queen Form */}
       {showMarkForm && (
         <div className="mb-6 p-4 bg-surface-elevated rounded-lg border border-amber-200 dark:border-amber-800">
-          <h4 className="text-md font-medium text-foreground mb-3">Mark Queen</h4>
+          <h4 className="text-md font-medium text-foreground mb-3">{existingQueenMarked ? 'Edit Queen Marking' : 'Mark Queen'}</h4>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <label className="text-sm text-text-secondary">Date:</label>

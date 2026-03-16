@@ -1292,6 +1292,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  emergenceDate={nuc.rearing_batches?.emergence_date || null}
  onInspectionChange={fetchNucs}
  readOnly={nuc.status === 'sold'}
+ existingQueenMarkedAt={nuc.queen_marked_at}
+ existingQueenMarked={nuc.batch_grafts?.queen_marked ?? false}
+ existingQueenNumber={nuc.batch_grafts?.queen_number ?? null}
  />
  )}
  </div>
