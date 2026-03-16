@@ -29,6 +29,8 @@ interface Graft {
  cell_number: number
  status: string
  notes: string | null
+ queen_marked?: boolean
+ queen_number?: string | null
 }
 
 interface Queen {
@@ -163,6 +165,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  mating_location: '',
  status: 'cell_introduced',
  setup_date: new Date().toISOString().split('T')[0],
+ queen_marked_at: '',
  notes: '',
  })
 
@@ -513,6 +516,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  mating_location: '',
  status: 'cell_introduced',
  setup_date: new Date().toISOString().split('T')[0],
+ queen_marked_at: '',
  notes: '',
  })
  setEditingNuc(null)
@@ -529,6 +533,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  mating_location: nuc.mating_location || '',
  status: nuc.status,
  setup_date: nuc.setup_date ? nuc.setup_date.split('T')[0] : '',
+ queen_marked_at: nuc.queen_marked_at ? nuc.queen_marked_at.split('T')[0] : '',
  notes: nuc.notes || '',
  })
  setShowForm(true)
@@ -550,6 +555,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  mating_location: formData.mating_location || null,
  status: formData.status,
  setup_date: formData.setup_date || null,
+ queen_marked_at: formData.queen_marked_at || null,
  notes: formData.notes || null,
  user_id: userId,
  }
@@ -793,13 +799,26 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <label className="block text-sm font-medium text-text-secondary mb-1">Cell/Graft</label>
  <select
  value={formData.graft_id}
- onChange={(e) => setFormData({ ...formData, graft_id: e.target.value })}
+ onChange={(e) => {
+ const selectedGraft = filteredGrafts.find(g => g.id === e.target.value)
+ const autoStatus = selectedGraft?.status === 'emerged' ? 'virgin' : formData.status === 'virgin' && !e.target.value ? 'cell_introduced' : formData.status
+ const updates: Partial<typeof formData> & { graft_id: string; status: string } = {
+   graft_id: e.target.value,
+   status: e.target.value ? autoStatus : formData.status,
+ }
+ if (selectedGraft?.status === 'emerged' && selectedGraft.queen_marked) {
+   updates.queen_marked_at = formData.setup_date || new Date().toISOString().split('T')[0]
+ } else if (!e.target.value) {
+   updates.queen_marked_at = ''
+ }
+ setFormData({ ...formData, ...updates })
+ }}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  >
  <option value="">Select cell (optional)</option>
  {filteredGrafts.map(g => (
  <option key={g.id} value={g.id}>
- Cell #{g.cell_number} ({g.status})
+ Cell #{g.cell_number} ({g.status}{g.queen_marked ? ', marked' : ''}{g.queen_number ? ` #${g.queen_number}` : ''})
  </option>
  ))}
  </select>
