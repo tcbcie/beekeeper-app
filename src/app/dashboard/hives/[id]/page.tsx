@@ -201,15 +201,15 @@ export default function HiveDetailPage() {
           {hive.apiaries && (
             <p className="text-text-tertiary">Apiary: {hive.apiaries.name}</p>
           )}
-          {hive.is_shared && (
+          {hive.is_shared && hive.team_name && (
             <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 border border-blue-300 dark:border-blue-800">
-              <span></span>
-              <span>Shared with SensibleTeam</span>
+              <span>👥</span>
+              <span>Shared via {hive.team_name}</span>
             </span>
           )}
           {!hive.is_shared && hive.shared_with_team && (
             <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-medium rounded flex items-center gap-1 border border-purple-300 dark:border-purple-800">
-              <span></span>
+              <span>📤</span>
               <span>Shared with {hive.shared_with_team}</span>
             </span>
           )}

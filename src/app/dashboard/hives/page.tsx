@@ -173,10 +173,14 @@ export default function HivesPage() {
  const ownerSharedMap = new Map<string, { name: string }>()
 
  if (allApiaryIds.length > 0) {
- const { data: teamApiaryData } = await supabase
+ const { data: teamApiaryData, error: teamApiaryError } = await supabase
  .from('team_apiaries')
  .select('apiary_id, teams(name)')
  .in('apiary_id', allApiaryIds)
+
+ if (teamApiaryError) {
+ console.error('Error fetching team apiary data:', teamApiaryError)
+ }
 
  if (teamApiaryData) {
  teamApiaryData.forEach((ta) => {
