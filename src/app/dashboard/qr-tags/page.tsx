@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Trash2, Link2, Link2Off, Printer, QrCode } from 'lucide-react'
+import { Plus, Trash2, Link2, Link2Off, Printer, QrCode, Users } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import ModalShell from '@/components/ui/ModalShell'
@@ -19,6 +19,7 @@ interface QrTag {
  id: string
  code: string
  hive_id: string | null
+ team_id: string | null
  label: string | null
  created_at: string
  assigned_at: string | null
@@ -29,6 +30,11 @@ interface HiveOption {
  id: string
  hive_number: string
  apiary_name: string | null
+}
+
+interface TeamOption {
+ id: string
+ name: string
 }
 
 export default function QrTagsPage() {
@@ -52,6 +58,14 @@ export default function QrTagsPage() {
  // Delete confirmation
  const [deletingTagId, setDeletingTagId] = useState<string | null>(null)
 
+ // Team/shared state
+ const [ownedTeams, setOwnedTeams] = useState<TeamOption[]>([])
+ const [teamNames, setTeamNames] = useState<Record<string, string>>({})
+ const [sharedTags, setSharedTags] = useState<QrTag[]>([])
+ const [sharedHivesByTeam, setSharedHivesByTeam] = useState<Record<string, HiveOption[]>>({})
+ const [generateTeamId, setGenerateTeamId] = useState('')
+ const [memberTeamIds, setMemberTeamIds] = useState<string[]>([])
+
  // Load logo as base64 for QR codes
  const [logoBase64, setLogoBase64] = useState<string>('')
  useEffect(() => {
@@ -71,7 +85,7 @@ export default function QrTagsPage() {
  const fetchTags = useCallback(async (uid: string) => {
  const { data, error } = await supabase
  .from('qr_tags')
- .select('id, code, hive_id, label, created_at, assigned_at')
+ .select('id, code, hive_id, team_id, label, created_at, assigned_at')
  .eq('user_id', uid)
  .order('created_at', { ascending: false })
 
@@ -128,16 +142,133 @@ export default function QrTagsPage() {
  }
  }, [])
 
+ const fetchTeamData = useCallback(async (uid: string) => {
+ // Owned teams
+ const { data: owned, error: ownedError } = await supabase
+  .from('teams')
+  .select('id, name')
+  .eq('owner_id', uid)
+ if (ownedError) {
+  showToast('Failed to load team data', 'error')
+  return { memberOnlyIds: [] as string[], allTeamIds: [] as string[] }
+ }
+ const ownedList: TeamOption[] = (owned || []).map(t => ({ id: t.id, name: t.name }))
+ setOwnedTeams(ownedList)
+
+ // Member teams (via team_members)
+ const { data: memberships, error: memberError } = await supabase
+  .from('team_members')
+  .select('team_id, teams(id, name)')
+  .eq('user_id', uid)
+ if (memberError) {
+  showToast('Failed to load team memberships', 'error')
+ }
+ const memberTeams: TeamOption[] = (memberships || []).map(m => {
+  const team = Array.isArray(m.teams) ? m.teams[0] : m.teams
+  return { id: (team as { id: string; name: string })?.id || m.team_id, name: (team as { id: string; name: string })?.name || '' }
+ })
+
+ // Build names map
+ const names: Record<string, string> = {}
+ ownedList.forEach(t => { names[t.id] = t.name })
+ memberTeams.forEach(t => { names[t.id] = t.name })
+ setTeamNames(names)
+
+ // Member-only IDs (teams user didn't create) for shared tags
+ const ownedIds = new Set(ownedList.map(t => t.id))
+ const memberOnlyIds = memberTeams.filter(t => !ownedIds.has(t.id)).map(t => t.id)
+ const allTeamIds = [...new Set([...ownedList.map(t => t.id), ...memberTeams.map(t => t.id)])]
+ return { memberOnlyIds, allTeamIds }
+ }, [showToast])
+
+ const fetchSharedTags = useCallback(async (uid: string, teamIdsToFetch: string[]) => {
+ if (teamIdsToFetch.length === 0) { setSharedTags([]); return }
+
+ const { data, error } = await supabase
+  .from('qr_tags')
+  .select('id, code, hive_id, team_id, label, created_at, assigned_at')
+  .in('team_id', teamIdsToFetch)
+  .neq('user_id', uid)
+  .order('created_at', { ascending: false })
+
+ if (error) { setSharedTags([]); return }
+
+ // Fetch hive details for assigned shared tags
+ const hiveIds = (data || []).filter(t => t.hive_id).map(t => t.hive_id!)
+ const hiveMap: Record<string, { hive_number: string; apiaries: { name: string } | null }> = {}
+ if (hiveIds.length > 0) {
+  const { data: hivesData } = await supabase
+   .from('hives')
+   .select('id, hive_number, apiaries(name)')
+   .in('id', hiveIds)
+  if (hivesData) {
+   for (const h of hivesData) {
+    const apiaryData = h.apiaries
+    hiveMap[h.id] = {
+     hive_number: h.hive_number,
+     apiaries: Array.isArray(apiaryData) ? apiaryData[0] ?? null : apiaryData,
+    }
+   }
+  }
+ }
+
+ setSharedTags((data || []).map(t => ({
+  ...t,
+  hive: t.hive_id ? hiveMap[t.hive_id] || null : null,
+ })))
+ }, [])
+
+ const fetchSharedHives = useCallback(async (allTeamIds: string[]) => {
+ if (allTeamIds.length === 0) { setSharedHivesByTeam({}); return }
+
+ const { data: teamApiaries } = await supabase
+  .from('team_apiaries')
+  .select('team_id, apiary_id')
+  .in('team_id', allTeamIds)
+ if (!teamApiaries || teamApiaries.length === 0) { setSharedHivesByTeam({}); return }
+
+ const apiaryToTeams: Record<string, string[]> = {}
+ for (const ta of teamApiaries) {
+  if (!apiaryToTeams[ta.apiary_id]) apiaryToTeams[ta.apiary_id] = []
+  apiaryToTeams[ta.apiary_id].push(ta.team_id)
+ }
+
+ const { data: hivesData } = await supabase
+  .from('hives')
+  .select('id, hive_number, apiary_id, apiaries(name)')
+  .in('apiary_id', Object.keys(apiaryToTeams))
+  .is('archived_at', null)
+  .order('hive_number')
+ if (!hivesData) { setSharedHivesByTeam({}); return }
+
+ const byTeam: Record<string, HiveOption[]> = {}
+ for (const h of hivesData) {
+  const apiaryData = h.apiaries
+  const apiary = Array.isArray(apiaryData) ? apiaryData[0] : apiaryData
+  const opt: HiveOption = { id: h.id, hive_number: h.hive_number, apiary_name: (apiary as { name: string })?.name ?? null }
+  const teams = apiaryToTeams[h.apiary_id] || []
+  for (const tid of teams) {
+   if (!byTeam[tid]) byTeam[tid] = []
+   byTeam[tid].push(opt)
+  }
+ }
+ setSharedHivesByTeam(byTeam)
+ }, [])
+
  useEffect(() => {
  const init = async () => {
  const uid = await getCurrentUserId()
  if (!uid) return
  setUserId(uid)
- await Promise.all([fetchTags(uid), fetchHives(uid)])
+ const [, , teamData] = await Promise.all([fetchTags(uid), fetchHives(uid), fetchTeamData(uid)])
+ if (teamData) {
+  setMemberTeamIds(teamData.memberOnlyIds)
+  await Promise.all([fetchSharedTags(uid, teamData.memberOnlyIds), fetchSharedHives(teamData.allTeamIds)])
+ }
  setLoading(false)
  }
  init()
- }, [fetchTags, fetchHives])
+ }, [fetchTags, fetchHives, fetchTeamData, fetchSharedTags, fetchSharedHives])
 
  const handleGenerate = async () => {
  if (!userId) return
@@ -150,7 +281,7 @@ export default function QrTagsPage() {
  const label = generateLabel
  ? (generateQuantity > 1 ? `${generateLabel} ${i + 1}` : generateLabel)
  : null
- newTags.push({ code, user_id: userId, label })
+ newTags.push({ code, user_id: userId, label, team_id: generateTeamId || null })
  }
 
  const { error } = await supabase.from('qr_tags').insert(newTags)
@@ -169,6 +300,7 @@ export default function QrTagsPage() {
  setShowGenerateModal(false)
  setGenerateQuantity(1)
  setGenerateLabel('')
+ setGenerateTeamId('')
  await fetchTags(userId)
  } finally {
  setGenerating(false)
@@ -197,6 +329,7 @@ export default function QrTagsPage() {
  setAssigningTag(null)
  setSelectedHiveId('')
  await fetchTags(userId)
+ if (memberTeamIds.length > 0) await fetchSharedTags(userId, memberTeamIds)
  }
 
  const handleDelete = async (tagId: string) => {
@@ -219,14 +352,16 @@ export default function QrTagsPage() {
 
  const qrContainerRef = useRef<HTMLDivElement>(null)
 
+ const allPrintTags = [...tags, ...sharedTags]
+
  const handlePrintBatch = () => {
- if (tags.length === 0 || !qrContainerRef.current) return
+ if (allPrintTags.length === 0 || !qrContainerRef.current) return
 
  const escapeHtml = (str: string) =>
  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
  // Serialise each hidden QRCodeSVG to a data URI
- const qrHtml = tags.map(tag => {
+ const qrHtml = allPrintTags.map(tag => {
  const svg = qrContainerRef.current?.querySelector(`[data-tag-code="${tag.code}"]`)
  let imgTag = ''
  if (svg) {
@@ -238,7 +373,7 @@ export default function QrTagsPage() {
  <div style="display:inline-block;text-align:center;padding:16px;page-break-inside:avoid;">
  ${imgTag}
  <p style="margin:4px 0 0;font-size:9px;color:#999;">www.hivecraic.com</p>
- <p style="margin:2px 0 0;font-size:12px;font-weight:bold;">${tag.code}</p>
+ <p style="margin:2px 0 0;font-size:12px;font-weight:bold;">${escapeHtml(tag.code)}</p>
  ${tag.label ? `<p style="margin:2px 0 0;font-size:10px;color:#666;">${escapeHtml(tag.label)}</p>` : ''}
  </div>
  `
@@ -272,7 +407,7 @@ export default function QrTagsPage() {
  <p className="text-text-tertiary mt-1">Generate reusable QR tags and assign them to hives</p>
  </div>
  <div className="flex gap-2">
- {tags.length > 0 && (
+ {allPrintTags.length > 0 && (
  <Button
  onClick={handlePrintBatch}
  className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated border border-border font-medium flex items-center gap-2 text-sm"
@@ -292,7 +427,7 @@ export default function QrTagsPage() {
  </div>
 
  {/* Tags List */}
- {tags.length === 0 ? (
+ {tags.length === 0 && sharedTags.length === 0 ? (
  <div className="bg-surface rounded-lg shadow-lg p-12 text-center border border-border">
  <QrCode size={48} className="mx-auto mb-4 text-text-tertiary" />
  <h2 className="text-xl font-semibold text-foreground mb-2">No QR Tags Yet</h2>
@@ -306,12 +441,23 @@ export default function QrTagsPage() {
  </div>
  ) : (
  <>
+ {/* My Tags */}
+ {tags.length > 0 && (
+ <>
+ <h2 className="text-lg font-semibold text-foreground mb-3">My Tags</h2>
  {/* Mobile Cards */}
  <div className="md:hidden space-y-3">
  {tags.map(tag => (
  <div key={tag.id} className="bg-surface rounded-lg shadow p-4 border border-border">
  <div className="flex items-center justify-between mb-2">
+ <div className="flex items-center gap-2">
  <span className="font-mono font-bold text-foreground">{tag.code}</span>
+ {tag.team_id && teamNames[tag.team_id] && (
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+  <Users size={10} />{teamNames[tag.team_id]}
+  </span>
+ )}
+ </div>
  <div className="flex gap-1">
  <Button
  onClick={() => {
@@ -382,7 +528,14 @@ export default function QrTagsPage() {
  <tbody className="divide-y divide-border">
  {tags.map(tag => (
  <tr key={tag.id} className="hover:bg-surface-secondary">
- <td className="px-4 py-3 font-mono font-bold text-foreground">{tag.code}</td>
+ <td className="px-4 py-3 font-mono font-bold text-foreground">
+ <span>{tag.code}</span>
+ {tag.team_id && teamNames[tag.team_id] && (
+  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+  <Users size={10} />{teamNames[tag.team_id]}
+  </span>
+ )}
+ </td>
  <td className="px-4 py-3 text-sm text-text-secondary">{tag.label || '—'}</td>
  <td className="px-4 py-3 text-sm">
  {tag.hive ? (
@@ -442,13 +595,125 @@ export default function QrTagsPage() {
  </div>
  </>
  )}
+ </>
+ )}
+
+ {/* Shared with Me */}
+ {sharedTags.length > 0 && (
+ <>
+ <h2 className="text-lg font-semibold text-foreground mt-8 mb-3 flex items-center gap-2">
+ <Users size={18} className="text-blue-600" />
+ Shared with Me
+ </h2>
+
+ {/* Shared Mobile Cards */}
+ <div className="md:hidden space-y-3">
+ {sharedTags.map(tag => (
+ <div key={tag.id} className="bg-surface rounded-lg shadow p-4 border border-blue-200 dark:border-blue-800">
+  <div className="flex items-center justify-between mb-2">
+  <div className="flex items-center gap-2">
+   <span className="font-mono font-bold text-foreground">{tag.code}</span>
+   {tag.team_id && teamNames[tag.team_id] && (
+   <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+   <Users size={10} />{teamNames[tag.team_id]}
+   </span>
+   )}
+  </div>
+  <Button
+   onClick={() => {
+   setAssigningTag(tag)
+   setSelectedHiveId(tag.hive_id || '')
+   setShowAssignModal(true)
+   }}
+   className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+   title={tag.hive_id ? 'Reassign' : 'Assign'}
+  >
+   {tag.hive_id ? <Link2 size={16} /> : <Link2Off size={16} />}
+  </Button>
+  </div>
+  {tag.label && <p className="text-sm text-text-secondary mb-1">{tag.label}</p>}
+  <p className="text-sm">
+  {tag.hive ? (
+   <span className="text-green-600 dark:text-green-400 font-medium">
+   Hive {tag.hive.hive_number}
+   {tag.hive.apiaries && <span className="text-text-tertiary font-normal"> — {tag.hive.apiaries.name}</span>}
+   </span>
+  ) : (
+   <span className="text-text-tertiary italic">Unassigned</span>
+  )}
+  </p>
+  <p className="text-xs text-text-tertiary mt-1">
+  Created {new Date(tag.created_at).toLocaleDateString()}
+  </p>
+ </div>
+ ))}
+ </div>
+
+ {/* Shared Desktop Table */}
+ <div className="hidden md:block bg-surface rounded-lg shadow-lg border border-blue-200 dark:border-blue-800 overflow-hidden">
+ <table className="w-full">
+  <thead className="bg-surface-secondary">
+  <tr>
+   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Code</th>
+   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Team</th>
+   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Label</th>
+   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Assigned Hive</th>
+   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Created</th>
+   <th className="text-right px-4 py-3 text-sm font-semibold text-text-secondary">Actions</th>
+  </tr>
+  </thead>
+  <tbody className="divide-y divide-border">
+  {sharedTags.map(tag => (
+   <tr key={tag.id} className="hover:bg-surface-secondary">
+   <td className="px-4 py-3 font-mono font-bold text-foreground">{tag.code}</td>
+   <td className="px-4 py-3 text-sm">
+    {tag.team_id && teamNames[tag.team_id] && (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+     <Users size={10} />{teamNames[tag.team_id]}
+    </span>
+    )}
+   </td>
+   <td className="px-4 py-3 text-sm text-text-secondary">{tag.label || '—'}</td>
+   <td className="px-4 py-3 text-sm">
+    {tag.hive ? (
+    <span className="text-green-600 dark:text-green-400 font-medium">
+     Hive {tag.hive.hive_number}
+     {tag.hive.apiaries && <span className="text-text-tertiary font-normal"> — {tag.hive.apiaries.name}</span>}
+    </span>
+    ) : (
+    <span className="text-text-tertiary italic">Unassigned</span>
+    )}
+   </td>
+   <td className="px-4 py-3 text-sm text-text-tertiary">
+    {new Date(tag.created_at).toLocaleDateString()}
+   </td>
+   <td className="px-4 py-3 text-right">
+    <Button
+    onClick={() => {
+     setAssigningTag(tag)
+     setSelectedHiveId(tag.hive_id || '')
+     setShowAssignModal(true)
+    }}
+    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+    title={tag.hive_id ? 'Reassign' : 'Assign to hive'}
+    >
+    {tag.hive_id ? <Link2 size={16} /> : <Link2Off size={16} />}
+    </Button>
+   </td>
+   </tr>
+  ))}
+  </tbody>
+ </table>
+ </div>
+ </>
+ )}
 
  {/* Generate Modal */}
  {showGenerateModal && (
  <ModalShell
  title="Generate QR Tags"
  maxWidthClassName="max-w-sm"
- onClose={() => setShowGenerateModal(false)}
+ onClose={() => { setShowGenerateModal(false); setGenerateTeamId('') }}
  closeOnBackdrop
  bodyClassName="p-6 space-y-4"
  >
@@ -472,6 +737,20 @@ export default function QrTagsPage() {
  maxLength={50}
  />
  </div>
+ {ownedTeams.length > 0 && (
+ <div>
+ <FieldLabel>For</FieldLabel>
+ <SelectField
+  value={generateTeamId}
+  onChange={e => setGenerateTeamId(e.target.value)}
+ >
+  <option value="">My hives</option>
+  {ownedTeams.map(t => (
+  <option key={t.id} value={t.id}>Team: {t.name}</option>
+  ))}
+ </SelectField>
+ </div>
+ )}
  <Button
  onClick={handleGenerate}
  disabled={generating}
@@ -485,7 +764,7 @@ export default function QrTagsPage() {
  {/* Assign Modal */}
  {/* Hidden QR codes for offline-safe batch print */}
  <div ref={qrContainerRef} className="hidden" aria-hidden="true">
- {tags.map(tag => {
+ {allPrintTags.map(tag => {
  const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/hive-scan/tag/${tag.code}`
  return (
  <QRCodeSVG
@@ -521,15 +800,21 @@ export default function QrTagsPage() {
  onChange={e => setSelectedHiveId(e.target.value)}
  >
  <option value="">Unassigned</option>
- {hives.filter(h => {
- // Exclude hives already assigned to another tag
- const taken = tags.some(t => t.hive_id === h.id && t.id !== assigningTag?.id)
- return !taken
+ {(() => {
+ // Use shared hives when assigning a shared tag, own hives otherwise
+ const hiveList = assigningTag?.team_id
+  ? (sharedHivesByTeam[assigningTag.team_id] || [])
+  : hives
+ const allTags = [...tags, ...sharedTags]
+ return hiveList.filter(h => {
+  const taken = allTags.some(t => t.hive_id === h.id && t.id !== assigningTag?.id)
+  return !taken
  }).map(h => (
- <option key={h.id} value={h.id}>
- Hive {h.hive_number}{h.apiary_name ? ` (${h.apiary_name})` : ''}
- </option>
- ))}
+  <option key={h.id} value={h.id}>
+  Hive {h.hive_number}{h.apiary_name ? ` (${h.apiary_name})` : ''}
+  </option>
+ ))
+ })()}
  </SelectField>
  </div>
  <FormActionRow>
