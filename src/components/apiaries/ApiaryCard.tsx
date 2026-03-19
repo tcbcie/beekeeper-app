@@ -26,6 +26,7 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
   return (
     <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border ${
       apiary.is_shared ? 'border-l-4 border-l-blue-500' :
+      apiary.team_name ? 'border-l-4 border-l-purple-500' :
       apiary.is_mating_apiary ? 'border-l-4 border-l-purple-500' : ''
     }`}>
       <div className="flex justify-between items-start mb-4 gap-4">
@@ -44,7 +45,12 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
           )}
           {apiary.is_shared && (
             <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full border border-blue-300 dark:border-blue-700 mt-1">
-              Shared via {apiary.team_name || 'team'}
+              👥 Shared via {apiary.team_name || 'team'}
+            </span>
+          )}
+          {!apiary.is_shared && apiary.team_name && (
+            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
+              📤 Shared with {apiary.team_name}
             </span>
           )}
           {apiary.is_mating_apiary && !apiary.is_shared && (

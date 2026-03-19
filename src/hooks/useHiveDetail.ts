@@ -75,9 +75,18 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
           const isShared = hiveData.user_id !== currentUserId
           hiveData.is_shared = isShared
 
-          if (!isShared && teamApiaries[0].teams) {
-            const teamData = teamApiaries[0].teams as unknown as { name: string }
-            hiveData.shared_with_team = teamData.name
+          if (teamApiaries[0].teams) {
+            const raw = teamApiaries[0].teams as unknown
+            const teamName = Array.isArray(raw)
+              ? (raw as { name: string }[])[0]?.name
+              : (raw as { name: string }).name
+            if (teamName) {
+              if (isShared) {
+                hiveData.team_name = teamName
+              } else {
+                hiveData.shared_with_team = teamName
+              }
+            }
           }
         }
       }

@@ -53,7 +53,8 @@ The "Share apiary location publicly" and "Declare as NIHBS Conservation Area" ch
 | Category | Left Border | Badge |
 |----------|-------------|-------|
 | Own | None (default) | None |
-| Shared | Blue (`border-l-blue-500`) | "Shared via {team}" (blue) |
+| Shared (team member view) | Blue (`border-l-blue-500`) | "👥 Shared via {team}" (blue) |
+| Shared (owner view) | Purple (`border-l-purple-500`) | "📤 Shared with {team}" (purple) |
 | Mating | Purple (`border-l-purple-500`) | "Mating Apiary" (purple) |
 
 ## Known Issue: INSERT RETURNING and RLS
