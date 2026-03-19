@@ -1,34 +1,36 @@
-# Track Distributed Cells in Virgin Queen Tracker & NIHBS Report
-
-**Date:** 2026-03-13
+# Shared Apiary QR Tags — Implementation
 
 ## Tasks
 
-- [x] 1. Virgin Queen Tracker hook — include `queen_cell` distributions
-- [x] 2. Tracker UI — show type badge to distinguish cells from virgin queens
-- [x] 3. Mark as Mated feedback — update `graft_distributions` mating_confirmed when a cell queen is marked mated
-- [x] 4. NIHBS Report — verified no changes needed (auto-calculates from mating_confirmed)
-- [x] 5. Update feature docs
+- [x] 1. DB: Add `team_id` column to `qr_tags` table + index
+- [x] 2. DB: Update RLS policies — allow team members to read and assign shared tags
+- [x] 3. DB: Update `transfer_apiary_ownership` RPC to transfer QR tags with apiary hives
+- [x] 4. FE: Extend QR Tags page fetch logic to load teams + shared tags + shared hives
+- [x] 5. FE: Update Generate modal with "For" selector (My hives / Team X)
+- [x] 6. FE: Split tags list into "My Tags" and "Shared Tags" sections with badges
+- [x] 7. FE: Hide generate/delete for shared tags when user is team member (not owner)
+- [x] 8. FE: Filter assign dropdown to show shared hives for shared tags
+- [x] 9. Update feature documentation
 
 ## Review
 
 ### Changes Summary
 
-| File | Change |
-|------|--------|
-| `src/hooks/useVirginQueenTracker.ts` | Added `'queen_cell'` to distribution type filter and `TrackedVirginQueen` type union |
-| `src/components/batches/VirginQueenTrackerTab.tsx` | Added Type column with colour-coded badge (amber Cell, blue Virgin, green Mated) in both desktop table and mobile cards |
-| `src/app/dashboard/queens/[id]/page.tsx` | `handleMarkMated` now also updates the matching `graft_distributions` record with `mating_confirmed = true`, `mating_confirmed_date`, and `mating_location` (non-blocking) |
-| `docs/features/virgin-queen-tracker.md` | Updated scope, added distribution types section and cell→mated feedback documentation |
+| File / Area | Change |
+|-------------|--------|
+| **DB: `qr_tags`** | Added `team_id UUID REFERENCES teams(id) ON DELETE SET NULL` column + partial index |
+| **DB: `qr_tags` RLS** | Renamed owner UPDATE policy; added "Team members can update shared tags" policy (team_id-scoped) |
+| **DB: `transfer_apiary_ownership`** | Added step to transfer QR tags assigned to hives in the transferred apiary |
+| **`src/app/dashboard/qr-tags/page.tsx`** | Added team/shared state, 3 new fetch functions (fetchTeamData, fetchSharedTags, fetchSharedHives), "For" selector in Generate modal, "My Tags" / "Shared with Me" split sections, blue team badges, filtered assign dropdown for shared hives, shared tags have no delete button |
+| **`docs/features/shared-apiary-qr-tags-plan.md`** | Feature documentation updated to Implemented status |
 
-### Data Flow
-```
-Cell queen marked as mated (queen detail page)
-  → queens table: status = 'active', mated_date set
-  → graft_distributions table: mating_confirmed = true (non-blocking)
-    → Virgin Queen Tracker: shows mated badge
-    → NIHBS Report B26: auto-counted as externally mated
-```
+### How It Works
 
-### No Changes Needed
-- **NIHBS Report** (`useNIHBSReport.ts`): Line 239 already checks `d.mating_confirmed` regardless of distribution type
+1. **Owner generates tags** → Picks "My hives" or "Team: X" in generate modal → Tags saved with `team_id`
+2. **Owner sees** all their tags in "My Tags" (shared ones marked with blue team badge)
+3. **Team member sees** owner's shared tags in "Shared with Me" section (blue border, team badge)
+4. **Team member can assign** shared tags to hives from that team's shared apiaries
+5. **Team member cannot** generate or delete shared tags (buttons hidden)
+6. **Assign dropdown** filters to shared hives when assigning a shared tag, own hives otherwise
+7. **Print All** includes both own and shared tags
+8. **Ownership transfer** moves QR tags with the apiary's hives to the new owner
