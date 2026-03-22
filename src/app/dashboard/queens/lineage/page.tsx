@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
@@ -98,52 +98,60 @@ export default function QueenLineageOverviewPage() {
   const [apiaries, setApiaries] = useState<{ id: string; name: string }[]>([])
 
   const fetchData = useCallback(async () => {
-    const userId = await getCurrentUserId()
-    if (!userId) return
+    try {
+      const userId = await getCurrentUserId()
+      if (!userId) {
+        setLoading(false)
+        return
+      }
 
-    // Fetch all queens with their hive/apiary info
-    const { data: queens } = await supabase
-      .from('queens')
-      .select('id, queen_number, marking_color, status, mother_id, hives!queen_id(hive_number, apiaries(id, name))')
-      .eq('user_id', userId)
-      .order('queen_number')
+      // Fetch all queens with their hive/apiary info
+      const { data: queens, error } = await supabase
+        .from('queens')
+        .select('id, queen_number, marking_color, status, mother_id, hives!queen_id(hive_number, apiaries(id, name))')
+        .eq('user_id', userId)
+        .order('queen_number')
 
-    if (!queens) {
+      if (error || !queens) {
+        console.error('Error fetching queens for lineage:', error)
+        setLoading(false)
+        return
+      }
+
+      // Extract queen nodes with hive/apiary
+      const queenNodes: LineageQueen[] = queens.map((q) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = q as any
+        const hiveData = Array.isArray(raw.hives) ? raw.hives[0] : raw.hives
+        const apiaryData = hiveData?.apiaries
+        const apiary = Array.isArray(apiaryData) ? apiaryData[0] : apiaryData
+        return {
+          id: q.id,
+          queen_number: q.queen_number,
+          marking_color: q.marking_color,
+          status: q.status,
+          mother_id: q.mother_id,
+          hive_number: hiveData?.hive_number || undefined,
+          apiary_name: apiary?.name || undefined,
+          apiary_id: apiary?.id || undefined,
+        }
+      })
+
+      setAllQueens(queenNodes)
+
+      // Collect unique apiaries
+      const apiaryMap = new Map<string, string>()
+      queenNodes.forEach((q) => {
+        if (q.apiary_id && q.apiary_name) {
+          apiaryMap.set(q.apiary_id, q.apiary_name)
+        }
+      })
+      setApiaries(Array.from(apiaryMap, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)))
+    } catch (err) {
+      console.error('Error loading lineage data:', err)
+    } finally {
       setLoading(false)
-      return
     }
-
-    // Extract queen nodes with hive/apiary
-    const queenNodes: LineageQueen[] = queens.map((q) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = q as any
-      const hiveData = Array.isArray(raw.hives) ? raw.hives[0] : raw.hives
-      const apiaryData = hiveData?.apiaries
-      const apiary = Array.isArray(apiaryData) ? apiaryData[0] : apiaryData
-      return {
-        id: q.id,
-        queen_number: q.queen_number,
-        marking_color: q.marking_color,
-        status: q.status,
-        mother_id: q.mother_id,
-        hive_number: hiveData?.hive_number || undefined,
-        apiary_name: apiary?.name || undefined,
-        apiary_id: apiary?.id || undefined,
-      }
-    })
-
-    setAllQueens(queenNodes)
-
-    // Collect unique apiaries
-    const apiaryMap = new Map<string, string>()
-    queenNodes.forEach((q) => {
-      if (q.apiary_id && q.apiary_name) {
-        apiaryMap.set(q.apiary_id, q.apiary_name)
-      }
-    })
-    setApiaries(Array.from(apiaryMap, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)))
-
-    setLoading(false)
   }, [])
 
   // Build trees from queens whenever allQueens or filter changes
@@ -163,46 +171,43 @@ export default function QueenLineageOverviewPage() {
       (q) => (q.mother_id && queenIds.has(q.mother_id)) || hasChildren.has(q.id)
     )
 
-    // Apply apiary filter: include queen if it or any descendant/ancestor matches the apiary
+    // Apply apiary filter: include full lineage chains that touch the selected apiary
     let filteredQueens = lineageQueens
     if (apiaryFilter !== 'all') {
-      // Find all queens in the filtered apiary
-      const apiaryQueenIds = new Set(lineageQueens.filter((q) => q.apiary_id === apiaryFilter).map((q) => q.id))
+      // Build a parent→children lookup for O(1) traversal
+      const childrenOf = new Map<string, string[]>()
+      lineageQueens.forEach((q) => {
+        if (q.mother_id) {
+          const siblings = childrenOf.get(q.mother_id) || []
+          siblings.push(q.id)
+          childrenOf.set(q.mother_id, siblings)
+        }
+      })
+      const queenById = new Map(lineageQueens.map((q) => [q.id, q]))
 
-      // Walk up and down to include full lineage chains
-      let changed = true
-      const includeIds = new Set(apiaryQueenIds)
-      while (changed) {
-        changed = false
-        lineageQueens.forEach((q) => {
-          if (includeIds.has(q.id)) return
-          // Include parent if child is included
-          if (q.mother_id && includeIds.has(q.mother_id)) {
-            // This is a child of an included queen
+      const includeIds = new Set<string>()
+
+      // For each queen in the target apiary, walk up to ancestors and down to descendants
+      lineageQueens
+        .filter((q) => q.apiary_id === apiaryFilter)
+        .forEach((seed) => {
+          // Walk up ancestors
+          let current: LineageQueen | undefined = seed
+          while (current && !includeIds.has(current.id)) {
+            includeIds.add(current.id)
+            current = current.mother_id ? queenById.get(current.mother_id) : undefined
           }
-          // Include children if parent is included
-        })
-        // Simpler: include all ancestors and descendants of apiary queens
-        lineageQueens.forEach((q) => {
-          if (includeIds.has(q.id)) {
-            // include children
-            lineageQueens.forEach((child) => {
-              if (child.mother_id === q.id && !includeIds.has(child.id)) {
-                includeIds.add(child.id)
-                changed = true
-              }
-            })
-          }
-          // include parents
-          if (q.mother_id && includeIds.has(q.id) && !includeIds.has(q.mother_id)) {
-            const parent = lineageQueens.find((p) => p.id === q.mother_id)
-            if (parent) {
-              includeIds.add(parent.id)
-              changed = true
+          // Walk down descendants (BFS)
+          const queue = [seed.id]
+          while (queue.length > 0) {
+            const id = queue.shift()!
+            includeIds.add(id)
+            for (const childId of childrenOf.get(id) || []) {
+              if (!includeIds.has(childId)) queue.push(childId)
             }
           }
         })
-      }
+
       filteredQueens = lineageQueens.filter((q) => includeIds.has(q.id))
     }
 
@@ -217,14 +222,20 @@ export default function QueenLineageOverviewPage() {
       }
     })
 
-    const buildTree = (queen: LineageQueen): FamilyTree => ({
-      queen,
-      children: (childrenMap.get(queen.id) || []).map(buildTree),
-    })
+    // Cycle-safe tree builder — tracks visited nodes to prevent infinite recursion
+    const buildTree = (queen: LineageQueen, visited: Set<string> = new Set()): FamilyTree => {
+      visited.add(queen.id)
+      return {
+        queen,
+        children: (childrenMap.get(queen.id) || [])
+          .filter((child) => !visited.has(child.id))
+          .map((child) => buildTree(child, visited)),
+      }
+    }
 
     // Find roots (queens with no mother in our set)
     const roots = filteredQueens.filter((q) => !q.mother_id || !queenMap.has(q.mother_id))
-    const familyTrees = roots.map(buildTree)
+    const familyTrees = roots.map((r) => buildTree(r))
 
     setTrees(familyTrees)
   }, [allQueens, apiaryFilter])
@@ -233,11 +244,14 @@ export default function QueenLineageOverviewPage() {
     fetchData()
   }, [fetchData])
 
-  if (loading) return <LoadingSpinner text="Loading lineage data..." />
+  const lineageQueenCount = useMemo(() => {
+    const ids = new Set<string>()
+    const walk = (t: FamilyTree) => { ids.add(t.queen.id); t.children.forEach(walk) }
+    trees.forEach(walk)
+    return ids.size
+  }, [trees])
 
-  const lineageQueenCount = new Set(trees.flatMap(function countAll(t: FamilyTree): string[] {
-    return [t.queen.id, ...t.children.flatMap(countAll)]
-  })).size
+  if (loading) return <LoadingSpinner text="Loading lineage data..." />
 
   return (
     <div className="space-y-6">

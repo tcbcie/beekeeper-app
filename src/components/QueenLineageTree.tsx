@@ -231,9 +231,19 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
   }, [queenId])
 
   useEffect(() => {
-    if (expanded && queenId) {
-      fetchLineage()
+    if (!expanded || !queenId) return
+    let stale = false
+
+    const run = async () => {
+      await fetchLineage()
+      // If queenId changed while fetching, discard result by re-fetching on next effect
+      if (stale) {
+        setLineage(null)
+      }
     }
+    run()
+
+    return () => { stale = true }
   }, [expanded, queenId, fetchLineage])
 
   return (
