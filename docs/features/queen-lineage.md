@@ -1,14 +1,16 @@
 # Queen Lineage Tree
 
 ## Overview
-Displays a visual family tree for any queen, showing ancestors (up to great-grandparents), daughters, and sisters.
+Displays a visual family tree for any queen, showing ancestors (up to great-grandparents), daughters, and sisters. Each queen card shows hive number and apiary name for location context.
 
 ## Location
 - **Queens list page** (`/dashboard/queens`) — shown below the edit form when editing an existing queen
 - **Queen detail page** (`/dashboard/queens/[id]`) — collapsible section
+- **Lineage overview page** (`/dashboard/queens/lineage`) — full overview of all lineage trees, accessible via "Lineage" button on queens list
 
-## Component
-`src/components/QueenLineageTree.tsx`
+## Components
+- `src/components/QueenLineageTree.tsx` — per-queen lineage tree (ancestors + descendants)
+- `src/app/dashboard/queens/lineage/page.tsx` — overview page showing all lineage families
 
 ## Data Model
 Lineage is tracked via self-referencing foreign keys on the `queens` table:
@@ -17,7 +19,9 @@ Lineage is tracked via self-referencing foreign keys on the `queens` table:
 
 The free-text `lineage` column stores human-readable breeding notation (e.g., `RZ018=.25-RZ026xSTD(CG)`).
 
-## What It Displays
+## Per-Queen Lineage Tree
+
+### What It Displays
 1. **Great-grandparents** (maternal line only)
 2. **Grandparents** (maternal line only)
 3. **Parents** — mother and father
@@ -25,7 +29,28 @@ The free-text `lineage` column stores human-readable breeding notation (e.g., `R
 5. **Daughters** — queens where `mother_id` = current queen (up to 6 shown)
 6. **Sisters** — queens with the same `mother_id` (up to 5 shown)
 
-Unknown ancestors show an "Unknown" placeholder card. Queens are colour-coded by marking colour (international standard).
+Each queen card shows:
+- Queen number and marking colour badge
+- Status (if not active)
+- **Hive number** and **apiary name** (if assigned)
+- Cards are **clickable** — navigate to the queen's detail page
+
+Unknown ancestors show an "Unknown" placeholder card.
+
+## Lineage Overview Page
+
+### Features
+- Shows all lineage family trees for the current user
+- Each family starts from a root queen (matriarch) and shows all descendants in a collapsible tree
+- **Apiary filter** — filter lineage trees to show only families with queens in a specific apiary
+- Summary statistics: number of lineages and total queens
+- All queen nodes are clickable links to their detail pages
+
+### Tree Display
+- Root queens shown with crown icon
+- Indented child branches with connector lines
+- Collapsible/expandable nodes
+- Daughter count shown on each queen with offspring
 
 ## Lineage Protection
 Queens with offspring (referenced via `mother_id` or `father_id`) are protected from deletion:
@@ -35,5 +60,7 @@ Queens with offspring (referenced via `mother_id` or `father_id`) are protected 
 
 ## Technical Notes
 - Self-referencing Supabase joins use **column name hints** (`queens!mother_id`, `queens!father_id`) — not FK constraint name hints
+- Hive/apiary data joined via `hives!queen_id(hive_number, apiaries(name))`
+- `extractQueenNode()` helper handles Supabase returning joins as arrays or objects
 - RLS access is controlled by `can_access_queen()` function (SECURITY DEFINER)
 - Error state is displayed to the user if the query fails

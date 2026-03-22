@@ -1,38 +1,68 @@
-# Owner Sharing Badges — Bug Fix
+# Queen Lineage Enhancement
 
-## Problem
-When an owner shares an apiary, their hive cards and apiary cards don't show a "Shared with [team]" badge. Team members correctly see "Shared via [team]" badges, but the owner gets no visual indication that their hives/apiaries are shared.
+## Investigation Findings
 
-Additionally, the hive detail page has a hardcoded "SensibleTeam" string instead of a dynamic team name.
+### Current State
+- `QueenLineageTree` component shows queen_number, marking_colour, and status only
+- No hive number or apiary info displayed on any queen card in the lineage
+- No overall lineage visualisation page exists — lineage is only per-queen (detail + edit pages)
+- Queen cards in lineage tree are NOT clickable (can't navigate to a queen)
+- Grandparents/great-grandparents only traced through maternal line (by design)
 
-## Root Cause
+### Inconsistencies Found
+1. **Missing location context**: Lineage cards lack hive/apiary info, making it hard to know where each queen lives
+2. **No navigability**: Can't click a queen in the lineage tree to view her detail page
+3. **No overview**: No way to see all lineage trees at a glance by user, apiary, or hive
+4. **Daughters/siblings lack hive info**: Only queen_number and colour shown for children and sisters
 
-1. **ApiaryCard**: Badge condition is `apiary.is_shared` which is only `true` for apiaries shared WITH the user (not BY the user). The `team_name` data IS populated for owner's shared apiaries but there's no badge condition to display it.
-2. **Hive detail page**: Hardcoded "SensibleTeam" text at line 207. The `useHiveDetail` hook only sets `shared_with_team` for the owner view but doesn't set `team_name` for the team member view.
-3. **Hive list page**: The `ownerSharedMap` data flow appears correct — needs runtime verification after other fixes.
+### Data Model (confirmed from DB)
+- Real lineage chains exist: e.g. `1B → 36-DA → 8B, 9B, 14B, 15B` and `37-D → 29-DA, 30-DA`
+- `UGMul1.6x → 7B` is another lineage chain
+- Hive/apiary data available via `hives.queen_id` → `apiaries`
 
 ## Tasks
 
-- [x] 1. Fix `useHiveDetail` hook: set `team_name` for shared hives (team member view)
-- [x] 2. Fix hive detail page: replace hardcoded "SensibleTeam" with dynamic `hive.team_name`
-- [x] 3. Fix ApiaryCard: add owner's sharing badge ("Shared with [team]") for `!is_shared && team_name`
-- [ ] 4. Verify hive list page badge works (data flow appears correct, needs runtime test)
-- [x] 5. Update feature documentation
-- [ ] 6. Prompt user to test
+### Part 1: Add Hive Number & Apiary to Lineage Cards
+- [x] 1. Extend `QueenNode` interface with `hive_number?` and `apiary_name?`
+- [x] 2. Update main queen + mother/father query to join hives and apiaries
+- [x] 3. Update grandparent/great-grandparent queries to join hives and apiaries
+- [x] 4. Update children + siblings queries to join hives and apiaries
+- [x] 5. Update `QueenCard` component to display hive number and apiary name
+- [x] 6. Make queen cards clickable (link to queen detail page)
+
+### Part 2: Overall Lineage Visualisation Page
+- [x] 7. Create `/dashboard/queens/lineage` page
+- [x] 8. Fetch all queens with lineage relationships for current user
+- [x] 9. Build tree(s) showing full lineage chains with hive/apiary context
+- [x] 10. Add filtering by apiary
+- [x] 11. Add navigation link from queens list page to lineage overview
+
+### Part 3: Documentation
+- [x] 12. Update `docs/features/queen-lineage.md` with new features
 
 ## Review
 
-### Changes Summary
+### Changes Made
 
-| File | Change |
-|------|--------|
-| **`src/hooks/useHiveDetail.ts`** | Set `team_name` for shared hives (team member view), not just `shared_with_team` for owner view |
-| **`src/app/dashboard/hives/[id]/page.tsx`** | Replaced hardcoded "SensibleTeam" with dynamic `hive.team_name`, added guard for `hive.team_name` |
-| **`src/components/apiaries/ApiaryCard.tsx`** | Added purple "Shared with [team]" badge for owner's shared apiaries, purple left border |
+**`src/components/QueenLineageTree.tsx`** (per-queen lineage tree):
+- Added `hive_number` and `apiary_name` to `QueenNode` interface
+- Added `extractQueenNode()` helper to safely extract hive/apiary from Supabase join results (handles array/object ambiguity)
+- Updated all 7 Supabase queries to join `hives!queen_id(hive_number, apiaries(name))`
+- Updated `QueenCard` to show hive number and apiary below queen number
+- Made all non-current queen cards clickable links to their detail pages
+- Daughters and siblings cards also show hive/apiary and are clickable
 
-### How It Works
+**`src/app/dashboard/queens/lineage/page.tsx`** (new page):
+- New lineage overview page showing all family trees for the current user
+- Collapsible tree visualisation with indented branches and connector lines
+- Each queen node shows: queen number, colour badge, status, hive, apiary, daughter count
+- All nodes are clickable links to queen detail pages
+- Apiary dropdown filter that includes full lineage chains (ancestors + descendants)
+- Summary stats: number of lineages and total queens
+- Back button to queens list
 
-- **Team member views shared hive/apiary**: Blue badge "👥 Shared via [team]" (unchanged)
-- **Owner views their shared apiary**: Purple badge "📤 Shared with [team]" (NEW)
-- **Owner views shared hive detail**: Purple badge "📤 Shared with [team]" (was working, unchanged)
-- **Team member views shared hive detail**: Blue badge "👥 Shared via [team]" (was hardcoded, now dynamic)
+**`src/app/dashboard/queens/page.tsx`**:
+- Added "Lineage" button with GitBranch icon next to Export CSV button
+
+**`docs/features/queen-lineage.md`**:
+- Updated to document all new features including hive/apiary display, clickable cards, and overview page

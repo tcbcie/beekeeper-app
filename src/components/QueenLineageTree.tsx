@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ChevronDown, ChevronRight, Crown } from 'lucide-react'
 import Button from '@/components/ui/Button'
@@ -11,6 +12,8 @@ interface QueenNode {
   marking_color: string
   status: string
   birth_date?: string
+  hive_number?: string
+  apiary_name?: string
 }
 
 interface LineageData {
@@ -48,6 +51,23 @@ const getColorClass = (color: string): string => {
   }
 }
 
+// Extract hive_number and apiary_name from Supabase join result (may be array or object)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const extractQueenNode = (raw: any): QueenNode => {
+  const hiveData = Array.isArray(raw.hives) ? raw.hives[0] : raw.hives
+  const apiaryData = hiveData?.apiaries
+  const apiary = Array.isArray(apiaryData) ? apiaryData[0] : apiaryData
+  return {
+    id: raw.id,
+    queen_number: raw.queen_number,
+    marking_color: raw.marking_color,
+    status: raw.status,
+    birth_date: raw.birth_date,
+    hive_number: hiveData?.hive_number || undefined,
+    apiary_name: apiary?.name || undefined,
+  }
+}
+
 const QueenCard = ({ queen, label, isMain = false }: { queen: QueenNode | null; label: string; isMain?: boolean }) => {
   if (!queen) {
     return (
@@ -60,22 +80,37 @@ const QueenCard = ({ queen, label, isMain = false }: { queen: QueenNode | null; 
     )
   }
 
+  const cardContent = (
+    <div
+      className={`px-3 py-2 rounded-lg border ${getColorClass(queen.marking_color)} ${
+        isMain ? 'ring-2 ring-forest-500 ring-offset-2 dark:ring-offset-slate-900' : ''
+      } ${!isMain ? 'hover:opacity-80 cursor-pointer' : ''}`}
+    >
+      <div className="flex items-center gap-1">
+        {isMain && <Crown size={14} className="text-amber-500" />}
+        <span className="font-medium text-sm">{queen.queen_number}</span>
+      </div>
+      {queen.status && queen.status !== 'active' && (
+        <span className="text-xs opacity-70">({queen.status})</span>
+      )}
+      {(queen.hive_number || queen.apiary_name) && (
+        <div className="text-xs opacity-70 mt-0.5">
+          {queen.hive_number && <span>{queen.hive_number}</span>}
+          {queen.hive_number && queen.apiary_name && <span> · </span>}
+          {queen.apiary_name && <span>{queen.apiary_name}</span>}
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className="flex flex-col items-center">
       <span className="text-xs text-text-tertiary mb-1">{label}</span>
-      <div
-        className={`px-3 py-2 rounded-lg border ${getColorClass(queen.marking_color)} ${
-          isMain ? 'ring-2 ring-forest-500 ring-offset-2 dark:ring-offset-slate-900' : ''
-        }`}
-      >
-        <div className="flex items-center gap-1">
-          {isMain && <Crown size={14} className="text-amber-500" />}
-          <span className="font-medium text-sm">{queen.queen_number}</span>
-        </div>
-        {queen.status && queen.status !== 'active' && (
-          <span className="text-xs opacity-70">({queen.status})</span>
-        )}
-      </div>
+      {isMain ? cardContent : (
+        <Link href={`/dashboard/queens/${queen.id}`}>
+          {cardContent}
+        </Link>
+      )}
     </div>
   )
 }
@@ -96,8 +131,9 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
         .from('queens')
         .select(`
           id, queen_number, marking_color, status, birth_date, mother_id, father_id,
-          mother:queens!mother_id(id, queen_number, marking_color, status, mother_id, father_id),
-          father:queens!father_id(id, queen_number, marking_color, status)
+          hives!queen_id(hive_number, apiaries(name)),
+          mother:queens!mother_id(id, queen_number, marking_color, status, mother_id, father_id, hives!queen_id(hive_number, apiaries(name))),
+          father:queens!father_id(id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name)))
         `)
         .eq('id', queenId)
         .single()
@@ -121,42 +157,42 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
       if (mother?.mother_id) {
         const { data: gm } = await supabase
           .from('queens')
-          .select('id, queen_number, marking_color, status, mother_id, father_id')
+          .select('id, queen_number, marking_color, status, mother_id, father_id, hives!queen_id(hive_number, apiaries(name))')
           .eq('id', mother.mother_id)
           .single()
-        grandmother = gm as QueenNode | null
+        grandmother = gm ? extractQueenNode(gm) : null
 
         // Fetch great-grandparents
         if (gm?.mother_id) {
           const { data: ggm } = await supabase
             .from('queens')
-            .select('id, queen_number, marking_color, status')
+            .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
             .eq('id', gm.mother_id)
             .single()
-          greatGrandmother = ggm as QueenNode | null
+          greatGrandmother = ggm ? extractQueenNode(ggm) : null
         }
         if (gm?.father_id) {
           const { data: ggf } = await supabase
             .from('queens')
-            .select('id, queen_number, marking_color, status')
+            .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
             .eq('id', gm.father_id)
             .single()
-          greatGrandfather = ggf as QueenNode | null
+          greatGrandfather = ggf ? extractQueenNode(ggf) : null
         }
       }
       if (mother?.father_id) {
         const { data: gf } = await supabase
           .from('queens')
-          .select('id, queen_number, marking_color, status')
+          .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
           .eq('id', mother.father_id)
           .single()
-        grandfather = gf as QueenNode | null
+        grandfather = gf ? extractQueenNode(gf) : null
       }
 
       // Fetch children (queens where mother_id = this queen)
       const { data: childrenData } = await supabase
         .from('queens')
-        .select('id, queen_number, marking_color, status')
+        .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
         .eq('mother_id', queenId)
         .order('birth_date', { ascending: false })
 
@@ -165,30 +201,25 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
       if (queen.mother_id) {
         const { data: siblingsData } = await supabase
           .from('queens')
-          .select('id, queen_number, marking_color, status')
+          .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
           .eq('mother_id', queen.mother_id)
           .neq('id', queenId)
           .limit(5)
-        siblings = (siblingsData as QueenNode[]) || []
+        siblings = (siblingsData || []).map(extractQueenNode)
       }
 
       // Handle father relation the same way
-      const fatherData = Array.isArray(queen.father) ? queen.father[0] : queen.father
+      const fatherRaw = Array.isArray(queen.father) ? queen.father[0] : queen.father
 
       setLineage({
-        queen: {
-          id: queen.id,
-          queen_number: queen.queen_number,
-          marking_color: queen.marking_color,
-          status: queen.status,
-        },
-        mother: mother as QueenNode | null,
-        father: fatherData as QueenNode | null,
+        queen: extractQueenNode(queen),
+        mother: mother ? extractQueenNode(mother) : null,
+        father: fatherRaw ? extractQueenNode(fatherRaw) : null,
         grandmother,
         grandfather,
         greatGrandmother,
         greatGrandfather,
-        children: (childrenData as QueenNode[]) || [],
+        children: (childrenData || []).map(extractQueenNode),
         siblings,
       })
     } catch (err) {
@@ -283,12 +314,18 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
                       {lineage.children.slice(0, 6).map((child) => (
-                        <div
-                          key={child.id}
-                          className={`px-2 py-1 rounded border text-xs ${getColorClass(child.marking_color)}`}
-                        >
-                          {child.queen_number}
-                        </div>
+                        <Link key={child.id} href={`/dashboard/queens/${child.id}`}>
+                          <div
+                            className={`px-2 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(child.marking_color)}`}
+                          >
+                            <div>{child.queen_number}</div>
+                            {(child.hive_number || child.apiary_name) && (
+                              <div className="opacity-70">
+                                {child.hive_number}{child.hive_number && child.apiary_name ? ' · ' : ''}{child.apiary_name}
+                              </div>
+                            )}
+                          </div>
+                        </Link>
                       ))}
                       {lineage.children.length > 6 && (
                         <span className="text-xs text-text-tertiary self-center">
@@ -308,12 +345,18 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {lineage.siblings.map((sibling) => (
-                      <div
-                        key={sibling.id}
-                        className={`px-2 py-1 rounded border text-xs ${getColorClass(sibling.marking_color)}`}
-                      >
-                        {sibling.queen_number}
-                      </div>
+                      <Link key={sibling.id} href={`/dashboard/queens/${sibling.id}`}>
+                        <div
+                          className={`px-2 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(sibling.marking_color)}`}
+                        >
+                          <div>{sibling.queen_number}</div>
+                          {(sibling.hive_number || sibling.apiary_name) && (
+                            <div className="opacity-70">
+                              {sibling.hive_number}{sibling.hive_number && sibling.apiary_name ? ' · ' : ''}{sibling.apiary_name}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 </div>

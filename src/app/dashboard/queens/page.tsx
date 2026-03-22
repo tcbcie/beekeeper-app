@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown } from 'lucide-react'
+import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
@@ -569,6 +569,14 @@ export default function QueensPage() {
  <div className="flex justify-between items-center">
  <h1 className="text-3xl font-bold text-foreground">Queens 👑</h1>
  <div className="flex gap-2">
+ <Link href="/dashboard/queens/lineage">
+ <Button
+ tone="neutral"
+ className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium flex items-center gap-2 min-h-[48px] border border-border"
+ >
+ <GitBranch size={16} /> Lineage
+ </Button>
+ </Link>
  <Button
  onClick={exportCSV}
  className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium flex items-center gap-2 min-h-[48px] border border-border"
