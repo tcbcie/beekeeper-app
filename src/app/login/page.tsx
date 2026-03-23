@@ -40,7 +40,7 @@ function LoginForm() {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           const pendingRedirect = localStorage.getItem('pendingRedirect')
-          if (pendingRedirect && pendingRedirect.startsWith('/') && !pendingRedirect.startsWith('//')) {
+          if (pendingRedirect && pendingRedirect.startsWith('/dashboard')) {
             localStorage.removeItem('pendingRedirect')
             router.push(pendingRedirect)
           } else if (!searchParams.get('redirect')) {

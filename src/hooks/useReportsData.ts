@@ -41,36 +41,42 @@ export function useReportsData(): UseReportsDataReturn {
     setLoading(true)
     try {
       // Fetch apiaries with eircode
-      const { data: apiariesData } = await supabase
+      const { data: apiariesData, error: apiariesError } = await supabase
         .from('apiaries')
         .select('id, name, eircode, location')
         .eq('user_id', userId)
         .order('name')
 
-      if (apiariesData) {
+      if (apiariesError) {
+        console.error('Error fetching apiaries for reports:', apiariesError)
+      } else if (apiariesData) {
         setApiaries(apiariesData)
       }
 
       // Fetch hives
-      const { data: hivesData } = await supabase
+      const { data: hivesData, error: hivesError } = await supabase
         .from('hives')
         .select('id, hive_number, apiary_id, status, archived_at, configuration')
         .eq('user_id', userId)
         .is('archived_at', null)
         .order('hive_number')
 
-      if (hivesData) {
+      if (hivesError) {
+        console.error('Error fetching hives for reports:', hivesError)
+      } else if (hivesData) {
         setHives(hivesData as Hive[])
       }
 
       // Fetch profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, last_name, email')
         .eq('id', userId)
         .single()
 
-      if (profileData) {
+      if (profileError) {
+        console.error('Error fetching profile for reports:', profileError)
+      } else if (profileData) {
         setProfile(profileData)
       }
     } finally {

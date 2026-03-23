@@ -112,8 +112,9 @@ async function fetchWithRetry(
 
     if (response.status === 429 && attempt < maxRetries) {
       // Rate limited - wait and retry with exponential backoff
-      const waitTime = Math.pow(2, attempt + 1) * 1000 // 2s, 4s, 8s, 16s
-      await delay(waitTime)
+      const baseWait = Math.pow(2, attempt + 1) * 1000 // 2s, 4s, 8s, 16s
+      const jitter = Math.random() * 0.3 * baseWait // ±30% jitter
+      await delay(baseWait + jitter)
       continue
     }
 

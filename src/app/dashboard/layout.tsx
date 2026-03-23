@@ -84,6 +84,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error('Account check failed:', err)
+        // Account check now fails closed — if DB is unreachable, isAccountActive returns false.
+        // The interval will retry on the next cycle (30s).
       } finally {
         checkingAccountRef.current = false
       }
