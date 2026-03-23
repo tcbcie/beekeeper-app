@@ -136,9 +136,10 @@ export default function DashboardPage() {
  // Memoised computed values (must be above early return to satisfy rules-of-hooks)
  // Sort apiaries nearest-first when GPS is available
  const sortedApiaries = useMemo(() => {
-  if (!devicePosition || apiaries.length === 0) return apiaries
+  const withHives = apiaries.filter(a => a.hiveCount > 0)
+  if (!devicePosition || withHives.length === 0) return withHives
   // Pre-compute distances once (O(n)), then sort by lookup
-  const withDistance = apiaries.map(apiary => ({
+  const withDistance = withHives.map(apiary => ({
    apiary,
    dist: apiary.latitude != null && apiary.longitude != null
     ? haversineKm(devicePosition.latitude, devicePosition.longitude, apiary.latitude, apiary.longitude)
