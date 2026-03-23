@@ -8,7 +8,7 @@
  * @param filename - Name of the file (without extension)
  * @param columns - Optional array of column names to include (defaults to all keys)
  */
-export function exportToCSV<T extends Record<string, unknown>>(
+export function exportToCSV<T extends object>(
   data: T[],
   filename: string,
   columns?: Array<keyof T | string>
