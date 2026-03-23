@@ -102,12 +102,14 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
 
       const ExcelJS = await import('exceljs')
       const workbook = new ExcelJS.Workbook()
+      workbook.creator = 'HiveCraic'
 
       // ====== Sheet 1: Group Details Sheet ======
       const detailsSheet = workbook.addWorksheet('Group Details Sheet')
       detailsSheet.columns = [
         { width: 38 }, { width: 26 }, { width: 18 }, { width: 38 },
       ]
+      detailsSheet.headerFooter = { oddFooter: '&CCreated by HiveCraic' }
 
       const yellowFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFFFF00' } }
       const redFill = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFF0000' } }
@@ -191,6 +193,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         const colWidths: { width: number }[] = [{ width: 65 }, { width: 8 }]
         for (let i = 0; i < apiaryCount; i++) colWidths.push({ width: 10 })
         sheet.columns = colWidths
+        sheet.headerFooter = { oddFooter: '&CCreated by HiveCraic' }
 
         // === Header Section (Rows 1-6) ===
 
