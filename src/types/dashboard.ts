@@ -7,10 +7,7 @@ export interface Inspection {
   queen_seen: boolean | null
   eggs_present: boolean | null
   brood_frames?: number | null
-  hives?: {
-    hive_number: string
-    apiaries?: { name: string } | null
-  }
+  hives?: { hive_number: string; apiaries?: { name: string }[] | null }[]
 }
 
 export interface VarroaTreatment {
@@ -18,10 +15,7 @@ export interface VarroaTreatment {
   hive_id: string
   treatment_date: string
   treatment_type: string
-  hives?: {
-    hive_number: string
-    apiaries?: { name: string } | null
-  }
+  hives?: { hive_number: string; apiaries?: { name: string }[] | null }[]
 }
 
 export interface VarroaCheck {
@@ -30,10 +24,7 @@ export interface VarroaCheck {
   check_date: string
   method: string
   infestation_rate: number | null
-  hives?: {
-    hive_number: string
-    apiaries?: { name: string } | null
-  }
+  hives?: { hive_number: string; apiaries?: { name: string }[] | null }[]
 }
 
 export interface Feeding {
@@ -42,10 +33,7 @@ export interface Feeding {
   feed_date: string
   feed_type: string
   quantity: number | null
-  hives?: {
-    hive_number: string
-    apiaries?: { name: string } | null
-  }
+  hives?: { hive_number: string; apiaries?: { name: string }[] | null }[]
 }
 
 export interface Harvest {
@@ -54,10 +42,7 @@ export interface Harvest {
   harvest_date: string
   honey_weight: number | null
   frames_harvested: number | null
-  hives?: {
-    hive_number: string
-    apiaries?: { name: string } | null
-  }
+  hives?: { hive_number: string; apiaries?: { name: string }[] | null }[]
 }
 
 // Unified record type for displaying all records together

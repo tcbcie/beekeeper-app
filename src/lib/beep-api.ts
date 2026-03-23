@@ -102,7 +102,9 @@ export async function beepGetDevices(apiToken: string): Promise<BeepDevice[]> {
   }
 
   const data = await response.json()
-  return data.devices || data || []
+  if (Array.isArray(data.devices)) return data.devices
+  if (Array.isArray(data)) return data
+  throw new Error('Unexpected BEEP API response format')
 }
 
 /**

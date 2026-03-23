@@ -62,6 +62,7 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
         .single()
 
       if (queenError) throw queenError
+      if (!queenData) throw new Error('Queen not found')
       setQueen(queenData as Queen)
       setIsOwner(queenData.user_id === currentUserId)
 

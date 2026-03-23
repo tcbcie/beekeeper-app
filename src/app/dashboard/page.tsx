@@ -572,7 +572,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  switch (record.record_type) {
  case 'inspection':
  icon = <Search size={18} className="text-blue-600 dark:text-blue-400" />
- label = `Inspection of ${record.hives?.hive_number || 'Unknown Hive'}`
+ label = `Inspection of ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = (
  <span className={`px-2 py-1 text-xs font-semibold rounded ${
  record.queen_seen
@@ -585,7 +585,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  break
  case 'varroa_treatment':
  icon = <Syringe size={18} className="text-red-600 dark:text-red-400" />
- label = `Varroa Treatment - ${record.hives?.hive_number || 'Unknown Hive'}`
+ label = `Varroa Treatment - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = (
  <span className="px-2 py-1 text-xs font-semibold rounded bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200">
  {record.treatment_type}
@@ -594,7 +594,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  break
  case 'varroa_check':
  icon = <Bug size={18} className="text-orange-600 dark:text-orange-400" />
- label = `Varroa Check - ${record.hives?.hive_number || 'Unknown Hive'}`
+ label = `Varroa Check - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = record.infestation_rate !== null ? (
  <span className="px-2 py-1 text-xs font-semibold rounded bg-orange-200 dark:bg-orange-900/40 text-orange-900 dark:text-orange-200">
  {record.infestation_rate}% infestation
@@ -603,7 +603,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  break
  case 'feeding':
  icon = <Wheat size={18} className="text-amber-600 dark:text-amber-400" />
- label = `Feeding - ${record.hives?.hive_number || 'Unknown Hive'}`
+ label = `Feeding - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = (
  <span className="px-2 py-1 text-xs font-semibold rounded bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">
  {record.feed_type}
@@ -612,7 +612,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  break
  case 'harvest':
  icon = <Droplet size={18} className="text-yellow-600 dark:text-yellow-400" />
- label = `Harvest - ${record.hives?.hive_number || 'Unknown Hive'}`
+ label = `Harvest - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = record.honey_weight !== null ? (
  <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200">
  {record.honey_weight} kg
@@ -621,7 +621,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  break
  }
       const recordHref = buildRecentActivityHref(record)
-      const apiaryName = record.hives?.apiaries?.name
+      const apiaryName = record.hives?.[0]?.apiaries?.[0]?.name
 
       return (
  <Link key={record.id} href={recordHref} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors">

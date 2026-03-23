@@ -20,6 +20,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     model: 'text-embedding-3-small',
     input: text,
   })
+  if (!response.data?.[0]?.embedding) {
+    throw new Error('OpenAI embedding response contained no data')
+  }
   return response.data[0].embedding
 }
 
@@ -92,7 +95,8 @@ Respond with JSON only: {"intent": "category", "confidence": 0.0-1.0}`
       intent: result.intent || 'general',
       confidence: result.confidence || 0.5
     }
-  } catch {
+  } catch (err) {
+    console.error('Failed to parse query classification response:', err, response.choices?.[0]?.message?.content)
     return { intent: 'general', confidence: 0.5 }
   }
 }

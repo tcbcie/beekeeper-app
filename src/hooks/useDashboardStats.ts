@@ -278,15 +278,6 @@ export function useDashboardStats(): UseDashboardStatsReturn {
 
         if (!isCurrentRequest()) return
 
-        setApiaries(enrichedApiaries)
-        setStats({
-          apiaries: apiariesRes.count || 0,
-          hives: hivesRes.count || 0,
-          recentInspections: inspectionsRes.count || 0,
-          queens: queensRes.count || 0,
-          activeTasks: tasksRes.count || 0,
-        })
-
         const todayString = toLocalDateString(new Date())
         const [oldQueensRes, highVarroaRes, activeHivesRes, todayTasksRes] = await Promise.all([
           supabase.from('queens').select('id', { count: 'exact', head: true })
@@ -323,8 +314,17 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           overdueCount = activeHiveIds.filter(id => !inspectedHiveIds.has(id)).length
         }
 
+        // Single checkpoint: set all overview state atomically
         if (!isCurrentRequest()) return
 
+        setApiaries(enrichedApiaries)
+        setStats({
+          apiaries: apiariesRes.count || 0,
+          hives: hivesRes.count || 0,
+          recentInspections: inspectionsRes.count || 0,
+          queens: queensRes.count || 0,
+          activeTasks: tasksRes.count || 0,
+        })
         setAlerts({
           overdueInspections: overdueCount,
           oldQueens: oldQueensRes.count || 0,

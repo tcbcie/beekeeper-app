@@ -24,6 +24,7 @@ const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, 
 export default function UpcomingEvents({ userId }: { userId: string }) {
   const [events, setEvents] = useState<UpcomingEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   const fetchUpcomingEvents = useCallback(async () => {
     if (!userId) return
@@ -47,6 +48,7 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
 
     if (error) {
       console.error('Error fetching events:', error)
+      setError(true)
       setLoading(false)
       return
     }
@@ -138,6 +140,10 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
         <p className="text-text-secondary text-sm">Loading...</p>
       </Panel>
     )
+  }
+
+  if (error) {
+    return null
   }
 
   // Filter out today's events (already shown in attention banner)

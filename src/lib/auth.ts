@@ -173,9 +173,9 @@ export async function isAccountActive(): Promise<boolean> {
 
   if (error) {
     console.error('Error fetching account status:', error)
-    // Fail open: assume account is active if we encounter an error
-    // This prevents false positives where network/DB issues lock out active users
-    return true
+    // Fail closed: deny access on error to prevent disabled accounts staying active
+    // The cached value (if any) will have already returned above for transient failures
+    return false
   }
 
   if (!data) {

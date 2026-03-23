@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const refreshingRef = useRef(false)
+  const cleanupRef = useRef<(() => void) | null>(null)
 
   const refreshUser = useCallback(async () => {
     if (refreshingRef.current) return
@@ -75,24 +76,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // Initial session check
-    refreshUser()
+    let cancelled = false
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        setUserId(session.user.id)
+    // Await initial session check before subscribing to auth changes
+    const init = async () => {
+      await refreshUser()
+
+      if (cancelled) return
+
+      // Listen for auth changes only after initial check completes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (cancelled) return
+        if (session?.user) {
+          setUser(session.user)
+          setUserId(session.user.id)
+        } else {
+          setUser(null)
+          setUserId(null)
+        }
         setLoading(false)
-      } else {
-        setUser(null)
-        setUserId(null)
-        setLoading(false)
-      }
-    })
+      })
+
+      // Store unsubscribe for cleanup
+      cleanupRef.current = () => subscription.unsubscribe()
+    }
+
+    init()
 
     return () => {
-      subscription.unsubscribe()
+      cancelled = true
+      cleanupRef.current?.()
     }
   }, [refreshUser])
 
