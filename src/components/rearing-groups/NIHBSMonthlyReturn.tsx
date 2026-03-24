@@ -115,20 +115,20 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
       } catch { /* logo optional — continue without it */ }
 
       // Helper: add branded footer to a sheet after content
-      const addBrandedFooter = (sheet: InstanceType<typeof ExcelJS.Worksheet>) => {
+      const addBrandedFooter = (sheet: ReturnType<typeof workbook.addWorksheet>) => {
         sheet.addRow([])
         sheet.addRow([])
         const currentRow = sheet.rowCount
         if (logoImageId !== null) {
           sheet.addImage(logoImageId, {
-            tl: { col: 0, row: currentRow } as ExcelJS.Anchor,
+            tl: { col: 0, row: currentRow },
             ext: { width: 40, height: 40 },
           })
         }
         const brandRow = sheet.addRow([])
         brandRow.height = 35
         const cell = brandRow.getCell(1)
-        cell.value = { text: '  Created by HiveCraic — www.hivecraic.com', hyperlink: 'https://www.hivecraic.com' } as ExcelJS.CellHyperlinkValue
+        cell.value = { text: '  Created by HiveCraic — www.hivecraic.com', hyperlink: 'https://www.hivecraic.com' }
         cell.font = { size: 9, italic: true, color: { argb: 'FF0563C1' }, underline: true }
         cell.alignment = { vertical: 'middle' }
       }
