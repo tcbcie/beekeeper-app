@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export interface MatingApiaryInfo {
@@ -52,8 +52,10 @@ export function useNIHBSReport() {
   const [reportData, setReportData] = useState<NIHBSReportData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fetchGenRef = useRef(0)
 
   const fetchReport = useCallback(async (groupId: string, groupName: string, year: number) => {
+    const gen = ++fetchGenRef.current
     setLoading(true)
     setError(null)
     try {
@@ -183,6 +185,7 @@ export function useNIHBSReport() {
 
           // Parse date string directly to avoid timezone shift
           const graftMonth = parseInt(graftDate.split('-')[1], 10)
+          if (isNaN(graftMonth) || graftMonth < 1 || graftMonth > 12) continue
           const emergence = getEmergenceMonthYear(batch)
           const apiaryId = batch.mating_apiary_id || 'unassigned'
 
@@ -255,12 +258,13 @@ export function useNIHBSReport() {
 
       const mating_apiaries: MatingApiaryInfo[] = []
       if (batchApiaryIds.size > 0) {
-        const { data: batchApiariesRaw } = await supabase
+        const { data: batchApiariesRaw, error: apiariesError } = await supabase
           .from('apiaries')
           .select('id, name, grid_reference, elevation')
           .in('id', Array.from(batchApiaryIds))
           .order('name')
 
+        if (apiariesError) throw apiariesError
         if (batchApiariesRaw) {
           for (const a of batchApiariesRaw) {
             mating_apiaries.push({
@@ -320,6 +324,9 @@ export function useNIHBSReport() {
 
       const months = Array.from(monthlyMap.values()).sort((a, b) => a.month - b.month)
 
+      // Discard result if a newer fetch was started while this one was in-flight
+      if (gen !== fetchGenRef.current) return
+
       setReportData({
         group_id: groupId,
         group_name: groupName,
@@ -332,11 +339,12 @@ export function useNIHBSReport() {
         months,
       })
     } catch (err) {
+      if (gen !== fetchGenRef.current) return
       console.error('Error fetching NIHBS report:', err)
       setError('Failed to load report data. Please try again.')
       setReportData(null)
     } finally {
-      setLoading(false)
+      if (gen === fetchGenRef.current) setLoading(false)
     }
   }, [])
 

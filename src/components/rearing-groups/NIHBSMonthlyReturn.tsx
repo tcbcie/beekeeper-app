@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNIHBSReport } from '@/hooks/useNIHBSReport'
 import type { ManualFields } from '@/hooks/useNIHBSReport'
 import type { RearingGroup } from '@/hooks/useRearingGroups'
@@ -15,6 +15,14 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
+
+const formatDate = (dateStr: string | null): string => {
+  if (!dateStr) return '-'
+  // Parse date string directly to avoid timezone shift (e.g. "2026-05-01" in UTC → April 30 in BST)
+  const parts = dateStr.split('-')
+  if (parts.length !== 3) return dateStr
+  return `${parts[2]}/${parts[1]}/${parts[0]}`
+}
 
 export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthlyReturnProps) {
   const now = new Date()
@@ -68,24 +76,23 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
   }
 
   const [saveStatus, setSaveStatus] = useState<{ month: number; success: boolean } | null>(null)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up save status timer on unmount
+  useEffect(() => {
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
+  }, [])
 
   const handleSaveMonth = async (month: number) => {
     const fields = manualEdits.get(month)
     if (!fields) return
     setSavingMonth(month)
     setSaveStatus(null)
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     const success = await saveManualFields(selectedGroupId, month, selectedYear, fields, userId)
     setSavingMonth(null)
     setSaveStatus({ month, success })
-    setTimeout(() => setSaveStatus(null), 3000)
-  }
-
-  const formatDate = (dateStr: string | null): string => {
-    if (!dateStr) return '-'
-    // Parse date string directly to avoid timezone shift (e.g. "2026-05-01" in UTC → April 30 in BST)
-    const parts = dateStr.split('-')
-    if (parts.length !== 3) return dateStr
-    return `${parts[2]}/${parts[1]}/${parts[0]}`
+    saveTimerRef.current = setTimeout(() => setSaveStatus(null), 3000)
   }
 
   const handleExportExcel = useCallback(async () => {
@@ -118,17 +125,16 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
       const addBrandedFooter = (sheet: ReturnType<typeof workbook.addWorksheet>) => {
         sheet.addRow([])
         sheet.addRow([])
-        const currentRow = sheet.rowCount
-        if (logoImageId !== null) {
-          sheet.addImage(logoImageId, {
-            tl: { col: 0, row: currentRow },
-            ext: { width: 40, height: 40 },
-          })
-        }
         const brandRow = sheet.addRow([])
         brandRow.height = 35
-        const cell = brandRow.getCell(1)
-        cell.value = { text: '  Created by HiveCraic — www.hivecraic.com', hyperlink: 'https://www.hivecraic.com' }
+        if (logoImageId !== null) {
+          sheet.addImage(logoImageId, {
+            tl: { col: 0, row: sheet.rowCount - 1 },
+            ext: { width: 30, height: 30 },
+          })
+        }
+        const cell = brandRow.getCell(2)
+        cell.value = { text: 'Created by HiveCraic — www.hivecraic.com', hyperlink: 'https://www.hivecraic.com' }
         cell.font = { size: 9, italic: true, color: { argb: 'FF0563C1' }, underline: true }
         cell.alignment = { vertical: 'middle' }
       }
@@ -394,7 +400,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
       try {
         const a = document.createElement('a')
         a.href = url
-        a.download = `NIHBS_Monthly_Return_${exportData.group_name.replace(/\s+/g, '_')}_${exportData.year}.xlsx`
+        a.download = `NIHBS_Monthly_Return_${exportData.group_name.replace(/[/\\:*?"<>|\s]+/g, '_')}_${exportData.year}.xlsx`
         a.click()
       } finally {
         URL.revokeObjectURL(url)
