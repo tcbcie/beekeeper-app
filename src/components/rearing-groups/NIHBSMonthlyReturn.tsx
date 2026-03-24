@@ -111,32 +111,14 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
       const workbook = new ExcelJS.Workbook()
       workbook.creator = 'HiveCraic'
 
-      // Fetch logo for branded footer
-      let logoImageId: number | null = null
-      try {
-        const logoRes = await fetch('/logo_trans.png')
-        if (logoRes.ok) {
-          const logoBuf = await logoRes.arrayBuffer()
-          logoImageId = workbook.addImage({ buffer: logoBuf, extension: 'png' })
-        }
-      } catch { /* logo optional — continue without it */ }
-
       // Helper: add branded footer to a sheet after content
       const addBrandedFooter = (sheet: ReturnType<typeof workbook.addWorksheet>) => {
         sheet.addRow([])
         sheet.addRow([])
         const brandRow = sheet.addRow([])
-        brandRow.height = 35
-        if (logoImageId !== null) {
-          sheet.addImage(logoImageId, {
-            tl: { col: 0, row: sheet.rowCount - 1 },
-            ext: { width: 30, height: 30 },
-          })
-        }
-        const cell = brandRow.getCell(2)
+        const cell = brandRow.getCell(1)
         cell.value = { text: 'Created by HiveCraic — www.hivecraic.com', hyperlink: 'https://www.hivecraic.com' }
         cell.font = { size: 9, italic: true, color: { argb: 'FF0563C1' }, underline: true }
-        cell.alignment = { vertical: 'middle' }
       }
 
       // ====== Sheet 1: Group Details Sheet ======
