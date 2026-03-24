@@ -127,11 +127,19 @@ export default function ApiariesPage() {
           const { lat, lng } = data.results[0].geometry.location
           return { lat: String(lat), lon: String(lng) }
         }
+        if (data.status !== 'OK') {
+          console.error('Google Geocoding API error:', data.status, data.error_message)
+        }
       }
 
-      // Fallback: Nominatim with city (if no Google API key or Google failed)
+      // Fallback: Nominatim with city only (Nominatim cannot handle Irish eircodes)
       const country = isUkNi ? 'United Kingdom' : 'Ireland'
-      const searchQuery = city ? `${city}, ${country}` : `${eircode}, ${country}`
+      const searchQuery = city
+        ? `${city}, ${country}`
+        : isUkNi
+          ? `${eircode}, ${country}`
+          : null
+      if (!searchQuery) return null
 
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1&countrycodes=${isUkNi ? 'gb' : 'ie'}`,
