@@ -104,6 +104,35 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
       const workbook = new ExcelJS.Workbook()
       workbook.creator = 'HiveCraic'
 
+      // Fetch logo for branded footer
+      let logoImageId: number | null = null
+      try {
+        const logoRes = await fetch('/logo_trans.png')
+        if (logoRes.ok) {
+          const logoBuf = await logoRes.arrayBuffer()
+          logoImageId = workbook.addImage({ buffer: logoBuf, extension: 'png' })
+        }
+      } catch { /* logo optional — continue without it */ }
+
+      // Helper: add branded footer to a sheet after content
+      const addBrandedFooter = (sheet: InstanceType<typeof ExcelJS.Worksheet>) => {
+        sheet.addRow([])
+        sheet.addRow([])
+        const currentRow = sheet.rowCount
+        if (logoImageId !== null) {
+          sheet.addImage(logoImageId, {
+            tl: { col: 0, row: currentRow } as ExcelJS.Anchor,
+            ext: { width: 40, height: 40 },
+          })
+        }
+        const brandRow = sheet.addRow([])
+        brandRow.height = 35
+        const cell = brandRow.getCell(1)
+        cell.value = { text: '  Created by HiveCraic — www.hivecraic.com', hyperlink: 'https://www.hivecraic.com' } as ExcelJS.CellHyperlinkValue
+        cell.font = { size: 9, italic: true, color: { argb: 'FF0563C1' }, underline: true }
+        cell.alignment = { vertical: 'middle' }
+      }
+
       // ====== Sheet 1: Group Details Sheet ======
       const detailsSheet = workbook.addWorksheet('Group Details Sheet')
       detailsSheet.columns = [
@@ -179,6 +208,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         ])
         row.eachCell((cell) => { cell.border = thinBorder })
       }
+      addBrandedFooter(detailsSheet)
 
       // ====== Monthly Sheets ======
       for (const md of exportData.months) {
@@ -354,6 +384,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         r26.getCell(2).border = thinBorder
         r26.getCell(2).alignment = { horizontal: 'center' }
 
+        addBrandedFooter(sheet)
       }
 
       // Generate and download
