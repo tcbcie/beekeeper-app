@@ -52,6 +52,7 @@ const ACTIVE_BLOOM_CACHE_TTL_MS = 60 * 60 * 1000
 const weatherCache = new Map<string, CacheEntry<ApiaryWeather>>()
 const scaleCache = new Map<string, CacheEntry<ScaleWeight[]>>()
 const gddCache = new Map<string, CacheEntry<number>>()
+const gddInflight = new Map<string, Promise<number | null>>()
 let bloomDataCache: CacheEntry<VegetationEntry[]> | null = null
 let bloomDataInflight: Promise<VegetationEntry[]> | null = null
 const activeBloomCache = new Map<string, CacheEntry<string[]>>()
@@ -210,13 +211,18 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     setWeatherLoading(true)
     setWeatherError(false)
 
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 15_000)
+
     try {
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,sunshine_duration,precipitation_sum&timezone=Europe/Dublin&forecast_days=7`
+        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,sunshine_duration,precipitation_sum&timezone=Europe/Dublin&forecast_days=7`,
+        { signal: controller.signal }
       )
       if (!res.ok) throw new Error('fetch failed')
 
       const data = await res.json()
+      if (!data.current || !data.daily?.time) throw new Error('Unexpected API response shape')
       const nextWeather: ApiaryWeather = {
         current: {
           temperature: Math.round(data.current.temperature_2m),
@@ -244,6 +250,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
         setWeatherError(true)
       }
     } finally {
+      clearTimeout(timer)
       if (mountedRef.current) {
         setWeatherLoading(false)
       }
@@ -302,6 +309,8 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
       startTransition(() => {
         setScaleData(nextScaleData)
       })
+    } catch {
+      // Scale data is supplementary — fail silently
     } finally {
       if (mountedRef.current) {
         setScaleLoading(false)
@@ -312,16 +321,27 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
   const fetchGDDAndBloom = useCallback(async () => {
     if (!hasCoords || !weatherCacheKey || !shouldLoadData) return
 
-    // 1. Fetch current GDD (24h cache)
+    try {
+    // 1. Fetch current GDD (24h cache, deduplicated across same-location cards)
     let gdd: number | null = null
     const cachedGDD = gddCache.get(weatherCacheKey)
     if (cachedGDD && isCacheFresh(cachedGDD.fetchedAt, GDD_CACHE_TTL_MS)) {
       gdd = cachedGDD.data
     } else {
-      gdd = await fetchCurrentYearGDD(apiary.latitude!, apiary.longitude!)
-      if (gdd !== null) {
-        gddCache.set(weatherCacheKey, { data: gdd, fetchedAt: Date.now() })
+      if (!gddInflight.has(weatherCacheKey)) {
+        gddInflight.set(weatherCacheKey, (async () => {
+          try {
+            const result = await fetchCurrentYearGDD(apiary.latitude!, apiary.longitude!)
+            if (result !== null) {
+              gddCache.set(weatherCacheKey, { data: result, fetchedAt: Date.now() })
+            }
+            return result
+          } finally {
+            gddInflight.delete(weatherCacheKey)
+          }
+        })())
       }
+      gdd = await gddInflight.get(weatherCacheKey)!
     }
 
     if (!mountedRef.current || gdd === null) return
@@ -479,6 +499,9 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     })
 
     startTransition(() => { setBloomingPlants(merged) })
+    } catch {
+      // GDD/bloom data is non-critical — fail silently, card still renders without it
+    }
   }, [apiary.id, apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey])
 
   useEffect(() => { fetchWeather() }, [fetchWeather])
