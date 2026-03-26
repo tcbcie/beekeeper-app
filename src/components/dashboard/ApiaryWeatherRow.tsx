@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation'
 import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle, Thermometer, Flower2, Check } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
-import { calculateForagingHours, fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
-import type { BloomingPlant, NectarCondition, VegetationEntry } from '@/lib/gdd'
+import { calculateForagingHours, fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, getPollenConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
+import type { BloomingPlant, NectarCondition, PollenCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary } from '@/types/dashboard'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
@@ -165,6 +165,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
   const [vegModalOpen, setVegModalOpen] = useState(false)
   const [vegModalPlant, setVegModalPlant] = useState<{ name: string; typeId: string } | null>(null)
   const [nectarCondition, setNectarCondition] = useState<NectarCondition | null>(null)
+  const [pollenCondition, setPollenCondition] = useState<PollenCondition | null>(null)
   const [foragingHours, setForagingHours] = useState<{ yesterday: number | null; today: number | null; tomorrow: number | null } | null>(null)
   const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
@@ -229,7 +230,11 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
       const data = await res.json()
       if (!data.current || !data.daily?.time) throw new Error('Unexpected API response shape')
 
-      // past_days=1 prepends yesterday at index 0; today starts at index 1
+      // past_days=1 prepends yesterday; find today's index to split reliably
+      const now = new Date()
+      const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+      const todayIndex = (data.daily.time as string[]).indexOf(todayDate)
+
       const allDays: DailyForecast[] = data.daily.time.map((date: string, index: number) => ({
         day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
         tempMin: Math.round(data.daily.temperature_2m_min[index]),
@@ -247,8 +252,8 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
           weatherCode: data.current.weather_code,
           humidity: data.current.relative_humidity_2m ?? 50,
         },
-        yesterday: allDays[0] ?? null,
-        daily: allDays.slice(1),
+        yesterday: todayIndex > 0 ? allDays[todayIndex - 1] : null,
+        daily: todayIndex >= 0 ? allDays.slice(todayIndex) : allDays,
       }
 
       weatherCache.set(weatherCacheKey, { data: nextWeather, fetchedAt: Date.now() })
@@ -535,6 +540,14 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     )
     setNectarCondition(condition)
 
+    // Pollen conditions: uses today's rain only (rain washes pollen off flowers)
+    setPollenCondition(getPollenConditions(
+      weather.current.temperature,
+      weather.current.humidity,
+      today.sunshineDuration,
+      today.precipitationSum
+    ))
+
     // Foraging window: yesterday / today / tomorrow (use raw temps for precision)
     const calcHours = (d: DailyForecast | null | undefined) =>
       d ? calculateForagingHours(d.tempMinRaw, d.tempMaxRaw, d.sunshineDuration, d.precipitationSum) : null
@@ -731,9 +744,26 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
                 </span>
               </div>
             )}
-            {foragingHours && (
+            {pollenCondition && (
               <>
                 {nectarCondition && <div className="w-px h-3 bg-border" />}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-text-secondary">Pollen:</span>
+                  <span className={`text-xs font-bold ${
+                    pollenCondition === 'good'
+                      ? 'text-green-700 dark:text-green-400'
+                      : pollenCondition === 'fair'
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : 'text-text-tertiary'
+                  }`}>
+                    {pollenCondition === 'good' ? 'Good' : pollenCondition === 'fair' ? 'Fair' : 'Poor'}
+                  </span>
+                </div>
+              </>
+            )}
+            {foragingHours && (
+              <>
+                {(nectarCondition || pollenCondition) && <div className="w-px h-3 bg-border" />}
                 <div className="flex items-center gap-1">
                   <span className="text-xs font-medium text-text-secondary">Foraging window:</span>
                   <span className="text-xs font-bold tabular-nums text-foreground">

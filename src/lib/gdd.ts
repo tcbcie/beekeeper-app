@@ -18,6 +18,7 @@ export interface BloomingPlant {
 }
 
 export type NectarCondition = 'good' | 'fair' | 'poor'
+export type PollenCondition = 'good' | 'fair' | 'poor'
 
 // --- Seasonal multiplier (from GDDTracker.tsx:42-46) ---
 
@@ -223,6 +224,39 @@ export function getNectarConditions(
   // Humidity: 40-70% ideal for nectar production
   if (humidity >= 40 && humidity <= 70) score += 2
   else if ((humidity >= 30 && humidity < 40) || (humidity > 70 && humidity <= 85)) score += 1
+
+  // Total: 0-8, Good: 6-8, Fair: 3-5, Poor: 0-2
+  if (score >= 6) return 'good'
+  if (score >= 3) return 'fair'
+  return 'poor'
+}
+
+// --- Pollen conditions assessment from weather data ---
+
+export function getPollenConditions(
+  currentTemp: number,
+  humidity: number,
+  sunshineDurationSeconds: number,
+  todayRainMm: number
+): PollenCondition {
+  let score = 0
+
+  // Temperature: >15°C ideal for pollen collection
+  if (currentTemp >= 15) score += 2
+  else if (currentTemp >= 10) score += 1
+
+  // Sunshine: >4h good, 2-4h fair (same as nectar)
+  const sunshineHours = sunshineDurationSeconds / 3600
+  if (sunshineHours > 4) score += 2
+  else if (sunshineHours >= 2) score += 1
+
+  // Rain: dry is best — rain washes pollen from flowers
+  if (todayRainMm < 1) score += 2
+  else if (todayRainMm <= 5) score += 1
+
+  // Humidity: low humidity preferred — dry pollen is easier for bees to collect
+  if (humidity < 60) score += 2
+  else if (humidity <= 80) score += 1
 
   // Total: 0-8, Good: 6-8, Fair: 3-5, Poor: 0-2
   if (score >= 6) return 'good'
