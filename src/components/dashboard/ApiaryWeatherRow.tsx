@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef, startTransition } from 'react'
+import { useEffect, useState, useCallback, useRef, startTransition, memo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle, Thermometer, Flower2, Check } from 'lucide-react'
@@ -150,7 +150,7 @@ interface ApiaryWeatherRowProps {
   onActionDrop?: (apiaryId: string) => void
 }
 
-export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherRowProps) {
+function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherRowProps) {
   const router = useRouter()
   const [weather, setWeather] = useState<ApiaryWeather | null>(null)
   const [weatherLoading, setWeatherLoading] = useState(false)
@@ -881,6 +881,8 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     </>
   )
 }
+
+export default memo(ApiaryWeatherRow)
 
 function avg(values: (number | null)[]): number | null {
   const valid = values.filter((value): value is number => value !== null)
