@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation'
 import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle, Thermometer, Flower2, Check } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
-import { fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, haversineDistance } from '@/lib/gdd'
+import { fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
 import type { BloomingPlant, NectarCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary } from '@/types/dashboard'
+import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 
 interface DailyForecast {
   day: string
@@ -156,6 +157,8 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
   const [forecastExpanded, setForecastExpanded] = useState(false)
   const [gddValue, setGddValue] = useState<number | null>(null)
   const [bloomingPlants, setBloomingPlants] = useState<BloomingPlant[]>([])
+  const [vegModalOpen, setVegModalOpen] = useState(false)
+  const [vegModalPlant, setVegModalPlant] = useState<{ name: string; typeId: string } | null>(null)
   const [nectarCondition, setNectarCondition] = useState<NectarCondition | null>(null)
   const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
@@ -336,7 +339,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
           try {
             const { data } = await supabase
               .from('vegetation_info')
-              .select('bloom_period, nectar_value, pollen_value, typical_gdd_range, dropdown_values:vegetation_type_id(value)')
+              .select('vegetation_type_id, bloom_period, nectar_value, pollen_value, typical_gdd_range, dropdown_values:vegetation_type_id(value)')
 
             const entries: VegetationEntry[] = data
               ? data.map((row: Record<string, unknown>) => {
@@ -344,6 +347,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
                   const dv = row.dropdown_values
                   const name = Array.isArray(dv) ? dv[0]?.value : (dv as Record<string, unknown> | null)?.value
                   return {
+                    vegetationTypeId: row.vegetation_type_id as string,
                     name: (name as string) ?? 'Unknown',
                     typicalGddRange: row.typical_gdd_range as string | null,
                     bloomPeriod: row.bloom_period as string | null,
@@ -443,17 +447,25 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
 
     if (!mountedRef.current) return
 
-    // 5. Merge: mark predicted plants as confirmed if they appear in observations
+    // 5. Filter stale confirmed blooms — discard observations where end_date is null
+    // but the plant is clearly past its bloom window based on GDD/calendar data
+    const validConfirmed = confirmedNames.filter(name => {
+      const vegEntry = vegData.find(v => v.name === name)
+      return !isBloomStale(gdd, vegEntry)
+    })
+
+    // 6. Merge: mark predicted plants as confirmed if they appear in observations
     const merged: BloomingPlant[] = predicted.map(p => ({
       ...p,
-      confirmed: confirmedNames.includes(p.name),
+      confirmed: validConfirmed.includes(p.name),
     }))
     // Add confirmed plants not in predicted list
-    for (const name of confirmedNames) {
+    for (const name of validConfirmed) {
       if (!merged.some(p => p.name === name)) {
         const vegEntry = vegData.find(v => v.name === name)
         merged.push({
           name,
+          vegetationTypeId: vegEntry?.vegetationTypeId ?? '',
           nectarValue: vegEntry?.nectarValue ?? 0,
           pollenValue: vegEntry?.pollenValue ?? 0,
           confirmed: true,
@@ -501,6 +513,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
   const hasQueenIssue = apiary.queenIssueHiveCount > 0
 
   return (
+    <>
     <Link
       ref={cardRef}
       href={`/dashboard/apiaries/${apiary.id}`}
@@ -625,11 +638,15 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
               <>
                 <div className="w-px h-4 bg-border" />
                 <Flower2 size={13} className="text-green-600 dark:text-green-400 shrink-0" />
-                <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+                <div className="flex items-center gap-1 min-w-0 flex-wrap">
                   {bloomingPlants.slice(0, 3).map((plant) => (
                     <span
                       key={plant.name}
-                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) } }}
+                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity ${
                         plant.confirmed
                           ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
                           : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
@@ -755,6 +772,15 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
         </div>
       )}
     </Link>
+    {vegModalOpen && vegModalPlant && (
+      <VegetationInfoModal
+        isOpen={vegModalOpen}
+        onClose={() => { setVegModalOpen(false); setVegModalPlant(null) }}
+        vegetationName={vegModalPlant.name}
+        vegetationTypeId={vegModalPlant.typeId}
+      />
+    )}
+    </>
   )
 }
 
