@@ -767,11 +767,11 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
                 <div className="flex items-center gap-1">
                   <span className="text-xs font-medium text-text-secondary">Foraging window:</span>
                   <span className="text-xs font-bold tabular-nums text-foreground">
-                    {foragingHours.yesterday !== null && <span className="text-text-secondary font-medium">(-1) {foragingHours.yesterday}h</span>}
+                    {foragingHours.yesterday !== null && <span className="text-text-secondary font-medium">(-1d) {foragingHours.yesterday}h</span>}
                     {foragingHours.yesterday !== null && foragingHours.today !== null && <span className="text-text-tertiary"> · </span>}
                     {foragingHours.today !== null && <span className={foragingHours.today >= 4 ? 'text-green-700 dark:text-green-400' : foragingHours.today >= 2 ? 'text-amber-700 dark:text-amber-400' : 'text-text-tertiary'}>Today {foragingHours.today}h</span>}
                     {foragingHours.today !== null && foragingHours.tomorrow !== null && <span className="text-text-tertiary"> · </span>}
-                    {foragingHours.tomorrow !== null && <span className="text-text-secondary font-medium">(+1) {foragingHours.tomorrow}h</span>}
+                    {foragingHours.tomorrow !== null && <span className="text-text-secondary font-medium">(+1d) {foragingHours.tomorrow}h</span>}
                   </span>
                 </div>
               </>
