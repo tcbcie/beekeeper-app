@@ -11,6 +11,7 @@ export interface OpenMeteoDaily {
 
 export interface BloomingPlant {
   name: string
+  vegetationTypeId: string
   nectarValue: number
   pollenValue: number
   confirmed: boolean // true = from user/community observation, false = predicted from GDD range
@@ -95,6 +96,7 @@ export function parseGDDRange(range: string | null): { min: number; max: number 
 // --- Determine which plants are blooming based on current GDD + calendar month ---
 
 export interface VegetationEntry {
+  vegetationTypeId: string
   name: string
   typicalGddRange: string | null
   bloomPeriod: string | null
@@ -138,6 +140,27 @@ export function parseBloomMonths(period: string | null): Set<number> | null {
   return months
 }
 
+/**
+ * Check if a confirmed bloom observation (with no end_date) is stale
+ * by cross-referencing against the vegetation's known bloom window.
+ * Returns true if the plant is clearly past its bloom season.
+ */
+export function isBloomStale(currentGDD: number, vegEntry: VegetationEntry | undefined): boolean {
+  if (!vegEntry) return false // Can't determine, assume still valid
+
+  const gddRange = parseGDDRange(vegEntry.typicalGddRange)
+  const bloomMonths = parseBloomMonths(vegEntry.bloomPeriod)
+  const currentMonth = new Date().getMonth() + 1
+
+  // If GDD is well past the plant's max range, it's stale
+  const gddPast = gddRange ? currentGDD > gddRange.max * 1.2 : false
+  // If current month is outside the bloom calendar, it's stale
+  const calendarPast = bloomMonths ? !bloomMonths.has(currentMonth) : false
+
+  // Stale if either signal clearly says it's over
+  return gddPast || calendarPast
+}
+
 export function getBloomingPlants(currentGDD: number, vegetation: VegetationEntry[]): BloomingPlant[] {
   const blooming: BloomingPlant[] = []
   const currentMonth = new Date().getMonth() + 1
@@ -161,6 +184,7 @@ export function getBloomingPlants(currentGDD: number, vegetation: VegetationEntr
     if (include) {
       blooming.push({
         name: veg.name,
+        vegetationTypeId: veg.vegetationTypeId,
         nectarValue: veg.nectarValue ?? 0,
         pollenValue: veg.pollenValue ?? 0,
         confirmed: false,
