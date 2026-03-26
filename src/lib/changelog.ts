@@ -60,7 +60,7 @@ export async function fetchChangelogEntries(
 export async function fetchGroupedChangelog(
   versionLimit: number = 5
 ): Promise<GroupedChangelog[]> {
-  const entries = await fetchChangelogEntries(100); // Fetch more to ensure we get enough versions
+  const entries = await fetchChangelogEntries(500); // Fetch enough to cover multiple versions
 
   // Group entries by version
   const groupedMap = new Map<string, GroupedChangelog>();

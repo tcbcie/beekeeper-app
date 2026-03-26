@@ -43,28 +43,32 @@ if (!targetVersion) {
   }
 }
 
-// Get latest git tag
-let lastTag;
+// Find the previous version bump commit (more reliable than git tags)
+let lastBumpCommit;
 try {
-  lastTag = execSync('git describe --tags --abbrev=0', {
-    encoding: 'utf8',
-    cwd: ROOT_DIR
-  }).trim();
+  // Get the second most recent bump commit (skip current version's bump)
+  const bumpCommits = execSync(
+    'git log --oneline --all --grep="chore: bump version" --format="%H" -n 2',
+    { encoding: 'utf8', cwd: ROOT_DIR }
+  ).trim().split('\n').filter(Boolean);
+
+  // Use the second one (previous version bump), or null if only one exists
+  lastBumpCommit = bumpCommits.length >= 2 ? bumpCommits[1] : null;
 } catch (error) {
-  console.log('⚠️  No previous tags found, using all commits from initial commit');
-  lastTag = null;
+  console.log('⚠️  No previous bump commits found, using all commits');
+  lastBumpCommit = null;
 }
 
 console.log('\n╔════════════════════════════════════════╗');
 console.log('║    Git Changelog Extractor             ║');
 console.log('╚════════════════════════════════════════╝\n');
 console.log(`📦 Target Version: v${targetVersion}`);
-console.log(`📌 Last Tag:       ${lastTag || '(none)'}`);
+console.log(`📌 Since commit:   ${lastBumpCommit ? lastBumpCommit.substring(0, 7) : '(all)'}`);
 console.log(`📊 Analyzing commits...\n`);
 
-// Get commits since last tag
-const gitCommand = lastTag
-  ? `git log ${lastTag}..HEAD --pretty=format:"%H|%s|%b" --no-merges`
+// Get commits since last version bump
+const gitCommand = lastBumpCommit
+  ? `git log ${lastBumpCommit}..HEAD --pretty=format:"%H|%s|%b" --no-merges`
   : `git log --pretty=format:"%H|%s|%b" --no-merges`;
 
 let commits;
