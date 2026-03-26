@@ -250,14 +250,17 @@ export function calculateForagingHours(
   if (sunshineHours <= 0 || tempMax < BEE_FLYING_THRESHOLD_C) return 0
 
   // Fraction of day above 12°C (sinusoidal approximation)
+  // For a sinusoid between tMin and tMax, the fraction above threshold T is:
+  //   acos((2T - tMax - tMin) / (tMax - tMin)) / π
   let warmFraction: number
   if (tempMin >= BEE_FLYING_THRESHOLD_C) {
     warmFraction = 1.0
   } else {
-    // acos gives the fraction of a sine wave above the threshold
-    warmFraction = 1 - Math.acos(
+    // Clamp to [-1, 1] to guard against floating-point edge cases
+    const arg = Math.max(-1, Math.min(1,
       (2 * BEE_FLYING_THRESHOLD_C - tempMax - tempMin) / (tempMax - tempMin)
-    ) / Math.PI
+    ))
+    warmFraction = Math.acos(arg) / Math.PI
   }
 
   // Rain penalty: heavy >5mm halves flyable time, moderate 1-5mm reduces by 25%

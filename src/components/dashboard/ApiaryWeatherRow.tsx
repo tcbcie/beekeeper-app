@@ -16,6 +16,8 @@ interface DailyForecast {
   day: string
   tempMin: number
   tempMax: number
+  tempMinRaw: number  // unrounded, for foraging calculations
+  tempMaxRaw: number  // unrounded, for foraging calculations
   weatherCode: number
   sunshineDuration: number  // seconds
   precipitationSum: number  // mm
@@ -232,6 +234,8 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
         day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
         tempMin: Math.round(data.daily.temperature_2m_min[index]),
         tempMax: Math.round(data.daily.temperature_2m_max[index]),
+        tempMinRaw: data.daily.temperature_2m_min[index] ?? 0,
+        tempMaxRaw: data.daily.temperature_2m_max[index] ?? 0,
         weatherCode: data.daily.weather_code[index],
         sunshineDuration: data.daily.sunshine_duration?.[index] ?? 0,
         precipitationSum: data.daily.precipitation_sum?.[index] ?? 0,
@@ -521,8 +525,8 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     if (!weather) return
     const today = weather.daily[0]
     if (!today) return
-    // Sum precipitation from the last 3 days (or as many as available)
-    const recentRain = weather.daily.slice(0, 3).reduce((sum, d) => sum + d.precipitationSum, 0)
+    // Sum recent precipitation: yesterday + today (actual/observed rain for nectar secretion)
+    const recentRain = (weather.yesterday?.precipitationSum ?? 0) + today.precipitationSum
     const condition = getNectarConditions(
       weather.current.temperature,
       weather.current.humidity,
@@ -531,9 +535,9 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     )
     setNectarCondition(condition)
 
-    // Foraging window: yesterday / today / tomorrow
+    // Foraging window: yesterday / today / tomorrow (use raw temps for precision)
     const calcHours = (d: DailyForecast | null | undefined) =>
-      d ? calculateForagingHours(d.tempMin, d.tempMax, d.sunshineDuration, d.precipitationSum) : null
+      d ? calculateForagingHours(d.tempMinRaw, d.tempMaxRaw, d.sunshineDuration, d.precipitationSum) : null
     setForagingHours({
       yesterday: calcHours(weather.yesterday),
       today: calcHours(today),
