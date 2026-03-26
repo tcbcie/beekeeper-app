@@ -2,21 +2,48 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import AppIcon from '@/components/icons/AppIcon'
 import AlertPanel from '@/components/ui/AlertPanel'
 import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
-import UpcomingEvents from '@/components/UpcomingEvents'
 import Link from 'next/link'
 import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg, ListChecks, GripVertical } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useGeolocation, haversineKm } from '@/hooks/useGeolocation'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { RecentActivityRecord } from '@/types/dashboard'
-import ApiaryWeatherRow from '@/components/dashboard/ApiaryWeatherRow'
 import { formatLocalDate } from '@/lib/date-utils'
 import { dashboardCardIcons, iconography } from '@/lib/iconography'
+
+const UpcomingEvents = dynamic(
+  () => import('@/components/UpcomingEvents'),
+  {
+    loading: () => (
+      <div className="bg-surface rounded-lg border border-border shadow p-4 space-y-3 animate-shimmer">
+        <div className="h-5 w-36 bg-surface-secondary rounded" />
+        <div className="h-4 w-full bg-surface-secondary rounded" />
+        <div className="h-4 w-3/4 bg-surface-secondary rounded" />
+      </div>
+    ),
+    ssr: false,
+  }
+)
+
+const ApiaryWeatherRow = dynamic(
+  () => import('@/components/dashboard/ApiaryWeatherRow'),
+  {
+    loading: () => (
+      <div className="bg-surface rounded-lg border border-border p-4 space-y-3 animate-shimmer">
+        <div className="h-5 w-40 bg-surface-secondary rounded" />
+        <div className="h-4 w-24 bg-surface-secondary rounded" />
+        <div className="h-20 bg-surface-secondary rounded" />
+      </div>
+    ),
+    ssr: false,
+  }
+)
 
 function getRecentActivityTypeParam(recordType: RecentActivityRecord['record_type']): string {
   switch (recordType) {
