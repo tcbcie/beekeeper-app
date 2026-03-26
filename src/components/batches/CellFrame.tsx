@@ -42,7 +42,6 @@ export default function CellFrame({
   handleBulkDelete,
   updateGraftStatus,
   updateGraftStatusDate,
-  deleteGraft,
 }: CellFrameProps) {
   if (grafts.length === 0) {
     return (
