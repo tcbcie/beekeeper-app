@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle, Thermometer, Flower2, Check } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
-import { fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
+import { calculateForagingHours, fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
 import type { BloomingPlant, NectarCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary } from '@/types/dashboard'
@@ -29,6 +29,7 @@ interface CurrentWeather {
 
 interface ApiaryWeather {
   current: CurrentWeather
+  yesterday: DailyForecast | null
   daily: DailyForecast[]
 }
 
@@ -158,9 +159,11 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
   const [forecastExpanded, setForecastExpanded] = useState(false)
   const [gddValue, setGddValue] = useState<number | null>(null)
   const [bloomingPlants, setBloomingPlants] = useState<BloomingPlant[]>([])
+  const [bloomExpanded, setBloomExpanded] = useState(false)
   const [vegModalOpen, setVegModalOpen] = useState(false)
   const [vegModalPlant, setVegModalPlant] = useState<{ name: string; typeId: string } | null>(null)
   const [nectarCondition, setNectarCondition] = useState<NectarCondition | null>(null)
+  const [foragingHours, setForagingHours] = useState<{ yesterday: number | null; today: number | null; tomorrow: number | null } | null>(null)
   const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
   const mountedRef = useRef(true)
@@ -216,27 +219,32 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
 
     try {
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,sunshine_duration,precipitation_sum&timezone=Europe/Dublin&forecast_days=7`,
+        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,sunshine_duration,precipitation_sum&timezone=Europe/Dublin&past_days=1&forecast_days=7`,
         { signal: controller.signal }
       )
       if (!res.ok) throw new Error('fetch failed')
 
       const data = await res.json()
       if (!data.current || !data.daily?.time) throw new Error('Unexpected API response shape')
+
+      // past_days=1 prepends yesterday at index 0; today starts at index 1
+      const allDays: DailyForecast[] = data.daily.time.map((date: string, index: number) => ({
+        day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
+        tempMin: Math.round(data.daily.temperature_2m_min[index]),
+        tempMax: Math.round(data.daily.temperature_2m_max[index]),
+        weatherCode: data.daily.weather_code[index],
+        sunshineDuration: data.daily.sunshine_duration?.[index] ?? 0,
+        precipitationSum: data.daily.precipitation_sum?.[index] ?? 0,
+      }))
+
       const nextWeather: ApiaryWeather = {
         current: {
           temperature: Math.round(data.current.temperature_2m),
           weatherCode: data.current.weather_code,
           humidity: data.current.relative_humidity_2m ?? 50,
         },
-        daily: data.daily.time.map((date: string, index: number) => ({
-          day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
-          tempMin: Math.round(data.daily.temperature_2m_min[index]),
-          tempMax: Math.round(data.daily.temperature_2m_max[index]),
-          weatherCode: data.daily.weather_code[index],
-          sunshineDuration: data.daily.sunshine_duration?.[index] ?? 0,
-          precipitationSum: data.daily.precipitation_sum?.[index] ?? 0,
-        })),
+        yesterday: allDays[0] ?? null,
+        daily: allDays.slice(1),
       }
 
       weatherCache.set(weatherCacheKey, { data: nextWeather, fetchedAt: Date.now() })
@@ -508,7 +516,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
   useEffect(() => { fetchScaleData() }, [fetchScaleData])
   useEffect(() => { fetchGDDAndBloom() }, [fetchGDDAndBloom])
 
-  // Compute nectar condition when weather data is available
+  // Compute nectar condition and foraging hours when weather data is available
   useEffect(() => {
     if (!weather) return
     const today = weather.daily[0]
@@ -522,6 +530,15 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
       recentRain
     )
     setNectarCondition(condition)
+
+    // Foraging window: yesterday / today / tomorrow
+    const calcHours = (d: DailyForecast | null | undefined) =>
+      d ? calculateForagingHours(d.tempMin, d.tempMax, d.sunshineDuration, d.precipitationSum) : null
+    setForagingHours({
+      yesterday: calcHours(weather.yesterday),
+      today: calcHours(today),
+      tomorrow: calcHours(weather.daily[1]),
+    })
   }, [weather])
 
   const locationText = apiary.city || apiary.location || null
@@ -660,9 +677,10 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
             {bloomingPlants.length > 0 && (
               <>
                 <div className="w-px h-4 bg-border" />
+                <span className="text-xs font-medium text-text-secondary shrink-0">Forage:</span>
                 <Flower2 size={13} className="text-green-600 dark:text-green-400 shrink-0" />
                 <div className="flex items-center gap-1 min-w-0 flex-wrap">
-                  {bloomingPlants.slice(0, 3).map((plant) => (
+                  {(bloomExpanded ? bloomingPlants : bloomingPlants.slice(0, 3)).map((plant) => (
                     <span
                       key={plant.name}
                       role="button"
@@ -680,28 +698,51 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
                     </span>
                   ))}
                   {bloomingPlants.length > 3 && (
-                    <span className="text-xs font-medium text-text-secondary whitespace-nowrap">
-                      +{bloomingPlants.length - 3}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) } }}
+                      className="text-xs font-medium text-forest-600 dark:text-forest-400 whitespace-nowrap cursor-pointer hover:underline"
+                    >
+                      {bloomExpanded ? 'less' : `+${bloomingPlants.length - 3} more`}
                     </span>
                   )}
                 </div>
               </>
             )}
           </div>
-          {nectarCondition && (
-            <div className="flex items-center gap-1 mt-1">
-              <span className="text-xs font-medium text-text-secondary">Nectar:</span>
-              <span className={`text-xs font-bold ${
-                nectarCondition === 'good'
-                  ? 'text-green-700 dark:text-green-400'
-                  : nectarCondition === 'fair'
-                    ? 'text-amber-700 dark:text-amber-400'
-                    : 'text-text-tertiary'
-              }`}>
-                {nectarCondition === 'good' ? 'Good' : nectarCondition === 'fair' ? 'Fair' : 'Poor'}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 mt-1">
+            {nectarCondition && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-medium text-text-secondary">Nectar:</span>
+                <span className={`text-xs font-bold ${
+                  nectarCondition === 'good'
+                    ? 'text-green-700 dark:text-green-400'
+                    : nectarCondition === 'fair'
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : 'text-text-tertiary'
+                }`}>
+                  {nectarCondition === 'good' ? 'Good' : nectarCondition === 'fair' ? 'Fair' : 'Poor'}
+                </span>
+              </div>
+            )}
+            {foragingHours && (
+              <>
+                {nectarCondition && <div className="w-px h-3 bg-border" />}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-text-secondary">Foraging window:</span>
+                  <span className="text-xs font-bold tabular-nums text-foreground">
+                    {foragingHours.yesterday !== null && <span className="text-text-secondary font-medium">Yday {foragingHours.yesterday}h</span>}
+                    {foragingHours.yesterday !== null && foragingHours.today !== null && <span className="text-text-tertiary"> · </span>}
+                    {foragingHours.today !== null && <span className={foragingHours.today >= 4 ? 'text-green-700 dark:text-green-400' : foragingHours.today >= 2 ? 'text-amber-700 dark:text-amber-400' : 'text-text-tertiary'}>Today {foragingHours.today}h</span>}
+                    {foragingHours.today !== null && foragingHours.tomorrow !== null && <span className="text-text-tertiary"> · </span>}
+                    {foragingHours.tomorrow !== null && <span className="text-text-secondary font-medium">Tmrw {foragingHours.tomorrow}h</span>}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 

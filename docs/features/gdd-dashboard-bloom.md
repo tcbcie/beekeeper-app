@@ -2,13 +2,14 @@
 
 ## Overview
 
-Each apiary card on the dashboard now displays three layers of forage intelligence:
+Each apiary card on the dashboard now displays four layers of forage intelligence:
 
 1. **Current GDD** — Accumulated Growing Degree Days for the year
-2. **What's Blooming** — Plants predicted or confirmed to be in bloom
+2. **Forage Sources** — Plants predicted or confirmed to be in bloom (pollen & nectar sources)
 3. **Nectar Conditions** — Good/Fair/Poor rating based on current weather
+4. **Foraging Window** — Estimated flyable hours for yesterday, today, and tomorrow
 
-This gives beekeepers an at-a-glance view of forage availability and nectar flow potential for each apiary location.
+This gives beekeepers an at-a-glance view of forage availability, nectar flow potential, and foraging opportunity for each apiary location.
 
 ## Data Sources
 
@@ -48,6 +49,17 @@ This gives beekeepers an at-a-glance view of forage availability and nectar flow
 
 - **Rating:** Good (6-8), Fair (3-5), Poor (0-2)
 
+### Foraging Window
+- **Source:** Open-Meteo Forecast API (`past_days=1` for yesterday, `forecast_days=7` for today onwards)
+- **Formula:** `foraging_hours = sunshine_hours × warm_fraction × rain_factor`
+  - **Sunshine hours:** `sunshine_duration / 3600`
+  - **Warm fraction:** Sinusoidal model estimating fraction of daylight above 12°C (bee flying threshold):
+    - `tempMin >= 12°C` → 1.0 (all day above threshold)
+    - `tempMax < 12°C` → 0.0 (too cold all day)
+    - Otherwise → `1 - acos((2×12 - tempMax - tempMin) / (tempMax - tempMin)) / π`
+  - **Rain factor:** `>5mm` → 0.5, `1–5mm` → 0.75, `<1mm` → 1.0
+- **Display:** Yesterday, today (colour-coded: green ≥4h, amber ≥2h, grey <2h), and tomorrow
+
 ## Caching Strategy
 
 | Cache | Key | TTL | Rationale |
@@ -64,14 +76,17 @@ All caches are module-level (shared across all card instances) and gated by Inte
 The forage row appears between the weather forecast section and the hive stats row:
 
 ```
-[Thermometer] 342 GDD  |  [Flower] [Clover] [Hawthorn] [Borage] +2
-                          Nectar: Good
+[Thermometer] 342 GDD  |  Forage: [Flower] [Clover] [Hawthorn] [Borage] +1 more
+Nectar: Good  |  Foraging window: Yday 3.2h · Today 5.1h · Tmrw 4.8h
 ```
 
-- **Predicted blooms:** Green pills (`bg-green-100`)
+- **"Forage:" label** before bloom pills — clarifies these are pollen & nectar sources
+- **Predicted blooms:** Green pills (`bg-green-100`), clickable to open plant info modal
 - **Confirmed blooms:** Amber pills (`bg-amber-100`) with a checkmark icon
-- **Max visible pills:** 3, with `+N` overflow indicator
+- **Expandable pills:** Shows 3 by default; "+N more" expands to show all, "less" collapses
+- **Stale bloom filtering:** Confirmed blooms past their season (GDD > max×1.2 or outside calendar window) are automatically hidden
 - **Nectar label:** Colour-coded (green/amber/grey)
+- **Foraging window:** Yesterday (muted), today (colour-coded), tomorrow (muted)
 - **Background:** Subtle green tint (`bg-green-50/50`)
 
 Only renders when the apiary has coordinates and GDD data loaded successfully.
@@ -80,7 +95,7 @@ Only renders when the apiary has coordinates and GDD data loaded successfully.
 
 | File | Role |
 |------|------|
-| `src/lib/gdd.ts` | Shared utility: GDD calculation, bloom matching, nectar scoring, range parsing, Haversine distance |
+| `src/lib/gdd.ts` | Shared utility: GDD calculation, bloom matching, nectar scoring, foraging hours, range parsing, Haversine distance |
 | `src/components/dashboard/ApiaryWeatherRow.tsx` | Dashboard card with forage row |
 
 ## Edge Cases
