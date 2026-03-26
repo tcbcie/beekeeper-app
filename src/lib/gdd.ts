@@ -230,6 +230,44 @@ export function getNectarConditions(
   return 'poor'
 }
 
+// --- Foraging window: estimate flyable hours for a single day ---
+
+const BEE_FLYING_THRESHOLD_C = 12
+
+/**
+ * Estimate foraging hours for a single day based on temperature, sunshine, and rain.
+ *
+ * Uses a sinusoidal model to approximate what fraction of daylight is above
+ * the bee flying threshold (12°C), multiplied by sunshine hours, with a rain penalty.
+ */
+export function calculateForagingHours(
+  tempMin: number,
+  tempMax: number,
+  sunshineDurationSeconds: number,
+  precipitationMm: number
+): number {
+  const sunshineHours = sunshineDurationSeconds / 3600
+  if (sunshineHours <= 0 || tempMax < BEE_FLYING_THRESHOLD_C) return 0
+
+  // Fraction of day above 12°C (sinusoidal approximation)
+  let warmFraction: number
+  if (tempMin >= BEE_FLYING_THRESHOLD_C) {
+    warmFraction = 1.0
+  } else {
+    // acos gives the fraction of a sine wave above the threshold
+    warmFraction = 1 - Math.acos(
+      (2 * BEE_FLYING_THRESHOLD_C - tempMax - tempMin) / (tempMax - tempMin)
+    ) / Math.PI
+  }
+
+  // Rain penalty: heavy >5mm halves flyable time, moderate 1-5mm reduces by 25%
+  let rainFactor = 1.0
+  if (precipitationMm > 5) rainFactor = 0.5
+  else if (precipitationMm >= 1) rainFactor = 0.75
+
+  return Math.round(sunshineHours * warmFraction * rainFactor * 10) / 10
+}
+
 // --- Haversine distance (km) - reused from GDDDataTab.tsx:164-173 ---
 
 export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
