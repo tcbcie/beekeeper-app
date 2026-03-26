@@ -4,8 +4,10 @@ import {
   BarChart3,
   ClipboardList,
   CloudSun,
+  Copyright,
   CreditCard,
   HardDrive,
+  Lock,
   Mail,
   Pill,
   ShieldAlert,
@@ -55,6 +57,23 @@ const sections: TermsSection[] = [
     title: 'Treatment & Health Management',
     content: 'Varroa treatment tracking and health management features are provided as record-keeping tools only. Always follow manufacturer instructions for any treatments, consult with veterinary professionals when required, and comply with local regulations.',
   },
+]
+
+const licenceRestrictions = [
+  'Reverse-engineer, decompile, or disassemble the software or any part thereof',
+  'Attempt to derive the source code, underlying algorithms, or structure of the software',
+  'Modify, adapt, translate, or create derivative works based on the software',
+  'Copy, reproduce, or distribute the software without prior written consent',
+  'Remove, alter, or obscure any proprietary notices, labels, or marks on the software',
+  'Use the software to develop a competing product or service',
+]
+
+const copyrightNotices = [
+  'All content, code, design, graphics, and data within HiveCraic are the intellectual property of tcbc.ie and are protected by copyright law',
+  'The HiveCraic name, logo, and associated branding are proprietary to tcbc.ie',
+  'You are granted a limited, non-exclusive, non-transferable licence to use the software for personal beekeeping management purposes only',
+  'No part of this software may be reproduced, distributed, or transmitted in any form without the prior written permission of tcbc.ie',
+  'All rights not expressly granted herein are reserved by tcbc.ie',
 ]
 
 const subscriptionTerms = [
@@ -138,6 +157,33 @@ export default function TermsPage() {
           </Panel>
         ))}
       </div>
+
+      <Panel id="licence" padding="none" className="overflow-hidden">
+        <div className="border-b border-border bg-surface-elevated/70 px-6 py-4">
+          <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
+            <Lock className="h-5 w-5 text-purple-700 dark:text-purple-300" />
+            Software Licence Restrictions (EULA)
+          </h2>
+        </div>
+        <div className="p-6">
+          <p className="mb-4 text-text-secondary">
+            By using HiveCraic, you agree that you shall not, and shall not permit any third party to:
+          </p>
+          <SimpleList items={licenceRestrictions} dotClassName="bg-purple-500" />
+        </div>
+      </Panel>
+
+      <Panel padding="none" className="overflow-hidden">
+        <div className="border-b border-border bg-surface-elevated/70 px-6 py-4">
+          <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
+            <Copyright className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
+            Intellectual Property &amp; Copyright
+          </h2>
+        </div>
+        <div className="p-6">
+          <SimpleList items={copyrightNotices} dotClassName="bg-emerald-500" />
+        </div>
+      </Panel>
 
       <Panel padding="none" className="overflow-hidden">
         <div className="border-b border-border bg-surface-elevated/70 px-6 py-4">
