@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback, useRef, startTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle } from 'lucide-react'
+import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle, Thermometer, Flower2, Check } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
+import { fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, haversineDistance } from '@/lib/gdd'
+import type { BloomingPlant, NectarCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary } from '@/types/dashboard'
 
@@ -14,11 +16,14 @@ interface DailyForecast {
   tempMin: number
   tempMax: number
   weatherCode: number
+  sunshineDuration: number  // seconds
+  precipitationSum: number  // mm
 }
 
 interface CurrentWeather {
   temperature: number
   weatherCode: number
+  humidity: number
 }
 
 interface ApiaryWeather {
@@ -40,8 +45,21 @@ interface CacheEntry<T> {
 
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000
 const SCALE_CACHE_TTL_MS = 5 * 60 * 1000
+const GDD_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+const BLOOM_DATA_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+const ACTIVE_BLOOM_CACHE_TTL_MS = 60 * 60 * 1000
 const weatherCache = new Map<string, CacheEntry<ApiaryWeather>>()
 const scaleCache = new Map<string, CacheEntry<ScaleWeight[]>>()
+const gddCache = new Map<string, CacheEntry<number>>()
+let bloomDataCache: CacheEntry<VegetationEntry[]> | null = null
+let bloomDataInflight: Promise<VegetationEntry[]> | null = null
+const activeBloomCache = new Map<string, CacheEntry<string[]>>()
+
+// Module-level community records cache — shared across all cards to avoid N identical RPC calls
+interface CommunityRecord { user_id: string; year: number; start_date: string; end_date: string | null; latitude: number; longitude: number; vegetation_name: string | null }
+const COMMUNITY_CACHE_TTL_MS = 60 * 60 * 1000
+let communityRecordsCache: CacheEntry<CommunityRecord[]> | null = null
+let communityInflight: Promise<CommunityRecord[]> | null = null
 
 function weatherIcon(code: number): string {
   if (code === 0) return '\u2600\uFE0F'
@@ -136,6 +154,9 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
   const [scaleLoading, setScaleLoading] = useState(false)
   const [shouldLoadData, setShouldLoadData] = useState(false)
   const [forecastExpanded, setForecastExpanded] = useState(false)
+  const [gddValue, setGddValue] = useState<number | null>(null)
+  const [bloomingPlants, setBloomingPlants] = useState<BloomingPlant[]>([])
+  const [nectarCondition, setNectarCondition] = useState<NectarCondition | null>(null)
   const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
   const mountedRef = useRef(true)
@@ -188,7 +209,7 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
 
     try {
       const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe/Dublin&forecast_days=7`
+        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,sunshine_duration,precipitation_sum&timezone=Europe/Dublin&forecast_days=7`
       )
       if (!res.ok) throw new Error('fetch failed')
 
@@ -197,12 +218,15 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
         current: {
           temperature: Math.round(data.current.temperature_2m),
           weatherCode: data.current.weather_code,
+          humidity: data.current.relative_humidity_2m ?? 50,
         },
         daily: data.daily.time.map((date: string, index: number) => ({
           day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
           tempMin: Math.round(data.daily.temperature_2m_min[index]),
           tempMax: Math.round(data.daily.temperature_2m_max[index]),
           weatherCode: data.daily.weather_code[index],
+          sunshineDuration: data.daily.sunshine_duration?.[index] ?? 0,
+          precipitationSum: data.daily.precipitation_sum?.[index] ?? 0,
         })),
       }
 
@@ -282,8 +306,182 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
     }
   }, [apiary.scales, hasScales, scaleCacheKey, shouldLoadData])
 
+  const fetchGDDAndBloom = useCallback(async () => {
+    if (!hasCoords || !weatherCacheKey || !shouldLoadData) return
+
+    // 1. Fetch current GDD (24h cache)
+    let gdd: number | null = null
+    const cachedGDD = gddCache.get(weatherCacheKey)
+    if (cachedGDD && isCacheFresh(cachedGDD.fetchedAt, GDD_CACHE_TTL_MS)) {
+      gdd = cachedGDD.data
+    } else {
+      gdd = await fetchCurrentYearGDD(apiary.latitude!, apiary.longitude!)
+      if (gdd !== null) {
+        gddCache.set(weatherCacheKey, { data: gdd, fetchedAt: Date.now() })
+      }
+    }
+
+    if (!mountedRef.current || gdd === null) return
+
+    startTransition(() => { setGddValue(gdd) })
+
+    // 2. Fetch vegetation reference data (24h cache, deduplicated across all cards)
+    let vegData: VegetationEntry[] = []
+    if (bloomDataCache && isCacheFresh(bloomDataCache.fetchedAt, BLOOM_DATA_CACHE_TTL_MS)) {
+      vegData = bloomDataCache.data
+    } else {
+      // Deduplicate: if another card is already fetching, share that promise
+      if (!bloomDataInflight) {
+        bloomDataInflight = (async () => {
+          try {
+            const { data } = await supabase
+              .from('vegetation_info')
+              .select('scientific_name, bloom_period, nectar_value, pollen_value, typical_gdd_range, dropdown_values:vegetation_type_id(value)')
+
+            const entries: VegetationEntry[] = data
+              ? data.map((row: Record<string, unknown>) => ({
+                  name: ((row.dropdown_values as Record<string, unknown>[] | null)?.[0] as Record<string, unknown> | undefined)?.value as string ?? 'Unknown',
+                  typicalGddRange: row.typical_gdd_range as string | null,
+                  nectarValue: row.nectar_value as number | null,
+                  pollenValue: row.pollen_value as number | null,
+                }))
+              : []
+            bloomDataCache = { data: entries, fetchedAt: Date.now() }
+            return entries
+          } finally {
+            bloomDataInflight = null
+          }
+        })()
+      }
+      vegData = await bloomDataInflight
+    }
+
+    if (!mountedRef.current) return
+
+    // 3. Get predicted blooms from GDD ranges
+    const predicted = getBloomingPlants(gdd, vegData)
+
+    // 4. Fetch confirmed bloom observations (1h per-apiary cache)
+    const cachedActive = activeBloomCache.get(apiary.id)
+    let confirmedNames: string[] = []
+    if (cachedActive && isCacheFresh(cachedActive.fetchedAt, ACTIVE_BLOOM_CACHE_TTL_MS)) {
+      confirmedNames = cachedActive.data
+    } else {
+      const now = new Date()
+      const currentYear = now.getFullYear()
+      const todayStr = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+      // User's own bloom records for this apiary, current year, still active
+      const { data: userRecords } = await supabase
+        .from('gdd_records')
+        .select('dropdown_values(value), end_date')
+        .eq('apiary_id', apiary.id)
+        .eq('year', currentYear)
+        .lte('start_date', todayStr)
+
+      if (userRecords) {
+        for (const rec of userRecords) {
+          const endDate = (rec as Record<string, unknown>).end_date as string | null
+          if (endDate && endDate < todayStr) continue
+          const vegName = ((rec as Record<string, unknown>).dropdown_values as Record<string, unknown>[] | null)?.[0]?.value as string | undefined
+          if (vegName && !confirmedNames.includes(vegName)) {
+            confirmedNames.push(vegName)
+          }
+        }
+      }
+
+      // Community shared records — single RPC, deduplicated across all cards
+      try {
+        let communityRecords: CommunityRecord[] = []
+        if (communityRecordsCache && isCacheFresh(communityRecordsCache.fetchedAt, COMMUNITY_CACHE_TTL_MS)) {
+          communityRecords = communityRecordsCache.data
+        } else {
+          if (!communityInflight) {
+            communityInflight = (async () => {
+              try {
+                const { data } = await supabase.rpc('get_shared_gdd_records')
+                const records = (data ?? []) as CommunityRecord[]
+                communityRecordsCache = { data: records, fetchedAt: Date.now() }
+                return records
+              } finally {
+                communityInflight = null
+              }
+            })()
+          }
+          communityRecords = await communityInflight
+        }
+
+        // Filter: exclude own records, within 20km, current year, currently active
+        const { data: { session } } = await supabase.auth.getSession()
+        const userId = session?.user?.id
+        for (const rec of communityRecords) {
+          if (rec.user_id === userId) continue
+          if (rec.year !== currentYear) continue
+          if (rec.start_date > todayStr) continue
+          if (rec.end_date && rec.end_date < todayStr) continue
+          const dist = haversineDistance(
+            apiary.latitude!, apiary.longitude!,
+            rec.latitude, rec.longitude
+          )
+          if (dist > 20) continue
+          if (rec.vegetation_name && !confirmedNames.includes(rec.vegetation_name)) {
+            confirmedNames.push(rec.vegetation_name)
+          }
+        }
+      } catch {
+        // Community data unavailable — continue with user records only
+      }
+
+      activeBloomCache.set(apiary.id, { data: confirmedNames, fetchedAt: Date.now() })
+    }
+
+    if (!mountedRef.current) return
+
+    // 5. Merge: mark predicted plants as confirmed if they appear in observations
+    const merged: BloomingPlant[] = predicted.map(p => ({
+      ...p,
+      confirmed: confirmedNames.includes(p.name),
+    }))
+    // Add confirmed plants not in predicted list
+    for (const name of confirmedNames) {
+      if (!merged.some(p => p.name === name)) {
+        const vegEntry = vegData.find(v => v.name === name)
+        merged.push({
+          name,
+          nectarValue: vegEntry?.nectarValue ?? 0,
+          pollenValue: vegEntry?.pollenValue ?? 0,
+          confirmed: true,
+        })
+      }
+    }
+    // Sort: confirmed first, then by nectar value
+    merged.sort((a, b) => {
+      if (a.confirmed !== b.confirmed) return a.confirmed ? -1 : 1
+      return b.nectarValue - a.nectarValue
+    })
+
+    startTransition(() => { setBloomingPlants(merged) })
+  }, [apiary.id, apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey])
+
   useEffect(() => { fetchWeather() }, [fetchWeather])
   useEffect(() => { fetchScaleData() }, [fetchScaleData])
+  useEffect(() => { fetchGDDAndBloom() }, [fetchGDDAndBloom])
+
+  // Compute nectar condition when weather data is available
+  useEffect(() => {
+    if (!weather) return
+    const today = weather.daily[0]
+    if (!today) return
+    // Sum precipitation from the last 3 days (or as many as available)
+    const recentRain = weather.daily.slice(0, 3).reduce((sum, d) => sum + d.precipitationSum, 0)
+    const condition = getNectarConditions(
+      weather.current.temperature,
+      weather.current.humidity,
+      today.sunshineDuration,
+      recentRain
+    )
+    setNectarCondition(condition)
+  }, [weather])
 
   const locationText = apiary.city || apiary.location || null
   const avgWeight = scaleData.length > 0 ? {
@@ -405,6 +603,59 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {gddValue !== null && !activeAction && (
+        <div className="px-3 py-1.5 bg-green-50/50 dark:bg-green-900/10 border-b border-border/50">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 shrink-0">
+              <Thermometer size={13} className="text-forest-600 dark:text-forest-400" />
+              <span className="text-sm font-bold text-forest-700 dark:text-forest-300 tabular-nums">
+                {Math.round(gddValue)} GDD
+              </span>
+            </div>
+            {bloomingPlants.length > 0 && (
+              <>
+                <div className="w-px h-4 bg-border" />
+                <Flower2 size={13} className="text-green-600 dark:text-green-400 shrink-0" />
+                <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+                  {bloomingPlants.slice(0, 3).map((plant) => (
+                    <span
+                      key={plant.name}
+                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${
+                        plant.confirmed
+                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                          : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      }`}
+                    >
+                      {plant.confirmed && <Check size={10} className="shrink-0" />}
+                      {plant.name}
+                    </span>
+                  ))}
+                  {bloomingPlants.length > 3 && (
+                    <span className="text-xs font-medium text-text-secondary whitespace-nowrap">
+                      +{bloomingPlants.length - 3}
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+          {nectarCondition && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-xs font-medium text-text-secondary">Nectar:</span>
+              <span className={`text-xs font-bold ${
+                nectarCondition === 'good'
+                  ? 'text-green-700 dark:text-green-400'
+                  : nectarCondition === 'fair'
+                    ? 'text-amber-700 dark:text-amber-400'
+                    : 'text-text-tertiary'
+              }`}>
+                {nectarCondition === 'good' ? 'Good' : nectarCondition === 'fair' ? 'Fair' : 'Poor'}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
