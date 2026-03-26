@@ -23,9 +23,12 @@ This gives beekeepers an at-a-glance view of forage availability and nectar flow
 
 ### Predicted Blooms
 - **Source:** `vegetation_info` table joined to `dropdown_values`
-- **Logic:** A plant is "in bloom" when `currentGDD >= range.min && currentGDD <= range.max`
+- **Logic:** Dual-filter approach using both GDD range and calendar month:
+  - When both `typical_gdd_range` AND `bloom_period` are available: plant must match **both** (strongest signal, fewest false positives)
+  - When only one source is available: use whichever data we have
+  - `bloom_period` text (e.g., "March–May") is parsed into month ranges, handling parenthetical notes and year-wrapping periods (e.g., "November–April")
 - **Sorting:** By nectar value (highest first)
-- **Data:** 29+ plants with `typical_gdd_range` values (e.g., "200-400")
+- **Data:** 40+ plants with `typical_gdd_range` values and `bloom_period` text — no user data required
 
 ### Confirmed Blooms
 - **User observations:** `gdd_records` table for the current year and apiary, where bloom is currently active (start_date <= today, end_date null or >= today)
