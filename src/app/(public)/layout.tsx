@@ -87,6 +87,11 @@ export default function PublicLayout({
                       Terms of Service
                     </Link>
                   </li>
+                  <li>
+                    <Link href="/terms#licence" className="text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors">
+                      Licence (EULA)
+                    </Link>
+                  </li>
                 </ul>
               </div>
             </div>
