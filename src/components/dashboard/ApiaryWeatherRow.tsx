@@ -336,15 +336,21 @@ export default function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }:
           try {
             const { data } = await supabase
               .from('vegetation_info')
-              .select('scientific_name, bloom_period, nectar_value, pollen_value, typical_gdd_range, dropdown_values:vegetation_type_id(value)')
+              .select('bloom_period, nectar_value, pollen_value, typical_gdd_range, dropdown_values:vegetation_type_id(value)')
 
             const entries: VegetationEntry[] = data
-              ? data.map((row: Record<string, unknown>) => ({
-                  name: ((row.dropdown_values as Record<string, unknown>[] | null)?.[0] as Record<string, unknown> | undefined)?.value as string ?? 'Unknown',
-                  typicalGddRange: row.typical_gdd_range as string | null,
-                  nectarValue: row.nectar_value as number | null,
-                  pollenValue: row.pollen_value as number | null,
-                }))
+              ? data.map((row: Record<string, unknown>) => {
+                  // PostgREST may return the join as a single object or an array — handle both
+                  const dv = row.dropdown_values
+                  const name = Array.isArray(dv) ? dv[0]?.value : (dv as Record<string, unknown> | null)?.value
+                  return {
+                    name: (name as string) ?? 'Unknown',
+                    typicalGddRange: row.typical_gdd_range as string | null,
+                    bloomPeriod: row.bloom_period as string | null,
+                    nectarValue: row.nectar_value as number | null,
+                    pollenValue: row.pollen_value as number | null,
+                  }
+                })
               : []
             bloomDataCache = { data: entries, fetchedAt: Date.now() }
             return entries

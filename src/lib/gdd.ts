@@ -92,22 +92,73 @@ export function parseGDDRange(range: string | null): { min: number; max: number 
   return { min, max }
 }
 
-// --- Determine which plants are blooming based on current GDD ---
+// --- Determine which plants are blooming based on current GDD + calendar month ---
 
 export interface VegetationEntry {
   name: string
   typicalGddRange: string | null
+  bloomPeriod: string | null
   nectarValue: number | null
   pollenValue: number | null
 }
 
+const MONTH_NAMES: Record<string, number> = {
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+}
+
+/**
+ * Parse bloom_period text like "March–May", "January–June (peak March–April)"
+ * into a set of month numbers. Returns null if unparseable.
+ */
+export function parseBloomMonths(period: string | null): Set<number> | null {
+  if (!period) return null
+
+  // Strip parenthetical notes like "(species dependent)", "(peak March–April)"
+  const cleaned = period.replace(/\(.*?\)/g, '').trim()
+
+  // Split on en-dash, em-dash, or hyphen
+  const parts = cleaned.includes('\u2013') ? cleaned.split('\u2013')
+    : cleaned.includes('\u2014') ? cleaned.split('\u2014')
+    : cleaned.split('-')
+  if (parts.length !== 2) return null
+
+  const startMonth = MONTH_NAMES[parts[0].trim().toLowerCase()]
+  const endMonth = MONTH_NAMES[parts[1].trim().toLowerCase()]
+  if (!startMonth || !endMonth) return null
+
+  const months = new Set<number>()
+  if (startMonth <= endMonth) {
+    for (let m = startMonth; m <= endMonth; m++) months.add(m)
+  } else {
+    // Wraps around year (e.g. November–April)
+    for (let m = startMonth; m <= 12; m++) months.add(m)
+    for (let m = 1; m <= endMonth; m++) months.add(m)
+  }
+  return months
+}
+
 export function getBloomingPlants(currentGDD: number, vegetation: VegetationEntry[]): BloomingPlant[] {
   const blooming: BloomingPlant[] = []
+  const currentMonth = new Date().getMonth() + 1
 
   for (const veg of vegetation) {
-    const range = parseGDDRange(veg.typicalGddRange)
-    if (!range) continue
-    if (currentGDD >= range.min && currentGDD <= range.max) {
+    // Skip entries with no usable name
+    if (!veg.name || veg.name === 'Unknown') continue
+
+    const gddRange = parseGDDRange(veg.typicalGddRange)
+    const bloomMonths = parseBloomMonths(veg.bloomPeriod)
+
+    // Must pass at least one filter (GDD range or calendar month)
+    const gddMatch = gddRange ? currentGDD >= gddRange.min && currentGDD <= gddRange.max : false
+    const calendarMatch = bloomMonths ? bloomMonths.has(currentMonth) : false
+
+    // Include if both GDD and calendar agree, or if only one source is available and it matches
+    const include = gddRange && bloomMonths
+      ? gddMatch && calendarMatch   // Both available: must both match (strongest signal)
+      : gddMatch || calendarMatch   // Only one available: use whichever we have
+
+    if (include) {
       blooming.push({
         name: veg.name,
         nectarValue: veg.nectarValue ?? 0,
