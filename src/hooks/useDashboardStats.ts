@@ -85,6 +85,9 @@ export function useDashboardStats(): UseDashboardStatsReturn {
       } catch (err) {
         console.error('Error fetching dashboard overview data:', err)
         if (isCurrentRequest()) {
+          setStats({ apiaries: 0, hives: 0, recentInspections: 0, queens: 0, activeTasks: 0 })
+          setAlerts({ overdueInspections: 0, oldQueens: 0, highVarroa: 0, todayTasks: 0 })
+          setApiaries([])
           setError('Some dashboard sections could not be loaded. You can still use the links below and retry the dashboard data.')
           setLoading(false)
         }
