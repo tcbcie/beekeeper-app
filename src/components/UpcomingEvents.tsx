@@ -17,6 +17,7 @@ interface UpcomingEvent {
   batch_id?: string
   hive_id?: string
   apiary_id?: string
+  apiary_name?: string
 }
 
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
@@ -39,7 +40,7 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
     // Fetch all tasks and events from tasks_events table
     const { data: tasks, error } = await supabase
       .from('tasks_events')
-      .select('id, title, event_type, category, priority, start_date, batch_id, hive_id, apiary_id, completed')
+      .select('id, title, event_type, category, priority, start_date, batch_id, hive_id, apiary_id, completed, apiaries(name)')
       .eq('user_id', userId)
       .eq('completed', false)
       .gte('start_date', todayString)
@@ -67,7 +68,8 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
         priority: task.priority || undefined,
         batch_id: task.batch_id || undefined,
         hive_id: task.hive_id || undefined,
-        apiary_id: task.apiary_id || undefined
+        apiary_id: task.apiary_id || undefined,
+        apiary_name: (task.apiaries as { name: string }[] | null)?.[0]?.name || undefined
       }
     })
 
@@ -183,6 +185,9 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
                     <span className="text-xs text-text-tertiary">• {getCategoryLabel(event.category)}</span>
                   )}
                 </div>
+                {event.apiary_name && (
+                  <p className="text-xs text-text-tertiary mt-0.5">{event.apiary_name}</p>
+                )}
                 <p className="text-xs text-text-tertiary mt-0.5">{formatDate(event.date)}</p>
               </div>
               <span className={`px-2 py-1 rounded text-xs font-medium border ${getBadgeColor(event.days_until)} whitespace-nowrap`}>
