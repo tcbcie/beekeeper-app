@@ -158,7 +158,8 @@ export default function TermsPage() {
         ))}
       </div>
 
-      <Panel id="licence" padding="none" className="overflow-hidden">
+      <div id="licence">
+      <Panel padding="none" className="overflow-hidden">
         <div className="border-b border-border bg-surface-elevated/70 px-6 py-4">
           <h2 className="flex items-center gap-3 text-xl font-semibold text-foreground">
             <Lock className="h-5 w-5 text-purple-700 dark:text-purple-300" />
@@ -172,6 +173,7 @@ export default function TermsPage() {
           <SimpleList items={licenceRestrictions} dotClassName="bg-purple-500" />
         </div>
       </Panel>
+      </div>
 
       <Panel padding="none" className="overflow-hidden">
         <div className="border-b border-border bg-surface-elevated/70 px-6 py-4">
