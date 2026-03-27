@@ -634,6 +634,11 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
               </>
             )}
           </div>
+
+          {/* Formula legend */}
+          <div className="text-xs text-text-tertiary">
+            <p>Foraging hrs = sunshine hrs × warm fraction × rain factor. Warm fraction: proportion of day above 12°C (sinusoidal model). Rain penalty: {'>'} 5 mm → ×0.5, 1–5 mm → ×0.75.</p>
+          </div>
         </>
       )}
     </div>
