@@ -88,7 +88,7 @@ export function buildEventAnnotations(
   return annotations
 }
 
-export default function KeyEventsOverlay({
+export function useKeyEvents({
   userId,
   apiaryId,
   selectedYears,

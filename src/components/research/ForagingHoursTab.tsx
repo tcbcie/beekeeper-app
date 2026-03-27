@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Sun, Loader2, TrendingUp, BarChart3, Filter, CalendarDays } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { calculateForagingHours } from '@/lib/gdd'
-import KeyEventsOverlay from '@/components/research/KeyEventsOverlay'
+import { useKeyEvents } from '@/components/research/KeyEventsOverlay'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -254,10 +254,8 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
     [selectedYears]
   )
 
-  // Key events overlay
-  const keyEvents = showEvents
-    ? KeyEventsOverlay({ userId, apiaryId: selectedApiary?.id, selectedYears, chartYearOrder })
-    : null
+  // Key events overlay (hook must be called unconditionally)
+  const keyEvents = useKeyEvents({ userId, apiaryId: selectedApiary?.id, selectedYears, chartYearOrder })
 
   // Accumulation chart data
   const accumulationChartData = useMemo(() => {
@@ -349,7 +347,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
               },
             },
           } : {}),
-          ...(keyEvents?.annotations ?? {}),
+          ...(showEvents ? keyEvents.annotations : {}),
         },
       },
     },
@@ -370,7 +368,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
       },
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [currentYearTotal, keyEvents?.annotations])
+  }), [currentYearTotal, showEvents, keyEvents.annotations])
 
   // Monthly bar chart data
   const monthlyChartData = useMemo(() => {
@@ -642,7 +640,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                 </div>
 
                 {/* Key events panel */}
-                {showEvents && keyEvents && (
+                {showEvents && (
                   <div className="mt-4 pt-4 border-t border-border">
                     {keyEvents.panel}
                   </div>
