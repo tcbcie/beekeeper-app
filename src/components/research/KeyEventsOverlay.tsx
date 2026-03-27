@@ -51,9 +51,11 @@ export function buildEventAnnotations(
   events.forEach((evt, i) => {
     if (!selectedYears.includes(evt.year)) return
 
-    const eventDate = new Date(evt.event_date)
+    // Parse manually to avoid UTC-vs-local timezone mismatch
+    const [y, m, d] = evt.event_date.split('-').map(Number)
+    const eventDate = new Date(y, m - 1, d)
     const dayOfYear = Math.floor(
-      (eventDate.getTime() - new Date(evt.year, 0, 0).getTime()) / 86400000
+      (eventDate.getTime() - new Date(y, 0, 0).getTime()) / 86400000
     )
     // Map to nearest x-axis tick index (ticks are day 1, 8, 15, ... step 7)
     const tickIndex = Math.round((dayOfYear - 1) / 7)
@@ -99,6 +101,7 @@ export function useKeyEvents({
   const [eventTypes, setEventTypes] = useState<EventTypeOption[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Form state
   const [eventDate, setEventDate] = useState('')
@@ -110,28 +113,36 @@ export function useKeyEvents({
   // Fetch event types from dropdown_values
   useEffect(() => {
     const fetchTypes = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('dropdown_categories')
         .select('id')
         .eq('category_key', 'key_event_type')
         .single()
 
-      if (data) {
-        const { data: values } = await supabase
-          .from('dropdown_values')
-          .select('id, value')
-          .eq('category_id', data.id)
-          .eq('is_active', true)
-          .order('display_order')
-
-        if (values) setEventTypes(values)
+      if (error || !data) {
+        console.error('Failed to fetch key event category:', error?.message ?? 'not found')
+        return
       }
+
+      const { data: values, error: valuesError } = await supabase
+        .from('dropdown_values')
+        .select('id, value')
+        .eq('category_id', data.id)
+        .eq('is_active', true)
+        .order('display_order')
+
+      if (valuesError) {
+        console.error('Failed to fetch key event types:', valuesError.message)
+        return
+      }
+
+      if (values) setEventTypes(values)
     }
     fetchTypes()
   }, [])
 
   // Fetch events for selected apiary
-  const fetchEvents = useCallback(async () => {
+  const fetchEvents = useCallback(async (signal?: AbortSignal) => {
     if (!apiaryId) { setLoading(false); return }
 
     setLoading(true)
@@ -143,6 +154,8 @@ export function useKeyEvents({
         .eq('apiary_id', apiaryId)
         .order('event_date', { ascending: false })
 
+      if (signal?.aborted) return
+
       if (error) {
         console.error('Failed to fetch key events:', error.message)
         return
@@ -150,14 +163,17 @@ export function useKeyEvents({
 
       setEvents((data as KeyEvent[]) || [])
     } catch (err) {
+      if (signal?.aborted) return
       console.error('Failed to fetch key events:', err)
     } finally {
-      setLoading(false)
+      if (!signal?.aborted) setLoading(false)
     }
   }, [userId, apiaryId])
 
   useEffect(() => {
-    fetchEvents()
+    const controller = new AbortController()
+    fetchEvents(controller.signal)
+    return () => controller.abort()
   }, [fetchEvents])
 
   // Filtered events for display (only selected years)
@@ -193,7 +209,7 @@ export function useKeyEvents({
 
     setSaving(true)
     try {
-      const year = new Date(eventDate).getFullYear()
+      const year = parseInt(eventDate.split('-')[0], 10)
 
       if (editingId) {
         const { error } = await supabase
@@ -245,18 +261,31 @@ export function useKeyEvents({
   }
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from('key_events')
-      .delete()
-      .eq('id', id)
+    if (deletingId) return
+    setDeletingId(id)
 
-    if (error) {
+    try {
+      const { error } = await supabase
+        .from('key_events')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        toast.error('Failed to delete event')
+        return
+      }
+
+      // Clear edit form if the deleted event was being edited
+      if (editingId === id) resetForm()
+
+      toast.success('Event deleted')
+      fetchEvents()
+    } catch (err) {
+      console.error('Failed to delete key event:', err)
       toast.error('Failed to delete event')
-      return
+    } finally {
+      setDeletingId(null)
     }
-
-    toast.success('Event deleted')
-    fetchEvents()
   }
 
   const getEventTypeName = (evt: KeyEvent) => {
@@ -360,10 +389,11 @@ export function useKeyEvents({
                   </button>
                   <button
                     onClick={() => handleDelete(evt.id)}
-                    className="p-1 text-text-tertiary hover:text-red-600 transition-colors"
+                    disabled={deletingId === evt.id}
+                    className="p-1 text-text-tertiary hover:text-red-600 disabled:opacity-50 transition-colors"
                     title="Delete event"
                   >
-                    <Trash2 size={13} />
+                    {deletingId === evt.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                   </button>
                 </div>
               </div>
