@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2, Users, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
-import KeyEventsOverlay from '@/components/research/KeyEventsOverlay'
+import { useKeyEvents } from '@/components/research/KeyEventsOverlay'
 import Button from '@/components/ui/Button'
 import {
   Chart as ChartJS,
@@ -662,10 +662,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     [selectedAccumulationYears]
   )
 
-  // Key events overlay
-  const keyEvents = showEvents
-    ? KeyEventsOverlay({ userId, apiaryId: apiaryCoordsList[0]?.id, selectedYears: selectedAccumulationYears, chartYearOrder: gddChartYearOrder })
-    : null
+  // Key events overlay (hook must be called unconditionally)
+  const keyEvents = useKeyEvents({ userId, apiaryId: apiaryCoordsList[0]?.id, selectedYears: selectedAccumulationYears, chartYearOrder: gddChartYearOrder })
 
   // Accumulation chart data
   const accumulationChartData = useMemo(() => {
@@ -804,7 +802,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       datalabels: {
         display: false,
       },
-      ...(keyEvents ? { annotation: { annotations: keyEvents.annotations } } : {}),
+      ...(showEvents ? { annotation: { annotations: keyEvents.annotations } } : {}),
     },
     scales: {
       y: {
@@ -844,7 +842,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       },
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [showTemperature, hasMonthlyTemps, keyEvents?.annotations])
+  }), [showTemperature, hasMonthlyTemps, showEvents, keyEvents.annotations])
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev =>
@@ -1189,7 +1187,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               </div>
 
               {/* Key events panel */}
-              {showEvents && keyEvents && (
+              {showEvents && (
                 <div className="mt-4 pt-4 border-t border-border">
                   {keyEvents.panel}
                 </div>
