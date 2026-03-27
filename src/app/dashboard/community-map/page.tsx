@@ -12,7 +12,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { useDCAPredictions, type DCAConfirmation } from '@/hooks/useDCAPredictions'
 // Server-side obfuscation now used - coordinates pre-obfuscated in database views
 
-interface SharedApiary {
+interface ApiaryPoint {
   id: string
   city: string | null
   latitude: number
@@ -20,6 +20,8 @@ interface SharedApiary {
   created_at: string
   hive_count: number
 }
+
+type SharedApiary = ApiaryPoint
 
 interface UserApiary {
   id: string
@@ -52,14 +54,7 @@ interface ConservationArea {
   nihbs_url: string | null
 }
 
-interface AllRegisteredApiary {
-  id: string
-  city: string | null
-  latitude: number
-  longitude: number
-  created_at: string
-  hive_count: number
-}
+type AllRegisteredApiary = ApiaryPoint
 
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
@@ -185,8 +180,11 @@ export default function CommunityMapPage() {
 
   // Check auth and fetch shared apiaries
   useEffect(() => {
+    let cancelled = false
+
     const init = async () => {
       const id = await getCurrentUserId()
+      if (cancelled) return
       if (!id) {
         router.push('/login')
         return
@@ -199,6 +197,7 @@ export default function CommunityMapPage() {
         .select('id, city, latitude, longitude, created_at, hive_count')
         .neq('user_id', id)
 
+      if (cancelled) return
       if (!sharedError && sharedData) {
         setSharedApiaries(sharedData)
       }
@@ -211,24 +210,25 @@ export default function CommunityMapPage() {
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
 
+      if (cancelled) return
       if (!userError && userData) {
         setUserApiaries(userData)
       }
 
-      // Check if user is Power User/Admin and fetch wild colonies
+      // Check if user is Power User/Admin and fetch privileged data
       const powerUser = await isPowerUserOrAdmin()
+      if (cancelled) return
       setIsPowerUser(powerUser)
       if (powerUser) {
         setShowWildColonies(false)
-      }
 
-      if (powerUser) {
         // Fetch wild colonies from obfuscated view
         // Coordinates are already obfuscated server-side for privacy
         const { data: wildData, error: wildError } = await supabase
           .from('wild_colonies_obfuscated')
           .select('id, latitude, longitude, status, nesting_type, observation_date')
 
+        if (cancelled) return
         if (!wildError && wildData) {
           setWildColonies(wildData)
         }
@@ -237,6 +237,7 @@ export default function CommunityMapPage() {
         const { data: allData, error: allError } = await supabase
           .rpc('get_all_apiaries_obfuscated')
 
+        if (cancelled) return
         if (!allError && allData) {
           setAllApiaries(allData)
         }
@@ -247,12 +248,15 @@ export default function CommunityMapPage() {
         .from('conservation_areas')
         .select('id, name, type, description, latitude, longitude, radius_km, county, country, nihbs_url')
         .eq('is_active', true)
+
+      if (cancelled) return
       if (caData) setConservationAreas(caData as ConservationArea[])
 
       setLoading(false)
     }
 
     init()
+    return () => { cancelled = true }
   }, [router])
 
   // Initialize map
@@ -412,8 +416,8 @@ export default function CommunityMapPage() {
             closeOnClick: true,
           }).setHTML(`
             <div style="padding: 4px 8px;">
-              <div style="font-weight: 600; color: #22c55e;">${apiary.name}</div>
-              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">${apiary.city}</div>` : ''}
+              <div style="font-weight: 600; color: #22c55e;">${escapeHtml(apiary.name)}</div>
+              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">${escapeHtml(apiary.city)}</div>` : ''}
               <div style="font-size: 11px; color: #22c55e; margin-top: 4px;">Your apiary</div>
             </div>
           `)
@@ -448,7 +452,7 @@ export default function CommunityMapPage() {
           }).setHTML(`
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #a78bfa;">Shared Apiary</div>
-              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${apiary.city}</div>` : ''}
+              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${escapeHtml(apiary.city)}</div>` : ''}
               <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
               <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
               ${distanceText}
@@ -509,7 +513,7 @@ export default function CommunityMapPage() {
           if (!map.current) return
 
           const nestingLabel = colony.nesting_type
-            ? colony.nesting_type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+            ? colony.nesting_type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
             : 'Unknown'
 
           const el = document.createElement('div')
@@ -532,8 +536,8 @@ export default function CommunityMapPage() {
           }).setHTML(`
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #f59e0b;">Wild Colony</div>
-              <div style="font-size: 12px; opacity: 0.7;">${nestingLabel}</div>
-              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Status: ${colony.status}</div>
+              <div style="font-size: 12px; opacity: 0.7;">${escapeHtml(nestingLabel)}</div>
+              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Status: ${escapeHtml(colony.status)}</div>
               <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
             </div>
           `)
@@ -741,18 +745,6 @@ export default function CommunityMapPage() {
       })
     }
 
-    // Fit bounds to include visible apiaries (only on first load)
-    const visibleUserApiaries = showUserApiaries ? filteredUserApiaries : []
-    const visibleSharedApiaries = showSharedApiaries ? filteredSharedApiaries : []
-    const allVisible = [...visibleUserApiaries, ...visibleSharedApiaries]
-
-    if (allVisible.length > 0 && !markers.current.some(m => m.getPopup()?.isOpen())) {
-      const bounds = new mapboxgl.LngLatBounds()
-      allVisible.forEach(apiary => {
-        bounds.extend([apiary.longitude, apiary.latitude])
-      })
-      // Only fit bounds initially, not on every filter change
-    }
   }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, allApiaries, showAllApiaries])
 
   // Handle style change
