@@ -1,34 +1,48 @@
-# Task: Foraging Hours Tab — Code Audit Hardening
+# Task: Key Events — Chart Overlay + Records Integration
 **Date:** 27/03/2026
-**Status:** Complete
+**Status:** In Progress
 
-## Findings
-
-| # | Severity | Issue | Lines |
-|---|----------|-------|-------|
-| 1 | Critical | Race condition — no AbortController on fetch; stale responses can overwrite fresh data | 136-228 |
-| 2 | High | Sequential API calls — 5 years = 5 serial HTTP requests | 149 |
-| 3 | High | Supabase error silently swallowed — no user feedback on failure | 113 |
-| 4 | Medium | `currentYear`/`availableYears` recreated every render | 83-84 |
+## Objective
+Allow beekeepers to record key seasonal events with a hybrid approach: quick-add inline on chart pages + full management in Records.
 
 ## Plan
 
-- [x] Add AbortController to `fetchForagingData`; abort previous in-flight fetches on re-trigger and on unmount
-- [x] Convert sequential `for` loop to `Promise.allSettled` for parallel year fetching
-- [x] Check Supabase `error` in apiary fetch; log and handle gracefully
-- [x] Stabilise `currentYear` and `availableYears` with `useMemo`
+### 1. Database
+- [x] Seed `key_event_type` dropdown category with values
+- [x] Create `key_events` table with RLS policies
+- [x] Add `key_events` to database export list
+
+### 2. Shared Overlay Component
+- [x] Create `src/components/research/KeyEventsOverlay.tsx`
+  - [x] Events toggle button
+  - [x] Fetch events for selected apiary + years
+  - [x] Build Chart.js vertical line annotations
+  - [x] Inline quick-add form: date picker, event type dropdown, notes
+  - [x] Event list with delete action
+
+### 3. Integrate into Foraging Hours Tab
+- [x] Add events toggle + overlay annotations to accumulation chart
+
+### 4. Integrate into GDD Data Tab
+- [x] Add events toggle + overlay annotations to accumulation chart
+
+### 5. Records Page Integration
+- [ ] Add `KeyEvent` interface and `'key_event'` to RecordType (deferred — separate task)
+
+### 6. Documentation
+- [x] Feature plan in `docs/features/key-events.md`
 
 ## Files Affected
-- `src/components/research/ForagingHoursTab.tsx`
+- Database: `key_events` table, `key_event_type` dropdown category
+- `src/components/research/KeyEventsOverlay.tsx` (new)
+- `src/components/research/GDDDataTab.tsx` (modify)
+- `src/components/research/ForagingHoursTab.tsx` (modify)
+- `src/lib/database-export.ts` (modify)
 
 ## Review
-
-All four issues resolved in a single pass:
-
-1. **AbortController** — `fetchForagingData` now accepts an `AbortSignal`. The triggering `useEffect` creates a controller and aborts on cleanup (dependency change or unmount). State setters are guarded by `signal.aborted` checks. `AbortError` is caught and silently dropped.
-
-2. **Parallel fetches** — The sequential `for` loop replaced with `Promise.allSettled(yearsToFetch.map(...))`. Each year's fetch+processing runs concurrently. Individual failures (`rejected` or `null` return) are skipped during result assembly — one year failing doesn't break the others.
-
-3. **Supabase error** — Destructure now includes `error`; early return with `console.error` on failure instead of silently proceeding with `null` data.
-
-4. **Stable references** — `currentYear` and `availableYears` wrapped in `useMemo` with appropriate dependency arrays. Prevents unnecessary callback/effect invalidation.
+- New `key_events` table with full RLS (user CRUD own records), indexed on user_id, apiary_id, year
+- `key_event_type` dropdown category seeded with 11 event types
+- `KeyEventsOverlay` is a shared component returning annotations + JSX panel; called as a function (not rendered as JSX) to allow chart options to consume annotations
+- Both GDD and Foraging Hours accumulation charts gain an "Events" toggle that shows vertical dashed lines at event dates, colour-matched to the year
+- Inline quick-add form + event list appear below the chart when toggle is active
+- Records page integration deferred to a separate task

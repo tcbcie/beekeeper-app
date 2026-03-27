@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2, Users } from 'lucide-react'
+import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2, Users, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
+import KeyEventsOverlay from '@/components/research/KeyEventsOverlay'
 import Button from '@/components/ui/Button'
 import {
   Chart as ChartJS,
@@ -94,9 +95,10 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   const [currentGDD, setCurrentGDD] = useState<number | null>(null)
   const [accumulationData, setAccumulationData] = useState<YearlyAccumulation[]>([])
   const [accumulationLoading, setAccumulationLoading] = useState(false)
-  const [apiaryCoordsList, setApiaryCoordsList] = useState<{ latitude: number; longitude: number }[]>([])
+  const [apiaryCoordsList, setApiaryCoordsList] = useState<{ id: string; latitude: number; longitude: number }[]>([])
   const [monthlyTemps, setMonthlyTemps] = useState<YearlyMonthlyTemps>({})
   const [showTemperature, setShowTemperature] = useState(true)
+  const [showEvents, setShowEvents] = useState(false)
 
   // Vegetation info modal
   const [vegModalOpen, setVegModalOpen] = useState(false)
@@ -225,7 +227,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     try {
       const { data: apiaries } = await supabase
         .from('apiaries')
-        .select('latitude, longitude')
+        .select('id, latitude, longitude')
         .eq('user_id', userId)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
@@ -233,7 +235,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       if (apiaries && apiaries.length > 0) {
         const coords = apiaries
           .filter(a => a.latitude && a.longitude)
-          .map(a => ({ latitude: a.latitude!, longitude: a.longitude! }))
+          .map(a => ({ id: a.id, latitude: a.latitude!, longitude: a.longitude! }))
         setApiaryCoordsList(coords)
       }
     } catch (err) {
@@ -654,6 +656,17 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     },
   }), [dateMap, showTemperature])
 
+  // Chart year order for event annotations colour matching
+  const gddChartYearOrder = useMemo(() =>
+    [...selectedAccumulationYears].sort((a, b) => a - b),
+    [selectedAccumulationYears]
+  )
+
+  // Key events overlay
+  const keyEvents = showEvents
+    ? KeyEventsOverlay({ userId, apiaryId: apiaryCoordsList[0]?.id, selectedYears: selectedAccumulationYears, chartYearOrder: gddChartYearOrder })
+    : null
+
   // Accumulation chart data
   const accumulationChartData = useMemo(() => {
     // Create labels for days of year (simplified to show months)
@@ -791,6 +804,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       datalabels: {
         display: false,
       },
+      ...(keyEvents ? { annotation: { annotations: keyEvents.annotations } } : {}),
     },
     scales: {
       y: {
@@ -829,7 +843,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         },
       },
     },
-  }), [showTemperature, hasMonthlyTemps])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [showTemperature, hasMonthlyTemps, keyEvents?.annotations])
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev =>
@@ -1130,6 +1145,18 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                   <Thermometer size={12} />
                   Temp
                 </Button>
+                <Button
+                  onClick={() => setShowEvents(!showEvents)}
+                  className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                    showEvents
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
+                  }`}
+                  title="Toggle key events overlay"
+                >
+                  <CalendarDays size={12} />
+                  Events
+                </Button>
               </div>
             )}
           </div>
@@ -1160,6 +1187,13 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                   {currentGDD !== null && ` Current year: ${currentGDD} GDD as of today.`}
                 </p>
               </div>
+
+              {/* Key events panel */}
+              {showEvents && keyEvents && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  {keyEvents.panel}
+                </div>
+              )}
             </>
           )}
 

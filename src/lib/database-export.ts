@@ -21,6 +21,7 @@ export const DATABASE_EXPORT_TABLES = [
   'frame_standards',
   'gdd_records',
   'graft_distributions',
+  'key_events',
   'harvests',
   'hive_configuration_history',
   'hives',
