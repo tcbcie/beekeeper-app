@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Sun, Loader2, TrendingUp, BarChart3, Thermometer, Filter } from 'lucide-react'
+import { Sun, Loader2, TrendingUp, BarChart3, Filter } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { calculateForagingHours } from '@/lib/gdd'
 import {
@@ -47,15 +47,6 @@ interface YearlyMonthlyHours {
   [year: number]: MonthlyHours[]
 }
 
-interface MonthlyTemperature {
-  month: string
-  avgTemp: number | null
-}
-
-interface YearlyMonthlyTemps {
-  [year: number]: MonthlyTemperature[]
-}
-
 interface ApiaryOption {
   id: string
   name: string
@@ -77,7 +68,6 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
   const [loading, setLoading] = useState(true)
   const [chartType, setChartType] = useState<ChartType>('accumulation')
-  const [showTemperature, setShowTemperature] = useState(true)
 
   // Apiary selection
   const [apiaries, setApiaries] = useState<ApiaryOption[]>([])
@@ -86,7 +76,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
   // Data
   const [accumulationData, setAccumulationData] = useState<YearlyAccumulation[]>([])
   const [monthlyHoursData, setMonthlyHoursData] = useState<YearlyMonthlyHours>({})
-  const [monthlyTemps, setMonthlyTemps] = useState<YearlyMonthlyTemps>({})
   const [currentYearTotal, setCurrentYearTotal] = useState<number | null>(null)
   const [dataLoading, setDataLoading] = useState(false)
 
@@ -155,7 +144,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
 
       const accResults: YearlyAccumulation[] = []
       const monthlyResults: YearlyMonthlyHours = {}
-      const tempResults: YearlyMonthlyTemps = {}
       let currentTotal: number | null = null
 
       for (const year of yearsToFetch) {
@@ -177,7 +165,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
         let cumulativeHours = 0
         const dataPoints: AccumulationDataPoint[] = []
         const monthlyBuckets: { hours: number; count: number }[] = Array(12).fill(null).map(() => ({ hours: 0, count: 0 }))
-        const tempBuckets: { sum: number; count: number }[] = Array(12).fill(null).map(() => ({ sum: 0, count: 0 }))
 
         for (let i = 0; i < data.daily.time.length; i++) {
           const tMax = data.daily.temperature_2m_max[i]
@@ -199,11 +186,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           monthlyBuckets[month].hours += dayHours
           monthlyBuckets[month].count++
 
-          // Temperature buckets
-          const avgTemp = (tMax + tMin) / 2
-          tempBuckets[month].sum += avgTemp
-          tempBuckets[month].count++
-
           // For past years, only include up to same day as current year for fair comparison
           if (!isCurrentYear && dayOfYear > todayDayOfYear) continue
 
@@ -222,12 +204,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           hours: bucket.count > 0 ? Math.round(bucket.hours * 10) / 10 : null,
         }))
 
-        // Monthly temps
-        tempResults[year] = tempBuckets.map((bucket, idx) => ({
-          month: MONTH_LABELS[idx],
-          avgTemp: bucket.count > 0 ? Math.round((bucket.sum / bucket.count) * 10) / 10 : null,
-        }))
-
         // Current year total
         if (isCurrentYear) {
           currentTotal = Math.round(cumulativeHours * 10) / 10
@@ -236,7 +212,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
 
       setAccumulationData(accResults.sort((a, b) => a.year - b.year))
       setMonthlyHoursData(monthlyResults)
-      setMonthlyTemps(tempResults)
       setCurrentYearTotal(currentTotal)
     } catch (err) {
       console.error('Failed to fetch foraging data:', err)
@@ -297,51 +272,8 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
       }
     })
 
-    // Temperature overlay
-    const currentYearTemps = monthlyTemps[currentYear] || []
-    if (showTemperature && currentYearTemps.length > 0) {
-      const tempData: Array<number | null> = Array(dayNumbers.length).fill(null)
-
-      currentYearTemps.forEach((temp, monthIdx) => {
-        if (temp.avgTemp === null) return
-
-        let targetIndex = -1
-        let bestDistance = Number.POSITIVE_INFINITY
-
-        dayNumbers.forEach((dayNum, idx) => {
-          const date = new Date(2024, 0, dayNum)
-          if (date.getMonth() !== monthIdx) return
-          const distanceToMidMonth = Math.abs(date.getDate() - 15)
-          if (distanceToMidMonth < bestDistance) {
-            bestDistance = distanceToMidMonth
-            targetIndex = idx
-          }
-        })
-
-        if (targetIndex >= 0) {
-          tempData[targetIndex] = temp.avgTemp
-        }
-      })
-
-      datasets.push({
-        label: 'Avg Temp (\u00B0C)',
-        data: tempData,
-        borderColor: 'rgba(239, 68, 68, 0.8)',
-        backgroundColor: 'rgba(239, 68, 68, 0.3)',
-        borderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        tension: 0.4,
-        fill: false,
-        spanGaps: true,
-        yAxisID: 'y1',
-      } as typeof datasets[0])
-    }
-
     return { labels, datasets }
-  }, [accumulationData, currentYear, showTemperature, monthlyTemps])
-
-  const hasMonthlyTemps = Object.keys(monthlyTemps).length > 0
+  }, [accumulationData, currentYear])
 
   const accumulationChartOptions = useMemo(() => ({
     responsive: true,
@@ -358,11 +290,8 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
       },
       tooltip: {
         callbacks: {
-          label: (context: { dataset: { label?: string; yAxisID?: string }; parsed: { y: number | null } }) => {
+          label: (context: { dataset: { label?: string }; parsed: { y: number | null } }) => {
             const value = context.parsed.y
-            if (context.dataset.yAxisID === 'y1') {
-              return `${context.dataset.label}: ${value !== null ? value.toFixed(1) + '\u00B0C' : 'No data'}`
-            }
             return `${context.dataset.label}: ${value !== null ? value.toFixed(1) + ' hrs' : 'No data'}`
           },
         },
@@ -400,24 +329,12 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           text: 'Cumulative Foraging Hours',
         },
       },
-      y1: {
-        type: 'linear' as const,
-        display: showTemperature && hasMonthlyTemps,
-        position: 'right' as const,
-        title: {
-          display: true,
-          text: 'Avg Temp (\u00B0C)',
-          color: 'rgb(239, 68, 68)',
-        },
-        grid: { drawOnChartArea: false },
-        ticks: { color: 'rgb(239, 68, 68)' },
-      },
       x: {
         title: { display: true, text: 'Month' },
         ticks: { maxRotation: 0 },
       },
     },
-  }), [showTemperature, hasMonthlyTemps, currentYearTotal])
+  }), [currentYearTotal])
 
   // Monthly bar chart data
   const monthlyChartData = useMemo(() => {
@@ -646,22 +563,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                     </Button>
                   ))}
                 </div>
-
-                {/* Temperature toggle (accumulation only) */}
-                {chartType === 'accumulation' && (
-                  <Button
-                    onClick={() => setShowTemperature(!showTemperature)}
-                    className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
-                      showTemperature
-                        ? 'bg-red-500 text-white'
-                        : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
-                    }`}
-                    title="Toggle average monthly temperature"
-                  >
-                    <Thermometer size={12} />
-                    Temp
-                  </Button>
-                )}
               </div>
             </div>
 
