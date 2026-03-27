@@ -52,6 +52,15 @@ interface ConservationArea {
   nihbs_url: string | null
 }
 
+interface AllRegisteredApiary {
+  id: string
+  city: string | null
+  latitude: number
+  longitude: number
+  created_at: string
+  hive_count: number
+}
+
 // Default center (Ireland)
 const DEFAULT_CENTER: [number, number] = [-8.2439, 53.4129]
 
@@ -166,6 +175,8 @@ export default function CommunityMapPage() {
   const [showConservationAreas, setShowConservationAreas] = useState(true)
   const [showDCAPredictions, setShowDCAPredictions] = useState(false)
   const [selectedDCAApiaries, setSelectedDCAApiaries] = useState<string[]>([])
+  const [allApiaries, setAllApiaries] = useState<AllRegisteredApiary[]>([])
+  const [showAllApiaries, setShowAllApiaries] = useState(false)
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
@@ -221,6 +232,14 @@ export default function CommunityMapPage() {
 
         if (!wildError && wildData) {
           setWildColonies(wildData)
+        }
+
+        // Fetch all registered apiaries (not just shared ones) for power users/admins
+        const { data: allData, error: allError } = await supabase
+          .rpc('get_all_apiaries_obfuscated')
+
+        if (!allError && allData) {
+          setAllApiaries(allData)
         }
       }
 
@@ -431,6 +450,44 @@ export default function CommunityMapPage() {
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #a78bfa;">Shared Apiary</div>
               ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${apiary.city}</div>` : ''}
+              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
+              <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
+              ${distanceText}
+            </div>
+          `)
+
+          const marker = new mapboxgl.Marker({ element: el })
+            .setLngLat([apiary.longitude, apiary.latitude])
+            .setPopup(popup)
+            .addTo(map.current)
+
+          markers.current.push(marker)
+        })
+      }
+
+      // Add markers for all registered apiaries (indigo) - Power Users/Admins only
+      // Coordinates already obfuscated server-side
+      if (isPowerUser && showAllApiaries) {
+        const filteredAllApiaries = filterByTime(allApiaries)
+        filteredAllApiaries.forEach((apiary) => {
+          if (!map.current) return
+
+          const distance = calculateNearestDistance(apiary.latitude, apiary.longitude)
+          const distanceText = distance !== undefined ? `<div style="font-size: 11px; color: #818cf8; margin-top: 4px;">${distance} km from your nearest apiary</div>` : ''
+
+          const el = document.createElement('div')
+          el.className = 'all-apiary-marker'
+          el.style.cursor = 'pointer'
+          el.innerHTML = `<div style="background-color: #6366f1; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); opacity: 0.85;"></div>`
+
+          const popup = new mapboxgl.Popup({
+            offset: 15,
+            closeButton: false,
+            closeOnClick: true,
+          }).setHTML(`
+            <div style="padding: 4px 8px;">
+              <div style="font-weight: 600; color: #818cf8;">Registered Apiary</div>
+              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${escapeHtml(apiary.city)}</div>` : ''}
               <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
               <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
               ${distanceText}
@@ -697,7 +754,7 @@ export default function CommunityMapPage() {
       })
       // Only fit bounds initially, not on every filter change
     }
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, allApiaries, showAllApiaries])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -829,6 +886,16 @@ export default function CommunityMapPage() {
           {isPowerUser && (
             <Button
               type="button"
+              onClick={() => setShowAllApiaries(prev => !prev)}
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showAllApiaries ? 'text-indigo-600' : 'text-text-tertiary'}`}
+            >
+              {showAllApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
+              <span>All apiaries</span>
+            </Button>
+          )}
+          {isPowerUser && (
+            <Button
+              type="button"
               onClick={() => setShowWildColonies(prev => !prev)}
               className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showWildColonies ? 'text-amber-600' : 'text-text-tertiary'}`}
             >
@@ -936,6 +1003,13 @@ export default function CommunityMapPage() {
               <span className="font-medium text-foreground">{sharedApiaries.length}</span>
               <span className="text-text-secondary hidden sm:inline">shared</span>
             </div>
+            {isPowerUser && allApiaries.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-indigo-500 border border-white"></div>
+                <span className="font-medium text-foreground">{allApiaries.length}</span>
+                <span className="text-text-secondary hidden sm:inline">all</span>
+              </div>
+            )}
             {isPowerUser && wildColonies.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-amber-500 border border-white"></div>
@@ -1041,6 +1115,12 @@ export default function CommunityMapPage() {
             <div className="w-4 h-4 rounded-full bg-purple-500 opacity-80 border-2 border-white shadow"></div>
             <span className="text-text-secondary">Shared apiary (~5km accuracy)</span>
           </div>
+          {isPowerUser && (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-indigo-500 opacity-85 border-2 border-white shadow"></div>
+              <span className="text-text-secondary">All registered apiary (~5km accuracy)</span>
+            </div>
+          )}
           {isPowerUser && (
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-md bg-amber-500 border-2 border-white shadow flex items-center justify-center">
