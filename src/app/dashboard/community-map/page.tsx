@@ -207,6 +207,10 @@ export default function CommunityMapPage() {
       // Check if user is Power User/Admin and fetch wild colonies
       const powerUser = await isPowerUserOrAdmin()
       setIsPowerUser(powerUser)
+      if (powerUser) {
+        setShowWildColonies(false)
+        setShowConservationAreas(false)
+      }
 
       if (powerUser) {
         // Fetch wild colonies from obfuscated view

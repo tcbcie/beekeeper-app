@@ -1,24 +1,30 @@
-# Task: Community Map Conservation Toggle Default
-**Date:** 16/03/2026
-**Status:** Awaiting Approval
+# Task: Community Map Privileged Defaults
+**Date:** 27/03/2026
+**Status:** Completed
 
 ## 1. Objective
-Change the Community Apiary Map so conservation areas are not enabled by default when the page first loads.
+Change the Community Map so Power Users and Admins do not have the privileged community overlays selected by default on first load. This will make wild colonies start hidden, and will treat conservation areas as hidden by default for those privileged users.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/app/dashboard/community-map/page.tsx`
-  * `docs/features/community-map-conservation-default-plan.md`
-* **Simplicity Check:** Keep the fix limited to the existing client-side visibility state in the community map page. No data query, map layer logic, or backend behaviour needs to change.
+  * `docs/features/community-map-privileged-defaults-plan.md`
+* **Simplicity Check:** Keep the change limited to the Community Map page's initial UI state and its supporting feature note. Do not alter data fetching, permissions, or the Settings page, which already defaults to the `Profile` section rather than `Conservation Areas`.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [ ] **Step 1:** Change the initial `showConservationAreas` state so conservation areas start hidden when the community map page loads.
-- [ ] **Step 2:** Keep the existing toggle and map-layer rendering flow intact so conservation areas still appear immediately when the user enables them.
-- [ ] **Step 3:** Update documentation in `docs/features/community-map-conservation-default-plan.md`
-- [ ] **Step 4:** Prompt user to test the build
+- [x] **Step 1:** Update the Community Map state initialisation so Power Users and Admins start with wild colonies hidden by default, while keeping the existing toggle behaviour unchanged.
+- [x] **Step 2:** Update the Community Map state initialisation so Power Users and Admins start with conservation areas hidden by default, without affecting the underlying conservation-area data load.
+- [x] **Step 3:** Review the surrounding map summary and control behaviour to ensure the default-off state does not break counts, toggles, or later layer rendering.
+- [x] **Step 4:** Update documentation in `docs/features/community-map-privileged-defaults-plan.md`
+- [x] **Step 5:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The page initialises the conservation-area visibility state to `true`, so the layer is rendered on first load without user intent.
-* **Summary of Changes:** Pending approval.
-* **Notes for User:** This is a client-side default-state change only. No database or API change is required.
+* **Root Cause Found (if applicable):** The Community Map was initialising privileged overlays with the same visible-by-default behaviour as general layers, so Power Users and Admins landed on a busier first view than intended.
+* **Summary of Changes:** Updated the Community Map bootstrap so Power Users and Admins start with wild colonies and conservation areas hidden by default, and documented the behaviour in the feature note.
+* **Notes for User:** I verified during planning that the Settings page already defaults to `Profile`, so this request was implemented as a Community Map default-selection change rather than a Settings-tab change.
+
+## Review
+* **Scope Covered:** Community Map privileged default visibility only.
+* **Summary of Changes:** Power User/Admin sessions now flip `Wild colonies` and `Conservation areas` off during the authenticated map initialisation flow before the map is shown, while leaving data loading and manual toggles unchanged.
+* **Notes for User:** Please test the Community Map as a Power User or Admin and confirm the two layers start hidden and can still be enabled normally.
