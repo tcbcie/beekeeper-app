@@ -51,7 +51,8 @@ Both the GDD Data and Foraging Hours tabs gain a small "Events" toggle button (s
 - Line colour matches the year's colour from `YEAR_COLORS`
 - Small label at the top showing the event type name
 - A compact inline form appears below the chart: date picker, event type dropdown, optional notes, save button
-- Quick list of events for the current apiary/years with delete action
+- Quick list of events for the current apiary/years with edit and delete actions
+- Clicking the pencil icon on an event pre-fills the form in edit mode; "Update" saves changes via Supabase `update`
 
 ### Annotation rendering
 

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { CalendarDays, Plus, Trash2, Loader2 } from 'lucide-react'
+import { CalendarDays, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 
@@ -105,6 +105,7 @@ export function useKeyEvents({
   const [eventTypeId, setEventTypeId] = useState('')
   const [notes, setNotes] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   // Fetch event types from dropdown_values
   useEffect(() => {
@@ -171,34 +172,69 @@ export function useKeyEvents({
     [filteredEvents, selectedYears, chartYearOrder]
   )
 
+  const resetForm = () => {
+    setEventDate('')
+    setEventTypeId('')
+    setNotes('')
+    setEditingId(null)
+    setShowForm(false)
+  }
+
+  const handleEdit = (evt: KeyEvent) => {
+    setEditingId(evt.id)
+    setEventDate(evt.event_date)
+    setEventTypeId(evt.event_type_id)
+    setNotes(evt.notes || '')
+    setShowForm(true)
+  }
+
   const handleSave = async () => {
     if (!eventDate || !eventTypeId || !apiaryId) return
 
     setSaving(true)
     try {
       const year = new Date(eventDate).getFullYear()
-      const { error } = await supabase
-        .from('key_events')
-        .insert({
-          user_id: userId,
-          apiary_id: apiaryId,
-          event_type_id: eventTypeId,
-          event_date: eventDate,
-          year,
-          notes: notes.trim() || null,
-        })
 
-      if (error) {
-        toast.error('Failed to save event')
-        console.error(error.message)
-        return
+      if (editingId) {
+        const { error } = await supabase
+          .from('key_events')
+          .update({
+            event_type_id: eventTypeId,
+            event_date: eventDate,
+            year,
+            notes: notes.trim() || null,
+          })
+          .eq('id', editingId)
+
+        if (error) {
+          toast.error('Failed to update event')
+          console.error(error.message)
+          return
+        }
+
+        toast.success('Event updated')
+      } else {
+        const { error } = await supabase
+          .from('key_events')
+          .insert({
+            user_id: userId,
+            apiary_id: apiaryId,
+            event_type_id: eventTypeId,
+            event_date: eventDate,
+            year,
+            notes: notes.trim() || null,
+          })
+
+        if (error) {
+          toast.error('Failed to save event')
+          console.error(error.message)
+          return
+        }
+
+        toast.success('Event recorded')
       }
 
-      toast.success('Event recorded')
-      setEventDate('')
-      setEventTypeId('')
-      setNotes('')
-      setShowForm(false)
+      resetForm()
       fetchEvents()
     } catch (err) {
       console.error('Failed to save key event:', err)
@@ -241,11 +277,13 @@ export function useKeyEvents({
             Key Events ({filteredEvents.length})
           </span>
           <Button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) { resetForm() } else { setShowForm(true) }
+            }}
             className="px-2 py-1 text-xs rounded-lg bg-forest-600 text-white hover:bg-forest-700 transition-colors flex items-center gap-1"
           >
-            <Plus size={12} />
-            Add
+            {showForm ? <X size={12} /> : <Plus size={12} />}
+            {showForm ? 'Cancel' : 'Add'}
           </Button>
         </div>
 
@@ -289,7 +327,7 @@ export function useKeyEvents({
               disabled={!eventDate || !eventTypeId || saving}
               className="px-3 py-1.5 text-sm rounded-lg bg-forest-600 text-white hover:bg-forest-700 disabled:opacity-50 transition-colors"
             >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+              {saving ? <Loader2 size={14} className="animate-spin" /> : editingId ? 'Update' : 'Save'}
             </Button>
           </div>
         )}
@@ -312,13 +350,22 @@ export function useKeyEvents({
                   <span className="font-medium text-foreground truncate">{getEventTypeName(evt)}</span>
                   {evt.notes && <span className="text-xs text-text-tertiary truncate">— {evt.notes}</span>}
                 </div>
-                <button
-                  onClick={() => handleDelete(evt.id)}
-                  className="shrink-0 p-1 text-text-tertiary hover:text-red-600 transition-colors"
-                  title="Delete event"
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => handleEdit(evt)}
+                    className="p-1 text-text-tertiary hover:text-forest-600 transition-colors"
+                    title="Edit event"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(evt.id)}
+                    className="p-1 text-text-tertiary hover:text-red-600 transition-colors"
+                    title="Delete event"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
