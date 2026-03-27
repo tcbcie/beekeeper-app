@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Sun, Loader2, TrendingUp, BarChart3, Filter } from 'lucide-react'
+import { Sun, Loader2, TrendingUp, BarChart3, Filter, CalendarDays } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { calculateForagingHours } from '@/lib/gdd'
+import KeyEventsOverlay from '@/components/research/KeyEventsOverlay'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -68,6 +69,7 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
   const [loading, setLoading] = useState(true)
   const [chartType, setChartType] = useState<ChartType>('accumulation')
+  const [showEvents, setShowEvents] = useState(false)
 
   // Apiary selection
   const [apiaries, setApiaries] = useState<ApiaryOption[]>([])
@@ -246,6 +248,17 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
     return () => controller.abort()
   }, [selectedApiary, selectedYears, fetchForagingData])
 
+  // Chart year order (sorted) — needed for colour matching in event annotations
+  const chartYearOrder = useMemo(() =>
+    [...selectedYears].sort((a, b) => a - b),
+    [selectedYears]
+  )
+
+  // Key events overlay
+  const keyEvents = showEvents
+    ? KeyEventsOverlay({ userId, apiaryId: selectedApiary?.id, selectedYears, chartYearOrder })
+    : null
+
   // Accumulation chart data
   const accumulationChartData = useMemo(() => {
     const labels: string[] = []
@@ -316,26 +329,29 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
         },
       },
       datalabels: { display: false },
-      annotation: currentYearTotal !== null ? {
+      annotation: {
         annotations: {
-          currentLine: {
-            type: 'line' as const,
-            yMin: currentYearTotal,
-            yMax: currentYearTotal,
-            borderColor: 'rgba(239, 68, 68, 0.8)',
-            borderWidth: 2,
-            borderDash: [6, 4],
-            label: {
-              display: true,
-              content: `Current: ${currentYearTotal} hrs`,
-              position: 'end' as const,
-              backgroundColor: 'rgba(239, 68, 68, 0.8)',
-              color: '#fff',
-              font: { size: 10 },
+          ...(currentYearTotal !== null ? {
+            currentLine: {
+              type: 'line' as const,
+              yMin: currentYearTotal,
+              yMax: currentYearTotal,
+              borderColor: 'rgba(239, 68, 68, 0.8)',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              label: {
+                display: true,
+                content: `Current: ${currentYearTotal} hrs`,
+                position: 'end' as const,
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                color: '#fff',
+                font: { size: 10 },
+              },
             },
-          },
+          } : {}),
+          ...(keyEvents?.annotations ?? {}),
         },
-      } : undefined,
+      },
     },
     scales: {
       y: {
@@ -353,7 +369,8 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
         ticks: { maxRotation: 0 },
       },
     },
-  }), [currentYearTotal])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [currentYearTotal, keyEvents?.annotations])
 
   // Monthly bar chart data
   const monthlyChartData = useMemo(() => {
@@ -582,6 +599,22 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                     </Button>
                   ))}
                 </div>
+
+                {/* Events overlay toggle (accumulation only) */}
+                {chartType === 'accumulation' && selectedApiary && (
+                  <Button
+                    onClick={() => setShowEvents(!showEvents)}
+                    className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                      showEvents
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
+                    }`}
+                    title="Toggle key events overlay"
+                  >
+                    <CalendarDays size={12} />
+                    Events
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -607,6 +640,13 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                     {currentYearTotal !== null && ` Current year: ${currentYearTotal} hrs as of today.`}
                   </p>
                 </div>
+
+                {/* Key events panel */}
+                {showEvents && keyEvents && (
+                  <div className="mt-4 pt-4 border-t border-border">
+                    {keyEvents.panel}
+                  </div>
+                )}
               </>
             )}
 
