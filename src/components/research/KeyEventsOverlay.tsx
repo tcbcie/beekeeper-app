@@ -47,6 +47,8 @@ export function buildEventAnnotations(
   chartYearOrder: number[]
 ) {
   const annotations: Record<string, object> = {}
+  // Track how many labels land on each tick so overlapping ones can be offset
+  const tickLabelCounts: Record<number, number> = {}
 
   events.forEach((evt, i) => {
     if (!selectedYears.includes(evt.year)) return
@@ -60,6 +62,10 @@ export function buildEventAnnotations(
     // Map to nearest x-axis tick index (ticks are day 1, 8, 15, ... step 7)
     const tickIndex = Math.round((dayOfYear - 1) / 7)
 
+    // Offset overlapping labels at the same tick
+    const countAtTick = tickLabelCounts[tickIndex] || 0
+    tickLabelCounts[tickIndex] = countAtTick + 1
+
     const yearIdx = chartYearOrder.indexOf(evt.year)
     const colorIdx = yearIdx >= 0 ? yearIdx % YEAR_COLORS.length : 0
 
@@ -72,7 +78,7 @@ export function buildEventAnnotations(
       xMin: tickIndex,
       xMax: tickIndex,
       borderColor: YEAR_COLORS[colorIdx].border,
-      borderWidth: 1.5,
+      borderWidth: countAtTick === 0 ? 1.5 : 0,
       borderDash: [4, 4],
       label: {
         display: true,
@@ -82,6 +88,7 @@ export function buildEventAnnotations(
         color: '#fff',
         font: { size: 9 },
         rotation: 270,
+        xAdjust: countAtTick * 14,
         padding: { top: 2, bottom: 2, left: 3, right: 3 },
       },
     }
