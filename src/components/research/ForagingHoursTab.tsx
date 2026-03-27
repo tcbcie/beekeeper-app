@@ -79,9 +79,9 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
   const [currentYearTotal, setCurrentYearTotal] = useState<number | null>(null)
   const [dataLoading, setDataLoading] = useState(false)
 
-  // Year selection
-  const currentYear = new Date().getFullYear()
-  const availableYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4]
+  // Year selection — stable across renders
+  const currentYear = useMemo(() => new Date().getFullYear(), [])
+  const availableYears = useMemo(() => [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4], [currentYear])
   const [selectedYears, setSelectedYears] = useState<number[]>([currentYear, currentYear - 1])
 
   // Period filter
@@ -110,12 +110,17 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
   useEffect(() => {
     const fetchApiaries = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('apiaries')
           .select('id, name, latitude, longitude')
           .eq('user_id', userId)
           .not('latitude', 'is', null)
           .not('longitude', 'is', null)
+
+        if (error) {
+          console.error('Supabase apiary query failed:', error.message)
+          return
+        }
 
         if (data && data.length > 0) {
           const valid = data
@@ -133,7 +138,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
   }, [userId])
 
   // Fetch daily weather data and compute foraging hours for selected years
-  const fetchForagingData = useCallback(async (yearsToFetch: number[]) => {
+  const fetchForagingData = useCallback(async (yearsToFetch: number[], signal: AbortSignal) => {
     if (!selectedApiary || yearsToFetch.length === 0) return
 
     setDataLoading(true)
@@ -142,11 +147,8 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
       const today = new Date()
       const todayDayOfYear = Math.floor((today.getTime() - new Date(currentYear, 0, 0).getTime()) / 86400000)
 
-      const accResults: YearlyAccumulation[] = []
-      const monthlyResults: YearlyMonthlyHours = {}
-      let currentTotal: number | null = null
-
-      for (const year of yearsToFetch) {
+      // Fetch all years in parallel
+      const settled = await Promise.allSettled(yearsToFetch.map(async (year) => {
         const isCurrentYear = year === currentYear
         const startDate = `${year}-01-01`
         const endDate = isCurrentYear
@@ -154,13 +156,14 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           : `${year}-12-31`
 
         const response = await fetch(
-          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min,sunshine_duration,precipitation_sum&timezone=Europe/Dublin`
+          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min,sunshine_duration,precipitation_sum&timezone=Europe/Dublin`,
+          { signal }
         )
 
-        if (!response.ok) continue
+        if (!response.ok) return null
 
         const data = await response.json()
-        if (!data.daily?.temperature_2m_max || !data.daily?.time) continue
+        if (!data.daily?.temperature_2m_max || !data.daily?.time) return null
 
         let cumulativeHours = 0
         const dataPoints: AccumulationDataPoint[] = []
@@ -182,7 +185,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           const month = dateObj.getMonth()
           const dayOfYear = Math.floor((dateObj.getTime() - new Date(year, 0, 0).getTime()) / 86400000)
 
-          // Monthly buckets
           monthlyBuckets[month].hours += dayHours
           monthlyBuckets[month].count++
 
@@ -196,15 +198,30 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           })
         }
 
+        return {
+          year,
+          isCurrentYear,
+          cumulativeHours,
+          dataPoints,
+          monthlyData: monthlyBuckets.map((bucket, idx) => ({
+            month: MONTH_LABELS[idx],
+            hours: bucket.count > 0 ? Math.round(bucket.hours * 10) / 10 : null,
+          })),
+        }
+      }))
+
+      // Don't update state if aborted (component unmounted or newer fetch superseded this one)
+      if (signal.aborted) return
+
+      const accResults: YearlyAccumulation[] = []
+      const monthlyResults: YearlyMonthlyHours = {}
+      let currentTotal: number | null = null
+
+      for (const result of settled) {
+        if (result.status !== 'fulfilled' || !result.value) continue
+        const { year, isCurrentYear, cumulativeHours, dataPoints, monthlyData } = result.value
         accResults.push({ year, data: dataPoints })
-
-        // Monthly hours
-        monthlyResults[year] = monthlyBuckets.map((bucket, idx) => ({
-          month: MONTH_LABELS[idx],
-          hours: bucket.count > 0 ? Math.round(bucket.hours * 10) / 10 : null,
-        }))
-
-        // Current year total
+        monthlyResults[year] = monthlyData
         if (isCurrentYear) {
           currentTotal = Math.round(cumulativeHours * 10) / 10
         }
@@ -214,17 +231,19 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
       setMonthlyHoursData(monthlyResults)
       setCurrentYearTotal(currentTotal)
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       console.error('Failed to fetch foraging data:', err)
     } finally {
-      setDataLoading(false)
+      if (!signal.aborted) setDataLoading(false)
     }
   }, [selectedApiary, currentYear])
 
-  // Refetch when years or apiary changes
+  // Refetch when years or apiary changes; abort previous in-flight request
   useEffect(() => {
-    if (selectedApiary && selectedYears.length > 0) {
-      fetchForagingData(selectedYears)
-    }
+    if (!selectedApiary || selectedYears.length === 0) return
+    const controller = new AbortController()
+    fetchForagingData(selectedYears, controller.signal)
+    return () => controller.abort()
   }, [selectedApiary, selectedYears, fetchForagingData])
 
   // Accumulation chart data

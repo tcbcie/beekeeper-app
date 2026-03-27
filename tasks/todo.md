@@ -1,37 +1,34 @@
-# Task: Foraging Hours — Research Tab
+# Task: Foraging Hours Tab — Code Audit Hardening
 **Date:** 27/03/2026
-**Status:** In Progress
+**Status:** Complete
 
-## Objective
-Add a new "Foraging Hours" tab to the Research section that displays historical foraging hours with year-over-year comparison, using accumulation and monthly bar charts (matching GDD Data styling).
+## Findings
+
+| # | Severity | Issue | Lines |
+|---|----------|-------|-------|
+| 1 | Critical | Race condition — no AbortController on fetch; stale responses can overwrite fresh data | 136-228 |
+| 2 | High | Sequential API calls — 5 years = 5 serial HTTP requests | 149 |
+| 3 | High | Supabase error silently swallowed — no user feedback on failure | 113 |
+| 4 | Medium | `currentYear`/`availableYears` recreated every render | 83-84 |
 
 ## Plan
 
-### 1. Explore & Plan
-- [x] Explore codebase: existing foraging logic, GDD Data charts, Research page
-- [x] Write feature plan in `docs/features/foraging-hours.md`
-
-### 2. Create ForagingHoursTab Component
-- [x] Create `src/components/research/ForagingHoursTab.tsx` with:
-  - [x] Apiary selector (reuse GDD Data pattern)
-  - [x] Year selector chips (current + 4 previous)
-  - [x] Period filter (Q1-Q4, custom months)
-  - [x] Chart type toggle (Accumulation / Monthly)
-  - [x] Accumulation line chart (cumulative foraging hours per year)
-  - [x] Monthly bar chart (total hours per month per year)
-  - [x] Temperature overlay toggle (accumulation view)
-  - [x] Current total reference line annotation
-
-### 3. Integrate into Research Page
-- [x] Add Foraging Hours tab to `src/app/dashboard/research/page.tsx`
-
-### 4. Test
-- [ ] Prompt user to test build
+- [x] Add AbortController to `fetchForagingData`; abort previous in-flight fetches on re-trigger and on unmount
+- [x] Convert sequential `for` loop to `Promise.allSettled` for parallel year fetching
+- [x] Check Supabase `error` in apiary fetch; log and handle gracefully
+- [x] Stabilise `currentYear` and `availableYears` with `useMemo`
 
 ## Files Affected
-- `src/components/research/ForagingHoursTab.tsx` (new)
-- `src/app/dashboard/research/page.tsx` (modify)
-- `docs/features/foraging-hours.md` (new)
+- `src/components/research/ForagingHoursTab.tsx`
 
 ## Review
-_To be filled after implementation._
+
+All four issues resolved in a single pass:
+
+1. **AbortController** — `fetchForagingData` now accepts an `AbortSignal`. The triggering `useEffect` creates a controller and aborts on cleanup (dependency change or unmount). State setters are guarded by `signal.aborted` checks. `AbortError` is caught and silently dropped.
+
+2. **Parallel fetches** — The sequential `for` loop replaced with `Promise.allSettled(yearsToFetch.map(...))`. Each year's fetch+processing runs concurrently. Individual failures (`rejected` or `null` return) are skipped during result assembly — one year failing doesn't break the others.
+
+3. **Supabase error** — Destructure now includes `error`; early return with `console.error` on failure instead of silently proceeding with `null` data.
+
+4. **Stable references** — `currentYear` and `availableYears` wrapped in `useMemo` with appropriate dependency arrays. Prevents unnecessary callback/effect invalidation.
