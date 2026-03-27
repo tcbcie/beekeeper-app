@@ -172,7 +172,7 @@ export default function CommunityMapPage() {
   const [showWildColonies, setShowWildColonies] = useState(true)
   const [isPowerUser, setIsPowerUser] = useState(false)
   const [conservationAreas, setConservationAreas] = useState<ConservationArea[]>([])
-  const [showConservationAreas, setShowConservationAreas] = useState(true)
+  const [showConservationAreas, setShowConservationAreas] = useState(false)
   const [showDCAPredictions, setShowDCAPredictions] = useState(false)
   const [selectedDCAApiaries, setSelectedDCAApiaries] = useState<string[]>([])
   const [allApiaries, setAllApiaries] = useState<AllRegisteredApiary[]>([])
@@ -220,7 +220,6 @@ export default function CommunityMapPage() {
       setIsPowerUser(powerUser)
       if (powerUser) {
         setShowWildColonies(false)
-        setShowConservationAreas(false)
       }
 
       if (powerUser) {
