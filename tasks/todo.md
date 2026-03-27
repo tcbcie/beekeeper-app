@@ -1,35 +1,37 @@
-# Task: All Registered Apiaries Layer on Community Map
+# Task: Foraging Hours — Research Tab
 **Date:** 27/03/2026
-**Status:** Complete
+**Status:** In Progress
 
 ## Objective
-Add a new toggle/layer to the Community Map for Power Users and Admins that shows ALL registered apiaries (not only those with `share_location = true`). Uses the same 5km coordinate obfuscation as shared apiaries. Hidden by default.
+Add a new "Foraging Hours" tab to the Research section that displays historical foraging hours with year-over-year comparison, using accumulation and monthly bar charts (matching GDD Data styling).
 
 ## Plan
 
-### 1. Database — Create RPC `get_all_apiaries_obfuscated`
-- [x] Create a SECURITY DEFINER RPC that checks `is_power_user_or_admin()`
-- [x] Returns all apiaries (excluding caller's own) with obfuscated coords, city, hive count
-- [x] Returns empty set if caller is not power user/admin
+### 1. Explore & Plan
+- [x] Explore codebase: existing foraging logic, GDD Data charts, Research page
+- [x] Write feature plan in `docs/features/foraging-hours.md`
 
-### 2. Frontend — `src/app/dashboard/community-map/page.tsx`
-- [x] Add `AllRegisteredApiary` interface (same shape as `SharedApiary`)
-- [x] Add `allApiaries` state and `showAllApiaries` state (default: false)
-- [x] Fetch via RPC in the power user branch (alongside wild colonies fetch)
-- [x] Add marker rendering (indigo colour, distinct from shared apiaries)
-- [x] Add visibility toggle in the controls panel (power user only)
-- [x] Add to the legend (power user only)
-- [x] Include in stats badge count (power user only)
+### 2. Create ForagingHoursTab Component
+- [x] Create `src/components/research/ForagingHoursTab.tsx` with:
+  - [x] Apiary selector (reuse GDD Data pattern)
+  - [x] Year selector chips (current + 4 previous)
+  - [x] Period filter (Q1-Q4, custom months)
+  - [x] Chart type toggle (Accumulation / Monthly)
+  - [x] Accumulation line chart (cumulative foraging hours per year)
+  - [x] Monthly bar chart (total hours per month per year)
+  - [x] Temperature overlay toggle (accumulation view)
+  - [x] Current total reference line annotation
 
-### 3. Documentation
-- [x] Create docs/features entry
+### 3. Integrate into Research Page
+- [x] Add Foraging Hours tab to `src/app/dashboard/research/page.tsx`
+
+### 4. Test
+- [ ] Prompt user to test build
 
 ## Files Affected
-- `src/app/dashboard/community-map/page.tsx`
-- New RPC via MCP (get_all_apiaries_obfuscated)
+- `src/components/research/ForagingHoursTab.tsx` (new)
+- `src/app/dashboard/research/page.tsx` (modify)
+- `docs/features/foraging-hours.md` (new)
 
 ## Review
-- New SECURITY DEFINER RPC `get_all_apiaries_obfuscated` returns all non-own apiaries with 5km obfuscation; returns empty for non-privileged users.
-- Indigo (#6366f1) markers distinguish "all registered" from purple "shared" and green "own".
-- Toggle defaults to off (hidden), consistent with other privileged layers.
-- Stats badge shows total count; legend entry shown only for power users/admins.
+_To be filled after implementation._
