@@ -1,35 +1,25 @@
-# Task: Principal Quality Architect Code Audit — Round 3
+# Task: Recalculate Nuc Status After Inspection Deletion
 
 **Date:** 28/03/2026
 **Status:** Complete
 
 ## Objective
-Third-pass audit of all new/modified code. Focus: defence-in-depth `user_id` guards on all remaining Supabase mutations.
+When inspection records are deleted, recalculate the nuc's derived fields (status, queen_emerged_at, mating_confirmed_at, queen_last_seen_at, failed_at) and graft status from remaining inspections.
 
-## Findings & Fixes
+## Plan
 
-### High Severity
-
-- [x] 1. **NucInspectionPanel.tsx** — 6 mutations missing `.eq('user_id', userId)`: inspection update, nuc sync, graft sync, inspection delete, mark queen graft, mark queen nuc
-- [x] 2. **MatingNucsTab.tsx** — 6 `batch_grafts` mutations missing `.eq('user_id', userId)`: fire-and-forget sync, edit revert, edit transition, create transition, retire revert, delete revert
-- [x] 3. **MatingNucsTab.tsx** — `handleDistributeSave` nuc status update to 'sold' missing `user_id` guard
-- [x] 4. **ManageNucsTab.tsx** — QR tag assignment during create missing `user_id` guard
-
-### Medium Severity
-
-- [x] 5. **ManageNucsTab.tsx** — Auto-expand effect lacks one-shot `useRef` guard (inconsistent with MatingNucsTab pattern)
+- [x] 1. After deleting an inspection, fetch remaining inspections for the nuc
+- [x] 2. Replay inspection logic chronologically to compute correct nuc state
+- [x] 3. Update nuc record with recalculated fields (or reset to defaults if no inspections remain)
+- [x] 4. Recalculate graft status if applicable
 
 ## Review
 
 ### Changes Made
 
-- **`src/components/batches/NucInspectionPanel.tsx`**
-  - Added `.eq('user_id', userId)` to inspection update, inspection delete, nuc status sync, graft status sync, mark queen graft update, and mark queen nuc update (6 mutations)
-
-- **`src/components/batches/MatingNucsTab.tsx`**
-  - Added `.eq('user_id', userId)` to all 6 `batch_grafts` mutations: fire-and-forget sync in fetchNucs, graft revert on edit, graft transition on edit, graft transition on create, graft revert on retire, graft revert on delete
-  - Added `.eq('user_id', userId)` to `handleDistributeSave` nuc status update to 'sold'
-
-- **`src/components/batches/ManageNucsTab.tsx`**
-  - Added `.eq('user_id', userId)` to QR tag assignment during nuc create
-  - Added `useRef` import and `autoExpandApplied` ref — auto-expand effect now fires once only, consistent with MatingNucsTab pattern
+- **`src/components/batches/NucInspectionPanel.tsx`** — `handleDelete`
+  - After deleting the inspection, fetches all remaining inspections ordered chronologically
+  - Replays the same queen_status → nuc field logic used in `handleSubmit` to compute the correct state
+  - Preserves earliest milestone dates (queen_emerged_at, mating_confirmed_at) and latest sighting dates (queen_last_seen_at)
+  - If no inspections remain, resets nuc to `status: 'setup'` and clears all date fields
+  - Also recalculates the linked graft status (or resets to `'in_nuc'` if no queen status inspections remain)
