@@ -165,7 +165,7 @@ export default function TagScanPage() {
             <div className="font-medium text-sm">View Details</div>
           </Link>
           <Link
-            href={`/dashboard/batches?tab=nucs&nuc=${nuc.id}`}
+            href={`/dashboard/batches?tab=nucs&nuc_number=${encodeURIComponent(nuc.nuc_number)}`}
             className="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 text-center"
           >
             <ClipboardList className="mx-auto mb-2" size={24} />

@@ -196,6 +196,14 @@ export default function BatchesPage() {
  const initialTab: TabId = tabParam && VALID_TABS.includes(tabParam as TabId) ? tabParam as TabId : 'grafting'
  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
 
+ // Sync active tab when URL ?tab= param changes (e.g. back button, deep-link navigation)
+ useEffect(() => {
+ const urlTab = searchParams.get('tab')
+ if (urlTab && VALID_TABS.includes(urlTab as TabId) && urlTab !== activeTab) {
+ setActiveTab(urlTab as TabId)
+ }
+ }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
  // Selection tab states
  const [selectedApiary, setSelectedApiary] = useState<string>('all')
  const [timePeriod, setTimePeriod] = useState<string>('all')

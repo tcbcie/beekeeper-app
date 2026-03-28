@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Plus, Edit2, Archive, Trash2, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
@@ -120,6 +120,7 @@ const getNucDistributionType = (status: string): 'virgin_queen' | 'mated_queen' 
 export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const searchParams = useSearchParams()
  const highlightNucId = searchParams.get('nuc')
+ const highlightNucNumber = searchParams.get('nuc_number')
  const toast = useToast()
  const [nucs, setNucs] = useState<MatingNuc[]>([])
  const [batches, setBatches] = useState<Batch[]>([])
@@ -144,6 +145,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [bulkCellSearch, setBulkCellSearch] = useState('')
  const [matingLocationOptions, setMatingLocationOptions] = useState<MatingLocationOption[]>([])
  const [inventoryNucs, setInventoryNucs] = useState<{ id: string; nuc_number: string; qr_tag_code: string | null }[]>([])
+ const [selectedInventoryNucId, setSelectedInventoryNucId] = useState('')
+ const autoExpandApplied = useRef(false)
 
  const {
  createDistribution,
@@ -371,15 +374,23 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  loadBulkRuns()
  }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, fetchMatingLocationOptions, fetchInventoryNucs, loadBulkRuns])
 
- // Auto-expand highlighted nuc from URL params
+ // Auto-expand highlighted nuc from URL params (by ID or by nuc_number) — once only
  useEffect(() => {
- if (highlightNucId && !loading) {
- setExpandedNucId(highlightNucId)
- setTimeout(() => {
- document.getElementById(`nuc-${highlightNucId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
- }, 200)
+ if (loading || autoExpandApplied.current) return
+ let targetId = highlightNucId || null
+ if (!targetId && highlightNucNumber) {
+ const match = nucs.find(n => n.nuc_number === highlightNucNumber)
+ if (match) targetId = match.id
  }
- }, [highlightNucId, loading])
+ if (targetId) {
+ autoExpandApplied.current = true
+ setExpandedNucId(targetId)
+ const timer = setTimeout(() => {
+ document.getElementById(`nuc-${targetId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+ }, 200)
+ return () => clearTimeout(timer)
+ }
+ }, [highlightNucId, highlightNucNumber, nucs, loading])
 
  // Filter grafts by selected batch (include the nuc's current graft when editing)
  useEffect(() => {
@@ -564,6 +575,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  notes: '',
  })
  setEditingNuc(null)
+ setSelectedInventoryNucId('')
  setShowForm(false)
  }
 
@@ -610,6 +622,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .from('mating_nucs')
  .update(nucData)
  .eq('id', editingNuc.id)
+ .eq('user_id', userId)
 
  if (error) throw error
 
@@ -675,6 +688,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .from('mating_nucs')
  .update({ retired_at: new Date().toISOString() })
  .eq('id', id)
+ .eq('user_id', userId)
 
  if (error) throw error
  toast.success('Nuc retired')
@@ -704,6 +718,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .from('mating_nucs')
  .delete()
  .eq('id', id)
+ .eq('user_id', userId)
 
  if (error) throw error
  toast.success('Nuc deleted')
@@ -827,9 +842,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Select from Inventory</label>
  <select
- value={inventoryNucs.find(n => n.nuc_number === formData.nuc_number)?.id || ''}
+ value={selectedInventoryNucId}
  onChange={(e) => {
  const selected = inventoryNucs.find(n => n.id === e.target.value)
+ setSelectedInventoryNucId(e.target.value)
  setFormData({ ...formData, nuc_number: selected?.nuc_number || '' })
  }}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
@@ -1221,7 +1237,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  ) : (
  <div className="space-y-2">
  {nucs.map(nuc => (
- <div key={nuc.id} id={`nuc-${nuc.id}`} className={`bg-surface dark:bg-surface rounded-lg shadow border overflow-hidden ${highlightNucId === nuc.id ? 'border-forest-500 ring-2 ring-forest-500/20' : 'border-border'}`}>
+ <div key={nuc.id} id={`nuc-${nuc.id}`} className={`bg-surface dark:bg-surface rounded-lg shadow border overflow-hidden ${(highlightNucId === nuc.id || highlightNucNumber === nuc.nuc_number) ? 'border-forest-500 ring-2 ring-forest-500/20' : 'border-border'}`}>
  {/* Nuc Row */}
  <div className="p-4">
  <div className="flex items-start gap-3">
