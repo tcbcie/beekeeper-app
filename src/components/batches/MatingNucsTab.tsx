@@ -1355,7 +1355,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </div>
  </div>
 
- {/* Action Buttons */}
+ {/* Action Buttons — hidden for retired nucs (read-only) */}
+ {!nuc.retired_at && (
  <div className="flex gap-1 shrink-0">
  {nuc.graft_id && NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
  <Button
@@ -1392,7 +1393,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </Button>
  </>
  )}
- {!nuc.retired_at && (
  <Button
  onClick={() => handleRetire(nuc.id)}
  className="p-2 text-text-secondary hover:bg-surface-secondary rounded"
@@ -1400,8 +1400,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  >
  <Archive size={18} />
  </Button>
- )}
  </div>
+ )}
  </div>
  </div>
 
@@ -1414,7 +1414,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  graftId={nuc.graft_id}
  emergenceDate={nuc.rearing_batches?.emergence_date || null}
  onInspectionChange={fetchNucs}
- readOnly={nuc.status === 'sold'}
+ readOnly={nuc.status === 'sold' || !!nuc.retired_at}
  existingQueenMarkedAt={nuc.queen_marked_at}
  existingQueenMarked={nuc.batch_grafts?.queen_marked ?? false}
  existingQueenNumber={nuc.batch_grafts?.queen_number ?? null}
