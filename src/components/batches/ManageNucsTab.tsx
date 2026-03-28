@@ -230,6 +230,13 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
   }
 
   const handleDeleteNuc = async (nucId: string) => {
+    const nuc = nucs.find(n => n.id === nucId)
+    if (nuc?.equipment_status === 'active') {
+      showToast('Cannot delete an active nuc — it is currently assigned in Nuc Setup', 'error')
+      setDeletingNucId(null)
+      return
+    }
+
     // Unassign any QR tag first
     await supabase
       .from('qr_tags')
@@ -493,9 +500,11 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
                       )}
                     </div>
 
-                    {/* Delete */}
+                    {/* Delete — hidden for active nucs (assigned in Nuc Setup) */}
                     <div className="pt-2 border-t border-border">
-                      {deletingNucId === nuc.id ? (
+                      {nuc.equipment_status === 'active' ? (
+                        <p className="text-xs text-text-tertiary">This nuc is active in Nuc Setup and cannot be deleted.</p>
+                      ) : deletingNucId === nuc.id ? (
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-text-secondary">Delete this nuc permanently?</span>
                           <Button
