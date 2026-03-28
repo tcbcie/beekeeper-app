@@ -83,6 +83,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
 
     if (error) {
       showToast('Failed to load mating nucs', 'error')
+      setLoading(false)
       return
     }
 
@@ -136,9 +137,10 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
   useEffect(() => {
     if (highlightNucId && !loading) {
       setExpandedNucId(highlightNucId)
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         document.getElementById(`nuc-${highlightNucId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 200)
+      return () => clearTimeout(timer)
     }
   }, [highlightNucId, loading])
 
@@ -156,6 +158,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
         retired_at: newStatus === 'retired' ? new Date().toISOString() : null,
       })
       .eq('id', nucId)
+      .eq('user_id', userId)
 
     if (error) {
       showToast('Failed to update status', 'error')
@@ -208,7 +211,11 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
         .eq('id', createQrTagId)
 
       if (tagError) {
-        showToast('Nuc created but failed to assign QR tag', 'error')
+        setCreating(false)
+        showToast('Nuc created but failed to assign QR tag — try assigning it manually', 'error')
+        await fetchNucs()
+        await fetchAvailableQrTags()
+        return
       }
     }
 
@@ -228,11 +235,13 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
       .from('qr_tags')
       .update({ mating_nuc_id: null, assigned_at: null })
       .eq('mating_nuc_id', nucId)
+      .eq('user_id', userId)
 
     const { error } = await supabase
       .from('mating_nucs')
       .delete()
       .eq('id', nucId)
+      .eq('user_id', userId)
 
     if (error) {
       showToast('Failed to delete nuc', 'error')

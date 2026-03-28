@@ -436,15 +436,15 @@ export default function QrTagsPage() {
 
  const qrContainerRef = useRef<HTMLDivElement>(null)
 
- const allPrintTags = [...tags, ...sharedTags]
+ const allPrintTags = useMemo(() => [...tags, ...sharedTags], [tags, sharedTags])
 
- const printTags = allPrintTags.filter(tag => {
+ const printTags = useMemo(() => allPrintTags.filter(tag => {
  if (tagTypeFilter === 'hive' && !tag.code.startsWith('HC-')) return false
  if (tagTypeFilter === 'nuc' && !tag.code.startsWith('MN-')) return false
  if (assignedFilter === 'assigned' && !tag.hive_id && !tag.mating_nuc_id) return false
  if (assignedFilter === 'unassigned' && (tag.hive_id || tag.mating_nuc_id)) return false
  return true
- })
+ }), [allPrintTags, tagTypeFilter, assignedFilter])
 
  const handlePrintBatch = () => {
  if (printTags.length === 0 || !qrContainerRef.current) return

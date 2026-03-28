@@ -121,3 +121,27 @@ The Manage NUCs tab supports URL parameters for deep-linking from the scan page:
 7. Test the deep-link: `/dashboard/batches?tab=manage_nucs&nuc={id}` auto-expands the card
 8. Test `/dashboard/mating-nucs?nuc={id}` redirects correctly
 9. Test on mobile viewport for responsive layout
+
+## Post-Refactor Audit (28/03/2026)
+
+A Principal Quality Architect audit identified and fixed 9 issues across severity levels:
+
+### High (3 fixed)
+- Loading spinner hang on fetch error (ManageNucsTab)
+- Missing `user_id` guard on equipment status update (ManageNucsTab)
+- Missing `user_id` guard on nuc delete (ManageNucsTab)
+
+### Medium (6 fixed)
+- setTimeout memory leak in auto-expand effects (ManageNucsTab + MatingNucsTab)
+- `allPrintTags` and `printTags` not memoised (QR Tags page)
+- Inventory dropdown bound by nuc_number instead of ID (MatingNucsTab)
+- QR tag assignment failure during create silently reset form (ManageNucsTab)
+
+### Audit Round 2 — High (2 fixed)
+- Auto-expand effect re-fired on every `fetchNucs()`, stealing expansion from user after inspection saves (MatingNucsTab)
+- Highlight ring not applied to nucs matched via `nuc_number` URL param (MatingNucsTab)
+
+### Audit Round 2 — Medium (5 fixed)
+- Missing `user_id` guards on update/retire/delete in MatingNucsTab (3 queries)
+- Missing `user_id` guard on QR tag unassign before delete (ManageNucsTab)
+- `activeTab` not synced when URL `?tab=` param changes via soft navigation (Batches page)
