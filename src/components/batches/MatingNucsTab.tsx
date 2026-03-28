@@ -1385,6 +1385,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  existingQueenMarkedAt={nuc.queen_marked_at}
  existingQueenMarked={nuc.batch_grafts?.queen_marked ?? false}
  existingQueenNumber={nuc.batch_grafts?.queen_number ?? null}
+ autoOpenForm={!!(highlightNucNumber === nuc.nuc_number || highlightNucId === nuc.id)}
  />
  )}
  </div>

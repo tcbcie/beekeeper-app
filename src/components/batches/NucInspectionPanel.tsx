@@ -45,15 +45,16 @@ interface NucInspectionPanelProps {
   existingQueenMarkedAt?: string | null
   existingQueenMarked?: boolean
   existingQueenNumber?: string | null
+  autoOpenForm?: boolean
 }
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
 
-export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange, readOnly, existingQueenMarkedAt, existingQueenMarked, existingQueenNumber }: NucInspectionPanelProps) {
+export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange, readOnly, existingQueenMarkedAt, existingQueenMarked, existingQueenNumber, autoOpenForm }: NucInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<NucInspection[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [showForm, setShowForm] = useState(autoOpenForm === true)
   const [editingInspection, setEditingInspection] = useState<NucInspection | null>(null)
   const [showMarkForm, setShowMarkForm] = useState(false)
   const [markQueenNumber, setMarkQueenNumber] = useState('')
