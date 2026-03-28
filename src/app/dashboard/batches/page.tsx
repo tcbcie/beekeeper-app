@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -13,6 +13,7 @@ import NotificationPermissionBanner from '@/components/NotificationPermissionBan
 import NotificationStatusCard from '@/components/NotificationStatusCard'
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
 import MatingNucsTab from '@/components/batches/MatingNucsTab'
+import ManageNucsTab from '@/components/batches/ManageNucsTab'
 import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
 import VirginQueenTrackerTab from '@/components/batches/VirginQueenTrackerTab'
 import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
@@ -172,8 +173,13 @@ const formatDateIrish = (dateString: string | null): string => {
  return `${day}/${month}/${year}`
 }
 
+type TabId = 'grafting' | 'nucs' | 'selection' | 'virgins' | 'planning' | 'manage_nucs'
+
+const VALID_TABS: TabId[] = ['grafting', 'nucs', 'selection', 'virgins', 'planning', 'manage_nucs']
+
 export default function BatchesPage() {
  const router = useRouter()
+ const searchParams = useSearchParams()
  const toast = useToast()
  const [batches, setBatches] = useState<Batch[]>([])
  const [sealedCellCounts, setSealedCellCounts] = useState<Record<string, number>>({})
@@ -185,7 +191,10 @@ export default function BatchesPage() {
  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
- const [activeTab, setActiveTab] = useState<'grafting' | 'nucs' | 'selection' | 'virgins' | 'planning'>('grafting')
+
+ const tabParam = searchParams.get('tab')
+ const initialTab: TabId = tabParam && VALID_TABS.includes(tabParam as TabId) ? tabParam as TabId : 'grafting'
+ const [activeTab, setActiveTab] = useState<TabId>(initialTab)
 
  // Selection tab states
  const [selectedApiary, setSelectedApiary] = useState<string>('all')
@@ -813,7 +822,7 @@ export default function BatchesPage() {
  size="lg"
  active={activeTab === 'nucs'}
  >
- Mating Nucs
+ Nuc Setup
  </NavTabButton>
  <NavTabButton
  onClick={() => setActiveTab('selection')}
@@ -838,6 +847,14 @@ export default function BatchesPage() {
  active={activeTab === 'planning'}
  >
  Planning
+ </NavTabButton>
+ <NavTabButton
+ onClick={() => setActiveTab('manage_nucs')}
+ tone="blue"
+ size="lg"
+ active={activeTab === 'manage_nucs'}
+ >
+ Manage NUCs
  </NavTabButton>
  </nav>
  </div>
@@ -1604,9 +1621,14 @@ export default function BatchesPage() {
  </>
  )}
 
- {/* Mating Nucs Tab Content */}
+ {/* Nuc Setup Tab Content */}
  {activeTab === 'nucs' && userId && (
  <MatingNucsTab userId={userId} />
+ )}
+
+ {/* Manage NUCs Tab Content */}
+ {activeTab === 'manage_nucs' && userId && (
+ <ManageNucsTab userId={userId} />
  )}
 
  {/* Selection Tab Content */}

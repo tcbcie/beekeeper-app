@@ -841,7 +841,6 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         },
       },
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [showTemperature, hasMonthlyTemps, showEvents, keyEvents.annotations])
 
   const toggleYear = (year: number) => {
