@@ -1497,6 +1497,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  fetchRecipientHives={fetchRecipientHives}
  onSave={handleDistributeSave}
  onClose={() => setDistributeNuc(null)}
+ defaultMatingLocation={distributeNuc.mating_location || undefined}
  />
  )}
  </div>

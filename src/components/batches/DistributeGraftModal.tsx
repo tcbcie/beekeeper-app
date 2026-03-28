@@ -22,6 +22,8 @@ interface DistributeGraftModalProps {
   // Bulk mode props
   bulkGrafts?: { id: string; status: string; cell_number: number }[]
   onBulkSave?: (data: BulkDistributionData) => Promise<boolean | null>
+  // Pre-fill mating location from existing records (e.g. nuc or batch mating apiary)
+  defaultMatingLocation?: string
 }
 
 const STATUS_ORDER: string[] = ['accepted', 'sealed', 'caged', 'emerged', 'in_nuc', 'mated']
@@ -51,6 +53,7 @@ export default function DistributeGraftModal({
   onClose,
   bulkGrafts,
   onBulkSave,
+  defaultMatingLocation,
 }: DistributeGraftModalProps) {
   const isBulk = bulkGrafts && bulkGrafts.length > 0
   const effectiveStatus = isBulk
@@ -87,8 +90,8 @@ export default function DistributeGraftModal({
   const [extPhone, setExtPhone] = useState('')
   const [extLocation, setExtLocation] = useState('')
 
-  // Mating location for app-user queen_cell distributions
-  const [matingLocation, setMatingLocation] = useState('')
+  // Mating location for app-user distributions — pre-filled from records when available
+  const [matingLocation, setMatingLocation] = useState(defaultMatingLocation || '')
   const [locationError, setLocationError] = useState('')
 
   const today = new Date().toISOString().split('T')[0]
@@ -105,7 +108,7 @@ export default function DistributeGraftModal({
     setSearchResults([])
     setSelectedApiaryId('')
     setSelectedHiveId('')
-    setMatingLocation('')
+    setMatingLocation(defaultMatingLocation || '')
     setLocationError('')
   }
 
@@ -316,7 +319,7 @@ export default function DistributeGraftModal({
                 )}
                 <Button
                   type="button"
-                  onClick={() => { setSelectedUser(null); setApiaries([]); setHives([]); setMatingLocation(''); setLocationError('') }}
+                  onClick={() => { setSelectedUser(null); setApiaries([]); setHives([]); setMatingLocation(defaultMatingLocation || ''); setLocationError('') }}
                   className="p-1 text-text-tertiary hover:text-foreground"
                 >
                   <X size={14} />
