@@ -240,6 +240,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
      .update({ status: 'in_nuc' })
      .in('id', activeGraftIds)
      .in('status', ['sealed', 'caged', 'emerged'])
+     .eq('user_id', userId)
      .then(({ error: syncError }) => {
        if (syncError) console.error('Failed to sync graft statuses:', syncError)
      })
@@ -653,12 +654,14 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
      .from('batch_grafts')
      .update({ status: 'sealed', queen_marked: false, queen_number: null })
      .eq('id', oldGraftId)
+     .eq('user_id', userId)
  }
  if (newGraftId && newGraftId !== oldGraftId) {
    await supabase
      .from('batch_grafts')
      .update({ status: 'in_nuc', status_date: formData.setup_date || new Date().toISOString().split('T')[0] })
      .eq('id', newGraftId)
+     .eq('user_id', userId)
  }
 
  toast.success('Mating nuc updated')
@@ -675,6 +678,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .from('batch_grafts')
  .update({ status: 'in_nuc', status_date: formData.setup_date || new Date().toISOString().split('T')[0] })
  .eq('id', formData.graft_id)
+ .eq('user_id', userId)
  }
 
  // Mark inventory nuc as active so it is no longer available for selection
@@ -711,6 +715,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
      .update({ status: 'sealed', queen_marked: false, queen_number: null })
      .eq('id', nuc.graft_id)
      .in('status', ['in_nuc', 'sealed', 'caged', 'emerged'])
+     .eq('user_id', userId)
  }
 
  const { error } = await supabase
@@ -741,6 +746,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    .update({ status: 'sealed', queen_marked: false, queen_number: null })
    .eq('id', nuc.graft_id)
    .in('status', ['in_nuc', 'sealed', 'caged', 'emerged'])
+   .eq('user_id', userId)
  }
 
  const { error } = await supabase
@@ -785,6 +791,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .from('mating_nucs')
  .update({ status: 'sold' })
  .eq('id', distributeNuc.id)
+ .eq('user_id', userId)
 
  if (nucError) {
  console.error('Error updating nuc status to sold:', nucError)
