@@ -37,17 +37,6 @@ const EQUIPMENT_STATUS_TONE: Record<string, 'green' | 'amber' | 'neutral'> = {
   retired: 'neutral',
 }
 
-const REARING_STATUS_TONE: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'neutral'> = {
-  setup: 'neutral',
-  graft_introduced: 'blue',
-  cell_introduced: 'blue',
-  virgin: 'purple',
-  mating: 'amber',
-  laying: 'green',
-  failed: 'red',
-  sold: 'neutral',
-  merged: 'neutral',
-}
 
 interface ManageNucsTabProps {
   userId: string
@@ -408,9 +397,6 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
                       <span className="text-lg font-bold text-foreground">Nuc {displayNumber}</span>
                       <Badge tone={EQUIPMENT_STATUS_TONE[nuc.equipment_status] || 'neutral'}>
                         {formatStatus(nuc.equipment_status)}
-                      </Badge>
-                      <Badge tone={REARING_STATUS_TONE[nuc.status] || 'neutral'}>
-                        {formatStatus(nuc.status)}
                       </Badge>
                       {nuc.qr_tag_code && (
                         <span className="inline-flex items-center gap-1 text-xs text-text-tertiary font-mono">
