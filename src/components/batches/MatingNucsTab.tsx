@@ -327,7 +327,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .select('id, nuc_number')
  .eq('user_id', userId)
  .eq('is_inventory', true)
- .in('equipment_status', ['active', 'ready'])
+ .eq('equipment_status', 'ready')
  .is('retired_at', null)
  .order('nuc_number')
 
@@ -658,11 +658,21 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .eq('id', formData.graft_id)
  }
 
+ // Mark inventory nuc as active so it is no longer available for selection
+ if (selectedInventoryNucId) {
+ await supabase
+ .from('mating_nucs')
+ .update({ equipment_status: 'active' })
+ .eq('id', selectedInventoryNucId)
+ .eq('user_id', userId)
+ }
+
  toast.success('Mating nuc created')
  }
 
  fetchNucs()
  fetchGrafts()
+ fetchInventoryNucs()
  resetForm()
  } catch (error) {
  console.error('Error saving nuc:', error)
