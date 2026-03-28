@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Plus, Edit2, Archive, Trash2, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
@@ -117,6 +118,8 @@ const getNucDistributionType = (status: string): 'virgin_queen' | 'mated_queen' 
 }
 
 export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
+ const searchParams = useSearchParams()
+ const highlightNucId = searchParams.get('nuc')
  const toast = useToast()
  const [nucs, setNucs] = useState<MatingNuc[]>([])
  const [batches, setBatches] = useState<Batch[]>([])
@@ -140,6 +143,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [availableBulkGrafts, setAvailableBulkGrafts] = useState<AvailableSealedGraft[]>([])
  const [bulkCellSearch, setBulkCellSearch] = useState('')
  const [matingLocationOptions, setMatingLocationOptions] = useState<MatingLocationOption[]>([])
+ const [inventoryNucs, setInventoryNucs] = useState<{ id: string; nuc_number: string; qr_tag_code: string | null }[]>([])
 
  const {
  createDistribution,
@@ -183,6 +187,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .from('mating_nucs')
  .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens(queen_number), mating_nuc_inspections(count)')
  .eq('user_id', userId)
+ .eq('is_inventory', false)
 
  // Filter by retired status
  if (showRetired) {
@@ -313,6 +318,36 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
  }, [userId, toast])
 
+ const fetchInventoryNucs = useCallback(async () => {
+ const { data } = await supabase
+ .from('mating_nucs')
+ .select('id, nuc_number')
+ .eq('user_id', userId)
+ .eq('is_inventory', true)
+ .in('equipment_status', ['active', 'ready'])
+ .is('retired_at', null)
+ .order('nuc_number')
+
+ const nucs = data || []
+ const nucIds = nucs.map(n => n.id)
+ const tagMap: Record<string, string> = {}
+
+ if (nucIds.length > 0) {
+ const { data: tagData } = await supabase
+ .from('qr_tags')
+ .select('mating_nuc_id, code')
+ .in('mating_nuc_id', nucIds)
+
+ if (tagData) {
+ for (const t of tagData) {
+ if (t.mating_nuc_id) tagMap[t.mating_nuc_id] = t.code
+ }
+ }
+ }
+
+ setInventoryNucs(nucs.map(n => ({ ...n, qr_tag_code: tagMap[n.id] || null })))
+ }, [userId])
+
  const loadBulkRuns = useCallback(async () => {
  try {
  setBulkRunsLoading(true)
@@ -332,8 +367,19 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  fetchGrafts()
  fetchQueens()
  fetchMatingLocationOptions()
+ fetchInventoryNucs()
  loadBulkRuns()
- }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, fetchMatingLocationOptions, loadBulkRuns])
+ }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, fetchMatingLocationOptions, fetchInventoryNucs, loadBulkRuns])
+
+ // Auto-expand highlighted nuc from URL params
+ useEffect(() => {
+ if (highlightNucId && !loading) {
+ setExpandedNucId(highlightNucId)
+ setTimeout(() => {
+ document.getElementById(`nuc-${highlightNucId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+ }, 200)
+ }
+ }, [highlightNucId, loading])
 
  // Filter grafts by selected batch (include the nuc's current graft when editing)
  useEffect(() => {
@@ -777,6 +823,24 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {editingNuc ? 'Edit Mating Nuc' : 'Create Mating Nuc'}
  </h3>
  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ {!editingNuc && inventoryNucs.length > 0 && (
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Select from Inventory</label>
+ <select
+ value={inventoryNucs.find(n => n.nuc_number === formData.nuc_number)?.id || ''}
+ onChange={(e) => {
+ const selected = inventoryNucs.find(n => n.id === e.target.value)
+ setFormData({ ...formData, nuc_number: selected?.nuc_number || '' })
+ }}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ >
+ <option value="">— or type below —</option>
+ {inventoryNucs.map(n => (
+ <option key={n.id} value={n.id}>{n.nuc_number}{n.qr_tag_code ? ` (${n.qr_tag_code})` : ''}</option>
+ ))}
+ </select>
+ </div>
+ )}
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Nuc Number</label>
  <input
@@ -1157,7 +1221,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  ) : (
  <div className="space-y-2">
  {nucs.map(nuc => (
- <div key={nuc.id} className="bg-surface dark:bg-surface rounded-lg shadow border border-border overflow-hidden">
+ <div key={nuc.id} id={`nuc-${nuc.id}`} className={`bg-surface dark:bg-surface rounded-lg shadow border overflow-hidden ${highlightNucId === nuc.id ? 'border-forest-500 ring-2 ring-forest-500/20' : 'border-border'}`}>
  {/* Nuc Row */}
  <div className="p-4">
  <div className="flex items-start gap-3">

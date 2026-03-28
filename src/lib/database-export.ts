@@ -11,6 +11,7 @@ export const DATABASE_EXPORT_TABLES = [
   'colony_movements',
   'conservation_areas',
   'container_harvests',
+  'dca_confirmations',
   'del_user_profiles',
   'diagnosis_image_comments',
   'diagnosis_images',

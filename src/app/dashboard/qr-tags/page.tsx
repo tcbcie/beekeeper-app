@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Trash2, Link2, Link2Off, Printer, QrCode, Users } from 'lucide-react'
@@ -19,17 +19,25 @@ interface QrTag {
  id: string
  code: string
  hive_id: string | null
+ mating_nuc_id: string | null
  team_id: string | null
  label: string | null
  created_at: string
  assigned_at: string | null
  hive?: { hive_number: string; apiaries: { name: string } | null } | null
+ mating_nuc?: { nuc_number: string } | null
 }
 
 interface HiveOption {
  id: string
  hive_number: string
  apiary_name: string | null
+}
+
+interface NucOption {
+ id: string
+ nuc_number: string
+ equipment_status: string
 }
 
 interface TeamOption {
@@ -49,14 +57,30 @@ export default function QrTagsPage() {
  const [generateQuantity, setGenerateQuantity] = useState(1)
  const [generateLabel, setGenerateLabel] = useState('')
  const [generating, setGenerating] = useState(false)
+ const [generateTagType, setGenerateTagType] = useState<'hive' | 'nuc'>('hive')
 
  // Assign modal state
  const [showAssignModal, setShowAssignModal] = useState(false)
  const [assigningTag, setAssigningTag] = useState<QrTag | null>(null)
  const [selectedHiveId, setSelectedHiveId] = useState('')
+ const [assignTargetType, setAssignTargetType] = useState<'hive' | 'nuc'>('hive')
+ const [selectedNucId, setSelectedNucId] = useState('')
+ const [matingNucs, setMatingNucs] = useState<NucOption[]>([])
 
  // Delete confirmation
  const [deletingTagId, setDeletingTagId] = useState<string | null>(null)
+
+ // Filter state
+ const [tagTypeFilter, setTagTypeFilter] = useState<'all' | 'hive' | 'nuc'>('all')
+ const [assignedFilter, setAssignedFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
+
+ const filteredTags = useMemo(() => tags.filter(tag => {
+ if (tagTypeFilter === 'hive' && !tag.code.startsWith('HC-')) return false
+ if (tagTypeFilter === 'nuc' && !tag.code.startsWith('MN-')) return false
+ if (assignedFilter === 'assigned' && !tag.hive_id && !tag.mating_nuc_id) return false
+ if (assignedFilter === 'unassigned' && (tag.hive_id || tag.mating_nuc_id)) return false
+ return true
+ }), [tags, tagTypeFilter, assignedFilter])
 
  // Team/shared state
  const [ownedTeams, setOwnedTeams] = useState<TeamOption[]>([])
@@ -85,7 +109,7 @@ export default function QrTagsPage() {
  const fetchTags = useCallback(async (uid: string) => {
  const { data, error } = await supabase
  .from('qr_tags')
- .select('id, code, hive_id, team_id, label, created_at, assigned_at')
+ .select('id, code, hive_id, mating_nuc_id, team_id, label, created_at, assigned_at')
  .eq('user_id', uid)
  .order('created_at', { ascending: false })
 
@@ -115,9 +139,27 @@ export default function QrTagsPage() {
  }
  }
 
+ // Fetch nuc details for assigned tags
+ const nucIds = (data || []).filter(t => t.mating_nuc_id).map(t => t.mating_nuc_id!)
+ const nucMap: Record<string, { nuc_number: string }> = {}
+
+ if (nucIds.length > 0) {
+ const { data: nucsData } = await supabase
+ .from('mating_nucs')
+ .select('id, nuc_number')
+ .in('id', nucIds)
+
+ if (nucsData) {
+ for (const n of nucsData) {
+ nucMap[n.id] = { nuc_number: n.nuc_number || 'Unnamed' }
+ }
+ }
+ }
+
  setTags((data || []).map(t => ({
  ...t,
  hive: t.hive_id ? hiveMap[t.hive_id] || null : null,
+ mating_nuc: t.mating_nuc_id ? nucMap[t.mating_nuc_id] || null : null,
  })))
  }, [showToast])
 
@@ -139,6 +181,24 @@ export default function QrTagsPage() {
  apiary_name: apiary?.name ?? null,
  }
  }))
+ }
+ }, [])
+
+ const fetchMatingNucs = useCallback(async (uid: string) => {
+ const { data } = await supabase
+ .from('mating_nucs')
+ .select('id, nuc_number, equipment_status')
+ .eq('user_id', uid)
+ .is('retired_at', null)
+ .neq('equipment_status', 'retired')
+ .order('nuc_number')
+
+ if (data) {
+ setMatingNucs(data.map(n => ({
+ id: n.id,
+ nuc_number: n.nuc_number || 'Unnamed',
+ equipment_status: n.equipment_status,
+ })))
  }
  }, [])
 
@@ -186,7 +246,7 @@ export default function QrTagsPage() {
 
  const { data, error } = await supabase
   .from('qr_tags')
-  .select('id, code, hive_id, team_id, label, created_at, assigned_at')
+  .select('id, code, hive_id, mating_nuc_id, team_id, label, created_at, assigned_at')
   .in('team_id', teamIdsToFetch)
   .neq('user_id', uid)
   .order('created_at', { ascending: false })
@@ -212,9 +272,25 @@ export default function QrTagsPage() {
   }
  }
 
+ // Fetch nuc details for assigned shared tags
+ const nucIds = (data || []).filter(t => t.mating_nuc_id).map(t => t.mating_nuc_id!)
+ const nucMap: Record<string, { nuc_number: string }> = {}
+ if (nucIds.length > 0) {
+  const { data: nucsData } = await supabase
+   .from('mating_nucs')
+   .select('id, nuc_number')
+   .in('id', nucIds)
+  if (nucsData) {
+   for (const n of nucsData) {
+    nucMap[n.id] = { nuc_number: n.nuc_number || 'Unnamed' }
+   }
+  }
+ }
+
  setSharedTags((data || []).map(t => ({
   ...t,
   hive: t.hive_id ? hiveMap[t.hive_id] || null : null,
+  mating_nuc: t.mating_nuc_id ? nucMap[t.mating_nuc_id] || null : null,
  })))
  }, [])
 
@@ -260,7 +336,7 @@ export default function QrTagsPage() {
  const uid = await getCurrentUserId()
  if (!uid) return
  setUserId(uid)
- const [, , teamData] = await Promise.all([fetchTags(uid), fetchHives(uid), fetchTeamData(uid)])
+ const [, , teamData] = await Promise.all([fetchTags(uid), fetchHives(uid), fetchTeamData(uid), fetchMatingNucs(uid)])
  if (teamData) {
   setMemberTeamIds(teamData.memberOnlyIds)
   await Promise.all([fetchSharedTags(uid, teamData.memberOnlyIds), fetchSharedHives(teamData.allTeamIds)])
@@ -268,7 +344,7 @@ export default function QrTagsPage() {
  setLoading(false)
  }
  init()
- }, [fetchTags, fetchHives, fetchTeamData, fetchSharedTags, fetchSharedHives])
+ }, [fetchTags, fetchHives, fetchTeamData, fetchSharedTags, fetchSharedHives, fetchMatingNucs])
 
  const handleGenerate = async () => {
  if (!userId) return
@@ -276,8 +352,9 @@ export default function QrTagsPage() {
 
  try {
  const newTags = []
+ const prefix = generateTagType === 'nuc' ? 'MN' : 'HC'
  for (let i = 0; i < generateQuantity; i++) {
- const code = generateTagCode()
+ const code = generateTagCode(prefix)
  const label = generateLabel
  ? (generateQuantity > 1 ? `${generateLabel} ${i + 1}` : generateLabel)
  : null
@@ -301,6 +378,7 @@ export default function QrTagsPage() {
  setGenerateQuantity(1)
  setGenerateLabel('')
  setGenerateTeamId('')
+ setGenerateTagType('hive')
  await fetchTags(userId)
  } finally {
  setGenerating(false)
@@ -310,12 +388,16 @@ export default function QrTagsPage() {
  const handleAssign = async () => {
  if (!assigningTag || !userId) return
 
- const hiveId = selectedHiveId || null
+ const isNuc = assignTargetType === 'nuc'
+ const targetId = isNuc ? (selectedNucId || null) : (selectedHiveId || null)
+ const hasTarget = !!targetId
+
  const { error } = await supabase
  .from('qr_tags')
  .update({
- hive_id: hiveId,
- assigned_at: hiveId ? new Date().toISOString() : null,
+ hive_id: isNuc ? null : targetId,
+ mating_nuc_id: isNuc ? targetId : null,
+ assigned_at: hasTarget ? new Date().toISOString() : null,
  })
  .eq('id', assigningTag.id)
 
@@ -324,10 +406,12 @@ export default function QrTagsPage() {
  return
  }
 
- showToast(hiveId ? 'Tag assigned to hive' : 'Tag unassigned', 'success')
+ showToast(hasTarget ? (isNuc ? 'Tag assigned to mating nuc' : 'Tag assigned to hive') : 'Tag unassigned', 'success')
  setShowAssignModal(false)
  setAssigningTag(null)
  setSelectedHiveId('')
+ setSelectedNucId('')
+ setAssignTargetType('hive')
  await fetchTags(userId)
  if (memberTeamIds.length > 0) await fetchSharedTags(userId, memberTeamIds)
  }
@@ -354,14 +438,22 @@ export default function QrTagsPage() {
 
  const allPrintTags = [...tags, ...sharedTags]
 
+ const printTags = allPrintTags.filter(tag => {
+ if (tagTypeFilter === 'hive' && !tag.code.startsWith('HC-')) return false
+ if (tagTypeFilter === 'nuc' && !tag.code.startsWith('MN-')) return false
+ if (assignedFilter === 'assigned' && !tag.hive_id && !tag.mating_nuc_id) return false
+ if (assignedFilter === 'unassigned' && (tag.hive_id || tag.mating_nuc_id)) return false
+ return true
+ })
+
  const handlePrintBatch = () => {
- if (allPrintTags.length === 0 || !qrContainerRef.current) return
+ if (printTags.length === 0 || !qrContainerRef.current) return
 
  const escapeHtml = (str: string) =>
  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
  // Serialise each hidden QRCodeSVG to a data URI
- const qrHtml = allPrintTags.map(tag => {
+ const qrHtml = printTags.map(tag => {
  const svg = qrContainerRef.current?.querySelector(`[data-tag-code="${tag.code}"]`)
  let imgTag = ''
  if (svg) {
@@ -404,16 +496,16 @@ export default function QrTagsPage() {
  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
  <div>
  <h1 className="text-3xl font-bold text-foreground">QR Tags</h1>
- <p className="text-text-tertiary mt-1">Generate reusable QR tags and assign them to hives</p>
+ <p className="text-text-tertiary mt-1">Generate reusable QR tags and assign them to hives or mating nucs</p>
  </div>
  <div className="flex gap-2">
- {allPrintTags.length > 0 && (
+ {printTags.length > 0 && (
  <Button
  onClick={handlePrintBatch}
  className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated border border-border font-medium flex items-center gap-2 text-sm"
  >
  <Printer size={16} />
- Print All
+ Print{tagTypeFilter !== 'all' || assignedFilter !== 'all' ? ` (${printTags.length})` : ' All'}
  </Button>
  )}
  <Button
@@ -445,9 +537,46 @@ export default function QrTagsPage() {
  {tags.length > 0 && (
  <>
  <h2 className="text-lg font-semibold text-foreground mb-3">My Tags</h2>
+
+ {/* Filter bar */}
+ <div className="flex flex-wrap items-center gap-2 mb-4">
+ {(['all', 'hive', 'nuc'] as const).map(f => (
+ <button
+ key={f}
+ onClick={() => setTagTypeFilter(f)}
+ className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+ tagTypeFilter === f
+ ? 'bg-forest-600 text-white'
+ : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
+ }`}
+ >
+ {f === 'all' ? 'All Types' : f === 'hive' ? 'Hive (HC-)' : 'Nuc (MN-)'}
+ </button>
+ ))}
+ <span className="text-border">|</span>
+ {(['all', 'assigned', 'unassigned'] as const).map(f => (
+ <button
+ key={f}
+ onClick={() => setAssignedFilter(f)}
+ className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+ assignedFilter === f
+ ? 'bg-forest-600 text-white'
+ : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
+ }`}
+ >
+ {f === 'all' ? 'All' : f === 'assigned' ? 'Assigned' : 'Unassigned'}
+ </button>
+ ))}
+ <span className="text-xs text-text-tertiary ml-1">({filteredTags.length})</span>
+ </div>
+
+ {filteredTags.length === 0 ? (
+ <p className="text-text-tertiary text-center py-8">No tags match the selected filters.</p>
+ ) : (
+ <>
  {/* Mobile Cards */}
  <div className="md:hidden space-y-3">
- {tags.map(tag => (
+ {filteredTags.map(tag => (
  <div key={tag.id} className="bg-surface rounded-lg shadow p-4 border border-border">
  <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-2">
@@ -463,12 +592,14 @@ export default function QrTagsPage() {
  onClick={() => {
  setAssigningTag(tag)
  setSelectedHiveId(tag.hive_id || '')
+ setSelectedNucId(tag.mating_nuc_id || '')
+ setAssignTargetType(tag.mating_nuc_id ? 'nuc' : 'hive')
  setShowAssignModal(true)
  }}
  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
- title={tag.hive_id ? 'Reassign' : 'Assign'}
+ title={(tag.hive_id || tag.mating_nuc_id) ? 'Reassign' : 'Assign'}
  >
- {tag.hive_id ? <Link2 size={16} /> : <Link2Off size={16} />}
+ {(tag.hive_id || tag.mating_nuc_id) ? <Link2 size={16} /> : <Link2Off size={16} />}
  </Button>
  {deletingTagId === tag.id ? (
  <div className="flex gap-1">
@@ -502,6 +633,10 @@ export default function QrTagsPage() {
  Hive {tag.hive.hive_number}
  {tag.hive.apiaries && <span className="text-text-tertiary font-normal"> — {tag.hive.apiaries.name}</span>}
  </span>
+ ) : tag.mating_nuc ? (
+ <span className="text-purple-600 dark:text-purple-400 font-medium">
+ Nuc {tag.mating_nuc.nuc_number}
+ </span>
  ) : (
  <span className="text-text-tertiary italic">Unassigned</span>
  )}
@@ -520,13 +655,13 @@ export default function QrTagsPage() {
  <tr>
  <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Code</th>
  <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Label</th>
- <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Assigned Hive</th>
+ <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Assigned To</th>
  <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Created</th>
  <th className="text-right px-4 py-3 text-sm font-semibold text-text-secondary">Actions</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-border">
- {tags.map(tag => (
+ {filteredTags.map(tag => (
  <tr key={tag.id} className="hover:bg-surface-secondary">
  <td className="px-4 py-3 font-mono font-bold text-foreground">
  <span>{tag.code}</span>
@@ -543,6 +678,10 @@ export default function QrTagsPage() {
  Hive {tag.hive.hive_number}
  {tag.hive.apiaries && <span className="text-text-tertiary font-normal"> — {tag.hive.apiaries.name}</span>}
  </span>
+ ) : tag.mating_nuc ? (
+ <span className="text-purple-600 dark:text-purple-400 font-medium">
+ Nuc {tag.mating_nuc.nuc_number}
+ </span>
  ) : (
  <span className="text-text-tertiary italic">Unassigned</span>
  )}
@@ -556,12 +695,14 @@ export default function QrTagsPage() {
  onClick={() => {
  setAssigningTag(tag)
  setSelectedHiveId(tag.hive_id || '')
+ setSelectedNucId(tag.mating_nuc_id || '')
+ setAssignTargetType(tag.mating_nuc_id ? 'nuc' : 'hive')
  setShowAssignModal(true)
  }}
  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
- title={tag.hive_id ? 'Reassign' : 'Assign to hive'}
+ title={(tag.hive_id || tag.mating_nuc_id) ? 'Reassign' : 'Assign'}
  >
- {tag.hive_id ? <Link2 size={16} /> : <Link2Off size={16} />}
+ {(tag.hive_id || tag.mating_nuc_id) ? <Link2 size={16} /> : <Link2Off size={16} />}
  </Button>
  {deletingTagId === tag.id ? (
  <div className="flex gap-1">
@@ -623,12 +764,14 @@ export default function QrTagsPage() {
    onClick={() => {
    setAssigningTag(tag)
    setSelectedHiveId(tag.hive_id || '')
+   setSelectedNucId(tag.mating_nuc_id || '')
+   setAssignTargetType(tag.mating_nuc_id ? 'nuc' : 'hive')
    setShowAssignModal(true)
    }}
    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-   title={tag.hive_id ? 'Reassign' : 'Assign'}
+   title={(tag.hive_id || tag.mating_nuc_id) ? 'Reassign' : 'Assign'}
   >
-   {tag.hive_id ? <Link2 size={16} /> : <Link2Off size={16} />}
+   {(tag.hive_id || tag.mating_nuc_id) ? <Link2 size={16} /> : <Link2Off size={16} />}
   </Button>
   </div>
   {tag.label && <p className="text-sm text-text-secondary mb-1">{tag.label}</p>}
@@ -637,6 +780,10 @@ export default function QrTagsPage() {
    <span className="text-green-600 dark:text-green-400 font-medium">
    Hive {tag.hive.hive_number}
    {tag.hive.apiaries && <span className="text-text-tertiary font-normal"> — {tag.hive.apiaries.name}</span>}
+   </span>
+  ) : tag.mating_nuc ? (
+   <span className="text-purple-600 dark:text-purple-400 font-medium">
+   Nuc {tag.mating_nuc.nuc_number}
    </span>
   ) : (
    <span className="text-text-tertiary italic">Unassigned</span>
@@ -657,7 +804,7 @@ export default function QrTagsPage() {
    <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Code</th>
    <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Team</th>
    <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Label</th>
-   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Assigned Hive</th>
+   <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Assigned To</th>
    <th className="text-left px-4 py-3 text-sm font-semibold text-text-secondary">Created</th>
    <th className="text-right px-4 py-3 text-sm font-semibold text-text-secondary">Actions</th>
   </tr>
@@ -680,6 +827,10 @@ export default function QrTagsPage() {
      Hive {tag.hive.hive_number}
      {tag.hive.apiaries && <span className="text-text-tertiary font-normal"> — {tag.hive.apiaries.name}</span>}
     </span>
+    ) : tag.mating_nuc ? (
+    <span className="text-purple-600 dark:text-purple-400 font-medium">
+     Nuc {tag.mating_nuc.nuc_number}
+    </span>
     ) : (
     <span className="text-text-tertiary italic">Unassigned</span>
     )}
@@ -692,12 +843,14 @@ export default function QrTagsPage() {
     onClick={() => {
      setAssigningTag(tag)
      setSelectedHiveId(tag.hive_id || '')
+     setSelectedNucId(tag.mating_nuc_id || '')
+     setAssignTargetType(tag.mating_nuc_id ? 'nuc' : 'hive')
      setShowAssignModal(true)
     }}
     className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-    title={tag.hive_id ? 'Reassign' : 'Assign to hive'}
+    title={(tag.hive_id || tag.mating_nuc_id) ? 'Reassign' : 'Assign'}
     >
-    {tag.hive_id ? <Link2 size={16} /> : <Link2Off size={16} />}
+    {(tag.hive_id || tag.mating_nuc_id) ? <Link2 size={16} /> : <Link2Off size={16} />}
     </Button>
    </td>
    </tr>
@@ -707,16 +860,25 @@ export default function QrTagsPage() {
  </div>
  </>
  )}
+ </>
+ )}
 
  {/* Generate Modal */}
  {showGenerateModal && (
  <ModalShell
  title="Generate QR Tags"
  maxWidthClassName="max-w-sm"
- onClose={() => { setShowGenerateModal(false); setGenerateTeamId('') }}
+ onClose={() => { setShowGenerateModal(false); setGenerateTeamId(''); setGenerateTagType('hive') }}
  closeOnBackdrop
  bodyClassName="p-6 space-y-4"
  >
+ <div>
+ <FieldLabel>Tag type</FieldLabel>
+ <SelectField value={generateTagType} onChange={e => setGenerateTagType(e.target.value as 'hive' | 'nuc')}>
+ <option value="hive">Hive (HC-)</option>
+ <option value="nuc">Mating Nuc (MN-)</option>
+ </SelectField>
+ </div>
  <div>
  <FieldLabel>Quantity (1-50)</FieldLabel>
  <TextInput
@@ -787,12 +949,23 @@ export default function QrTagsPage() {
 
  {showAssignModal && assigningTag && (
  <ModalShell
- title={`${assigningTag.hive_id ? 'Reassign' : 'Assign'} Tag ${assigningTag.code}`}
+ title={`${(assigningTag.hive_id || assigningTag.mating_nuc_id) ? 'Reassign' : 'Assign'} Tag ${assigningTag.code}`}
  maxWidthClassName="max-w-sm"
- onClose={() => { setShowAssignModal(false); setAssigningTag(null) }}
+ onClose={() => { setShowAssignModal(false); setAssigningTag(null); setAssignTargetType('hive') }}
  closeOnBackdrop
  bodyClassName="p-6 space-y-4"
  >
+ <div>
+ <FieldLabel>Assign to</FieldLabel>
+ <SelectField
+ value={assignTargetType}
+ onChange={e => { setAssignTargetType(e.target.value as 'hive' | 'nuc'); setSelectedHiveId(''); setSelectedNucId('') }}
+ >
+ <option value="hive">Hive</option>
+ <option value="nuc">Mating Nuc</option>
+ </SelectField>
+ </div>
+ {assignTargetType === 'hive' ? (
  <div>
  <FieldLabel>Select Hive</FieldLabel>
  <SelectField
@@ -801,7 +974,6 @@ export default function QrTagsPage() {
  >
  <option value="">Unassigned</option>
  {(() => {
- // Use shared hives when assigning a shared tag, own hives otherwise
  const hiveList = assigningTag?.team_id
   ? (sharedHivesByTeam[assigningTag.team_id] || [])
   : hives
@@ -817,15 +989,37 @@ export default function QrTagsPage() {
  })()}
  </SelectField>
  </div>
+ ) : (
+ <div>
+ <FieldLabel>Select Mating Nuc</FieldLabel>
+ <SelectField
+ value={selectedNucId}
+ onChange={e => setSelectedNucId(e.target.value)}
+ >
+ <option value="">Unassigned</option>
+ {(() => {
+ const allTags = [...tags, ...sharedTags]
+ return matingNucs.filter(n => {
+  const taken = allTags.some(t => t.mating_nuc_id === n.id && t.id !== assigningTag?.id)
+  return !taken
+ }).map(n => (
+  <option key={n.id} value={n.id}>
+  Nuc {n.nuc_number} ({n.equipment_status})
+  </option>
+ ))
+ })()}
+ </SelectField>
+ </div>
+ )}
  <FormActionRow>
  <Button
  onClick={handleAssign}
  className="fj-btn fj-btn-blue fj-btn-sm flex-1"
  >
- {selectedHiveId ? 'Assign' : 'Unassign'}
+ {(assignTargetType === 'hive' ? selectedHiveId : selectedNucId) ? 'Assign' : 'Unassign'}
  </Button>
  <Button
- onClick={() => { setShowAssignModal(false); setAssigningTag(null) }}
+ onClick={() => { setShowAssignModal(false); setAssigningTag(null); setAssignTargetType('hive') }}
  className="fj-btn fj-btn-neutral fj-btn-sm flex-1"
  >
  Cancel

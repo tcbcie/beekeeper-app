@@ -367,7 +367,6 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
         ticks: { maxRotation: 0 },
       },
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [currentYearTotal, showEvents, keyEvents.annotations])
 
   // Monthly bar chart data
