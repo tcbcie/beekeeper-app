@@ -50,9 +50,39 @@ Add a new "Reports" tab to the Queen Rearing page (`/dashboard/batches?tab=repor
 - Mobile-first: batch performance uses cards on mobile, table on desktop.
 - No mutations — purely read-only reports tab.
 
-### Audit Hardening (Post-Implementation)
+### Phase 2: Customisation & PDF Export
+
+#### Tasks
+- [x] 1. Add batch filter dropdown — select which rearing batch(es) to include or "All Batches"
+- [x] 2. Add time period filter — reuse existing `TimePeriod` type with button toggles (All Time, 3 Months, 6 Months, 1 Year, Custom)
+- [x] 3. Filter the derived report data by selected batch and date range
+- [x] 4. Add `ReportExportBar` — Print/PDF (via `printReport()`), Export CSV (via `exportToCSV()`), Export Image
+- [x] 5. Wrap report content in a `ref` for image export and add `print-container` class for print styling
+- [ ] 6. Prompt user to test the build
+- [x] 7. Update review section
+
+#### Approach
+- Reuse existing `ReportExportBar` component for export buttons
+- Reuse existing `printReport()`, `exportToCSV()`, `exportToImage()` from `export-utils.ts`
+- Reuse existing `TimePeriod` type from `types/reports.ts`
+- Filters use `no-print` class so they're hidden in PDF output
+- Single file change: `NucReportsTab.tsx` only
+
+#### Phase 2 Review
+- **Batch filter**: Dropdown derived from unique batches in fetched data via `useMemo`. Filters `filteredNucs` which feeds all report calculations.
+- **Time period filter**: Reuses `TimePeriod` type from `types/reports.ts`. Button toggle pattern matches `ReportFilters` component. Custom date range with Clear button. Filters on `setup_date`.
+- **Export**: Reuses `ReportExportBar`, `printReport()`, `exportToCSV()`, `exportToImage()` from existing utils. Report content wrapped in `ref` with `print-container` class. Filters panel has `no-print` class. Print header shows selected filters context.
+- **CSV export**: Exports per-nuc rows with status, batch, setup date, emergence, mating confirmed, retired dates.
+- **Single file changed**: `NucReportsTab.tsx` only.
+
+### Audit Hardening — Phase 1
 - **[Critical]** Added explicit error state (`fetchError`) with retry button — fetch failures no longer silently show as empty data.
 - **[High]** PostgREST array join normalisation — follows `ManageNucsTab` pattern instead of `as unknown` cast.
 - **[High]** Batch Performance React keys changed from `batchName` (non-unique) to `batchId` (UUID).
 - **[Medium]** Invalid Date guard (`isNaN`) on `setupDate` for malformed date strings.
 - **[Medium]** Fixed operator precedence on tone fallback expressions.
+
+### Audit Hardening — Phase 2
+- **[High]** `handleExportImage` wrapped in try/catch with `toast.error()` — `exportToImage` re-throws on failure, previously caused unhandled promise rejection with no user feedback.
+- **[High]** Print header date range consolidated into single expression — previously produced unbalanced parentheses when only one of start/end date was set.
+- **[Medium]** Custom date filter inputs guarded with `isNaN` — invalid dates no longer silently filter out all nucs.
