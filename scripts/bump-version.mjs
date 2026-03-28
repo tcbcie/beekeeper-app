@@ -186,7 +186,7 @@ async function main() {
   // Call update-version script
   try {
     console.log('\n🔄 Updating files...\n');
-    execSync(`node "${join(__dirname, 'update-version.mjs')}" ${newVersion} "${newDate}"`, {
+    execSync(`node --no-deprecation "${join(__dirname, 'update-version.mjs')}" ${newVersion} "${newDate}"`, {
       cwd: ROOT_DIR,
       stdio: 'inherit'
     });
@@ -200,7 +200,7 @@ async function main() {
 
     try {
       // Run git changelog extraction
-      const extractOutput = execSync(`node "${join(__dirname, 'extract-git-changelog.mjs')}" "${newVersion}"`, {
+      const extractOutput = execSync(`node --no-deprecation "${join(__dirname, 'extract-git-changelog.mjs')}" "${newVersion}"`, {
         cwd: ROOT_DIR,
         encoding: 'utf8'
       });
@@ -219,7 +219,7 @@ async function main() {
           for (const entry of changelogData.entries) {
             try {
               const result = execSync(
-                `node "${join(__dirname, 'add-changelog.mjs')}" "${newVersion}" "${entry.entry_type}" "${entry.title}" "${entry.description}"`,
+                `node --no-deprecation "${join(__dirname, 'add-changelog.mjs')}" "${newVersion}" "${entry.entry_type}" "${entry.title}" "${entry.description}"`,
                 {
                   cwd: ROOT_DIR,
                   encoding: 'utf8',
