@@ -20,10 +20,11 @@ interface BatchGraftsSectionProps {
   groupId?: string | null
   emergenceDate?: string | null
   graftDate?: string | null
+  matingApiaryName?: string | null
   onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
 }
 
-export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, graftDate, onCountsChange }: BatchGraftsSectionProps) {
+export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, graftDate, matingApiaryName, onCountsChange }: BatchGraftsSectionProps) {
   const hook = useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange })
 
   const handleFrameBulkButtonClick = async () => {
@@ -184,6 +185,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           fetchRecipientHives={hook.fetchRecipientHives}
           onSave={hook.handleDistributeSave}
           onClose={() => hook.setDistributeGraft(null)}
+          defaultMatingLocation={hook.distributeGraft.status === 'mated' ? (matingApiaryName || undefined) : undefined}
         />
       )}
 
@@ -203,6 +205,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           onClose={() => hook.setBulkDistributeGrafts(null)}
           bulkGrafts={hook.bulkDistributeGrafts.map(g => ({ id: g.id, status: g.status, cell_number: g.cell_number }))}
           onBulkSave={hook.handleBulkDistributeSave}
+          defaultMatingLocation={hook.bulkDistributeGrafts.some(g => g.status === 'mated') ? (matingApiaryName || undefined) : undefined}
         />
       )}
     </div>

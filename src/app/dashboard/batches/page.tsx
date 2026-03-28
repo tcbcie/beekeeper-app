@@ -1416,6 +1416,7 @@ export default function BatchesPage() {
  groupId={editingBatch.rearing_group_id}
  emergenceDate={editingBatch.emergence_date}
  graftDate={formData.graft_date || null}
+ matingApiaryName={apiaries.find(a => a.id === formData.mating_apiary_id)?.name || null}
  onCountsChange={(counts) => setFormData(prev => ({
  ...prev,
  grafts_accepted: counts.grafts_accepted.toString(),
