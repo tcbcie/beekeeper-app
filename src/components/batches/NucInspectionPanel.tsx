@@ -225,11 +225,68 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     if (error) {
       console.error('Error deleting inspection:', error)
       toast.error('Failed to delete inspection')
-    } else {
-      toast.success('Inspection deleted')
-      fetchInspections()
-      onInspectionChange?.()
+      return
     }
+
+    // Recalculate nuc derived fields from remaining inspections
+    const { data: remaining } = await supabase
+      .from('mating_nuc_inspections')
+      .select('inspection_date, queen_seen, queen_status')
+      .eq('nuc_id', nucId)
+      .order('inspection_date', { ascending: true })
+
+    const nucReset: Record<string, string | null> = {
+      status: 'setup',
+      queen_emerged_at: null,
+      mating_confirmed_at: null,
+      queen_last_seen_at: null,
+      failed_at: null,
+    }
+    let graftStatus: string | null = null
+
+    if (remaining && remaining.length > 0) {
+      for (const insp of remaining) {
+        if (insp.queen_seen) {
+          nucReset.queen_last_seen_at = insp.inspection_date
+        }
+        const qs = insp.queen_status
+        if (qs === 'virgin') {
+          nucReset.status = 'virgin'
+          nucReset.queen_emerged_at = nucReset.queen_emerged_at || insp.inspection_date
+          graftStatus = 'emerged'
+        } else if (qs === 'mated') {
+          nucReset.status = 'mating'
+          nucReset.mating_confirmed_at = nucReset.mating_confirmed_at || insp.inspection_date
+          graftStatus = 'mated'
+        } else if (qs === 'laying') {
+          nucReset.status = 'laying'
+          nucReset.mating_confirmed_at = nucReset.mating_confirmed_at || insp.inspection_date
+          graftStatus = 'mated'
+        } else if (qs === 'dead' || qs === 'missing') {
+          nucReset.status = 'failed'
+          nucReset.failed_at = insp.inspection_date
+          graftStatus = 'failed'
+        }
+      }
+    }
+
+    await supabase
+      .from('mating_nucs')
+      .update(nucReset)
+      .eq('id', nucId)
+      .eq('user_id', userId)
+
+    if (graftId) {
+      await supabase
+        .from('batch_grafts')
+        .update({ status: graftStatus || 'in_nuc' })
+        .eq('id', graftId)
+        .eq('user_id', userId)
+    }
+
+    toast.success('Inspection deleted')
+    fetchInspections()
+    onInspectionChange?.()
   }
 
   const markColour = emergenceDate ? getQueenColorFromYear(emergenceDate) : ''
