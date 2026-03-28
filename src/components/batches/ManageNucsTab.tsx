@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { QrCode, ChevronDown, ChevronUp, Box, Plus, X, Trash2 } from 'lucide-react'
@@ -61,6 +61,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
   const [creating, setCreating] = useState(false)
   const [deletingNucId, setDeletingNucId] = useState<string | null>(null)
   const { showToast } = useToast()
+  const autoExpandApplied = useRef(false)
 
   const fetchNucs = useCallback(async () => {
     const { data, error } = await supabase
@@ -122,15 +123,15 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
     fetchAvailableQrTags()
   }, [fetchNucs, fetchAvailableQrTags])
 
-  // Auto-expand highlighted nuc from URL params
+  // Auto-expand highlighted nuc from URL params — once only
   useEffect(() => {
-    if (highlightNucId && !loading) {
-      setExpandedNucId(highlightNucId)
-      const timer = setTimeout(() => {
-        document.getElementById(`nuc-${highlightNucId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 200)
-      return () => clearTimeout(timer)
-    }
+    if (loading || autoExpandApplied.current || !highlightNucId) return
+    autoExpandApplied.current = true
+    setExpandedNucId(highlightNucId)
+    const timer = setTimeout(() => {
+      document.getElementById(`nuc-${highlightNucId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 200)
+    return () => clearTimeout(timer)
   }, [highlightNucId, loading])
 
   const handleEquipmentStatusChange = async (nucId: string, newStatus: string) => {
@@ -198,6 +199,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
         .from('qr_tags')
         .update({ mating_nuc_id: inserted.id, assigned_at: new Date().toISOString() })
         .eq('id', createQrTagId)
+        .eq('user_id', userId)
 
       if (tagError) {
         setCreating(false)

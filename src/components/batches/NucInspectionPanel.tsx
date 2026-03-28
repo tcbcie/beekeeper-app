@@ -142,6 +142,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
           .from('mating_nuc_inspections')
           .update(inspectionData)
           .eq('id', editingInspection.id)
+          .eq('user_id', userId)
 
         if (error) throw error
         toast.success('Inspection updated')
@@ -188,6 +189,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
           .from('mating_nucs')
           .update(nucUpdate)
           .eq('id', nucId)
+          .eq('user_id', userId)
 
         if (nucSyncError) console.error('Error syncing nuc status:', nucSyncError)
       }
@@ -197,6 +199,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
           .from('batch_grafts')
           .update({ status: graftStatus, status_date: inspectionDate })
           .eq('id', graftId)
+          .eq('user_id', userId)
 
         if (graftSyncError) console.error('Error syncing graft status:', graftSyncError)
       }
@@ -217,6 +220,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       .from('mating_nuc_inspections')
       .delete()
       .eq('id', id)
+      .eq('user_id', userId)
 
     if (error) {
       console.error('Error deleting inspection:', error)
@@ -240,6 +244,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
           .from('batch_grafts')
           .update({ queen_marked: true, queen_number: markQueenNumber || null })
           .eq('id', graftId)
+          .eq('user_id', userId)
 
         if (graftError) throw graftError
       }
@@ -248,6 +253,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         .from('mating_nucs')
         .update({ queen_marked_at: markDate })
         .eq('id', nucId)
+        .eq('user_id', userId)
 
       if (nucError) throw nucError
 
