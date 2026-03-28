@@ -17,6 +17,7 @@ import ManageNucsTab from '@/components/batches/ManageNucsTab'
 import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
 import VirginQueenTrackerTab from '@/components/batches/VirginQueenTrackerTab'
 import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
+import NucReportsTab from '@/components/batches/NucReportsTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 
 interface Queen {
@@ -173,9 +174,9 @@ const formatDateIrish = (dateString: string | null): string => {
  return `${day}/${month}/${year}`
 }
 
-type TabId = 'grafting' | 'nucs' | 'selection' | 'virgins' | 'planning' | 'manage_nucs'
+type TabId = 'grafting' | 'nucs' | 'selection' | 'virgins' | 'planning' | 'manage_nucs' | 'reports'
 
-const VALID_TABS: TabId[] = ['grafting', 'nucs', 'selection', 'virgins', 'planning', 'manage_nucs']
+const VALID_TABS: TabId[] = ['grafting', 'nucs', 'selection', 'virgins', 'planning', 'manage_nucs', 'reports']
 
 export default function BatchesPage() {
  const router = useRouter()
@@ -863,6 +864,14 @@ export default function BatchesPage() {
  active={activeTab === 'manage_nucs'}
  >
  Manage NUCs
+ </NavTabButton>
+ <NavTabButton
+ onClick={() => setActiveTab('reports')}
+ tone="blue"
+ size="lg"
+ active={activeTab === 'reports'}
+ >
+ Reports
  </NavTabButton>
  </nav>
  </div>
@@ -2099,6 +2108,11 @@ export default function BatchesPage() {
  {/* Planning Tab Content */}
  {activeTab === 'planning' && (
  <QueenRearingPlanningTab />
+ )}
+
+ {/* Reports Tab Content */}
+ {activeTab === 'reports' && userId && (
+ <NucReportsTab userId={userId} />
  )}
  </div>
  </>
