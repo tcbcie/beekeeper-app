@@ -146,6 +146,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [matingLocationOptions, setMatingLocationOptions] = useState<MatingLocationOption[]>([])
  const [inventoryNucs, setInventoryNucs] = useState<{ id: string; nuc_number: string; qr_tag_code: string | null }[]>([])
  const [selectedInventoryNucId, setSelectedInventoryNucId] = useState('')
+ const [nucTagCodes, setNucTagCodes] = useState<Record<string, string>>({})
  const autoExpandApplied = useRef(false)
 
  const {
@@ -209,6 +210,24 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  console.error('Error fetching nucs:', error)
  } else if (data) {
  setNucs(data)
+
+ // Fetch QR tag codes for displayed nucs
+ const nucIds = data.map(n => n.id)
+ if (nucIds.length > 0) {
+   const { data: tagData } = await supabase
+     .from('qr_tags')
+     .select('mating_nuc_id, code')
+     .in('mating_nuc_id', nucIds)
+   const tagMap: Record<string, string> = {}
+   if (tagData) {
+     for (const t of tagData) {
+       if (t.mating_nuc_id) tagMap[t.mating_nuc_id] = t.code
+     }
+   }
+   setNucTagCodes(tagMap)
+ } else {
+   setNucTagCodes({})
+ }
 
  // Sync graft statuses: ensure grafts assigned to active nucs show 'in_nuc'
  const activeGraftIds = data
@@ -1264,6 +1283,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div className="flex-1 min-w-0">
  <div className="flex items-center flex-wrap gap-2 mb-2">
  <span className="font-semibold text-foreground text-lg">{nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}</span>
+ {nucTagCodes[nuc.id] && (
+   <span className="text-sm text-text-secondary font-normal">({nucTagCodes[nuc.id]})</span>
+ )}
  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(nuc.status)}`}>
  {NUC_STATUSES.find(s => s.value === nuc.status)?.label}
  </span>
