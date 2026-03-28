@@ -707,16 +707,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (!confirm('Retire this nuc? It will be archived but history preserved.')) return
 
  try {
- // Revert graft status before retiring so the cell becomes available again
  const nuc = nucs.find(n => n.id === id)
- if (nuc?.graft_id) {
-   await supabase
-     .from('batch_grafts')
-     .update({ status: 'sealed', queen_marked: false, queen_number: null })
-     .eq('id', nuc.graft_id)
-     .in('status', ['in_nuc', 'sealed', 'caged', 'emerged'])
-     .eq('user_id', userId)
- }
 
  const { error } = await supabase
  .from('mating_nucs')
@@ -725,9 +716,22 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .eq('user_id', userId)
 
  if (error) throw error
+
+ // Set the corresponding inventory nuc to 'retired' if one exists
+ if (nuc?.nuc_number) {
+   await supabase
+     .from('mating_nucs')
+     .update({ equipment_status: 'retired', retired_at: new Date().toISOString() })
+     .eq('nuc_number', nuc.nuc_number)
+     .eq('user_id', userId)
+     .eq('is_inventory', true)
+     .eq('equipment_status', 'active')
+ }
+
  toast.success('Nuc retired')
  fetchNucs()
  fetchGrafts()
+ fetchInventoryNucs()
  } catch (error) {
  console.error('Error retiring nuc:', error)
  toast.error('Failed to retire mating nuc')
