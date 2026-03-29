@@ -1,29 +1,31 @@
-# Task: Dashboard Dark Mode Improvements
+# Task: Fix NIHBS Report Missing Mating Apiary Details
 
 **Date:** 29/03/2026
 **Status:** Complete
 
 ## Objective
-Improve dark mode readability and visual separation on the dashboard apiary cards.
+Fix the NIHBS monthly returns report showing empty mating apiary details (name, grid reference, altitude all blank, count = 0).
+
+## Root Cause
+The `can_access_apiary` RLS function only allowed access to apiaries the user owns or shares via teams. When the report queries apiary details for mating apiaries belonging to other group members, RLS blocked the result.
 
 ## Plan
 
-- [x] 1. Increase dark mode background opacity on GDD/forage row (`10%` → `30%`)
-- [x] 2. Increase dark mode background opacity on weather condition bar (`20%` → `40%`, hover `30%` → `50%`)
-- [x] 3. Increase dark mode background opacity on forecast "today" highlight (`15%` → `30%`)
-- [x] 4. Strengthen section borders in dark mode (`border-border/50` → `border-border dark:border-border/70`)
-- [x] 5. All changes in `ApiaryWeatherRow.tsx` only
+- [x] 1. Update `can_access_apiary` function to allow access to mating apiaries used in the user's rearing group batches
+- [x] 2. Update feature documentation
 
 ## Review
 
 ### Changes Made
 
-- **`src/components/dashboard/ApiaryWeatherRow.tsx`**
-  - Weather condition bar ("Drizzle"): `dark:bg-forest-900/20` → `dark:bg-forest-900/40`, hover `dark:hover:bg-forest-900/30` → `dark:hover:bg-forest-900/50`
-  - Forecast "today" column highlight: `dark:bg-forest-900/15` → `dark:bg-forest-900/30`
-  - GDD/forage row: `dark:bg-green-900/10` → `dark:bg-green-900/30`, border `border-border/50` → `border-border dark:border-border/70`
-  - Hives/inspection/queen status row: border `border-border/50` → `border-border dark:border-border/70`
+- **`can_access_apiary` SQL function** — Added a fourth OR clause:
+  - Allows SELECT access when the apiary is referenced as `mating_apiary_id` on a `rearing_batches` row linked to a `rearing_group` the user is a member of
+  - Applied directly via Supabase MCP
+
+- **`sql/can_access_apiary_add_rearing_group.sql`** — Migration file for the function update
+
+- **`docs/features/nihbs-monthly-returns.md`** — Added RLS note for apiaries access via rearing group membership
 
 ### Notes
-- All changes are dark-mode-only opacity increases — light mode is untouched
-- No structural or layout changes
+- No frontend code changes needed — the hook logic was correct, only RLS was blocking
+- The fix is scoped: only mating apiaries referenced by group batches become visible, not all of a group member's apiaries
