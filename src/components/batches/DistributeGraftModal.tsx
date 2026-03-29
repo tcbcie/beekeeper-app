@@ -88,7 +88,7 @@ export default function DistributeGraftModal({
   const [extName, setExtName] = useState('')
   const [extEmail, setExtEmail] = useState('')
   const [extPhone, setExtPhone] = useState('')
-  const [extLocation, setExtLocation] = useState('')
+  const [extLocation, setExtLocation] = useState(defaultMatingLocation || '')
 
   // Mating location for app-user distributions — pre-filled from records when available
   const [matingLocation, setMatingLocation] = useState(defaultMatingLocation || '')
