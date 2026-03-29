@@ -694,7 +694,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
             {bloomingPlants.length > 0 && (
               <>
                 <div className="w-px h-4 bg-border" />
-                <span className="text-xs font-medium text-text-secondary shrink-0">Forage:</span>
+                <span className="text-xs font-medium text-text-secondary dark:text-gray-300 shrink-0">Forage:</span>
                 <Flower2 size={13} className="text-green-600 dark:text-green-400 shrink-0" />
                 <div className="flex items-center gap-1 min-w-0 flex-wrap">
                   {(bloomExpanded ? bloomingPlants : bloomingPlants.slice(0, 3)).map((plant) => (
@@ -706,8 +706,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) } }}
                       className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity ${
                         plant.confirmed
-                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                          : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200'
+                          : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'
                       }`}
                     >
                       {plant.confirmed && <Check size={10} className="shrink-0" />}
@@ -732,7 +732,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           <div className="flex items-center gap-3 mt-1">
             {nectarCondition && (
               <div className="flex items-center gap-1">
-                <span className="text-xs font-medium text-text-secondary">Nectar:</span>
+                <span className="text-xs font-medium text-text-secondary dark:text-gray-300">Nectar:</span>
                 <span className={`text-xs font-bold ${
                   nectarCondition === 'good'
                     ? 'text-green-700 dark:text-green-400'
@@ -748,7 +748,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
               <>
                 {nectarCondition && <div className="w-px h-3 bg-border" />}
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-medium text-text-secondary">Pollen:</span>
+                  <span className="text-xs font-medium text-text-secondary dark:text-gray-300">Pollen:</span>
                   <span className={`text-xs font-bold ${
                     pollenCondition === 'good'
                       ? 'text-green-700 dark:text-green-400'
@@ -765,13 +765,13 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
               <>
                 {(nectarCondition || pollenCondition) && <div className="w-px h-3 bg-border" />}
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-medium text-text-secondary">Foraging window:</span>
+                  <span className="text-xs font-medium text-text-secondary dark:text-gray-300">Foraging window:</span>
                   <span className="text-xs font-bold tabular-nums text-foreground">
-                    {foragingHours.yesterday !== null && <span className="text-text-secondary font-medium">(-1d) {foragingHours.yesterday}h</span>}
-                    {foragingHours.yesterday !== null && foragingHours.today !== null && <span className="text-text-tertiary"> · </span>}
-                    {foragingHours.today !== null && <span className={foragingHours.today >= 4 ? 'text-green-700 dark:text-green-400' : foragingHours.today >= 2 ? 'text-amber-700 dark:text-amber-400' : 'text-text-tertiary'}>Today {foragingHours.today}h</span>}
-                    {foragingHours.today !== null && foragingHours.tomorrow !== null && <span className="text-text-tertiary"> · </span>}
-                    {foragingHours.tomorrow !== null && <span className="text-text-secondary font-medium">(+1d) {foragingHours.tomorrow}h</span>}
+                    {foragingHours.yesterday !== null && <span className="text-text-secondary dark:text-gray-300 font-medium">(-1d) {foragingHours.yesterday}h</span>}
+                    {foragingHours.yesterday !== null && foragingHours.today !== null && <span className="text-text-tertiary dark:text-gray-400"> · </span>}
+                    {foragingHours.today !== null && <span className={foragingHours.today >= 4 ? 'text-green-700 dark:text-green-400' : foragingHours.today >= 2 ? 'text-amber-700 dark:text-amber-400' : 'text-text-tertiary dark:text-gray-400'}>Today {foragingHours.today}h</span>}
+                    {foragingHours.today !== null && foragingHours.tomorrow !== null && <span className="text-text-tertiary dark:text-gray-400"> · </span>}
+                    {foragingHours.tomorrow !== null && <span className="text-text-secondary dark:text-gray-300 font-medium">(+1d) {foragingHours.tomorrow}h</span>}
                   </span>
                 </div>
               </>
