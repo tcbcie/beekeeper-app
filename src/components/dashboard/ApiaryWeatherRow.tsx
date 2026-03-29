@@ -683,7 +683,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
       )}
 
       {gddValue !== null && !activeAction && (
-        <div className="px-3 py-1.5 bg-green-50/50 dark:bg-surface-elevated border-b border-border dark:border-border/70">
+        <div className="px-3 py-1.5 bg-green-50/50 dark:bg-surface-secondary border-b border-border dark:border-border/70">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 shrink-0">
               <Thermometer size={13} className="text-forest-600 dark:text-forest-400" />
