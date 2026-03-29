@@ -54,7 +54,7 @@ const STATUS_LABELS: Record<string, string> = {
   mating: 'Mating',
   laying: 'Laying',
   failed: 'Failed',
-  sold: 'Sold',
+  sold: 'Distributed/Sold',
   merged: 'Merged',
 }
 
