@@ -209,6 +209,7 @@ export default function QueenTrackingSection({
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Last Update</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Marked</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Number</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Weight (mg)</th>
               <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">Actions</th>
             </tr>
           </thead>
@@ -300,6 +301,11 @@ export default function QueenTrackingSection({
                         className="w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
                       />
                     )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="text-xs text-text-secondary">
+                      {graft.latest_weight_mg ? `${graft.latest_weight_mg}` : '-'}
+                    </span>
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-1 justify-end items-center">
@@ -439,6 +445,10 @@ export default function QueenTrackingSection({
                     ) : (
                       <span className="text-xs text-text-secondary">{graft.queen_number || '-'}</span>
                     )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs text-text-secondary shrink-0">Weight (mg)</label>
+                    <span className="text-xs text-text-secondary">{graft.latest_weight_mg ? `${graft.latest_weight_mg}` : '-'}</span>
                   </div>
                 </div>
               )}

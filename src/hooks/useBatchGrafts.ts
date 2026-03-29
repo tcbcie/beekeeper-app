@@ -76,7 +76,28 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error fetching grafts:', error)
       toast.error('Failed to load grafts')
     } else if (data) {
-      setGrafts(data as Graft[])
+      // Fetch latest weights for each graft
+      const graftIds = (data as Graft[]).map(g => g.id)
+      let weightMap = new Map<string, number>()
+      if (graftIds.length > 0) {
+        const { data: weights } = await supabase
+          .from('queen_weights')
+          .select('graft_id, weight_mg')
+          .in('graft_id', graftIds)
+          .order('weighed_at', { ascending: false })
+        if (weights) {
+          for (const w of weights) {
+            if (!weightMap.has(w.graft_id)) {
+              weightMap.set(w.graft_id, w.weight_mg)
+            }
+          }
+        }
+      }
+      const graftsWithWeights = (data as Graft[]).map(g => ({
+        ...g,
+        latest_weight_mg: weightMap.get(g.id) ?? null,
+      }))
+      setGrafts(graftsWithWeights)
       // Prune frame selected IDs to only include grafts still on the frame
       setSelectedIds(prev => {
         if (prev.size === 0) return prev
