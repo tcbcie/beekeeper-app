@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
@@ -63,6 +63,7 @@ interface Batch {
  notes: string | null
  enable_browser_notifications: boolean
  enable_email_digest: boolean
+ status: string | null
  mating_apiary_id: string | null
  rearing_group_id: string | null
  enable_batch_event_reminders?: boolean
@@ -192,6 +193,22 @@ export default function BatchesPage() {
  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
+ const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('active')
+ const [filterYear, setFilterYear] = useState<string>('all')
+
+ const availableYears = useMemo(() => {
+ const years = [...new Set(batches.map(b => b.graft_date?.split('-')[0]).filter(Boolean))]
+ return years.sort((a, b) => b.localeCompare(a))
+ }, [batches])
+
+ const filteredBatches = useMemo(() => {
+ return batches.filter(b => {
+ if (filterStatus === 'completed' && b.status !== 'completed') return false
+ if (filterStatus === 'active' && b.status === 'completed') return false
+ if (filterYear !== 'all' && !b.graft_date?.startsWith(filterYear)) return false
+ return true
+ })
+ }, [batches, filterStatus, filterYear])
 
  const tabParam = searchParams.get('tab')
  const initialTab: TabId = tabParam && VALID_TABS.includes(tabParam as TabId) ? tabParam as TabId : 'grafting'
@@ -1529,12 +1546,41 @@ export default function BatchesPage() {
  </div>
  )}
 
+ {/* Batch Filters */}
+ <div className="flex flex-wrap items-center gap-3 mb-4">
+ <select
+ value={filterStatus}
+ onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'completed')}
+ className="px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+ >
+ <option value="all">All Batches</option>
+ <option value="active">Active</option>
+ <option value="completed">Completed</option>
+ </select>
+ <select
+ value={filterYear}
+ onChange={(e) => setFilterYear(e.target.value)}
+ className="px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+ >
+ <option value="all">All Years</option>
+ {availableYears.map(y => (
+ <option key={y} value={y}>{y}</option>
+ ))}
+ </select>
+ <span className="text-xs text-text-tertiary">{filteredBatches.length} of {batches.length} batches</span>
+ </div>
+
  {/* Mobile Card View */}
  <div className="md:hidden space-y-4">
- {batches.map((batch: Batch) => (
+ {filteredBatches.map((batch: Batch) => (
  <div key={batch.id} className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-4">
  <div className="flex justify-between items-start mb-3">
+ <div className="flex items-center gap-2">
  <h4 className="font-semibold text-foreground text-lg">{batch.batch_name}</h4>
+ {batch.status === 'completed' && (
+ <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border border-green-200 dark:border-green-800">Completed</span>
+ )}
+ </div>
  <div className="flex gap-2">
  <IconButton
  onClick={() => handleEdit(batch)}
@@ -1590,8 +1636,10 @@ export default function BatchesPage() {
  </div>
  </div>
  ))}
- {batches.length === 0 && (
- <div className="text-center py-8 text-text-tertiary">No rearing batch found. Create your first!</div>
+ {filteredBatches.length === 0 && (
+ <div className="text-center py-8 text-text-tertiary">
+ {batches.length === 0 ? 'No rearing batch found. Create your first!' : 'No batches match the current filters.'}
+ </div>
  )}
  </div>
 
@@ -1611,7 +1659,7 @@ export default function BatchesPage() {
  </tr>
  </thead>
  <tbody className="bg-surface dark:bg-surface divide-y divide-border">
- {batches.map((batch: Batch) => (
+ {filteredBatches.map((batch: Batch) => (
  <tr key={batch.id} className="hover:bg-surface-secondary">
  <td className="px-6 py-4 whitespace-nowrap flex gap-2">
  <IconButton onClick={() => handleEdit(batch)} tone="blue" size="xs" aria-label="Edit batch">
@@ -1621,7 +1669,14 @@ export default function BatchesPage() {
  <Trash2 size={16} />
  </IconButton>
  </td>
- <td className="px-6 py-4 whitespace-nowrap font-medium">{batch.batch_name}</td>
+ <td className="px-6 py-4 whitespace-nowrap font-medium">
+ <span className="inline-flex items-center gap-2">
+ {batch.batch_name}
+ {batch.status === 'completed' && (
+ <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border border-green-200 dark:border-green-800">Completed</span>
+ )}
+ </span>
+ </td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
  <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
  <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
@@ -1632,8 +1687,10 @@ export default function BatchesPage() {
  ))}
  </tbody>
  </table>
- {batches.length === 0 && (
- <div className="text-center py-8 text-text-tertiary">No rearing batch found. Create your first!</div>
+ {filteredBatches.length === 0 && (
+ <div className="text-center py-8 text-text-tertiary">
+ {batches.length === 0 ? 'No rearing batch found. Create your first!' : 'No batches match the current filters.'}
+ </div>
  )}
  </div>
  </>
