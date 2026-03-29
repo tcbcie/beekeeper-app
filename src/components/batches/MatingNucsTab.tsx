@@ -147,6 +147,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [inventoryNucs, setInventoryNucs] = useState<{ id: string; nuc_number: string; qr_tag_code: string | null }[]>([])
  const [selectedInventoryNucId, setSelectedInventoryNucId] = useState('')
  const [nucTagCodes, setNucTagCodes] = useState<Record<string, string>>({})
+ const [nucWeights, setNucWeights] = useState<Record<string, number>>({})
  const autoExpandApplied = useRef(false)
 
  const {
@@ -227,6 +228,32 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    setNucTagCodes(tagMap)
  } else {
    setNucTagCodes({})
+ }
+
+ // Fetch latest queen weights for nucs with grafts
+ const graftIdToNucId: Record<string, string> = {}
+ for (const n of data) {
+   if (n.graft_id) graftIdToNucId[n.graft_id] = n.id
+ }
+ const weightGraftIds = Object.keys(graftIdToNucId)
+ if (weightGraftIds.length > 0) {
+   const { data: weights } = await supabase
+     .from('queen_weights')
+     .select('graft_id, weight_mg')
+     .in('graft_id', weightGraftIds)
+     .order('weighed_at', { ascending: false })
+   const wMap: Record<string, number> = {}
+   if (weights) {
+     for (const w of weights) {
+       const nucId = graftIdToNucId[w.graft_id]
+       if (nucId && !(nucId in wMap)) {
+         wMap[nucId] = w.weight_mg
+       }
+     }
+   }
+   setNucWeights(wMap)
+ } else {
+   setNucWeights({})
  }
 
  // Sync graft statuses: ensure grafts assigned to active nucs show 'in_nuc'
@@ -1349,6 +1376,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </span>
  )
  })()}
+ {nucWeights[nuc.id] && (
+ <span>Weight: <strong>{nucWeights[nuc.id]} mg</strong></span>
+ )}
  <span className="text-text-tertiary">
  Updated: {formatDateIrish(nuc.updated_at)}
  </span>
