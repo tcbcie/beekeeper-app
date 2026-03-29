@@ -156,6 +156,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
         updateGraftStatusDate={hook.updateGraftStatusDate}
         updateGraftQueenMarked={hook.updateGraftQueenMarked}
         updateGraftQueenNumber={hook.updateGraftQueenNumber}
+        updateGraftWeight={hook.updateGraftWeight}
         deleteGraft={hook.deleteGraft}
         setDistributeGraft={hook.setDistributeGraft}
       />

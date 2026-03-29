@@ -324,6 +324,26 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     }
   }, [toast, grafts])
 
+  const updateGraftWeight = useCallback(async (graftId: string, weightMg: number) => {
+    const previous = grafts.find(g => g.id === graftId)?.latest_weight_mg
+    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, latest_weight_mg: weightMg } : g))
+    try {
+      const { error } = await supabase
+        .from('queen_weights')
+        .insert([{
+          user_id: userId,
+          graft_id: graftId,
+          weight_mg: weightMg,
+          weighed_at: new Date().toISOString().split('T')[0],
+        }])
+      if (error) throw error
+    } catch (error) {
+      console.error('Error recording weight:', error)
+      toast.error('Failed to record weight')
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, latest_weight_mg: previous ?? null } : g))
+    }
+  }, [toast, grafts, userId])
+
   // --- Distribution wrappers ---
 
   const handleDistributeSave = useCallback(async (data: Parameters<typeof createDistribution>[0]) => {
@@ -662,6 +682,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     updateGraftQueenMarked,
     updateGraftStatusDate,
     updateGraftQueenNumber,
+    updateGraftWeight,
 
     // Distribution wrappers
     handleDistributeSave,
