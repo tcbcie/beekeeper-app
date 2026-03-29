@@ -245,7 +245,7 @@ export default function QueenTrackingSection({
                         </span>
                       ) : (
                         <span className="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium">
-                          Distributed
+                          Distributed/Sold
                         </span>
                       )
                     ) : (
