@@ -135,3 +135,4 @@ Batch-level values take precedence when explicitly set (uses `??` nullish coales
 
 - `nihbs_monthly_returns`: Group owners only (SELECT/INSERT/UPDATE).
 - `batch_grafts`: Group owners can view member grafts (SELECT) — enables graft-derived counter fallback for the NIHBS and rearing reports.
+- `apiaries`: The `can_access_apiary` function grants SELECT access when an apiary is used as a mating apiary in a rearing group the user belongs to — enables the NIHBS report to show mating apiary details (name, grid reference, altitude) for all group members' mating apiaries.
