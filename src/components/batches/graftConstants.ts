@@ -9,6 +9,7 @@ export interface Graft {
   notes: string | null
   queen_marked: boolean
   queen_number: string | null
+  latest_weight_mg?: number | null
 }
 
 const STATUS_CHIP_CLASSES = {
