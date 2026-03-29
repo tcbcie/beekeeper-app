@@ -40,6 +40,7 @@ interface QueenTrackingSectionProps {
   updateGraftStatusDate: (graftId: string, date: string) => void
   updateGraftQueenMarked: (graftId: string, marked: boolean) => void
   updateGraftQueenNumber: (graftId: string, queenNumber: string) => void
+  updateGraftWeight: (graftId: string, weightMg: number) => void
   deleteGraft: (graftId: string) => void
   setDistributeGraft: (graft: Graft | null) => void
 }
@@ -70,6 +71,7 @@ export default function QueenTrackingSection({
   updateGraftStatusDate,
   updateGraftQueenMarked,
   updateGraftQueenNumber,
+  updateGraftWeight,
   deleteGraft,
   setDistributeGraft,
 }: QueenTrackingSectionProps) {
@@ -303,9 +305,26 @@ export default function QueenTrackingSection({
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    <span className="text-xs text-text-secondary">
-                      {graft.latest_weight_mg ? `${graft.latest_weight_mg}` : '-'}
-                    </span>
+                    {(isLocked || !canMark) ? (
+                      <span className="text-xs text-text-secondary">{graft.latest_weight_mg ?? '-'}</span>
+                    ) : (
+                      <input
+                        key={`${graft.id}-wt-${graft.latest_weight_mg ?? ''}`}
+                        type="number"
+                        defaultValue={graft.latest_weight_mg ?? ''}
+                        onBlur={(e) => {
+                          const val = e.target.value.trim()
+                          const parsed = val ? parseInt(val, 10) : null
+                          if (parsed && parsed > 0 && parsed !== (graft.latest_weight_mg ?? null)) {
+                            updateGraftWeight(graft.id, parsed)
+                          }
+                        }}
+                        min="1"
+                        step="1"
+                        placeholder="mg"
+                        className="w-20 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                      />
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-1 justify-end items-center">
@@ -448,7 +467,26 @@ export default function QueenTrackingSection({
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <label className="text-xs text-text-secondary shrink-0">Weight (mg)</label>
-                    <span className="text-xs text-text-secondary">{graft.latest_weight_mg ? `${graft.latest_weight_mg}` : '-'}</span>
+                    {canMark ? (
+                    <input
+                      key={`${graft.id}-wt-${graft.latest_weight_mg ?? ''}`}
+                      type="number"
+                      defaultValue={graft.latest_weight_mg ?? ''}
+                      onBlur={(e) => {
+                        const val = e.target.value.trim()
+                        const parsed = val ? parseInt(val, 10) : null
+                        if (parsed && parsed > 0 && parsed !== (graft.latest_weight_mg ?? null)) {
+                          updateGraftWeight(graft.id, parsed)
+                        }
+                      }}
+                      min="1"
+                      step="1"
+                      placeholder="mg"
+                      className="w-20 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                    />
+                    ) : (
+                      <span className="text-xs text-text-secondary">{graft.latest_weight_mg ?? '-'}</span>
+                    )}
                   </div>
                 </div>
               )}
