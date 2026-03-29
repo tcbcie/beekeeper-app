@@ -650,6 +650,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  return
  }
 
+ if (formData.batch_id && !formData.graft_id) {
+ toast.error('Please select a cell/graft when a batch is chosen.')
+ return
+ }
+
  const nucData = {
  nuc_number: formData.nuc_number || null,
  batch_id: formData.batch_id || null,
@@ -969,7 +974,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  {formData.batch_id && (
  <div>
- <label className="block text-sm font-medium text-text-secondary mb-1">Cell/Graft</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Cell/Graft *</label>
  <select
  value={formData.graft_id}
  onChange={(e) => {
@@ -988,7 +993,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  >
- <option value="">Select cell (optional)</option>
+ <option value="">Select cell *</option>
  {filteredGrafts.map(g => (
  <option key={g.id} value={g.id}>
  Cell #{g.cell_number} ({g.status}{g.queen_marked ? ', marked' : ''}{g.queen_number ? ` #${g.queen_number}` : ''})
